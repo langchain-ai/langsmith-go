@@ -28,7 +28,7 @@ func TestUsage(t *testing.T) {
 	)
 	customChartsSection, err := client.Sessions.Dashboard(
 		context.TODO(),
-		"REPLACE_ME",
+		"1ffaeba7-541e-469f-bae7-df3208ea3d45",
 		langsmith.SessionDashboardParams{
 			CustomChartsSectionRequest: langsmith.CustomChartsSectionRequestParam{},
 		},

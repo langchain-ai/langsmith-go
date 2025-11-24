@@ -54,7 +54,7 @@ func main() {
 	)
 	customChartsSection, err := client.Sessions.Dashboard(
 		context.TODO(),
-		"REPLACE_ME",
+		"1ffaeba7-541e-469f-bae7-df3208ea3d45",
 		langsmith.SessionDashboardParams{
 			CustomChartsSectionRequest: langsmith.CustomChartsSectionRequestParam{},
 		},
@@ -211,7 +211,7 @@ To handle errors, we recommend that you use the `errors.As` pattern:
 ```go
 _, err := client.Sessions.Dashboard(
 	context.TODO(),
-	"REPLACE_ME",
+	"1ffaeba7-541e-469f-bae7-df3208ea3d45",
 	langsmith.SessionDashboardParams{
 		CustomChartsSectionRequest: langsmith.CustomChartsSectionRequestParam{},
 	},
@@ -242,7 +242,7 @@ ctx, cancel := context.WithTimeout(context.Background(), 5*time.Minute)
 defer cancel()
 client.Sessions.Dashboard(
 	ctx,
-	"REPLACE_ME",
+	"1ffaeba7-541e-469f-bae7-df3208ea3d45",
 	langsmith.SessionDashboardParams{
 		CustomChartsSectionRequest: langsmith.CustomChartsSectionRequestParam{},
 	},
@@ -302,7 +302,7 @@ client := langsmith.NewClient(
 // Override per-request:
 client.Sessions.Dashboard(
 	context.TODO(),
-	"REPLACE_ME",
+	"1ffaeba7-541e-469f-bae7-df3208ea3d45",
 	langsmith.SessionDashboardParams{
 		CustomChartsSectionRequest: langsmith.CustomChartsSectionRequestParam{},
 	},
@@ -320,7 +320,7 @@ you need to examine response headers, status codes, or other details.
 var response *http.Response
 customChartsSection, err := client.Sessions.Dashboard(
 	context.TODO(),
-	"REPLACE_ME",
+	"1ffaeba7-541e-469f-bae7-df3208ea3d45",
 	langsmith.SessionDashboardParams{
 		CustomChartsSectionRequest: langsmith.CustomChartsSectionRequestParam{},
 	},
