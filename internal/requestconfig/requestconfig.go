@@ -18,11 +18,11 @@ import (
 	"strings"
 	"time"
 
-	"github.com/stainless-sdks/langsmith-api-go/internal"
-	"github.com/stainless-sdks/langsmith-api-go/internal/apierror"
-	"github.com/stainless-sdks/langsmith-api-go/internal/apiform"
-	"github.com/stainless-sdks/langsmith-api-go/internal/apiquery"
-	"github.com/stainless-sdks/langsmith-api-go/internal/param"
+	"github.com/langchain-ai/langsmith-go/internal"
+	"github.com/langchain-ai/langsmith-go/internal/apierror"
+	"github.com/langchain-ai/langsmith-go/internal/apiform"
+	"github.com/langchain-ai/langsmith-go/internal/apiquery"
+	"github.com/langchain-ai/langsmith-go/internal/param"
 )
 
 func getDefaultHeaders() map[string]string {

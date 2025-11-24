@@ -13,7 +13,7 @@ import (
 	"sync"
 	"time"
 
-	"github.com/stainless-sdks/langsmith-api-go/internal/param"
+	"github.com/langchain-ai/langsmith-go/internal/param"
 )
 
 var encoders sync.Map // map[encoderEntry]encoderFunc
