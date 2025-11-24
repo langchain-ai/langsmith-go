@@ -3,7 +3,7 @@
 package langsmith
 
 import (
-	"github.com/stainless-sdks/langsmith-api-go/internal/apierror"
+	"github.com/langchain-ai/langsmith-go/internal/apierror"
 )
 
 type Error = apierror.Error

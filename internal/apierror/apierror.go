@@ -7,7 +7,7 @@ import (
 	"net/http"
 	"net/http/httputil"
 
-	"github.com/stainless-sdks/langsmith-api-go/internal/apijson"
+	"github.com/langchain-ai/langsmith-go/internal/apijson"
 )
 
 // Error represents an error that originates from the API, i.e. when a request is

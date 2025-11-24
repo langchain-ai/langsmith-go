@@ -1,4 +1,4 @@
-module github.com/stainless-sdks/langsmith-api-go
+module github.com/langchain-ai/langsmith-go
 
 go 1.22
 
