@@ -50,6 +50,10 @@ func (UnionBool) ImplementsFeedbackTokenUpdateParamsScoreUnion() {}
 func (UnionBool) ImplementsFeedbackTokenUpdateParamsValueUnion() {}
 func (UnionBool) ImplementsCommitUpdateParamsSkipWebhooksUnion() {}
 
+type UnionInt int64
+
+func (UnionInt) ImplementsAnnotationQueueUpdateParamsNumReviewersPerItemUnion() {}
+
 type UnionFloat float64
 
 func (UnionFloat) ImplementsDatasetGroupRunsResponseGroupsGroupKeyUnion() {}
