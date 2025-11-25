@@ -380,6 +380,8 @@ func (r MissingParam) ImplementsDatasetUpdateParamsNameUnion() {}
 
 func (r MissingParam) implementsDatasetUpdateParamsTransformationsUnion() {}
 
+func (r MissingParam) ImplementsAnnotationQueueUpdateParamsNumReviewersPerItemUnion() {}
+
 type Missing_Missing string
 
 const (

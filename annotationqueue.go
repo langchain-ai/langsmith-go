@@ -638,19 +638,24 @@ func (r AnnotationQueueGetAnnotationQueuesResponseQueueType) IsKnown() bool {
 }
 
 type AnnotationQueueUpdateParams struct {
-	DefaultDataset      param.Field[string]                                 `json:"default_dataset" format:"uuid"`
-	Description         param.Field[string]                                 `json:"description"`
-	EnableReservations  param.Field[bool]                                   `json:"enable_reservations"`
-	Metadata            param.Field[MissingParam]                           `json:"metadata"`
-	Name                param.Field[string]                                 `json:"name"`
-	NumReviewersPerItem param.Field[int64]                                  `json:"num_reviewers_per_item"`
-	ReservationMinutes  param.Field[int64]                                  `json:"reservation_minutes"`
-	RubricInstructions  param.Field[string]                                 `json:"rubric_instructions"`
-	RubricItems         param.Field[[]AnnotationQueueRubricItemSchemaParam] `json:"rubric_items"`
+	DefaultDataset      param.Field[string]                                              `json:"default_dataset" format:"uuid"`
+	Description         param.Field[string]                                              `json:"description"`
+	EnableReservations  param.Field[bool]                                                `json:"enable_reservations"`
+	Metadata            param.Field[MissingParam]                                        `json:"metadata"`
+	Name                param.Field[string]                                              `json:"name"`
+	NumReviewersPerItem param.Field[AnnotationQueueUpdateParamsNumReviewersPerItemUnion] `json:"num_reviewers_per_item"`
+	ReservationMinutes  param.Field[int64]                                               `json:"reservation_minutes"`
+	RubricInstructions  param.Field[string]                                              `json:"rubric_instructions"`
+	RubricItems         param.Field[[]AnnotationQueueRubricItemSchemaParam]              `json:"rubric_items"`
 }
 
 func (r AnnotationQueueUpdateParams) MarshalJSON() (data []byte, err error) {
 	return apijson.MarshalRoot(r)
+}
+
+// Satisfied by [shared.UnionInt], [MissingParam].
+type AnnotationQueueUpdateParamsNumReviewersPerItemUnion interface {
+	ImplementsAnnotationQueueUpdateParamsNumReviewersPerItemUnion()
 }
 
 type AnnotationQueueAnnotationQueuesParams struct {

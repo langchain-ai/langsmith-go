@@ -12,6 +12,7 @@ import (
 	"github.com/langchain-ai/langsmith-go"
 	"github.com/langchain-ai/langsmith-go/internal/testutil"
 	"github.com/langchain-ai/langsmith-go/option"
+	"github.com/langchain-ai/langsmith-go/shared"
 )
 
 func TestAnnotationQueueGet(t *testing.T) {
@@ -63,7 +64,7 @@ func TestAnnotationQueueUpdateWithOptionalParams(t *testing.T) {
 			EnableReservations:  langsmith.F(true),
 			Metadata:            langsmith.F(langsmith.MissingParam{Missing: langsmith.F(langsmith.Missing_Missing_Missing)}),
 			Name:                langsmith.F("name"),
-			NumReviewersPerItem: langsmith.F(int64(0)),
+			NumReviewersPerItem: langsmith.F[langsmith.AnnotationQueueUpdateParamsNumReviewersPerItemUnion](shared.UnionInt(int64(0))),
 			ReservationMinutes:  langsmith.F(int64(0)),
 			RubricInstructions:  langsmith.F("rubric_instructions"),
 			RubricItems: langsmith.F([]langsmith.AnnotationQueueRubricItemSchemaParam{{
