@@ -160,17 +160,17 @@ func (r AttachmentsOperationsParam) MarshalJSON() (data []byte, err error) {
 
 // Example schema.
 type Example struct {
-	ID             string      `json:"id,required" format:"uuid"`
-	DatasetID      string      `json:"dataset_id,required" format:"uuid"`
-	Inputs         interface{} `json:"inputs,required"`
-	Name           string      `json:"name,required"`
-	AttachmentURLs interface{} `json:"attachment_urls,nullable"`
-	CreatedAt      time.Time   `json:"created_at" format:"date-time"`
-	Metadata       interface{} `json:"metadata,nullable"`
-	ModifiedAt     time.Time   `json:"modified_at,nullable" format:"date-time"`
-	Outputs        interface{} `json:"outputs,nullable"`
-	SourceRunID    string      `json:"source_run_id,nullable" format:"uuid"`
-	JSON           exampleJSON `json:"-"`
+	ID             string                 `json:"id,required" format:"uuid"`
+	DatasetID      string                 `json:"dataset_id,required" format:"uuid"`
+	Inputs         map[string]interface{} `json:"inputs,required"`
+	Name           string                 `json:"name,required"`
+	AttachmentURLs map[string]interface{} `json:"attachment_urls,nullable"`
+	CreatedAt      time.Time              `json:"created_at" format:"date-time"`
+	Metadata       map[string]interface{} `json:"metadata,nullable"`
+	ModifiedAt     time.Time              `json:"modified_at,nullable" format:"date-time"`
+	Outputs        map[string]interface{} `json:"outputs,nullable"`
+	SourceRunID    string                 `json:"source_run_id,nullable" format:"uuid"`
+	JSON           exampleJSON            `json:"-"`
 }
 
 // exampleJSON contains the JSON metadata for the struct [Example]
@@ -230,9 +230,9 @@ type ExampleNewParams struct {
 	DatasetID   param.Field[string]                     `json:"dataset_id,required" format:"uuid"`
 	ID          param.Field[string]                     `json:"id" format:"uuid"`
 	CreatedAt   param.Field[string]                     `json:"created_at"`
-	Inputs      param.Field[interface{}]                `json:"inputs"`
-	Metadata    param.Field[interface{}]                `json:"metadata"`
-	Outputs     param.Field[interface{}]                `json:"outputs"`
+	Inputs      param.Field[map[string]interface{}]     `json:"inputs"`
+	Metadata    param.Field[map[string]interface{}]     `json:"metadata"`
+	Outputs     param.Field[map[string]interface{}]     `json:"outputs"`
 	SourceRunID param.Field[string]                     `json:"source_run_id" format:"uuid"`
 	Split       param.Field[ExampleNewParamsSplitUnion] `json:"split"`
 	// Use Legacy Message Format for LLM runs
@@ -279,9 +279,9 @@ type ExampleGetParamsAsOfUnion interface {
 type ExampleUpdateParams struct {
 	AttachmentsOperations param.Field[AttachmentsOperationsParam]    `json:"attachments_operations"`
 	DatasetID             param.Field[string]                        `json:"dataset_id" format:"uuid"`
-	Inputs                param.Field[interface{}]                   `json:"inputs"`
-	Metadata              param.Field[interface{}]                   `json:"metadata"`
-	Outputs               param.Field[interface{}]                   `json:"outputs"`
+	Inputs                param.Field[map[string]interface{}]        `json:"inputs"`
+	Metadata              param.Field[map[string]interface{}]        `json:"metadata"`
+	Outputs               param.Field[map[string]interface{}]        `json:"outputs"`
 	Overwrite             param.Field[bool]                          `json:"overwrite"`
 	Split                 param.Field[ExampleUpdateParamsSplitUnion] `json:"split"`
 }

@@ -36,14 +36,24 @@ func (UnionString) ImplementsDatasetVersionGetDiffParamsFromVersionUnion() {}
 func (UnionString) ImplementsDatasetVersionGetDiffParamsToVersionUnion()   {}
 func (UnionString) ImplementsDatasetGroupRunsResponseGroupsGroupKeyUnion() {}
 func (UnionString) ImplementsDatasetSplitGetParamsAsOfUnion()              {}
+func (UnionString) ImplementsFeedbackCreateSchemaCorrectionUnionParam()    {}
+func (UnionString) ImplementsFeedbackCreateSchemaValueUnionParam()         {}
+func (UnionString) ImplementsFeedbackSchemaCorrectionUnion()               {}
+func (UnionString) ImplementsFeedbackSchemaValueUnion()                    {}
+func (UnionString) ImplementsFeedbackUpdateParamsCorrectionUnion()         {}
+func (UnionString) ImplementsFeedbackUpdateParamsValueUnion()              {}
 func (UnionString) ImplementsFeedbackTokenGetParamsValueUnion()            {}
+func (UnionString) ImplementsFeedbackTokenUpdateParamsCorrectionUnion()    {}
 func (UnionString) ImplementsFeedbackTokenUpdateParamsValueUnion()         {}
 
 type UnionBool bool
 
 func (UnionBool) ImplementsFeedbackCreateSchemaScoreUnionParam() {}
+func (UnionBool) ImplementsFeedbackCreateSchemaValueUnionParam() {}
 func (UnionBool) ImplementsFeedbackSchemaScoreUnion()            {}
+func (UnionBool) ImplementsFeedbackSchemaValueUnion()            {}
 func (UnionBool) ImplementsFeedbackUpdateParamsScoreUnion()      {}
+func (UnionBool) ImplementsFeedbackUpdateParamsValueUnion()      {}
 func (UnionBool) ImplementsFeedbackTokenGetParamsScoreUnion()    {}
 func (UnionBool) ImplementsFeedbackTokenGetParamsValueUnion()    {}
 func (UnionBool) ImplementsFeedbackTokenUpdateParamsScoreUnion() {}
@@ -56,11 +66,16 @@ func (UnionInt) ImplementsAnnotationQueueUpdateParamsNumReviewersPerItemUnion() 
 
 type UnionFloat float64
 
-func (UnionFloat) ImplementsDatasetGroupRunsResponseGroupsGroupKeyUnion() {}
-func (UnionFloat) ImplementsFeedbackCreateSchemaScoreUnionParam()         {}
-func (UnionFloat) ImplementsFeedbackSchemaScoreUnion()                    {}
-func (UnionFloat) ImplementsFeedbackUpdateParamsScoreUnion()              {}
-func (UnionFloat) ImplementsFeedbackTokenGetParamsScoreUnion()            {}
-func (UnionFloat) ImplementsFeedbackTokenGetParamsValueUnion()            {}
-func (UnionFloat) ImplementsFeedbackTokenUpdateParamsScoreUnion()         {}
-func (UnionFloat) ImplementsFeedbackTokenUpdateParamsValueUnion()         {}
+func (UnionFloat) ImplementsCustomChartsSectionChartsDataValueUnion()            {}
+func (UnionFloat) ImplementsCustomChartsSectionSubSectionsChartsDataValueUnion() {}
+func (UnionFloat) ImplementsDatasetGroupRunsResponseGroupsGroupKeyUnion()        {}
+func (UnionFloat) ImplementsFeedbackCreateSchemaScoreUnionParam()                {}
+func (UnionFloat) ImplementsFeedbackCreateSchemaValueUnionParam()                {}
+func (UnionFloat) ImplementsFeedbackSchemaScoreUnion()                           {}
+func (UnionFloat) ImplementsFeedbackSchemaValueUnion()                           {}
+func (UnionFloat) ImplementsFeedbackUpdateParamsScoreUnion()                     {}
+func (UnionFloat) ImplementsFeedbackUpdateParamsValueUnion()                     {}
+func (UnionFloat) ImplementsFeedbackTokenGetParamsScoreUnion()                   {}
+func (UnionFloat) ImplementsFeedbackTokenGetParamsValueUnion()                   {}
+func (UnionFloat) ImplementsFeedbackTokenUpdateParamsScoreUnion()                {}
+func (UnionFloat) ImplementsFeedbackTokenUpdateParamsValueUnion()                {}

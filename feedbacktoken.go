@@ -247,15 +247,25 @@ type FeedbackTokenGetParamsValueUnion interface {
 }
 
 type FeedbackTokenUpdateParams struct {
-	Comment    param.Field[string]                              `json:"comment"`
-	Correction param.Field[interface{}]                         `json:"correction"`
-	Metadata   param.Field[interface{}]                         `json:"metadata"`
-	Score      param.Field[FeedbackTokenUpdateParamsScoreUnion] `json:"score"`
-	Value      param.Field[FeedbackTokenUpdateParamsValueUnion] `json:"value"`
+	Comment    param.Field[string]                                   `json:"comment"`
+	Correction param.Field[FeedbackTokenUpdateParamsCorrectionUnion] `json:"correction"`
+	Metadata   param.Field[map[string]interface{}]                   `json:"metadata"`
+	Score      param.Field[FeedbackTokenUpdateParamsScoreUnion]      `json:"score"`
+	Value      param.Field[FeedbackTokenUpdateParamsValueUnion]      `json:"value"`
 }
 
 func (r FeedbackTokenUpdateParams) MarshalJSON() (data []byte, err error) {
 	return apijson.MarshalRoot(r)
+}
+
+// Satisfied by [FeedbackTokenUpdateParamsCorrectionMap], [shared.UnionString].
+type FeedbackTokenUpdateParamsCorrectionUnion interface {
+	ImplementsFeedbackTokenUpdateParamsCorrectionUnion()
+}
+
+type FeedbackTokenUpdateParamsCorrectionMap map[string]interface{}
+
+func (r FeedbackTokenUpdateParamsCorrectionMap) ImplementsFeedbackTokenUpdateParamsCorrectionUnion() {
 }
 
 // Satisfied by [shared.UnionFloat], [shared.UnionBool].

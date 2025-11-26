@@ -30,12 +30,14 @@ func TestSessionNewWithOptionalParams(t *testing.T) {
 		option.WithOrganizationID("My Organization ID"),
 	)
 	_, err := client.Sessions.New(context.TODO(), langsmith.SessionNewParams{
-		Upsert:             langsmith.F(true),
-		ID:                 langsmith.F("182bd5e5-6e1a-4fe4-a799-aa6d9a6ab26e"),
-		DefaultDatasetID:   langsmith.F("182bd5e5-6e1a-4fe4-a799-aa6d9a6ab26e"),
-		Description:        langsmith.F("description"),
-		EndTime:            langsmith.F(time.Now()),
-		Extra:              langsmith.F[any](map[string]interface{}{}),
+		Upsert:           langsmith.F(true),
+		ID:               langsmith.F("182bd5e5-6e1a-4fe4-a799-aa6d9a6ab26e"),
+		DefaultDatasetID: langsmith.F("182bd5e5-6e1a-4fe4-a799-aa6d9a6ab26e"),
+		Description:      langsmith.F("description"),
+		EndTime:          langsmith.F(time.Now()),
+		Extra: langsmith.F(map[string]interface{}{
+			"foo": "bar",
+		}),
 		Name:               langsmith.F("name"),
 		ReferenceDatasetID: langsmith.F("182bd5e5-6e1a-4fe4-a799-aa6d9a6ab26e"),
 		StartTime:          langsmith.F(time.Now()),
@@ -105,9 +107,11 @@ func TestSessionUpdateWithOptionalParams(t *testing.T) {
 			DefaultDatasetID: langsmith.F("182bd5e5-6e1a-4fe4-a799-aa6d9a6ab26e"),
 			Description:      langsmith.F("description"),
 			EndTime:          langsmith.F(time.Now()),
-			Extra:            langsmith.F[any](map[string]interface{}{}),
-			Name:             langsmith.F("name"),
-			TraceTier:        langsmith.F(langsmith.SessionUpdateParamsTraceTierLonglived),
+			Extra: langsmith.F(map[string]interface{}{
+				"foo": "bar",
+			}),
+			Name:      langsmith.F("name"),
+			TraceTier: langsmith.F(langsmith.SessionUpdateParamsTraceTierLonglived),
 		},
 	)
 	if err != nil {

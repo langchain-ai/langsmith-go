@@ -115,7 +115,7 @@ func (r *SessionInsightService) GetRuns(ctx context.Context, sessionID string, j
 
 // Request to create a run clustering job.
 type CreateRunClusteringJobRequestParam struct {
-	AttributeSchemas     param.Field[interface{}]                        `json:"attribute_schemas"`
+	AttributeSchemas     param.Field[map[string]interface{}]             `json:"attribute_schemas"`
 	EndTime              param.Field[time.Time]                          `json:"end_time" format:"date-time"`
 	Filter               param.Field[string]                             `json:"filter"`
 	Hierarchy            param.Field[[]int64]                            `json:"hierarchy"`
@@ -233,7 +233,7 @@ type SessionInsightGetJobResponse struct {
 	Status    string                                `json:"status,required"`
 	EndTime   time.Time                             `json:"end_time,nullable" format:"date-time"`
 	Error     string                                `json:"error,nullable"`
-	Metadata  interface{}                           `json:"metadata,nullable"`
+	Metadata  map[string]interface{}                `json:"metadata,nullable"`
 	Shape     map[string]int64                      `json:"shape,nullable"`
 	StartTime time.Time                             `json:"start_time,nullable" format:"date-time"`
 	JSON      sessionInsightGetJobResponseJSON      `json:"-"`
@@ -270,7 +270,7 @@ type SessionInsightGetJobResponseCluster struct {
 	Level       int64                                   `json:"level,required"`
 	Name        string                                  `json:"name,required"`
 	NumRuns     int64                                   `json:"num_runs,required"`
-	Stats       interface{}                             `json:"stats,required,nullable"`
+	Stats       map[string]interface{}                  `json:"stats,required,nullable"`
 	ParentID    string                                  `json:"parent_id,nullable" format:"uuid"`
 	ParentName  string                                  `json:"parent_name,nullable"`
 	JSON        sessionInsightGetJobResponseClusterJSON `json:"-"`
@@ -301,7 +301,7 @@ func (r sessionInsightGetJobResponseClusterJSON) RawJSON() string {
 
 type SessionInsightGetRunsResponse struct {
 	Offset int64                             `json:"offset,required,nullable"`
-	Runs   []interface{}                     `json:"runs,required"`
+	Runs   []map[string]interface{}          `json:"runs,required"`
 	JSON   sessionInsightGetRunsResponseJSON `json:"-"`
 }
 
