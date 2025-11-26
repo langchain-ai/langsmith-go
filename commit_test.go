@@ -69,7 +69,9 @@ func TestCommitUpdateWithOptionalParams(t *testing.T) {
 		"owner",
 		"repo",
 		langsmith.CommitUpdateParams{
-			Manifest:      langsmith.F[any](map[string]interface{}{}),
+			Manifest: langsmith.F(map[string]interface{}{
+				"foo": "bar",
+			}),
 			ExampleRunIDs: langsmith.F([]string{"182bd5e5-6e1a-4fe4-a799-aa6d9a6ab26e"}),
 			ParentCommit:  langsmith.F("parent_commit"),
 			SkipWebhooks:  langsmith.F[langsmith.CommitUpdateParamsSkipWebhooksUnion](shared.UnionBool(true)),

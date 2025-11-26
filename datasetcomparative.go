@@ -133,7 +133,7 @@ type DatasetComparativeNewResponse struct {
 	ReferenceDatasetID string                            `json:"reference_dataset_id,required" format:"uuid"`
 	TenantID           string                            `json:"tenant_id,required" format:"uuid"`
 	Description        string                            `json:"description,nullable"`
-	Extra              interface{}                       `json:"extra,nullable"`
+	Extra              map[string]interface{}            `json:"extra,nullable"`
 	Name               string                            `json:"name,nullable"`
 	JSON               datasetComparativeNewResponseJSON `json:"-"`
 }
@@ -170,8 +170,8 @@ type DatasetComparativeListResponse struct {
 	ReferenceDatasetID string                             `json:"reference_dataset_id,required" format:"uuid"`
 	TenantID           string                             `json:"tenant_id,required" format:"uuid"`
 	Description        string                             `json:"description,nullable"`
-	Extra              interface{}                        `json:"extra,nullable"`
-	FeedbackStats      interface{}                        `json:"feedback_stats,nullable"`
+	Extra              map[string]interface{}             `json:"extra,nullable"`
+	FeedbackStats      map[string]interface{}             `json:"feedback_stats,nullable"`
 	Name               string                             `json:"name,nullable"`
 	JSON               datasetComparativeListResponseJSON `json:"-"`
 }
@@ -204,14 +204,14 @@ func (r datasetComparativeListResponseJSON) RawJSON() string {
 type DatasetComparativeDeleteResponse = interface{}
 
 type DatasetComparativeNewParams struct {
-	ExperimentIDs      param.Field[[]string]    `json:"experiment_ids,required" format:"uuid"`
-	ID                 param.Field[string]      `json:"id" format:"uuid"`
-	CreatedAt          param.Field[time.Time]   `json:"created_at" format:"date-time"`
-	Description        param.Field[string]      `json:"description"`
-	Extra              param.Field[interface{}] `json:"extra"`
-	ModifiedAt         param.Field[time.Time]   `json:"modified_at" format:"date-time"`
-	Name               param.Field[string]      `json:"name"`
-	ReferenceDatasetID param.Field[string]      `json:"reference_dataset_id" format:"uuid"`
+	ExperimentIDs      param.Field[[]string]               `json:"experiment_ids,required" format:"uuid"`
+	ID                 param.Field[string]                 `json:"id" format:"uuid"`
+	CreatedAt          param.Field[time.Time]              `json:"created_at" format:"date-time"`
+	Description        param.Field[string]                 `json:"description"`
+	Extra              param.Field[map[string]interface{}] `json:"extra"`
+	ModifiedAt         param.Field[time.Time]              `json:"modified_at" format:"date-time"`
+	Name               param.Field[string]                 `json:"name"`
+	ReferenceDatasetID param.Field[string]                 `json:"reference_dataset_id" format:"uuid"`
 }
 
 func (r DatasetComparativeNewParams) MarshalJSON() (data []byte, err error) {

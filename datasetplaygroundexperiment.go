@@ -50,14 +50,14 @@ func (r *DatasetPlaygroundExperimentService) Stream(ctx context.Context, body Da
 
 // Configuration for a Runnable.
 type RunnableConfigParam struct {
-	Callbacks      param.Field[[]interface{}] `json:"callbacks"`
-	Configurable   param.Field[interface{}]   `json:"configurable"`
-	MaxConcurrency param.Field[int64]         `json:"max_concurrency"`
-	Metadata       param.Field[interface{}]   `json:"metadata"`
-	RecursionLimit param.Field[int64]         `json:"recursion_limit"`
-	RunID          param.Field[string]        `json:"run_id" format:"uuid"`
-	RunName        param.Field[string]        `json:"run_name"`
-	Tags           param.Field[[]string]      `json:"tags"`
+	Callbacks      param.Field[[]interface{}]          `json:"callbacks"`
+	Configurable   param.Field[map[string]interface{}] `json:"configurable"`
+	MaxConcurrency param.Field[int64]                  `json:"max_concurrency"`
+	Metadata       param.Field[map[string]interface{}] `json:"metadata"`
+	RecursionLimit param.Field[int64]                  `json:"recursion_limit"`
+	RunID          param.Field[string]                 `json:"run_id" format:"uuid"`
+	RunName        param.Field[string]                 `json:"run_name"`
+	Tags           param.Field[[]string]               `json:"tags"`
 }
 
 func (r RunnableConfigParam) MarshalJSON() (data []byte, err error) {
@@ -87,25 +87,25 @@ type DatasetPlaygroundExperimentBatchParams struct {
 	DatasetID param.Field[string]      `json:"dataset_id,required" format:"uuid"`
 	Manifest  param.Field[interface{}] `json:"manifest,required"`
 	// Configuration for a Runnable.
-	Options                         param.Field[RunnableConfigParam] `json:"options,required"`
-	ProjectName                     param.Field[string]              `json:"project_name,required"`
-	Secrets                         param.Field[map[string]string]   `json:"secrets,required"`
-	BatchSize                       param.Field[int64]               `json:"batch_size"`
-	Commit                          param.Field[string]              `json:"commit"`
-	DatasetSplits                   param.Field[[]string]            `json:"dataset_splits"`
-	EvaluatorRules                  param.Field[[]string]            `json:"evaluator_rules" format:"uuid"`
-	Metadata                        param.Field[interface{}]         `json:"metadata"`
-	Owner                           param.Field[string]              `json:"owner"`
-	ParallelToolCalls               param.Field[bool]                `json:"parallel_tool_calls"`
-	Repetitions                     param.Field[int64]               `json:"repetitions"`
-	RepoHandle                      param.Field[string]              `json:"repo_handle"`
-	RepoID                          param.Field[string]              `json:"repo_id"`
-	RequestsPerSecond               param.Field[int64]               `json:"requests_per_second"`
-	RunID                           param.Field[string]              `json:"run_id"`
-	RunnerContext                   param.Field[RunnerContextEnum]   `json:"runner_context"`
-	ToolChoice                      param.Field[string]              `json:"tool_choice"`
-	Tools                           param.Field[[]interface{}]       `json:"tools"`
-	UseOrFallbackToWorkspaceSecrets param.Field[bool]                `json:"use_or_fallback_to_workspace_secrets"`
+	Options                         param.Field[RunnableConfigParam]    `json:"options,required"`
+	ProjectName                     param.Field[string]                 `json:"project_name,required"`
+	Secrets                         param.Field[map[string]string]      `json:"secrets,required"`
+	BatchSize                       param.Field[int64]                  `json:"batch_size"`
+	Commit                          param.Field[string]                 `json:"commit"`
+	DatasetSplits                   param.Field[[]string]               `json:"dataset_splits"`
+	EvaluatorRules                  param.Field[[]string]               `json:"evaluator_rules" format:"uuid"`
+	Metadata                        param.Field[map[string]interface{}] `json:"metadata"`
+	Owner                           param.Field[string]                 `json:"owner"`
+	ParallelToolCalls               param.Field[bool]                   `json:"parallel_tool_calls"`
+	Repetitions                     param.Field[int64]                  `json:"repetitions"`
+	RepoHandle                      param.Field[string]                 `json:"repo_handle"`
+	RepoID                          param.Field[string]                 `json:"repo_id"`
+	RequestsPerSecond               param.Field[int64]                  `json:"requests_per_second"`
+	RunID                           param.Field[string]                 `json:"run_id"`
+	RunnerContext                   param.Field[RunnerContextEnum]      `json:"runner_context"`
+	ToolChoice                      param.Field[string]                 `json:"tool_choice"`
+	Tools                           param.Field[[]interface{}]          `json:"tools"`
+	UseOrFallbackToWorkspaceSecrets param.Field[bool]                   `json:"use_or_fallback_to_workspace_secrets"`
 }
 
 func (r DatasetPlaygroundExperimentBatchParams) MarshalJSON() (data []byte, err error) {
@@ -116,24 +116,24 @@ type DatasetPlaygroundExperimentStreamParams struct {
 	DatasetID param.Field[string]      `json:"dataset_id,required" format:"uuid"`
 	Manifest  param.Field[interface{}] `json:"manifest,required"`
 	// Configuration for a Runnable.
-	Options                         param.Field[RunnableConfigParam] `json:"options,required"`
-	ProjectName                     param.Field[string]              `json:"project_name,required"`
-	Secrets                         param.Field[map[string]string]   `json:"secrets,required"`
-	Commit                          param.Field[string]              `json:"commit"`
-	DatasetSplits                   param.Field[[]string]            `json:"dataset_splits"`
-	EvaluatorRules                  param.Field[[]string]            `json:"evaluator_rules" format:"uuid"`
-	Metadata                        param.Field[interface{}]         `json:"metadata"`
-	Owner                           param.Field[string]              `json:"owner"`
-	ParallelToolCalls               param.Field[bool]                `json:"parallel_tool_calls"`
-	Repetitions                     param.Field[int64]               `json:"repetitions"`
-	RepoHandle                      param.Field[string]              `json:"repo_handle"`
-	RepoID                          param.Field[string]              `json:"repo_id"`
-	RequestsPerSecond               param.Field[int64]               `json:"requests_per_second"`
-	RunID                           param.Field[string]              `json:"run_id"`
-	RunnerContext                   param.Field[RunnerContextEnum]   `json:"runner_context"`
-	ToolChoice                      param.Field[string]              `json:"tool_choice"`
-	Tools                           param.Field[[]interface{}]       `json:"tools"`
-	UseOrFallbackToWorkspaceSecrets param.Field[bool]                `json:"use_or_fallback_to_workspace_secrets"`
+	Options                         param.Field[RunnableConfigParam]    `json:"options,required"`
+	ProjectName                     param.Field[string]                 `json:"project_name,required"`
+	Secrets                         param.Field[map[string]string]      `json:"secrets,required"`
+	Commit                          param.Field[string]                 `json:"commit"`
+	DatasetSplits                   param.Field[[]string]               `json:"dataset_splits"`
+	EvaluatorRules                  param.Field[[]string]               `json:"evaluator_rules" format:"uuid"`
+	Metadata                        param.Field[map[string]interface{}] `json:"metadata"`
+	Owner                           param.Field[string]                 `json:"owner"`
+	ParallelToolCalls               param.Field[bool]                   `json:"parallel_tool_calls"`
+	Repetitions                     param.Field[int64]                  `json:"repetitions"`
+	RepoHandle                      param.Field[string]                 `json:"repo_handle"`
+	RepoID                          param.Field[string]                 `json:"repo_id"`
+	RequestsPerSecond               param.Field[int64]                  `json:"requests_per_second"`
+	RunID                           param.Field[string]                 `json:"run_id"`
+	RunnerContext                   param.Field[RunnerContextEnum]      `json:"runner_context"`
+	ToolChoice                      param.Field[string]                 `json:"tool_choice"`
+	Tools                           param.Field[[]interface{}]          `json:"tools"`
+	UseOrFallbackToWorkspaceSecrets param.Field[bool]                   `json:"use_or_fallback_to_workspace_secrets"`
 }
 
 func (r DatasetPlaygroundExperimentStreamParams) MarshalJSON() (data []byte, err error) {

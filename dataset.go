@@ -247,10 +247,10 @@ type Dataset struct {
 	DataType                DataType                `json:"data_type,nullable"`
 	Description             string                  `json:"description,nullable"`
 	ExternallyManaged       bool                    `json:"externally_managed,nullable"`
-	InputsSchemaDefinition  interface{}             `json:"inputs_schema_definition,nullable"`
+	InputsSchemaDefinition  map[string]interface{}  `json:"inputs_schema_definition,nullable"`
 	LastSessionStartTime    time.Time               `json:"last_session_start_time,nullable" format:"date-time"`
-	Metadata                interface{}             `json:"metadata,nullable"`
-	OutputsSchemaDefinition interface{}             `json:"outputs_schema_definition,nullable"`
+	Metadata                map[string]interface{}  `json:"metadata,nullable"`
+	OutputsSchemaDefinition map[string]interface{}  `json:"outputs_schema_definition,nullable"`
 	Transformations         []DatasetTransformation `json:"transformations,nullable"`
 	JSON                    datasetJSON             `json:"-"`
 }
@@ -376,9 +376,17 @@ func (r MissingParam) MarshalJSON() (data []byte, err error) {
 
 func (r MissingParam) ImplementsDatasetUpdateParamsDescriptionUnion() {}
 
+func (r MissingParam) implementsDatasetUpdateParamsInputsSchemaDefinitionUnion() {}
+
+func (r MissingParam) implementsDatasetUpdateParamsMetadataUnion() {}
+
 func (r MissingParam) ImplementsDatasetUpdateParamsNameUnion() {}
 
+func (r MissingParam) implementsDatasetUpdateParamsOutputsSchemaDefinitionUnion() {}
+
 func (r MissingParam) implementsDatasetUpdateParamsTransformationsUnion() {}
+
+func (r MissingParam) implementsAnnotationQueueUpdateParamsMetadataUnion() {}
 
 func (r MissingParam) ImplementsAnnotationQueueUpdateParamsNumReviewersPerItemUnion() {}
 
@@ -425,8 +433,8 @@ type DatasetUpdateResponse struct {
 	DataType                DataType                  `json:"data_type,nullable"`
 	Description             string                    `json:"description,nullable"`
 	ExternallyManaged       bool                      `json:"externally_managed,nullable"`
-	InputsSchemaDefinition  interface{}               `json:"inputs_schema_definition,nullable"`
-	OutputsSchemaDefinition interface{}               `json:"outputs_schema_definition,nullable"`
+	InputsSchemaDefinition  map[string]interface{}    `json:"inputs_schema_definition,nullable"`
+	OutputsSchemaDefinition map[string]interface{}    `json:"outputs_schema_definition,nullable"`
 	Transformations         []DatasetTransformation   `json:"transformations,nullable"`
 	JSON                    datasetUpdateResponseJSON `json:"-"`
 }
@@ -458,7 +466,7 @@ func (r datasetUpdateResponseJSON) RawJSON() string {
 
 type DatasetDeleteResponse = interface{}
 
-type DatasetCloneResponse = interface{}
+type DatasetCloneResponse map[string]interface{}
 
 type DatasetGetCsvResponse = interface{}
 
@@ -476,9 +484,9 @@ type DatasetNewParams struct {
 	DataType                param.Field[DataType]                     `json:"data_type"`
 	Description             param.Field[string]                       `json:"description"`
 	ExternallyManaged       param.Field[bool]                         `json:"externally_managed"`
-	Extra                   param.Field[interface{}]                  `json:"extra"`
-	InputsSchemaDefinition  param.Field[interface{}]                  `json:"inputs_schema_definition"`
-	OutputsSchemaDefinition param.Field[interface{}]                  `json:"outputs_schema_definition"`
+	Extra                   param.Field[map[string]interface{}]       `json:"extra"`
+	InputsSchemaDefinition  param.Field[map[string]interface{}]       `json:"inputs_schema_definition"`
+	OutputsSchemaDefinition param.Field[map[string]interface{}]       `json:"outputs_schema_definition"`
 	Transformations         param.Field[[]DatasetTransformationParam] `json:"transformations"`
 }
 
@@ -487,13 +495,13 @@ func (r DatasetNewParams) MarshalJSON() (data []byte, err error) {
 }
 
 type DatasetUpdateParams struct {
-	Description             param.Field[DatasetUpdateParamsDescriptionUnion]         `json:"description"`
-	InputsSchemaDefinition  param.Field[MissingParam]                                `json:"inputs_schema_definition"`
-	Metadata                param.Field[MissingParam]                                `json:"metadata"`
-	Name                    param.Field[DatasetUpdateParamsNameUnion]                `json:"name"`
-	OutputsSchemaDefinition param.Field[MissingParam]                                `json:"outputs_schema_definition"`
-	PatchExamples           param.Field[map[string]DatasetUpdateParamsPatchExamples] `json:"patch_examples"`
-	Transformations         param.Field[DatasetUpdateParamsTransformationsUnion]     `json:"transformations"`
+	Description             param.Field[DatasetUpdateParamsDescriptionUnion]             `json:"description"`
+	InputsSchemaDefinition  param.Field[DatasetUpdateParamsInputsSchemaDefinitionUnion]  `json:"inputs_schema_definition"`
+	Metadata                param.Field[DatasetUpdateParamsMetadataUnion]                `json:"metadata"`
+	Name                    param.Field[DatasetUpdateParamsNameUnion]                    `json:"name"`
+	OutputsSchemaDefinition param.Field[DatasetUpdateParamsOutputsSchemaDefinitionUnion] `json:"outputs_schema_definition"`
+	PatchExamples           param.Field[map[string]DatasetUpdateParamsPatchExamples]     `json:"patch_examples"`
+	Transformations         param.Field[DatasetUpdateParamsTransformationsUnion]         `json:"transformations"`
 }
 
 func (r DatasetUpdateParams) MarshalJSON() (data []byte, err error) {
@@ -505,18 +513,47 @@ type DatasetUpdateParamsDescriptionUnion interface {
 	ImplementsDatasetUpdateParamsDescriptionUnion()
 }
 
+// Satisfied by [DatasetUpdateParamsInputsSchemaDefinitionMap], [MissingParam].
+type DatasetUpdateParamsInputsSchemaDefinitionUnion interface {
+	implementsDatasetUpdateParamsInputsSchemaDefinitionUnion()
+}
+
+type DatasetUpdateParamsInputsSchemaDefinitionMap map[string]interface{}
+
+func (r DatasetUpdateParamsInputsSchemaDefinitionMap) implementsDatasetUpdateParamsInputsSchemaDefinitionUnion() {
+}
+
+// Satisfied by [DatasetUpdateParamsMetadataMap], [MissingParam].
+type DatasetUpdateParamsMetadataUnion interface {
+	implementsDatasetUpdateParamsMetadataUnion()
+}
+
+type DatasetUpdateParamsMetadataMap map[string]interface{}
+
+func (r DatasetUpdateParamsMetadataMap) implementsDatasetUpdateParamsMetadataUnion() {}
+
 // Satisfied by [shared.UnionString], [MissingParam].
 type DatasetUpdateParamsNameUnion interface {
 	ImplementsDatasetUpdateParamsNameUnion()
+}
+
+// Satisfied by [DatasetUpdateParamsOutputsSchemaDefinitionMap], [MissingParam].
+type DatasetUpdateParamsOutputsSchemaDefinitionUnion interface {
+	implementsDatasetUpdateParamsOutputsSchemaDefinitionUnion()
+}
+
+type DatasetUpdateParamsOutputsSchemaDefinitionMap map[string]interface{}
+
+func (r DatasetUpdateParamsOutputsSchemaDefinitionMap) implementsDatasetUpdateParamsOutputsSchemaDefinitionUnion() {
 }
 
 // Update class for Example.
 type DatasetUpdateParamsPatchExamples struct {
 	AttachmentsOperations param.Field[AttachmentsOperationsParam]                 `json:"attachments_operations"`
 	DatasetID             param.Field[string]                                     `json:"dataset_id" format:"uuid"`
-	Inputs                param.Field[interface{}]                                `json:"inputs"`
-	Metadata              param.Field[interface{}]                                `json:"metadata"`
-	Outputs               param.Field[interface{}]                                `json:"outputs"`
+	Inputs                param.Field[map[string]interface{}]                     `json:"inputs"`
+	Metadata              param.Field[map[string]interface{}]                     `json:"metadata"`
+	Outputs               param.Field[map[string]interface{}]                     `json:"outputs"`
 	Overwrite             param.Field[bool]                                       `json:"overwrite"`
 	Split                 param.Field[DatasetUpdateParamsPatchExamplesSplitUnion] `json:"split"`
 }

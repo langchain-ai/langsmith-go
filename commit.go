@@ -108,7 +108,7 @@ func (r *CommitService) ListAutoPaging(ctx context.Context, owner string, repo s
 // Response model for get_commit_manifest.
 type CommitManifestResponse struct {
 	CommitHash string                          `json:"commit_hash,required"`
-	Manifest   interface{}                     `json:"manifest,required"`
+	Manifest   map[string]interface{}          `json:"manifest,required"`
 	Examples   []CommitManifestResponseExample `json:"examples,nullable"`
 	JSON       commitManifestResponseJSON      `json:"-"`
 }
@@ -135,8 +135,8 @@ func (r commitManifestResponseJSON) RawJSON() string {
 type CommitManifestResponseExample struct {
 	ID        string                            `json:"id,required" format:"uuid"`
 	SessionID string                            `json:"session_id,required" format:"uuid"`
-	Inputs    interface{}                       `json:"inputs,nullable"`
-	Outputs   interface{}                       `json:"outputs,nullable"`
+	Inputs    map[string]interface{}            `json:"inputs,nullable"`
+	Outputs   map[string]interface{}            `json:"outputs,nullable"`
 	StartTime time.Time                         `json:"start_time,nullable" format:"date-time"`
 	JSON      commitManifestResponseExampleJSON `json:"-"`
 }
@@ -164,19 +164,19 @@ func (r commitManifestResponseExampleJSON) RawJSON() string {
 // All database fields for commits, plus helpful computed fields and user info for
 // private prompts.
 type CommitWithLookups struct {
-	ID               string                `json:"id,required" format:"uuid"`
-	CommitHash       string                `json:"commit_hash,required"`
-	CreatedAt        time.Time             `json:"created_at,required" format:"date-time"`
-	ExampleRunIDs    []string              `json:"example_run_ids,required" format:"uuid"`
-	Manifest         interface{}           `json:"manifest,required"`
-	NumDownloads     int64                 `json:"num_downloads,required"`
-	NumViews         int64                 `json:"num_views,required"`
-	RepoID           string                `json:"repo_id,required" format:"uuid"`
-	UpdatedAt        time.Time             `json:"updated_at,required" format:"date-time"`
-	FullName         string                `json:"full_name,nullable"`
-	ParentCommitHash string                `json:"parent_commit_hash,nullable"`
-	ParentID         string                `json:"parent_id,nullable" format:"uuid"`
-	JSON             commitWithLookupsJSON `json:"-"`
+	ID               string                 `json:"id,required" format:"uuid"`
+	CommitHash       string                 `json:"commit_hash,required"`
+	CreatedAt        time.Time              `json:"created_at,required" format:"date-time"`
+	ExampleRunIDs    []string               `json:"example_run_ids,required" format:"uuid"`
+	Manifest         map[string]interface{} `json:"manifest,required"`
+	NumDownloads     int64                  `json:"num_downloads,required"`
+	NumViews         int64                  `json:"num_views,required"`
+	RepoID           string                 `json:"repo_id,required" format:"uuid"`
+	UpdatedAt        time.Time              `json:"updated_at,required" format:"date-time"`
+	FullName         string                 `json:"full_name,nullable"`
+	ParentCommitHash string                 `json:"parent_commit_hash,nullable"`
+	ParentID         string                 `json:"parent_id,nullable" format:"uuid"`
+	JSON             commitWithLookupsJSON  `json:"-"`
 }
 
 // commitWithLookupsJSON contains the JSON metadata for the struct
@@ -244,7 +244,7 @@ func (r CommitGetParams) URLQuery() (v url.Values) {
 }
 
 type CommitUpdateParams struct {
-	Manifest      param.Field[interface{}]                         `json:"manifest,required"`
+	Manifest      param.Field[map[string]interface{}]              `json:"manifest,required"`
 	ExampleRunIDs param.Field[[]string]                            `json:"example_run_ids" format:"uuid"`
 	ParentCommit  param.Field[string]                              `json:"parent_commit"`
 	SkipWebhooks  param.Field[CommitUpdateParamsSkipWebhooksUnion] `json:"skip_webhooks" format:"uuid"`

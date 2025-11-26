@@ -56,9 +56,9 @@ type ExampleValidationResult struct {
 	ID             string                            `json:"id,nullable" format:"uuid"`
 	CreatedAt      time.Time                         `json:"created_at,nullable" format:"date-time"`
 	DatasetID      string                            `json:"dataset_id,nullable" format:"uuid"`
-	Inputs         interface{}                       `json:"inputs,nullable"`
-	Metadata       interface{}                       `json:"metadata,nullable"`
-	Outputs        interface{}                       `json:"outputs,nullable"`
+	Inputs         map[string]interface{}            `json:"inputs,nullable"`
+	Metadata       map[string]interface{}            `json:"metadata,nullable"`
+	Outputs        map[string]interface{}            `json:"outputs,nullable"`
 	Overwrite      bool                              `json:"overwrite"`
 	SourceRunID    string                            `json:"source_run_id,nullable" format:"uuid"`
 	Split          ExampleValidationResultSplitUnion `json:"split,nullable"`

@@ -32,10 +32,14 @@ func TestDatasetPlaygroundExperimentBatchWithOptionalParams(t *testing.T) {
 		DatasetID: langsmith.F("182bd5e5-6e1a-4fe4-a799-aa6d9a6ab26e"),
 		Manifest:  langsmith.F[any](map[string]interface{}{}),
 		Options: langsmith.F(langsmith.RunnableConfigParam{
-			Callbacks:      langsmith.F([]interface{}{map[string]interface{}{}}),
-			Configurable:   langsmith.F[any](map[string]interface{}{}),
+			Callbacks: langsmith.F([]interface{}{map[string]interface{}{}}),
+			Configurable: langsmith.F(map[string]interface{}{
+				"foo": "bar",
+			}),
 			MaxConcurrency: langsmith.F(int64(0)),
-			Metadata:       langsmith.F[any](map[string]interface{}{}),
+			Metadata: langsmith.F(map[string]interface{}{
+				"foo": "bar",
+			}),
 			RecursionLimit: langsmith.F(int64(0)),
 			RunID:          langsmith.F("182bd5e5-6e1a-4fe4-a799-aa6d9a6ab26e"),
 			RunName:        langsmith.F("run_name"),
@@ -45,11 +49,13 @@ func TestDatasetPlaygroundExperimentBatchWithOptionalParams(t *testing.T) {
 		Secrets: langsmith.F(map[string]string{
 			"foo": "string",
 		}),
-		BatchSize:                       langsmith.F(int64(1)),
-		Commit:                          langsmith.F("commit"),
-		DatasetSplits:                   langsmith.F([]string{"string"}),
-		EvaluatorRules:                  langsmith.F([]string{"182bd5e5-6e1a-4fe4-a799-aa6d9a6ab26e"}),
-		Metadata:                        langsmith.F[any](map[string]interface{}{}),
+		BatchSize:      langsmith.F(int64(1)),
+		Commit:         langsmith.F("commit"),
+		DatasetSplits:  langsmith.F([]string{"string"}),
+		EvaluatorRules: langsmith.F([]string{"182bd5e5-6e1a-4fe4-a799-aa6d9a6ab26e"}),
+		Metadata: langsmith.F(map[string]interface{}{
+			"foo": "bar",
+		}),
 		Owner:                           langsmith.F("owner"),
 		ParallelToolCalls:               langsmith.F(true),
 		Repetitions:                     langsmith.F(int64(1)),
@@ -90,10 +96,14 @@ func TestDatasetPlaygroundExperimentStreamWithOptionalParams(t *testing.T) {
 		DatasetID: langsmith.F("182bd5e5-6e1a-4fe4-a799-aa6d9a6ab26e"),
 		Manifest:  langsmith.F[any](map[string]interface{}{}),
 		Options: langsmith.F(langsmith.RunnableConfigParam{
-			Callbacks:      langsmith.F([]interface{}{map[string]interface{}{}}),
-			Configurable:   langsmith.F[any](map[string]interface{}{}),
+			Callbacks: langsmith.F([]interface{}{map[string]interface{}{}}),
+			Configurable: langsmith.F(map[string]interface{}{
+				"foo": "bar",
+			}),
 			MaxConcurrency: langsmith.F(int64(0)),
-			Metadata:       langsmith.F[any](map[string]interface{}{}),
+			Metadata: langsmith.F(map[string]interface{}{
+				"foo": "bar",
+			}),
 			RecursionLimit: langsmith.F(int64(0)),
 			RunID:          langsmith.F("182bd5e5-6e1a-4fe4-a799-aa6d9a6ab26e"),
 			RunName:        langsmith.F("run_name"),
@@ -103,10 +113,12 @@ func TestDatasetPlaygroundExperimentStreamWithOptionalParams(t *testing.T) {
 		Secrets: langsmith.F(map[string]string{
 			"foo": "string",
 		}),
-		Commit:                          langsmith.F("commit"),
-		DatasetSplits:                   langsmith.F([]string{"string"}),
-		EvaluatorRules:                  langsmith.F([]string{"182bd5e5-6e1a-4fe4-a799-aa6d9a6ab26e"}),
-		Metadata:                        langsmith.F[any](map[string]interface{}{}),
+		Commit:         langsmith.F("commit"),
+		DatasetSplits:  langsmith.F([]string{"string"}),
+		EvaluatorRules: langsmith.F([]string{"182bd5e5-6e1a-4fe4-a799-aa6d9a6ab26e"}),
+		Metadata: langsmith.F(map[string]interface{}{
+			"foo": "bar",
+		}),
 		Owner:                           langsmith.F("owner"),
 		ParallelToolCalls:               langsmith.F(true),
 		Repetitions:                     langsmith.F(int64(1)),

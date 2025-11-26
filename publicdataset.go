@@ -155,8 +155,8 @@ type PublicDatasetListResponse struct {
 	DataType                DataType                      `json:"data_type,nullable"`
 	Description             string                        `json:"description,nullable"`
 	ExternallyManaged       bool                          `json:"externally_managed,nullable"`
-	InputsSchemaDefinition  interface{}                   `json:"inputs_schema_definition,nullable"`
-	OutputsSchemaDefinition interface{}                   `json:"outputs_schema_definition,nullable"`
+	InputsSchemaDefinition  map[string]interface{}        `json:"inputs_schema_definition,nullable"`
+	OutputsSchemaDefinition map[string]interface{}        `json:"outputs_schema_definition,nullable"`
 	Transformations         []DatasetTransformation       `json:"transformations,nullable"`
 	JSON                    publicDatasetListResponseJSON `json:"-"`
 }
@@ -193,8 +193,8 @@ type PublicDatasetListComparativeResponse struct {
 	ExperimentsInfo []SimpleExperimentInfo                   `json:"experiments_info,required"`
 	ModifiedAt      time.Time                                `json:"modified_at,required" format:"date-time"`
 	Description     string                                   `json:"description,nullable"`
-	Extra           interface{}                              `json:"extra,nullable"`
-	FeedbackStats   interface{}                              `json:"feedback_stats,nullable"`
+	Extra           map[string]interface{}                   `json:"extra,nullable"`
+	FeedbackStats   map[string]interface{}                   `json:"feedback_stats,nullable"`
 	Name            string                                   `json:"name,nullable"`
 	JSON            publicDatasetListComparativeResponseJSON `json:"-"`
 }

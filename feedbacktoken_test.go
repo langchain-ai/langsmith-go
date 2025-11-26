@@ -113,11 +113,15 @@ func TestFeedbackTokenUpdateWithOptionalParams(t *testing.T) {
 		context.TODO(),
 		"182bd5e5-6e1a-4fe4-a799-aa6d9a6ab26e",
 		langsmith.FeedbackTokenUpdateParams{
-			Comment:    langsmith.F("comment"),
-			Correction: langsmith.F[any](map[string]interface{}{}),
-			Metadata:   langsmith.F[any](map[string]interface{}{}),
-			Score:      langsmith.F[langsmith.FeedbackTokenUpdateParamsScoreUnion](shared.UnionFloat(0.000000)),
-			Value:      langsmith.F[langsmith.FeedbackTokenUpdateParamsValueUnion](shared.UnionFloat(0.000000)),
+			Comment: langsmith.F("comment"),
+			Correction: langsmith.F[langsmith.FeedbackTokenUpdateParamsCorrectionUnion](langsmith.FeedbackTokenUpdateParamsCorrectionMap(map[string]interface{}{
+				"foo": "bar",
+			})),
+			Metadata: langsmith.F(map[string]interface{}{
+				"foo": "bar",
+			}),
+			Score: langsmith.F[langsmith.FeedbackTokenUpdateParamsScoreUnion](shared.UnionFloat(0.000000)),
+			Value: langsmith.F[langsmith.FeedbackTokenUpdateParamsValueUnion](shared.UnionFloat(0.000000)),
 		},
 	)
 	if err != nil {
