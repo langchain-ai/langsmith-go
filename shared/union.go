@@ -58,7 +58,6 @@ func (UnionBool) ImplementsFeedbackTokenGetParamsScoreUnion()    {}
 func (UnionBool) ImplementsFeedbackTokenGetParamsValueUnion()    {}
 func (UnionBool) ImplementsFeedbackTokenUpdateParamsScoreUnion() {}
 func (UnionBool) ImplementsFeedbackTokenUpdateParamsValueUnion() {}
-func (UnionBool) ImplementsCommitUpdateParamsSkipWebhooksUnion() {}
 
 type UnionInt int64
 
