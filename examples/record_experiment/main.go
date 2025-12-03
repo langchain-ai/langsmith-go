@@ -2,16 +2,13 @@ package main
 
 import (
 	"context"
-	"crypto/rand"
-	"crypto/sha1"
-	"encoding/binary"
-	"encoding/hex"
 	"encoding/json"
 	"fmt"
 	"os"
 	"strings"
 	"time"
 
+	"github.com/google/uuid"
 	"github.com/langchain-ai/langsmith-go"
 )
 
@@ -248,57 +245,17 @@ func generateExampleID(datasetID string, input, referenceOutput map[string]inter
 		return "", fmt.Errorf("marshaling reference output: %w", err)
 	}
 
-	namespaceBytes, err := parseUUIDBytes(datasetID)
+	namespace, err := uuid.Parse(datasetID)
 	if err != nil {
 		return "", fmt.Errorf("parsing dataset ID as UUID: %w", err)
 	}
 
 	name := fmt.Sprintf("%s|%s", string(inputJSON), string(outputJSON))
+	id := uuid.NewSHA1(namespace, []byte(name))
 
-	hash := sha1.New()
-	hash.Write(namespaceBytes)
-	hash.Write([]byte(name))
-	hashBytes := hash.Sum(nil)
-
-	// Set UUID version 5 and variant bits according to RFC 4122
-	const (
-		uuidVersion5Mask = 0x50
-		uuidVariantMask  = 0x80
-	)
-	hashBytes[6] = (hashBytes[6] & 0x0f) | uuidVersion5Mask
-	hashBytes[8] = (hashBytes[8] & 0x3f) | uuidVariantMask
-
-	return formatUUID(hashBytes[:16]), nil
+	return id.String(), nil
 }
 
-// parseUUIDBytes parses a UUID string and returns its bytes.
-func parseUUIDBytes(uuidStr string) ([]byte, error) {
-	uuidStr = strings.ReplaceAll(uuidStr, "-", "")
-	if len(uuidStr) != 32 {
-		return nil, fmt.Errorf("invalid UUID length: expected 32 hex characters, got %d", len(uuidStr))
-	}
-
-	uuidBytes, err := hex.DecodeString(uuidStr)
-	if err != nil {
-		return nil, fmt.Errorf("decoding UUID hex: %w", err)
-	}
-
-	return uuidBytes, nil
-}
-
-// formatUUID formats a 16-byte UUID as a standard UUID string (8-4-4-4-12 format).
-func formatUUID(uuidBytes []byte) string {
-	if len(uuidBytes) < 16 {
-		// This should never happen in practice, but handle gracefully
-		return fmt.Sprintf("%x", uuidBytes)
-	}
-	return fmt.Sprintf("%08x-%04x-%04x-%04x-%012x",
-		binary.BigEndian.Uint32(uuidBytes[0:4]),
-		binary.BigEndian.Uint16(uuidBytes[4:6]),
-		binary.BigEndian.Uint16(uuidBytes[6:8]),
-		binary.BigEndian.Uint16(uuidBytes[8:10]),
-		uuidBytes[10:16])
-}
 
 // createExamplesFromResults creates examples from experiment results with deterministic IDs.
 func createExamplesFromResults(ctx context.Context, client *langsmith.Client, datasetID string, results []ExperimentResult) ([]langsmith.Example, error) {
@@ -350,22 +307,13 @@ func createExperimentSession(ctx context.Context, client *langsmith.Client, expe
 	return session, nil
 }
 
-// generateUUID generates a random UUID v4 using crypto/rand.
+// generateUUID generates a random UUID v4 using the standard library.
 func generateUUID() (string, error) {
-	b := make([]byte, 16)
-	if _, err := rand.Read(b); err != nil {
-		return "", fmt.Errorf("generating random bytes: %w", err)
+	id, err := uuid.NewRandom()
+	if err != nil {
+		return "", fmt.Errorf("generating UUID: %w", err)
 	}
-
-	// Set UUID version 4 and variant bits according to RFC 4122
-	const (
-		uuidVersion4Mask = 0x40
-		uuidVariantMask  = 0x80
-	)
-	b[6] = (b[6] & 0x0f) | uuidVersion4Mask
-	b[8] = (b[8] & 0x3f) | uuidVariantMask
-
-	return formatUUID(b), nil
+	return id.String(), nil
 }
 
 // createAndIngestRuns creates runs from experiment results and ingests them in a batch.
