@@ -27,11 +27,11 @@ import (
 //
 // Running:
 //
-//	go run examples/prompt_management_example.go
+//	go run ./examples/prompt_management
 
 const (
-	defaultOwner     = "-"
-	promptName       = "product-description-generator"
+	defaultOwner      = "-"
+	promptName        = "product-description-generator"
 	fullNameSeparator = "/"
 )
 
@@ -115,9 +115,8 @@ func extractOwner(repo *langsmith.RepoWithLookups) string {
 		return repo.Owner
 	}
 	// Parse owner from FullName (format: "owner/repo")
-	parts := strings.Split(repo.FullName, fullNameSeparator)
-	if len(parts) == 2 {
-		return parts[0]
+	if idx := strings.Index(repo.FullName, fullNameSeparator); idx >= 0 {
+		return repo.FullName[:idx]
 	}
 	return defaultOwner
 }
@@ -171,7 +170,7 @@ func retrieveLatestCommit(ctx context.Context, client *langsmith.Client, owner, 
 	var manifestResponse langsmith.CommitManifestResponse
 	path := fmt.Sprintf("api/v1/commits/%s/%s/latest", owner, promptName)
 	if err := client.Get(ctx, path, nil, &manifestResponse); err != nil {
-		return nil, err
+		return nil, fmt.Errorf("retrieving latest commit: %w", err)
 	}
 	return &manifestResponse, nil
 }
@@ -256,15 +255,15 @@ func (b *ChatPromptBuilder) Build() (map[string]interface{}, error) {
 		return nil, errors.New("at least one message is required")
 	}
 
-	manifestMessages := make([]interface{}, len(b.messages))
-	for i, msg := range b.messages {
-		manifestMessages[i] = msg.toManifest()
+	manifestMessages := make([]interface{}, 0, len(b.messages))
+	for _, msg := range b.messages {
+		manifestMessages = append(manifestMessages, msg.toManifest())
 	}
 
 	finalInputVariables := b.inputVariables
 	if len(finalInputVariables) == 0 {
 		// Auto-detect from all messages if not explicitly set
-		seen := make(map[string]bool)
+		seen := make(map[string]bool, len(b.messages))
 		for _, msg := range b.messages {
 			vars := extractVariablesFromTemplate(msg.Template)
 			for _, v := range vars {
@@ -282,7 +281,7 @@ func (b *ChatPromptBuilder) Build() (map[string]interface{}, error) {
 		"id":   []string{"langchain_core", "prompts", "chat", "ChatPromptTemplate"},
 		"kwargs": map[string]interface{}{
 			"input_variables": finalInputVariables,
-			"messages":       manifestMessages,
+			"messages":        manifestMessages,
 		},
 	}, nil
 }
@@ -393,12 +392,11 @@ func hasLatestCommit(ctx context.Context, client *langsmith.Client, promptName, 
 	path := fmt.Sprintf("api/v1/commits/%s/%s/latest", owner, promptName)
 	err := client.Get(ctx, path, nil, &manifestResponse)
 	if err != nil {
-		// If we get a 404, the commit doesn't exist
 		var apiErr *langsmith.Error
 		if errors.As(err, &apiErr) && apiErr.StatusCode == 404 {
 			return false, nil
 		}
-		return false, err
+		return false, fmt.Errorf("checking for latest commit: %w", err)
 	}
 	return true, nil
 }
@@ -408,9 +406,10 @@ func createCommit(ctx context.Context, client *langsmith.Client, promptName, own
 	fmt.Println("3. Adding prompt content using client.Post()...")
 
 	builder := &ChatPromptBuilder{}
-	builder.SystemMessage("You are a professional copywriter specializing in e-commerce product descriptions.")
-	builder.UserMessage("Write a compelling product description for {product_name}. Highlight key features and benefits.")
-	builder.InputVariables("product_name")
+	builder.
+		SystemMessage("You are a professional copywriter specializing in e-commerce product descriptions.").
+		UserMessage("Write a compelling product description for {product_name}. Highlight key features and benefits.").
+		InputVariables("product_name")
 
 	manifest, err := builder.Build()
 	if err != nil {
@@ -427,7 +426,7 @@ func createCommit(ctx context.Context, client *langsmith.Client, promptName, own
 	path := fmt.Sprintf("api/v1/commits/%s/%s", owner, promptName)
 	var createResp interface{}
 	if err := client.Post(ctx, path, params, &createResp); err != nil {
-		return fmt.Errorf("creating commit: %w", err)
+		return fmt.Errorf("posting commit: %w", err)
 	}
 
 	fmt.Println("   ✓ Added prompt content as commit")
@@ -451,7 +450,7 @@ func extractPromptContent(manifest map[string]interface{}) string {
 		return "Unable to parse prompt content"
 	}
 
-	var parts []string
+	parts := make([]string, 0, len(messages))
 	for i, messageObj := range messages {
 		message, ok := messageObj.(map[string]interface{})
 		if !ok {
@@ -492,12 +491,3 @@ func extractPromptContent(manifest map[string]interface{}) string {
 
 	return strings.Join(parts, "")
 }
-
-// getOwnerFromEnv retrieves the owner from environment variables, defaulting to "-" if not set.
-func getOwnerFromEnv() string {
-	if owner := os.Getenv("LANGSMITH_OWNER"); owner != "" {
-		return owner
-	}
-	return defaultOwner
-}
-
