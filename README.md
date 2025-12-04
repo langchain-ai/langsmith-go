@@ -33,6 +33,22 @@ go get -u 'github.com/langchain-ai/langsmith-go@v0.0.1'
 
 This library requires Go 1.22+.
 
+## Configuration
+
+The client can be configured using environment variables or by passing options directly to `langsmith.NewClient()`. Environment variables are automatically read when creating a new client.
+
+### Environment Variables
+
+| Variable | Required | Description |
+|----------|----------|-------------|
+| `LANGSMITH_API_KEY` | Optional* | Your LangSmith API key for authentication |
+| `LANGSMITH_BEARER_TOKEN` | Optional* | Bearer token for authentication (alternative to API key) |
+| `LANGSMITH_TENANT_ID` | Optional | Your LangSmith tenant ID |
+| `LANGSMITH_ORGANIZATION_ID` | Optional | Your LangSmith organization ID |
+| `LANGCHAIN_BASE_URL` | Optional | Custom base URL for the LangSmith API (defaults to `https://api.smith.langchain.com`) |
+
+\* Either `LANGSMITH_API_KEY` or `LANGSMITH_BEARER_TOKEN` is required for authentication.
+
 ## Usage
 
 The full API of this library can be found in [api.md](api.md).
