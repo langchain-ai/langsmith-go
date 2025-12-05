@@ -227,16 +227,19 @@ func (r sessionInsightDeleteResponseJSON) RawJSON() string {
 
 // Response to get a specific cluster job for a session.
 type SessionInsightGetJobResponse struct {
-	ID        string                                `json:"id,required" format:"uuid"`
-	Clusters  []SessionInsightGetJobResponseCluster `json:"clusters,required"`
-	Name      string                                `json:"name,required"`
-	Status    string                                `json:"status,required"`
-	EndTime   time.Time                             `json:"end_time,nullable" format:"date-time"`
-	Error     string                                `json:"error,nullable"`
-	Metadata  map[string]interface{}                `json:"metadata,nullable"`
-	Shape     map[string]int64                      `json:"shape,nullable"`
-	StartTime time.Time                             `json:"start_time,nullable" format:"date-time"`
-	JSON      sessionInsightGetJobResponseJSON      `json:"-"`
+	ID       string                                `json:"id,required" format:"uuid"`
+	Clusters []SessionInsightGetJobResponseCluster `json:"clusters,required"`
+	Name     string                                `json:"name,required"`
+	Status   string                                `json:"status,required"`
+	EndTime  time.Time                             `json:"end_time,nullable" format:"date-time"`
+	Error    string                                `json:"error,nullable"`
+	Metadata map[string]interface{}                `json:"metadata,nullable"`
+	// High level summary of an insights job that pulls out patterns and specific
+	// traces.
+	Report    SessionInsightGetJobResponseReport `json:"report,nullable"`
+	Shape     map[string]int64                   `json:"shape,nullable"`
+	StartTime time.Time                          `json:"start_time,nullable" format:"date-time"`
+	JSON      sessionInsightGetJobResponseJSON   `json:"-"`
 }
 
 // sessionInsightGetJobResponseJSON contains the JSON metadata for the struct
@@ -249,6 +252,7 @@ type sessionInsightGetJobResponseJSON struct {
 	EndTime     apijson.Field
 	Error       apijson.Field
 	Metadata    apijson.Field
+	Report      apijson.Field
 	Shape       apijson.Field
 	StartTime   apijson.Field
 	raw         string
@@ -296,6 +300,67 @@ func (r *SessionInsightGetJobResponseCluster) UnmarshalJSON(data []byte) (err er
 }
 
 func (r sessionInsightGetJobResponseClusterJSON) RawJSON() string {
+	return r.raw
+}
+
+// High level summary of an insights job that pulls out patterns and specific
+// traces.
+type SessionInsightGetJobResponseReport struct {
+	CreatedAt         time.Time                                            `json:"created_at,nullable" format:"date-time"`
+	HighlightedTraces []SessionInsightGetJobResponseReportHighlightedTrace `json:"highlighted_traces"`
+	KeyPoints         []string                                             `json:"key_points"`
+	Title             string                                               `json:"title,nullable"`
+	JSON              sessionInsightGetJobResponseReportJSON               `json:"-"`
+}
+
+// sessionInsightGetJobResponseReportJSON contains the JSON metadata for the struct
+// [SessionInsightGetJobResponseReport]
+type sessionInsightGetJobResponseReportJSON struct {
+	CreatedAt         apijson.Field
+	HighlightedTraces apijson.Field
+	KeyPoints         apijson.Field
+	Title             apijson.Field
+	raw               string
+	ExtraFields       map[string]apijson.Field
+}
+
+func (r *SessionInsightGetJobResponseReport) UnmarshalJSON(data []byte) (err error) {
+	return apijson.UnmarshalRoot(data, r)
+}
+
+func (r sessionInsightGetJobResponseReportJSON) RawJSON() string {
+	return r.raw
+}
+
+// A trace highlighted in an insights report summary. Up to 10 per insights job.
+type SessionInsightGetJobResponseReportHighlightedTrace struct {
+	HighlightReason string                                                 `json:"highlight_reason,required"`
+	Rank            int64                                                  `json:"rank,required"`
+	RunID           string                                                 `json:"run_id,required" format:"uuid"`
+	ClusterID       string                                                 `json:"cluster_id,nullable" format:"uuid"`
+	ClusterName     string                                                 `json:"cluster_name,nullable"`
+	Summary         string                                                 `json:"summary,nullable"`
+	JSON            sessionInsightGetJobResponseReportHighlightedTraceJSON `json:"-"`
+}
+
+// sessionInsightGetJobResponseReportHighlightedTraceJSON contains the JSON
+// metadata for the struct [SessionInsightGetJobResponseReportHighlightedTrace]
+type sessionInsightGetJobResponseReportHighlightedTraceJSON struct {
+	HighlightReason apijson.Field
+	Rank            apijson.Field
+	RunID           apijson.Field
+	ClusterID       apijson.Field
+	ClusterName     apijson.Field
+	Summary         apijson.Field
+	raw             string
+	ExtraFields     map[string]apijson.Field
+}
+
+func (r *SessionInsightGetJobResponseReportHighlightedTrace) UnmarshalJSON(data []byte) (err error) {
+	return apijson.UnmarshalRoot(data, r)
+}
+
+func (r sessionInsightGetJobResponseReportHighlightedTraceJSON) RawJSON() string {
 	return r.raw
 }
 
