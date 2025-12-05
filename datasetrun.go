@@ -535,8 +535,7 @@ func (r SortParamsForRunsComparisonViewSortOrder) IsKnown() bool {
 	return false
 }
 
-// Union satisfied by [DatasetRunNewResponseExamplesWithRuns] or
-// [DatasetRunNewResponseArray].
+// Union satisfied by [DatasetRunNewResponseArray] or [DatasetRunNewResponseArray].
 type DatasetRunNewResponseUnion interface {
 	implementsDatasetRunNewResponseUnion()
 }
@@ -547,7 +546,7 @@ func init() {
 		"",
 		apijson.UnionVariant{
 			TypeFilter: gjson.JSON,
-			Type:       reflect.TypeOf(DatasetRunNewResponseExamplesWithRuns{}),
+			Type:       reflect.TypeOf(DatasetRunNewResponseArray{}),
 		},
 		apijson.UnionVariant{
 			TypeFilter: gjson.JSON,
@@ -556,11 +555,7 @@ func init() {
 	)
 }
 
-type DatasetRunNewResponseExamplesWithRuns []ExampleWithRuns
-
-func (r DatasetRunNewResponseExamplesWithRuns) implementsDatasetRunNewResponseUnion() {}
-
-type DatasetRunNewResponseArray []ExampleWithRunsCh
+type DatasetRunNewResponseArray []ExampleWithRuns
 
 func (r DatasetRunNewResponseArray) implementsDatasetRunNewResponseUnion() {}
 
