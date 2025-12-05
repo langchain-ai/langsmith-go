@@ -176,6 +176,7 @@ type RepoWithLookups struct {
 	Tags           []string  `json:"tags,required"`
 	TenantID       string    `json:"tenant_id,required" format:"uuid"`
 	UpdatedAt      time.Time `json:"updated_at,required" format:"date-time"`
+	CreatedBy      string    `json:"created_by,nullable"`
 	Description    string    `json:"description,nullable"`
 	LastCommitHash string    `json:"last_commit_hash,nullable"`
 	// Response model for get_commit_manifest.
@@ -205,6 +206,7 @@ type repoWithLookupsJSON struct {
 	Tags                 apijson.Field
 	TenantID             apijson.Field
 	UpdatedAt            apijson.Field
+	CreatedBy            apijson.Field
 	Description          apijson.Field
 	LastCommitHash       apijson.Field
 	LatestCommitManifest apijson.Field
