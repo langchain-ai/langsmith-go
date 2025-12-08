@@ -49,6 +49,26 @@ The client can be configured using environment variables or by passing options d
 
 \* Either `LANGSMITH_API_KEY` or `LANGSMITH_BEARER_TOKEN` is required for authentication.
 
+## Examples
+
+This repository includes several complete examples demonstrating common use cases:
+
+- **[List Runs](./examples/list_runs)** - Query and filter runs from your LangSmith project
+- **[Dataset Management](./examples/dataset)** - Create datasets, add examples individually or in bulk, and manage dataset lifecycle
+- **[E2E Evaluation](./examples/e2e_eval)** - Run real OpenAI experiments with automatic OpenTelemetry tracing linked to dataset examples
+- **[Record Experiment](./examples/record_experiment)** - Create datasets, examples, sessions, and batch ingest runs for experiments
+- **[Prompt Management](./examples/prompt_management)** - Create and manage prompt repositories, commits, and versions
+- **[OpenTelemetry Ingestion](./examples/otel_ingestion)** - Send OpenTelemetry traces to LangSmith with hierarchical span structure
+- **[OpenTelemetry + OpenAI](./examples/otel_openai)** - Make real OpenAI API calls with automatic OpenTelemetry tracing to LangSmith
+
+Each example includes detailed documentation in its source code. To run an example:
+
+```sh
+go run ./examples/<example-name>
+```
+
+Make sure to set the required environment variables `LANGSMITH_API_KEY` before running and `OPENAI_API_KEY` for the OpenAI examples.
+
 ## Usage
 
 The full API of this library can be found in [api.md](api.md).
