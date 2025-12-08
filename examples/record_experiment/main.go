@@ -360,11 +360,23 @@ func createAndIngestRuns(ctx context.Context, client *langsmith.Client, results 
 	return nil
 }
 
-// formatDottedOrder formats a timestamp and UUID into a dotted order string.
-// Format: YYYYMMDDTHHMMSSffffffZ + UUID (where ffffff is nanoseconds, 9 digits).
-// See: https://github.com/langchain-ai/langsmith-sdk/blob/main/python/langsmith/run_trees.py
+// formatDottedOrder formats a timestamp and UUID into a dotted order string for root runs.
+// Format: YYYYMMDDTHHMMSSmmmmmmZ{run_id} where mmmmmm is microseconds (6 digits).
+// For root runs: single part (no dots): {timestamp}Z{run_id}
+// For child runs: {parent_dotted_order}.{timestamp}Z{run_id}
+// Rules:
+//   - Root runs: single part (no dots)
+//   - First part must match trace_id (root run ID)
+//   - Last part must match the current run_id
+//   - Each part: {timestamp}Z{run_id} where timestamp is YYYYMMDDTHHMMSSmmmmmm
 func formatDottedOrder(t time.Time, runID string) string {
-	return t.Format("20060102T150405") + fmt.Sprintf("%09dZ", t.Nanosecond()) + runID
+	// Format: YYYYMMDDTHHMMSS (date and time)
+	//         mmmmmm (microseconds, 6 digits)
+	//         Z (literal Z)
+	//         {run_id} (UUID)
+	timestamp := t.Format("20060102T150405")
+	microseconds := t.Nanosecond() / 1000 // Convert nanoseconds to microseconds
+	return fmt.Sprintf("%s%06dZ%s", timestamp, microseconds, runID)
 }
 
 // buildDatasetURL builds a URL to view a dataset in LangSmith.
