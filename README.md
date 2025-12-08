@@ -51,15 +51,15 @@ The client can be configured using environment variables or by passing options d
 
 ## Examples
 
-This repository includes several complete examples demonstrating common use cases:
+This repository includes several examples demonstrating common use cases:
 
 - **[List Runs](./examples/list_runs)** - Query and filter runs from your LangSmith project
 - **[Dataset Management](./examples/dataset)** - Create datasets, add examples individually or in bulk, and manage dataset lifecycle
-- **[E2E Evaluation](./examples/e2e_eval)** - Run real OpenAI experiments with automatic OpenTelemetry tracing linked to dataset examples
+- **[E2E Evaluation](./examples/e2e_eval)** - Run OpenAI experiments with automatic OpenTelemetry tracing linked to dataset examples
 - **[Record Experiment](./examples/record_experiment)** - Create datasets, examples, sessions, and batch ingest runs for experiments
 - **[Prompt Management](./examples/prompt_management)** - Create and manage prompt repositories, commits, and versions
 - **[OpenTelemetry Ingestion](./examples/otel_ingestion)** - Send OpenTelemetry traces to LangSmith with hierarchical span structure
-- **[OpenTelemetry + OpenAI](./examples/otel_openai)** - Make real OpenAI API calls with automatic OpenTelemetry tracing to LangSmith
+- **[OpenTelemetry + OpenAI](./examples/otel_openai)** - Make OpenAI API calls with automatic OpenTelemetry tracing to LangSmith
 
 Each example includes detailed documentation in its source code. To run an example:
 
