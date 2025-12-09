@@ -179,6 +179,7 @@ type RunQueryResponseRun struct {
 	LastQueuedAt           time.Time                         `json:"last_queued_at,nullable" format:"date-time"`
 	ManifestID             string                            `json:"manifest_id,nullable" format:"uuid"`
 	ManifestS3ID           string                            `json:"manifest_s3_id,nullable" format:"uuid"`
+	Messages               []map[string]interface{}          `json:"messages,nullable"`
 	Outputs                map[string]interface{}            `json:"outputs,nullable"`
 	OutputsPreview         string                            `json:"outputs_preview,nullable"`
 	OutputsS3URLs          map[string]interface{}            `json:"outputs_s3_urls,nullable"`
@@ -239,6 +240,7 @@ type runQueryResponseRunJSON struct {
 	LastQueuedAt           apijson.Field
 	ManifestID             apijson.Field
 	ManifestS3ID           apijson.Field
+	Messages               apijson.Field
 	Outputs                apijson.Field
 	OutputsPreview         apijson.Field
 	OutputsS3URLs          apijson.Field
@@ -474,11 +476,12 @@ const (
 	RunQueryParamsSelectTraceUpgrade           RunQueryParamsSelect = "trace_upgrade"
 	RunQueryParamsSelectThreadID               RunQueryParamsSelect = "thread_id"
 	RunQueryParamsSelectTraceMinMaxStartTime   RunQueryParamsSelect = "trace_min_max_start_time"
+	RunQueryParamsSelectMessages               RunQueryParamsSelect = "messages"
 )
 
 func (r RunQueryParamsSelect) IsKnown() bool {
 	switch r {
-	case RunQueryParamsSelectID, RunQueryParamsSelectName, RunQueryParamsSelectRunType, RunQueryParamsSelectStartTime, RunQueryParamsSelectEndTime, RunQueryParamsSelectStatus, RunQueryParamsSelectError, RunQueryParamsSelectExtra, RunQueryParamsSelectEvents, RunQueryParamsSelectInputs, RunQueryParamsSelectInputsPreview, RunQueryParamsSelectInputsS3URLs, RunQueryParamsSelectInputsOrSignedURL, RunQueryParamsSelectOutputs, RunQueryParamsSelectOutputsPreview, RunQueryParamsSelectOutputsS3URLs, RunQueryParamsSelectOutputsOrSignedURL, RunQueryParamsSelectS3URLs, RunQueryParamsSelectErrorOrSignedURL, RunQueryParamsSelectEventsOrSignedURL, RunQueryParamsSelectExtraOrSignedURL, RunQueryParamsSelectSerializedOrSignedURL, RunQueryParamsSelectParentRunID, RunQueryParamsSelectManifestID, RunQueryParamsSelectManifestS3ID, RunQueryParamsSelectManifest, RunQueryParamsSelectSessionID, RunQueryParamsSelectSerialized, RunQueryParamsSelectReferenceExampleID, RunQueryParamsSelectReferenceDatasetID, RunQueryParamsSelectTotalTokens, RunQueryParamsSelectPromptTokens, RunQueryParamsSelectPromptTokenDetails, RunQueryParamsSelectCompletionTokens, RunQueryParamsSelectCompletionTokenDetails, RunQueryParamsSelectTotalCost, RunQueryParamsSelectPromptCost, RunQueryParamsSelectPromptCostDetails, RunQueryParamsSelectCompletionCost, RunQueryParamsSelectCompletionCostDetails, RunQueryParamsSelectPriceModelID, RunQueryParamsSelectFirstTokenTime, RunQueryParamsSelectTraceID, RunQueryParamsSelectDottedOrder, RunQueryParamsSelectLastQueuedAt, RunQueryParamsSelectFeedbackStats, RunQueryParamsSelectChildRunIDs, RunQueryParamsSelectParentRunIDs, RunQueryParamsSelectTags, RunQueryParamsSelectInDataset, RunQueryParamsSelectAppPath, RunQueryParamsSelectShareToken, RunQueryParamsSelectTraceTier, RunQueryParamsSelectTraceFirstReceivedAt, RunQueryParamsSelectTtlSeconds, RunQueryParamsSelectTraceUpgrade, RunQueryParamsSelectThreadID, RunQueryParamsSelectTraceMinMaxStartTime:
+	case RunQueryParamsSelectID, RunQueryParamsSelectName, RunQueryParamsSelectRunType, RunQueryParamsSelectStartTime, RunQueryParamsSelectEndTime, RunQueryParamsSelectStatus, RunQueryParamsSelectError, RunQueryParamsSelectExtra, RunQueryParamsSelectEvents, RunQueryParamsSelectInputs, RunQueryParamsSelectInputsPreview, RunQueryParamsSelectInputsS3URLs, RunQueryParamsSelectInputsOrSignedURL, RunQueryParamsSelectOutputs, RunQueryParamsSelectOutputsPreview, RunQueryParamsSelectOutputsS3URLs, RunQueryParamsSelectOutputsOrSignedURL, RunQueryParamsSelectS3URLs, RunQueryParamsSelectErrorOrSignedURL, RunQueryParamsSelectEventsOrSignedURL, RunQueryParamsSelectExtraOrSignedURL, RunQueryParamsSelectSerializedOrSignedURL, RunQueryParamsSelectParentRunID, RunQueryParamsSelectManifestID, RunQueryParamsSelectManifestS3ID, RunQueryParamsSelectManifest, RunQueryParamsSelectSessionID, RunQueryParamsSelectSerialized, RunQueryParamsSelectReferenceExampleID, RunQueryParamsSelectReferenceDatasetID, RunQueryParamsSelectTotalTokens, RunQueryParamsSelectPromptTokens, RunQueryParamsSelectPromptTokenDetails, RunQueryParamsSelectCompletionTokens, RunQueryParamsSelectCompletionTokenDetails, RunQueryParamsSelectTotalCost, RunQueryParamsSelectPromptCost, RunQueryParamsSelectPromptCostDetails, RunQueryParamsSelectCompletionCost, RunQueryParamsSelectCompletionCostDetails, RunQueryParamsSelectPriceModelID, RunQueryParamsSelectFirstTokenTime, RunQueryParamsSelectTraceID, RunQueryParamsSelectDottedOrder, RunQueryParamsSelectLastQueuedAt, RunQueryParamsSelectFeedbackStats, RunQueryParamsSelectChildRunIDs, RunQueryParamsSelectParentRunIDs, RunQueryParamsSelectTags, RunQueryParamsSelectInDataset, RunQueryParamsSelectAppPath, RunQueryParamsSelectShareToken, RunQueryParamsSelectTraceTier, RunQueryParamsSelectTraceFirstReceivedAt, RunQueryParamsSelectTtlSeconds, RunQueryParamsSelectTraceUpgrade, RunQueryParamsSelectThreadID, RunQueryParamsSelectTraceMinMaxStartTime, RunQueryParamsSelectMessages:
 		return true
 	}
 	return false
