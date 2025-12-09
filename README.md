@@ -24,7 +24,7 @@ Or to pin the version:
 <!-- x-release-please-start-version -->
 
 ```sh
-go get -u 'github.com/langchain-ai/langsmith-go@v0.1.0-alpha.2'
+go get -u 'github.com/langchain-ai/langsmith-go@v0.1.0-alpha.3'
 ```
 
 <!-- x-release-please-end -->
@@ -59,7 +59,9 @@ This repository includes several examples demonstrating common use cases:
 - **[Record Experiment](./examples/record_experiment)** - Create datasets, examples, sessions, and batch ingest runs for experiments
 - **[Prompt Management](./examples/prompt_management)** - Create and manage prompt repositories, commits, and versions
 - **[OpenTelemetry Ingestion](./examples/otel_ingestion)** - Send OpenTelemetry traces to LangSmith with hierarchical span structure
-- **[OpenTelemetry + OpenAI](./examples/otel_openai)** - Make OpenAI API calls with automatic OpenTelemetry tracing to LangSmith
+- **[OpenTelemetry + OpenAI](./examples/otel_openai)** - Make OpenAI API calls with manual OpenTelemetry tracing to LangSmith
+- **[OpenTelemetry + OpenAI (Auto)](./examples/otel_openai_auto)** - Automatic OpenTelemetry tracing for OpenAI API calls using HTTP client wrapper
+- **[OpenTelemetry + Anthropic (Auto)](./examples/otel_anthropic_auto)** - Automatic OpenTelemetry tracing for Anthropic API calls using HTTP client wrapper
 
 Each example includes detailed documentation in its source code. To run an example:
 
