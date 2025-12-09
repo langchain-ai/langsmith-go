@@ -48,11 +48,7 @@ func (r *DatasetPlaygroundExperimentService) Stream(ctx context.Context, body Da
 	return
 }
 
-// Configuration for a `Runnable`.
-//
-// See the
-// [reference docs](https://reference.langchain.com/python/langchain_core/runnables/#langchain_core.runnables.RunnableConfig)
-// for more details.
+// Configuration for a Runnable.
 type RunnableConfigParam struct {
 	Callbacks      param.Field[[]interface{}]          `json:"callbacks"`
 	Configurable   param.Field[map[string]interface{}] `json:"configurable"`
@@ -90,11 +86,7 @@ type DatasetPlaygroundExperimentStreamResponse = interface{}
 type DatasetPlaygroundExperimentBatchParams struct {
 	DatasetID param.Field[string]      `json:"dataset_id,required" format:"uuid"`
 	Manifest  param.Field[interface{}] `json:"manifest,required"`
-	// Configuration for a `Runnable`.
-	//
-	// See the
-	// [reference docs](https://reference.langchain.com/python/langchain_core/runnables/#langchain_core.runnables.RunnableConfig)
-	// for more details.
+	// Configuration for a Runnable.
 	Options                         param.Field[RunnableConfigParam]    `json:"options,required"`
 	ProjectName                     param.Field[string]                 `json:"project_name,required"`
 	Secrets                         param.Field[map[string]string]      `json:"secrets,required"`
@@ -123,11 +115,7 @@ func (r DatasetPlaygroundExperimentBatchParams) MarshalJSON() (data []byte, err 
 type DatasetPlaygroundExperimentStreamParams struct {
 	DatasetID param.Field[string]      `json:"dataset_id,required" format:"uuid"`
 	Manifest  param.Field[interface{}] `json:"manifest,required"`
-	// Configuration for a `Runnable`.
-	//
-	// See the
-	// [reference docs](https://reference.langchain.com/python/langchain_core/runnables/#langchain_core.runnables.RunnableConfig)
-	// for more details.
+	// Configuration for a Runnable.
 	Options                         param.Field[RunnableConfigParam]    `json:"options,required"`
 	ProjectName                     param.Field[string]                 `json:"project_name,required"`
 	Secrets                         param.Field[map[string]string]      `json:"secrets,required"`
