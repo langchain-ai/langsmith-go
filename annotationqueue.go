@@ -357,6 +357,7 @@ type RunSchemaWithAnnotationQueueInfo struct {
 	LastReviewedTime       time.Time                                 `json:"last_reviewed_time,nullable" format:"date-time"`
 	ManifestID             string                                    `json:"manifest_id,nullable" format:"uuid"`
 	ManifestS3ID           string                                    `json:"manifest_s3_id,nullable" format:"uuid"`
+	Messages               []map[string]interface{}                  `json:"messages,nullable"`
 	Outputs                map[string]interface{}                    `json:"outputs,nullable"`
 	OutputsPreview         string                                    `json:"outputs_preview,nullable"`
 	OutputsS3URLs          map[string]interface{}                    `json:"outputs_s3_urls,nullable"`
@@ -421,6 +422,7 @@ type runSchemaWithAnnotationQueueInfoJSON struct {
 	LastReviewedTime       apijson.Field
 	ManifestID             apijson.Field
 	ManifestS3ID           apijson.Field
+	Messages               apijson.Field
 	Outputs                apijson.Field
 	OutputsPreview         apijson.Field
 	OutputsS3URLs          apijson.Field
