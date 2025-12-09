@@ -8,7 +8,6 @@ import (
 	"fmt"
 	"net/http"
 	"slices"
-	"time"
 
 	"github.com/langchain-ai/langsmith-go/internal/apijson"
 	"github.com/langchain-ai/langsmith-go/internal/param"
@@ -47,30 +46,6 @@ func (r *DatasetIndexService) New(ctx context.Context, datasetID string, body Da
 	return
 }
 
-// Get index info.
-func (r *DatasetIndexService) Get(ctx context.Context, datasetID string, opts ...option.RequestOption) (res *DatasetIndexGetResponse, err error) {
-	opts = slices.Concat(r.Options, opts)
-	if datasetID == "" {
-		err = errors.New("missing required dataset_id parameter")
-		return
-	}
-	path := fmt.Sprintf("api/v1/datasets/%s/index", datasetID)
-	err = requestconfig.ExecuteNewRequest(ctx, http.MethodGet, path, nil, &res, opts...)
-	return
-}
-
-// Remove an index for a dataset.
-func (r *DatasetIndexService) DeleteAll(ctx context.Context, datasetID string, opts ...option.RequestOption) (res *DatasetIndexDeleteAllResponse, err error) {
-	opts = slices.Concat(r.Options, opts)
-	if datasetID == "" {
-		err = errors.New("missing required dataset_id parameter")
-		return
-	}
-	path := fmt.Sprintf("api/v1/datasets/%s/index", datasetID)
-	err = requestconfig.ExecuteNewRequest(ctx, http.MethodDelete, path, nil, &res, opts...)
-	return
-}
-
 // Sync an index for a dataset.
 func (r *DatasetIndexService) Sync(ctx context.Context, datasetID string, opts ...option.RequestOption) (res *DatasetIndexSyncResponse, err error) {
 	opts = slices.Concat(r.Options, opts)
@@ -84,34 +59,6 @@ func (r *DatasetIndexService) Sync(ctx context.Context, datasetID string, opts .
 }
 
 type DatasetIndexNewResponse = interface{}
-
-// Dataset schema for serving.
-type DatasetIndexGetResponse struct {
-	DatasetID          string                      `json:"dataset_id,required" format:"uuid"`
-	LastUpdatedVersion time.Time                   `json:"last_updated_version,nullable" format:"date-time"`
-	Tag                string                      `json:"tag,nullable"`
-	JSON               datasetIndexGetResponseJSON `json:"-"`
-}
-
-// datasetIndexGetResponseJSON contains the JSON metadata for the struct
-// [DatasetIndexGetResponse]
-type datasetIndexGetResponseJSON struct {
-	DatasetID          apijson.Field
-	LastUpdatedVersion apijson.Field
-	Tag                apijson.Field
-	raw                string
-	ExtraFields        map[string]apijson.Field
-}
-
-func (r *DatasetIndexGetResponse) UnmarshalJSON(data []byte) (err error) {
-	return apijson.UnmarshalRoot(data, r)
-}
-
-func (r datasetIndexGetResponseJSON) RawJSON() string {
-	return r.raw
-}
-
-type DatasetIndexDeleteAllResponse = interface{}
 
 type DatasetIndexSyncResponse = interface{}
 
