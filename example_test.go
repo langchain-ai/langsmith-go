@@ -11,10 +11,10 @@ import (
 	"testing"
 	"time"
 
-	"github.com/stainless-sdks/langsmith-api-go"
-	"github.com/stainless-sdks/langsmith-api-go/internal/testutil"
-	"github.com/stainless-sdks/langsmith-api-go/option"
-	"github.com/stainless-sdks/langsmith-api-go/shared"
+	"github.com/langchain-ai/langsmith-go"
+	"github.com/langchain-ai/langsmith-go/internal/testutil"
+	"github.com/langchain-ai/langsmith-go/option"
+	"github.com/langchain-ai/langsmith-go/shared"
 )
 
 func TestExampleNewWithOptionalParams(t *testing.T) {
@@ -33,12 +33,18 @@ func TestExampleNewWithOptionalParams(t *testing.T) {
 		option.WithOrganizationID("My Organization ID"),
 	)
 	_, err := client.Examples.New(context.TODO(), langsmith.ExampleNewParams{
-		DatasetID:               langsmith.F("182bd5e5-6e1a-4fe4-a799-aa6d9a6ab26e"),
-		ID:                      langsmith.F("182bd5e5-6e1a-4fe4-a799-aa6d9a6ab26e"),
-		CreatedAt:               langsmith.F("created_at"),
-		Inputs:                  langsmith.F[any](map[string]interface{}{}),
-		Metadata:                langsmith.F[any](map[string]interface{}{}),
-		Outputs:                 langsmith.F[any](map[string]interface{}{}),
+		DatasetID: langsmith.F("182bd5e5-6e1a-4fe4-a799-aa6d9a6ab26e"),
+		ID:        langsmith.F("182bd5e5-6e1a-4fe4-a799-aa6d9a6ab26e"),
+		CreatedAt: langsmith.F("created_at"),
+		Inputs: langsmith.F(map[string]interface{}{
+			"foo": "bar",
+		}),
+		Metadata: langsmith.F(map[string]interface{}{
+			"foo": "bar",
+		}),
+		Outputs: langsmith.F(map[string]interface{}{
+			"foo": "bar",
+		}),
 		SourceRunID:             langsmith.F("182bd5e5-6e1a-4fe4-a799-aa6d9a6ab26e"),
 		Split:                   langsmith.F[langsmith.ExampleNewParamsSplitUnion](langsmith.ExampleNewParamsSplitArray([]string{"string"})),
 		UseLegacyMessageFormat:  langsmith.F(true),
@@ -111,9 +117,15 @@ func TestExampleUpdateWithOptionalParams(t *testing.T) {
 				Retain: langsmith.F([]string{"string"}),
 			}),
 			DatasetID: langsmith.F("182bd5e5-6e1a-4fe4-a799-aa6d9a6ab26e"),
-			Inputs:    langsmith.F[any](map[string]interface{}{}),
-			Metadata:  langsmith.F[any](map[string]interface{}{}),
-			Outputs:   langsmith.F[any](map[string]interface{}{}),
+			Inputs: langsmith.F(map[string]interface{}{
+				"foo": "bar",
+			}),
+			Metadata: langsmith.F(map[string]interface{}{
+				"foo": "bar",
+			}),
+			Outputs: langsmith.F(map[string]interface{}{
+				"foo": "bar",
+			}),
 			Overwrite: langsmith.F(true),
 			Split:     langsmith.F[langsmith.ExampleUpdateParamsSplitUnion](langsmith.ExampleUpdateParamsSplitArray([]string{"string"})),
 		},

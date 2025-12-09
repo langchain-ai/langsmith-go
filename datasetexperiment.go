@@ -10,10 +10,10 @@ import (
 	"slices"
 	"time"
 
-	"github.com/stainless-sdks/langsmith-api-go/internal/apijson"
-	"github.com/stainless-sdks/langsmith-api-go/internal/param"
-	"github.com/stainless-sdks/langsmith-api-go/internal/requestconfig"
-	"github.com/stainless-sdks/langsmith-api-go/option"
+	"github.com/langchain-ai/langsmith-go/internal/apijson"
+	"github.com/langchain-ai/langsmith-go/internal/param"
+	"github.com/langchain-ai/langsmith-go/internal/requestconfig"
+	"github.com/langchain-ai/langsmith-go/option"
 )
 
 // DatasetExperimentService contains methods and other services that help with

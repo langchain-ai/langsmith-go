@@ -9,9 +9,10 @@ import (
 	"testing"
 	"time"
 
-	"github.com/stainless-sdks/langsmith-api-go"
-	"github.com/stainless-sdks/langsmith-api-go/internal/testutil"
-	"github.com/stainless-sdks/langsmith-api-go/option"
+	"github.com/langchain-ai/langsmith-go"
+	"github.com/langchain-ai/langsmith-go/internal/testutil"
+	"github.com/langchain-ai/langsmith-go/option"
+	"github.com/langchain-ai/langsmith-go/shared"
 )
 
 func TestAnnotationQueueGet(t *testing.T) {
@@ -58,12 +59,14 @@ func TestAnnotationQueueUpdateWithOptionalParams(t *testing.T) {
 		context.TODO(),
 		"182bd5e5-6e1a-4fe4-a799-aa6d9a6ab26e",
 		langsmith.AnnotationQueueUpdateParams{
-			DefaultDataset:      langsmith.F("182bd5e5-6e1a-4fe4-a799-aa6d9a6ab26e"),
-			Description:         langsmith.F("description"),
-			EnableReservations:  langsmith.F(true),
-			Metadata:            langsmith.F(langsmith.MissingParam{Missing: langsmith.F(langsmith.Missing_Missing_Missing)}),
+			DefaultDataset:     langsmith.F("182bd5e5-6e1a-4fe4-a799-aa6d9a6ab26e"),
+			Description:        langsmith.F("description"),
+			EnableReservations: langsmith.F(true),
+			Metadata: langsmith.F[langsmith.AnnotationQueueUpdateParamsMetadataUnion](langsmith.AnnotationQueueUpdateParamsMetadataMap(map[string]interface{}{
+				"foo": "bar",
+			})),
 			Name:                langsmith.F("name"),
-			NumReviewersPerItem: langsmith.F(int64(0)),
+			NumReviewersPerItem: langsmith.F[langsmith.AnnotationQueueUpdateParamsNumReviewersPerItemUnion](shared.UnionInt(int64(0))),
 			ReservationMinutes:  langsmith.F(int64(0)),
 			RubricInstructions:  langsmith.F("rubric_instructions"),
 			RubricItems: langsmith.F([]langsmith.AnnotationQueueRubricItemSchemaParam{{
@@ -128,13 +131,15 @@ func TestAnnotationQueueAnnotationQueuesWithOptionalParams(t *testing.T) {
 		option.WithOrganizationID("My Organization ID"),
 	)
 	_, err := client.AnnotationQueues.AnnotationQueues(context.TODO(), langsmith.AnnotationQueueAnnotationQueuesParams{
-		Name:                langsmith.F("name"),
-		ID:                  langsmith.F("182bd5e5-6e1a-4fe4-a799-aa6d9a6ab26e"),
-		CreatedAt:           langsmith.F(time.Now()),
-		DefaultDataset:      langsmith.F("182bd5e5-6e1a-4fe4-a799-aa6d9a6ab26e"),
-		Description:         langsmith.F("description"),
-		EnableReservations:  langsmith.F(true),
-		Metadata:            langsmith.F[any](map[string]interface{}{}),
+		Name:               langsmith.F("name"),
+		ID:                 langsmith.F("182bd5e5-6e1a-4fe4-a799-aa6d9a6ab26e"),
+		CreatedAt:          langsmith.F(time.Now()),
+		DefaultDataset:     langsmith.F("182bd5e5-6e1a-4fe4-a799-aa6d9a6ab26e"),
+		Description:        langsmith.F("description"),
+		EnableReservations: langsmith.F(true),
+		Metadata: langsmith.F(map[string]interface{}{
+			"foo": "bar",
+		}),
 		NumReviewersPerItem: langsmith.F(int64(0)),
 		ReservationMinutes:  langsmith.F(int64(0)),
 		RubricInstructions:  langsmith.F("rubric_instructions"),

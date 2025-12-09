@@ -9,10 +9,10 @@ import (
 	"testing"
 	"time"
 
-	"github.com/stainless-sdks/langsmith-api-go"
-	"github.com/stainless-sdks/langsmith-api-go/internal/testutil"
-	"github.com/stainless-sdks/langsmith-api-go/option"
-	"github.com/stainless-sdks/langsmith-api-go/shared"
+	"github.com/langchain-ai/langsmith-go"
+	"github.com/langchain-ai/langsmith-go/internal/testutil"
+	"github.com/langchain-ai/langsmith-go/option"
+	"github.com/langchain-ai/langsmith-go/shared"
 )
 
 func TestFeedbackNewWithOptionalParams(t *testing.T) {
@@ -36,9 +36,11 @@ func TestFeedbackNewWithOptionalParams(t *testing.T) {
 			ID:                      langsmith.F("182bd5e5-6e1a-4fe4-a799-aa6d9a6ab26e"),
 			Comment:                 langsmith.F("comment"),
 			ComparativeExperimentID: langsmith.F("182bd5e5-6e1a-4fe4-a799-aa6d9a6ab26e"),
-			Correction:              langsmith.F[any](map[string]interface{}{}),
-			CreatedAt:               langsmith.F(time.Now()),
-			Error:                   langsmith.F(true),
+			Correction: langsmith.F[langsmith.FeedbackCreateSchemaCorrectionUnionParam](langsmith.FeedbackCreateSchemaCorrectionMapParam(map[string]interface{}{
+				"foo": "bar",
+			})),
+			CreatedAt: langsmith.F(time.Now()),
+			Error:     langsmith.F(true),
 			FeedbackConfig: langsmith.F(langsmith.FeedbackCreateSchemaFeedbackConfigParam{
 				Type: langsmith.F(langsmith.FeedbackCreateSchemaFeedbackConfigTypeContinuous),
 				Categories: langsmith.F([]langsmith.FeedbackCreateSchemaFeedbackConfigCategoryParam{{
@@ -50,15 +52,17 @@ func TestFeedbackNewWithOptionalParams(t *testing.T) {
 			}),
 			FeedbackGroupID: langsmith.F("182bd5e5-6e1a-4fe4-a799-aa6d9a6ab26e"),
 			FeedbackSource: langsmith.F[langsmith.FeedbackCreateSchemaFeedbackSourceUnionParam](langsmith.AppFeedbackSourceParam{
-				Metadata: langsmith.F[any](map[string]interface{}{}),
-				Type:     langsmith.F(langsmith.AppFeedbackSourceTypeApp),
+				Metadata: langsmith.F(map[string]interface{}{
+					"foo": "bar",
+				}),
+				Type: langsmith.F(langsmith.AppFeedbackSourceTypeApp),
 			}),
 			ModifiedAt: langsmith.F(time.Now()),
 			RunID:      langsmith.F("182bd5e5-6e1a-4fe4-a799-aa6d9a6ab26e"),
 			Score:      langsmith.F[langsmith.FeedbackCreateSchemaScoreUnionParam](shared.UnionFloat(0.000000)),
 			SessionID:  langsmith.F("182bd5e5-6e1a-4fe4-a799-aa6d9a6ab26e"),
 			TraceID:    langsmith.F("182bd5e5-6e1a-4fe4-a799-aa6d9a6ab26e"),
-			Value:      langsmith.F[any](map[string]interface{}{}),
+			Value:      langsmith.F[langsmith.FeedbackCreateSchemaValueUnionParam](shared.UnionFloat(0.000000)),
 		},
 	})
 	if err != nil {
@@ -120,8 +124,10 @@ func TestFeedbackUpdateWithOptionalParams(t *testing.T) {
 		context.TODO(),
 		"182bd5e5-6e1a-4fe4-a799-aa6d9a6ab26e",
 		langsmith.FeedbackUpdateParams{
-			Comment:    langsmith.F("comment"),
-			Correction: langsmith.F[any](map[string]interface{}{}),
+			Comment: langsmith.F("comment"),
+			Correction: langsmith.F[langsmith.FeedbackUpdateParamsCorrectionUnion](langsmith.FeedbackUpdateParamsCorrectionMap(map[string]interface{}{
+				"foo": "bar",
+			})),
 			FeedbackConfig: langsmith.F(langsmith.FeedbackUpdateParamsFeedbackConfig{
 				Type: langsmith.F(langsmith.FeedbackUpdateParamsFeedbackConfigTypeContinuous),
 				Categories: langsmith.F([]langsmith.FeedbackUpdateParamsFeedbackConfigCategory{{
@@ -132,7 +138,7 @@ func TestFeedbackUpdateWithOptionalParams(t *testing.T) {
 				Min: langsmith.F(0.000000),
 			}),
 			Score: langsmith.F[langsmith.FeedbackUpdateParamsScoreUnion](shared.UnionFloat(0.000000)),
-			Value: langsmith.F[any](map[string]interface{}{}),
+			Value: langsmith.F[langsmith.FeedbackUpdateParamsValueUnion](shared.UnionFloat(0.000000)),
 		},
 	)
 	if err != nil {

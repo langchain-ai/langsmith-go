@@ -10,9 +10,9 @@ import (
 	"testing"
 	"time"
 
-	"github.com/stainless-sdks/langsmith-api-go"
-	"github.com/stainless-sdks/langsmith-api-go/internal"
-	"github.com/stainless-sdks/langsmith-api-go/option"
+	"github.com/langchain-ai/langsmith-go"
+	"github.com/langchain-ai/langsmith-go/internal"
+	"github.com/langchain-ai/langsmith-go/option"
 )
 
 type closureTransport struct {
@@ -42,7 +42,7 @@ func TestUserAgentHeader(t *testing.T) {
 	)
 	client.Sessions.Dashboard(
 		context.Background(),
-		"REPLACE_ME",
+		"1ffaeba7-541e-469f-bae7-df3208ea3d45",
 		langsmith.SessionDashboardParams{
 			CustomChartsSectionRequest: langsmith.CustomChartsSectionRequestParam{},
 		},
@@ -74,7 +74,7 @@ func TestRetryAfter(t *testing.T) {
 	)
 	_, err := client.Sessions.Dashboard(
 		context.Background(),
-		"REPLACE_ME",
+		"1ffaeba7-541e-469f-bae7-df3208ea3d45",
 		langsmith.SessionDashboardParams{
 			CustomChartsSectionRequest: langsmith.CustomChartsSectionRequestParam{},
 		},
@@ -117,7 +117,7 @@ func TestDeleteRetryCountHeader(t *testing.T) {
 	)
 	_, err := client.Sessions.Dashboard(
 		context.Background(),
-		"REPLACE_ME",
+		"1ffaeba7-541e-469f-bae7-df3208ea3d45",
 		langsmith.SessionDashboardParams{
 			CustomChartsSectionRequest: langsmith.CustomChartsSectionRequestParam{},
 		},
@@ -155,7 +155,7 @@ func TestOverwriteRetryCountHeader(t *testing.T) {
 	)
 	_, err := client.Sessions.Dashboard(
 		context.Background(),
-		"REPLACE_ME",
+		"1ffaeba7-541e-469f-bae7-df3208ea3d45",
 		langsmith.SessionDashboardParams{
 			CustomChartsSectionRequest: langsmith.CustomChartsSectionRequestParam{},
 		},
@@ -192,7 +192,7 @@ func TestRetryAfterMs(t *testing.T) {
 	)
 	_, err := client.Sessions.Dashboard(
 		context.Background(),
-		"REPLACE_ME",
+		"1ffaeba7-541e-469f-bae7-df3208ea3d45",
 		langsmith.SessionDashboardParams{
 			CustomChartsSectionRequest: langsmith.CustomChartsSectionRequestParam{},
 		},
@@ -223,7 +223,7 @@ func TestContextCancel(t *testing.T) {
 	cancel()
 	_, err := client.Sessions.Dashboard(
 		cancelCtx,
-		"REPLACE_ME",
+		"1ffaeba7-541e-469f-bae7-df3208ea3d45",
 		langsmith.SessionDashboardParams{
 			CustomChartsSectionRequest: langsmith.CustomChartsSectionRequestParam{},
 		},
@@ -251,7 +251,7 @@ func TestContextCancelDelay(t *testing.T) {
 	defer cancel()
 	_, err := client.Sessions.Dashboard(
 		cancelCtx,
-		"REPLACE_ME",
+		"1ffaeba7-541e-469f-bae7-df3208ea3d45",
 		langsmith.SessionDashboardParams{
 			CustomChartsSectionRequest: langsmith.CustomChartsSectionRequestParam{},
 		},
@@ -285,7 +285,7 @@ func TestContextDeadline(t *testing.T) {
 		)
 		_, err := client.Sessions.Dashboard(
 			deadlineCtx,
-			"REPLACE_ME",
+			"1ffaeba7-541e-469f-bae7-df3208ea3d45",
 			langsmith.SessionDashboardParams{
 				CustomChartsSectionRequest: langsmith.CustomChartsSectionRequestParam{},
 			},

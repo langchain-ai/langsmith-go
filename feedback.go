@@ -12,13 +12,13 @@ import (
 	"slices"
 	"time"
 
-	"github.com/stainless-sdks/langsmith-api-go/internal/apijson"
-	"github.com/stainless-sdks/langsmith-api-go/internal/apiquery"
-	"github.com/stainless-sdks/langsmith-api-go/internal/param"
-	"github.com/stainless-sdks/langsmith-api-go/internal/requestconfig"
-	"github.com/stainless-sdks/langsmith-api-go/option"
-	"github.com/stainless-sdks/langsmith-api-go/packages/pagination"
-	"github.com/stainless-sdks/langsmith-api-go/shared"
+	"github.com/langchain-ai/langsmith-go/internal/apijson"
+	"github.com/langchain-ai/langsmith-go/internal/apiquery"
+	"github.com/langchain-ai/langsmith-go/internal/param"
+	"github.com/langchain-ai/langsmith-go/internal/requestconfig"
+	"github.com/langchain-ai/langsmith-go/option"
+	"github.com/langchain-ai/langsmith-go/packages/pagination"
+	"github.com/langchain-ai/langsmith-go/shared"
 	"github.com/tidwall/gjson"
 )
 
@@ -112,8 +112,8 @@ func (r *FeedbackService) Delete(ctx context.Context, feedbackID string, opts ..
 
 // API feedback source.
 type APIFeedbackSourceParam struct {
-	Metadata param.Field[interface{}]           `json:"metadata"`
-	Type     param.Field[APIFeedbackSourceType] `json:"type"`
+	Metadata param.Field[map[string]interface{}] `json:"metadata"`
+	Type     param.Field[APIFeedbackSourceType]  `json:"type"`
 }
 
 func (r APIFeedbackSourceParam) MarshalJSON() (data []byte, err error) {
@@ -138,8 +138,8 @@ func (r APIFeedbackSourceType) IsKnown() bool {
 
 // Feedback from the LangChainPlus App.
 type AppFeedbackSourceParam struct {
-	Metadata param.Field[interface{}]           `json:"metadata"`
-	Type     param.Field[AppFeedbackSourceType] `json:"type"`
+	Metadata param.Field[map[string]interface{}] `json:"metadata"`
+	Type     param.Field[AppFeedbackSourceType]  `json:"type"`
 }
 
 func (r AppFeedbackSourceParam) MarshalJSON() (data []byte, err error) {
@@ -164,7 +164,7 @@ func (r AppFeedbackSourceType) IsKnown() bool {
 
 // Auto eval feedback source.
 type AutoEvalFeedbackSourceParam struct {
-	Metadata param.Field[interface{}]                `json:"metadata"`
+	Metadata param.Field[map[string]interface{}]     `json:"metadata"`
 	Type     param.Field[AutoEvalFeedbackSourceType] `json:"type"`
 }
 
@@ -190,15 +190,15 @@ func (r AutoEvalFeedbackSourceType) IsKnown() bool {
 
 // Schema used for creating feedback.
 type FeedbackCreateSchemaParam struct {
-	Key                     param.Field[string]                                  `json:"key,required"`
-	ID                      param.Field[string]                                  `json:"id" format:"uuid"`
-	Comment                 param.Field[string]                                  `json:"comment"`
-	ComparativeExperimentID param.Field[string]                                  `json:"comparative_experiment_id" format:"uuid"`
-	Correction              param.Field[interface{}]                             `json:"correction"`
-	CreatedAt               param.Field[time.Time]                               `json:"created_at" format:"date-time"`
-	Error                   param.Field[bool]                                    `json:"error"`
-	FeedbackConfig          param.Field[FeedbackCreateSchemaFeedbackConfigParam] `json:"feedback_config"`
-	FeedbackGroupID         param.Field[string]                                  `json:"feedback_group_id" format:"uuid"`
+	Key                     param.Field[string]                                   `json:"key,required"`
+	ID                      param.Field[string]                                   `json:"id" format:"uuid"`
+	Comment                 param.Field[string]                                   `json:"comment"`
+	ComparativeExperimentID param.Field[string]                                   `json:"comparative_experiment_id" format:"uuid"`
+	Correction              param.Field[FeedbackCreateSchemaCorrectionUnionParam] `json:"correction"`
+	CreatedAt               param.Field[time.Time]                                `json:"created_at" format:"date-time"`
+	Error                   param.Field[bool]                                     `json:"error"`
+	FeedbackConfig          param.Field[FeedbackCreateSchemaFeedbackConfigParam]  `json:"feedback_config"`
+	FeedbackGroupID         param.Field[string]                                   `json:"feedback_group_id" format:"uuid"`
 	// Feedback from the LangChainPlus App.
 	FeedbackSource param.Field[FeedbackCreateSchemaFeedbackSourceUnionParam] `json:"feedback_source"`
 	ModifiedAt     param.Field[time.Time]                                    `json:"modified_at" format:"date-time"`
@@ -206,11 +206,21 @@ type FeedbackCreateSchemaParam struct {
 	Score          param.Field[FeedbackCreateSchemaScoreUnionParam]          `json:"score"`
 	SessionID      param.Field[string]                                       `json:"session_id" format:"uuid"`
 	TraceID        param.Field[string]                                       `json:"trace_id" format:"uuid"`
-	Value          param.Field[interface{}]                                  `json:"value"`
+	Value          param.Field[FeedbackCreateSchemaValueUnionParam]          `json:"value"`
 }
 
 func (r FeedbackCreateSchemaParam) MarshalJSON() (data []byte, err error) {
 	return apijson.MarshalRoot(r)
+}
+
+// Satisfied by [FeedbackCreateSchemaCorrectionMapParam], [shared.UnionString].
+type FeedbackCreateSchemaCorrectionUnionParam interface {
+	ImplementsFeedbackCreateSchemaCorrectionUnionParam()
+}
+
+type FeedbackCreateSchemaCorrectionMapParam map[string]interface{}
+
+func (r FeedbackCreateSchemaCorrectionMapParam) ImplementsFeedbackCreateSchemaCorrectionUnionParam() {
 }
 
 type FeedbackCreateSchemaFeedbackConfigParam struct {
@@ -296,6 +306,16 @@ type FeedbackCreateSchemaScoreUnionParam interface {
 	ImplementsFeedbackCreateSchemaScoreUnionParam()
 }
 
+// Satisfied by [shared.UnionFloat], [shared.UnionBool], [shared.UnionString],
+// [FeedbackCreateSchemaValueMapParam].
+type FeedbackCreateSchemaValueUnionParam interface {
+	ImplementsFeedbackCreateSchemaValueUnionParam()
+}
+
+type FeedbackCreateSchemaValueMapParam map[string]interface{}
+
+func (r FeedbackCreateSchemaValueMapParam) ImplementsFeedbackCreateSchemaValueUnionParam() {}
+
 // Enum for feedback levels.
 type FeedbackLevel string
 
@@ -314,14 +334,14 @@ func (r FeedbackLevel) IsKnown() bool {
 
 // Schema for getting feedback.
 type FeedbackSchema struct {
-	ID                      string      `json:"id,required" format:"uuid"`
-	Key                     string      `json:"key,required"`
-	Comment                 string      `json:"comment,nullable"`
-	ComparativeExperimentID string      `json:"comparative_experiment_id,nullable" format:"uuid"`
-	Correction              interface{} `json:"correction,nullable"`
-	CreatedAt               time.Time   `json:"created_at" format:"date-time"`
-	Extra                   interface{} `json:"extra,nullable"`
-	FeedbackGroupID         string      `json:"feedback_group_id,nullable" format:"uuid"`
+	ID                      string                        `json:"id,required" format:"uuid"`
+	Key                     string                        `json:"key,required"`
+	Comment                 string                        `json:"comment,nullable"`
+	ComparativeExperimentID string                        `json:"comparative_experiment_id,nullable" format:"uuid"`
+	Correction              FeedbackSchemaCorrectionUnion `json:"correction,nullable"`
+	CreatedAt               time.Time                     `json:"created_at" format:"date-time"`
+	Extra                   map[string]interface{}        `json:"extra,nullable"`
+	FeedbackGroupID         string                        `json:"feedback_group_id,nullable" format:"uuid"`
 	// The feedback source loaded from the database.
 	FeedbackSource   FeedbackSchemaFeedbackSource `json:"feedback_source,nullable"`
 	FeedbackThreadID string                       `json:"feedback_thread_id,nullable"`
@@ -331,7 +351,7 @@ type FeedbackSchema struct {
 	SessionID        string                       `json:"session_id,nullable" format:"uuid"`
 	StartTime        time.Time                    `json:"start_time,nullable" format:"date-time"`
 	TraceID          string                       `json:"trace_id,nullable" format:"uuid"`
-	Value            interface{}                  `json:"value,nullable"`
+	Value            FeedbackSchemaValueUnion     `json:"value,nullable"`
 	JSON             feedbackSchemaJSON           `json:"-"`
 }
 
@@ -366,10 +386,34 @@ func (r feedbackSchemaJSON) RawJSON() string {
 	return r.raw
 }
 
+// Union satisfied by [FeedbackSchemaCorrectionMap] or [shared.UnionString].
+type FeedbackSchemaCorrectionUnion interface {
+	ImplementsFeedbackSchemaCorrectionUnion()
+}
+
+func init() {
+	apijson.RegisterUnion(
+		reflect.TypeOf((*FeedbackSchemaCorrectionUnion)(nil)).Elem(),
+		"",
+		apijson.UnionVariant{
+			TypeFilter: gjson.JSON,
+			Type:       reflect.TypeOf(FeedbackSchemaCorrectionMap{}),
+		},
+		apijson.UnionVariant{
+			TypeFilter: gjson.String,
+			Type:       reflect.TypeOf(shared.UnionString("")),
+		},
+	)
+}
+
+type FeedbackSchemaCorrectionMap map[string]interface{}
+
+func (r FeedbackSchemaCorrectionMap) ImplementsFeedbackSchemaCorrectionUnion() {}
+
 // The feedback source loaded from the database.
 type FeedbackSchemaFeedbackSource struct {
 	LsUserID string                           `json:"ls_user_id,nullable" format:"uuid"`
-	Metadata interface{}                      `json:"metadata,nullable"`
+	Metadata map[string]interface{}           `json:"metadata,nullable"`
 	Type     string                           `json:"type,nullable"`
 	UserID   string                           `json:"user_id,nullable" format:"uuid"`
 	UserName string                           `json:"user_name,nullable"`
@@ -420,9 +464,46 @@ func init() {
 	)
 }
 
+// Union satisfied by [shared.UnionFloat], [shared.UnionBool], [shared.UnionString]
+// or [FeedbackSchemaValueMap].
+type FeedbackSchemaValueUnion interface {
+	ImplementsFeedbackSchemaValueUnion()
+}
+
+func init() {
+	apijson.RegisterUnion(
+		reflect.TypeOf((*FeedbackSchemaValueUnion)(nil)).Elem(),
+		"",
+		apijson.UnionVariant{
+			TypeFilter: gjson.Number,
+			Type:       reflect.TypeOf(shared.UnionFloat(0)),
+		},
+		apijson.UnionVariant{
+			TypeFilter: gjson.True,
+			Type:       reflect.TypeOf(shared.UnionBool(false)),
+		},
+		apijson.UnionVariant{
+			TypeFilter: gjson.False,
+			Type:       reflect.TypeOf(shared.UnionBool(false)),
+		},
+		apijson.UnionVariant{
+			TypeFilter: gjson.String,
+			Type:       reflect.TypeOf(shared.UnionString("")),
+		},
+		apijson.UnionVariant{
+			TypeFilter: gjson.JSON,
+			Type:       reflect.TypeOf(FeedbackSchemaValueMap{}),
+		},
+	)
+}
+
+type FeedbackSchemaValueMap map[string]interface{}
+
+func (r FeedbackSchemaValueMap) ImplementsFeedbackSchemaValueUnion() {}
+
 // Model feedback source.
 type ModelFeedbackSourceParam struct {
-	Metadata param.Field[interface{}]             `json:"metadata"`
+	Metadata param.Field[map[string]interface{}]  `json:"metadata"`
 	Type     param.Field[ModelFeedbackSourceType] `json:"type"`
 }
 
@@ -488,16 +569,25 @@ func (r FeedbackGetParams) URLQuery() (v url.Values) {
 }
 
 type FeedbackUpdateParams struct {
-	Comment        param.Field[string]                             `json:"comment"`
-	Correction     param.Field[interface{}]                        `json:"correction"`
-	FeedbackConfig param.Field[FeedbackUpdateParamsFeedbackConfig] `json:"feedback_config"`
-	Score          param.Field[FeedbackUpdateParamsScoreUnion]     `json:"score"`
-	Value          param.Field[interface{}]                        `json:"value"`
+	Comment        param.Field[string]                              `json:"comment"`
+	Correction     param.Field[FeedbackUpdateParamsCorrectionUnion] `json:"correction"`
+	FeedbackConfig param.Field[FeedbackUpdateParamsFeedbackConfig]  `json:"feedback_config"`
+	Score          param.Field[FeedbackUpdateParamsScoreUnion]      `json:"score"`
+	Value          param.Field[FeedbackUpdateParamsValueUnion]      `json:"value"`
 }
 
 func (r FeedbackUpdateParams) MarshalJSON() (data []byte, err error) {
 	return apijson.MarshalRoot(r)
 }
+
+// Satisfied by [FeedbackUpdateParamsCorrectionMap], [shared.UnionString].
+type FeedbackUpdateParamsCorrectionUnion interface {
+	ImplementsFeedbackUpdateParamsCorrectionUnion()
+}
+
+type FeedbackUpdateParamsCorrectionMap map[string]interface{}
+
+func (r FeedbackUpdateParamsCorrectionMap) ImplementsFeedbackUpdateParamsCorrectionUnion() {}
 
 type FeedbackUpdateParamsFeedbackConfig struct {
 	// Enum for feedback types.
@@ -542,6 +632,16 @@ func (r FeedbackUpdateParamsFeedbackConfigCategory) MarshalJSON() (data []byte, 
 type FeedbackUpdateParamsScoreUnion interface {
 	ImplementsFeedbackUpdateParamsScoreUnion()
 }
+
+// Satisfied by [shared.UnionFloat], [shared.UnionBool], [shared.UnionString],
+// [FeedbackUpdateParamsValueMap].
+type FeedbackUpdateParamsValueUnion interface {
+	ImplementsFeedbackUpdateParamsValueUnion()
+}
+
+type FeedbackUpdateParamsValueMap map[string]interface{}
+
+func (r FeedbackUpdateParamsValueMap) ImplementsFeedbackUpdateParamsValueUnion() {}
 
 type FeedbackListParams struct {
 	ComparativeExperimentID param.Field[string]   `query:"comparative_experiment_id" format:"uuid"`

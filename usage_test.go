@@ -7,9 +7,9 @@ import (
 	"os"
 	"testing"
 
-	"github.com/stainless-sdks/langsmith-api-go"
-	"github.com/stainless-sdks/langsmith-api-go/internal/testutil"
-	"github.com/stainless-sdks/langsmith-api-go/option"
+	"github.com/langchain-ai/langsmith-go"
+	"github.com/langchain-ai/langsmith-go/internal/testutil"
+	"github.com/langchain-ai/langsmith-go/option"
 )
 
 func TestUsage(t *testing.T) {
@@ -28,7 +28,7 @@ func TestUsage(t *testing.T) {
 	)
 	customChartsSection, err := client.Sessions.Dashboard(
 		context.TODO(),
-		"REPLACE_ME",
+		"1ffaeba7-541e-469f-bae7-df3208ea3d45",
 		langsmith.SessionDashboardParams{
 			CustomChartsSectionRequest: langsmith.CustomChartsSectionRequestParam{},
 		},

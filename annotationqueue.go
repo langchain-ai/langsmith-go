@@ -11,12 +11,12 @@ import (
 	"slices"
 	"time"
 
-	"github.com/stainless-sdks/langsmith-api-go/internal/apijson"
-	"github.com/stainless-sdks/langsmith-api-go/internal/apiquery"
-	"github.com/stainless-sdks/langsmith-api-go/internal/param"
-	"github.com/stainless-sdks/langsmith-api-go/internal/requestconfig"
-	"github.com/stainless-sdks/langsmith-api-go/option"
-	"github.com/stainless-sdks/langsmith-api-go/packages/pagination"
+	"github.com/langchain-ai/langsmith-go/internal/apijson"
+	"github.com/langchain-ai/langsmith-go/internal/apiquery"
+	"github.com/langchain-ai/langsmith-go/internal/param"
+	"github.com/langchain-ai/langsmith-go/internal/requestconfig"
+	"github.com/langchain-ai/langsmith-go/option"
+	"github.com/langchain-ai/langsmith-go/packages/pagination"
 )
 
 // AnnotationQueueService contains methods and other services that help with
@@ -247,7 +247,7 @@ type AnnotationQueueSchema struct {
 	DefaultDataset      string                         `json:"default_dataset,nullable" format:"uuid"`
 	Description         string                         `json:"description,nullable"`
 	EnableReservations  bool                           `json:"enable_reservations,nullable"`
-	Metadata            interface{}                    `json:"metadata,nullable"`
+	Metadata            map[string]interface{}         `json:"metadata,nullable"`
 	NumReviewersPerItem int64                          `json:"num_reviewers_per_item,nullable"`
 	ReservationMinutes  int64                          `json:"reservation_minutes,nullable"`
 	RunRuleID           string                         `json:"run_rule_id,nullable" format:"uuid"`
@@ -344,22 +344,23 @@ type RunSchemaWithAnnotationQueueInfo struct {
 	EffectiveAddedAt       time.Time                                 `json:"effective_added_at,nullable" format:"date-time"`
 	EndTime                time.Time                                 `json:"end_time,nullable" format:"date-time"`
 	Error                  string                                    `json:"error,nullable"`
-	Events                 []interface{}                             `json:"events,nullable"`
+	Events                 []map[string]interface{}                  `json:"events,nullable"`
 	ExecutionOrder         int64                                     `json:"execution_order"`
-	Extra                  interface{}                               `json:"extra,nullable"`
-	FeedbackStats          map[string]interface{}                    `json:"feedback_stats,nullable"`
+	Extra                  map[string]interface{}                    `json:"extra,nullable"`
+	FeedbackStats          map[string]map[string]interface{}         `json:"feedback_stats,nullable"`
 	FirstTokenTime         time.Time                                 `json:"first_token_time,nullable" format:"date-time"`
 	InDataset              bool                                      `json:"in_dataset,nullable"`
-	Inputs                 interface{}                               `json:"inputs,nullable"`
+	Inputs                 map[string]interface{}                    `json:"inputs,nullable"`
 	InputsPreview          string                                    `json:"inputs_preview,nullable"`
-	InputsS3URLs           interface{}                               `json:"inputs_s3_urls,nullable"`
+	InputsS3URLs           map[string]interface{}                    `json:"inputs_s3_urls,nullable"`
 	LastQueuedAt           time.Time                                 `json:"last_queued_at,nullable" format:"date-time"`
 	LastReviewedTime       time.Time                                 `json:"last_reviewed_time,nullable" format:"date-time"`
 	ManifestID             string                                    `json:"manifest_id,nullable" format:"uuid"`
 	ManifestS3ID           string                                    `json:"manifest_s3_id,nullable" format:"uuid"`
-	Outputs                interface{}                               `json:"outputs,nullable"`
+	Messages               []map[string]interface{}                  `json:"messages,nullable"`
+	Outputs                map[string]interface{}                    `json:"outputs,nullable"`
 	OutputsPreview         string                                    `json:"outputs_preview,nullable"`
-	OutputsS3URLs          interface{}                               `json:"outputs_s3_urls,nullable"`
+	OutputsS3URLs          map[string]interface{}                    `json:"outputs_s3_urls,nullable"`
 	ParentRunID            string                                    `json:"parent_run_id,nullable" format:"uuid"`
 	ParentRunIDs           []string                                  `json:"parent_run_ids,nullable" format:"uuid"`
 	PriceModelID           string                                    `json:"price_model_id,nullable" format:"uuid"`
@@ -369,8 +370,8 @@ type RunSchemaWithAnnotationQueueInfo struct {
 	PromptTokens           int64                                     `json:"prompt_tokens"`
 	ReferenceDatasetID     string                                    `json:"reference_dataset_id,nullable" format:"uuid"`
 	ReferenceExampleID     string                                    `json:"reference_example_id,nullable" format:"uuid"`
-	S3URLs                 interface{}                               `json:"s3_urls,nullable"`
-	Serialized             interface{}                               `json:"serialized,nullable"`
+	S3URLs                 map[string]interface{}                    `json:"s3_urls,nullable"`
+	Serialized             map[string]interface{}                    `json:"serialized,nullable"`
 	ShareToken             string                                    `json:"share_token,nullable" format:"uuid"`
 	StartTime              time.Time                                 `json:"start_time" format:"date-time"`
 	Tags                   []string                                  `json:"tags,nullable"`
@@ -421,6 +422,7 @@ type runSchemaWithAnnotationQueueInfoJSON struct {
 	LastReviewedTime       apijson.Field
 	ManifestID             apijson.Field
 	ManifestS3ID           apijson.Field
+	Messages               apijson.Field
 	Outputs                apijson.Field
 	OutputsPreview         apijson.Field
 	OutputsS3URLs          apijson.Field
@@ -505,7 +507,7 @@ type AnnotationQueueGetResponse struct {
 	DefaultDataset      string                              `json:"default_dataset,nullable" format:"uuid"`
 	Description         string                              `json:"description,nullable"`
 	EnableReservations  bool                                `json:"enable_reservations,nullable"`
-	Metadata            interface{}                         `json:"metadata,nullable"`
+	Metadata            map[string]interface{}              `json:"metadata,nullable"`
 	NumReviewersPerItem int64                               `json:"num_reviewers_per_item,nullable"`
 	ReservationMinutes  int64                               `json:"reservation_minutes,nullable"`
 	RubricInstructions  string                              `json:"rubric_instructions,nullable"`
@@ -583,7 +585,7 @@ type AnnotationQueueGetAnnotationQueuesResponse struct {
 	DefaultDataset      string                                              `json:"default_dataset,nullable" format:"uuid"`
 	Description         string                                              `json:"description,nullable"`
 	EnableReservations  bool                                                `json:"enable_reservations,nullable"`
-	Metadata            interface{}                                         `json:"metadata,nullable"`
+	Metadata            map[string]interface{}                              `json:"metadata,nullable"`
 	NumReviewersPerItem int64                                               `json:"num_reviewers_per_item,nullable"`
 	ReservationMinutes  int64                                               `json:"reservation_minutes,nullable"`
 	RunRuleID           string                                              `json:"run_rule_id,nullable" format:"uuid"`
@@ -638,19 +640,34 @@ func (r AnnotationQueueGetAnnotationQueuesResponseQueueType) IsKnown() bool {
 }
 
 type AnnotationQueueUpdateParams struct {
-	DefaultDataset      param.Field[string]                                 `json:"default_dataset" format:"uuid"`
-	Description         param.Field[string]                                 `json:"description"`
-	EnableReservations  param.Field[bool]                                   `json:"enable_reservations"`
-	Metadata            param.Field[MissingParam]                           `json:"metadata"`
-	Name                param.Field[string]                                 `json:"name"`
-	NumReviewersPerItem param.Field[int64]                                  `json:"num_reviewers_per_item"`
-	ReservationMinutes  param.Field[int64]                                  `json:"reservation_minutes"`
-	RubricInstructions  param.Field[string]                                 `json:"rubric_instructions"`
-	RubricItems         param.Field[[]AnnotationQueueRubricItemSchemaParam] `json:"rubric_items"`
+	DefaultDataset      param.Field[string]                                              `json:"default_dataset" format:"uuid"`
+	Description         param.Field[string]                                              `json:"description"`
+	EnableReservations  param.Field[bool]                                                `json:"enable_reservations"`
+	Metadata            param.Field[AnnotationQueueUpdateParamsMetadataUnion]            `json:"metadata"`
+	Name                param.Field[string]                                              `json:"name"`
+	NumReviewersPerItem param.Field[AnnotationQueueUpdateParamsNumReviewersPerItemUnion] `json:"num_reviewers_per_item"`
+	ReservationMinutes  param.Field[int64]                                               `json:"reservation_minutes"`
+	RubricInstructions  param.Field[string]                                              `json:"rubric_instructions"`
+	RubricItems         param.Field[[]AnnotationQueueRubricItemSchemaParam]              `json:"rubric_items"`
 }
 
 func (r AnnotationQueueUpdateParams) MarshalJSON() (data []byte, err error) {
 	return apijson.MarshalRoot(r)
+}
+
+// Satisfied by [AnnotationQueueUpdateParamsMetadataMap], [MissingParam].
+type AnnotationQueueUpdateParamsMetadataUnion interface {
+	implementsAnnotationQueueUpdateParamsMetadataUnion()
+}
+
+type AnnotationQueueUpdateParamsMetadataMap map[string]interface{}
+
+func (r AnnotationQueueUpdateParamsMetadataMap) implementsAnnotationQueueUpdateParamsMetadataUnion() {
+}
+
+// Satisfied by [shared.UnionInt], [MissingParam].
+type AnnotationQueueUpdateParamsNumReviewersPerItemUnion interface {
+	ImplementsAnnotationQueueUpdateParamsNumReviewersPerItemUnion()
 }
 
 type AnnotationQueueAnnotationQueuesParams struct {
@@ -660,7 +677,7 @@ type AnnotationQueueAnnotationQueuesParams struct {
 	DefaultDataset      param.Field[string]                                 `json:"default_dataset" format:"uuid"`
 	Description         param.Field[string]                                 `json:"description"`
 	EnableReservations  param.Field[bool]                                   `json:"enable_reservations"`
-	Metadata            param.Field[interface{}]                            `json:"metadata"`
+	Metadata            param.Field[map[string]interface{}]                 `json:"metadata"`
 	NumReviewersPerItem param.Field[int64]                                  `json:"num_reviewers_per_item"`
 	ReservationMinutes  param.Field[int64]                                  `json:"reservation_minutes"`
 	RubricInstructions  param.Field[string]                                 `json:"rubric_instructions"`

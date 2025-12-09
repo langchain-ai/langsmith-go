@@ -1,6 +1,6 @@
 # LangChain Go API Library
 
-<a href="https://pkg.go.dev/github.com/stainless-sdks/langsmith-api-go"><img src="https://pkg.go.dev/badge/github.com/stainless-sdks/langsmith-api-go.svg" alt="Go Reference"></a>
+<a href="https://pkg.go.dev/github.com/langchain-ai/langsmith-go"><img src="https://pkg.go.dev/badge/github.com/langchain-ai/langsmith-go.svg" alt="Go Reference"></a>
 
 The LangChain Go library provides convenient access to the LangChain REST API
 from applications written in Go.
@@ -9,21 +9,65 @@ It is generated with [Stainless](https://www.stainless.com/).
 
 ## Installation
 
+<!-- x-release-please-start-version -->
+
 ```go
 import (
-	"github.com/stainless-sdks/langsmith-api-go" // imported as langsmith
+	"github.com/langchain-ai/langsmith-go" // imported as langsmith
 )
 ```
 
+<!-- x-release-please-end -->
+
 Or to pin the version:
 
+<!-- x-release-please-start-version -->
+
 ```sh
-go get -u 'github.com/stainless-sdks/langsmith-api-go@v0.0.1'
+go get -u 'github.com/langchain-ai/langsmith-go@v0.1.0-alpha.1'
 ```
+
+<!-- x-release-please-end -->
 
 ## Requirements
 
 This library requires Go 1.22+.
+
+## Configuration
+
+The client can be configured using environment variables or by passing options directly to `langsmith.NewClient()`. Environment variables are automatically read when creating a new client.
+
+### Environment Variables
+
+| Variable | Required | Description |
+|----------|----------|-------------|
+| `LANGSMITH_API_KEY` | Optional* | Your LangSmith API key for authentication |
+| `LANGSMITH_BEARER_TOKEN` | Optional* | Bearer token for authentication (alternative to API key) |
+| `LANGSMITH_TENANT_ID` | Optional | Your LangSmith tenant ID |
+| `LANGSMITH_ORGANIZATION_ID` | Optional | Your LangSmith organization ID |
+| `LANGCHAIN_BASE_URL` | Optional | Custom base URL for the LangSmith API (defaults to `https://api.smith.langchain.com`) |
+
+\* Either `LANGSMITH_API_KEY` or `LANGSMITH_BEARER_TOKEN` is required for authentication.
+
+## Examples
+
+This repository includes several examples demonstrating common use cases:
+
+- **[List Runs](./examples/list_runs)** - Query and filter runs from your LangSmith project
+- **[Dataset Management](./examples/dataset)** - Create datasets, add examples individually or in bulk, and manage dataset lifecycle
+- **[E2E Evaluation](./examples/e2e_eval)** - Run OpenAI experiments with automatic OpenTelemetry tracing linked to dataset examples
+- **[Record Experiment](./examples/record_experiment)** - Create datasets, examples, sessions, and batch ingest runs for experiments
+- **[Prompt Management](./examples/prompt_management)** - Create and manage prompt repositories, commits, and versions
+- **[OpenTelemetry Ingestion](./examples/otel_ingestion)** - Send OpenTelemetry traces to LangSmith with hierarchical span structure
+- **[OpenTelemetry + OpenAI](./examples/otel_openai)** - Make OpenAI API calls with automatic OpenTelemetry tracing to LangSmith
+
+Each example includes detailed documentation in its source code. To run an example:
+
+```sh
+go run ./examples/<example-name>
+```
+
+Make sure to set the required environment variables `LANGSMITH_API_KEY` before running and `OPENAI_API_KEY` for the OpenAI examples.
 
 ## Usage
 
@@ -36,8 +80,8 @@ import (
 	"context"
 	"fmt"
 
-	"github.com/stainless-sdks/langsmith-api-go"
-	"github.com/stainless-sdks/langsmith-api-go/option"
+	"github.com/langchain-ai/langsmith-go"
+	"github.com/langchain-ai/langsmith-go/option"
 )
 
 func main() {
@@ -46,7 +90,7 @@ func main() {
 	)
 	customChartsSection, err := client.Sessions.Dashboard(
 		context.TODO(),
-		"REPLACE_ME",
+		"1ffaeba7-541e-469f-bae7-df3208ea3d45",
 		langsmith.SessionDashboardParams{
 			CustomChartsSectionRequest: langsmith.CustomChartsSectionRequestParam{},
 		},
@@ -151,7 +195,7 @@ client.Sessions.Dashboard(context.TODO(), ...,
 )
 ```
 
-See the [full list of request options](https://pkg.go.dev/github.com/stainless-sdks/langsmith-api-go/option).
+See the [full list of request options](https://pkg.go.dev/github.com/langchain-ai/langsmith-go/option).
 
 ### Pagination
 
@@ -159,8 +203,37 @@ This library provides some conveniences for working with paginated list endpoint
 
 You can use `.ListAutoPaging()` methods to iterate through items across all pages:
 
+```go
+iter := client.Datasets.ListAutoPaging(context.TODO(), langsmith.DatasetListParams{
+	Limit: langsmith.F(int64(100)),
+})
+// Automatically fetches more pages as needed.
+for iter.Next() {
+	dataset := iter.Current()
+	fmt.Printf("%+v\n", dataset)
+}
+if err := iter.Err(); err != nil {
+	panic(err.Error())
+}
+```
+
 Or you can use simple `.List()` methods to fetch a single page and receive a standard response object
 with additional helper methods like `.GetNextPage()`, e.g.:
+
+```go
+page, err := client.Datasets.List(context.TODO(), langsmith.DatasetListParams{
+	Limit: langsmith.F(int64(100)),
+})
+for page != nil {
+	for _, dataset := range page.Items {
+		fmt.Printf("%+v\n", dataset)
+	}
+	page, err = page.GetNextPage()
+}
+if err != nil {
+	panic(err.Error())
+}
+```
 
 ### Errors
 
@@ -174,7 +247,7 @@ To handle errors, we recommend that you use the `errors.As` pattern:
 ```go
 _, err := client.Sessions.Dashboard(
 	context.TODO(),
-	"REPLACE_ME",
+	"1ffaeba7-541e-469f-bae7-df3208ea3d45",
 	langsmith.SessionDashboardParams{
 		CustomChartsSectionRequest: langsmith.CustomChartsSectionRequestParam{},
 	},
@@ -205,7 +278,7 @@ ctx, cancel := context.WithTimeout(context.Background(), 5*time.Minute)
 defer cancel()
 client.Sessions.Dashboard(
 	ctx,
-	"REPLACE_ME",
+	"1ffaeba7-541e-469f-bae7-df3208ea3d45",
 	langsmith.SessionDashboardParams{
 		CustomChartsSectionRequest: langsmith.CustomChartsSectionRequestParam{},
 	},
@@ -265,7 +338,7 @@ client := langsmith.NewClient(
 // Override per-request:
 client.Sessions.Dashboard(
 	context.TODO(),
-	"REPLACE_ME",
+	"1ffaeba7-541e-469f-bae7-df3208ea3d45",
 	langsmith.SessionDashboardParams{
 		CustomChartsSectionRequest: langsmith.CustomChartsSectionRequestParam{},
 	},
@@ -283,7 +356,7 @@ you need to examine response headers, status codes, or other details.
 var response *http.Response
 customChartsSection, err := client.Sessions.Dashboard(
 	context.TODO(),
-	"REPLACE_ME",
+	"1ffaeba7-541e-469f-bae7-df3208ea3d45",
 	langsmith.SessionDashboardParams{
 		CustomChartsSectionRequest: langsmith.CustomChartsSectionRequestParam{},
 	},
@@ -393,7 +466,7 @@ This package generally follows [SemVer](https://semver.org/spec/v2.0.0.html) con
 
 We take backwards-compatibility seriously and work hard to ensure you can rely on a smooth upgrade experience.
 
-We are keen for your feedback; please open an [issue](https://www.github.com/stainless-sdks/langsmith-api-go/issues) with questions, bugs, or suggestions.
+We are keen for your feedback; please open an [issue](https://www.github.com/langchain-ai/langsmith-go/issues) with questions, bugs, or suggestions.
 
 ## Contributing
 

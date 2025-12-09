@@ -9,9 +9,9 @@ import (
 	"testing"
 	"time"
 
-	"github.com/stainless-sdks/langsmith-api-go"
-	"github.com/stainless-sdks/langsmith-api-go/internal/testutil"
-	"github.com/stainless-sdks/langsmith-api-go/option"
+	"github.com/langchain-ai/langsmith-go"
+	"github.com/langchain-ai/langsmith-go/internal/testutil"
+	"github.com/langchain-ai/langsmith-go/option"
 )
 
 func TestDatasetComparativeNewWithOptionalParams(t *testing.T) {
@@ -30,11 +30,13 @@ func TestDatasetComparativeNewWithOptionalParams(t *testing.T) {
 		option.WithOrganizationID("My Organization ID"),
 	)
 	_, err := client.Datasets.Comparative.New(context.TODO(), langsmith.DatasetComparativeNewParams{
-		ExperimentIDs:      langsmith.F([]string{"182bd5e5-6e1a-4fe4-a799-aa6d9a6ab26e"}),
-		ID:                 langsmith.F("182bd5e5-6e1a-4fe4-a799-aa6d9a6ab26e"),
-		CreatedAt:          langsmith.F(time.Now()),
-		Description:        langsmith.F("description"),
-		Extra:              langsmith.F[any](map[string]interface{}{}),
+		ExperimentIDs: langsmith.F([]string{"182bd5e5-6e1a-4fe4-a799-aa6d9a6ab26e"}),
+		ID:            langsmith.F("182bd5e5-6e1a-4fe4-a799-aa6d9a6ab26e"),
+		CreatedAt:     langsmith.F(time.Now()),
+		Description:   langsmith.F("description"),
+		Extra: langsmith.F(map[string]interface{}{
+			"foo": "bar",
+		}),
 		ModifiedAt:         langsmith.F(time.Now()),
 		Name:               langsmith.F("name"),
 		ReferenceDatasetID: langsmith.F("182bd5e5-6e1a-4fe4-a799-aa6d9a6ab26e"),

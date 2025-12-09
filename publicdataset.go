@@ -11,12 +11,12 @@ import (
 	"slices"
 	"time"
 
-	"github.com/stainless-sdks/langsmith-api-go/internal/apijson"
-	"github.com/stainless-sdks/langsmith-api-go/internal/apiquery"
-	"github.com/stainless-sdks/langsmith-api-go/internal/param"
-	"github.com/stainless-sdks/langsmith-api-go/internal/requestconfig"
-	"github.com/stainless-sdks/langsmith-api-go/option"
-	"github.com/stainless-sdks/langsmith-api-go/packages/pagination"
+	"github.com/langchain-ai/langsmith-go/internal/apijson"
+	"github.com/langchain-ai/langsmith-go/internal/apiquery"
+	"github.com/langchain-ai/langsmith-go/internal/param"
+	"github.com/langchain-ai/langsmith-go/internal/requestconfig"
+	"github.com/langchain-ai/langsmith-go/option"
+	"github.com/langchain-ai/langsmith-go/packages/pagination"
 )
 
 // PublicDatasetService contains methods and other services that help with
@@ -155,8 +155,8 @@ type PublicDatasetListResponse struct {
 	DataType                DataType                      `json:"data_type,nullable"`
 	Description             string                        `json:"description,nullable"`
 	ExternallyManaged       bool                          `json:"externally_managed,nullable"`
-	InputsSchemaDefinition  interface{}                   `json:"inputs_schema_definition,nullable"`
-	OutputsSchemaDefinition interface{}                   `json:"outputs_schema_definition,nullable"`
+	InputsSchemaDefinition  map[string]interface{}        `json:"inputs_schema_definition,nullable"`
+	OutputsSchemaDefinition map[string]interface{}        `json:"outputs_schema_definition,nullable"`
 	Transformations         []DatasetTransformation       `json:"transformations,nullable"`
 	JSON                    publicDatasetListResponseJSON `json:"-"`
 }
@@ -193,8 +193,8 @@ type PublicDatasetListComparativeResponse struct {
 	ExperimentsInfo []SimpleExperimentInfo                   `json:"experiments_info,required"`
 	ModifiedAt      time.Time                                `json:"modified_at,required" format:"date-time"`
 	Description     string                                   `json:"description,nullable"`
-	Extra           interface{}                              `json:"extra,nullable"`
-	FeedbackStats   interface{}                              `json:"feedback_stats,nullable"`
+	Extra           map[string]interface{}                   `json:"extra,nullable"`
+	FeedbackStats   map[string]interface{}                   `json:"feedback_stats,nullable"`
 	Name            string                                   `json:"name,nullable"`
 	JSON            publicDatasetListComparativeResponseJSON `json:"-"`
 }

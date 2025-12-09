@@ -11,11 +11,11 @@ import (
 	"slices"
 	"time"
 
-	"github.com/stainless-sdks/langsmith-api-go/internal/apijson"
-	"github.com/stainless-sdks/langsmith-api-go/internal/param"
-	"github.com/stainless-sdks/langsmith-api-go/internal/requestconfig"
-	"github.com/stainless-sdks/langsmith-api-go/option"
-	"github.com/stainless-sdks/langsmith-api-go/shared"
+	"github.com/langchain-ai/langsmith-go/internal/apijson"
+	"github.com/langchain-ai/langsmith-go/internal/param"
+	"github.com/langchain-ai/langsmith-go/internal/requestconfig"
+	"github.com/langchain-ai/langsmith-go/option"
+	"github.com/langchain-ai/langsmith-go/shared"
 	"github.com/tidwall/gjson"
 )
 
@@ -120,7 +120,7 @@ type DatasetGroupRunsResponseGroup struct {
 	CompletionTokens int64                                       `json:"completion_tokens,nullable"`
 	Count            int64                                       `json:"count,nullable"`
 	ErrorRate        float64                                     `json:"error_rate,nullable"`
-	FeedbackStats    interface{}                                 `json:"feedback_stats,nullable"`
+	FeedbackStats    map[string]interface{}                      `json:"feedback_stats,nullable"`
 	LatencyP50       float64                                     `json:"latency_p50,nullable"`
 	LatencyP99       float64                                     `json:"latency_p99,nullable"`
 	MaxStartTime     time.Time                                   `json:"max_start_time,nullable" format:"date-time"`
@@ -204,8 +204,8 @@ type DatasetGroupRunsResponseGroupsSession struct {
 	EndTime              time.Time                                       `json:"end_time,nullable" format:"date-time"`
 	ErrorRate            float64                                         `json:"error_rate,nullable"`
 	ExampleCount         int64                                           `json:"example_count,nullable"`
-	Extra                interface{}                                     `json:"extra,nullable"`
-	FeedbackStats        interface{}                                     `json:"feedback_stats,nullable"`
+	Extra                map[string]interface{}                          `json:"extra,nullable"`
+	FeedbackStats        map[string]interface{}                          `json:"feedback_stats,nullable"`
 	FirstTokenP50        float64                                         `json:"first_token_p50,nullable"`
 	FirstTokenP99        float64                                         `json:"first_token_p99,nullable"`
 	LastRunStartTime     time.Time                                       `json:"last_run_start_time,nullable" format:"date-time"`
@@ -219,8 +219,8 @@ type DatasetGroupRunsResponseGroupsSession struct {
 	PromptTokens         int64                                           `json:"prompt_tokens,nullable"`
 	ReferenceDatasetID   string                                          `json:"reference_dataset_id,nullable" format:"uuid"`
 	RunCount             int64                                           `json:"run_count,nullable"`
-	RunFacets            []interface{}                                   `json:"run_facets,nullable"`
-	SessionFeedbackStats interface{}                                     `json:"session_feedback_stats,nullable"`
+	RunFacets            []map[string]interface{}                        `json:"run_facets,nullable"`
+	SessionFeedbackStats map[string]interface{}                          `json:"session_feedback_stats,nullable"`
 	StartTime            time.Time                                       `json:"start_time" format:"date-time"`
 	StreamingRate        float64                                         `json:"streaming_rate,nullable"`
 	TestRunNumber        int64                                           `json:"test_run_number,nullable"`

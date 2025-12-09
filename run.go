@@ -8,10 +8,10 @@ import (
 	"slices"
 	"time"
 
-	"github.com/stainless-sdks/langsmith-api-go/internal/apijson"
-	"github.com/stainless-sdks/langsmith-api-go/internal/param"
-	"github.com/stainless-sdks/langsmith-api-go/internal/requestconfig"
-	"github.com/stainless-sdks/langsmith-api-go/option"
+	"github.com/langchain-ai/langsmith-go/internal/apijson"
+	"github.com/langchain-ai/langsmith-go/internal/param"
+	"github.com/langchain-ai/langsmith-go/internal/requestconfig"
+	"github.com/langchain-ai/langsmith-go/option"
 )
 
 // RunService contains methods and other services that help with interacting with
@@ -155,57 +155,58 @@ type RunQueryResponseRun struct {
 	DottedOrder string `json:"dotted_order,required"`
 	Name        string `json:"name,required"`
 	// Enum for run types.
-	RunType                RunQueryResponseRunsRunType   `json:"run_type,required"`
-	SessionID              string                        `json:"session_id,required" format:"uuid"`
-	Status                 string                        `json:"status,required"`
-	TraceID                string                        `json:"trace_id,required" format:"uuid"`
-	ChildRunIDs            []string                      `json:"child_run_ids,nullable" format:"uuid"`
-	CompletionCost         string                        `json:"completion_cost,nullable"`
-	CompletionCostDetails  map[string]string             `json:"completion_cost_details,nullable"`
-	CompletionTokenDetails map[string]int64              `json:"completion_token_details,nullable"`
-	CompletionTokens       int64                         `json:"completion_tokens"`
-	DirectChildRunIDs      []string                      `json:"direct_child_run_ids,nullable" format:"uuid"`
-	EndTime                time.Time                     `json:"end_time,nullable" format:"date-time"`
-	Error                  string                        `json:"error,nullable"`
-	Events                 []interface{}                 `json:"events,nullable"`
-	ExecutionOrder         int64                         `json:"execution_order"`
-	Extra                  interface{}                   `json:"extra,nullable"`
-	FeedbackStats          map[string]interface{}        `json:"feedback_stats,nullable"`
-	FirstTokenTime         time.Time                     `json:"first_token_time,nullable" format:"date-time"`
-	InDataset              bool                          `json:"in_dataset,nullable"`
-	Inputs                 interface{}                   `json:"inputs,nullable"`
-	InputsPreview          string                        `json:"inputs_preview,nullable"`
-	InputsS3URLs           interface{}                   `json:"inputs_s3_urls,nullable"`
-	LastQueuedAt           time.Time                     `json:"last_queued_at,nullable" format:"date-time"`
-	ManifestID             string                        `json:"manifest_id,nullable" format:"uuid"`
-	ManifestS3ID           string                        `json:"manifest_s3_id,nullable" format:"uuid"`
-	Outputs                interface{}                   `json:"outputs,nullable"`
-	OutputsPreview         string                        `json:"outputs_preview,nullable"`
-	OutputsS3URLs          interface{}                   `json:"outputs_s3_urls,nullable"`
-	ParentRunID            string                        `json:"parent_run_id,nullable" format:"uuid"`
-	ParentRunIDs           []string                      `json:"parent_run_ids,nullable" format:"uuid"`
-	PriceModelID           string                        `json:"price_model_id,nullable" format:"uuid"`
-	PromptCost             string                        `json:"prompt_cost,nullable"`
-	PromptCostDetails      map[string]string             `json:"prompt_cost_details,nullable"`
-	PromptTokenDetails     map[string]int64              `json:"prompt_token_details,nullable"`
-	PromptTokens           int64                         `json:"prompt_tokens"`
-	ReferenceDatasetID     string                        `json:"reference_dataset_id,nullable" format:"uuid"`
-	ReferenceExampleID     string                        `json:"reference_example_id,nullable" format:"uuid"`
-	S3URLs                 interface{}                   `json:"s3_urls,nullable"`
-	Serialized             interface{}                   `json:"serialized,nullable"`
-	ShareToken             string                        `json:"share_token,nullable" format:"uuid"`
-	StartTime              time.Time                     `json:"start_time" format:"date-time"`
-	Tags                   []string                      `json:"tags,nullable"`
-	ThreadID               string                        `json:"thread_id,nullable"`
-	TotalCost              string                        `json:"total_cost,nullable"`
-	TotalTokens            int64                         `json:"total_tokens"`
-	TraceFirstReceivedAt   time.Time                     `json:"trace_first_received_at,nullable" format:"date-time"`
-	TraceMaxStartTime      time.Time                     `json:"trace_max_start_time,nullable" format:"date-time"`
-	TraceMinStartTime      time.Time                     `json:"trace_min_start_time,nullable" format:"date-time"`
-	TraceTier              RunQueryResponseRunsTraceTier `json:"trace_tier,nullable"`
-	TraceUpgrade           bool                          `json:"trace_upgrade"`
-	TtlSeconds             int64                         `json:"ttl_seconds,nullable"`
-	JSON                   runQueryResponseRunJSON       `json:"-"`
+	RunType                RunQueryResponseRunsRunType       `json:"run_type,required"`
+	SessionID              string                            `json:"session_id,required" format:"uuid"`
+	Status                 string                            `json:"status,required"`
+	TraceID                string                            `json:"trace_id,required" format:"uuid"`
+	ChildRunIDs            []string                          `json:"child_run_ids,nullable" format:"uuid"`
+	CompletionCost         string                            `json:"completion_cost,nullable"`
+	CompletionCostDetails  map[string]string                 `json:"completion_cost_details,nullable"`
+	CompletionTokenDetails map[string]int64                  `json:"completion_token_details,nullable"`
+	CompletionTokens       int64                             `json:"completion_tokens"`
+	DirectChildRunIDs      []string                          `json:"direct_child_run_ids,nullable" format:"uuid"`
+	EndTime                time.Time                         `json:"end_time,nullable" format:"date-time"`
+	Error                  string                            `json:"error,nullable"`
+	Events                 []map[string]interface{}          `json:"events,nullable"`
+	ExecutionOrder         int64                             `json:"execution_order"`
+	Extra                  map[string]interface{}            `json:"extra,nullable"`
+	FeedbackStats          map[string]map[string]interface{} `json:"feedback_stats,nullable"`
+	FirstTokenTime         time.Time                         `json:"first_token_time,nullable" format:"date-time"`
+	InDataset              bool                              `json:"in_dataset,nullable"`
+	Inputs                 map[string]interface{}            `json:"inputs,nullable"`
+	InputsPreview          string                            `json:"inputs_preview,nullable"`
+	InputsS3URLs           map[string]interface{}            `json:"inputs_s3_urls,nullable"`
+	LastQueuedAt           time.Time                         `json:"last_queued_at,nullable" format:"date-time"`
+	ManifestID             string                            `json:"manifest_id,nullable" format:"uuid"`
+	ManifestS3ID           string                            `json:"manifest_s3_id,nullable" format:"uuid"`
+	Messages               []map[string]interface{}          `json:"messages,nullable"`
+	Outputs                map[string]interface{}            `json:"outputs,nullable"`
+	OutputsPreview         string                            `json:"outputs_preview,nullable"`
+	OutputsS3URLs          map[string]interface{}            `json:"outputs_s3_urls,nullable"`
+	ParentRunID            string                            `json:"parent_run_id,nullable" format:"uuid"`
+	ParentRunIDs           []string                          `json:"parent_run_ids,nullable" format:"uuid"`
+	PriceModelID           string                            `json:"price_model_id,nullable" format:"uuid"`
+	PromptCost             string                            `json:"prompt_cost,nullable"`
+	PromptCostDetails      map[string]string                 `json:"prompt_cost_details,nullable"`
+	PromptTokenDetails     map[string]int64                  `json:"prompt_token_details,nullable"`
+	PromptTokens           int64                             `json:"prompt_tokens"`
+	ReferenceDatasetID     string                            `json:"reference_dataset_id,nullable" format:"uuid"`
+	ReferenceExampleID     string                            `json:"reference_example_id,nullable" format:"uuid"`
+	S3URLs                 map[string]interface{}            `json:"s3_urls,nullable"`
+	Serialized             map[string]interface{}            `json:"serialized,nullable"`
+	ShareToken             string                            `json:"share_token,nullable" format:"uuid"`
+	StartTime              time.Time                         `json:"start_time" format:"date-time"`
+	Tags                   []string                          `json:"tags,nullable"`
+	ThreadID               string                            `json:"thread_id,nullable"`
+	TotalCost              string                            `json:"total_cost,nullable"`
+	TotalTokens            int64                             `json:"total_tokens"`
+	TraceFirstReceivedAt   time.Time                         `json:"trace_first_received_at,nullable" format:"date-time"`
+	TraceMaxStartTime      time.Time                         `json:"trace_max_start_time,nullable" format:"date-time"`
+	TraceMinStartTime      time.Time                         `json:"trace_min_start_time,nullable" format:"date-time"`
+	TraceTier              RunQueryResponseRunsTraceTier     `json:"trace_tier,nullable"`
+	TraceUpgrade           bool                              `json:"trace_upgrade"`
+	TtlSeconds             int64                             `json:"ttl_seconds,nullable"`
+	JSON                   runQueryResponseRunJSON           `json:"-"`
 }
 
 // runQueryResponseRunJSON contains the JSON metadata for the struct
@@ -239,6 +240,7 @@ type runQueryResponseRunJSON struct {
 	LastQueuedAt           apijson.Field
 	ManifestID             apijson.Field
 	ManifestS3ID           apijson.Field
+	Messages               apijson.Field
 	Outputs                apijson.Field
 	OutputsPreview         apijson.Field
 	OutputsS3URLs          apijson.Field
@@ -474,11 +476,12 @@ const (
 	RunQueryParamsSelectTraceUpgrade           RunQueryParamsSelect = "trace_upgrade"
 	RunQueryParamsSelectThreadID               RunQueryParamsSelect = "thread_id"
 	RunQueryParamsSelectTraceMinMaxStartTime   RunQueryParamsSelect = "trace_min_max_start_time"
+	RunQueryParamsSelectMessages               RunQueryParamsSelect = "messages"
 )
 
 func (r RunQueryParamsSelect) IsKnown() bool {
 	switch r {
-	case RunQueryParamsSelectID, RunQueryParamsSelectName, RunQueryParamsSelectRunType, RunQueryParamsSelectStartTime, RunQueryParamsSelectEndTime, RunQueryParamsSelectStatus, RunQueryParamsSelectError, RunQueryParamsSelectExtra, RunQueryParamsSelectEvents, RunQueryParamsSelectInputs, RunQueryParamsSelectInputsPreview, RunQueryParamsSelectInputsS3URLs, RunQueryParamsSelectInputsOrSignedURL, RunQueryParamsSelectOutputs, RunQueryParamsSelectOutputsPreview, RunQueryParamsSelectOutputsS3URLs, RunQueryParamsSelectOutputsOrSignedURL, RunQueryParamsSelectS3URLs, RunQueryParamsSelectErrorOrSignedURL, RunQueryParamsSelectEventsOrSignedURL, RunQueryParamsSelectExtraOrSignedURL, RunQueryParamsSelectSerializedOrSignedURL, RunQueryParamsSelectParentRunID, RunQueryParamsSelectManifestID, RunQueryParamsSelectManifestS3ID, RunQueryParamsSelectManifest, RunQueryParamsSelectSessionID, RunQueryParamsSelectSerialized, RunQueryParamsSelectReferenceExampleID, RunQueryParamsSelectReferenceDatasetID, RunQueryParamsSelectTotalTokens, RunQueryParamsSelectPromptTokens, RunQueryParamsSelectPromptTokenDetails, RunQueryParamsSelectCompletionTokens, RunQueryParamsSelectCompletionTokenDetails, RunQueryParamsSelectTotalCost, RunQueryParamsSelectPromptCost, RunQueryParamsSelectPromptCostDetails, RunQueryParamsSelectCompletionCost, RunQueryParamsSelectCompletionCostDetails, RunQueryParamsSelectPriceModelID, RunQueryParamsSelectFirstTokenTime, RunQueryParamsSelectTraceID, RunQueryParamsSelectDottedOrder, RunQueryParamsSelectLastQueuedAt, RunQueryParamsSelectFeedbackStats, RunQueryParamsSelectChildRunIDs, RunQueryParamsSelectParentRunIDs, RunQueryParamsSelectTags, RunQueryParamsSelectInDataset, RunQueryParamsSelectAppPath, RunQueryParamsSelectShareToken, RunQueryParamsSelectTraceTier, RunQueryParamsSelectTraceFirstReceivedAt, RunQueryParamsSelectTtlSeconds, RunQueryParamsSelectTraceUpgrade, RunQueryParamsSelectThreadID, RunQueryParamsSelectTraceMinMaxStartTime:
+	case RunQueryParamsSelectID, RunQueryParamsSelectName, RunQueryParamsSelectRunType, RunQueryParamsSelectStartTime, RunQueryParamsSelectEndTime, RunQueryParamsSelectStatus, RunQueryParamsSelectError, RunQueryParamsSelectExtra, RunQueryParamsSelectEvents, RunQueryParamsSelectInputs, RunQueryParamsSelectInputsPreview, RunQueryParamsSelectInputsS3URLs, RunQueryParamsSelectInputsOrSignedURL, RunQueryParamsSelectOutputs, RunQueryParamsSelectOutputsPreview, RunQueryParamsSelectOutputsS3URLs, RunQueryParamsSelectOutputsOrSignedURL, RunQueryParamsSelectS3URLs, RunQueryParamsSelectErrorOrSignedURL, RunQueryParamsSelectEventsOrSignedURL, RunQueryParamsSelectExtraOrSignedURL, RunQueryParamsSelectSerializedOrSignedURL, RunQueryParamsSelectParentRunID, RunQueryParamsSelectManifestID, RunQueryParamsSelectManifestS3ID, RunQueryParamsSelectManifest, RunQueryParamsSelectSessionID, RunQueryParamsSelectSerialized, RunQueryParamsSelectReferenceExampleID, RunQueryParamsSelectReferenceDatasetID, RunQueryParamsSelectTotalTokens, RunQueryParamsSelectPromptTokens, RunQueryParamsSelectPromptTokenDetails, RunQueryParamsSelectCompletionTokens, RunQueryParamsSelectCompletionTokenDetails, RunQueryParamsSelectTotalCost, RunQueryParamsSelectPromptCost, RunQueryParamsSelectPromptCostDetails, RunQueryParamsSelectCompletionCost, RunQueryParamsSelectCompletionCostDetails, RunQueryParamsSelectPriceModelID, RunQueryParamsSelectFirstTokenTime, RunQueryParamsSelectTraceID, RunQueryParamsSelectDottedOrder, RunQueryParamsSelectLastQueuedAt, RunQueryParamsSelectFeedbackStats, RunQueryParamsSelectChildRunIDs, RunQueryParamsSelectParentRunIDs, RunQueryParamsSelectTags, RunQueryParamsSelectInDataset, RunQueryParamsSelectAppPath, RunQueryParamsSelectShareToken, RunQueryParamsSelectTraceTier, RunQueryParamsSelectTraceFirstReceivedAt, RunQueryParamsSelectTtlSeconds, RunQueryParamsSelectTraceUpgrade, RunQueryParamsSelectThreadID, RunQueryParamsSelectTraceMinMaxStartTime, RunQueryParamsSelectMessages:
 		return true
 	}
 	return false

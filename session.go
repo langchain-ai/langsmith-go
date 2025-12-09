@@ -8,15 +8,18 @@ import (
 	"fmt"
 	"net/http"
 	"net/url"
+	"reflect"
 	"slices"
 	"time"
 
-	"github.com/stainless-sdks/langsmith-api-go/internal/apijson"
-	"github.com/stainless-sdks/langsmith-api-go/internal/apiquery"
-	"github.com/stainless-sdks/langsmith-api-go/internal/param"
-	"github.com/stainless-sdks/langsmith-api-go/internal/requestconfig"
-	"github.com/stainless-sdks/langsmith-api-go/option"
-	"github.com/stainless-sdks/langsmith-api-go/packages/pagination"
+	"github.com/langchain-ai/langsmith-go/internal/apijson"
+	"github.com/langchain-ai/langsmith-go/internal/apiquery"
+	"github.com/langchain-ai/langsmith-go/internal/param"
+	"github.com/langchain-ai/langsmith-go/internal/requestconfig"
+	"github.com/langchain-ai/langsmith-go/option"
+	"github.com/langchain-ai/langsmith-go/packages/pagination"
+	"github.com/langchain-ai/langsmith-go/shared"
+	"github.com/tidwall/gjson"
 )
 
 // SessionService contains methods and other services that help with interacting
@@ -171,7 +174,7 @@ type CustomChartsSectionChart struct {
 	Title         string                                 `json:"title,required"`
 	CommonFilters CustomChartsSectionChartsCommonFilters `json:"common_filters,nullable"`
 	Description   string                                 `json:"description,nullable"`
-	Metadata      interface{}                            `json:"metadata,nullable"`
+	Metadata      map[string]interface{}                 `json:"metadata,nullable"`
 	JSON          customChartsSectionChartJSON           `json:"-"`
 }
 
@@ -216,11 +219,11 @@ func (r CustomChartsSectionChartsChartType) IsKnown() bool {
 }
 
 type CustomChartsSectionChartsData struct {
-	SeriesID  string                            `json:"series_id,required"`
-	Timestamp time.Time                         `json:"timestamp,required" format:"date-time"`
-	Value     interface{}                       `json:"value,required,nullable"`
-	Group     string                            `json:"group,nullable"`
-	JSON      customChartsSectionChartsDataJSON `json:"-"`
+	SeriesID  string                                  `json:"series_id,required"`
+	Timestamp time.Time                               `json:"timestamp,required" format:"date-time"`
+	Value     CustomChartsSectionChartsDataValueUnion `json:"value,required,nullable"`
+	Group     string                                  `json:"group,nullable"`
+	JSON      customChartsSectionChartsDataJSON       `json:"-"`
 }
 
 // customChartsSectionChartsDataJSON contains the JSON metadata for the struct
@@ -241,6 +244,31 @@ func (r *CustomChartsSectionChartsData) UnmarshalJSON(data []byte) (err error) {
 func (r customChartsSectionChartsDataJSON) RawJSON() string {
 	return r.raw
 }
+
+// Union satisfied by [shared.UnionFloat] or
+// [CustomChartsSectionChartsDataValueMap].
+type CustomChartsSectionChartsDataValueUnion interface {
+	ImplementsCustomChartsSectionChartsDataValueUnion()
+}
+
+func init() {
+	apijson.RegisterUnion(
+		reflect.TypeOf((*CustomChartsSectionChartsDataValueUnion)(nil)).Elem(),
+		"",
+		apijson.UnionVariant{
+			TypeFilter: gjson.Number,
+			Type:       reflect.TypeOf(shared.UnionFloat(0)),
+		},
+		apijson.UnionVariant{
+			TypeFilter: gjson.JSON,
+			Type:       reflect.TypeOf(CustomChartsSectionChartsDataValueMap{}),
+		},
+	)
+}
+
+type CustomChartsSectionChartsDataValueMap map[string]interface{}
+
+func (r CustomChartsSectionChartsDataValueMap) ImplementsCustomChartsSectionChartsDataValueUnion() {}
 
 type CustomChartsSectionChartsSeries struct {
 	ID string `json:"id,required" format:"uuid"`
@@ -498,7 +526,7 @@ type CustomChartsSectionSubSectionsChart struct {
 	Title         string                                            `json:"title,required"`
 	CommonFilters CustomChartsSectionSubSectionsChartsCommonFilters `json:"common_filters,nullable"`
 	Description   string                                            `json:"description,nullable"`
-	Metadata      interface{}                                       `json:"metadata,nullable"`
+	Metadata      map[string]interface{}                            `json:"metadata,nullable"`
 	JSON          customChartsSectionSubSectionsChartJSON           `json:"-"`
 }
 
@@ -543,11 +571,11 @@ func (r CustomChartsSectionSubSectionsChartsChartType) IsKnown() bool {
 }
 
 type CustomChartsSectionSubSectionsChartsData struct {
-	SeriesID  string                                       `json:"series_id,required"`
-	Timestamp time.Time                                    `json:"timestamp,required" format:"date-time"`
-	Value     interface{}                                  `json:"value,required,nullable"`
-	Group     string                                       `json:"group,nullable"`
-	JSON      customChartsSectionSubSectionsChartsDataJSON `json:"-"`
+	SeriesID  string                                             `json:"series_id,required"`
+	Timestamp time.Time                                          `json:"timestamp,required" format:"date-time"`
+	Value     CustomChartsSectionSubSectionsChartsDataValueUnion `json:"value,required,nullable"`
+	Group     string                                             `json:"group,nullable"`
+	JSON      customChartsSectionSubSectionsChartsDataJSON       `json:"-"`
 }
 
 // customChartsSectionSubSectionsChartsDataJSON contains the JSON metadata for the
@@ -567,6 +595,32 @@ func (r *CustomChartsSectionSubSectionsChartsData) UnmarshalJSON(data []byte) (e
 
 func (r customChartsSectionSubSectionsChartsDataJSON) RawJSON() string {
 	return r.raw
+}
+
+// Union satisfied by [shared.UnionFloat] or
+// [CustomChartsSectionSubSectionsChartsDataValueMap].
+type CustomChartsSectionSubSectionsChartsDataValueUnion interface {
+	ImplementsCustomChartsSectionSubSectionsChartsDataValueUnion()
+}
+
+func init() {
+	apijson.RegisterUnion(
+		reflect.TypeOf((*CustomChartsSectionSubSectionsChartsDataValueUnion)(nil)).Elem(),
+		"",
+		apijson.UnionVariant{
+			TypeFilter: gjson.Number,
+			Type:       reflect.TypeOf(shared.UnionFloat(0)),
+		},
+		apijson.UnionVariant{
+			TypeFilter: gjson.JSON,
+			Type:       reflect.TypeOf(CustomChartsSectionSubSectionsChartsDataValueMap{}),
+		},
+	)
+}
+
+type CustomChartsSectionSubSectionsChartsDataValueMap map[string]interface{}
+
+func (r CustomChartsSectionSubSectionsChartsDataValueMap) ImplementsCustomChartsSectionSubSectionsChartsDataValueUnion() {
 }
 
 type CustomChartsSectionSubSectionsChartsSeries struct {
@@ -863,36 +917,36 @@ func (r TimedeltaInputParam) MarshalJSON() (data []byte, err error) {
 
 // TracerSession schema.
 type TracerSession struct {
-	ID                   string                 `json:"id,required" format:"uuid"`
-	TenantID             string                 `json:"tenant_id,required" format:"uuid"`
-	CompletionCost       string                 `json:"completion_cost,nullable"`
-	CompletionTokens     int64                  `json:"completion_tokens,nullable"`
-	DefaultDatasetID     string                 `json:"default_dataset_id,nullable" format:"uuid"`
-	Description          string                 `json:"description,nullable"`
-	EndTime              time.Time              `json:"end_time,nullable" format:"date-time"`
-	ErrorRate            float64                `json:"error_rate,nullable"`
-	Extra                interface{}            `json:"extra,nullable"`
-	FeedbackStats        interface{}            `json:"feedback_stats,nullable"`
-	FirstTokenP50        float64                `json:"first_token_p50,nullable"`
-	FirstTokenP99        float64                `json:"first_token_p99,nullable"`
-	LastRunStartTime     time.Time              `json:"last_run_start_time,nullable" format:"date-time"`
-	LastRunStartTimeLive time.Time              `json:"last_run_start_time_live,nullable" format:"date-time"`
-	LatencyP50           float64                `json:"latency_p50,nullable"`
-	LatencyP99           float64                `json:"latency_p99,nullable"`
-	Name                 string                 `json:"name"`
-	PromptCost           string                 `json:"prompt_cost,nullable"`
-	PromptTokens         int64                  `json:"prompt_tokens,nullable"`
-	ReferenceDatasetID   string                 `json:"reference_dataset_id,nullable" format:"uuid"`
-	RunCount             int64                  `json:"run_count,nullable"`
-	RunFacets            []interface{}          `json:"run_facets,nullable"`
-	SessionFeedbackStats interface{}            `json:"session_feedback_stats,nullable"`
-	StartTime            time.Time              `json:"start_time" format:"date-time"`
-	StreamingRate        float64                `json:"streaming_rate,nullable"`
-	TestRunNumber        int64                  `json:"test_run_number,nullable"`
-	TotalCost            string                 `json:"total_cost,nullable"`
-	TotalTokens          int64                  `json:"total_tokens,nullable"`
-	TraceTier            TracerSessionTraceTier `json:"trace_tier,nullable"`
-	JSON                 tracerSessionJSON      `json:"-"`
+	ID                   string                   `json:"id,required" format:"uuid"`
+	TenantID             string                   `json:"tenant_id,required" format:"uuid"`
+	CompletionCost       string                   `json:"completion_cost,nullable"`
+	CompletionTokens     int64                    `json:"completion_tokens,nullable"`
+	DefaultDatasetID     string                   `json:"default_dataset_id,nullable" format:"uuid"`
+	Description          string                   `json:"description,nullable"`
+	EndTime              time.Time                `json:"end_time,nullable" format:"date-time"`
+	ErrorRate            float64                  `json:"error_rate,nullable"`
+	Extra                map[string]interface{}   `json:"extra,nullable"`
+	FeedbackStats        map[string]interface{}   `json:"feedback_stats,nullable"`
+	FirstTokenP50        float64                  `json:"first_token_p50,nullable"`
+	FirstTokenP99        float64                  `json:"first_token_p99,nullable"`
+	LastRunStartTime     time.Time                `json:"last_run_start_time,nullable" format:"date-time"`
+	LastRunStartTimeLive time.Time                `json:"last_run_start_time_live,nullable" format:"date-time"`
+	LatencyP50           float64                  `json:"latency_p50,nullable"`
+	LatencyP99           float64                  `json:"latency_p99,nullable"`
+	Name                 string                   `json:"name"`
+	PromptCost           string                   `json:"prompt_cost,nullable"`
+	PromptTokens         int64                    `json:"prompt_tokens,nullable"`
+	ReferenceDatasetID   string                   `json:"reference_dataset_id,nullable" format:"uuid"`
+	RunCount             int64                    `json:"run_count,nullable"`
+	RunFacets            []map[string]interface{} `json:"run_facets,nullable"`
+	SessionFeedbackStats map[string]interface{}   `json:"session_feedback_stats,nullable"`
+	StartTime            time.Time                `json:"start_time" format:"date-time"`
+	StreamingRate        float64                  `json:"streaming_rate,nullable"`
+	TestRunNumber        int64                    `json:"test_run_number,nullable"`
+	TotalCost            string                   `json:"total_cost,nullable"`
+	TotalTokens          int64                    `json:"total_tokens,nullable"`
+	TraceTier            TracerSessionTraceTier   `json:"trace_tier,nullable"`
+	JSON                 tracerSessionJSON        `json:"-"`
 }
 
 // tracerSessionJSON contains the JSON metadata for the struct [TracerSession]
@@ -960,7 +1014,7 @@ type TracerSessionWithoutVirtualFields struct {
 	DefaultDatasetID     string                                     `json:"default_dataset_id,nullable" format:"uuid"`
 	Description          string                                     `json:"description,nullable"`
 	EndTime              time.Time                                  `json:"end_time,nullable" format:"date-time"`
-	Extra                interface{}                                `json:"extra,nullable"`
+	Extra                map[string]interface{}                     `json:"extra,nullable"`
 	LastRunStartTimeLive time.Time                                  `json:"last_run_start_time_live,nullable" format:"date-time"`
 	Name                 string                                     `json:"name"`
 	ReferenceDatasetID   string                                     `json:"reference_dataset_id,nullable" format:"uuid"`
@@ -1018,7 +1072,7 @@ type SessionNewParams struct {
 	DefaultDatasetID   param.Field[string]                    `json:"default_dataset_id" format:"uuid"`
 	Description        param.Field[string]                    `json:"description"`
 	EndTime            param.Field[time.Time]                 `json:"end_time" format:"date-time"`
-	Extra              param.Field[interface{}]               `json:"extra"`
+	Extra              param.Field[map[string]interface{}]    `json:"extra"`
 	Name               param.Field[string]                    `json:"name"`
 	ReferenceDatasetID param.Field[string]                    `json:"reference_dataset_id" format:"uuid"`
 	StartTime          param.Field[time.Time]                 `json:"start_time" format:"date-time"`
@@ -1070,7 +1124,7 @@ type SessionUpdateParams struct {
 	DefaultDatasetID param.Field[string]                       `json:"default_dataset_id" format:"uuid"`
 	Description      param.Field[string]                       `json:"description"`
 	EndTime          param.Field[time.Time]                    `json:"end_time" format:"date-time"`
-	Extra            param.Field[interface{}]                  `json:"extra"`
+	Extra            param.Field[map[string]interface{}]       `json:"extra"`
 	Name             param.Field[string]                       `json:"name"`
 	TraceTier        param.Field[SessionUpdateParamsTraceTier] `json:"trace_tier"`
 }

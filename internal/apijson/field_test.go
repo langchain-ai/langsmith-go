@@ -4,7 +4,7 @@ import (
 	"testing"
 	"time"
 
-	"github.com/stainless-sdks/langsmith-api-go/internal/param"
+	"github.com/langchain-ai/langsmith-go/internal/param"
 )
 
 type Struct struct {

@@ -11,12 +11,12 @@ import (
 	"slices"
 	"time"
 
-	"github.com/stainless-sdks/langsmith-api-go/internal/apijson"
-	"github.com/stainless-sdks/langsmith-api-go/internal/apiquery"
-	"github.com/stainless-sdks/langsmith-api-go/internal/param"
-	"github.com/stainless-sdks/langsmith-api-go/internal/requestconfig"
-	"github.com/stainless-sdks/langsmith-api-go/option"
-	"github.com/stainless-sdks/langsmith-api-go/packages/pagination"
+	"github.com/langchain-ai/langsmith-go/internal/apijson"
+	"github.com/langchain-ai/langsmith-go/internal/apiquery"
+	"github.com/langchain-ai/langsmith-go/internal/param"
+	"github.com/langchain-ai/langsmith-go/internal/requestconfig"
+	"github.com/langchain-ai/langsmith-go/option"
+	"github.com/langchain-ai/langsmith-go/packages/pagination"
 )
 
 // RepoService contains methods and other services that help with interacting with
@@ -176,6 +176,7 @@ type RepoWithLookups struct {
 	Tags           []string  `json:"tags,required"`
 	TenantID       string    `json:"tenant_id,required" format:"uuid"`
 	UpdatedAt      time.Time `json:"updated_at,required" format:"date-time"`
+	CreatedBy      string    `json:"created_by,nullable"`
 	Description    string    `json:"description,nullable"`
 	LastCommitHash string    `json:"last_commit_hash,nullable"`
 	// Response model for get_commit_manifest.
@@ -205,6 +206,7 @@ type repoWithLookupsJSON struct {
 	Tags                 apijson.Field
 	TenantID             apijson.Field
 	UpdatedAt            apijson.Field
+	CreatedBy            apijson.Field
 	Description          apijson.Field
 	LastCommitHash       apijson.Field
 	LatestCommitManifest apijson.Field

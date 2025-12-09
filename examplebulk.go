@@ -7,10 +7,10 @@ import (
 	"net/http"
 	"slices"
 
-	"github.com/stainless-sdks/langsmith-api-go/internal/apijson"
-	"github.com/stainless-sdks/langsmith-api-go/internal/param"
-	"github.com/stainless-sdks/langsmith-api-go/internal/requestconfig"
-	"github.com/stainless-sdks/langsmith-api-go/option"
+	"github.com/langchain-ai/langsmith-go/internal/apijson"
+	"github.com/langchain-ai/langsmith-go/internal/param"
+	"github.com/langchain-ai/langsmith-go/internal/requestconfig"
+	"github.com/langchain-ai/langsmith-go/option"
 )
 
 // ExampleBulkService contains methods and other services that help with
@@ -66,9 +66,9 @@ type ExampleBulkNewParamsBody struct {
 	DatasetID   param.Field[string]                             `json:"dataset_id,required" format:"uuid"`
 	ID          param.Field[string]                             `json:"id" format:"uuid"`
 	CreatedAt   param.Field[string]                             `json:"created_at"`
-	Inputs      param.Field[interface{}]                        `json:"inputs"`
-	Metadata    param.Field[interface{}]                        `json:"metadata"`
-	Outputs     param.Field[interface{}]                        `json:"outputs"`
+	Inputs      param.Field[map[string]interface{}]             `json:"inputs"`
+	Metadata    param.Field[map[string]interface{}]             `json:"metadata"`
+	Outputs     param.Field[map[string]interface{}]             `json:"outputs"`
 	SourceRunID param.Field[string]                             `json:"source_run_id" format:"uuid"`
 	Split       param.Field[ExampleBulkNewParamsBodySplitUnion] `json:"split"`
 	// Use Legacy Message Format for LLM runs
@@ -103,9 +103,9 @@ type ExampleBulkPatchAllParamsBody struct {
 	ID                    param.Field[string]                                  `json:"id,required" format:"uuid"`
 	AttachmentsOperations param.Field[AttachmentsOperationsParam]              `json:"attachments_operations"`
 	DatasetID             param.Field[string]                                  `json:"dataset_id" format:"uuid"`
-	Inputs                param.Field[interface{}]                             `json:"inputs"`
-	Metadata              param.Field[interface{}]                             `json:"metadata"`
-	Outputs               param.Field[interface{}]                             `json:"outputs"`
+	Inputs                param.Field[map[string]interface{}]                  `json:"inputs"`
+	Metadata              param.Field[map[string]interface{}]                  `json:"metadata"`
+	Outputs               param.Field[map[string]interface{}]                  `json:"outputs"`
 	Overwrite             param.Field[bool]                                    `json:"overwrite"`
 	Split                 param.Field[ExampleBulkPatchAllParamsBodySplitUnion] `json:"split"`
 }
