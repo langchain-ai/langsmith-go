@@ -28,6 +28,7 @@ import (
 type AnnotationQueueService struct {
 	Options []option.RequestOption
 	Runs    *AnnotationQueueRunService
+	Info    *AnnotationQueueInfoService
 }
 
 // NewAnnotationQueueService generates a new service that applies the given options
@@ -37,6 +38,7 @@ func NewAnnotationQueueService(opts ...option.RequestOption) (r *AnnotationQueue
 	r = &AnnotationQueueService{}
 	r.Options = opts
 	r.Runs = NewAnnotationQueueRunService(opts...)
+	r.Info = NewAnnotationQueueInfoService(opts...)
 	return
 }
 

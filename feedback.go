@@ -31,6 +31,7 @@ import (
 type FeedbackService struct {
 	Options []option.RequestOption
 	Tokens  *FeedbackTokenService
+	Configs *FeedbackConfigService
 }
 
 // NewFeedbackService generates a new service that applies the given options to
@@ -40,6 +41,7 @@ func NewFeedbackService(opts ...option.RequestOption) (r *FeedbackService) {
 	r = &FeedbackService{}
 	r.Options = opts
 	r.Tokens = NewFeedbackTokenService(opts...)
+	r.Configs = NewFeedbackConfigService(opts...)
 	return
 }
 
