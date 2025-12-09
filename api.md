@@ -226,15 +226,11 @@ Methods:
 Response Types:
 
 - <a href="https://pkg.go.dev/github.com/langchain-ai/langsmith-go">langsmith</a>.<a href="https://pkg.go.dev/github.com/langchain-ai/langsmith-go#DatasetIndexNewResponse">DatasetIndexNewResponse</a>
-- <a href="https://pkg.go.dev/github.com/langchain-ai/langsmith-go">langsmith</a>.<a href="https://pkg.go.dev/github.com/langchain-ai/langsmith-go#DatasetIndexGetResponse">DatasetIndexGetResponse</a>
-- <a href="https://pkg.go.dev/github.com/langchain-ai/langsmith-go">langsmith</a>.<a href="https://pkg.go.dev/github.com/langchain-ai/langsmith-go#DatasetIndexDeleteAllResponse">DatasetIndexDeleteAllResponse</a>
 - <a href="https://pkg.go.dev/github.com/langchain-ai/langsmith-go">langsmith</a>.<a href="https://pkg.go.dev/github.com/langchain-ai/langsmith-go#DatasetIndexSyncResponse">DatasetIndexSyncResponse</a>
 
 Methods:
 
 - <code title="post /api/v1/datasets/{dataset_id}/index">client.Datasets.Index.<a href="https://pkg.go.dev/github.com/langchain-ai/langsmith-go#DatasetIndexService.New">New</a>(ctx <a href="https://pkg.go.dev/context">context</a>.<a href="https://pkg.go.dev/context#Context">Context</a>, datasetID <a href="https://pkg.go.dev/builtin#string">string</a>, body <a href="https://pkg.go.dev/github.com/langchain-ai/langsmith-go">langsmith</a>.<a href="https://pkg.go.dev/github.com/langchain-ai/langsmith-go#DatasetIndexNewParams">DatasetIndexNewParams</a>) (<a href="https://pkg.go.dev/github.com/langchain-ai/langsmith-go">langsmith</a>.<a href="https://pkg.go.dev/github.com/langchain-ai/langsmith-go#DatasetIndexNewResponse">DatasetIndexNewResponse</a>, <a href="https://pkg.go.dev/builtin#error">error</a>)</code>
-- <code title="get /api/v1/datasets/{dataset_id}/index">client.Datasets.Index.<a href="https://pkg.go.dev/github.com/langchain-ai/langsmith-go#DatasetIndexService.Get">Get</a>(ctx <a href="https://pkg.go.dev/context">context</a>.<a href="https://pkg.go.dev/context#Context">Context</a>, datasetID <a href="https://pkg.go.dev/builtin#string">string</a>) (<a href="https://pkg.go.dev/github.com/langchain-ai/langsmith-go">langsmith</a>.<a href="https://pkg.go.dev/github.com/langchain-ai/langsmith-go#DatasetIndexGetResponse">DatasetIndexGetResponse</a>, <a href="https://pkg.go.dev/builtin#error">error</a>)</code>
-- <code title="delete /api/v1/datasets/{dataset_id}/index">client.Datasets.Index.<a href="https://pkg.go.dev/github.com/langchain-ai/langsmith-go#DatasetIndexService.DeleteAll">DeleteAll</a>(ctx <a href="https://pkg.go.dev/context">context</a>.<a href="https://pkg.go.dev/context#Context">Context</a>, datasetID <a href="https://pkg.go.dev/builtin#string">string</a>) (<a href="https://pkg.go.dev/github.com/langchain-ai/langsmith-go">langsmith</a>.<a href="https://pkg.go.dev/github.com/langchain-ai/langsmith-go#DatasetIndexDeleteAllResponse">DatasetIndexDeleteAllResponse</a>, <a href="https://pkg.go.dev/builtin#error">error</a>)</code>
 - <code title="post /api/v1/datasets/{dataset_id}/index/sync">client.Datasets.Index.<a href="https://pkg.go.dev/github.com/langchain-ai/langsmith-go#DatasetIndexService.Sync">Sync</a>(ctx <a href="https://pkg.go.dev/context">context</a>.<a href="https://pkg.go.dev/context#Context">Context</a>, datasetID <a href="https://pkg.go.dev/builtin#string">string</a>) (<a href="https://pkg.go.dev/github.com/langchain-ai/langsmith-go">langsmith</a>.<a href="https://pkg.go.dev/github.com/langchain-ai/langsmith-go#DatasetIndexSyncResponse">DatasetIndexSyncResponse</a>, <a href="https://pkg.go.dev/builtin#error">error</a>)</code>
 
 ## PlaygroundExperiment
@@ -315,6 +311,12 @@ Methods:
 - <code title="post /api/v1/feedback/tokens/{token}">client.Feedback.Tokens.<a href="https://pkg.go.dev/github.com/langchain-ai/langsmith-go#FeedbackTokenService.Update">Update</a>(ctx <a href="https://pkg.go.dev/context">context</a>.<a href="https://pkg.go.dev/context#Context">Context</a>, token <a href="https://pkg.go.dev/builtin#string">string</a>, body <a href="https://pkg.go.dev/github.com/langchain-ai/langsmith-go">langsmith</a>.<a href="https://pkg.go.dev/github.com/langchain-ai/langsmith-go#FeedbackTokenUpdateParams">FeedbackTokenUpdateParams</a>) (<a href="https://pkg.go.dev/github.com/langchain-ai/langsmith-go">langsmith</a>.<a href="https://pkg.go.dev/github.com/langchain-ai/langsmith-go#FeedbackTokenUpdateResponse">FeedbackTokenUpdateResponse</a>, <a href="https://pkg.go.dev/builtin#error">error</a>)</code>
 - <code title="get /api/v1/feedback/tokens">client.Feedback.Tokens.<a href="https://pkg.go.dev/github.com/langchain-ai/langsmith-go#FeedbackTokenService.List">List</a>(ctx <a href="https://pkg.go.dev/context">context</a>.<a href="https://pkg.go.dev/context#Context">Context</a>, query <a href="https://pkg.go.dev/github.com/langchain-ai/langsmith-go">langsmith</a>.<a href="https://pkg.go.dev/github.com/langchain-ai/langsmith-go#FeedbackTokenListParams">FeedbackTokenListParams</a>) ([]<a href="https://pkg.go.dev/github.com/langchain-ai/langsmith-go">langsmith</a>.<a href="https://pkg.go.dev/github.com/langchain-ai/langsmith-go#FeedbackIngestTokenSchema">FeedbackIngestTokenSchema</a>, <a href="https://pkg.go.dev/builtin#error">error</a>)</code>
 
+## Configs
+
+Methods:
+
+- <code title="delete /api/v1/feedback-configs">client.Feedback.Configs.<a href="https://pkg.go.dev/github.com/langchain-ai/langsmith-go#FeedbackConfigService.Delete">Delete</a>(ctx <a href="https://pkg.go.dev/context">context</a>.<a href="https://pkg.go.dev/context#Context">Context</a>, body <a href="https://pkg.go.dev/github.com/langchain-ai/langsmith-go">langsmith</a>.<a href="https://pkg.go.dev/github.com/langchain-ai/langsmith-go#FeedbackConfigDeleteParams">FeedbackConfigDeleteParams</a>) <a href="https://pkg.go.dev/builtin#error">error</a></code>
+
 # Public
 
 Methods:
@@ -389,6 +391,16 @@ Methods:
 - <code title="post /api/v1/annotation-queues/{queue_id}/runs/delete">client.AnnotationQueues.Runs.<a href="https://pkg.go.dev/github.com/langchain-ai/langsmith-go#AnnotationQueueRunService.DeleteAll">DeleteAll</a>(ctx <a href="https://pkg.go.dev/context">context</a>.<a href="https://pkg.go.dev/context#Context">Context</a>, queueID <a href="https://pkg.go.dev/builtin#string">string</a>, body <a href="https://pkg.go.dev/github.com/langchain-ai/langsmith-go">langsmith</a>.<a href="https://pkg.go.dev/github.com/langchain-ai/langsmith-go#AnnotationQueueRunDeleteAllParams">AnnotationQueueRunDeleteAllParams</a>) (<a href="https://pkg.go.dev/github.com/langchain-ai/langsmith-go">langsmith</a>.<a href="https://pkg.go.dev/github.com/langchain-ai/langsmith-go#AnnotationQueueRunDeleteAllResponse">AnnotationQueueRunDeleteAllResponse</a>, <a href="https://pkg.go.dev/builtin#error">error</a>)</code>
 - <code title="delete /api/v1/annotation-queues/{queue_id}/runs/{queue_run_id}">client.AnnotationQueues.Runs.<a href="https://pkg.go.dev/github.com/langchain-ai/langsmith-go#AnnotationQueueRunService.DeleteQueue">DeleteQueue</a>(ctx <a href="https://pkg.go.dev/context">context</a>.<a href="https://pkg.go.dev/context#Context">Context</a>, queueID <a href="https://pkg.go.dev/builtin#string">string</a>, queueRunID <a href="https://pkg.go.dev/builtin#string">string</a>) (<a href="https://pkg.go.dev/github.com/langchain-ai/langsmith-go">langsmith</a>.<a href="https://pkg.go.dev/github.com/langchain-ai/langsmith-go#AnnotationQueueRunDeleteQueueResponse">AnnotationQueueRunDeleteQueueResponse</a>, <a href="https://pkg.go.dev/builtin#error">error</a>)</code>
 
+## Info
+
+Response Types:
+
+- <a href="https://pkg.go.dev/github.com/langchain-ai/langsmith-go">langsmith</a>.<a href="https://pkg.go.dev/github.com/langchain-ai/langsmith-go#AnnotationQueueInfoListResponse">AnnotationQueueInfoListResponse</a>
+
+Methods:
+
+- <code title="get /api/v1/info">client.AnnotationQueues.Info.<a href="https://pkg.go.dev/github.com/langchain-ai/langsmith-go#AnnotationQueueInfoService.List">List</a>(ctx <a href="https://pkg.go.dev/context">context</a>.<a href="https://pkg.go.dev/context#Context">Context</a>) (<a href="https://pkg.go.dev/github.com/langchain-ai/langsmith-go">langsmith</a>.<a href="https://pkg.go.dev/github.com/langchain-ai/langsmith-go#AnnotationQueueInfoListResponse">AnnotationQueueInfoListResponse</a>, <a href="https://pkg.go.dev/builtin#error">error</a>)</code>
+
 # Repos
 
 Response Types:
@@ -411,6 +423,15 @@ Methods:
 Response Types:
 
 - <a href="https://pkg.go.dev/github.com/langchain-ai/langsmith-go">langsmith</a>.<a href="https://pkg.go.dev/github.com/langchain-ai/langsmith-go#CommitManifestResponse">CommitManifestResponse</a>
+- <a href="https://pkg.go.dev/github.com/langchain-ai/langsmith-go">langsmith</a>.<a href="https://pkg.go.dev/github.com/langchain-ai/langsmith-go#CommitWithLookups">CommitWithLookups</a>
+- <a href="https://pkg.go.dev/github.com/langchain-ai/langsmith-go">langsmith</a>.<a href="https://pkg.go.dev/github.com/langchain-ai/langsmith-go#CommitNewResponse">CommitNewResponse</a>
+- <a href="https://pkg.go.dev/github.com/langchain-ai/langsmith-go">langsmith</a>.<a href="https://pkg.go.dev/github.com/langchain-ai/langsmith-go#CommitGetResponse">CommitGetResponse</a>
+
+Methods:
+
+- <code title="post /commits/{owner}/{repo}">client.Commits.<a href="https://pkg.go.dev/github.com/langchain-ai/langsmith-go#CommitService.New">New</a>(ctx <a href="https://pkg.go.dev/context">context</a>.<a href="https://pkg.go.dev/context#Context">Context</a>, owner interface{}, repo interface{}, body <a href="https://pkg.go.dev/github.com/langchain-ai/langsmith-go">langsmith</a>.<a href="https://pkg.go.dev/github.com/langchain-ai/langsmith-go#CommitNewParams">CommitNewParams</a>) (<a href="https://pkg.go.dev/github.com/langchain-ai/langsmith-go">langsmith</a>.<a href="https://pkg.go.dev/github.com/langchain-ai/langsmith-go#CommitNewResponse">CommitNewResponse</a>, <a href="https://pkg.go.dev/builtin#error">error</a>)</code>
+- <code title="get /commits/{owner}/{repo}/{commit}">client.Commits.<a href="https://pkg.go.dev/github.com/langchain-ai/langsmith-go#CommitService.Get">Get</a>(ctx <a href="https://pkg.go.dev/context">context</a>.<a href="https://pkg.go.dev/context#Context">Context</a>, owner interface{}, repo interface{}, commit interface{}, query <a href="https://pkg.go.dev/github.com/langchain-ai/langsmith-go">langsmith</a>.<a href="https://pkg.go.dev/github.com/langchain-ai/langsmith-go#CommitGetParams">CommitGetParams</a>) (<a href="https://pkg.go.dev/github.com/langchain-ai/langsmith-go">langsmith</a>.<a href="https://pkg.go.dev/github.com/langchain-ai/langsmith-go#CommitGetResponse">CommitGetResponse</a>, <a href="https://pkg.go.dev/builtin#error">error</a>)</code>
+- <code title="get /commits/{owner}/{repo}">client.Commits.<a href="https://pkg.go.dev/github.com/langchain-ai/langsmith-go#CommitService.List">List</a>(ctx <a href="https://pkg.go.dev/context">context</a>.<a href="https://pkg.go.dev/context#Context">Context</a>, owner interface{}, repo interface{}, query <a href="https://pkg.go.dev/github.com/langchain-ai/langsmith-go">langsmith</a>.<a href="https://pkg.go.dev/github.com/langchain-ai/langsmith-go#CommitListParams">CommitListParams</a>) (<a href="https://pkg.go.dev/github.com/langchain-ai/langsmith-go/packages/pagination">pagination</a>.<a href="https://pkg.go.dev/github.com/langchain-ai/langsmith-go/packages/pagination#OffsetPaginationCommits">OffsetPaginationCommits</a>[<a href="https://pkg.go.dev/github.com/langchain-ai/langsmith-go">langsmith</a>.<a href="https://pkg.go.dev/github.com/langchain-ai/langsmith-go#CommitWithLookups">CommitWithLookups</a>], <a href="https://pkg.go.dev/builtin#error">error</a>)</code>
 
 # Settings
 
