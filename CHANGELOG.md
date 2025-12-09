@@ -1,5 +1,19 @@
 # Changelog
 
+## 0.1.0-alpha.2 (2025-12-09)
+
+Full Changelog: [v0.1.0-alpha.1...v0.1.0-alpha.2](https://github.com/langchain-ai/langsmith-go/compare/v0.1.0-alpha.1...v0.1.0-alpha.2)
+
+### Features
+
+* **api:** api update ([9961cd7](https://github.com/langchain-ai/langsmith-go/commit/9961cd783e6a42711329554a16ffe8a4ecdbe175))
+* **api:** manual updates ([5b09d69](https://github.com/langchain-ai/langsmith-go/commit/5b09d69af8b36c0b824ca47c9c7b48ef7f9e9339))
+
+
+### Chores
+
+* **api:** delete index methods ([a9333cc](https://github.com/langchain-ai/langsmith-go/commit/a9333cc11eed5b3061e21317e5f0b2ee06b08041))
+
 ## 0.1.0-alpha.1 (2025-12-09)
 
 Full Changelog: [v0.0.1...v0.1.0-alpha.1](https://github.com/langchain-ai/langsmith-go/compare/v0.0.1...v0.1.0-alpha.1)
