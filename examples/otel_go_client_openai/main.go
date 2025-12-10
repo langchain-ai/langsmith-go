@@ -14,7 +14,7 @@ import (
 	sdktrace "go.opentelemetry.io/otel/sdk/trace"
 	semconv "go.opentelemetry.io/otel/semconv/v1.21.0"
 
-	"github.com/langchain-ai/langsmith-go/examples/otel_openai_auto/traceopenai"
+	"github.com/langchain-ai/langsmith-go/examples/otel_go_client_openai/traceopenai"
 )
 
 // Demonstrates automatic OpenTelemetry tracing for OpenAI API calls.
@@ -32,7 +32,7 @@ import (
 //
 // Running:
 //
-//	go run ./examples/otel_openai_auto
+//	go run ./examples/otel_go_client_openai
 
 const (
 	defaultProjectName    = "default"

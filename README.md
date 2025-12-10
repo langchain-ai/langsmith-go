@@ -60,8 +60,8 @@ This repository includes several examples demonstrating common use cases:
 - **[Prompt Management](./examples/prompt_management)** - Create and manage prompt repositories, commits, and versions
 - **[OpenTelemetry Ingestion](./examples/otel_ingestion)** - Send OpenTelemetry traces to LangSmith with hierarchical span structure
 - **[OpenTelemetry + OpenAI](./examples/otel_openai)** - Make OpenAI API calls with manual OpenTelemetry tracing to LangSmith
-- **[OpenTelemetry + OpenAI (Auto)](./examples/otel_openai_auto)** - Automatic OpenTelemetry tracing for OpenAI API calls using HTTP client wrapper
-- **[OpenTelemetry + Anthropic (Auto)](./examples/otel_anthropic_auto)** - Automatic OpenTelemetry tracing for Anthropic API calls using HTTP client wrapper
+- **[OpenTelemetry + OpenAI (Go Client)](./examples/otel_go_client_openai)** - Automatic OpenTelemetry tracing for OpenAI API calls using sashabaranov/go-openai client wrapper
+- **[OpenTelemetry + Anthropic](./examples/otel_anthropic)** - Automatic OpenTelemetry tracing for Anthropic API calls using HTTP client wrapper
 
 Each example includes detailed documentation in its source code. To run an example:
 

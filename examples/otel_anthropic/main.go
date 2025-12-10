@@ -15,7 +15,7 @@ import (
 	sdktrace "go.opentelemetry.io/otel/sdk/trace"
 	semconv "go.opentelemetry.io/otel/semconv/v1.21.0"
 
-	"github.com/langchain-ai/langsmith-go/examples/otel_anthropic_auto/traceanthropic"
+	"github.com/langchain-ai/langsmith-go/examples/otel_anthropic/traceanthropic"
 )
 
 // Demonstrates automatic OpenTelemetry tracing for Anthropic API calls.
@@ -33,7 +33,7 @@ import (
 //
 // Running:
 //
-//	go run ./examples/otel_anthropic_auto
+//	go run ./examples/otel_anthropic
 
 const (
 	defaultProjectName    = "default"
