@@ -172,6 +172,7 @@ func TestDatasetListWithOptionalParams(t *testing.T) {
 	_, err := client.Datasets.List(context.TODO(), langsmith.DatasetListParams{
 		ID:                         langsmith.F([]string{"182bd5e5-6e1a-4fe4-a799-aa6d9a6ab26e"}),
 		Datatype:                   langsmith.F[langsmith.DatasetListParamsDataTypeUnion](langsmith.DatasetListParamsDataTypeArray([]langsmith.DataType{langsmith.DataTypeKv})),
+		Exclude:                    langsmith.F([]langsmith.DatasetListParamsExclude{langsmith.DatasetListParamsExcludeExampleCount}),
 		ExcludeCorrectionsDatasets: langsmith.F(true),
 		Limit:                      langsmith.F(int64(1)),
 		Metadata:                   langsmith.F("metadata"),
