@@ -1,5 +1,14 @@
 # Changelog
 
+## 0.1.0-alpha.4 (2025-12-10)
+
+Full Changelog: [v0.1.0-alpha.3...v0.1.0-alpha.4](https://github.com/langchain-ai/langsmith-go/compare/v0.1.0-alpha.3...v0.1.0-alpha.4)
+
+### Features
+
+* added tracing with go openai client ([#16](https://github.com/langchain-ai/langsmith-go/issues/16)) ([49d5dce](https://github.com/langchain-ai/langsmith-go/commit/49d5dce40aced07d8fef90dd4bcc5eb6391221fc))
+* **api:** api update ([5a2210d](https://github.com/langchain-ai/langsmith-go/commit/5a2210dafdd9faa25832178a5edc92d92b9dac58))
+
 ## 0.1.0-alpha.3 (2025-12-09)
 
 Full Changelog: [v0.1.0-alpha.2...v0.1.0-alpha.3](https://github.com/langchain-ai/langsmith-go/compare/v0.1.0-alpha.2...v0.1.0-alpha.3)
