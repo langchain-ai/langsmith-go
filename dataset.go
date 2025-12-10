@@ -237,7 +237,6 @@ func (r DataType) implementsDatasetListParamsDataTypeUnion() {}
 // Dataset schema.
 type Dataset struct {
 	ID           string    `json:"id,required" format:"uuid"`
-	ExampleCount int64     `json:"example_count,required"`
 	ModifiedAt   time.Time `json:"modified_at,required" format:"date-time"`
 	Name         string    `json:"name,required"`
 	SessionCount int64     `json:"session_count,required"`
@@ -246,6 +245,7 @@ type Dataset struct {
 	// Enum for dataset data types.
 	DataType                DataType                `json:"data_type,nullable"`
 	Description             string                  `json:"description,nullable"`
+	ExampleCount            int64                   `json:"example_count,nullable"`
 	ExternallyManaged       bool                    `json:"externally_managed,nullable"`
 	InputsSchemaDefinition  map[string]interface{}  `json:"inputs_schema_definition,nullable"`
 	LastSessionStartTime    time.Time               `json:"last_session_start_time,nullable" format:"date-time"`
@@ -258,7 +258,6 @@ type Dataset struct {
 // datasetJSON contains the JSON metadata for the struct [Dataset]
 type datasetJSON struct {
 	ID                      apijson.Field
-	ExampleCount            apijson.Field
 	ModifiedAt              apijson.Field
 	Name                    apijson.Field
 	SessionCount            apijson.Field
@@ -266,6 +265,7 @@ type datasetJSON struct {
 	CreatedAt               apijson.Field
 	DataType                apijson.Field
 	Description             apijson.Field
+	ExampleCount            apijson.Field
 	ExternallyManaged       apijson.Field
 	InputsSchemaDefinition  apijson.Field
 	LastSessionStartTime    apijson.Field
@@ -586,6 +586,7 @@ type DatasetListParams struct {
 	ID param.Field[[]string] `query:"id" format:"uuid"`
 	// Enum for dataset data types.
 	Datatype                   param.Field[DatasetListParamsDataTypeUnion] `query:"data_type"`
+	Exclude                    param.Field[[]DatasetListParamsExclude]     `query:"exclude"`
 	ExcludeCorrectionsDatasets param.Field[bool]                           `query:"exclude_corrections_datasets"`
 	Limit                      param.Field[int64]                          `query:"limit"`
 	Metadata                   param.Field[string]                         `query:"metadata"`
@@ -616,6 +617,20 @@ type DatasetListParamsDataTypeUnion interface {
 type DatasetListParamsDataTypeArray []DataType
 
 func (r DatasetListParamsDataTypeArray) implementsDatasetListParamsDataTypeUnion() {}
+
+type DatasetListParamsExclude string
+
+const (
+	DatasetListParamsExcludeExampleCount DatasetListParamsExclude = "example_count"
+)
+
+func (r DatasetListParamsExclude) IsKnown() bool {
+	switch r {
+	case DatasetListParamsExcludeExampleCount:
+		return true
+	}
+	return false
+}
 
 type DatasetCloneParams struct {
 	SourceDatasetID param.Field[string] `json:"source_dataset_id,required" format:"uuid"`
