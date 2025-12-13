@@ -237,6 +237,7 @@ func TestDatasetCloneWithOptionalParams(t *testing.T) {
 		TargetDatasetID: langsmith.F("182bd5e5-6e1a-4fe4-a799-aa6d9a6ab26e"),
 		AsOf:            langsmith.F[langsmith.DatasetCloneParamsAsOfUnion](shared.UnionTime(time.Now())),
 		Examples:        langsmith.F([]string{"182bd5e5-6e1a-4fe4-a799-aa6d9a6ab26e"}),
+		Split:           langsmith.F[langsmith.DatasetCloneParamsSplitUnion](shared.UnionString("string")),
 	})
 	if err != nil {
 		var apierr *langsmith.Error
