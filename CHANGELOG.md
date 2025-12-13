@@ -1,5 +1,15 @@
 # Changelog
 
+## 0.1.0-alpha.5 (2025-12-13)
+
+Full Changelog: [v0.1.0-alpha.4...v0.1.0-alpha.5](https://github.com/langchain-ai/langsmith-go/compare/v0.1.0-alpha.4...v0.1.0-alpha.5)
+
+### Features
+
+* **api:** api update ([13e585b](https://github.com/langchain-ai/langsmith-go/commit/13e585bda50d281da4a45d9968acdf37567555cf))
+* **api:** api update ([e7ba714](https://github.com/langchain-ai/langsmith-go/commit/e7ba714691bc74fb530a729ece4f1bf63159d2a4))
+* **api:** api update ([64f64ed](https://github.com/langchain-ai/langsmith-go/commit/64f64ed425d061c542cdc767c2991c3065b28f30))
+
 ## 0.1.0-alpha.4 (2025-12-10)
 
 Full Changelog: [v0.1.0-alpha.3...v0.1.0-alpha.4](https://github.com/langchain-ai/langsmith-go/compare/v0.1.0-alpha.3...v0.1.0-alpha.4)
