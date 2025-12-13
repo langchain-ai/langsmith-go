@@ -637,8 +637,9 @@ type DatasetCloneParams struct {
 	TargetDatasetID param.Field[string] `json:"target_dataset_id,required" format:"uuid"`
 	// Only modifications made on or before this time are included. If None, the latest
 	// version of the dataset is used.
-	AsOf     param.Field[DatasetCloneParamsAsOfUnion] `json:"as_of" format:"date-time"`
-	Examples param.Field[[]string]                    `json:"examples" format:"uuid"`
+	AsOf     param.Field[DatasetCloneParamsAsOfUnion]  `json:"as_of" format:"date-time"`
+	Examples param.Field[[]string]                     `json:"examples" format:"uuid"`
+	Split    param.Field[DatasetCloneParamsSplitUnion] `json:"split"`
 }
 
 func (r DatasetCloneParams) MarshalJSON() (data []byte, err error) {
@@ -652,6 +653,15 @@ func (r DatasetCloneParams) MarshalJSON() (data []byte, err error) {
 type DatasetCloneParamsAsOfUnion interface {
 	ImplementsDatasetCloneParamsAsOfUnion()
 }
+
+// Satisfied by [shared.UnionString], [DatasetCloneParamsSplitArray].
+type DatasetCloneParamsSplitUnion interface {
+	ImplementsDatasetCloneParamsSplitUnion()
+}
+
+type DatasetCloneParamsSplitArray []string
+
+func (r DatasetCloneParamsSplitArray) ImplementsDatasetCloneParamsSplitUnion() {}
 
 type DatasetGetCsvParams struct {
 	// Only modifications made on or before this time are included. If None, the latest
