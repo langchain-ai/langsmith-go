@@ -146,7 +146,6 @@ Methods:
 
 Params Types:
 
-- <a href="https://pkg.go.dev/github.com/langchain-ai/langsmith-go">langsmith</a>.<a href="https://pkg.go.dev/github.com/langchain-ai/langsmith-go#QueryExampleSchemaWithRunsParam">QueryExampleSchemaWithRunsParam</a>
 - <a href="https://pkg.go.dev/github.com/langchain-ai/langsmith-go">langsmith</a>.<a href="https://pkg.go.dev/github.com/langchain-ai/langsmith-go#QueryFeedbackDeltaParam">QueryFeedbackDeltaParam</a>
 - <a href="https://pkg.go.dev/github.com/langchain-ai/langsmith-go">langsmith</a>.<a href="https://pkg.go.dev/github.com/langchain-ai/langsmith-go#SortParamsForRunsComparisonView">SortParamsForRunsComparisonView</a>
 

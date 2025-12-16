@@ -32,21 +32,20 @@ func TestDatasetRunNewWithOptionalParams(t *testing.T) {
 		context.TODO(),
 		"182bd5e5-6e1a-4fe4-a799-aa6d9a6ab26e",
 		langsmith.DatasetRunNewParams{
-			QueryExampleSchemaWithRuns: langsmith.QueryExampleSchemaWithRunsParam{
-				SessionIDs:              langsmith.F([]string{"182bd5e5-6e1a-4fe4-a799-aa6d9a6ab26e"}),
-				ComparativeExperimentID: langsmith.F("182bd5e5-6e1a-4fe4-a799-aa6d9a6ab26e"),
-				Filters: langsmith.F(map[string][]string{
-					"foo": {"string"},
-				}),
-				Limit:   langsmith.F(int64(1)),
-				Offset:  langsmith.F(int64(0)),
-				Preview: langsmith.F(true),
-				SortParams: langsmith.F(langsmith.SortParamsForRunsComparisonView{
-					SortBy:    langsmith.F("sort_by"),
-					SortOrder: langsmith.F(langsmith.SortParamsForRunsComparisonViewSortOrderAsc),
-				}),
-			},
-			Format: langsmith.F("format"),
+			SessionIDs:              langsmith.F([]string{"182bd5e5-6e1a-4fe4-a799-aa6d9a6ab26e"}),
+			Format:                  langsmith.F(langsmith.DatasetRunNewParamsFormatCsv),
+			ComparativeExperimentID: langsmith.F("182bd5e5-6e1a-4fe4-a799-aa6d9a6ab26e"),
+			Filters: langsmith.F(map[string][]string{
+				"foo": {"string"},
+			}),
+			Limit:   langsmith.F(int64(1)),
+			Offset:  langsmith.F(int64(0)),
+			Preview: langsmith.F(true),
+			SortParams: langsmith.F(langsmith.SortParamsForRunsComparisonView{
+				SortBy:    langsmith.F("sort_by"),
+				SortOrder: langsmith.F(langsmith.SortParamsForRunsComparisonViewSortOrderAsc),
+			}),
+			Stream: langsmith.F(true),
 		},
 	)
 	if err != nil {
