@@ -141,12 +141,22 @@ type AnnotationQueueRunDeleteAllResponse = interface{}
 type AnnotationQueueRunDeleteQueueResponse = interface{}
 
 type AnnotationQueueRunNewParams struct {
-	Body []string `json:"body,required" format:"uuid"`
+	Body AnnotationQueueRunNewParamsBodyUnion `json:"body,required" format:"uuid"`
 }
 
 func (r AnnotationQueueRunNewParams) MarshalJSON() (data []byte, err error) {
 	return apijson.MarshalRoot(r.Body)
 }
+
+// Satisfied by [AnnotationQueueRunNewParamsBodyArray],
+// [AnnotationQueueRunNewParamsBodyArray].
+type AnnotationQueueRunNewParamsBodyUnion interface {
+	implementsAnnotationQueueRunNewParamsBodyUnion()
+}
+
+type AnnotationQueueRunNewParamsBodyArray []string
+
+func (r AnnotationQueueRunNewParamsBodyArray) implementsAnnotationQueueRunNewParamsBodyUnion() {}
 
 type AnnotationQueueRunUpdateParams struct {
 	AddedAt          param.Field[time.Time] `json:"added_at" format:"date-time"`
