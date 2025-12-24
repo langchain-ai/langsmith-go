@@ -439,20 +439,6 @@ func (r ExampleWithRunsChRunsRunType) IsKnown() bool {
 	return false
 }
 
-type QueryExampleSchemaWithRunsParam struct {
-	SessionIDs              param.Field[[]string]                        `json:"session_ids,required" format:"uuid"`
-	ComparativeExperimentID param.Field[string]                          `json:"comparative_experiment_id" format:"uuid"`
-	Filters                 param.Field[map[string][]string]             `json:"filters"`
-	Limit                   param.Field[int64]                           `json:"limit"`
-	Offset                  param.Field[int64]                           `json:"offset"`
-	Preview                 param.Field[bool]                            `json:"preview"`
-	SortParams              param.Field[SortParamsForRunsComparisonView] `json:"sort_params"`
-}
-
-func (r QueryExampleSchemaWithRunsParam) MarshalJSON() (data []byte, err error) {
-	return apijson.MarshalRoot(r)
-}
-
 type QueryFeedbackDeltaParam struct {
 	BaselineSessionID       param.Field[string]              `json:"baseline_session_id,required" format:"uuid"`
 	ComparisonSessionIDs    param.Field[[]string]            `json:"comparison_session_ids,required" format:"uuid"`
@@ -567,13 +553,20 @@ type DatasetRunNewResponseArray []ExampleWithRunsCh
 func (r DatasetRunNewResponseArray) implementsDatasetRunNewResponseUnion() {}
 
 type DatasetRunNewParams struct {
-	QueryExampleSchemaWithRuns QueryExampleSchemaWithRunsParam `json:"query_example_schema_with_runs,required"`
+	SessionIDs param.Field[[]string] `json:"session_ids,required" format:"uuid"`
 	// Response format, e.g., 'csv'
-	Format param.Field[string] `query:"format"`
+	Format                  param.Field[DatasetRunNewParamsFormat]       `query:"format"`
+	ComparativeExperimentID param.Field[string]                          `json:"comparative_experiment_id" format:"uuid"`
+	Filters                 param.Field[map[string][]string]             `json:"filters"`
+	Limit                   param.Field[int64]                           `json:"limit"`
+	Offset                  param.Field[int64]                           `json:"offset"`
+	Preview                 param.Field[bool]                            `json:"preview"`
+	SortParams              param.Field[SortParamsForRunsComparisonView] `json:"sort_params"`
+	Stream                  param.Field[bool]                            `json:"stream"`
 }
 
 func (r DatasetRunNewParams) MarshalJSON() (data []byte, err error) {
-	return apijson.MarshalRoot(r.QueryExampleSchemaWithRuns)
+	return apijson.MarshalRoot(r)
 }
 
 // URLQuery serializes [DatasetRunNewParams]'s query parameters as `url.Values`.
@@ -582,6 +575,21 @@ func (r DatasetRunNewParams) URLQuery() (v url.Values) {
 		ArrayFormat:  apiquery.ArrayQueryFormatComma,
 		NestedFormat: apiquery.NestedQueryFormatBrackets,
 	})
+}
+
+// Response format, e.g., 'csv'
+type DatasetRunNewParamsFormat string
+
+const (
+	DatasetRunNewParamsFormatCsv DatasetRunNewParamsFormat = "csv"
+)
+
+func (r DatasetRunNewParamsFormat) IsKnown() bool {
+	switch r {
+	case DatasetRunNewParamsFormatCsv:
+		return true
+	}
+	return false
 }
 
 type DatasetRunDeltaParams struct {

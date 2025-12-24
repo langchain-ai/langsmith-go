@@ -257,7 +257,8 @@ func (r ExampleNewParamsSplitArray) ImplementsExampleNewParamsSplitUnion() {}
 type ExampleGetParams struct {
 	// Only modifications made on or before this time are included. If None, the latest
 	// version of the dataset is used.
-	AsOf param.Field[ExampleGetParamsAsOfUnion] `query:"as_of" format:"date-time"`
+	AsOf    param.Field[ExampleGetParamsAsOfUnion] `query:"as_of" format:"date-time"`
+	Dataset param.Field[string]                    `query:"dataset" format:"uuid"`
 }
 
 // URLQuery serializes [ExampleGetParams]'s query parameters as `url.Values`.

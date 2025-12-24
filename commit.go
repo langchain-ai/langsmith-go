@@ -64,6 +64,8 @@ func (r *CommitService) Get(ctx context.Context, owner interface{}, repo interfa
 // Lists all commits for a repository with pagination support. This endpoint
 // supports both authenticated and unauthenticated access. Authenticated users can
 // access private repos, while unauthenticated users can only access public repos.
+// The include_stats parameter controls whether download and view statistics are
+// computed (defaults to true).
 func (r *CommitService) List(ctx context.Context, owner interface{}, repo interface{}, query CommitListParams, opts ...option.RequestOption) (res *pagination.OffsetPaginationCommits[CommitWithLookups], err error) {
 	var raw *http.Response
 	opts = slices.Concat(r.Options, opts)
@@ -84,6 +86,8 @@ func (r *CommitService) List(ctx context.Context, owner interface{}, repo interf
 // Lists all commits for a repository with pagination support. This endpoint
 // supports both authenticated and unauthenticated access. Authenticated users can
 // access private repos, while unauthenticated users can only access public repos.
+// The include_stats parameter controls whether download and view statistics are
+// computed (defaults to true).
 func (r *CommitService) ListAutoPaging(ctx context.Context, owner interface{}, repo interface{}, query CommitListParams, opts ...option.RequestOption) *pagination.OffsetPaginationCommitsAutoPager[CommitWithLookups] {
 	return pagination.NewOffsetPaginationCommitsAutoPager(r.List(ctx, owner, repo, query, opts...))
 }
@@ -304,6 +308,8 @@ func (r CommitGetParams) URLQuery() (v url.Values) {
 }
 
 type CommitListParams struct {
+	// IncludeStats determines whether to compute num_downloads and num_views
+	IncludeStats param.Field[bool] `query:"include_stats"`
 	// Limit is the pagination limit
 	Limit param.Field[int64] `query:"limit"`
 	// Offset is the pagination offset

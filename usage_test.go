@@ -26,6 +26,7 @@ func TestUsage(t *testing.T) {
 		option.WithTenantID("My Tenant ID"),
 		option.WithOrganizationID("My Organization ID"),
 	)
+	t.Skip("Prism tests are disabled")
 	customChartsSection, err := client.Sessions.Dashboard(
 		context.TODO(),
 		"1ffaeba7-541e-469f-bae7-df3208ea3d45",

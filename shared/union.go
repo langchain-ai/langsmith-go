@@ -31,6 +31,7 @@ func (UnionString) ImplementsDatasetUpdateParamsDescriptionUnion()         {}
 func (UnionString) ImplementsDatasetUpdateParamsNameUnion()                {}
 func (UnionString) ImplementsDatasetUpdateParamsPatchExamplesSplitUnion()  {}
 func (UnionString) ImplementsDatasetCloneParamsAsOfUnion()                 {}
+func (UnionString) ImplementsDatasetCloneParamsSplitUnion()                {}
 func (UnionString) ImplementsDatasetUpdateTagsParamsAsOfUnion()            {}
 func (UnionString) ImplementsDatasetVersionGetDiffParamsFromVersionUnion() {}
 func (UnionString) ImplementsDatasetVersionGetDiffParamsToVersionUnion()   {}
