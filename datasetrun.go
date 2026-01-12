@@ -344,6 +344,7 @@ type ExampleWithRunsChRun struct {
 	ExecutionOrder     int64                             `json:"execution_order"`
 	Extra              map[string]interface{}            `json:"extra,nullable"`
 	FeedbackStats      map[string]map[string]interface{} `json:"feedback_stats,nullable"`
+	Feedbacks          []FeedbackSchema                  `json:"feedbacks"`
 	Inputs             map[string]interface{}            `json:"inputs,nullable"`
 	InputsPreview      string                            `json:"inputs_preview,nullable"`
 	InputsS3URLs       map[string]interface{}            `json:"inputs_s3_urls,nullable"`
@@ -386,6 +387,7 @@ type exampleWithRunsChRunJSON struct {
 	ExecutionOrder     apijson.Field
 	Extra              apijson.Field
 	FeedbackStats      apijson.Field
+	Feedbacks          apijson.Field
 	Inputs             apijson.Field
 	InputsPreview      apijson.Field
 	InputsS3URLs       apijson.Field
