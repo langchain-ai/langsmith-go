@@ -1,5 +1,31 @@
 # Changelog
 
+## 0.1.0-alpha.5 (2026-01-14)
+
+Full Changelog: [v0.1.0-alpha.4...v0.1.0-alpha.5](https://github.com/langchain-ai/langsmith-go/compare/v0.1.0-alpha.4...v0.1.0-alpha.5)
+
+### Features
+
+* **api:** api update ([925146c](https://github.com/langchain-ai/langsmith-go/commit/925146c93683a7b98324d8b1b2bf27b3d4deec8d))
+* **api:** api update ([40886b9](https://github.com/langchain-ai/langsmith-go/commit/40886b91e1471e64dff8dfb274b8bfe179ac99f9))
+* **api:** api update ([74c71ed](https://github.com/langchain-ai/langsmith-go/commit/74c71eda0feb1f9a5885404d8583671e34585fb1))
+* **api:** api update ([9dad560](https://github.com/langchain-ai/langsmith-go/commit/9dad56055048b0a1376c45d125de51a9da8f7446))
+* **api:** api update ([df983a3](https://github.com/langchain-ai/langsmith-go/commit/df983a31e6f0ded956237952f91aade41bed48aa))
+* **api:** api update ([13e585b](https://github.com/langchain-ai/langsmith-go/commit/13e585bda50d281da4a45d9968acdf37567555cf))
+* **api:** api update ([e7ba714](https://github.com/langchain-ai/langsmith-go/commit/e7ba714691bc74fb530a729ece4f1bf63159d2a4))
+* **api:** api update ([64f64ed](https://github.com/langchain-ai/langsmith-go/commit/64f64ed425d061c542cdc767c2991c3065b28f30))
+* **api:** manual updates ([13e2d39](https://github.com/langchain-ai/langsmith-go/commit/13e2d39dd5518d343d1dbd1fd5ef07744f9e0c9a))
+
+
+### Bug Fixes
+
+* skip usage tests that don't work with Prism ([6f397c4](https://github.com/langchain-ai/langsmith-go/commit/6f397c4441cd81e2d6ff8e85953502e1e39a8afb))
+
+
+### Chores
+
+* **internal:** codegen related update ([cbcbc79](https://github.com/langchain-ai/langsmith-go/commit/cbcbc790d92feb7a25fce8dcccdf363504e76a96))
+
 ## 0.1.0-alpha.4 (2025-12-10)
 
 Full Changelog: [v0.1.0-alpha.3...v0.1.0-alpha.4](https://github.com/langchain-ai/langsmith-go/compare/v0.1.0-alpha.3...v0.1.0-alpha.4)
