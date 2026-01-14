@@ -43,7 +43,7 @@ func (r *ExampleValidateService) New(ctx context.Context, opts ...option.Request
 	return
 }
 
-// Validate an example.
+// Validate examples in bulk.
 func (r *ExampleValidateService) Bulk(ctx context.Context, opts ...option.RequestOption) (res *[]ExampleValidationResult, err error) {
 	opts = slices.Concat(r.Options, opts)
 	path := "api/v1/examples/validate/bulk"
