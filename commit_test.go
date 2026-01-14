@@ -102,8 +102,9 @@ func TestCommitListWithOptionalParams(t *testing.T) {
 		map[string]interface{}{},
 		map[string]interface{}{},
 		langsmith.CommitListParams{
-			Limit:  langsmith.F(int64(1)),
-			Offset: langsmith.F(int64(0)),
+			IncludeStats: langsmith.F(true),
+			Limit:        langsmith.F(int64(1)),
+			Offset:       langsmith.F(int64(0)),
 		},
 	)
 	if err != nil {

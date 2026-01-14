@@ -207,6 +207,7 @@ type FeedbackCreateSchemaParam struct {
 	RunID          param.Field[string]                                       `json:"run_id" format:"uuid"`
 	Score          param.Field[FeedbackCreateSchemaScoreUnionParam]          `json:"score"`
 	SessionID      param.Field[string]                                       `json:"session_id" format:"uuid"`
+	StartTime      param.Field[time.Time]                                    `json:"start_time" format:"date-time"`
 	TraceID        param.Field[string]                                       `json:"trace_id" format:"uuid"`
 	Value          param.Field[FeedbackCreateSchemaValueUnionParam]          `json:"value"`
 }
