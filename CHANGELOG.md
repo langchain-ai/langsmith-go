@@ -1,5 +1,18 @@
 # Changelog
 
+## 0.1.0-alpha.6 (2026-01-15)
+
+Full Changelog: [v0.1.0-alpha.5...v0.1.0-alpha.6](https://github.com/langchain-ai/langsmith-go/compare/v0.1.0-alpha.5...v0.1.0-alpha.6)
+
+### Features
+
+* **api:** api update ([402c765](https://github.com/langchain-ai/langsmith-go/commit/402c7650086efacfee5d42d11bf5672745da8f55))
+
+
+### Bug Fixes
+
+* added fix for missing thread token counts ([#19](https://github.com/langchain-ai/langsmith-go/issues/19)) ([6c54b0f](https://github.com/langchain-ai/langsmith-go/commit/6c54b0fbac81a2df9b0de9d38f3e3fd54180637d))
+
 ## 0.1.0-alpha.5 (2026-01-14)
 
 Full Changelog: [v0.1.0-alpha.4...v0.1.0-alpha.5](https://github.com/langchain-ai/langsmith-go/compare/v0.1.0-alpha.4...v0.1.0-alpha.5)
