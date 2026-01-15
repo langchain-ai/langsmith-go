@@ -69,10 +69,13 @@ func (rt *roundTripper) RoundTrip(req *http.Request) (*http.Response, error) {
 	// Extract span context from request headers
 	ctx = otel.GetTextMapPropagator().Extract(ctx, propagation.HeaderCarrier(req.Header))
 
+	// Capture parent span before creating child span (for token propagation)
+	parentSpan := trace.SpanFromContext(ctx)
+
 	// Determine span name based on endpoint
 	spanName := getSpanName(req.URL.Path)
 
-	// Start span
+	// Start span (child span)
 	ctx, span := tracer.Start(ctx, spanName,
 		trace.WithAttributes(
 			attribute.String("gen_ai.system", "anthropic"),
@@ -128,7 +131,7 @@ func (rt *roundTripper) RoundTrip(req *http.Request) (*http.Response, error) {
 
 	// Extract response attributes
 	if len(responseBody) > 0 {
-		extractResponseAttributes(span, responseBody)
+		extractResponseAttributes(span, responseBody, parentSpan)
 	}
 
 	// Set status based on HTTP status code
@@ -229,7 +232,7 @@ func buildPromptFromMessages(messages []interface{}) string {
 }
 
 // extractResponseAttributes extracts attributes from Anthropic response body.
-func extractResponseAttributes(span trace.Span, body []byte) {
+func extractResponseAttributes(span trace.Span, body []byte, parentSpan trace.Span) {
 	var resp map[string]interface{}
 	if err := json.Unmarshal(body, &resp); err != nil {
 		return
@@ -242,7 +245,7 @@ func extractResponseAttributes(span trace.Span, body []byte) {
 
 	// Extract usage
 	if usage, ok := resp["usage"].(map[string]interface{}); ok {
-		setUsageAttributes(span, usage)
+		setUsageAttributes(span, usage, parentSpan)
 	}
 
 	// Extract stop_reason
@@ -275,7 +278,7 @@ func extractCompletionFromContent(content []interface{}) string {
 }
 
 // setUsageAttributes sets usage-related attributes on the span.
-func setUsageAttributes(span trace.Span, usage map[string]interface{}) {
+func setUsageAttributes(span trace.Span, usage map[string]interface{}, parentSpan trace.Span) {
 	var inputTokens, outputTokens, totalTokens int64
 
 	if v, ok := usage["input_tokens"].(float64); ok {
@@ -302,9 +305,18 @@ func setUsageAttributes(span trace.Span, usage map[string]interface{}) {
 
 	if totalPrompt > 0 {
 		span.SetAttributes(attribute.Int64("gen_ai.usage.input_tokens", totalPrompt))
+		// Propagate usage to parent span if it exists and is valid
+		// This ensures token counts appear in Thread list view (which aggregates from root spans)
+		if parentSpan.SpanContext().IsValid() && parentSpan.IsRecording() {
+			parentSpan.SetAttributes(attribute.Int64("gen_ai.usage.input_tokens", totalPrompt))
+		}
 	}
 	if outputTokens > 0 {
 		span.SetAttributes(attribute.Int64("gen_ai.usage.output_tokens", outputTokens))
+		// Propagate usage to parent span if it exists and is valid
+		if parentSpan.SpanContext().IsValid() && parentSpan.IsRecording() {
+			parentSpan.SetAttributes(attribute.Int64("gen_ai.usage.output_tokens", outputTokens))
+		}
 	}
 	if totalTokens > 0 {
 		span.SetAttributes(attribute.Int64("gen_ai.usage.total_tokens", totalTokens))
