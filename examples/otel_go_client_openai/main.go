@@ -6,13 +6,17 @@ import (
 	"os"
 	"time"
 
+	"github.com/google/uuid"
 	"github.com/sashabaranov/go-openai"
 	"go.opentelemetry.io/otel"
+	"go.opentelemetry.io/otel/attribute"
+	"go.opentelemetry.io/otel/baggage"
 	"go.opentelemetry.io/otel/exporters/otlp/otlptrace/otlptracehttp"
 	"go.opentelemetry.io/otel/propagation"
 	"go.opentelemetry.io/otel/sdk/resource"
 	sdktrace "go.opentelemetry.io/otel/sdk/trace"
 	semconv "go.opentelemetry.io/otel/semconv/v1.21.0"
+	"go.opentelemetry.io/otel/trace"
 
 	"github.com/langchain-ai/langsmith-go/examples/otel_go_client_openai/traceopenai"
 )
@@ -91,14 +95,59 @@ func run() error {
 	fmt.Println("  All API calls will be automatically traced!")
 	fmt.Println()
 
-	// Make OpenAI API calls - tracing happens automatically!
-	ctx := context.Background()
-
-	fmt.Println("Making OpenAI API calls...")
+	// Generate a thread ID to group all traces together
+	// IMPORTANT: For threads, each API call should be its own trace (not one big trace)
+	// All traces share the same session_id to group them into a thread
+	threadID := uuid.New().String()
+	fmt.Printf("Thread ID: %s\n", threadID)
+	fmt.Println("  Each API call will be its own trace, all grouped into this thread")
 	fmt.Println()
 
-	// Example 1: Simple chat completion
-	fmt.Println("1. Simple chat completion:")
+	tracer := otel.Tracer(serviceName)
+
+	fmt.Println("Creating separate traces for each API call (grouped in thread)...")
+	fmt.Println()
+	fmt.Println("Each trace will have:")
+	fmt.Println("  • agent.chain (root span)")
+	fmt.Println("    └─ agent.step (child span)")
+	fmt.Println("        └─ openai.chat.completion (auto-traced child)")
+	fmt.Println()
+	fmt.Println("All traces share session_id: " + threadID)
+	fmt.Println()
+
+	// Trace 1: First API call
+	fmt.Println("Trace 1: Initial question")
+	ctx1 := context.Background()
+	
+	// Propagate thread ID through baggage for this trace
+	member1, _ := baggage.NewMember("session_id", threadID)
+	bag1, _ := baggage.New(member1)
+	ctx1 = baggage.ContextWithBaggage(ctx1, bag1)
+	
+	ctx1, trace1Root := tracer.Start(ctx1, "agent.chain",
+		trace.WithAttributes(
+			attribute.String("gen_ai.operation.name", "chat"),
+			attribute.String("service.name", serviceName),
+			// Set thread metadata in multiple formats for compatibility
+			attribute.String("session_id", threadID),
+			attribute.String("langsmith.metadata.session_id", threadID),
+			attribute.String("session.id", threadID),
+		),
+	)
+	
+	ctx1, trace1Step := tracer.Start(ctx1, "agent.step",
+		trace.WithAttributes(
+			attribute.String("step.type", "initial_query"),
+			attribute.String("step.number", "1"),
+			// Set thread metadata in multiple formats for compatibility
+			attribute.String("session_id", threadID),
+			attribute.String("langsmith.metadata.session_id", threadID),
+			attribute.String("session.id", threadID),
+		),
+	)
+	
+	time.Sleep(50 * time.Millisecond)
+
 	req1 := openai.ChatCompletionRequest{
 		Model: openai.GPT4oMini,
 		Messages: []openai.ChatCompletionMessage{
@@ -109,68 +158,174 @@ func run() error {
 		},
 	}
 
-	completion1, err := client.CreateChatCompletion(ctx, req1)
+	// Set input (prompt) on root span for LangSmith UI
+	trace1Root.SetAttributes(attribute.String("gen_ai.prompt", "What is the capital of France?"))
+
+	completion1, err := client.CreateChatCompletion(ctx1, req1)
 	if err != nil {
 		return fmt.Errorf("creating chat completion: %w", err)
 	}
 
+	// Extract completion text
+	var completion1Text string
 	if len(completion1.Choices) > 0 && completion1.Choices[0].Message.Content != "" {
-		fmt.Printf("   Response: %s\n", completion1.Choices[0].Message.Content)
+		completion1Text = completion1.Choices[0].Message.Content
+		fmt.Printf("   Response: %s\n", completion1Text)
 	}
+	
+	// Set output on root span for LangSmith UI
+	if completion1Text != "" {
+		trace1Root.SetAttributes(attribute.String("gen_ai.completion", completion1Text))
+	}
+	
 	if completion1.Usage.TotalTokens > 0 {
 		fmt.Printf("   Tokens used: %d\n", completion1.Usage.TotalTokens)
 	}
+	trace1Step.End()
+	trace1Root.End()
+	time.Sleep(200 * time.Millisecond) // Delay between traces
 	fmt.Println()
 
-	// Example 2: Chat completion with system message
-	fmt.Println("2. Chat completion with system message:")
+	// Trace 2: Second API call (same thread)
+	fmt.Println("Trace 2: Another question")
+	ctx2 := context.Background()
+	
+	member2, _ := baggage.NewMember("session_id", threadID)
+	bag2, _ := baggage.New(member2)
+	ctx2 = baggage.ContextWithBaggage(ctx2, bag2)
+	
+	ctx2, trace2Root := tracer.Start(ctx2, "agent.chain",
+		trace.WithAttributes(
+			attribute.String("gen_ai.operation.name", "chat"),
+			attribute.String("service.name", serviceName),
+			attribute.String("session_id", threadID),
+			attribute.String("langsmith.metadata.session_id", threadID),
+			attribute.String("session.id", threadID),
+		),
+	)
+	
+	ctx2, trace2Step := tracer.Start(ctx2, "agent.step",
+		trace.WithAttributes(
+			attribute.String("step.type", "additional_query"),
+			attribute.String("step.number", "2"),
+			attribute.String("session_id", threadID),
+			attribute.String("langsmith.metadata.session_id", threadID),
+			attribute.String("session.id", threadID),
+		),
+	)
+	
+	time.Sleep(50 * time.Millisecond)
+
 	req2 := openai.ChatCompletionRequest{
 		Model: openai.GPT4oMini,
 		Messages: []openai.ChatCompletionMessage{
 			{
-				Role:    openai.ChatMessageRoleSystem,
-				Content: "You are a helpful assistant that provides concise answers.",
-			},
-			{
 				Role:    openai.ChatMessageRoleUser,
-				Content: "Explain quantum computing in one sentence.",
+				Content: "What is 2+2?",
 			},
 		},
 	}
 
-	completion2, err := client.CreateChatCompletion(ctx, req2)
+	// Set input on root span for LangSmith UI
+	trace2Root.SetAttributes(attribute.String("gen_ai.prompt", "What is 2+2?"))
+
+	completion2, err := client.CreateChatCompletion(ctx2, req2)
 	if err != nil {
 		return fmt.Errorf("creating chat completion: %w", err)
 	}
 
+	// Extract completion text
+	var completion2Text string
 	if len(completion2.Choices) > 0 && completion2.Choices[0].Message.Content != "" {
-		fmt.Printf("   Response: %s\n", completion2.Choices[0].Message.Content)
+		completion2Text = completion2.Choices[0].Message.Content
+		fmt.Printf("   Response: %s\n", completion2Text)
 	}
+	
+	// Set output on root span for LangSmith UI
+	if completion2Text != "" {
+		trace2Root.SetAttributes(attribute.String("gen_ai.completion", completion2Text))
+	}
+	
 	if completion2.Usage.TotalTokens > 0 {
 		fmt.Printf("   Tokens used: %d\n", completion2.Usage.TotalTokens)
 	}
+	trace2Step.End()
+	trace2Root.End()
+	time.Sleep(200 * time.Millisecond)
+	fmt.Println()
+
+	// Trace 3: Third API call (same thread)
+	fmt.Println("Trace 3: Final question")
+	ctx3 := context.Background()
+	
+	member3, _ := baggage.NewMember("session_id", threadID)
+	bag3, _ := baggage.New(member3)
+	ctx3 = baggage.ContextWithBaggage(ctx3, bag3)
+	
+	ctx3, trace3Root := tracer.Start(ctx3, "agent.chain",
+		trace.WithAttributes(
+			attribute.String("gen_ai.operation.name", "chat"),
+			attribute.String("service.name", serviceName),
+			attribute.String("session_id", threadID),
+			attribute.String("langsmith.metadata.session_id", threadID),
+			attribute.String("session.id", threadID),
+		),
+	)
+	
+	ctx3, trace3Step := tracer.Start(ctx3, "agent.step",
+		trace.WithAttributes(
+			attribute.String("step.type", "final_query"),
+			attribute.String("step.number", "3"),
+			attribute.String("session_id", threadID),
+			attribute.String("langsmith.metadata.session_id", threadID),
+			attribute.String("session.id", threadID),
+		),
+	)
+	
+	time.Sleep(50 * time.Millisecond)
+
+	req3 := openai.ChatCompletionRequest{
+		Model: openai.GPT4oMini,
+		Messages: []openai.ChatCompletionMessage{
+			{
+				Role:    openai.ChatMessageRoleUser,
+				Content: "Name a famous scientist.",
+			},
+		},
+	}
+
+	// Set input on root span for LangSmith UI
+	trace3Root.SetAttributes(attribute.String("gen_ai.prompt", "Name a famous scientist."))
+
+	completion3, err := client.CreateChatCompletion(ctx3, req3)
+	if err != nil {
+		return fmt.Errorf("creating chat completion: %w", err)
+	}
+
+	// Extract completion text
+	var completion3Text string
+	if len(completion3.Choices) > 0 && completion3.Choices[0].Message.Content != "" {
+		completion3Text = completion3.Choices[0].Message.Content
+		fmt.Printf("   Response: %s\n", completion3Text)
+	}
+	
+	// Set output on root span for LangSmith UI
+	if completion3Text != "" {
+		trace3Root.SetAttributes(attribute.String("gen_ai.completion", completion3Text))
+	}
+	
+	if completion3.Usage.TotalTokens > 0 {
+		fmt.Printf("   Tokens used: %d\n", completion3.Usage.TotalTokens)
+	}
+	trace3Step.End()
+	trace3Root.End()
+	time.Sleep(200 * time.Millisecond)
 	fmt.Println()
 
 	// Flush traces
 	fmt.Println("Flushing traces to LangSmith...")
 	time.Sleep(traceFlushWait)
 	fmt.Println("✓ All traces flushed successfully")
-	fmt.Println()
-
-	fmt.Println("=== Summary ===")
-	fmt.Println("✓ Made 2 OpenAI API calls")
-	fmt.Println("✓ All calls were automatically traced with OpenTelemetry")
-	fmt.Println("✓ Traces sent to LangSmith with proper Gen AI attributes")
-	fmt.Println()
-	fmt.Println("View your traces in LangSmith:")
-	fmt.Printf("  https://smith.langchain.com/o/{tenant_id}/projects/{project_name}\n")
-	fmt.Println()
-	fmt.Println("Benefits of automatic tracing:")
-	fmt.Println("  • No manual span creation needed")
-	fmt.Println("  • All OpenAI requests/responses automatically captured")
-	fmt.Println("  • Proper Gen AI semantic conventions applied")
-	fmt.Println("  • Token usage and latency metrics included")
-
 	return nil
 }
 

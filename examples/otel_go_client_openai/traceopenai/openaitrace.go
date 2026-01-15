@@ -11,6 +11,7 @@ import (
 
 	"go.opentelemetry.io/otel"
 	"go.opentelemetry.io/otel/attribute"
+	"go.opentelemetry.io/otel/baggage"
 	"go.opentelemetry.io/otel/codes"
 	"go.opentelemetry.io/otel/propagation"
 	"go.opentelemetry.io/otel/trace"
@@ -35,18 +36,54 @@ func Middleware(req *http.Request, next MiddlewareNext) (*http.Response, error) 
 	// Extract span context from request headers
 	ctx = otel.GetTextMapPropagator().Extract(ctx, propagation.HeaderCarrier(req.Header))
 
+	// Capture parent span before creating child span (for token propagation)
+	parentSpan := trace.SpanFromContext(ctx)
+
 	// Determine span name based on endpoint
 	spanName := getSpanName(req.URL.Path)
 
-	// Start span
-	ctx, span := tracer.Start(ctx, spanName,
-		trace.WithAttributes(
-			attribute.String("gen_ai.system", "openai"),
-			attribute.String("gen_ai.operation.name", getOperationName(req.URL.Path)),
-			attribute.String("http.method", req.Method),
-			attribute.String("http.url", req.URL.String()),
-		),
-	)
+	// Build attributes for child span
+	spanAttrs := []attribute.KeyValue{
+		attribute.String("gen_ai.system", "openai"),
+		attribute.String("gen_ai.operation.name", getOperationName(req.URL.Path)),
+		attribute.String("http.method", req.Method),
+		attribute.String("http.url", req.URL.String()),
+	}
+
+	// Propagate thread metadata from baggage
+	// This ensures all child spans are part of the same thread
+	// According to LangSmith docs: thread metadata must be on ALL spans including children
+	// LangSmith looks for: session_id, thread_id, or conversation_id in span attributes/metadata
+	// Set in multiple formats: standard (session_id), LangSmith metadata format (langsmith.metadata.session_id), and compatibility (session.id)
+	bag := baggage.FromContext(ctx)
+	// Check for thread metadata keys in baggage and propagate to span attributes
+	if member := bag.Member("session_id"); member.Key() == "session_id" {
+		value := member.Value()
+		spanAttrs = append(spanAttrs, 
+			attribute.String("session_id", value), // Standard format per docs
+			attribute.String("langsmith.metadata.session_id", value), // LangSmith metadata format
+			attribute.String("session.id", value), // Compatibility format
+		)
+	}
+	if member := bag.Member("thread_id"); member.Key() == "thread_id" {
+		value := member.Value()
+		spanAttrs = append(spanAttrs, 
+			attribute.String("thread_id", value),
+			attribute.String("langsmith.metadata.thread_id", value),
+			attribute.String("thread.id", value),
+		)
+	}
+	if member := bag.Member("conversation_id"); member.Key() == "conversation_id" {
+		value := member.Value()
+		spanAttrs = append(spanAttrs, 
+			attribute.String("conversation_id", value),
+			attribute.String("langsmith.metadata.conversation_id", value),
+			attribute.String("conversation.id", value),
+		)
+	}
+
+	// Start span (child span)
+	ctx, span := tracer.Start(ctx, spanName, trace.WithAttributes(spanAttrs...))
 	defer span.End()
 
 	// Read request body if present
@@ -108,10 +145,21 @@ func Middleware(req *http.Request, next MiddlewareNext) (*http.Response, error) 
 			span.SetAttributes(attribute.String("gen_ai.completion", completion))
 		}
 		if usage.InputTokens > 0 {
+			inputTokens := int64(usage.InputTokens)
+			outputTokens := int64(usage.OutputTokens)
+			// Set token usage on child span
 			span.SetAttributes(
-				attribute.Int64("gen_ai.usage.input_tokens", int64(usage.InputTokens)),
-				attribute.Int64("gen_ai.usage.output_tokens", int64(usage.OutputTokens)),
+				attribute.Int64("gen_ai.usage.input_tokens", inputTokens),
+				attribute.Int64("gen_ai.usage.output_tokens", outputTokens),
 			)
+			// Propagate token usage to parent span if it exists and is valid
+			// This ensures token counts appear in Thread list view (which aggregates from root spans)
+			if parentSpan.SpanContext().IsValid() && parentSpan.IsRecording() {
+				parentSpan.SetAttributes(
+					attribute.Int64("gen_ai.usage.input_tokens", inputTokens),
+					attribute.Int64("gen_ai.usage.output_tokens", outputTokens),
+				)
+			}
 		}
 	}
 
