@@ -207,7 +207,7 @@ func (r *DatasetService) UpdateTags(ctx context.Context, datasetID string, body 
 	return
 }
 
-// Create a new dataset from a CSV file.
+// Create a new dataset from a CSV or JSONL file.
 func (r *DatasetService) Upload(ctx context.Context, body DatasetUploadParams, opts ...option.RequestOption) (res *Dataset, err error) {
 	opts = slices.Concat(r.Options, opts)
 	path := "api/v1/datasets/upload"
