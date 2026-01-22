@@ -1,5 +1,24 @@
 # Changelog
 
+## 0.1.0-alpha.7 (2026-01-22)
+
+Full Changelog: [v0.1.0-alpha.6...v0.1.0-alpha.7](https://github.com/langchain-ai/langsmith-go/compare/v0.1.0-alpha.6...v0.1.0-alpha.7)
+
+### Features
+
+* added high level tracer initialization ([#21](https://github.com/langchain-ai/langsmith-go/issues/21)) ([031e9e8](https://github.com/langchain-ai/langsmith-go/commit/031e9e89a644ca7e5ca518e3c8bbec50461e0585))
+* **api:** api update ([146db7b](https://github.com/langchain-ai/langsmith-go/commit/146db7b1b43663bc4d064aa8b40c4faff8339942))
+
+
+### Bug Fixes
+
+* **docs:** add missing pointer prefix to api.md return types ([0d8ba3a](https://github.com/langchain-ai/langsmith-go/commit/0d8ba3ae02d75b410a89cee54d07f7e7b73ba7ea))
+
+
+### Chores
+
+* **internal:** update `actions/checkout` version ([faac99e](https://github.com/langchain-ai/langsmith-go/commit/faac99e1ba11d1b495e077bfcc84f7b3336e280c))
+
 ## 0.1.0-alpha.6 (2026-01-15)
 
 Full Changelog: [v0.1.0-alpha.5...v0.1.0-alpha.6](https://github.com/langchain-ai/langsmith-go/compare/v0.1.0-alpha.5...v0.1.0-alpha.6)
