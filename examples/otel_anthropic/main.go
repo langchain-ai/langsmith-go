@@ -8,13 +8,8 @@ import (
 
 	"github.com/anthropics/anthropic-sdk-go"
 	"github.com/anthropics/anthropic-sdk-go/option"
-	"go.opentelemetry.io/otel"
-	"go.opentelemetry.io/otel/exporters/otlp/otlptrace/otlptracehttp"
-	"go.opentelemetry.io/otel/propagation"
-	"go.opentelemetry.io/otel/sdk/resource"
-	sdktrace "go.opentelemetry.io/otel/sdk/trace"
-	semconv "go.opentelemetry.io/otel/semconv/v1.21.0"
 
+	"github.com/langchain-ai/langsmith-go"
 	"github.com/langchain-ai/langsmith-go/examples/otel_anthropic/traceanthropic"
 )
 
@@ -36,11 +31,9 @@ import (
 //	go run ./examples/otel_anthropic
 
 const (
-	defaultProjectName    = "default"
-	serviceName           = "langsmith-go-anthropic-auto"
-	traceFlushWait        = 2 * time.Second
-	tracerShutdownTimeout = 10 * time.Second
-	batchTimeout          = 1 * time.Second
+	defaultProjectName = "default"
+	serviceName        = "langsmith-go-anthropic-auto"
+	traceFlushWait     = 2 * time.Second
 )
 
 func main() {
@@ -73,11 +66,15 @@ func run() error {
 	fmt.Println()
 
 	// Initialize OpenTelemetry tracer
-	shutdown, err := initTracer(langsmithKey, projectName)
+	ls, err := langsmith.NewTracer(
+		langsmith.WithAPIKey(langsmithKey),
+		langsmith.WithProjectName(projectName),
+		langsmith.WithServiceName(serviceName),
+	)
 	if err != nil {
 		return fmt.Errorf("initializing tracer: %w", err)
 	}
-	defer shutdown()
+	defer ls.Shutdown(context.Background())
 
 	fmt.Println("✓ OpenTelemetry configured for LangSmith")
 	fmt.Println()
@@ -102,7 +99,7 @@ func run() error {
 	// Example 1: Simple message
 	fmt.Println("1. Simple message:")
 	msg1, err := client.Messages.New(ctx, anthropic.MessageNewParams{
-		Model: anthropic.Model("claude-3-opus-20240229"),
+		Model: anthropic.Model("claude-sonnet-4-5-20250929"),
 		Messages: []anthropic.MessageParam{
 			anthropic.NewUserMessage(anthropic.ContentBlockParamUnion{
 				OfText: &anthropic.TextBlockParam{
@@ -128,7 +125,7 @@ func run() error {
 	// Example 2: Message with system prompt
 	fmt.Println("2. Message with system prompt:")
 	msg2, err := client.Messages.New(ctx, anthropic.MessageNewParams{
-		Model: anthropic.Model("claude-3-opus-20240229"),
+		Model: anthropic.Model("claude-sonnet-4-5-20250929"),
 		System: []anthropic.TextBlockParam{
 			{Text: "You are a helpful assistant that provides concise answers."},
 		},
@@ -178,55 +175,6 @@ func run() error {
 	return nil
 }
 
-// initTracer initializes the OpenTelemetry tracer with LangSmith OTLP exporter.
-func initTracer(apiKey, projectName string) (func(), error) {
-	ctx := context.Background()
-
-	// Create resource with service name
-	res, err := resource.New(ctx,
-		resource.WithAttributes(
-			semconv.ServiceName(serviceName),
-		),
-	)
-	if err != nil {
-		return nil, fmt.Errorf("creating resource: %w", err)
-	}
-
-	// Create OTLP HTTP exporter with LangSmith endpoint and headers
-	exporter, err := otlptracehttp.New(ctx,
-		otlptracehttp.WithEndpoint("api.smith.langchain.com"),
-		otlptracehttp.WithURLPath("/otel/v1/traces"),
-		otlptracehttp.WithHeaders(map[string]string{
-			"x-api-key":         apiKey,
-			"Langsmith-Project": projectName,
-		}),
-	)
-	if err != nil {
-		return nil, fmt.Errorf("creating OTLP exporter: %w", err)
-	}
-
-	// Create tracer provider
-	tp := sdktrace.NewTracerProvider(
-		sdktrace.WithBatcher(exporter, sdktrace.WithBatchTimeout(batchTimeout)),
-		sdktrace.WithResource(res),
-	)
-
-	// Set global tracer provider
-	otel.SetTracerProvider(tp)
-	otel.SetTextMapPropagator(propagation.NewCompositeTextMapPropagator(
-		propagation.TraceContext{},
-		propagation.Baggage{},
-	))
-
-	// Return shutdown function
-	return func() {
-		shutdownCtx, cancel := context.WithTimeout(ctx, tracerShutdownTimeout)
-		defer cancel()
-		if err := tp.Shutdown(shutdownCtx); err != nil {
-			fmt.Fprintf(os.Stderr, "Error shutting down tracer: %v\n", err)
-		}
-	}, nil
-}
 
 // getProjectName returns the project name from environment or default.
 func getProjectName() string {
