@@ -9,15 +9,11 @@ import (
 	"time"
 
 	"github.com/sashabaranov/go-openai"
-	"go.opentelemetry.io/otel"
 	"go.opentelemetry.io/otel/attribute"
 	"go.opentelemetry.io/otel/codes"
-	"go.opentelemetry.io/otel/exporters/otlp/otlptrace/otlptracehttp"
-	"go.opentelemetry.io/otel/propagation"
-	"go.opentelemetry.io/otel/sdk/resource"
-	sdktrace "go.opentelemetry.io/otel/sdk/trace"
-	semconv "go.opentelemetry.io/otel/semconv/v1.21.0"
 	"go.opentelemetry.io/otel/trace"
+
+	"github.com/langchain-ai/langsmith-go"
 )
 
 // Demonstrates how to make real OpenAI API calls with OpenTelemetry tracing to LangSmith.
@@ -43,8 +39,6 @@ const (
 	serviceName            = "langsmith-go-openai-example"
 	separator              = "============================================================"
 	traceFlushWaitDuration = 2 * time.Second
-	tracerShutdownTimeout  = 10 * time.Second
-	batchTimeout           = 1 * time.Second
 )
 
 func main() {
@@ -67,11 +61,15 @@ func run() error {
 	printConfig(cfg)
 
 	// Initialize OpenTelemetry tracer
-	shutdown, err := initTracer(cfg.langsmithKey, cfg.projectName)
+	ls, err := langsmith.NewTracer(
+		langsmith.WithAPIKey(cfg.langsmithKey),
+		langsmith.WithProjectName(cfg.projectName),
+		langsmith.WithServiceName(serviceName),
+	)
 	if err != nil {
 		return fmt.Errorf("initializing tracer: %w", err)
 	}
-	defer shutdown()
+	defer ls.Shutdown(context.Background())
 
 	fmt.Println("✓ OpenTelemetry configured for LangSmith")
 	fmt.Println()
@@ -81,7 +79,7 @@ func run() error {
 
 	// Run the agent workflow
 	ctx := context.Background()
-	tracer := otel.Tracer(serviceName)
+	tracer := ls.Tracer(serviceName)
 
 	ctx, workflowSpan := tracer.Start(ctx, "openai_agent_workflow",
 		trace.WithAttributes(
@@ -438,53 +436,4 @@ func executeWeatherTool(args map[string]interface{}) string {
 	return string(resultJSON)
 }
 
-// initTracer initializes the OpenTelemetry tracer with LangSmith OTLP exporter.
-func initTracer(apiKey, projectName string) (func(), error) {
-	ctx := context.Background()
-
-	// Create resource with service name
-	res, err := resource.New(ctx,
-		resource.WithAttributes(
-			semconv.ServiceName(serviceName),
-		),
-	)
-	if err != nil {
-		return nil, fmt.Errorf("creating resource: %w", err)
-	}
-
-	// Create OTLP HTTP exporter with LangSmith endpoint and headers
-	exporter, err := otlptracehttp.New(ctx,
-		otlptracehttp.WithEndpoint("api.smith.langchain.com"),
-		otlptracehttp.WithURLPath("/otel/v1/traces"),
-		otlptracehttp.WithHeaders(map[string]string{
-			"x-api-key":         apiKey,
-			"Langsmith-Project": projectName,
-		}),
-	)
-	if err != nil {
-		return nil, fmt.Errorf("creating OTLP exporter: %w", err)
-	}
-
-	// Create tracer provider with simple processor for immediate export
-	tp := sdktrace.NewTracerProvider(
-		sdktrace.WithBatcher(exporter, sdktrace.WithBatchTimeout(batchTimeout)),
-		sdktrace.WithResource(res),
-	)
-
-	// Set global tracer provider
-	otel.SetTracerProvider(tp)
-	otel.SetTextMapPropagator(propagation.NewCompositeTextMapPropagator(
-		propagation.TraceContext{},
-		propagation.Baggage{},
-	))
-
-	// Return shutdown function
-	return func() {
-		shutdownCtx, cancel := context.WithTimeout(ctx, tracerShutdownTimeout)
-		defer cancel()
-		if err := tp.Shutdown(shutdownCtx); err != nil {
-			fmt.Fprintf(os.Stderr, "Error shutting down tracer: %v\n", err)
-		}
-	}, nil
-}
 

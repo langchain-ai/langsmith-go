@@ -6,16 +6,11 @@ import (
 	"os"
 	"time"
 
-	"go.opentelemetry.io/otel"
 	"go.opentelemetry.io/otel/attribute"
-	"go.opentelemetry.io/otel/exporters/otlp/otlptrace/otlptracehttp"
-	"go.opentelemetry.io/otel/propagation"
-	"go.opentelemetry.io/otel/sdk/resource"
-	sdktrace "go.opentelemetry.io/otel/sdk/trace"
-	semconv "go.opentelemetry.io/otel/semconv/v1.21.0"
 	"go.opentelemetry.io/otel/trace"
 
 	"github.com/google/uuid"
+	"github.com/langchain-ai/langsmith-go"
 )
 
 // Demonstrates how to send OpenTelemetry traces to LangSmith UI.
@@ -32,16 +27,15 @@ import (
 //	go run ./examples/otel_ingestion
 
 const (
-	defaultProjectName    = "default"
-	otelEndpoint         = "https://api.smith.langchain.com/otel/v1/traces"
-	serviceName          = "langsmith-go"
-	tracerName           = "langsmith.go.example"
-	traceFlushWait       = 2 * time.Second
-	tracerShutdownTimeout = 5 * time.Second
-	llmSpan1Duration     = 500 * time.Millisecond
-	toolSpanDuration     = 300 * time.Millisecond
-	retrieverSpanDuration = 200 * time.Millisecond
-	llmSpan2Duration     = 400 * time.Millisecond
+	defaultProjectName     = "default"
+	otelEndpoint           = "https://api.smith.langchain.com/otel/v1/traces"
+	serviceName            = "langsmith-go"
+	tracerName             = "langsmith.go.example"
+	traceFlushWait         = 2 * time.Second
+	llmSpan1Duration       = 500 * time.Millisecond
+	toolSpanDuration       = 300 * time.Millisecond
+	retrieverSpanDuration  = 200 * time.Millisecond
+	llmSpan2Duration       = 400 * time.Millisecond
 )
 
 func main() {
@@ -64,15 +58,19 @@ func run() error {
 	printConfig(cfg)
 
 	// Initialize OpenTelemetry tracer
-	shutdown, err := initTracer(cfg.apiKey, cfg.projectName)
+	ls, err := langsmith.NewTracer(
+		langsmith.WithAPIKey(cfg.apiKey),
+		langsmith.WithProjectName(cfg.projectName),
+		langsmith.WithServiceName(serviceName),
+	)
 	if err != nil {
 		return fmt.Errorf("initializing tracer: %w", err)
 	}
-	defer shutdown()
+	defer ls.Shutdown(context.Background())
 
 	// Create spans
 	ctx := context.Background()
-	tracer := otel.Tracer(tracerName)
+	tracer := ls.Tracer(tracerName)
 	sessionID := uuid.New().String()
 
 	printWaterfallStructure()
@@ -237,54 +235,4 @@ func flushTraces() {
 	time.Sleep(traceFlushWait)
 }
 
-// initTracer initializes the OpenTelemetry tracer with LangSmith OTLP exporter.
-func initTracer(apiKey, projectName string) (func(), error) {
-	ctx := context.Background()
-
-	// Create resource with service name
-	res, err := resource.New(ctx,
-		resource.WithAttributes(
-			semconv.ServiceName(serviceName),
-		),
-	)
-	if err != nil {
-		return nil, fmt.Errorf("creating resource: %w", err)
-	}
-
-	// Create OTLP HTTP exporter with LangSmith endpoint and headers
-	// WithEndpoint expects just the hostname (without protocol)
-	exporter, err := otlptracehttp.New(ctx,
-		otlptracehttp.WithEndpoint("api.smith.langchain.com"),
-		otlptracehttp.WithURLPath("/otel/v1/traces"),
-		otlptracehttp.WithHeaders(map[string]string{
-			"x-api-key":         apiKey,
-			"Langsmith-Project": projectName,
-		}),
-	)
-	if err != nil {
-		return nil, fmt.Errorf("creating OTLP exporter: %w", err)
-	}
-
-	// Create tracer provider
-	tp := sdktrace.NewTracerProvider(
-		sdktrace.WithBatcher(exporter),
-		sdktrace.WithResource(res),
-	)
-
-	// Set global tracer provider
-	otel.SetTracerProvider(tp)
-	otel.SetTextMapPropagator(propagation.NewCompositeTextMapPropagator(
-		propagation.TraceContext{},
-		propagation.Baggage{},
-	))
-
-	// Return shutdown function
-	return func() {
-		shutdownCtx, cancel := context.WithTimeout(ctx, tracerShutdownTimeout)
-		defer cancel()
-		if err := tp.Shutdown(shutdownCtx); err != nil {
-			fmt.Fprintf(os.Stderr, "Error shutting down tracer: %v\n", err)
-		}
-	}, nil
-}
 

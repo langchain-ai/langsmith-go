@@ -3,6 +3,7 @@ module github.com/langchain-ai/langsmith-go
 go 1.23.0
 
 require (
+	github.com/anthropics/anthropic-sdk-go v1.19.0
 	github.com/google/uuid v1.6.0
 	github.com/sashabaranov/go-openai v1.41.2
 	github.com/tidwall/gjson v1.18.0
@@ -14,7 +15,6 @@ require (
 )
 
 require (
-	github.com/anthropics/anthropic-sdk-go v1.19.0 // indirect
 	github.com/cenkalti/backoff/v5 v5.0.3 // indirect
 	github.com/go-logr/logr v1.4.3 // indirect
 	github.com/go-logr/stdr v1.2.2 // indirect

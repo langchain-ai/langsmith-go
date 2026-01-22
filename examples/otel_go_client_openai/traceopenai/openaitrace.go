@@ -24,14 +24,28 @@ type MiddlewareNext func(*http.Request) (*http.Response, error)
 // Middleware adds OpenTelemetry tracing to OpenAI API requests.
 // It intercepts the request, creates spans, extracts/records attributes,
 // and then calls next to make the actual HTTP request.
+// Uses the global tracer provider.
 func Middleware(req *http.Request, next MiddlewareNext) (*http.Response, error) {
+	return MiddlewareWithTracerProvider(req, next, nil)
+}
+
+// MiddlewareWithTracerProvider adds OpenTelemetry tracing to OpenAI API requests.
+// It intercepts the request, creates spans, extracts/records attributes,
+// and then calls next to make the actual HTTP request.
+// If tp is nil, uses the global tracer provider.
+func MiddlewareWithTracerProvider(req *http.Request, next MiddlewareNext, tp trace.TracerProvider) (*http.Response, error) {
 	// Only trace OpenAI API requests
 	if !strings.Contains(req.URL.Host, "api.openai.com") {
 		return next(req)
 	}
 
 	ctx := req.Context()
-	tracer := otel.Tracer("github.com/sashabaranov/go-openai")
+	var tracer trace.Tracer
+	if tp != nil {
+		tracer = tp.Tracer("github.com/sashabaranov/go-openai")
+	} else {
+		tracer = otel.Tracer("github.com/sashabaranov/go-openai")
+	}
 
 	// Extract span context from request headers
 	ctx = otel.GetTextMapPropagator().Extract(ctx, propagation.HeaderCarrier(req.Header))

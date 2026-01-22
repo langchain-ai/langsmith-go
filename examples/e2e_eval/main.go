@@ -10,14 +10,8 @@ import (
 
 	"github.com/google/uuid"
 	"github.com/sashabaranov/go-openai"
-	"go.opentelemetry.io/otel"
 	"go.opentelemetry.io/otel/attribute"
 	"go.opentelemetry.io/otel/codes"
-	"go.opentelemetry.io/otel/exporters/otlp/otlptrace/otlptracehttp"
-	"go.opentelemetry.io/otel/propagation"
-	"go.opentelemetry.io/otel/sdk/resource"
-	sdktrace "go.opentelemetry.io/otel/sdk/trace"
-	semconv "go.opentelemetry.io/otel/semconv/v1.21.0"
 	"go.opentelemetry.io/otel/trace"
 
 	"github.com/langchain-ai/langsmith-go"
@@ -43,15 +37,13 @@ import (
 //	go run ./examples/e2e_eval
 
 const (
-	datasetName           = "Q&A Evaluation Dataset - Go Example"
-	datasetDescription    = "Dataset for Q&A evaluation with real OpenAI experiments."
-	serviceName           = "langsmith-go-e2e-eval"
-	traceFlushWait        = 2 * time.Second
-	tracerShutdownTimeout = 10 * time.Second
-	batchTimeout          = 1 * time.Second
-	defaultProjectName    = "default"
-	defaultEndpoint       = "https://api.smith.langchain.com"
-	dateTimeFormat        = "20060102-150405"
+	datasetName        = "Q&A Evaluation Dataset - Go Example"
+	datasetDescription = "Dataset for Q&A evaluation with real OpenAI experiments."
+	serviceName        = "langsmith-go-e2e-eval"
+	traceFlushWait     = 2 * time.Second
+	defaultProjectName = "default"
+	defaultEndpoint    = "https://api.smith.langchain.com"
+	dateTimeFormat     = "20060102-150405"
 
 	// OpenTelemetry span and attribute names
 	spanNameChatCompletion = "openai.chat.completion"
@@ -120,11 +112,15 @@ func run() error {
 	}
 
 	// 4. Configure OpenTelemetry
-	shutdown, err := initTracer(langsmithKey, projectName)
+	ls, err := langsmith.NewTracer(
+		langsmith.WithAPIKey(langsmithKey),
+		langsmith.WithProjectName(projectName),
+		langsmith.WithServiceName(serviceName),
+	)
 	if err != nil {
 		return fmt.Errorf("initializing tracer: %w", err)
 	}
-	defer shutdown()
+	defer ls.Shutdown(context.Background())
 
 	fmt.Println("   ✓ OpenTelemetry configured to send traces with session_id attribute")
 	fmt.Println()
@@ -133,7 +129,7 @@ func run() error {
 	openaiClient := openai.NewClient(openaiKey)
 
 	// 6. Run experiments
-	if err := runExperiments(ctx, openaiClient, testCases, examples, session.ID); err != nil {
+	if err := runExperiments(ctx, ls, openaiClient, testCases, examples, session.ID); err != nil {
 		return err
 	}
 
@@ -293,7 +289,7 @@ func createExperimentSession(ctx context.Context, client *langsmith.Client, data
 }
 
 // runExperiments runs the agent against each test case with OpenTelemetry tracing.
-func runExperiments(ctx context.Context, client *openai.Client, testCases []testCase, examples []langsmith.Example, sessionID string) error {
+func runExperiments(ctx context.Context, ls *langsmith.Tracer, client *openai.Client, testCases []testCase, examples []langsmith.Example, sessionID string) error {
 	if len(testCases) != len(examples) {
 		return fmt.Errorf("test cases count (%d) does not match examples count (%d)", len(testCases), len(examples))
 	}
@@ -303,7 +299,7 @@ func runExperiments(ctx context.Context, client *openai.Client, testCases []test
 	fmt.Println("   linked to the corresponding dataset example.")
 	fmt.Println()
 
-	tracer := otel.Tracer(serviceName)
+	tracer := ls.Tracer(serviceName)
 
 	for i, tc := range testCases {
 		example := examples[i]
@@ -447,52 +443,3 @@ func printSummary(dataset *langsmith.Dataset, session *langsmith.TracerSessionWi
 	fmt.Println()
 }
 
-// initTracer initializes the OpenTelemetry tracer with LangSmith OTLP exporter.
-func initTracer(apiKey, projectName string) (func(), error) {
-	ctx := context.Background()
-
-	// Create resource with service name
-	res, err := resource.New(ctx,
-		resource.WithAttributes(
-			semconv.ServiceName(serviceName),
-		),
-	)
-	if err != nil {
-		return nil, fmt.Errorf("creating resource: %w", err)
-	}
-
-	// Create OTLP HTTP exporter with LangSmith endpoint and headers
-	exporter, err := otlptracehttp.New(ctx,
-		otlptracehttp.WithEndpoint("api.smith.langchain.com"),
-		otlptracehttp.WithURLPath("/otel/v1/traces"),
-		otlptracehttp.WithHeaders(map[string]string{
-			"x-api-key":         apiKey,
-			"Langsmith-Project": projectName,
-		}),
-	)
-	if err != nil {
-		return nil, fmt.Errorf("creating OTLP exporter: %w", err)
-	}
-
-	// Create tracer provider
-	tp := sdktrace.NewTracerProvider(
-		sdktrace.WithBatcher(exporter, sdktrace.WithBatchTimeout(batchTimeout)),
-		sdktrace.WithResource(res),
-	)
-
-	// Set global tracer provider
-	otel.SetTracerProvider(tp)
-	otel.SetTextMapPropagator(propagation.NewCompositeTextMapPropagator(
-		propagation.TraceContext{},
-		propagation.Baggage{},
-	))
-
-	// Return shutdown function
-	return func() {
-		shutdownCtx, cancel := context.WithTimeout(ctx, tracerShutdownTimeout)
-		defer cancel()
-		if err := tp.Shutdown(shutdownCtx); err != nil {
-			fmt.Fprintf(os.Stderr, "Error shutting down tracer: %v\n", err)
-		}
-	}, nil
-}

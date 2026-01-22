@@ -8,16 +8,11 @@ import (
 
 	"github.com/google/uuid"
 	"github.com/sashabaranov/go-openai"
-	"go.opentelemetry.io/otel"
 	"go.opentelemetry.io/otel/attribute"
 	"go.opentelemetry.io/otel/baggage"
-	"go.opentelemetry.io/otel/exporters/otlp/otlptrace/otlptracehttp"
-	"go.opentelemetry.io/otel/propagation"
-	"go.opentelemetry.io/otel/sdk/resource"
-	sdktrace "go.opentelemetry.io/otel/sdk/trace"
-	semconv "go.opentelemetry.io/otel/semconv/v1.21.0"
 	"go.opentelemetry.io/otel/trace"
 
+	"github.com/langchain-ai/langsmith-go"
 	"github.com/langchain-ai/langsmith-go/examples/otel_go_client_openai/traceopenai"
 )
 
@@ -39,11 +34,9 @@ import (
 //	go run ./examples/otel_go_client_openai
 
 const (
-	defaultProjectName    = "default"
-	serviceName           = "langsmith-go-openai-auto"
-	traceFlushWait        = 2 * time.Second
-	tracerShutdownTimeout = 10 * time.Second
-	batchTimeout          = 1 * time.Second
+	defaultProjectName = "default"
+	serviceName        = "langsmith-go-openai-auto"
+	traceFlushWait     = 2 * time.Second
 )
 
 func main() {
@@ -76,11 +69,15 @@ func run() error {
 	fmt.Println()
 
 	// Initialize OpenTelemetry tracer
-	shutdown, err := initTracer(langsmithKey, projectName)
+	ls, err := langsmith.NewTracer(
+		langsmith.WithAPIKey(langsmithKey),
+		langsmith.WithProjectName(projectName),
+		langsmith.WithServiceName(serviceName),
+	)
 	if err != nil {
 		return fmt.Errorf("initializing tracer: %w", err)
 	}
-	defer shutdown()
+	defer ls.Shutdown(context.Background())
 
 	fmt.Println("✓ OpenTelemetry configured for LangSmith")
 	fmt.Println()
@@ -88,7 +85,7 @@ func run() error {
 	// Create OpenAI client with automatic tracing
 	// The traceopenai.Client() wraps the HTTP client to automatically trace all requests
 	cfg := openai.DefaultConfig(openaiKey)
-	cfg.HTTPClient = traceopenai.Client()
+	cfg.HTTPClient = traceopenai.Client(traceopenai.WithTracerProvider(ls.TracerProvider()))
 	client := openai.NewClientWithConfig(cfg)
 
 	fmt.Println("✓ OpenAI client configured with automatic tracing")
@@ -103,7 +100,7 @@ func run() error {
 	fmt.Println("  Each API call will be its own trace, all grouped into this thread")
 	fmt.Println()
 
-	tracer := otel.Tracer(serviceName)
+	tracer := ls.Tracer(serviceName)
 
 	fmt.Println("Creating separate traces for each API call (grouped in thread)...")
 	fmt.Println()
@@ -124,7 +121,7 @@ func run() error {
 	bag1, _ := baggage.New(member1)
 	ctx1 = baggage.ContextWithBaggage(ctx1, bag1)
 	
-	ctx1, trace1Root := tracer.Start(ctx1, "agent.chain",
+	ctx1, trace1Root := tracer.Start(ctx1, "trace.1.initial_question",
 		trace.WithAttributes(
 			attribute.String("gen_ai.operation.name", "chat"),
 			attribute.String("service.name", serviceName),
@@ -194,7 +191,7 @@ func run() error {
 	bag2, _ := baggage.New(member2)
 	ctx2 = baggage.ContextWithBaggage(ctx2, bag2)
 	
-	ctx2, trace2Root := tracer.Start(ctx2, "agent.chain",
+	ctx2, trace2Root := tracer.Start(ctx2, "trace.2.simple_math",
 		trace.WithAttributes(
 			attribute.String("gen_ai.operation.name", "chat"),
 			attribute.String("service.name", serviceName),
@@ -262,7 +259,7 @@ func run() error {
 	bag3, _ := baggage.New(member3)
 	ctx3 = baggage.ContextWithBaggage(ctx3, bag3)
 	
-	ctx3, trace3Root := tracer.Start(ctx3, "agent.chain",
+	ctx3, trace3Root := tracer.Start(ctx3, "trace.3.famous_scientist",
 		trace.WithAttributes(
 			attribute.String("gen_ai.operation.name", "chat"),
 			attribute.String("service.name", serviceName),
@@ -329,55 +326,6 @@ func run() error {
 	return nil
 }
 
-// initTracer initializes the OpenTelemetry tracer with LangSmith OTLP exporter.
-func initTracer(apiKey, projectName string) (func(), error) {
-	ctx := context.Background()
-
-	// Create resource with service name
-	res, err := resource.New(ctx,
-		resource.WithAttributes(
-			semconv.ServiceName(serviceName),
-		),
-	)
-	if err != nil {
-		return nil, fmt.Errorf("creating resource: %w", err)
-	}
-
-	// Create OTLP HTTP exporter with LangSmith endpoint and headers
-	exporter, err := otlptracehttp.New(ctx,
-		otlptracehttp.WithEndpoint("api.smith.langchain.com"),
-		otlptracehttp.WithURLPath("/otel/v1/traces"),
-		otlptracehttp.WithHeaders(map[string]string{
-			"x-api-key":         apiKey,
-			"Langsmith-Project": projectName,
-		}),
-	)
-	if err != nil {
-		return nil, fmt.Errorf("creating OTLP exporter: %w", err)
-	}
-
-	// Create tracer provider
-	tp := sdktrace.NewTracerProvider(
-		sdktrace.WithBatcher(exporter, sdktrace.WithBatchTimeout(batchTimeout)),
-		sdktrace.WithResource(res),
-	)
-
-	// Set global tracer provider
-	otel.SetTracerProvider(tp)
-	otel.SetTextMapPropagator(propagation.NewCompositeTextMapPropagator(
-		propagation.TraceContext{},
-		propagation.Baggage{},
-	))
-
-	// Return shutdown function
-	return func() {
-		shutdownCtx, cancel := context.WithTimeout(ctx, tracerShutdownTimeout)
-		defer cancel()
-		if err := tp.Shutdown(shutdownCtx); err != nil {
-			fmt.Fprintf(os.Stderr, "Error shutting down tracer: %v\n", err)
-		}
-	}, nil
-}
 
 // getProjectName returns the project name from environment or default.
 func getProjectName() string {
