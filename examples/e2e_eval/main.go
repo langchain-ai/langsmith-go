@@ -10,7 +10,6 @@ import (
 
 	"github.com/google/uuid"
 	"github.com/sashabaranov/go-openai"
-	"go.opentelemetry.io/otel"
 	"go.opentelemetry.io/otel/attribute"
 	"go.opentelemetry.io/otel/codes"
 	"go.opentelemetry.io/otel/trace"
@@ -130,7 +129,7 @@ func run() error {
 	openaiClient := openai.NewClient(openaiKey)
 
 	// 6. Run experiments
-	if err := runExperiments(ctx, openaiClient, testCases, examples, session.ID); err != nil {
+	if err := runExperiments(ctx, ls, openaiClient, testCases, examples, session.ID); err != nil {
 		return err
 	}
 
@@ -290,7 +289,7 @@ func createExperimentSession(ctx context.Context, client *langsmith.Client, data
 }
 
 // runExperiments runs the agent against each test case with OpenTelemetry tracing.
-func runExperiments(ctx context.Context, client *openai.Client, testCases []testCase, examples []langsmith.Example, sessionID string) error {
+func runExperiments(ctx context.Context, ls *langsmith.Tracer, client *openai.Client, testCases []testCase, examples []langsmith.Example, sessionID string) error {
 	if len(testCases) != len(examples) {
 		return fmt.Errorf("test cases count (%d) does not match examples count (%d)", len(testCases), len(examples))
 	}
@@ -300,7 +299,7 @@ func runExperiments(ctx context.Context, client *openai.Client, testCases []test
 	fmt.Println("   linked to the corresponding dataset example.")
 	fmt.Println()
 
-	tracer := otel.Tracer(serviceName)
+	tracer := ls.Tracer(serviceName)
 
 	for i, tc := range testCases {
 		example := examples[i]

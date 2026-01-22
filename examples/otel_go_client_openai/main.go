@@ -8,7 +8,6 @@ import (
 
 	"github.com/google/uuid"
 	"github.com/sashabaranov/go-openai"
-	"go.opentelemetry.io/otel"
 	"go.opentelemetry.io/otel/attribute"
 	"go.opentelemetry.io/otel/baggage"
 	"go.opentelemetry.io/otel/trace"
@@ -101,7 +100,7 @@ func run() error {
 	fmt.Println("  Each API call will be its own trace, all grouped into this thread")
 	fmt.Println()
 
-	tracer := otel.Tracer(serviceName)
+	tracer := ls.Tracer(serviceName)
 
 	fmt.Println("Creating separate traces for each API call (grouped in thread)...")
 	fmt.Println()

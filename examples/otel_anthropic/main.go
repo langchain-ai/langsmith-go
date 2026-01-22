@@ -83,7 +83,7 @@ func run() error {
 	// The traceanthropic.Client() wraps the HTTP client to automatically trace all requests
 	client := anthropic.NewClient(
 		option.WithAPIKey(anthropicKey),
-		option.WithHTTPClient(traceanthropic.Client()),
+		option.WithHTTPClient(traceanthropic.Client(traceanthropic.WithTracerProvider(ls.TracerProvider()))),
 	)
 
 	fmt.Println("✓ Anthropic client configured with automatic tracing")

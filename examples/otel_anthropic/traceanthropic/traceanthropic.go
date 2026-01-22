@@ -9,6 +9,13 @@
 //		anthropic.WithHTTPClient(traceanthropic.Client()),
 //	)
 //
+//	// Or use a custom tracer provider:
+//	tp := sdktrace.NewTracerProvider(...)
+//	client := anthropic.NewClient(
+//		anthropic.WithAPIKey(apiKey),
+//		anthropic.WithHTTPClient(traceanthropic.Client(traceanthropic.WithTracerProvider(tp))),
+//	)
+//
 //	// Your Anthropic API calls will now be automatically traced with LangSmith attrs
 //	// resp, err := client.Messages.Create(ctx, ...)
 package traceanthropic
@@ -28,15 +35,35 @@ import (
 	"go.opentelemetry.io/otel/trace"
 )
 
+// Option configures a traced HTTP client.
+type Option func(*clientOptions)
+
+type clientOptions struct {
+	tracerProvider trace.TracerProvider
+}
+
+// WithTracerProvider returns an Option that sets the tracer provider.
+// If not provided, the global tracer provider is used.
+func WithTracerProvider(tp trace.TracerProvider) Option {
+	return func(opts *clientOptions) {
+		opts.tracerProvider = tp
+	}
+}
+
 // Client returns a new http.Client configured with tracing middleware.
-// Equivalent to WrapClient(nil), which wraps the default transport.
-func Client() *http.Client {
-	return WrapClient(nil)
+// Equivalent to WrapClient(nil, opts...), which wraps the default transport.
+func Client(opts ...Option) *http.Client {
+	return WrapClient(nil, opts...)
 }
 
 // WrapClient wraps an existing http.Client with tracing middleware.
 // If client is nil, a new client with the default transport is created.
-func WrapClient(client *http.Client) *http.Client {
+func WrapClient(client *http.Client, opts ...Option) *http.Client {
+	options := &clientOptions{}
+	for _, opt := range opts {
+		opt(options)
+	}
+
 	if client == nil {
 		client = &http.Client{}
 	}
@@ -44,16 +71,20 @@ func WrapClient(client *http.Client) *http.Client {
 	if transport == nil {
 		transport = http.DefaultTransport
 	}
-	client.Transport = newRoundTripper(transport)
+	client.Transport = newRoundTripper(transport, options.tracerProvider)
 	return client
 }
 
 type roundTripper struct {
-	base http.RoundTripper
+	base           http.RoundTripper
+	tracerProvider trace.TracerProvider
 }
 
-func newRoundTripper(base http.RoundTripper) http.RoundTripper {
-	return &roundTripper{base: base}
+func newRoundTripper(base http.RoundTripper, tp trace.TracerProvider) http.RoundTripper {
+	return &roundTripper{
+		base:           base,
+		tracerProvider: tp,
+	}
 }
 
 // RoundTrip intercepts requests/responses to add OpenTelemetry tracing.
@@ -64,7 +95,12 @@ func (rt *roundTripper) RoundTrip(req *http.Request) (*http.Response, error) {
 	}
 
 	ctx := req.Context()
-	tracer := otel.Tracer("github.com/anthropics/anthropic-sdk-go")
+	var tracer trace.Tracer
+	if rt.tracerProvider != nil {
+		tracer = rt.tracerProvider.Tracer("github.com/anthropics/anthropic-sdk-go")
+	} else {
+		tracer = otel.Tracer("github.com/anthropics/anthropic-sdk-go")
+	}
 
 	// Extract span context from request headers
 	ctx = otel.GetTextMapPropagator().Extract(ctx, propagation.HeaderCarrier(req.Header))

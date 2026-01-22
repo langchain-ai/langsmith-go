@@ -6,7 +6,6 @@ import (
 	"os"
 	"time"
 
-	"go.opentelemetry.io/otel"
 	"go.opentelemetry.io/otel/attribute"
 	"go.opentelemetry.io/otel/trace"
 
@@ -71,7 +70,7 @@ func run() error {
 
 	// Create spans
 	ctx := context.Background()
-	tracer := otel.Tracer(tracerName)
+	tracer := ls.Tracer(tracerName)
 	sessionID := uuid.New().String()
 
 	printWaterfallStructure()

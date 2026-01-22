@@ -3,6 +3,7 @@ package langsmith
 import (
 	"context"
 	"fmt"
+	"os"
 	"time"
 
 	"go.opentelemetry.io/otel"
@@ -83,12 +84,19 @@ func NewTracer(opts ...TracerOption) (*Tracer, error) {
 		opt(cfg)
 	}
 
+	// Fall back to environment variables if not provided via options
 	if cfg.apiKey == "" {
-		return nil, fmt.Errorf("API key is required (use WithAPIKey)")
+		cfg.apiKey = os.Getenv("LANGSMITH_API_KEY")
+	}
+	if cfg.apiKey == "" {
+		return nil, fmt.Errorf("API key is required (use WithAPIKey or set LANGSMITH_API_KEY environment variable)")
 	}
 
 	if cfg.projectName == "" {
-		return nil, fmt.Errorf("project name is required (use WithProjectName)")
+		cfg.projectName = os.Getenv("LANGSMITH_PROJECT")
+	}
+	if cfg.projectName == "" {
+		cfg.projectName = "default"
 	}
 
 	ctx := context.Background()
@@ -141,6 +149,12 @@ func NewTracer(opts ...TracerOption) (*Tracer, error) {
 // TracerProvider returns the underlying trace.TracerProvider.
 func (t *Tracer) TracerProvider() trace.TracerProvider {
 	return t.tp
+}
+
+// Tracer returns a trace.Tracer with the given name.
+// This is a convenience method that wraps TracerProvider().Tracer(name).
+func (t *Tracer) Tracer(name string) trace.Tracer {
+	return t.tp.Tracer(name)
 }
 
 // Shutdown gracefully shuts down the tracer provider.

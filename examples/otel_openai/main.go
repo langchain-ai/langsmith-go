@@ -9,7 +9,6 @@ import (
 	"time"
 
 	"github.com/sashabaranov/go-openai"
-	"go.opentelemetry.io/otel"
 	"go.opentelemetry.io/otel/attribute"
 	"go.opentelemetry.io/otel/codes"
 	"go.opentelemetry.io/otel/trace"
@@ -80,7 +79,7 @@ func run() error {
 
 	// Run the agent workflow
 	ctx := context.Background()
-	tracer := otel.Tracer(serviceName)
+	tracer := ls.Tracer(serviceName)
 
 	ctx, workflowSpan := tracer.Start(ctx, "openai_agent_workflow",
 		trace.WithAttributes(
