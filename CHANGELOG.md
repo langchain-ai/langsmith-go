@@ -1,5 +1,21 @@
 # Changelog
 
+## 0.1.0-alpha.8 (2026-01-23)
+
+Full Changelog: [v0.1.0-alpha.7...v0.1.0-alpha.8](https://github.com/langchain-ai/langsmith-go/compare/v0.1.0-alpha.7...v0.1.0-alpha.8)
+
+### Features
+
+* **api:** api update ([086dbef](https://github.com/langchain-ai/langsmith-go/commit/086dbefc54d0aa66112df736ffa9931db9023475))
+* **api:** manual updates ([6df9292](https://github.com/langchain-ai/langsmith-go/commit/6df92927c7dc7072023b115552942b8641b94b65))
+* **api:** manual updates ([7146ed4](https://github.com/langchain-ai/langsmith-go/commit/7146ed43004342d207bbd6250349ae2f77f62f5d))
+* **api:** manual updates ([531ec16](https://github.com/langchain-ai/langsmith-go/commit/531ec16a61dba409170587de365832a09e3326c6))
+
+
+### Chores
+
+* rename langchain_base_url to langsmith_endpoint ([#22](https://github.com/langchain-ai/langsmith-go/issues/22)) ([66b5cb4](https://github.com/langchain-ai/langsmith-go/commit/66b5cb449050d5fff16ed86bad49fe82a99b3eee))
+
 ## 0.1.0-alpha.7 (2026-01-22)
 
 Full Changelog: [v0.1.0-alpha.6...v0.1.0-alpha.7](https://github.com/langchain-ai/langsmith-go/compare/v0.1.0-alpha.6...v0.1.0-alpha.7)
