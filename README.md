@@ -45,7 +45,7 @@ The client can be configured using environment variables or by passing options d
 | `LANGSMITH_BEARER_TOKEN` | Optional* | Bearer token for authentication (alternative to API key) |
 | `LANGSMITH_TENANT_ID` | Optional | Your LangSmith tenant ID |
 | `LANGSMITH_ORGANIZATION_ID` | Optional | Your LangSmith organization ID |
-| `LANGCHAIN_BASE_URL` | Optional | Custom base URL for the LangSmith API (defaults to `https://api.smith.langchain.com`) |
+| `LANGSMITH_ENDPOINT` | Optional | Custom base URL for the LangSmith API (defaults to `https://api.smith.langchain.com`).
 
 \* Either `LANGSMITH_API_KEY` or `LANGSMITH_BEARER_TOKEN` is required for authentication.
 

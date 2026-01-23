@@ -23,7 +23,7 @@ import (
 // Prerequisites:
 //   - LANGSMITH_API_KEY: Your LangSmith API key
 //   - LANGSMITH_OWNER: Your LangSmith owner (defaults to "-" if not set)
-//   - LANGCHAIN_BASE_URL: LangSmith API URL (https://api.smith.langchain.com)
+//   - LANGSMITH_ENDPOINT: LangSmith API URL (https://api.smith.langchain.com)
 //
 // Running:
 //
