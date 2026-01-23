@@ -141,11 +141,55 @@ type AnnotationQueueRunDeleteAllResponse = interface{}
 type AnnotationQueueRunDeleteQueueResponse = interface{}
 
 type AnnotationQueueRunNewParams struct {
-	Body interface{} `json:"body,required"`
+	Body AnnotationQueueRunNewParamsBodyUnion `json:"body,required" format:"uuid"`
 }
 
 func (r AnnotationQueueRunNewParams) MarshalJSON() (data []byte, err error) {
 	return apijson.MarshalRoot(r.Body)
+}
+
+// Satisfied by [AnnotationQueueRunNewParamsBodyRunIDList],
+// [AnnotationQueueRunNewParamsBodyRunAddObjects].
+type AnnotationQueueRunNewParamsBodyUnion interface {
+	implementsAnnotationQueueRunNewParamsBodyUnion()
+}
+
+type AnnotationQueueRunNewParamsBodyRunIDList []string
+
+func (r AnnotationQueueRunNewParamsBodyRunIDList) implementsAnnotationQueueRunNewParamsBodyUnion() {}
+
+type AnnotationQueueRunNewParamsBodyRunAddObjects []AnnotationQueueRunNewParamsBodyRunAddObject
+
+func (r AnnotationQueueRunNewParamsBodyRunAddObjects) implementsAnnotationQueueRunNewParamsBodyUnion() {
+}
+
+// Schema for adding a run to an annotation queue with optional metadata.
+type AnnotationQueueRunNewParamsBodyRunAddObject struct {
+	RunID       param.Field[string]                                                `json:"run_id,required" format:"uuid"`
+	ParentRunID param.Field[string]                                                `json:"parent_run_id" format:"uuid"`
+	SessionID   param.Field[string]                                                `json:"session_id" format:"uuid"`
+	StartTime   param.Field[time.Time]                                             `json:"start_time" format:"date-time"`
+	TraceID     param.Field[string]                                                `json:"trace_id" format:"uuid"`
+	TraceTier   param.Field[AnnotationQueueRunNewParamsBodyRunAddObjectsTraceTier] `json:"trace_tier"`
+}
+
+func (r AnnotationQueueRunNewParamsBodyRunAddObject) MarshalJSON() (data []byte, err error) {
+	return apijson.MarshalRoot(r)
+}
+
+type AnnotationQueueRunNewParamsBodyRunAddObjectsTraceTier string
+
+const (
+	AnnotationQueueRunNewParamsBodyRunAddObjectsTraceTierLonglived  AnnotationQueueRunNewParamsBodyRunAddObjectsTraceTier = "longlived"
+	AnnotationQueueRunNewParamsBodyRunAddObjectsTraceTierShortlived AnnotationQueueRunNewParamsBodyRunAddObjectsTraceTier = "shortlived"
+)
+
+func (r AnnotationQueueRunNewParamsBodyRunAddObjectsTraceTier) IsKnown() bool {
+	switch r {
+	case AnnotationQueueRunNewParamsBodyRunAddObjectsTraceTierLonglived, AnnotationQueueRunNewParamsBodyRunAddObjectsTraceTierShortlived:
+		return true
+	}
+	return false
 }
 
 type AnnotationQueueRunUpdateParams struct {
