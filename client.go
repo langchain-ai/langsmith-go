@@ -31,10 +31,13 @@ type Client struct {
 
 // DefaultClientOptions read from the environment (LANGSMITH_API_KEY,
 // LANGSMITH_TENANT_ID, LANGSMITH_BEARER_TOKEN, LANGSMITH_ORGANIZATION_ID,
-// LANGCHAIN_BASE_URL). This should be used to initialize new clients.
+// LANGSMITH_ENDPOINT). This should be used to initialize new clients.
 func DefaultClientOptions() []option.RequestOption {
 	defaults := []option.RequestOption{option.WithEnvironmentProduction()}
-	if o, ok := os.LookupEnv("LANGCHAIN_BASE_URL"); ok {
+	// Check LANGSMITH_ENDPOINT first, then fall back to LANGCHAIN_BASE_URL for backward compatibility
+	if o, ok := os.LookupEnv("LANGSMITH_ENDPOINT"); ok {
+		defaults = append(defaults, option.WithBaseURL(o))
+	} else if o, ok := os.LookupEnv("LANGCHAIN_BASE_URL"); ok {
 		defaults = append(defaults, option.WithBaseURL(o))
 	}
 	if o, ok := os.LookupEnv("LANGSMITH_API_KEY"); ok {
@@ -54,7 +57,7 @@ func DefaultClientOptions() []option.RequestOption {
 
 // NewClient generates a new client with the default option read from the
 // environment (LANGSMITH_API_KEY, LANGSMITH_TENANT_ID, LANGSMITH_BEARER_TOKEN,
-// LANGSMITH_ORGANIZATION_ID, LANGCHAIN_BASE_URL). The option passed in as
+// LANGSMITH_ORGANIZATION_ID, LANGSMITH_ENDPOINT). The option passed in as
 // arguments are applied after these default arguments, and all option will be
 // passed down to the services and requests that this client makes.
 func NewClient(opts ...option.RequestOption) (r *Client) {
