@@ -34,10 +34,7 @@ type Client struct {
 // LANGSMITH_ENDPOINT). This should be used to initialize new clients.
 func DefaultClientOptions() []option.RequestOption {
 	defaults := []option.RequestOption{option.WithEnvironmentProduction()}
-	// Check LANGSMITH_ENDPOINT first, then fall back to LANGCHAIN_BASE_URL for backward compatibility
 	if o, ok := os.LookupEnv("LANGSMITH_ENDPOINT"); ok {
-		defaults = append(defaults, option.WithBaseURL(o))
-	} else if o, ok := os.LookupEnv("LANGCHAIN_BASE_URL"); ok {
 		defaults = append(defaults, option.WithBaseURL(o))
 	}
 	if o, ok := os.LookupEnv("LANGSMITH_API_KEY"); ok {
