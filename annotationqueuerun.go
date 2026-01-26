@@ -148,15 +148,50 @@ func (r AnnotationQueueRunNewParams) MarshalJSON() (data []byte, err error) {
 	return apijson.MarshalRoot(r.Body)
 }
 
-// Satisfied by [AnnotationQueueRunNewParamsBodyArray],
-// [AnnotationQueueRunNewParamsBodyArray].
+// Satisfied by [AnnotationQueueRunNewParamsBodyRunsUuidArray],
+// [AnnotationQueueRunNewParamsBodyRunsAnnotationQueueRunAddSchemaArray].
 type AnnotationQueueRunNewParamsBodyUnion interface {
 	implementsAnnotationQueueRunNewParamsBodyUnion()
 }
 
-type AnnotationQueueRunNewParamsBodyArray []string
+type AnnotationQueueRunNewParamsBodyRunsUuidArray []string
 
-func (r AnnotationQueueRunNewParamsBodyArray) implementsAnnotationQueueRunNewParamsBodyUnion() {}
+func (r AnnotationQueueRunNewParamsBodyRunsUuidArray) implementsAnnotationQueueRunNewParamsBodyUnion() {
+}
+
+type AnnotationQueueRunNewParamsBodyRunsAnnotationQueueRunAddSchemaArray []AnnotationQueueRunNewParamsBodyRunsAnnotationQueueRunAddSchemaArrayItem
+
+func (r AnnotationQueueRunNewParamsBodyRunsAnnotationQueueRunAddSchemaArray) implementsAnnotationQueueRunNewParamsBodyUnion() {
+}
+
+// Schema for adding a run to an annotation queue with optional metadata.
+type AnnotationQueueRunNewParamsBodyRunsAnnotationQueueRunAddSchemaArrayItem struct {
+	RunID       param.Field[string]                                                                       `json:"run_id,required" format:"uuid"`
+	ParentRunID param.Field[string]                                                                       `json:"parent_run_id" format:"uuid"`
+	SessionID   param.Field[string]                                                                       `json:"session_id" format:"uuid"`
+	StartTime   param.Field[time.Time]                                                                    `json:"start_time" format:"date-time"`
+	TraceID     param.Field[string]                                                                       `json:"trace_id" format:"uuid"`
+	TraceTier   param.Field[AnnotationQueueRunNewParamsBodyRunsAnnotationQueueRunAddSchemaArrayTraceTier] `json:"trace_tier"`
+}
+
+func (r AnnotationQueueRunNewParamsBodyRunsAnnotationQueueRunAddSchemaArrayItem) MarshalJSON() (data []byte, err error) {
+	return apijson.MarshalRoot(r)
+}
+
+type AnnotationQueueRunNewParamsBodyRunsAnnotationQueueRunAddSchemaArrayTraceTier string
+
+const (
+	AnnotationQueueRunNewParamsBodyRunsAnnotationQueueRunAddSchemaArrayTraceTierLonglived  AnnotationQueueRunNewParamsBodyRunsAnnotationQueueRunAddSchemaArrayTraceTier = "longlived"
+	AnnotationQueueRunNewParamsBodyRunsAnnotationQueueRunAddSchemaArrayTraceTierShortlived AnnotationQueueRunNewParamsBodyRunsAnnotationQueueRunAddSchemaArrayTraceTier = "shortlived"
+)
+
+func (r AnnotationQueueRunNewParamsBodyRunsAnnotationQueueRunAddSchemaArrayTraceTier) IsKnown() bool {
+	switch r {
+	case AnnotationQueueRunNewParamsBodyRunsAnnotationQueueRunAddSchemaArrayTraceTierLonglived, AnnotationQueueRunNewParamsBodyRunsAnnotationQueueRunAddSchemaArrayTraceTierShortlived:
+		return true
+	}
+	return false
+}
 
 type AnnotationQueueRunUpdateParams struct {
 	AddedAt          param.Field[time.Time] `json:"added_at" format:"date-time"`
