@@ -148,45 +148,46 @@ func (r AnnotationQueueRunNewParams) MarshalJSON() (data []byte, err error) {
 	return apijson.MarshalRoot(r.Body)
 }
 
-// Satisfied by [AnnotationQueueRunNewParamsBodyRunIDList],
-// [AnnotationQueueRunNewParamsBodyRunAddObjects].
+// Satisfied by [AnnotationQueueRunNewParamsBodyRunsUuidArray],
+// [AnnotationQueueRunNewParamsBodyRunsAnnotationQueueRunAddSchemaArray].
 type AnnotationQueueRunNewParamsBodyUnion interface {
 	implementsAnnotationQueueRunNewParamsBodyUnion()
 }
 
-type AnnotationQueueRunNewParamsBodyRunIDList []string
+type AnnotationQueueRunNewParamsBodyRunsUuidArray []string
 
-func (r AnnotationQueueRunNewParamsBodyRunIDList) implementsAnnotationQueueRunNewParamsBodyUnion() {}
+func (r AnnotationQueueRunNewParamsBodyRunsUuidArray) implementsAnnotationQueueRunNewParamsBodyUnion() {
+}
 
-type AnnotationQueueRunNewParamsBodyRunAddObjects []AnnotationQueueRunNewParamsBodyRunAddObject
+type AnnotationQueueRunNewParamsBodyRunsAnnotationQueueRunAddSchemaArray []AnnotationQueueRunNewParamsBodyRunsAnnotationQueueRunAddSchemaArrayItem
 
-func (r AnnotationQueueRunNewParamsBodyRunAddObjects) implementsAnnotationQueueRunNewParamsBodyUnion() {
+func (r AnnotationQueueRunNewParamsBodyRunsAnnotationQueueRunAddSchemaArray) implementsAnnotationQueueRunNewParamsBodyUnion() {
 }
 
 // Schema for adding a run to an annotation queue with optional metadata.
-type AnnotationQueueRunNewParamsBodyRunAddObject struct {
-	RunID       param.Field[string]                                                `json:"run_id,required" format:"uuid"`
-	ParentRunID param.Field[string]                                                `json:"parent_run_id" format:"uuid"`
-	SessionID   param.Field[string]                                                `json:"session_id" format:"uuid"`
-	StartTime   param.Field[time.Time]                                             `json:"start_time" format:"date-time"`
-	TraceID     param.Field[string]                                                `json:"trace_id" format:"uuid"`
-	TraceTier   param.Field[AnnotationQueueRunNewParamsBodyRunAddObjectsTraceTier] `json:"trace_tier"`
+type AnnotationQueueRunNewParamsBodyRunsAnnotationQueueRunAddSchemaArrayItem struct {
+	RunID       param.Field[string]                                                                       `json:"run_id,required" format:"uuid"`
+	ParentRunID param.Field[string]                                                                       `json:"parent_run_id" format:"uuid"`
+	SessionID   param.Field[string]                                                                       `json:"session_id" format:"uuid"`
+	StartTime   param.Field[time.Time]                                                                    `json:"start_time" format:"date-time"`
+	TraceID     param.Field[string]                                                                       `json:"trace_id" format:"uuid"`
+	TraceTier   param.Field[AnnotationQueueRunNewParamsBodyRunsAnnotationQueueRunAddSchemaArrayTraceTier] `json:"trace_tier"`
 }
 
-func (r AnnotationQueueRunNewParamsBodyRunAddObject) MarshalJSON() (data []byte, err error) {
+func (r AnnotationQueueRunNewParamsBodyRunsAnnotationQueueRunAddSchemaArrayItem) MarshalJSON() (data []byte, err error) {
 	return apijson.MarshalRoot(r)
 }
 
-type AnnotationQueueRunNewParamsBodyRunAddObjectsTraceTier string
+type AnnotationQueueRunNewParamsBodyRunsAnnotationQueueRunAddSchemaArrayTraceTier string
 
 const (
-	AnnotationQueueRunNewParamsBodyRunAddObjectsTraceTierLonglived  AnnotationQueueRunNewParamsBodyRunAddObjectsTraceTier = "longlived"
-	AnnotationQueueRunNewParamsBodyRunAddObjectsTraceTierShortlived AnnotationQueueRunNewParamsBodyRunAddObjectsTraceTier = "shortlived"
+	AnnotationQueueRunNewParamsBodyRunsAnnotationQueueRunAddSchemaArrayTraceTierLonglived  AnnotationQueueRunNewParamsBodyRunsAnnotationQueueRunAddSchemaArrayTraceTier = "longlived"
+	AnnotationQueueRunNewParamsBodyRunsAnnotationQueueRunAddSchemaArrayTraceTierShortlived AnnotationQueueRunNewParamsBodyRunsAnnotationQueueRunAddSchemaArrayTraceTier = "shortlived"
 )
 
-func (r AnnotationQueueRunNewParamsBodyRunAddObjectsTraceTier) IsKnown() bool {
+func (r AnnotationQueueRunNewParamsBodyRunsAnnotationQueueRunAddSchemaArrayTraceTier) IsKnown() bool {
 	switch r {
-	case AnnotationQueueRunNewParamsBodyRunAddObjectsTraceTierLonglived, AnnotationQueueRunNewParamsBodyRunAddObjectsTraceTierShortlived:
+	case AnnotationQueueRunNewParamsBodyRunsAnnotationQueueRunAddSchemaArrayTraceTierLonglived, AnnotationQueueRunNewParamsBodyRunsAnnotationQueueRunAddSchemaArrayTraceTierShortlived:
 		return true
 	}
 	return false
