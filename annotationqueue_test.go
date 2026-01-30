@@ -72,6 +72,7 @@ func TestAnnotationQueueUpdateWithOptionalParams(t *testing.T) {
 			RubricItems: langsmith.F([]langsmith.AnnotationQueueRubricItemSchemaParam{{
 				FeedbackKey: langsmith.F("feedback_key"),
 				Description: langsmith.F("description"),
+				IsRequired:  langsmith.F(true),
 				ScoreDescriptions: langsmith.F(map[string]string{
 					"foo": "string",
 				}),
@@ -146,6 +147,7 @@ func TestAnnotationQueueAnnotationQueuesWithOptionalParams(t *testing.T) {
 		RubricItems: langsmith.F([]langsmith.AnnotationQueueRubricItemSchemaParam{{
 			FeedbackKey: langsmith.F("feedback_key"),
 			Description: langsmith.F("description"),
+			IsRequired:  langsmith.F(true),
 			ScoreDescriptions: langsmith.F(map[string]string{
 				"foo": "string",
 			}),
