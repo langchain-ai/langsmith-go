@@ -559,6 +559,7 @@ type DatasetRunNewParams struct {
 	// Response format, e.g., 'csv'
 	Format                  param.Field[DatasetRunNewParamsFormat]       `query:"format"`
 	ComparativeExperimentID param.Field[string]                          `json:"comparative_experiment_id" format:"uuid"`
+	ExampleIDs              param.Field[[]string]                        `json:"example_ids" format:"uuid"`
 	Filters                 param.Field[map[string][]string]             `json:"filters"`
 	Limit                   param.Field[int64]                           `json:"limit"`
 	Offset                  param.Field[int64]                           `json:"offset"`
