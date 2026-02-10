@@ -176,6 +176,7 @@ type RepoWithLookups struct {
 	Tags           []string  `json:"tags,required"`
 	TenantID       string    `json:"tenant_id,required" format:"uuid"`
 	UpdatedAt      time.Time `json:"updated_at,required" format:"date-time"`
+	CommitTags     []string  `json:"commit_tags"`
 	CreatedBy      string    `json:"created_by,nullable"`
 	Description    string    `json:"description,nullable"`
 	LastCommitHash string    `json:"last_commit_hash,nullable"`
@@ -206,6 +207,7 @@ type repoWithLookupsJSON struct {
 	Tags                 apijson.Field
 	TenantID             apijson.Field
 	UpdatedAt            apijson.Field
+	CommitTags           apijson.Field
 	CreatedBy            apijson.Field
 	Description          apijson.Field
 	LastCommitHash       apijson.Field

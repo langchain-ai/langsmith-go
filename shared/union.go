@@ -43,6 +43,8 @@ func (UnionString) ImplementsFeedbackSchemaCorrectionUnion()               {}
 func (UnionString) ImplementsFeedbackSchemaValueUnion()                    {}
 func (UnionString) ImplementsFeedbackUpdateParamsCorrectionUnion()         {}
 func (UnionString) ImplementsFeedbackUpdateParamsValueUnion()              {}
+func (UnionString) ImplementsFeedbackListParamsRunUnion()                  {}
+func (UnionString) ImplementsFeedbackListParamsSessionUnion()              {}
 func (UnionString) ImplementsFeedbackTokenGetParamsValueUnion()            {}
 func (UnionString) ImplementsFeedbackTokenUpdateParamsCorrectionUnion()    {}
 func (UnionString) ImplementsFeedbackTokenUpdateParamsValueUnion()         {}
