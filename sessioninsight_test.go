@@ -37,6 +37,7 @@ func TestSessionInsightNewWithOptionalParams(t *testing.T) {
 				AttributeSchemas: langsmith.F(map[string]interface{}{
 					"foo": "bar",
 				}),
+				ConfigID:   langsmith.F("182bd5e5-6e1a-4fe4-a799-aa6d9a6ab26e"),
 				EndTime:    langsmith.F(time.Now()),
 				Filter:     langsmith.F("filter"),
 				Hierarchy:  langsmith.F([]int64{int64(0)}),

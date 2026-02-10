@@ -116,6 +116,7 @@ func (r *SessionInsightService) GetRuns(ctx context.Context, sessionID string, j
 // Request to create a run clustering job.
 type CreateRunClusteringJobRequestParam struct {
 	AttributeSchemas     param.Field[map[string]interface{}]             `json:"attribute_schemas"`
+	ConfigID             param.Field[string]                             `json:"config_id" format:"uuid"`
 	EndTime              param.Field[time.Time]                          `json:"end_time" format:"date-time"`
 	Filter               param.Field[string]                             `json:"filter"`
 	Hierarchy            param.Field[[]int64]                            `json:"hierarchy"`
