@@ -236,12 +236,13 @@ func (r DataType) implementsDatasetListParamsDataTypeUnion() {}
 
 // Dataset schema.
 type Dataset struct {
-	ID           string    `json:"id,required" format:"uuid"`
-	ModifiedAt   time.Time `json:"modified_at,required" format:"date-time"`
-	Name         string    `json:"name,required"`
-	SessionCount int64     `json:"session_count,required"`
-	TenantID     string    `json:"tenant_id,required" format:"uuid"`
-	CreatedAt    time.Time `json:"created_at" format:"date-time"`
+	ID                   string    `json:"id,required" format:"uuid"`
+	ModifiedAt           time.Time `json:"modified_at,required" format:"date-time"`
+	Name                 string    `json:"name,required"`
+	SessionCount         int64     `json:"session_count,required"`
+	TenantID             string    `json:"tenant_id,required" format:"uuid"`
+	BaselineExperimentID string    `json:"baseline_experiment_id,nullable" format:"uuid"`
+	CreatedAt            time.Time `json:"created_at" format:"date-time"`
 	// Enum for dataset data types.
 	DataType                DataType                `json:"data_type,nullable"`
 	Description             string                  `json:"description,nullable"`
@@ -262,6 +263,7 @@ type datasetJSON struct {
 	Name                    apijson.Field
 	SessionCount            apijson.Field
 	TenantID                apijson.Field
+	BaselineExperimentID    apijson.Field
 	CreatedAt               apijson.Field
 	DataType                apijson.Field
 	Description             apijson.Field
@@ -373,6 +375,8 @@ type MissingParam struct {
 func (r MissingParam) MarshalJSON() (data []byte, err error) {
 	return apijson.MarshalRoot(r)
 }
+
+func (r MissingParam) ImplementsDatasetUpdateParamsBaselineExperimentIDUnion() {}
 
 func (r MissingParam) ImplementsDatasetUpdateParamsDescriptionUnion() {}
 
@@ -495,6 +499,7 @@ func (r DatasetNewParams) MarshalJSON() (data []byte, err error) {
 }
 
 type DatasetUpdateParams struct {
+	BaselineExperimentID    param.Field[DatasetUpdateParamsBaselineExperimentIDUnion]    `json:"baseline_experiment_id" format:"uuid"`
 	Description             param.Field[DatasetUpdateParamsDescriptionUnion]             `json:"description"`
 	InputsSchemaDefinition  param.Field[DatasetUpdateParamsInputsSchemaDefinitionUnion]  `json:"inputs_schema_definition"`
 	Metadata                param.Field[DatasetUpdateParamsMetadataUnion]                `json:"metadata"`
@@ -506,6 +511,11 @@ type DatasetUpdateParams struct {
 
 func (r DatasetUpdateParams) MarshalJSON() (data []byte, err error) {
 	return apijson.MarshalRoot(r)
+}
+
+// Satisfied by [shared.UnionString], [MissingParam].
+type DatasetUpdateParamsBaselineExperimentIDUnion interface {
+	ImplementsDatasetUpdateParamsBaselineExperimentIDUnion()
 }
 
 // Satisfied by [shared.UnionString], [MissingParam].
