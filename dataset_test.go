@@ -106,7 +106,8 @@ func TestDatasetUpdateWithOptionalParams(t *testing.T) {
 		context.TODO(),
 		"182bd5e5-6e1a-4fe4-a799-aa6d9a6ab26e",
 		langsmith.DatasetUpdateParams{
-			Description: langsmith.F[langsmith.DatasetUpdateParamsDescriptionUnion](shared.UnionString("string")),
+			BaselineExperimentID: langsmith.F[langsmith.DatasetUpdateParamsBaselineExperimentIDUnion](shared.UnionString("182bd5e5-6e1a-4fe4-a799-aa6d9a6ab26e")),
+			Description:          langsmith.F[langsmith.DatasetUpdateParamsDescriptionUnion](shared.UnionString("string")),
 			InputsSchemaDefinition: langsmith.F[langsmith.DatasetUpdateParamsInputsSchemaDefinitionUnion](langsmith.DatasetUpdateParamsInputsSchemaDefinitionMap(map[string]interface{}{
 				"foo": "bar",
 			})),
