@@ -4,6 +4,7 @@ package langsmith
 
 import (
 	"context"
+	"errors"
 	"fmt"
 	"net/http"
 	"net/url"
@@ -39,9 +40,17 @@ func NewCommitService(opts ...option.RequestOption) (r *CommitService) {
 
 // Creates a new commit in a repository. Requires authentication and write access
 // to the repository.
-func (r *CommitService) New(ctx context.Context, owner interface{}, repo interface{}, body CommitNewParams, opts ...option.RequestOption) (res *CommitNewResponse, err error) {
+func (r *CommitService) New(ctx context.Context, owner string, repo string, body CommitNewParams, opts ...option.RequestOption) (res *CommitNewResponse, err error) {
 	opts = slices.Concat(r.Options, opts)
-	path := fmt.Sprintf("commits/%v/%v", owner, repo)
+	if owner == "" {
+		err = errors.New("missing required owner parameter")
+		return
+	}
+	if repo == "" {
+		err = errors.New("missing required repo parameter")
+		return
+	}
+	path := fmt.Sprintf("commits/%s/%s", owner, repo)
 	err = requestconfig.ExecuteNewRequest(ctx, http.MethodPost, path, body, &res, opts...)
 	return
 }
@@ -54,9 +63,21 @@ func (r *CommitService) New(ctx context.Context, owner interface{}, repo interfa
 // - "latest" or empty: Get the most recent commit
 // - Less than 8 characters: Only check for tags
 // - 8 or more characters: Prioritize commit hash over tag, check both
-func (r *CommitService) Get(ctx context.Context, owner interface{}, repo interface{}, commit interface{}, query CommitGetParams, opts ...option.RequestOption) (res *CommitGetResponse, err error) {
+func (r *CommitService) Get(ctx context.Context, owner string, repo string, commit string, query CommitGetParams, opts ...option.RequestOption) (res *CommitGetResponse, err error) {
 	opts = slices.Concat(r.Options, opts)
-	path := fmt.Sprintf("commits/%v/%v/%v", owner, repo, commit)
+	if owner == "" {
+		err = errors.New("missing required owner parameter")
+		return
+	}
+	if repo == "" {
+		err = errors.New("missing required repo parameter")
+		return
+	}
+	if commit == "" {
+		err = errors.New("missing required commit parameter")
+		return
+	}
+	path := fmt.Sprintf("commits/%s/%s/%s", owner, repo, commit)
 	err = requestconfig.ExecuteNewRequest(ctx, http.MethodGet, path, query, &res, opts...)
 	return
 }
@@ -66,11 +87,19 @@ func (r *CommitService) Get(ctx context.Context, owner interface{}, repo interfa
 // access private repos, while unauthenticated users can only access public repos.
 // The include_stats parameter controls whether download and view statistics are
 // computed (defaults to true).
-func (r *CommitService) List(ctx context.Context, owner interface{}, repo interface{}, query CommitListParams, opts ...option.RequestOption) (res *pagination.OffsetPaginationCommits[CommitWithLookups], err error) {
+func (r *CommitService) List(ctx context.Context, owner string, repo string, query CommitListParams, opts ...option.RequestOption) (res *pagination.OffsetPaginationCommits[CommitWithLookups], err error) {
 	var raw *http.Response
 	opts = slices.Concat(r.Options, opts)
 	opts = append([]option.RequestOption{option.WithResponseInto(&raw)}, opts...)
-	path := fmt.Sprintf("commits/%v/%v", owner, repo)
+	if owner == "" {
+		err = errors.New("missing required owner parameter")
+		return
+	}
+	if repo == "" {
+		err = errors.New("missing required repo parameter")
+		return
+	}
+	path := fmt.Sprintf("commits/%s/%s", owner, repo)
 	cfg, err := requestconfig.NewRequestConfig(ctx, http.MethodGet, path, query, &res, opts...)
 	if err != nil {
 		return nil, err
@@ -88,7 +117,7 @@ func (r *CommitService) List(ctx context.Context, owner interface{}, repo interf
 // access private repos, while unauthenticated users can only access public repos.
 // The include_stats parameter controls whether download and view statistics are
 // computed (defaults to true).
-func (r *CommitService) ListAutoPaging(ctx context.Context, owner interface{}, repo interface{}, query CommitListParams, opts ...option.RequestOption) *pagination.OffsetPaginationCommitsAutoPager[CommitWithLookups] {
+func (r *CommitService) ListAutoPaging(ctx context.Context, owner string, repo string, query CommitListParams, opts ...option.RequestOption) *pagination.OffsetPaginationCommitsAutoPager[CommitWithLookups] {
 	return pagination.NewOffsetPaginationCommitsAutoPager(r.List(ctx, owner, repo, query, opts...))
 }
 

@@ -30,8 +30,8 @@ func TestCommitNewWithOptionalParams(t *testing.T) {
 	)
 	_, err := client.Commits.New(
 		context.TODO(),
-		map[string]interface{}{},
-		map[string]interface{}{},
+		"owner",
+		"repo",
 		langsmith.CommitNewParams{
 			Manifest:     langsmith.F[any](map[string]interface{}{}),
 			ParentCommit: langsmith.F("parent_commit"),
@@ -64,9 +64,9 @@ func TestCommitGetWithOptionalParams(t *testing.T) {
 	)
 	_, err := client.Commits.Get(
 		context.TODO(),
-		map[string]interface{}{},
-		map[string]interface{}{},
-		map[string]interface{}{},
+		"owner",
+		"repo",
+		"commit",
 		langsmith.CommitGetParams{
 			GetExamples:  langsmith.F(true),
 			IncludeModel: langsmith.F(true),
@@ -99,8 +99,8 @@ func TestCommitListWithOptionalParams(t *testing.T) {
 	)
 	_, err := client.Commits.List(
 		context.TODO(),
-		map[string]interface{}{},
-		map[string]interface{}{},
+		"owner",
+		"repo",
 		langsmith.CommitListParams{
 			IncludeStats: langsmith.F(true),
 			Limit:        langsmith.F(int64(1)),
