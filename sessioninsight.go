@@ -232,6 +232,7 @@ type SessionInsightGetJobResponse struct {
 	Clusters []SessionInsightGetJobResponseCluster `json:"clusters,required"`
 	Name     string                                `json:"name,required"`
 	Status   string                                `json:"status,required"`
+	ConfigID string                                `json:"config_id,nullable" format:"uuid"`
 	EndTime  time.Time                             `json:"end_time,nullable" format:"date-time"`
 	Error    string                                `json:"error,nullable"`
 	Metadata map[string]interface{}                `json:"metadata,nullable"`
@@ -250,6 +251,7 @@ type sessionInsightGetJobResponseJSON struct {
 	Clusters    apijson.Field
 	Name        apijson.Field
 	Status      apijson.Field
+	ConfigID    apijson.Field
 	EndTime     apijson.Field
 	Error       apijson.Field
 	Metadata    apijson.Field
