@@ -41,6 +41,9 @@ func TestFeedbackNewWithOptionalParams(t *testing.T) {
 			})),
 			CreatedAt: langsmith.F(time.Now()),
 			Error:     langsmith.F(true),
+			Extra: langsmith.F(map[string]interface{}{
+				"foo": "bar",
+			}),
 			FeedbackConfig: langsmith.F(langsmith.FeedbackCreateSchemaFeedbackConfigParam{
 				Type: langsmith.F(langsmith.FeedbackCreateSchemaFeedbackConfigTypeContinuous),
 				Categories: langsmith.F([]langsmith.FeedbackCreateSchemaFeedbackConfigCategoryParam{{
