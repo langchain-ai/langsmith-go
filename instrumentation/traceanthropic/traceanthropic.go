@@ -137,9 +137,10 @@ func (rt *roundTripper) RoundTrip(req *http.Request) (*http.Response, error) {
 		req.Body = io.NopCloser(bytes.NewBuffer(requestBody))
 	}
 
-	// Extract request attributes from body
+	// Extract request attributes and streaming flag
+	var streaming bool
 	if len(requestBody) > 0 {
-		extractRequestAttributes(span, requestBody)
+		streaming = extractRequestAttributes(span, requestBody)
 	}
 
 	// Inject span context into request headers and update request context
@@ -158,8 +159,6 @@ func (rt *roundTripper) RoundTrip(req *http.Request) (*http.Response, error) {
 	if resp.StatusCode >= 400 {
 		span.SetStatus(codes.Error, fmt.Sprintf("HTTP %d", resp.StatusCode))
 	}
-
-	streaming := isStreaming(requestBody)
 
 	resp.Body = traceutil.NewBufferedReader(resp.Body, func(r io.Reader) {
 		data, err := io.ReadAll(r)
@@ -197,27 +196,31 @@ func getOperationName(path string) string {
 	return "request"
 }
 
-// extractRequestAttributes extracts attributes from Anthropic request body.
-func extractRequestAttributes(span trace.Span, body []byte) {
-	var req map[string]interface{}
+// extractRequestAttributes extracts attributes from the Anthropic request body
+// and returns whether the request is streaming.
+func extractRequestAttributes(span trace.Span, body []byte) (streaming bool) {
+	var req map[string]any
 	if err := json.Unmarshal(body, &req); err != nil {
-		return
+		return false
 	}
 
-	// Extract model
+	// Model
 	if model, ok := req["model"].(string); ok {
 		span.SetAttributes(attribute.String("gen_ai.request.model", model))
 	}
 
-	// Extract max_tokens
+	// Max tokens
 	if maxTokens, ok := req["max_tokens"].(float64); ok {
 		span.SetAttributes(attribute.Int64("gen_ai.request.max_tokens", int64(maxTokens)))
 	}
 
-	// Extract temperature
+	// Temperature
 	if temp, ok := req["temperature"].(float64); ok {
 		span.SetAttributes(attribute.Float64("gen_ai.request.temperature", temp))
 	}
+
+	// Streaming flag
+	streaming, _ = req["stream"].(bool)
 
 	// Build input messages — system prepended, all roles preserved
 	var messages []any
@@ -236,16 +239,8 @@ func extractRequestAttributes(span trace.Span, body []byte) {
 			span.SetAttributes(attribute.String("gen_ai.prompt", string(out)))
 		}
 	}
-}
 
-// isStreaming checks the request JSON for "stream":true.
-func isStreaming(requestBody []byte) bool {
-	var req map[string]any
-	if err := json.Unmarshal(requestBody, &req); err != nil {
-		return false
-	}
-	v, ok := req["stream"].(bool)
-	return ok && v
+	return streaming
 }
 
 // extractStreamingResponseAttributes parses an SSE response body and sets

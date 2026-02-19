@@ -116,19 +116,20 @@ func MiddlewareWithTracerProvider(req *http.Request, next MiddlewareNext, tp tra
 		req.Body = io.NopCloser(bytes.NewBuffer(requestBody))
 	}
 
-	// Extract input messages from request body
+	// Extract request attributes
+	var streaming bool
 	if len(requestBody) > 0 {
-		inputMessages := extractInputMessages(requestBody)
-		if inputMessages != "" {
-			span.SetAttributes(attribute.String("gen_ai.prompt", inputMessages))
+		reqFields := parseRequestBody(requestBody)
+		if reqFields.inputMessages != "" {
+			span.SetAttributes(attribute.String("gen_ai.prompt", reqFields.inputMessages))
 		}
-
-		// Extract model if present
-		model := extractModelFromRequest(requestBody)
-		if model != "" {
-			span.SetAttributes(attribute.String("gen_ai.request.model", model))
+		if reqFields.model != "" {
+			span.SetAttributes(attribute.String("gen_ai.request.model", reqFields.model))
 		}
+		streaming = reqFields.streaming
 	}
+
+	responsesAPI := strings.HasSuffix(req.URL.Path, "/responses")
 
 	// Inject span context into request headers and update request context
 	otel.GetTextMapPropagator().Inject(ctx, propagation.HeaderCarrier(req.Header))
@@ -146,9 +147,6 @@ func MiddlewareWithTracerProvider(req *http.Request, next MiddlewareNext, tp tra
 	if resp.StatusCode >= 400 {
 		span.SetStatus(codes.Error, fmt.Sprintf("HTTP %d", resp.StatusCode))
 	}
-
-	streaming := isStreaming(requestBody)
-	responsesAPI := strings.HasSuffix(req.URL.Path, "/responses")
 
 	resp.Body = traceutil.NewBufferedReader(resp.Body, func(r io.Reader) {
 		data, err := io.ReadAll(r)
@@ -239,36 +237,52 @@ func getOperationName(path string) string {
 	return "request"
 }
 
-// extractInputMessages returns a JSON object string {"messages":[...]} from the
-// request body, preserving all message roles and structure. Falls back to
-// wrapping plain strings in a single user message.
-func extractInputMessages(body []byte) string {
+// requestFields holds fields extracted from the request body.
+type requestFields struct {
+	inputMessages string
+	model         string
+	streaming     bool
+}
+
+// parseRequestBody extracts input messages, model, and streaming flag from
+// the request body.
+func parseRequestBody(body []byte) requestFields {
 	var req map[string]any
 	if err := json.Unmarshal(body, &req); err != nil {
-		return ""
+		return requestFields{}
 	}
 
-	// Chat completions — messages array
+	var fields requestFields
+
+	// Model
+	fields.model, _ = req["model"].(string)
+
+	// Streaming
+	fields.streaming, _ = req["stream"].(bool)
+
+	// Input messages — chat completions
 	if messages, ok := req["messages"].([]any); ok && len(messages) > 0 {
-		return marshalMessages(messages)
+		fields.inputMessages = marshalMessages(messages)
+		return fields
 	}
 
-	// Responses API — input field (string or array)
+	// Input — Responses API (string or array)
 	if input, ok := req["input"]; ok {
 		switch v := input.(type) {
 		case string:
-			return marshalMessages([]any{map[string]any{"role": "user", "content": v}})
+			fields.inputMessages = marshalMessages([]any{map[string]any{"role": "user", "content": v}})
 		case []any:
-			return marshalMessages(v)
+			fields.inputMessages = marshalMessages(v)
 		}
+		return fields
 	}
 
-	// Legacy completions — prompt string
+	// Input — legacy completions
 	if prompt, ok := req["prompt"].(string); ok {
-		return marshalMessages([]any{map[string]any{"role": "user", "content": prompt}})
+		fields.inputMessages = marshalMessages([]any{map[string]any{"role": "user", "content": prompt}})
 	}
 
-	return ""
+	return fields
 }
 
 // marshalMessages wraps a messages slice in {"messages":[...]} and marshals to JSON.
@@ -278,30 +292,6 @@ func marshalMessages(messages []any) string {
 		return ""
 	}
 	return string(out)
-}
-
-// extractModelFromRequest extracts the model name from OpenAI request body.
-func extractModelFromRequest(body []byte) string {
-	var req map[string]interface{}
-	if err := json.Unmarshal(body, &req); err != nil {
-		return ""
-	}
-
-	if model, ok := req["model"].(string); ok {
-		return model
-	}
-
-	return ""
-}
-
-// isStreaming checks the request JSON for "stream":true.
-func isStreaming(requestBody []byte) bool {
-	var req map[string]any
-	if err := json.Unmarshal(requestBody, &req); err != nil {
-		return false
-	}
-	v, ok := req["stream"].(bool)
-	return ok && v
 }
 
 // extractStreamingCompletion parses an SSE response body, aggregates
