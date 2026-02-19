@@ -108,7 +108,7 @@ func (r *PublicDatasetService) ListFeedbackAutoPaging(ctx context.Context, share
 func (r *PublicDatasetService) ListSessions(ctx context.Context, shareToken string, params PublicDatasetListSessionsParams, opts ...option.RequestOption) (res *pagination.OffsetPaginationTopLevelArray[TracerSession], err error) {
 	var raw *http.Response
 	if params.Accept.Present {
-		opts = append(opts, option.WithHeader("accept", fmt.Sprintf("%s", params.Accept)))
+		opts = append(opts, option.WithHeader("accept", fmt.Sprintf("%v", params.Accept)))
 	}
 	opts = slices.Concat(r.Options, opts)
 	opts = append([]option.RequestOption{option.WithResponseInto(&raw)}, opts...)
