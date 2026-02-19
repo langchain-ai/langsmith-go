@@ -33,6 +33,8 @@ import (
 	"go.opentelemetry.io/otel/codes"
 	"go.opentelemetry.io/otel/propagation"
 	"go.opentelemetry.io/otel/trace"
+
+	"github.com/langchain-ai/langsmith-go/internal/traceutil"
 )
 
 // Option configures a traced HTTP client.
@@ -120,7 +122,6 @@ func (rt *roundTripper) RoundTrip(req *http.Request) (*http.Response, error) {
 			attribute.String("http.url", req.URL.String()),
 		),
 	)
-	defer span.End()
 
 	// Read request body if present
 	var requestBody []byte
@@ -130,54 +131,53 @@ func (rt *roundTripper) RoundTrip(req *http.Request) (*http.Response, error) {
 		if err != nil {
 			span.RecordError(err)
 			span.SetStatus(codes.Error, fmt.Sprintf("failed to read request body: %v", err))
+			span.End()
 			return rt.base.RoundTrip(req)
 		}
 		req.Body = io.NopCloser(bytes.NewBuffer(requestBody))
 	}
 
-	// Extract request attributes from body
+	// Extract request attributes and streaming flag
+	var streaming bool
 	if len(requestBody) > 0 {
-		extractRequestAttributes(span, requestBody)
+		streaming = extractRequestAttributes(span, requestBody)
 	}
 
-	// Inject span context into request headers
+	// Inject span context into request headers and update request context
 	otel.GetTextMapPropagator().Inject(ctx, propagation.HeaderCarrier(req.Header))
+	req = req.WithContext(ctx)
 
 	// Make the actual request
 	resp, err := rt.base.RoundTrip(req)
 	if err != nil {
 		span.RecordError(err)
 		span.SetStatus(codes.Error, err.Error())
+		span.End()
 		return resp, err
 	}
 
-	// Read response body
-	var responseBody []byte
-	if resp.Body != nil {
-		var readErr error
-		responseBody, readErr = io.ReadAll(resp.Body)
-		if readErr != nil {
-			span.RecordError(readErr)
-			span.SetStatus(codes.Error, fmt.Sprintf("failed to read response body: %v", readErr))
-			// Continue with empty body rather than failing the request
-		} else {
-			resp.Body = io.NopCloser(bytes.NewBuffer(responseBody))
-		}
-	}
-
-	// Extract response attributes
-	if len(responseBody) > 0 {
-		extractResponseAttributes(span, responseBody, parentSpan)
-	}
-
-	// Set status based on HTTP status code
 	if resp.StatusCode >= 400 {
 		span.SetStatus(codes.Error, fmt.Sprintf("HTTP %d", resp.StatusCode))
-	} else {
-		span.SetStatus(codes.Ok, "")
 	}
 
-	return resp, err
+	resp.Body = traceutil.NewBufferedReader(resp.Body, func(r io.Reader) {
+		data, err := io.ReadAll(r)
+		if err != nil || len(data) == 0 {
+			span.End()
+			return
+		}
+		if streaming {
+			extractStreamingResponseAttributes(span, data, parentSpan)
+		} else {
+			extractResponseAttributes(span, data, parentSpan)
+		}
+		if resp.StatusCode < 400 {
+			span.SetStatus(codes.Ok, "")
+		}
+		span.End()
+	})
+
+	return resp, nil
 }
 
 // getSpanName returns an appropriate span name based on the API endpoint.
@@ -196,75 +196,197 @@ func getOperationName(path string) string {
 	return "request"
 }
 
-// extractRequestAttributes extracts attributes from Anthropic request body.
-func extractRequestAttributes(span trace.Span, body []byte) {
-	var req map[string]interface{}
+// extractRequestAttributes extracts attributes from the Anthropic request body
+// and returns whether the request is streaming.
+func extractRequestAttributes(span trace.Span, body []byte) (streaming bool) {
+	var req map[string]any
 	if err := json.Unmarshal(body, &req); err != nil {
-		return
+		return false
 	}
 
-	// Extract model
+	// Model
 	if model, ok := req["model"].(string); ok {
 		span.SetAttributes(attribute.String("gen_ai.request.model", model))
 	}
 
-	// Extract max_tokens
+	// Max tokens
 	if maxTokens, ok := req["max_tokens"].(float64); ok {
 		span.SetAttributes(attribute.Int64("gen_ai.request.max_tokens", int64(maxTokens)))
 	}
 
-	// Extract temperature
+	// Temperature
 	if temp, ok := req["temperature"].(float64); ok {
 		span.SetAttributes(attribute.Float64("gen_ai.request.temperature", temp))
 	}
 
-	// Extract system message if present
-	var messages []interface{}
+	// Streaming flag
+	streaming, _ = req["stream"].(bool)
+
+	// Build input messages — system prepended, all roles preserved
+	var messages []any
 	if sys, ok := req["system"]; ok {
-		messages = append(messages, map[string]interface{}{
+		messages = append(messages, map[string]any{
 			"role":    "system",
 			"content": sys,
 		})
 	}
-
-	// Extract user messages
-	if msgs, ok := req["messages"].([]interface{}); ok {
+	if msgs, ok := req["messages"].([]any); ok {
 		messages = append(messages, msgs...)
 	}
 
-	// Build prompt from messages
 	if len(messages) > 0 {
-		prompt := buildPromptFromMessages(messages)
-		if prompt != "" {
-			span.SetAttributes(attribute.String("gen_ai.prompt", prompt))
+		if out, err := json.Marshal(map[string]any{"messages": messages}); err == nil {
+			span.SetAttributes(attribute.String("gen_ai.prompt", string(out)))
 		}
 	}
+
+	return streaming
 }
 
-// buildPromptFromMessages builds a prompt string from Anthropic messages.
-func buildPromptFromMessages(messages []interface{}) string {
-	var parts []string
-	for _, msg := range messages {
-		if msgMap, ok := msg.(map[string]interface{}); ok {
-			if role, _ := msgMap["role"].(string); role == "user" || role == "system" {
-				if content, ok := msgMap["content"].(string); ok {
-					parts = append(parts, content)
-				} else if contentArray, ok := msgMap["content"].([]interface{}); ok {
-					// Handle content blocks
-					for _, block := range contentArray {
-						if blockMap, ok := block.(map[string]interface{}); ok {
-							if blockType, _ := blockMap["type"].(string); blockType == "text" {
-								if text, _ := blockMap["text"].(string); text != "" {
-									parts = append(parts, text)
-								}
-							}
+// extractStreamingResponseAttributes parses an SSE response body and sets
+// the same span attributes as the non-streaming path: gen_ai.completion,
+// usage tokens, and cache breakdown.
+//
+// Anthropic SSE events of interest:
+//   - message_start       — contains message.usage (input_tokens, cache tokens)
+//   - content_block_start — initialises a content block (text or tool_use)
+//   - content_block_delta — text_delta or input_json_delta carries incremental data
+//   - message_delta       — contains usage.output_tokens and stop_reason
+func extractStreamingResponseAttributes(span trace.Span, data []byte, parentSpan trace.Span) {
+	chunks, err := traceutil.ParseSSEChunks(bytes.NewReader(data))
+	if err != nil || len(chunks) == 0 {
+		return
+	}
+
+	usage := make(map[string]interface{})
+
+	// Track content blocks by index for proper multi-block reconstruction
+	type contentBlock struct {
+		blockType string // "text" or "tool_use"
+		id        string // tool_use id
+		name      string // tool_use function name
+		buf       strings.Builder
+	}
+	var blocks []*contentBlock
+
+	for _, chunk := range chunks {
+		eventType, _ := chunk["type"].(string)
+
+		switch eventType {
+		case "message_start":
+			if message, ok := chunk["message"].(map[string]any); ok {
+				if curUsage, ok := message["usage"].(map[string]any); ok {
+					for k, v := range curUsage {
+						usage[k] = v
+					}
+				}
+				if model, ok := message["model"].(string); ok {
+					span.SetAttributes(attribute.String("gen_ai.response.model", model))
+				}
+			}
+
+		case "content_block_start":
+			idxF, ok := chunk["index"].(float64)
+			if !ok {
+				continue
+			}
+			idx := int(idxF)
+			for len(blocks) <= idx {
+				blocks = append(blocks, nil)
+			}
+			block := &contentBlock{}
+			if cb, ok := chunk["content_block"].(map[string]any); ok {
+				block.blockType, _ = cb["type"].(string)
+				block.id, _ = cb["id"].(string)
+				block.name, _ = cb["name"].(string)
+			}
+			blocks[idx] = block
+
+		case "content_block_delta":
+			idxF, ok := chunk["index"].(float64)
+			if !ok {
+				continue
+			}
+			idx := int(idxF)
+			for len(blocks) <= idx {
+				blocks = append(blocks, nil)
+			}
+			if blocks[idx] == nil {
+				blocks[idx] = &contentBlock{}
+			}
+			if delta, ok := chunk["delta"].(map[string]any); ok {
+				switch deltaType, _ := delta["type"].(string); deltaType {
+				case "text_delta":
+					if text, ok := delta["text"].(string); ok {
+						blocks[idx].buf.WriteString(text)
+						if blocks[idx].blockType == "" {
+							blocks[idx].blockType = "text"
+						}
+					}
+				case "input_json_delta":
+					if partialJSON, ok := delta["partial_json"].(string); ok {
+						blocks[idx].buf.WriteString(partialJSON)
+						if blocks[idx].blockType == "" {
+							blocks[idx].blockType = "tool_use"
 						}
 					}
 				}
 			}
+
+		case "message_delta":
+			if curUsage, ok := chunk["usage"].(map[string]any); ok {
+				for k, v := range curUsage {
+					usage[k] = v
+				}
+			}
+			if delta, ok := chunk["delta"].(map[string]any); ok {
+				if stopReason, ok := delta["stop_reason"].(string); ok && stopReason != "" {
+					span.SetAttributes(attribute.String("langsmith.metadata.stop_reason", stopReason))
+				}
+			}
 		}
 	}
-	return strings.Join(parts, "\n")
+
+	// Reconstruct content blocks into an assistant message
+	var contentBlocks []map[string]any
+	for _, b := range blocks {
+		if b == nil {
+			continue
+		}
+		switch b.blockType {
+		case "text":
+			contentBlocks = append(contentBlocks, map[string]any{
+				"type": "text",
+				"text": b.buf.String(),
+			})
+		case "tool_use":
+			block := map[string]any{
+				"type": "tool_use",
+				"id":   b.id,
+				"name": b.name,
+			}
+			var input any
+			if err := json.Unmarshal([]byte(b.buf.String()), &input); err == nil {
+				block["input"] = input
+			} else {
+				block["input"] = b.buf.String()
+			}
+			contentBlocks = append(contentBlocks, block)
+		}
+	}
+
+	if len(contentBlocks) > 0 {
+		msg := map[string]any{"messages": []any{
+			map[string]any{"role": "assistant", "content": contentBlocks},
+		}}
+		if out, err := json.Marshal(msg); err == nil {
+			span.SetAttributes(attribute.String("gen_ai.completion", string(out)))
+		}
+	}
+
+	if len(usage) > 0 {
+		setUsageAttributes(span, usage, parentSpan)
+	}
 }
 
 // extractResponseAttributes extracts attributes from Anthropic response body.
@@ -289,28 +411,15 @@ func extractResponseAttributes(span trace.Span, body []byte, parentSpan trace.Sp
 		span.SetAttributes(attribute.String("langsmith.metadata.stop_reason", stopReason))
 	}
 
-	// Extract completion from content
-	if content, ok := resp["content"].([]interface{}); ok && len(content) > 0 {
-		completion := extractCompletionFromContent(content)
-		if completion != "" {
-			span.SetAttributes(attribute.String("gen_ai.completion", completion))
+	// Extract output — wrap full content array in an assistant message
+	if content, ok := resp["content"].([]any); ok && len(content) > 0 {
+		msg := map[string]any{"messages": []any{
+			map[string]any{"role": "assistant", "content": content},
+		}}
+		if out, err := json.Marshal(msg); err == nil {
+			span.SetAttributes(attribute.String("gen_ai.completion", string(out)))
 		}
 	}
-}
-
-// extractCompletionFromContent extracts text completion from Anthropic content blocks.
-func extractCompletionFromContent(content []interface{}) string {
-	var parts []string
-	for _, block := range content {
-		if blockMap, ok := block.(map[string]interface{}); ok {
-			if blockType, _ := blockMap["type"].(string); blockType == "text" {
-				if text, _ := blockMap["text"].(string); text != "" {
-					parts = append(parts, text)
-				}
-			}
-		}
-	}
-	return strings.Join(parts, "\n")
 }
 
 // setUsageAttributes sets usage-related attributes on the span.
