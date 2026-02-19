@@ -41,6 +41,9 @@ func TestFeedbackNewWithOptionalParams(t *testing.T) {
 			})),
 			CreatedAt: langsmith.F(time.Now()),
 			Error:     langsmith.F(true),
+			Extra: langsmith.F(map[string]interface{}{
+				"foo": "bar",
+			}),
 			FeedbackConfig: langsmith.F(langsmith.FeedbackCreateSchemaFeedbackConfigParam{
 				Type: langsmith.F(langsmith.FeedbackCreateSchemaFeedbackConfigTypeContinuous),
 				Categories: langsmith.F([]langsmith.FeedbackCreateSchemaFeedbackConfigCategoryParam{{
@@ -177,8 +180,8 @@ func TestFeedbackListWithOptionalParams(t *testing.T) {
 		MaxCreatedAt:            langsmith.F(time.Now()),
 		MinCreatedAt:            langsmith.F(time.Now()),
 		Offset:                  langsmith.F(int64(0)),
-		Run:                     langsmith.F([]string{"182bd5e5-6e1a-4fe4-a799-aa6d9a6ab26e"}),
-		Session:                 langsmith.F([]string{"182bd5e5-6e1a-4fe4-a799-aa6d9a6ab26e"}),
+		Run:                     langsmith.F[langsmith.FeedbackListParamsRunUnion](langsmith.FeedbackListParamsRunArray([]string{"182bd5e5-6e1a-4fe4-a799-aa6d9a6ab26e"})),
+		Session:                 langsmith.F[langsmith.FeedbackListParamsSessionUnion](langsmith.FeedbackListParamsSessionArray([]string{"182bd5e5-6e1a-4fe4-a799-aa6d9a6ab26e"})),
 		Source:                  langsmith.F([]langsmith.SourceType{langsmith.SourceTypeAPI}),
 		User:                    langsmith.F([]string{"182bd5e5-6e1a-4fe4-a799-aa6d9a6ab26e"}),
 	})

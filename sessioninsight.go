@@ -116,6 +116,8 @@ func (r *SessionInsightService) GetRuns(ctx context.Context, sessionID string, j
 // Request to create a run clustering job.
 type CreateRunClusteringJobRequestParam struct {
 	AttributeSchemas     param.Field[map[string]interface{}]             `json:"attribute_schemas"`
+	ClusterModel         param.Field[string]                             `json:"cluster_model"`
+	ConfigID             param.Field[string]                             `json:"config_id" format:"uuid"`
 	EndTime              param.Field[time.Time]                          `json:"end_time" format:"date-time"`
 	Filter               param.Field[string]                             `json:"filter"`
 	Hierarchy            param.Field[[]int64]                            `json:"hierarchy"`
@@ -125,6 +127,7 @@ type CreateRunClusteringJobRequestParam struct {
 	Partitions           param.Field[map[string]string]                  `json:"partitions"`
 	Sample               param.Field[float64]                            `json:"sample"`
 	StartTime            param.Field[time.Time]                          `json:"start_time" format:"date-time"`
+	SummaryModel         param.Field[string]                             `json:"summary_model"`
 	SummaryPrompt        param.Field[string]                             `json:"summary_prompt"`
 	UserContext          param.Field[map[string]string]                  `json:"user_context"`
 	ValidateModelSecrets param.Field[bool]                               `json:"validate_model_secrets"`
@@ -231,6 +234,7 @@ type SessionInsightGetJobResponse struct {
 	Clusters []SessionInsightGetJobResponseCluster `json:"clusters,required"`
 	Name     string                                `json:"name,required"`
 	Status   string                                `json:"status,required"`
+	ConfigID string                                `json:"config_id,nullable" format:"uuid"`
 	EndTime  time.Time                             `json:"end_time,nullable" format:"date-time"`
 	Error    string                                `json:"error,nullable"`
 	Metadata map[string]interface{}                `json:"metadata,nullable"`
@@ -249,6 +253,7 @@ type sessionInsightGetJobResponseJSON struct {
 	Clusters    apijson.Field
 	Name        apijson.Field
 	Status      apijson.Field
+	ConfigID    apijson.Field
 	EndTime     apijson.Field
 	Error       apijson.Field
 	Metadata    apijson.Field

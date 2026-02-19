@@ -199,6 +199,7 @@ type FeedbackCreateSchemaParam struct {
 	Correction              param.Field[FeedbackCreateSchemaCorrectionUnionParam] `json:"correction"`
 	CreatedAt               param.Field[time.Time]                                `json:"created_at" format:"date-time"`
 	Error                   param.Field[bool]                                     `json:"error"`
+	Extra                   param.Field[map[string]interface{}]                   `json:"extra"`
 	FeedbackConfig          param.Field[FeedbackCreateSchemaFeedbackConfigParam]  `json:"feedback_config"`
 	FeedbackGroupID         param.Field[string]                                   `json:"feedback_group_id" format:"uuid"`
 	// Feedback from the LangChainPlus App.
@@ -653,15 +654,15 @@ type FeedbackListParams struct {
 	IncludeUserNames        param.Field[bool]     `query:"include_user_names"`
 	Key                     param.Field[[]string] `query:"key"`
 	// Enum for feedback levels.
-	Level        param.Field[FeedbackLevel] `query:"level"`
-	Limit        param.Field[int64]         `query:"limit"`
-	MaxCreatedAt param.Field[time.Time]     `query:"max_created_at" format:"date-time"`
-	MinCreatedAt param.Field[time.Time]     `query:"min_created_at" format:"date-time"`
-	Offset       param.Field[int64]         `query:"offset"`
-	Run          param.Field[[]string]      `query:"run" format:"uuid"`
-	Session      param.Field[[]string]      `query:"session" format:"uuid"`
-	Source       param.Field[[]SourceType]  `query:"source"`
-	User         param.Field[[]string]      `query:"user" format:"uuid"`
+	Level        param.Field[FeedbackLevel]                  `query:"level"`
+	Limit        param.Field[int64]                          `query:"limit"`
+	MaxCreatedAt param.Field[time.Time]                      `query:"max_created_at" format:"date-time"`
+	MinCreatedAt param.Field[time.Time]                      `query:"min_created_at" format:"date-time"`
+	Offset       param.Field[int64]                          `query:"offset"`
+	Run          param.Field[FeedbackListParamsRunUnion]     `query:"run" format:"uuid"`
+	Session      param.Field[FeedbackListParamsSessionUnion] `query:"session" format:"uuid"`
+	Source       param.Field[[]SourceType]                   `query:"source"`
+	User         param.Field[[]string]                       `query:"user" format:"uuid"`
 }
 
 // URLQuery serializes [FeedbackListParams]'s query parameters as `url.Values`.
@@ -671,3 +672,21 @@ func (r FeedbackListParams) URLQuery() (v url.Values) {
 		NestedFormat: apiquery.NestedQueryFormatBrackets,
 	})
 }
+
+// Satisfied by [FeedbackListParamsRunArray], [shared.UnionString].
+type FeedbackListParamsRunUnion interface {
+	ImplementsFeedbackListParamsRunUnion()
+}
+
+type FeedbackListParamsRunArray []string
+
+func (r FeedbackListParamsRunArray) ImplementsFeedbackListParamsRunUnion() {}
+
+// Satisfied by [FeedbackListParamsSessionArray], [shared.UnionString].
+type FeedbackListParamsSessionUnion interface {
+	ImplementsFeedbackListParamsSessionUnion()
+}
+
+type FeedbackListParamsSessionArray []string
+
+func (r FeedbackListParamsSessionArray) ImplementsFeedbackListParamsSessionUnion() {}

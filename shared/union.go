@@ -19,33 +19,36 @@ func (UnionTime) ImplementsDatasetSplitGetParamsAsOfUnion()              {}
 
 type UnionString string
 
-func (UnionString) ImplementsExampleNewParamsSplitUnion()                  {}
-func (UnionString) ImplementsExampleGetParamsAsOfUnion()                   {}
-func (UnionString) ImplementsExampleUpdateParamsSplitUnion()               {}
-func (UnionString) ImplementsExampleListParamsAsOfUnion()                  {}
-func (UnionString) ImplementsExampleGetCountParamsAsOfUnion()              {}
-func (UnionString) ImplementsExampleBulkNewParamsBodySplitUnion()          {}
-func (UnionString) ImplementsExampleBulkPatchAllParamsBodySplitUnion()     {}
-func (UnionString) ImplementsExampleValidationResultSplitUnion()           {}
-func (UnionString) ImplementsDatasetUpdateParamsDescriptionUnion()         {}
-func (UnionString) ImplementsDatasetUpdateParamsNameUnion()                {}
-func (UnionString) ImplementsDatasetUpdateParamsPatchExamplesSplitUnion()  {}
-func (UnionString) ImplementsDatasetCloneParamsAsOfUnion()                 {}
-func (UnionString) ImplementsDatasetCloneParamsSplitUnion()                {}
-func (UnionString) ImplementsDatasetUpdateTagsParamsAsOfUnion()            {}
-func (UnionString) ImplementsDatasetVersionGetDiffParamsFromVersionUnion() {}
-func (UnionString) ImplementsDatasetVersionGetDiffParamsToVersionUnion()   {}
-func (UnionString) ImplementsDatasetGroupRunsResponseGroupsGroupKeyUnion() {}
-func (UnionString) ImplementsDatasetSplitGetParamsAsOfUnion()              {}
-func (UnionString) ImplementsFeedbackCreateSchemaCorrectionUnionParam()    {}
-func (UnionString) ImplementsFeedbackCreateSchemaValueUnionParam()         {}
-func (UnionString) ImplementsFeedbackSchemaCorrectionUnion()               {}
-func (UnionString) ImplementsFeedbackSchemaValueUnion()                    {}
-func (UnionString) ImplementsFeedbackUpdateParamsCorrectionUnion()         {}
-func (UnionString) ImplementsFeedbackUpdateParamsValueUnion()              {}
-func (UnionString) ImplementsFeedbackTokenGetParamsValueUnion()            {}
-func (UnionString) ImplementsFeedbackTokenUpdateParamsCorrectionUnion()    {}
-func (UnionString) ImplementsFeedbackTokenUpdateParamsValueUnion()         {}
+func (UnionString) ImplementsExampleNewParamsSplitUnion()                   {}
+func (UnionString) ImplementsExampleGetParamsAsOfUnion()                    {}
+func (UnionString) ImplementsExampleUpdateParamsSplitUnion()                {}
+func (UnionString) ImplementsExampleListParamsAsOfUnion()                   {}
+func (UnionString) ImplementsExampleGetCountParamsAsOfUnion()               {}
+func (UnionString) ImplementsExampleBulkNewParamsBodySplitUnion()           {}
+func (UnionString) ImplementsExampleBulkPatchAllParamsBodySplitUnion()      {}
+func (UnionString) ImplementsExampleValidationResultSplitUnion()            {}
+func (UnionString) ImplementsDatasetUpdateParamsBaselineExperimentIDUnion() {}
+func (UnionString) ImplementsDatasetUpdateParamsDescriptionUnion()          {}
+func (UnionString) ImplementsDatasetUpdateParamsNameUnion()                 {}
+func (UnionString) ImplementsDatasetUpdateParamsPatchExamplesSplitUnion()   {}
+func (UnionString) ImplementsDatasetCloneParamsAsOfUnion()                  {}
+func (UnionString) ImplementsDatasetCloneParamsSplitUnion()                 {}
+func (UnionString) ImplementsDatasetUpdateTagsParamsAsOfUnion()             {}
+func (UnionString) ImplementsDatasetVersionGetDiffParamsFromVersionUnion()  {}
+func (UnionString) ImplementsDatasetVersionGetDiffParamsToVersionUnion()    {}
+func (UnionString) ImplementsDatasetGroupRunsResponseGroupsGroupKeyUnion()  {}
+func (UnionString) ImplementsDatasetSplitGetParamsAsOfUnion()               {}
+func (UnionString) ImplementsFeedbackCreateSchemaCorrectionUnionParam()     {}
+func (UnionString) ImplementsFeedbackCreateSchemaValueUnionParam()          {}
+func (UnionString) ImplementsFeedbackSchemaCorrectionUnion()                {}
+func (UnionString) ImplementsFeedbackSchemaValueUnion()                     {}
+func (UnionString) ImplementsFeedbackUpdateParamsCorrectionUnion()          {}
+func (UnionString) ImplementsFeedbackUpdateParamsValueUnion()               {}
+func (UnionString) ImplementsFeedbackListParamsRunUnion()                   {}
+func (UnionString) ImplementsFeedbackListParamsSessionUnion()               {}
+func (UnionString) ImplementsFeedbackTokenGetParamsValueUnion()             {}
+func (UnionString) ImplementsFeedbackTokenUpdateParamsCorrectionUnion()     {}
+func (UnionString) ImplementsFeedbackTokenUpdateParamsValueUnion()          {}
 
 type UnionBool bool
 
