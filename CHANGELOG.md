@@ -1,5 +1,31 @@
 # Changelog
 
+## 0.1.0-alpha.10 (2026-02-19)
+
+Full Changelog: [v0.1.0-alpha.9...v0.1.0-alpha.10](https://github.com/langchain-ai/langsmith-go/compare/v0.1.0-alpha.9...v0.1.0-alpha.10)
+
+### Features
+
+* **api:** api update ([fafcd6d](https://github.com/langchain-ai/langsmith-go/commit/fafcd6dac4bb2999e9caf0ecd48e160814d4f20a))
+* **api:** api update ([a37c8c2](https://github.com/langchain-ai/langsmith-go/commit/a37c8c2dc4938ea718370bd1a1cfc83e63ffd852))
+* **api:** api update ([e892367](https://github.com/langchain-ai/langsmith-go/commit/e89236788b500e796c37d6f19150acc0e96444af))
+* **api:** api update ([b0f5add](https://github.com/langchain-ai/langsmith-go/commit/b0f5addf212f54d27f50700b8938317e04477030))
+* **api:** api update ([3baff5d](https://github.com/langchain-ai/langsmith-go/commit/3baff5dcc7247fd4191e91715aab109c0d644536))
+* **api:** api update ([4bb8835](https://github.com/langchain-ai/langsmith-go/commit/4bb88355dc1215542f0afdfd21919f38c3b81b52))
+* **api:** api update ([79854d5](https://github.com/langchain-ai/langsmith-go/commit/79854d5907831d0ccbfd611062ccf03d0baf22ed))
+* **api:** api update ([488b81d](https://github.com/langchain-ai/langsmith-go/commit/488b81d21399c46ab5338c7e23552e3e790564a3))
+* **api:** api update ([735e948](https://github.com/langchain-ai/langsmith-go/commit/735e9482c7cfdb19554688a08a94055572d104e1))
+
+
+### Bug Fixes
+
+* **client:** use correct format specifier for header serialization ([7f9dfea](https://github.com/langchain-ai/langsmith-go/commit/7f9dfeafa7d1272a77b681c6d04f4e802577ac94))
+
+
+### Chores
+
+* **api:** minor updates ([d251895](https://github.com/langchain-ai/langsmith-go/commit/d2518950220c7132bfeabd5fe37db49d4f2ae34f))
+
 ## 0.1.0-alpha.9 (2026-01-27)
 
 Full Changelog: [v0.1.0-alpha.8...v0.1.0-alpha.9](https://github.com/langchain-ai/langsmith-go/compare/v0.1.0-alpha.8...v0.1.0-alpha.9)
