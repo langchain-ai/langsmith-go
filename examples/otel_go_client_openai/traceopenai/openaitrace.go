@@ -36,8 +36,9 @@ func Middleware(req *http.Request, next MiddlewareNext) (*http.Response, error) 
 // and then calls next to make the actual HTTP request.
 // If tp is nil, uses the global tracer provider.
 func MiddlewareWithTracerProvider(req *http.Request, next MiddlewareNext, tp trace.TracerProvider) (*http.Response, error) {
-	// Only trace OpenAI API requests
-	if !strings.Contains(req.URL.Host, "api.openai.com") {
+	// Only trace known OpenAI-compatible API endpoints (path-based, works with
+	// OpenRouter, Azure, local proxies, etc.)
+	if !isOpenAIEndpoint(req.URL.Path) {
 		return next(req)
 	}
 
@@ -146,6 +147,7 @@ func MiddlewareWithTracerProvider(req *http.Request, next MiddlewareNext, tp tra
 	}
 
 	streaming := isStreaming(requestBody)
+	responsesAPI := strings.HasSuffix(req.URL.Path, "/responses")
 
 	resp.Body = traceutil.NewBufferedReader(resp.Body, func(r io.Reader) {
 		data, err := io.ReadAll(r)
@@ -156,7 +158,13 @@ func MiddlewareWithTracerProvider(req *http.Request, next MiddlewareNext, tp tra
 
 		var completion string
 		var usage usageInfo
-		if streaming {
+		if responsesAPI {
+			if streaming {
+				completion, usage = extractStreamingResponsesCompletion(data)
+			} else {
+				completion, usage = extractResponsesCompletion(data)
+			}
+		} else if streaming {
 			completion, usage = extractStreamingCompletion(data)
 		} else {
 			completion, usage = extractCompletionFromResponse(data)
@@ -188,30 +196,44 @@ func MiddlewareWithTracerProvider(req *http.Request, next MiddlewareNext, tp tra
 	return resp, nil
 }
 
+// isOpenAIEndpoint returns true if the path matches a known OpenAI API endpoint.
+func isOpenAIEndpoint(path string) bool {
+	return strings.HasSuffix(path, "/chat/completions") ||
+		strings.HasSuffix(path, "/completions") ||
+		strings.HasSuffix(path, "/embeddings") ||
+		strings.HasSuffix(path, "/responses")
+}
+
 // getSpanName returns an appropriate span name based on the API endpoint.
 func getSpanName(path string) string {
-	if strings.Contains(path, "/chat/completions") {
+	if strings.HasSuffix(path, "/chat/completions") {
 		return "openai.chat.completion"
 	}
-	if strings.Contains(path, "/completions") {
+	if strings.HasSuffix(path, "/completions") {
 		return "openai.completion"
 	}
-	if strings.Contains(path, "/embeddings") {
+	if strings.HasSuffix(path, "/embeddings") {
 		return "openai.embedding"
+	}
+	if strings.HasSuffix(path, "/responses") {
+		return "openai.responses"
 	}
 	return "openai.request"
 }
 
 // getOperationName returns the operation name for Gen AI semantic conventions.
 func getOperationName(path string) string {
-	if strings.Contains(path, "/chat/completions") {
+	if strings.HasSuffix(path, "/chat/completions") {
 		return "chat"
 	}
-	if strings.Contains(path, "/completions") {
+	if strings.HasSuffix(path, "/completions") {
 		return "completion"
 	}
-	if strings.Contains(path, "/embeddings") {
+	if strings.HasSuffix(path, "/embeddings") {
 		return "embedding"
+	}
+	if strings.HasSuffix(path, "/responses") {
+		return "responses"
 	}
 	return "request"
 }
@@ -273,8 +295,8 @@ func isStreaming(requestBody []byte) bool {
 }
 
 // extractStreamingCompletion parses an SSE response body, aggregates
-// delta.content across chunks, and extracts usage from the chunk that
-// contains it (last chunk when stream_options.include_usage is set).
+// delta.content and delta.tool_calls across chunks, and extracts usage from
+// the chunk that contains it (last chunk when stream_options.include_usage is set).
 func extractStreamingCompletion(data []byte) (string, usageInfo) {
 	chunks, err := traceutil.ParseSSEChunks(bytes.NewReader(data))
 	if err != nil || len(chunks) == 0 {
@@ -284,13 +306,53 @@ func extractStreamingCompletion(data []byte) (string, usageInfo) {
 	var content strings.Builder
 	var usage usageInfo
 
+	// Track tool calls by index. Each entry holds id, type, function name,
+	// and a builder that accumulates the streamed function arguments.
+	type toolCallAcc struct {
+		ID   string
+		Type string
+		Name string
+		Args strings.Builder
+	}
+	var toolCalls []*toolCallAcc
+
 	for _, chunk := range chunks {
-		// Aggregate choices[0].delta.content
 		if choices, ok := chunk["choices"].([]any); ok && len(choices) > 0 {
 			if choice, ok := choices[0].(map[string]any); ok {
 				if delta, ok := choice["delta"].(map[string]any); ok {
+					// Aggregate text content
 					if text, ok := delta["content"].(string); ok {
 						content.WriteString(text)
+					}
+					// Aggregate tool call deltas
+					if tcs, ok := delta["tool_calls"].([]any); ok {
+						for _, tc := range tcs {
+							tcMap, ok := tc.(map[string]any)
+							if !ok {
+								continue
+							}
+							idx := 0
+							if idxF, ok := tcMap["index"].(float64); ok {
+								idx = int(idxF)
+							}
+							for len(toolCalls) <= idx {
+								toolCalls = append(toolCalls, &toolCallAcc{})
+							}
+							if id, ok := tcMap["id"].(string); ok {
+								toolCalls[idx].ID = id
+							}
+							if typ, ok := tcMap["type"].(string); ok {
+								toolCalls[idx].Type = typ
+							}
+							if fn, ok := tcMap["function"].(map[string]any); ok {
+								if name, ok := fn["name"].(string); ok {
+									toolCalls[idx].Name = name
+								}
+								if args, ok := fn["arguments"].(string); ok {
+									toolCalls[idx].Args.WriteString(args)
+								}
+							}
+						}
 					}
 				}
 			}
@@ -307,7 +369,32 @@ func extractStreamingCompletion(data []byte) (string, usageInfo) {
 		}
 	}
 
-	return content.String(), usage
+	text := content.String()
+	if len(toolCalls) == 0 {
+		return text, usage
+	}
+
+	// Tool calls present — serialize as JSON to preserve structure
+	tcOut := make([]map[string]any, len(toolCalls))
+	for i, tc := range toolCalls {
+		tcOut[i] = map[string]any{
+			"id":   tc.ID,
+			"type": tc.Type,
+			"function": map[string]any{
+				"name":      tc.Name,
+				"arguments": tc.Args.String(),
+			},
+		}
+	}
+	msg := map[string]any{"tool_calls": tcOut}
+	if text != "" {
+		msg["content"] = text
+	}
+	out, err := json.Marshal(msg)
+	if err != nil {
+		return text, usage
+	}
+	return string(out), usage
 }
 
 // usageInfo holds token usage information.
@@ -352,4 +439,106 @@ func extractCompletionFromResponse(body []byte) (string, usageInfo) {
 	}
 
 	return completion, usage
+}
+
+// --- Responses API (/v1/responses) ---
+
+// extractResponsesCompletion extracts completion and usage from a non-streaming
+// Responses API response.
+func extractResponsesCompletion(body []byte) (string, usageInfo) {
+	var resp map[string]any
+	if err := json.Unmarshal(body, &resp); err != nil {
+		return "", usageInfo{}
+	}
+	return extractResponsesOutput(resp), extractResponsesUsage(resp)
+}
+
+// extractStreamingResponsesCompletion extracts completion and usage from a
+// streaming Responses API response. The response.completed event contains the
+// full response object.
+func extractStreamingResponsesCompletion(data []byte) (string, usageInfo) {
+	chunks, err := traceutil.ParseSSEChunks(bytes.NewReader(data))
+	if err != nil || len(chunks) == 0 {
+		return "", usageInfo{}
+	}
+
+	for _, chunk := range chunks {
+		if msgType, _ := chunk["type"].(string); msgType == "response.completed" {
+			if response, ok := chunk["response"].(map[string]any); ok {
+				return extractResponsesOutput(response), extractResponsesUsage(response)
+			}
+		}
+	}
+	return "", usageInfo{}
+}
+
+// extractResponsesUsage extracts usage from a Responses API response object.
+// The Responses API uses input_tokens/output_tokens (not prompt_tokens/completion_tokens).
+func extractResponsesUsage(resp map[string]any) usageInfo {
+	var usage usageInfo
+	if usageMap, ok := resp["usage"].(map[string]any); ok {
+		if v, ok := usageMap["input_tokens"].(float64); ok {
+			usage.InputTokens = int(v)
+		}
+		if v, ok := usageMap["output_tokens"].(float64); ok {
+			usage.OutputTokens = int(v)
+		}
+	}
+	return usage
+}
+
+// extractResponsesOutput extracts completion text from a Responses API response.
+// Handles both message (output_text) and function_call output items.
+func extractResponsesOutput(resp map[string]any) string {
+	output, ok := resp["output"].([]any)
+	if !ok || len(output) == 0 {
+		return ""
+	}
+
+	var textParts []string
+	var functionCalls []map[string]any
+
+	for _, item := range output {
+		itemMap, ok := item.(map[string]any)
+		if !ok {
+			continue
+		}
+		switch itemType, _ := itemMap["type"].(string); itemType {
+		case "message":
+			if content, ok := itemMap["content"].([]any); ok {
+				for _, block := range content {
+					blockMap, ok := block.(map[string]any)
+					if !ok {
+						continue
+					}
+					if blockType, _ := blockMap["type"].(string); blockType == "output_text" {
+						if text, ok := blockMap["text"].(string); ok {
+							textParts = append(textParts, text)
+						}
+					}
+				}
+			}
+		case "function_call":
+			fc := map[string]any{
+				"name":      itemMap["name"],
+				"arguments": itemMap["arguments"],
+			}
+			if callID, ok := itemMap["call_id"].(string); ok {
+				fc["call_id"] = callID
+			}
+			functionCalls = append(functionCalls, fc)
+		}
+	}
+
+	if len(functionCalls) == 0 {
+		return strings.Join(textParts, "\n")
+	}
+
+	// Function calls present — serialize as JSON
+	msg := map[string]any{"function_calls": functionCalls}
+	if len(textParts) > 0 {
+		msg["content"] = strings.Join(textParts, "\n")
+	}
+	out, _ := json.Marshal(msg)
+	return string(out)
 }

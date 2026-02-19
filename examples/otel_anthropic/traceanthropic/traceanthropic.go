@@ -282,9 +282,10 @@ func isStreaming(requestBody []byte) bool {
 // usage tokens, and cache breakdown.
 //
 // Anthropic SSE events of interest:
-//   - message_start  — contains message.usage (input_tokens, cache tokens)
-//   - content_block_delta — text_delta carries incremental text
-//   - message_delta  — contains usage.output_tokens
+//   - message_start       — contains message.usage (input_tokens, cache tokens)
+//   - content_block_start — initialises a content block (text or tool_use)
+//   - content_block_delta — text_delta or input_json_delta carries incremental data
+//   - message_delta       — contains usage.output_tokens and stop_reason
 func extractStreamingResponseAttributes(span trace.Span, data []byte, parentSpan trace.Span) {
 	chunks, err := traceutil.ParseSSEChunks(bytes.NewReader(data))
 	if err != nil || len(chunks) == 0 {
@@ -292,38 +293,81 @@ func extractStreamingResponseAttributes(span trace.Span, data []byte, parentSpan
 	}
 
 	usage := make(map[string]interface{})
-	var content strings.Builder
+
+	// Track content blocks by index for proper multi-block reconstruction
+	type contentBlock struct {
+		blockType string // "text" or "tool_use"
+		id        string // tool_use id
+		name      string // tool_use function name
+		buf       strings.Builder
+	}
+	var blocks []*contentBlock
 
 	for _, chunk := range chunks {
 		eventType, _ := chunk["type"].(string)
 
 		switch eventType {
 		case "message_start":
-			// message_start contains message.usage with input/cache tokens
 			if message, ok := chunk["message"].(map[string]any); ok {
 				if curUsage, ok := message["usage"].(map[string]any); ok {
 					for k, v := range curUsage {
 						usage[k] = v
 					}
 				}
-				// Extract model from message_start
 				if model, ok := message["model"].(string); ok {
 					span.SetAttributes(attribute.String("gen_ai.response.model", model))
 				}
 			}
 
+		case "content_block_start":
+			idxF, ok := chunk["index"].(float64)
+			if !ok {
+				continue
+			}
+			idx := int(idxF)
+			for len(blocks) <= idx {
+				blocks = append(blocks, nil)
+			}
+			block := &contentBlock{}
+			if cb, ok := chunk["content_block"].(map[string]any); ok {
+				block.blockType, _ = cb["type"].(string)
+				block.id, _ = cb["id"].(string)
+				block.name, _ = cb["name"].(string)
+			}
+			blocks[idx] = block
+
 		case "content_block_delta":
-			// Aggregate text from text_delta events
+			idxF, ok := chunk["index"].(float64)
+			if !ok {
+				continue
+			}
+			idx := int(idxF)
+			for len(blocks) <= idx {
+				blocks = append(blocks, nil)
+			}
+			if blocks[idx] == nil {
+				blocks[idx] = &contentBlock{}
+			}
 			if delta, ok := chunk["delta"].(map[string]any); ok {
-				if deltaType, _ := delta["type"].(string); deltaType == "text_delta" {
+				switch deltaType, _ := delta["type"].(string); deltaType {
+				case "text_delta":
 					if text, ok := delta["text"].(string); ok {
-						content.WriteString(text)
+						blocks[idx].buf.WriteString(text)
+						if blocks[idx].blockType == "" {
+							blocks[idx].blockType = "text"
+						}
+					}
+				case "input_json_delta":
+					if partialJSON, ok := delta["partial_json"].(string); ok {
+						blocks[idx].buf.WriteString(partialJSON)
+						if blocks[idx].blockType == "" {
+							blocks[idx].blockType = "tool_use"
+						}
 					}
 				}
 			}
 
 		case "message_delta":
-			// message_delta contains usage.output_tokens and stop_reason
 			if curUsage, ok := chunk["usage"].(map[string]any); ok {
 				for k, v := range curUsage {
 					usage[k] = v
@@ -337,8 +381,59 @@ func extractStreamingResponseAttributes(span trace.Span, data []byte, parentSpan
 		}
 	}
 
-	if text := content.String(); text != "" {
-		span.SetAttributes(attribute.String("gen_ai.completion", text))
+	// Build completion from content blocks
+	hasToolUse := false
+	for _, b := range blocks {
+		if b != nil && b.blockType == "tool_use" {
+			hasToolUse = true
+			break
+		}
+	}
+
+	if !hasToolUse {
+		// Text-only — flat string (backward compatible)
+		var parts []string
+		for _, b := range blocks {
+			if b != nil {
+				if text := b.buf.String(); text != "" {
+					parts = append(parts, text)
+				}
+			}
+		}
+		if completion := strings.Join(parts, "\n"); completion != "" {
+			span.SetAttributes(attribute.String("gen_ai.completion", completion))
+		}
+	} else {
+		// Has tool_use blocks — serialize as JSON content array
+		var contentBlocks []map[string]any
+		for _, b := range blocks {
+			if b == nil {
+				continue
+			}
+			switch b.blockType {
+			case "text":
+				contentBlocks = append(contentBlocks, map[string]any{
+					"type": "text",
+					"text": b.buf.String(),
+				})
+			case "tool_use":
+				block := map[string]any{
+					"type": "tool_use",
+					"id":   b.id,
+					"name": b.name,
+				}
+				var input any
+				if err := json.Unmarshal([]byte(b.buf.String()), &input); err == nil {
+					block["input"] = input
+				} else {
+					block["input"] = b.buf.String()
+				}
+				contentBlocks = append(contentBlocks, block)
+			}
+		}
+		if out, err := json.Marshal(contentBlocks); err == nil {
+			span.SetAttributes(attribute.String("gen_ai.completion", string(out)))
+		}
 	}
 
 	if len(usage) > 0 {
