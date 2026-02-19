@@ -116,11 +116,11 @@ func MiddlewareWithTracerProvider(req *http.Request, next MiddlewareNext, tp tra
 		req.Body = io.NopCloser(bytes.NewBuffer(requestBody))
 	}
 
-	// Extract prompt from request body
+	// Extract input messages from request body
 	if len(requestBody) > 0 {
-		prompt := extractPromptFromRequest(requestBody)
-		if prompt != "" {
-			span.SetAttributes(attribute.String("gen_ai.prompt", prompt))
+		inputMessages := extractInputMessages(requestBody)
+		if inputMessages != "" {
+			span.SetAttributes(attribute.String("gen_ai.prompt", inputMessages))
 		}
 
 		// Extract model if present
@@ -238,36 +238,45 @@ func getOperationName(path string) string {
 	return "request"
 }
 
-// extractPromptFromRequest extracts the prompt text from OpenAI request body.
-func extractPromptFromRequest(body []byte) string {
-	var req map[string]interface{}
+// extractInputMessages returns a JSON object string {"messages":[...]} from the
+// request body, preserving all message roles and structure. Falls back to
+// wrapping plain strings in a single user message.
+func extractInputMessages(body []byte) string {
+	var req map[string]any
 	if err := json.Unmarshal(body, &req); err != nil {
 		return ""
 	}
 
-	// For chat completions, extract messages
-	if messages, ok := req["messages"].([]interface{}); ok {
-		var promptParts []string
-		for _, msg := range messages {
-			if msgMap, ok := msg.(map[string]interface{}); ok {
-				if role, _ := msgMap["role"].(string); role == "user" || role == "system" {
-					if content, _ := msgMap["content"].(string); content != "" {
-						promptParts = append(promptParts, content)
-					}
-				}
-			}
-		}
-		if len(promptParts) > 0 {
-			return strings.Join(promptParts, "\n")
+	// Chat completions — messages array
+	if messages, ok := req["messages"].([]any); ok && len(messages) > 0 {
+		return marshalMessages(messages)
+	}
+
+	// Responses API — input field (string or array)
+	if input, ok := req["input"]; ok {
+		switch v := input.(type) {
+		case string:
+			return marshalMessages([]any{map[string]any{"role": "user", "content": v}})
+		case []any:
+			return marshalMessages(v)
 		}
 	}
 
-	// For completions, extract prompt
+	// Legacy completions — prompt string
 	if prompt, ok := req["prompt"].(string); ok {
-		return prompt
+		return marshalMessages([]any{map[string]any{"role": "user", "content": prompt}})
 	}
 
 	return ""
+}
+
+// marshalMessages wraps a messages slice in {"messages":[...]} and marshals to JSON.
+func marshalMessages(messages []any) string {
+	out, err := json.Marshal(map[string]any{"messages": messages})
+	if err != nil {
+		return ""
+	}
+	return string(out)
 }
 
 // extractModelFromRequest extracts the model name from OpenAI request body.
@@ -370,31 +379,32 @@ func extractStreamingCompletion(data []byte) (string, usageInfo) {
 	}
 
 	text := content.String()
-	if len(toolCalls) == 0 {
-		return text, usage
-	}
 
-	// Tool calls present — serialize as JSON to preserve structure
-	tcOut := make([]map[string]any, len(toolCalls))
-	for i, tc := range toolCalls {
-		tcOut[i] = map[string]any{
-			"id":   tc.ID,
-			"type": tc.Type,
-			"function": map[string]any{
-				"name":      tc.Name,
-				"arguments": tc.Args.String(),
-			},
-		}
-	}
-	msg := map[string]any{"tool_calls": tcOut}
+	// Build assistant message
+	msg := map[string]any{"role": "assistant"}
 	if text != "" {
 		msg["content"] = text
 	}
-	out, err := json.Marshal(msg)
-	if err != nil {
-		return text, usage
+	if len(toolCalls) > 0 {
+		tcOut := make([]map[string]any, len(toolCalls))
+		for i, tc := range toolCalls {
+			tcOut[i] = map[string]any{
+				"id":   tc.ID,
+				"type": tc.Type,
+				"function": map[string]any{
+					"name":      tc.Name,
+					"arguments": tc.Args.String(),
+				},
+			}
+		}
+		msg["tool_calls"] = tcOut
 	}
-	return string(out), usage
+
+	if len(msg) == 1 {
+		// Only "role" — no content or tool calls
+		return "", usage
+	}
+	return marshalMessages([]any{msg}), usage
 }
 
 // usageInfo holds token usage information.
@@ -403,42 +413,38 @@ type usageInfo struct {
 	OutputTokens int
 }
 
-// extractCompletionFromResponse extracts completion text and usage from OpenAI response.
+// extractCompletionFromResponse extracts the assistant message and usage from
+// an OpenAI response. Returns a {"messages":[message]} JSON string.
 func extractCompletionFromResponse(body []byte) (string, usageInfo) {
-	var resp map[string]interface{}
+	var resp map[string]any
 	if err := json.Unmarshal(body, &resp); err != nil {
 		return "", usageInfo{}
 	}
 
-	var completion string
 	var usage usageInfo
+	if usageMap, ok := resp["usage"].(map[string]any); ok {
+		if v, ok := usageMap["prompt_tokens"].(float64); ok {
+			usage.InputTokens = int(v)
+		}
+		if v, ok := usageMap["completion_tokens"].(float64); ok {
+			usage.OutputTokens = int(v)
+		}
+	}
 
-	// Extract from choices array (chat completions)
-	if choices, ok := resp["choices"].([]interface{}); ok && len(choices) > 0 {
-		if choice, ok := choices[0].(map[string]interface{}); ok {
-			if message, ok := choice["message"].(map[string]interface{}); ok {
-				if content, ok := message["content"].(string); ok {
-					completion = content
-				}
+	if choices, ok := resp["choices"].([]any); ok && len(choices) > 0 {
+		if choice, ok := choices[0].(map[string]any); ok {
+			// Chat completions — full message object (has role, content, tool_calls, etc.)
+			if message, ok := choice["message"].(map[string]any); ok {
+				return marshalMessages([]any{message}), usage
 			}
-			// For completions endpoint
+			// Legacy completions — wrap text in an assistant message
 			if text, ok := choice["text"].(string); ok {
-				completion = text
+				return marshalMessages([]any{map[string]any{"role": "assistant", "content": text}}), usage
 			}
 		}
 	}
 
-	// Extract usage
-	if usageMap, ok := resp["usage"].(map[string]interface{}); ok {
-		if promptTokens, ok := usageMap["prompt_tokens"].(float64); ok {
-			usage.InputTokens = int(promptTokens)
-		}
-		if completionTokens, ok := usageMap["completion_tokens"].(float64); ok {
-			usage.OutputTokens = int(completionTokens)
-		}
-	}
-
-	return completion, usage
+	return "", usage
 }
 
 // --- Responses API (/v1/responses) ---
@@ -487,8 +493,8 @@ func extractResponsesUsage(resp map[string]any) usageInfo {
 	return usage
 }
 
-// extractResponsesOutput extracts completion text from a Responses API response.
-// Handles both message (output_text) and function_call output items.
+// extractResponsesOutput extracts a {"messages":[...]} JSON string from a
+// Responses API response. Handles message (output_text) and function_call items.
 func extractResponsesOutput(resp map[string]any) string {
 	output, ok := resp["output"].([]any)
 	if !ok || len(output) == 0 {
@@ -530,15 +536,15 @@ func extractResponsesOutput(resp map[string]any) string {
 		}
 	}
 
-	if len(functionCalls) == 0 {
-		return strings.Join(textParts, "\n")
-	}
-
-	// Function calls present — serialize as JSON
-	msg := map[string]any{"function_calls": functionCalls}
+	msg := map[string]any{"role": "assistant"}
 	if len(textParts) > 0 {
 		msg["content"] = strings.Join(textParts, "\n")
 	}
-	out, _ := json.Marshal(msg)
-	return string(out)
+	if len(functionCalls) > 0 {
+		msg["function_calls"] = functionCalls
+	}
+	if len(msg) == 1 {
+		return ""
+	}
+	return marshalMessages([]any{msg})
 }

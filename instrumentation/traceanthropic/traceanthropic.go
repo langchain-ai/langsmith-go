@@ -218,53 +218,23 @@ func extractRequestAttributes(span trace.Span, body []byte) {
 		span.SetAttributes(attribute.Float64("gen_ai.request.temperature", temp))
 	}
 
-	// Extract system message if present
-	var messages []interface{}
+	// Build input messages — system prepended, all roles preserved
+	var messages []any
 	if sys, ok := req["system"]; ok {
-		messages = append(messages, map[string]interface{}{
+		messages = append(messages, map[string]any{
 			"role":    "system",
 			"content": sys,
 		})
 	}
-
-	// Extract user messages
-	if msgs, ok := req["messages"].([]interface{}); ok {
+	if msgs, ok := req["messages"].([]any); ok {
 		messages = append(messages, msgs...)
 	}
 
-	// Build prompt from messages
 	if len(messages) > 0 {
-		prompt := buildPromptFromMessages(messages)
-		if prompt != "" {
-			span.SetAttributes(attribute.String("gen_ai.prompt", prompt))
+		if out, err := json.Marshal(map[string]any{"messages": messages}); err == nil {
+			span.SetAttributes(attribute.String("gen_ai.prompt", string(out)))
 		}
 	}
-}
-
-// buildPromptFromMessages builds a prompt string from Anthropic messages.
-func buildPromptFromMessages(messages []interface{}) string {
-	var parts []string
-	for _, msg := range messages {
-		if msgMap, ok := msg.(map[string]interface{}); ok {
-			if role, _ := msgMap["role"].(string); role == "user" || role == "system" {
-				if content, ok := msgMap["content"].(string); ok {
-					parts = append(parts, content)
-				} else if contentArray, ok := msgMap["content"].([]interface{}); ok {
-					// Handle content blocks
-					for _, block := range contentArray {
-						if blockMap, ok := block.(map[string]interface{}); ok {
-							if blockType, _ := blockMap["type"].(string); blockType == "text" {
-								if text, _ := blockMap["text"].(string); text != "" {
-									parts = append(parts, text)
-								}
-							}
-						}
-					}
-				}
-			}
-		}
-	}
-	return strings.Join(parts, "\n")
 }
 
 // isStreaming checks the request JSON for "stream":true.
@@ -381,57 +351,39 @@ func extractStreamingResponseAttributes(span trace.Span, data []byte, parentSpan
 		}
 	}
 
-	// Build completion from content blocks
-	hasToolUse := false
+	// Reconstruct content blocks into an assistant message
+	var contentBlocks []map[string]any
 	for _, b := range blocks {
-		if b != nil && b.blockType == "tool_use" {
-			hasToolUse = true
-			break
+		if b == nil {
+			continue
+		}
+		switch b.blockType {
+		case "text":
+			contentBlocks = append(contentBlocks, map[string]any{
+				"type": "text",
+				"text": b.buf.String(),
+			})
+		case "tool_use":
+			block := map[string]any{
+				"type": "tool_use",
+				"id":   b.id,
+				"name": b.name,
+			}
+			var input any
+			if err := json.Unmarshal([]byte(b.buf.String()), &input); err == nil {
+				block["input"] = input
+			} else {
+				block["input"] = b.buf.String()
+			}
+			contentBlocks = append(contentBlocks, block)
 		}
 	}
 
-	if !hasToolUse {
-		// Text-only — flat string (backward compatible)
-		var parts []string
-		for _, b := range blocks {
-			if b != nil {
-				if text := b.buf.String(); text != "" {
-					parts = append(parts, text)
-				}
-			}
-		}
-		if completion := strings.Join(parts, "\n"); completion != "" {
-			span.SetAttributes(attribute.String("gen_ai.completion", completion))
-		}
-	} else {
-		// Has tool_use blocks — serialize as JSON content array
-		var contentBlocks []map[string]any
-		for _, b := range blocks {
-			if b == nil {
-				continue
-			}
-			switch b.blockType {
-			case "text":
-				contentBlocks = append(contentBlocks, map[string]any{
-					"type": "text",
-					"text": b.buf.String(),
-				})
-			case "tool_use":
-				block := map[string]any{
-					"type": "tool_use",
-					"id":   b.id,
-					"name": b.name,
-				}
-				var input any
-				if err := json.Unmarshal([]byte(b.buf.String()), &input); err == nil {
-					block["input"] = input
-				} else {
-					block["input"] = b.buf.String()
-				}
-				contentBlocks = append(contentBlocks, block)
-			}
-		}
-		if out, err := json.Marshal(contentBlocks); err == nil {
+	if len(contentBlocks) > 0 {
+		msg := map[string]any{"messages": []any{
+			map[string]any{"role": "assistant", "content": contentBlocks},
+		}}
+		if out, err := json.Marshal(msg); err == nil {
 			span.SetAttributes(attribute.String("gen_ai.completion", string(out)))
 		}
 	}
@@ -463,28 +415,15 @@ func extractResponseAttributes(span trace.Span, body []byte, parentSpan trace.Sp
 		span.SetAttributes(attribute.String("langsmith.metadata.stop_reason", stopReason))
 	}
 
-	// Extract completion from content
-	if content, ok := resp["content"].([]interface{}); ok && len(content) > 0 {
-		completion := extractCompletionFromContent(content)
-		if completion != "" {
-			span.SetAttributes(attribute.String("gen_ai.completion", completion))
+	// Extract output — wrap full content array in an assistant message
+	if content, ok := resp["content"].([]any); ok && len(content) > 0 {
+		msg := map[string]any{"messages": []any{
+			map[string]any{"role": "assistant", "content": content},
+		}}
+		if out, err := json.Marshal(msg); err == nil {
+			span.SetAttributes(attribute.String("gen_ai.completion", string(out)))
 		}
 	}
-}
-
-// extractCompletionFromContent extracts text completion from Anthropic content blocks.
-func extractCompletionFromContent(content []interface{}) string {
-	var parts []string
-	for _, block := range content {
-		if blockMap, ok := block.(map[string]interface{}); ok {
-			if blockType, _ := blockMap["type"].(string); blockType == "text" {
-				if text, _ := blockMap["text"].(string); text != "" {
-					parts = append(parts, text)
-				}
-			}
-		}
-	}
-	return strings.Join(parts, "\n")
 }
 
 // setUsageAttributes sets usage-related attributes on the span.
