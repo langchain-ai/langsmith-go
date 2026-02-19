@@ -54,7 +54,7 @@ func (r *SessionService) New(ctx context.Context, params SessionNewParams, opts 
 // Get a specific session.
 func (r *SessionService) Get(ctx context.Context, sessionID string, params SessionGetParams, opts ...option.RequestOption) (res *TracerSession, err error) {
 	if params.Accept.Present {
-		opts = append(opts, option.WithHeader("accept", fmt.Sprintf("%s", params.Accept)))
+		opts = append(opts, option.WithHeader("accept", fmt.Sprintf("%v", params.Accept)))
 	}
 	opts = slices.Concat(r.Options, opts)
 	if sessionID == "" {
@@ -82,7 +82,7 @@ func (r *SessionService) Update(ctx context.Context, sessionID string, body Sess
 func (r *SessionService) List(ctx context.Context, params SessionListParams, opts ...option.RequestOption) (res *pagination.OffsetPaginationTopLevelArray[TracerSession], err error) {
 	var raw *http.Response
 	if params.Accept.Present {
-		opts = append(opts, option.WithHeader("accept", fmt.Sprintf("%s", params.Accept)))
+		opts = append(opts, option.WithHeader("accept", fmt.Sprintf("%v", params.Accept)))
 	}
 	opts = slices.Concat(r.Options, opts)
 	opts = append([]option.RequestOption{option.WithResponseInto(&raw)}, opts...)
@@ -119,7 +119,7 @@ func (r *SessionService) Delete(ctx context.Context, sessionID string, opts ...o
 // Get a prebuilt dashboard for a tracing project.
 func (r *SessionService) Dashboard(ctx context.Context, sessionID string, params SessionDashboardParams, opts ...option.RequestOption) (res *CustomChartsSection, err error) {
 	if params.Accept.Present {
-		opts = append(opts, option.WithHeader("accept", fmt.Sprintf("%s", params.Accept)))
+		opts = append(opts, option.WithHeader("accept", fmt.Sprintf("%v", params.Accept)))
 	}
 	opts = slices.Concat(r.Options, opts)
 	if sessionID == "" {
