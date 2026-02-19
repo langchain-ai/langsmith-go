@@ -130,8 +130,9 @@ func MiddlewareWithTracerProvider(req *http.Request, next MiddlewareNext, tp tra
 		}
 	}
 
-	// Inject span context into request headers
+	// Inject span context into request headers and update request context
 	otel.GetTextMapPropagator().Inject(ctx, propagation.HeaderCarrier(req.Header))
+	req = req.WithContext(ctx)
 
 	// Make the actual request via next middleware/transport
 	resp, err := next(req)
@@ -175,16 +176,16 @@ func MiddlewareWithTracerProvider(req *http.Request, next MiddlewareNext, tp tra
 		}
 		if usage.InputTokens > 0 {
 			inputTokens := int64(usage.InputTokens)
-			outputTokens := int64(usage.OutputTokens)
-			span.SetAttributes(
-				attribute.Int64("gen_ai.usage.input_tokens", inputTokens),
-				attribute.Int64("gen_ai.usage.output_tokens", outputTokens),
-			)
+			span.SetAttributes(attribute.Int64("gen_ai.usage.input_tokens", inputTokens))
 			if parentSpan.SpanContext().IsValid() && parentSpan.IsRecording() {
-				parentSpan.SetAttributes(
-					attribute.Int64("gen_ai.usage.input_tokens", inputTokens),
-					attribute.Int64("gen_ai.usage.output_tokens", outputTokens),
-				)
+				parentSpan.SetAttributes(attribute.Int64("gen_ai.usage.input_tokens", inputTokens))
+			}
+		}
+		if usage.OutputTokens > 0 {
+			outputTokens := int64(usage.OutputTokens)
+			span.SetAttributes(attribute.Int64("gen_ai.usage.output_tokens", outputTokens))
+			if parentSpan.SpanContext().IsValid() && parentSpan.IsRecording() {
+				parentSpan.SetAttributes(attribute.Int64("gen_ai.usage.output_tokens", outputTokens))
 			}
 		}
 		if resp.StatusCode < 400 {

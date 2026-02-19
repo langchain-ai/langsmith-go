@@ -142,8 +142,9 @@ func (rt *roundTripper) RoundTrip(req *http.Request) (*http.Response, error) {
 		extractRequestAttributes(span, requestBody)
 	}
 
-	// Inject span context into request headers
+	// Inject span context into request headers and update request context
 	otel.GetTextMapPropagator().Inject(ctx, propagation.HeaderCarrier(req.Header))
+	req = req.WithContext(ctx)
 
 	// Make the actual request
 	resp, err := rt.base.RoundTrip(req)
