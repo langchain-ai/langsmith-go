@@ -33,6 +33,8 @@ import (
 	"go.opentelemetry.io/otel/codes"
 	"go.opentelemetry.io/otel/propagation"
 	"go.opentelemetry.io/otel/trace"
+
+	"github.com/langchain-ai/langsmith-go/internal/traceutil"
 )
 
 // Option configures a traced HTTP client.
@@ -120,7 +122,6 @@ func (rt *roundTripper) RoundTrip(req *http.Request) (*http.Response, error) {
 			attribute.String("http.url", req.URL.String()),
 		),
 	)
-	defer span.End()
 
 	// Read request body if present
 	var requestBody []byte
@@ -130,6 +131,7 @@ func (rt *roundTripper) RoundTrip(req *http.Request) (*http.Response, error) {
 		if err != nil {
 			span.RecordError(err)
 			span.SetStatus(codes.Error, fmt.Sprintf("failed to read request body: %v", err))
+			span.End()
 			return rt.base.RoundTrip(req)
 		}
 		req.Body = io.NopCloser(bytes.NewBuffer(requestBody))
@@ -148,36 +150,34 @@ func (rt *roundTripper) RoundTrip(req *http.Request) (*http.Response, error) {
 	if err != nil {
 		span.RecordError(err)
 		span.SetStatus(codes.Error, err.Error())
+		span.End()
 		return resp, err
 	}
 
-	// Read response body
-	var responseBody []byte
-	if resp.Body != nil {
-		var readErr error
-		responseBody, readErr = io.ReadAll(resp.Body)
-		if readErr != nil {
-			span.RecordError(readErr)
-			span.SetStatus(codes.Error, fmt.Sprintf("failed to read response body: %v", readErr))
-			// Continue with empty body rather than failing the request
-		} else {
-			resp.Body = io.NopCloser(bytes.NewBuffer(responseBody))
-		}
-	}
-
-	// Extract response attributes
-	if len(responseBody) > 0 {
-		extractResponseAttributes(span, responseBody, parentSpan)
-	}
-
-	// Set status based on HTTP status code
 	if resp.StatusCode >= 400 {
 		span.SetStatus(codes.Error, fmt.Sprintf("HTTP %d", resp.StatusCode))
-	} else {
-		span.SetStatus(codes.Ok, "")
 	}
 
-	return resp, err
+	streaming := isStreaming(requestBody)
+
+	resp.Body = traceutil.NewBufferedReader(resp.Body, func(r io.Reader) {
+		data, err := io.ReadAll(r)
+		if err != nil || len(data) == 0 {
+			span.End()
+			return
+		}
+		if streaming {
+			extractStreamingResponseAttributes(span, data, parentSpan)
+		} else {
+			extractResponseAttributes(span, data, parentSpan)
+		}
+		if resp.StatusCode < 400 {
+			span.SetStatus(codes.Ok, "")
+		}
+		span.End()
+	})
+
+	return resp, nil
 }
 
 // getSpanName returns an appropriate span name based on the API endpoint.
@@ -265,6 +265,85 @@ func buildPromptFromMessages(messages []interface{}) string {
 		}
 	}
 	return strings.Join(parts, "\n")
+}
+
+// isStreaming checks the request JSON for "stream":true.
+func isStreaming(requestBody []byte) bool {
+	var req map[string]any
+	if err := json.Unmarshal(requestBody, &req); err != nil {
+		return false
+	}
+	v, ok := req["stream"].(bool)
+	return ok && v
+}
+
+// extractStreamingResponseAttributes parses an SSE response body and sets
+// the same span attributes as the non-streaming path: gen_ai.completion,
+// usage tokens, and cache breakdown.
+//
+// Anthropic SSE events of interest:
+//   - message_start  — contains message.usage (input_tokens, cache tokens)
+//   - content_block_delta — text_delta carries incremental text
+//   - message_delta  — contains usage.output_tokens
+func extractStreamingResponseAttributes(span trace.Span, data []byte, parentSpan trace.Span) {
+	chunks, err := traceutil.ParseSSEChunks(bytes.NewReader(data))
+	if err != nil || len(chunks) == 0 {
+		return
+	}
+
+	usage := make(map[string]interface{})
+	var content strings.Builder
+
+	for _, chunk := range chunks {
+		eventType, _ := chunk["type"].(string)
+
+		switch eventType {
+		case "message_start":
+			// message_start contains message.usage with input/cache tokens
+			if message, ok := chunk["message"].(map[string]any); ok {
+				if curUsage, ok := message["usage"].(map[string]any); ok {
+					for k, v := range curUsage {
+						usage[k] = v
+					}
+				}
+				// Extract model from message_start
+				if model, ok := message["model"].(string); ok {
+					span.SetAttributes(attribute.String("gen_ai.response.model", model))
+				}
+			}
+
+		case "content_block_delta":
+			// Aggregate text from text_delta events
+			if delta, ok := chunk["delta"].(map[string]any); ok {
+				if deltaType, _ := delta["type"].(string); deltaType == "text_delta" {
+					if text, ok := delta["text"].(string); ok {
+						content.WriteString(text)
+					}
+				}
+			}
+
+		case "message_delta":
+			// message_delta contains usage.output_tokens and stop_reason
+			if curUsage, ok := chunk["usage"].(map[string]any); ok {
+				for k, v := range curUsage {
+					usage[k] = v
+				}
+			}
+			if delta, ok := chunk["delta"].(map[string]any); ok {
+				if stopReason, ok := delta["stop_reason"].(string); ok && stopReason != "" {
+					span.SetAttributes(attribute.String("langsmith.metadata.stop_reason", stopReason))
+				}
+			}
+		}
+	}
+
+	if text := content.String(); text != "" {
+		span.SetAttributes(attribute.String("gen_ai.completion", text))
+	}
+
+	if len(usage) > 0 {
+		setUsageAttributes(span, usage, parentSpan)
+	}
 }
 
 // extractResponseAttributes extracts attributes from Anthropic response body.

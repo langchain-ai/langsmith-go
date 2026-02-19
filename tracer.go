@@ -68,40 +68,61 @@ func WithBatchTimeout(timeout time.Duration) TracerOption {
 	}
 }
 
-// Tracer manages an OpenTelemetry tracer provider for LangSmith.
+// Tracer manages a LangSmith span processor registered on an OpenTelemetry tracer provider.
 type Tracer struct {
-	tp *sdktrace.TracerProvider
+	tp        *sdktrace.TracerProvider
+	processor sdktrace.SpanProcessor
+	ownsTP    bool
 }
 
-// NewTracer creates a new Tracer with the given options.
-func NewTracer(opts ...TracerOption) (*Tracer, error) {
-	cfg := &tracerConfig{
-		endpoint:     defaultEndpoint,
-		batchTimeout: defaultBatchTimeout,
-	}
+// New registers a LangSmith exporter on the provided TracerProvider.
+//
+// Example:
+//
+//	tp := sdktrace.NewTracerProvider()
+//	defer tp.Shutdown(context.Background())
+//	otel.SetTracerProvider(tp)
+//
+//	ls, err := langsmith.New(tp,
+//		langsmith.WithAPIKey("your-api-key"),
+//		langsmith.WithProjectName("my-project"),
+//	)
+//	if err != nil {
+//		log.Fatal(err)
+//	}
+//	defer ls.Shutdown(context.Background())
+func New(tp *sdktrace.TracerProvider, opts ...TracerOption) (*Tracer, error) {
+	cfg := resolveConfig(opts)
 
-	for _, opt := range opts {
-		opt(cfg)
-	}
-
-	// Fall back to environment variables if not provided via options
-	if cfg.apiKey == "" {
-		cfg.apiKey = os.Getenv("LANGSMITH_API_KEY")
-	}
 	if cfg.apiKey == "" {
 		return nil, fmt.Errorf("API key is required (use WithAPIKey or set LANGSMITH_API_KEY environment variable)")
 	}
 
-	if cfg.projectName == "" {
-		cfg.projectName = os.Getenv("LANGSMITH_PROJECT")
+	processor, err := createProcessor(cfg)
+	if err != nil {
+		return nil, err
 	}
-	if cfg.projectName == "" {
-		cfg.projectName = "default"
+
+	tp.RegisterSpanProcessor(processor)
+
+	return &Tracer{
+		tp:        tp,
+		processor: processor,
+		ownsTP:    false,
+	}, nil
+}
+
+// NewTracer creates a new Tracer that owns its own TracerProvider.
+// For sharing a TracerProvider with other libraries, use New instead.
+func NewTracer(opts ...TracerOption) (*Tracer, error) {
+	cfg := resolveConfig(opts)
+
+	if cfg.apiKey == "" {
+		return nil, fmt.Errorf("API key is required (use WithAPIKey or set LANGSMITH_API_KEY environment variable)")
 	}
 
 	ctx := context.Background()
 
-	// Create resource with service name if provided
 	var res *resource.Resource
 	var err error
 	if cfg.serviceName != "" {
@@ -117,7 +138,51 @@ func NewTracer(opts ...TracerOption) (*Tracer, error) {
 		return nil, fmt.Errorf("creating resource: %w", err)
 	}
 
-	// Create OTLP HTTP exporter with LangSmith endpoint and headers
+	tp := sdktrace.NewTracerProvider(sdktrace.WithResource(res))
+
+	processor, err := createProcessor(cfg)
+	if err != nil {
+		return nil, err
+	}
+
+	tp.RegisterSpanProcessor(processor)
+
+	otel.SetTracerProvider(tp)
+	otel.SetTextMapPropagator(propagation.NewCompositeTextMapPropagator(
+		propagation.TraceContext{},
+		propagation.Baggage{},
+	))
+
+	return &Tracer{
+		tp:        tp,
+		processor: processor,
+		ownsTP:    true,
+	}, nil
+}
+
+func resolveConfig(opts []TracerOption) *tracerConfig {
+	cfg := &tracerConfig{
+		endpoint:     defaultEndpoint,
+		batchTimeout: defaultBatchTimeout,
+	}
+	for _, opt := range opts {
+		opt(cfg)
+	}
+	if cfg.apiKey == "" {
+		cfg.apiKey = os.Getenv("LANGSMITH_API_KEY")
+	}
+	if cfg.projectName == "" {
+		cfg.projectName = os.Getenv("LANGSMITH_PROJECT")
+	}
+	if cfg.projectName == "" {
+		cfg.projectName = "default"
+	}
+	return cfg
+}
+
+func createProcessor(cfg *tracerConfig) (sdktrace.SpanProcessor, error) {
+	ctx := context.Background()
+
 	exporter, err := otlptracehttp.New(ctx,
 		otlptracehttp.WithEndpoint(cfg.endpoint),
 		otlptracehttp.WithURLPath(defaultURLPath),
@@ -130,20 +195,9 @@ func NewTracer(opts ...TracerOption) (*Tracer, error) {
 		return nil, fmt.Errorf("creating OTLP exporter: %w", err)
 	}
 
-	// Create tracer provider
-	tp := sdktrace.NewTracerProvider(
-		sdktrace.WithBatcher(exporter, sdktrace.WithBatchTimeout(cfg.batchTimeout)),
-		sdktrace.WithResource(res),
-	)
-
-	// Set global tracer provider (for backward compatibility)
-	otel.SetTracerProvider(tp)
-	otel.SetTextMapPropagator(propagation.NewCompositeTextMapPropagator(
-		propagation.TraceContext{},
-		propagation.Baggage{},
-	))
-
-	return &Tracer{tp: tp}, nil
+	return sdktrace.NewBatchSpanProcessor(exporter,
+		sdktrace.WithBatchTimeout(cfg.batchTimeout),
+	), nil
 }
 
 // TracerProvider returns the underlying trace.TracerProvider.
@@ -157,9 +211,14 @@ func (t *Tracer) Tracer(name string) trace.Tracer {
 	return t.tp.Tracer(name)
 }
 
-// Shutdown gracefully shuts down the tracer provider.
+// Shutdown gracefully shuts down the tracer.
+// If the Tracer was created with New, only the LangSmith processor is shut down.
+// If the Tracer was created with NewTracer, the entire TracerProvider is shut down.
 func (t *Tracer) Shutdown(ctx context.Context) error {
 	shutdownCtx, cancel := context.WithTimeout(ctx, defaultShutdownTimeout)
 	defer cancel()
-	return t.tp.Shutdown(shutdownCtx)
+	if t.ownsTP {
+		return t.tp.Shutdown(shutdownCtx)
+	}
+	return t.processor.Shutdown(shutdownCtx)
 }

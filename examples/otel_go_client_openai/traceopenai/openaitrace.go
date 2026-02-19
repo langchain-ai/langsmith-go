@@ -15,6 +15,8 @@ import (
 	"go.opentelemetry.io/otel/codes"
 	"go.opentelemetry.io/otel/propagation"
 	"go.opentelemetry.io/otel/trace"
+
+	"github.com/langchain-ai/langsmith-go/internal/traceutil"
 )
 
 // MiddlewareNext is a function which is called by the middleware to pass an HTTP request
@@ -98,7 +100,6 @@ func MiddlewareWithTracerProvider(req *http.Request, next MiddlewareNext, tp tra
 
 	// Start span (child span)
 	ctx, span := tracer.Start(ctx, spanName, trace.WithAttributes(spanAttrs...))
-	defer span.End()
 
 	// Read request body if present
 	var requestBody []byte
@@ -108,6 +109,7 @@ func MiddlewareWithTracerProvider(req *http.Request, next MiddlewareNext, tp tra
 		if err != nil {
 			span.RecordError(err)
 			span.SetStatus(codes.Error, fmt.Sprintf("failed to read request body: %v", err))
+			span.End()
 			return next(req)
 		}
 		req.Body = io.NopCloser(bytes.NewBuffer(requestBody))
@@ -135,39 +137,41 @@ func MiddlewareWithTracerProvider(req *http.Request, next MiddlewareNext, tp tra
 	if err != nil {
 		span.RecordError(err)
 		span.SetStatus(codes.Error, err.Error())
+		span.End()
 		return resp, err
 	}
 
-	// Read response body
-	var responseBody []byte
-	if resp.Body != nil {
-		var readErr error
-		responseBody, readErr = io.ReadAll(resp.Body)
-		if readErr != nil {
-			span.RecordError(readErr)
-			span.SetStatus(codes.Error, fmt.Sprintf("failed to read response body: %v", readErr))
-			// Continue with empty body rather than failing the request
-		} else {
-			resp.Body = io.NopCloser(bytes.NewBuffer(responseBody))
-		}
+	if resp.StatusCode >= 400 {
+		span.SetStatus(codes.Error, fmt.Sprintf("HTTP %d", resp.StatusCode))
 	}
 
-	// Extract completion and usage from response
-	if len(responseBody) > 0 {
-		completion, usage := extractCompletionFromResponse(responseBody)
+	streaming := isStreaming(requestBody)
+
+	resp.Body = traceutil.NewBufferedReader(resp.Body, func(r io.Reader) {
+		data, err := io.ReadAll(r)
+		if err != nil || len(data) == 0 {
+			span.End()
+			return
+		}
+
+		var completion string
+		var usage usageInfo
+		if streaming {
+			completion, usage = extractStreamingCompletion(data)
+		} else {
+			completion, usage = extractCompletionFromResponse(data)
+		}
+
 		if completion != "" {
 			span.SetAttributes(attribute.String("gen_ai.completion", completion))
 		}
 		if usage.InputTokens > 0 {
 			inputTokens := int64(usage.InputTokens)
 			outputTokens := int64(usage.OutputTokens)
-			// Set token usage on child span
 			span.SetAttributes(
 				attribute.Int64("gen_ai.usage.input_tokens", inputTokens),
 				attribute.Int64("gen_ai.usage.output_tokens", outputTokens),
 			)
-			// Propagate token usage to parent span if it exists and is valid
-			// This ensures token counts appear in Thread list view (which aggregates from root spans)
 			if parentSpan.SpanContext().IsValid() && parentSpan.IsRecording() {
 				parentSpan.SetAttributes(
 					attribute.Int64("gen_ai.usage.input_tokens", inputTokens),
@@ -175,16 +179,13 @@ func MiddlewareWithTracerProvider(req *http.Request, next MiddlewareNext, tp tra
 				)
 			}
 		}
-	}
+		if resp.StatusCode < 400 {
+			span.SetStatus(codes.Ok, "")
+		}
+		span.End()
+	})
 
-	// Set status based on HTTP status code
-	if resp.StatusCode >= 400 {
-		span.SetStatus(codes.Error, fmt.Sprintf("HTTP %d", resp.StatusCode))
-	} else {
-		span.SetStatus(codes.Ok, "")
-	}
-
-	return resp, err
+	return resp, nil
 }
 
 // getSpanName returns an appropriate span name based on the API endpoint.
@@ -259,6 +260,54 @@ func extractModelFromRequest(body []byte) string {
 	}
 
 	return ""
+}
+
+// isStreaming checks the request JSON for "stream":true.
+func isStreaming(requestBody []byte) bool {
+	var req map[string]any
+	if err := json.Unmarshal(requestBody, &req); err != nil {
+		return false
+	}
+	v, ok := req["stream"].(bool)
+	return ok && v
+}
+
+// extractStreamingCompletion parses an SSE response body, aggregates
+// delta.content across chunks, and extracts usage from the chunk that
+// contains it (last chunk when stream_options.include_usage is set).
+func extractStreamingCompletion(data []byte) (string, usageInfo) {
+	chunks, err := traceutil.ParseSSEChunks(bytes.NewReader(data))
+	if err != nil || len(chunks) == 0 {
+		return "", usageInfo{}
+	}
+
+	var content strings.Builder
+	var usage usageInfo
+
+	for _, chunk := range chunks {
+		// Aggregate choices[0].delta.content
+		if choices, ok := chunk["choices"].([]any); ok && len(choices) > 0 {
+			if choice, ok := choices[0].(map[string]any); ok {
+				if delta, ok := choice["delta"].(map[string]any); ok {
+					if text, ok := delta["content"].(string); ok {
+						content.WriteString(text)
+					}
+				}
+			}
+		}
+
+		// Extract usage (present in the last chunk when include_usage is set)
+		if usageMap, ok := chunk["usage"].(map[string]any); ok {
+			if v, ok := usageMap["prompt_tokens"].(float64); ok {
+				usage.InputTokens = int(v)
+			}
+			if v, ok := usageMap["completion_tokens"].(float64); ok {
+				usage.OutputTokens = int(v)
+			}
+		}
+	}
+
+	return content.String(), usage
 }
 
 // usageInfo holds token usage information.
