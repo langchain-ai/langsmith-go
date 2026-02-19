@@ -1,5 +1,14 @@
 # Changelog
 
+## 0.1.0 (2026-02-19)
+
+Full Changelog: [v0.1.0-alpha.10...v0.1.0](https://github.com/langchain-ai/langsmith-go/compare/v0.1.0-alpha.10...v0.1.0)
+
+### Chores
+
+* stable release ([#28](https://github.com/langchain-ai/langsmith-go/issues/28)) ([127e4a7](https://github.com/langchain-ai/langsmith-go/commit/127e4a7027ff8066289a4f0407a07730209e2ee0))
+* stable release ([#31](https://github.com/langchain-ai/langsmith-go/issues/31)) ([3e69fc6](https://github.com/langchain-ai/langsmith-go/commit/3e69fc60056c409c53389d5ccb2746a93eaf0107))
+
 ## 0.1.0-alpha.10 (2026-02-19)
 
 Full Changelog: [v0.1.0-alpha.9...v0.1.0-alpha.10](https://github.com/langchain-ai/langsmith-go/compare/v0.1.0-alpha.9...v0.1.0-alpha.10)
