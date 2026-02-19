@@ -13,7 +13,7 @@ import (
 	"go.opentelemetry.io/otel/trace"
 
 	"github.com/langchain-ai/langsmith-go"
-	"github.com/langchain-ai/langsmith-go/examples/otel_go_client_openai/traceopenai"
+	"github.com/langchain-ai/langsmith-go/instrumentation/traceopenai"
 )
 
 // Demonstrates automatic OpenTelemetry tracing for OpenAI API calls.

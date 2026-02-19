@@ -10,7 +10,7 @@ import (
 	"github.com/anthropics/anthropic-sdk-go/option"
 
 	"github.com/langchain-ai/langsmith-go"
-	"github.com/langchain-ai/langsmith-go/examples/otel_anthropic/traceanthropic"
+	"github.com/langchain-ai/langsmith-go/instrumentation/traceanthropic"
 )
 
 // Demonstrates automatic OpenTelemetry tracing for Anthropic API calls.
