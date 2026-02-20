@@ -1,5 +1,19 @@
 # Changelog
 
+## 0.1.1 (2026-02-20)
+
+Full Changelog: [v0.1.0...v0.1.1](https://github.com/langchain-ai/langsmith-go/compare/v0.1.0...v0.1.1)
+
+### Bug Fixes
+
+* allow canceling a request while it is waiting to retry ([1e74640](https://github.com/langchain-ai/langsmith-go/commit/1e74640a8bf7c5ed31666c737ac2e164c0e8e9d2))
+
+
+### Chores
+
+* **internal:** remove mock server code ([29de91e](https://github.com/langchain-ai/langsmith-go/commit/29de91e1d14eb45ec8149e451f6b3909cbecb9f9))
+* update mock server docs ([08bd0c3](https://github.com/langchain-ai/langsmith-go/commit/08bd0c3bbe4a380ef361cbedcef438996806a78b))
+
 ## 0.1.0 (2026-02-19)
 
 Full Changelog: [v0.1.0-alpha.10...v0.1.0](https://github.com/langchain-ai/langsmith-go/compare/v0.1.0-alpha.10...v0.1.0)
