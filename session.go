@@ -132,13 +132,13 @@ func (r *SessionService) Dashboard(ctx context.Context, sessionID string, params
 }
 
 type CustomChartsSection struct {
-	ID          string                          `json:"id,required" format:"uuid"`
-	Charts      []CustomChartsSectionChart      `json:"charts,required"`
-	Title       string                          `json:"title,required"`
-	Description string                          `json:"description,nullable"`
-	Index       int64                           `json:"index,nullable"`
-	SessionID   string                          `json:"session_id,nullable" format:"uuid"`
-	SubSections []CustomChartsSectionSubSection `json:"sub_sections,nullable"`
+	ID          string                          `json:"id" api:"required" format:"uuid"`
+	Charts      []CustomChartsSectionChart      `json:"charts" api:"required"`
+	Title       string                          `json:"title" api:"required"`
+	Description string                          `json:"description" api:"nullable"`
+	Index       int64                           `json:"index" api:"nullable"`
+	SessionID   string                          `json:"session_id" api:"nullable" format:"uuid"`
+	SubSections []CustomChartsSectionSubSection `json:"sub_sections" api:"nullable"`
 	JSON        customChartsSectionJSON         `json:"-"`
 }
 
@@ -165,16 +165,16 @@ func (r customChartsSectionJSON) RawJSON() string {
 }
 
 type CustomChartsSectionChart struct {
-	ID string `json:"id,required" format:"uuid"`
+	ID string `json:"id" api:"required" format:"uuid"`
 	// Enum for custom chart types.
-	ChartType     CustomChartsSectionChartsChartType     `json:"chart_type,required"`
-	Data          []CustomChartsSectionChartsData        `json:"data,required"`
-	Index         int64                                  `json:"index,required"`
-	Series        []CustomChartsSectionChartsSeries      `json:"series,required"`
-	Title         string                                 `json:"title,required"`
-	CommonFilters CustomChartsSectionChartsCommonFilters `json:"common_filters,nullable"`
-	Description   string                                 `json:"description,nullable"`
-	Metadata      map[string]interface{}                 `json:"metadata,nullable"`
+	ChartType     CustomChartsSectionChartsChartType     `json:"chart_type" api:"required"`
+	Data          []CustomChartsSectionChartsData        `json:"data" api:"required"`
+	Index         int64                                  `json:"index" api:"required"`
+	Series        []CustomChartsSectionChartsSeries      `json:"series" api:"required"`
+	Title         string                                 `json:"title" api:"required"`
+	CommonFilters CustomChartsSectionChartsCommonFilters `json:"common_filters" api:"nullable"`
+	Description   string                                 `json:"description" api:"nullable"`
+	Metadata      map[string]interface{}                 `json:"metadata" api:"nullable"`
 	JSON          customChartsSectionChartJSON           `json:"-"`
 }
 
@@ -219,10 +219,10 @@ func (r CustomChartsSectionChartsChartType) IsKnown() bool {
 }
 
 type CustomChartsSectionChartsData struct {
-	SeriesID  string                                  `json:"series_id,required"`
-	Timestamp time.Time                               `json:"timestamp,required" format:"date-time"`
-	Value     CustomChartsSectionChartsDataValueUnion `json:"value,required,nullable"`
-	Group     string                                  `json:"group,nullable"`
+	SeriesID  string                                  `json:"series_id" api:"required"`
+	Timestamp time.Time                               `json:"timestamp" api:"required" format:"date-time"`
+	Value     CustomChartsSectionChartsDataValueUnion `json:"value" api:"required,nullable"`
+	Group     string                                  `json:"group" api:"nullable"`
 	JSON      customChartsSectionChartsDataJSON       `json:"-"`
 }
 
@@ -271,18 +271,18 @@ type CustomChartsSectionChartsDataValueMap map[string]interface{}
 func (r CustomChartsSectionChartsDataValueMap) ImplementsCustomChartsSectionChartsDataValueUnion() {}
 
 type CustomChartsSectionChartsSeries struct {
-	ID string `json:"id,required" format:"uuid"`
+	ID string `json:"id" api:"required" format:"uuid"`
 	// Metrics you can chart. Feedback metrics are not available for
 	// organization-scoped charts.
-	Metric      CustomChartsSectionChartsSeriesMetric  `json:"metric,required"`
-	Name        string                                 `json:"name,required"`
-	FeedbackKey string                                 `json:"feedback_key,nullable"`
-	Filters     CustomChartsSectionChartsSeriesFilters `json:"filters,nullable"`
+	Metric      CustomChartsSectionChartsSeriesMetric  `json:"metric" api:"required"`
+	Name        string                                 `json:"name" api:"required"`
+	FeedbackKey string                                 `json:"feedback_key" api:"nullable"`
+	Filters     CustomChartsSectionChartsSeriesFilters `json:"filters" api:"nullable"`
 	// Include additional information about where the group_by param was set.
-	GroupBy CustomChartsSectionChartsSeriesGroupBy `json:"group_by,nullable"`
+	GroupBy CustomChartsSectionChartsSeriesGroupBy `json:"group_by" api:"nullable"`
 	// LGP Metrics you can chart.
-	ProjectMetric CustomChartsSectionChartsSeriesProjectMetric `json:"project_metric,nullable"`
-	WorkspaceID   string                                       `json:"workspace_id,nullable" format:"uuid"`
+	ProjectMetric CustomChartsSectionChartsSeriesProjectMetric `json:"project_metric" api:"nullable"`
+	WorkspaceID   string                                       `json:"workspace_id" api:"nullable" format:"uuid"`
 	JSON          customChartsSectionChartsSeriesJSON          `json:"-"`
 }
 
@@ -350,10 +350,10 @@ func (r CustomChartsSectionChartsSeriesMetric) IsKnown() bool {
 }
 
 type CustomChartsSectionChartsSeriesFilters struct {
-	Filter      string                                     `json:"filter,nullable"`
-	Session     []string                                   `json:"session,nullable" format:"uuid"`
-	TraceFilter string                                     `json:"trace_filter,nullable"`
-	TreeFilter  string                                     `json:"tree_filter,nullable"`
+	Filter      string                                     `json:"filter" api:"nullable"`
+	Session     []string                                   `json:"session" api:"nullable" format:"uuid"`
+	TraceFilter string                                     `json:"trace_filter" api:"nullable"`
+	TreeFilter  string                                     `json:"tree_filter" api:"nullable"`
 	JSON        customChartsSectionChartsSeriesFiltersJSON `json:"-"`
 }
 
@@ -378,10 +378,10 @@ func (r customChartsSectionChartsSeriesFiltersJSON) RawJSON() string {
 
 // Include additional information about where the group_by param was set.
 type CustomChartsSectionChartsSeriesGroupBy struct {
-	Attribute CustomChartsSectionChartsSeriesGroupByAttribute `json:"attribute,required"`
+	Attribute CustomChartsSectionChartsSeriesGroupByAttribute `json:"attribute" api:"required"`
 	MaxGroups int64                                           `json:"max_groups"`
-	Path      string                                          `json:"path,nullable"`
-	SetBy     CustomChartsSectionChartsSeriesGroupBySetBy     `json:"set_by,nullable"`
+	Path      string                                          `json:"path" api:"nullable"`
+	SetBy     CustomChartsSectionChartsSeriesGroupBySetBy     `json:"set_by" api:"nullable"`
 	JSON      customChartsSectionChartsSeriesGroupByJSON      `json:"-"`
 }
 
@@ -461,10 +461,10 @@ func (r CustomChartsSectionChartsSeriesProjectMetric) IsKnown() bool {
 }
 
 type CustomChartsSectionChartsCommonFilters struct {
-	Filter      string                                     `json:"filter,nullable"`
-	Session     []string                                   `json:"session,nullable" format:"uuid"`
-	TraceFilter string                                     `json:"trace_filter,nullable"`
-	TreeFilter  string                                     `json:"tree_filter,nullable"`
+	Filter      string                                     `json:"filter" api:"nullable"`
+	Session     []string                                   `json:"session" api:"nullable" format:"uuid"`
+	TraceFilter string                                     `json:"trace_filter" api:"nullable"`
+	TreeFilter  string                                     `json:"tree_filter" api:"nullable"`
 	JSON        customChartsSectionChartsCommonFiltersJSON `json:"-"`
 }
 
@@ -488,11 +488,11 @@ func (r customChartsSectionChartsCommonFiltersJSON) RawJSON() string {
 }
 
 type CustomChartsSectionSubSection struct {
-	ID          string                                `json:"id,required" format:"uuid"`
-	Charts      []CustomChartsSectionSubSectionsChart `json:"charts,required"`
-	Index       int64                                 `json:"index,required"`
-	Title       string                                `json:"title,required"`
-	Description string                                `json:"description,nullable"`
+	ID          string                                `json:"id" api:"required" format:"uuid"`
+	Charts      []CustomChartsSectionSubSectionsChart `json:"charts" api:"required"`
+	Index       int64                                 `json:"index" api:"required"`
+	Title       string                                `json:"title" api:"required"`
+	Description string                                `json:"description" api:"nullable"`
 	JSON        customChartsSectionSubSectionJSON     `json:"-"`
 }
 
@@ -517,16 +517,16 @@ func (r customChartsSectionSubSectionJSON) RawJSON() string {
 }
 
 type CustomChartsSectionSubSectionsChart struct {
-	ID string `json:"id,required" format:"uuid"`
+	ID string `json:"id" api:"required" format:"uuid"`
 	// Enum for custom chart types.
-	ChartType     CustomChartsSectionSubSectionsChartsChartType     `json:"chart_type,required"`
-	Data          []CustomChartsSectionSubSectionsChartsData        `json:"data,required"`
-	Index         int64                                             `json:"index,required"`
-	Series        []CustomChartsSectionSubSectionsChartsSeries      `json:"series,required"`
-	Title         string                                            `json:"title,required"`
-	CommonFilters CustomChartsSectionSubSectionsChartsCommonFilters `json:"common_filters,nullable"`
-	Description   string                                            `json:"description,nullable"`
-	Metadata      map[string]interface{}                            `json:"metadata,nullable"`
+	ChartType     CustomChartsSectionSubSectionsChartsChartType     `json:"chart_type" api:"required"`
+	Data          []CustomChartsSectionSubSectionsChartsData        `json:"data" api:"required"`
+	Index         int64                                             `json:"index" api:"required"`
+	Series        []CustomChartsSectionSubSectionsChartsSeries      `json:"series" api:"required"`
+	Title         string                                            `json:"title" api:"required"`
+	CommonFilters CustomChartsSectionSubSectionsChartsCommonFilters `json:"common_filters" api:"nullable"`
+	Description   string                                            `json:"description" api:"nullable"`
+	Metadata      map[string]interface{}                            `json:"metadata" api:"nullable"`
 	JSON          customChartsSectionSubSectionsChartJSON           `json:"-"`
 }
 
@@ -571,10 +571,10 @@ func (r CustomChartsSectionSubSectionsChartsChartType) IsKnown() bool {
 }
 
 type CustomChartsSectionSubSectionsChartsData struct {
-	SeriesID  string                                             `json:"series_id,required"`
-	Timestamp time.Time                                          `json:"timestamp,required" format:"date-time"`
-	Value     CustomChartsSectionSubSectionsChartsDataValueUnion `json:"value,required,nullable"`
-	Group     string                                             `json:"group,nullable"`
+	SeriesID  string                                             `json:"series_id" api:"required"`
+	Timestamp time.Time                                          `json:"timestamp" api:"required" format:"date-time"`
+	Value     CustomChartsSectionSubSectionsChartsDataValueUnion `json:"value" api:"required,nullable"`
+	Group     string                                             `json:"group" api:"nullable"`
 	JSON      customChartsSectionSubSectionsChartsDataJSON       `json:"-"`
 }
 
@@ -624,18 +624,18 @@ func (r CustomChartsSectionSubSectionsChartsDataValueMap) ImplementsCustomCharts
 }
 
 type CustomChartsSectionSubSectionsChartsSeries struct {
-	ID string `json:"id,required" format:"uuid"`
+	ID string `json:"id" api:"required" format:"uuid"`
 	// Metrics you can chart. Feedback metrics are not available for
 	// organization-scoped charts.
-	Metric      CustomChartsSectionSubSectionsChartsSeriesMetric  `json:"metric,required"`
-	Name        string                                            `json:"name,required"`
-	FeedbackKey string                                            `json:"feedback_key,nullable"`
-	Filters     CustomChartsSectionSubSectionsChartsSeriesFilters `json:"filters,nullable"`
+	Metric      CustomChartsSectionSubSectionsChartsSeriesMetric  `json:"metric" api:"required"`
+	Name        string                                            `json:"name" api:"required"`
+	FeedbackKey string                                            `json:"feedback_key" api:"nullable"`
+	Filters     CustomChartsSectionSubSectionsChartsSeriesFilters `json:"filters" api:"nullable"`
 	// Include additional information about where the group_by param was set.
-	GroupBy CustomChartsSectionSubSectionsChartsSeriesGroupBy `json:"group_by,nullable"`
+	GroupBy CustomChartsSectionSubSectionsChartsSeriesGroupBy `json:"group_by" api:"nullable"`
 	// LGP Metrics you can chart.
-	ProjectMetric CustomChartsSectionSubSectionsChartsSeriesProjectMetric `json:"project_metric,nullable"`
-	WorkspaceID   string                                                  `json:"workspace_id,nullable" format:"uuid"`
+	ProjectMetric CustomChartsSectionSubSectionsChartsSeriesProjectMetric `json:"project_metric" api:"nullable"`
+	WorkspaceID   string                                                  `json:"workspace_id" api:"nullable" format:"uuid"`
 	JSON          customChartsSectionSubSectionsChartsSeriesJSON          `json:"-"`
 }
 
@@ -703,10 +703,10 @@ func (r CustomChartsSectionSubSectionsChartsSeriesMetric) IsKnown() bool {
 }
 
 type CustomChartsSectionSubSectionsChartsSeriesFilters struct {
-	Filter      string                                                `json:"filter,nullable"`
-	Session     []string                                              `json:"session,nullable" format:"uuid"`
-	TraceFilter string                                                `json:"trace_filter,nullable"`
-	TreeFilter  string                                                `json:"tree_filter,nullable"`
+	Filter      string                                                `json:"filter" api:"nullable"`
+	Session     []string                                              `json:"session" api:"nullable" format:"uuid"`
+	TraceFilter string                                                `json:"trace_filter" api:"nullable"`
+	TreeFilter  string                                                `json:"tree_filter" api:"nullable"`
 	JSON        customChartsSectionSubSectionsChartsSeriesFiltersJSON `json:"-"`
 }
 
@@ -731,10 +731,10 @@ func (r customChartsSectionSubSectionsChartsSeriesFiltersJSON) RawJSON() string 
 
 // Include additional information about where the group_by param was set.
 type CustomChartsSectionSubSectionsChartsSeriesGroupBy struct {
-	Attribute CustomChartsSectionSubSectionsChartsSeriesGroupByAttribute `json:"attribute,required"`
+	Attribute CustomChartsSectionSubSectionsChartsSeriesGroupByAttribute `json:"attribute" api:"required"`
 	MaxGroups int64                                                      `json:"max_groups"`
-	Path      string                                                     `json:"path,nullable"`
-	SetBy     CustomChartsSectionSubSectionsChartsSeriesGroupBySetBy     `json:"set_by,nullable"`
+	Path      string                                                     `json:"path" api:"nullable"`
+	SetBy     CustomChartsSectionSubSectionsChartsSeriesGroupBySetBy     `json:"set_by" api:"nullable"`
 	JSON      customChartsSectionSubSectionsChartsSeriesGroupByJSON      `json:"-"`
 }
 
@@ -814,10 +814,10 @@ func (r CustomChartsSectionSubSectionsChartsSeriesProjectMetric) IsKnown() bool 
 }
 
 type CustomChartsSectionSubSectionsChartsCommonFilters struct {
-	Filter      string                                                `json:"filter,nullable"`
-	Session     []string                                              `json:"session,nullable" format:"uuid"`
-	TraceFilter string                                                `json:"trace_filter,nullable"`
-	TreeFilter  string                                                `json:"tree_filter,nullable"`
+	Filter      string                                                `json:"filter" api:"nullable"`
+	Session     []string                                              `json:"session" api:"nullable" format:"uuid"`
+	TraceFilter string                                                `json:"trace_filter" api:"nullable"`
+	TreeFilter  string                                                `json:"tree_filter" api:"nullable"`
 	JSON        customChartsSectionSubSectionsChartsCommonFiltersJSON `json:"-"`
 }
 
@@ -857,7 +857,7 @@ func (r CustomChartsSectionRequestParam) MarshalJSON() (data []byte, err error) 
 
 // Group by param for run stats.
 type RunStatsGroupByParam struct {
-	Attribute param.Field[RunStatsGroupByAttribute] `json:"attribute,required"`
+	Attribute param.Field[RunStatsGroupByAttribute] `json:"attribute" api:"required"`
 	MaxGroups param.Field[int64]                    `json:"max_groups"`
 	Path      param.Field[string]                   `json:"path"`
 }
@@ -917,35 +917,35 @@ func (r TimedeltaInputParam) MarshalJSON() (data []byte, err error) {
 
 // TracerSession schema.
 type TracerSession struct {
-	ID                   string                   `json:"id,required" format:"uuid"`
-	TenantID             string                   `json:"tenant_id,required" format:"uuid"`
-	CompletionCost       string                   `json:"completion_cost,nullable"`
-	CompletionTokens     int64                    `json:"completion_tokens,nullable"`
-	DefaultDatasetID     string                   `json:"default_dataset_id,nullable" format:"uuid"`
-	Description          string                   `json:"description,nullable"`
-	EndTime              time.Time                `json:"end_time,nullable" format:"date-time"`
-	ErrorRate            float64                  `json:"error_rate,nullable"`
-	Extra                map[string]interface{}   `json:"extra,nullable"`
-	FeedbackStats        map[string]interface{}   `json:"feedback_stats,nullable"`
-	FirstTokenP50        float64                  `json:"first_token_p50,nullable"`
-	FirstTokenP99        float64                  `json:"first_token_p99,nullable"`
-	LastRunStartTime     time.Time                `json:"last_run_start_time,nullable" format:"date-time"`
-	LastRunStartTimeLive time.Time                `json:"last_run_start_time_live,nullable" format:"date-time"`
-	LatencyP50           float64                  `json:"latency_p50,nullable"`
-	LatencyP99           float64                  `json:"latency_p99,nullable"`
+	ID                   string                   `json:"id" api:"required" format:"uuid"`
+	TenantID             string                   `json:"tenant_id" api:"required" format:"uuid"`
+	CompletionCost       string                   `json:"completion_cost" api:"nullable"`
+	CompletionTokens     int64                    `json:"completion_tokens" api:"nullable"`
+	DefaultDatasetID     string                   `json:"default_dataset_id" api:"nullable" format:"uuid"`
+	Description          string                   `json:"description" api:"nullable"`
+	EndTime              time.Time                `json:"end_time" api:"nullable" format:"date-time"`
+	ErrorRate            float64                  `json:"error_rate" api:"nullable"`
+	Extra                map[string]interface{}   `json:"extra" api:"nullable"`
+	FeedbackStats        map[string]interface{}   `json:"feedback_stats" api:"nullable"`
+	FirstTokenP50        float64                  `json:"first_token_p50" api:"nullable"`
+	FirstTokenP99        float64                  `json:"first_token_p99" api:"nullable"`
+	LastRunStartTime     time.Time                `json:"last_run_start_time" api:"nullable" format:"date-time"`
+	LastRunStartTimeLive time.Time                `json:"last_run_start_time_live" api:"nullable" format:"date-time"`
+	LatencyP50           float64                  `json:"latency_p50" api:"nullable"`
+	LatencyP99           float64                  `json:"latency_p99" api:"nullable"`
 	Name                 string                   `json:"name"`
-	PromptCost           string                   `json:"prompt_cost,nullable"`
-	PromptTokens         int64                    `json:"prompt_tokens,nullable"`
-	ReferenceDatasetID   string                   `json:"reference_dataset_id,nullable" format:"uuid"`
-	RunCount             int64                    `json:"run_count,nullable"`
-	RunFacets            []map[string]interface{} `json:"run_facets,nullable"`
-	SessionFeedbackStats map[string]interface{}   `json:"session_feedback_stats,nullable"`
+	PromptCost           string                   `json:"prompt_cost" api:"nullable"`
+	PromptTokens         int64                    `json:"prompt_tokens" api:"nullable"`
+	ReferenceDatasetID   string                   `json:"reference_dataset_id" api:"nullable" format:"uuid"`
+	RunCount             int64                    `json:"run_count" api:"nullable"`
+	RunFacets            []map[string]interface{} `json:"run_facets" api:"nullable"`
+	SessionFeedbackStats map[string]interface{}   `json:"session_feedback_stats" api:"nullable"`
 	StartTime            time.Time                `json:"start_time" format:"date-time"`
-	StreamingRate        float64                  `json:"streaming_rate,nullable"`
-	TestRunNumber        int64                    `json:"test_run_number,nullable"`
-	TotalCost            string                   `json:"total_cost,nullable"`
-	TotalTokens          int64                    `json:"total_tokens,nullable"`
-	TraceTier            TracerSessionTraceTier   `json:"trace_tier,nullable"`
+	StreamingRate        float64                  `json:"streaming_rate" api:"nullable"`
+	TestRunNumber        int64                    `json:"test_run_number" api:"nullable"`
+	TotalCost            string                   `json:"total_cost" api:"nullable"`
+	TotalTokens          int64                    `json:"total_tokens" api:"nullable"`
+	TraceTier            TracerSessionTraceTier   `json:"trace_tier" api:"nullable"`
 	JSON                 tracerSessionJSON        `json:"-"`
 }
 
@@ -1009,17 +1009,17 @@ func (r TracerSessionTraceTier) IsKnown() bool {
 
 // TracerSession schema.
 type TracerSessionWithoutVirtualFields struct {
-	ID                   string                                     `json:"id,required" format:"uuid"`
-	TenantID             string                                     `json:"tenant_id,required" format:"uuid"`
-	DefaultDatasetID     string                                     `json:"default_dataset_id,nullable" format:"uuid"`
-	Description          string                                     `json:"description,nullable"`
-	EndTime              time.Time                                  `json:"end_time,nullable" format:"date-time"`
-	Extra                map[string]interface{}                     `json:"extra,nullable"`
-	LastRunStartTimeLive time.Time                                  `json:"last_run_start_time_live,nullable" format:"date-time"`
+	ID                   string                                     `json:"id" api:"required" format:"uuid"`
+	TenantID             string                                     `json:"tenant_id" api:"required" format:"uuid"`
+	DefaultDatasetID     string                                     `json:"default_dataset_id" api:"nullable" format:"uuid"`
+	Description          string                                     `json:"description" api:"nullable"`
+	EndTime              time.Time                                  `json:"end_time" api:"nullable" format:"date-time"`
+	Extra                map[string]interface{}                     `json:"extra" api:"nullable"`
+	LastRunStartTimeLive time.Time                                  `json:"last_run_start_time_live" api:"nullable" format:"date-time"`
 	Name                 string                                     `json:"name"`
-	ReferenceDatasetID   string                                     `json:"reference_dataset_id,nullable" format:"uuid"`
+	ReferenceDatasetID   string                                     `json:"reference_dataset_id" api:"nullable" format:"uuid"`
 	StartTime            time.Time                                  `json:"start_time" format:"date-time"`
-	TraceTier            TracerSessionWithoutVirtualFieldsTraceTier `json:"trace_tier,nullable"`
+	TraceTier            TracerSessionWithoutVirtualFieldsTraceTier `json:"trace_tier" api:"nullable"`
 	JSON                 tracerSessionWithoutVirtualFieldsJSON      `json:"-"`
 }
 
@@ -1179,7 +1179,7 @@ func (r SessionListParams) URLQuery() (v url.Values) {
 }
 
 type SessionDashboardParams struct {
-	CustomChartsSectionRequest CustomChartsSectionRequestParam `json:"custom_charts_section_request,required"`
+	CustomChartsSectionRequest CustomChartsSectionRequestParam `json:"custom_charts_section_request" api:"required"`
 	Accept                     param.Field[string]             `header:"accept"`
 }
 

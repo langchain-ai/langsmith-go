@@ -86,8 +86,8 @@ func (r *FeedbackTokenService) List(ctx context.Context, query FeedbackTokenList
 
 // Feedback ingest token create schema.
 type FeedbackIngestTokenCreateSchemaParam struct {
-	FeedbackKey param.Field[string]    `json:"feedback_key,required"`
-	RunID       param.Field[string]    `json:"run_id,required" format:"uuid"`
+	FeedbackKey param.Field[string]    `json:"feedback_key" api:"required"`
+	RunID       param.Field[string]    `json:"run_id" api:"required" format:"uuid"`
 	ExpiresAt   param.Field[time.Time] `json:"expires_at" format:"date-time"`
 	// Timedelta input.
 	ExpiresIn      param.Field[TimedeltaInputParam]                                `json:"expires_in"`
@@ -102,7 +102,7 @@ func (r FeedbackIngestTokenCreateSchemaParam) implementsFeedbackTokenNewParamsBo
 
 type FeedbackIngestTokenCreateSchemaFeedbackConfigParam struct {
 	// Enum for feedback types.
-	Type       param.Field[FeedbackIngestTokenCreateSchemaFeedbackConfigType]            `json:"type,required"`
+	Type       param.Field[FeedbackIngestTokenCreateSchemaFeedbackConfigType]            `json:"type" api:"required"`
 	Categories param.Field[[]FeedbackIngestTokenCreateSchemaFeedbackConfigCategoryParam] `json:"categories"`
 	Max        param.Field[float64]                                                      `json:"max"`
 	Min        param.Field[float64]                                                      `json:"min"`
@@ -131,7 +131,7 @@ func (r FeedbackIngestTokenCreateSchemaFeedbackConfigType) IsKnown() bool {
 
 // Specific value and label pair for feedback
 type FeedbackIngestTokenCreateSchemaFeedbackConfigCategoryParam struct {
-	Value param.Field[float64] `json:"value,required"`
+	Value param.Field[float64] `json:"value" api:"required"`
 	Label param.Field[string]  `json:"label"`
 }
 
@@ -141,10 +141,10 @@ func (r FeedbackIngestTokenCreateSchemaFeedbackConfigCategoryParam) MarshalJSON(
 
 // Feedback ingest token schema.
 type FeedbackIngestTokenSchema struct {
-	ID          string                        `json:"id,required" format:"uuid"`
-	ExpiresAt   time.Time                     `json:"expires_at,required" format:"date-time"`
-	FeedbackKey string                        `json:"feedback_key,required"`
-	URL         string                        `json:"url,required"`
+	ID          string                        `json:"id" api:"required" format:"uuid"`
+	ExpiresAt   time.Time                     `json:"expires_at" api:"required" format:"date-time"`
+	FeedbackKey string                        `json:"feedback_key" api:"required"`
+	URL         string                        `json:"url" api:"required"`
 	JSON        feedbackIngestTokenSchemaJSON `json:"-"`
 }
 
@@ -202,7 +202,7 @@ type FeedbackTokenUpdateResponse = interface{}
 
 type FeedbackTokenNewParams struct {
 	// Feedback ingest token create schema.
-	Body FeedbackTokenNewParamsBodyUnion `json:"body,required"`
+	Body FeedbackTokenNewParamsBodyUnion `json:"body" api:"required"`
 }
 
 func (r FeedbackTokenNewParams) MarshalJSON() (data []byte, err error) {
@@ -279,7 +279,7 @@ type FeedbackTokenUpdateParamsValueUnion interface {
 }
 
 type FeedbackTokenListParams struct {
-	RunID param.Field[string] `query:"run_id,required" format:"uuid"`
+	RunID param.Field[string] `query:"run_id" api:"required" format:"uuid"`
 }
 
 // URLQuery serializes [FeedbackTokenListParams]'s query parameters as

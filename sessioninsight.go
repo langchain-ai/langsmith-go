@@ -154,10 +154,10 @@ func (r CreateRunClusteringJobRequestModel) IsKnown() bool {
 
 // Response to creating a run clustering job.
 type SessionInsightNewResponse struct {
-	ID     string                        `json:"id,required" format:"uuid"`
-	Name   string                        `json:"name,required"`
-	Status string                        `json:"status,required"`
-	Error  string                        `json:"error,nullable"`
+	ID     string                        `json:"id" api:"required" format:"uuid"`
+	Name   string                        `json:"name" api:"required"`
+	Status string                        `json:"status" api:"required"`
+	Error  string                        `json:"error" api:"nullable"`
 	JSON   sessionInsightNewResponseJSON `json:"-"`
 }
 
@@ -182,8 +182,8 @@ func (r sessionInsightNewResponseJSON) RawJSON() string {
 
 // Response to update a session cluster job.
 type SessionInsightUpdateResponse struct {
-	Name   string                           `json:"name,required"`
-	Status string                           `json:"status,required"`
+	Name   string                           `json:"name" api:"required"`
+	Status string                           `json:"status" api:"required"`
 	JSON   sessionInsightUpdateResponseJSON `json:"-"`
 }
 
@@ -206,8 +206,8 @@ func (r sessionInsightUpdateResponseJSON) RawJSON() string {
 
 // Response to delete a session cluster job.
 type SessionInsightDeleteResponse struct {
-	ID      string                           `json:"id,required" format:"uuid"`
-	Message string                           `json:"message,required"`
+	ID      string                           `json:"id" api:"required" format:"uuid"`
+	Message string                           `json:"message" api:"required"`
 	JSON    sessionInsightDeleteResponseJSON `json:"-"`
 }
 
@@ -230,19 +230,19 @@ func (r sessionInsightDeleteResponseJSON) RawJSON() string {
 
 // Response to get a specific cluster job for a session.
 type SessionInsightGetJobResponse struct {
-	ID       string                                `json:"id,required" format:"uuid"`
-	Clusters []SessionInsightGetJobResponseCluster `json:"clusters,required"`
-	Name     string                                `json:"name,required"`
-	Status   string                                `json:"status,required"`
-	ConfigID string                                `json:"config_id,nullable" format:"uuid"`
-	EndTime  time.Time                             `json:"end_time,nullable" format:"date-time"`
-	Error    string                                `json:"error,nullable"`
-	Metadata map[string]interface{}                `json:"metadata,nullable"`
+	ID       string                                `json:"id" api:"required" format:"uuid"`
+	Clusters []SessionInsightGetJobResponseCluster `json:"clusters" api:"required"`
+	Name     string                                `json:"name" api:"required"`
+	Status   string                                `json:"status" api:"required"`
+	ConfigID string                                `json:"config_id" api:"nullable" format:"uuid"`
+	EndTime  time.Time                             `json:"end_time" api:"nullable" format:"date-time"`
+	Error    string                                `json:"error" api:"nullable"`
+	Metadata map[string]interface{}                `json:"metadata" api:"nullable"`
 	// High level summary of an insights job that pulls out patterns and specific
 	// traces.
-	Report    SessionInsightGetJobResponseReport `json:"report,nullable"`
-	Shape     map[string]int64                   `json:"shape,nullable"`
-	StartTime time.Time                          `json:"start_time,nullable" format:"date-time"`
+	Report    SessionInsightGetJobResponseReport `json:"report" api:"nullable"`
+	Shape     map[string]int64                   `json:"shape" api:"nullable"`
+	StartTime time.Time                          `json:"start_time" api:"nullable" format:"date-time"`
 	JSON      sessionInsightGetJobResponseJSON   `json:"-"`
 }
 
@@ -274,14 +274,14 @@ func (r sessionInsightGetJobResponseJSON) RawJSON() string {
 
 // A single cluster of runs.
 type SessionInsightGetJobResponseCluster struct {
-	ID          string                                  `json:"id,required" format:"uuid"`
-	Description string                                  `json:"description,required"`
-	Level       int64                                   `json:"level,required"`
-	Name        string                                  `json:"name,required"`
-	NumRuns     int64                                   `json:"num_runs,required"`
-	Stats       map[string]interface{}                  `json:"stats,required,nullable"`
-	ParentID    string                                  `json:"parent_id,nullable" format:"uuid"`
-	ParentName  string                                  `json:"parent_name,nullable"`
+	ID          string                                  `json:"id" api:"required" format:"uuid"`
+	Description string                                  `json:"description" api:"required"`
+	Level       int64                                   `json:"level" api:"required"`
+	Name        string                                  `json:"name" api:"required"`
+	NumRuns     int64                                   `json:"num_runs" api:"required"`
+	Stats       map[string]interface{}                  `json:"stats" api:"required,nullable"`
+	ParentID    string                                  `json:"parent_id" api:"nullable" format:"uuid"`
+	ParentName  string                                  `json:"parent_name" api:"nullable"`
 	JSON        sessionInsightGetJobResponseClusterJSON `json:"-"`
 }
 
@@ -311,10 +311,10 @@ func (r sessionInsightGetJobResponseClusterJSON) RawJSON() string {
 // High level summary of an insights job that pulls out patterns and specific
 // traces.
 type SessionInsightGetJobResponseReport struct {
-	CreatedAt         time.Time                                            `json:"created_at,nullable" format:"date-time"`
+	CreatedAt         time.Time                                            `json:"created_at" api:"nullable" format:"date-time"`
 	HighlightedTraces []SessionInsightGetJobResponseReportHighlightedTrace `json:"highlighted_traces"`
 	KeyPoints         []string                                             `json:"key_points"`
-	Title             string                                               `json:"title,nullable"`
+	Title             string                                               `json:"title" api:"nullable"`
 	JSON              sessionInsightGetJobResponseReportJSON               `json:"-"`
 }
 
@@ -339,12 +339,12 @@ func (r sessionInsightGetJobResponseReportJSON) RawJSON() string {
 
 // A trace highlighted in an insights report summary. Up to 10 per insights job.
 type SessionInsightGetJobResponseReportHighlightedTrace struct {
-	HighlightReason string                                                 `json:"highlight_reason,required"`
-	Rank            int64                                                  `json:"rank,required"`
-	RunID           string                                                 `json:"run_id,required" format:"uuid"`
-	ClusterID       string                                                 `json:"cluster_id,nullable" format:"uuid"`
-	ClusterName     string                                                 `json:"cluster_name,nullable"`
-	Summary         string                                                 `json:"summary,nullable"`
+	HighlightReason string                                                 `json:"highlight_reason" api:"required"`
+	Rank            int64                                                  `json:"rank" api:"required"`
+	RunID           string                                                 `json:"run_id" api:"required" format:"uuid"`
+	ClusterID       string                                                 `json:"cluster_id" api:"nullable" format:"uuid"`
+	ClusterName     string                                                 `json:"cluster_name" api:"nullable"`
+	Summary         string                                                 `json:"summary" api:"nullable"`
 	JSON            sessionInsightGetJobResponseReportHighlightedTraceJSON `json:"-"`
 }
 
@@ -370,8 +370,8 @@ func (r sessionInsightGetJobResponseReportHighlightedTraceJSON) RawJSON() string
 }
 
 type SessionInsightGetRunsResponse struct {
-	Offset int64                             `json:"offset,required,nullable"`
-	Runs   []map[string]interface{}          `json:"runs,required"`
+	Offset int64                             `json:"offset" api:"required,nullable"`
+	Runs   []map[string]interface{}          `json:"runs" api:"required"`
 	JSON   sessionInsightGetRunsResponseJSON `json:"-"`
 }
 
@@ -394,7 +394,7 @@ func (r sessionInsightGetRunsResponseJSON) RawJSON() string {
 
 type SessionInsightNewParams struct {
 	// Request to create a run clustering job.
-	CreateRunClusteringJobRequest CreateRunClusteringJobRequestParam `json:"create_run_clustering_job_request,required"`
+	CreateRunClusteringJobRequest CreateRunClusteringJobRequestParam `json:"create_run_clustering_job_request" api:"required"`
 }
 
 func (r SessionInsightNewParams) MarshalJSON() (data []byte, err error) {
@@ -402,7 +402,7 @@ func (r SessionInsightNewParams) MarshalJSON() (data []byte, err error) {
 }
 
 type SessionInsightUpdateParams struct {
-	Name param.Field[string] `json:"name,required"`
+	Name param.Field[string] `json:"name" api:"required"`
 }
 
 func (r SessionInsightUpdateParams) MarshalJSON() (data []byte, err error) {

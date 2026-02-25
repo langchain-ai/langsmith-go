@@ -202,11 +202,11 @@ func (r *AnnotationQueueService) GetTotalSize(ctx context.Context, queueID strin
 }
 
 type AnnotationQueueRubricItemSchema struct {
-	FeedbackKey       string                              `json:"feedback_key,required"`
-	Description       string                              `json:"description,nullable"`
-	IsRequired        bool                                `json:"is_required,nullable"`
-	ScoreDescriptions map[string]string                   `json:"score_descriptions,nullable"`
-	ValueDescriptions map[string]string                   `json:"value_descriptions,nullable"`
+	FeedbackKey       string                              `json:"feedback_key" api:"required"`
+	Description       string                              `json:"description" api:"nullable"`
+	IsRequired        bool                                `json:"is_required" api:"nullable"`
+	ScoreDescriptions map[string]string                   `json:"score_descriptions" api:"nullable"`
+	ValueDescriptions map[string]string                   `json:"value_descriptions" api:"nullable"`
 	JSON              annotationQueueRubricItemSchemaJSON `json:"-"`
 }
 
@@ -231,7 +231,7 @@ func (r annotationQueueRubricItemSchemaJSON) RawJSON() string {
 }
 
 type AnnotationQueueRubricItemSchemaParam struct {
-	FeedbackKey       param.Field[string]            `json:"feedback_key,required"`
+	FeedbackKey       param.Field[string]            `json:"feedback_key" api:"required"`
 	Description       param.Field[string]            `json:"description"`
 	IsRequired        param.Field[bool]              `json:"is_required"`
 	ScoreDescriptions param.Field[map[string]string] `json:"score_descriptions"`
@@ -244,19 +244,19 @@ func (r AnnotationQueueRubricItemSchemaParam) MarshalJSON() (data []byte, err er
 
 // AnnotationQueue schema.
 type AnnotationQueueSchema struct {
-	ID                  string                         `json:"id,required" format:"uuid"`
-	Name                string                         `json:"name,required"`
-	QueueType           AnnotationQueueSchemaQueueType `json:"queue_type,required"`
-	TenantID            string                         `json:"tenant_id,required" format:"uuid"`
+	ID                  string                         `json:"id" api:"required" format:"uuid"`
+	Name                string                         `json:"name" api:"required"`
+	QueueType           AnnotationQueueSchemaQueueType `json:"queue_type" api:"required"`
+	TenantID            string                         `json:"tenant_id" api:"required" format:"uuid"`
 	CreatedAt           time.Time                      `json:"created_at" format:"date-time"`
-	DefaultDataset      string                         `json:"default_dataset,nullable" format:"uuid"`
-	Description         string                         `json:"description,nullable"`
-	EnableReservations  bool                           `json:"enable_reservations,nullable"`
-	Metadata            map[string]interface{}         `json:"metadata,nullable"`
-	NumReviewersPerItem int64                          `json:"num_reviewers_per_item,nullable"`
-	ReservationMinutes  int64                          `json:"reservation_minutes,nullable"`
-	RunRuleID           string                         `json:"run_rule_id,nullable" format:"uuid"`
-	SourceRuleID        string                         `json:"source_rule_id,nullable" format:"uuid"`
+	DefaultDataset      string                         `json:"default_dataset" api:"nullable" format:"uuid"`
+	Description         string                         `json:"description" api:"nullable"`
+	EnableReservations  bool                           `json:"enable_reservations" api:"nullable"`
+	Metadata            map[string]interface{}         `json:"metadata" api:"nullable"`
+	NumReviewersPerItem int64                          `json:"num_reviewers_per_item" api:"nullable"`
+	ReservationMinutes  int64                          `json:"reservation_minutes" api:"nullable"`
+	RunRuleID           string                         `json:"run_rule_id" api:"nullable" format:"uuid"`
+	SourceRuleID        string                         `json:"source_rule_id" api:"nullable" format:"uuid"`
 	UpdatedAt           time.Time                      `json:"updated_at" format:"date-time"`
 	JSON                annotationQueueSchemaJSON      `json:"-"`
 }
@@ -307,7 +307,7 @@ func (r AnnotationQueueSchemaQueueType) IsKnown() bool {
 
 // Size of an Annotation Queue
 type AnnotationQueueSizeSchema struct {
-	Size int64                         `json:"size,required"`
+	Size int64                         `json:"size" api:"required"`
 	JSON annotationQueueSizeSchemaJSON `json:"-"`
 }
 
@@ -329,66 +329,66 @@ func (r annotationQueueSizeSchemaJSON) RawJSON() string {
 
 // Run schema with annotation queue info.
 type RunSchemaWithAnnotationQueueInfo struct {
-	ID          string `json:"id,required" format:"uuid"`
-	AppPath     string `json:"app_path,required"`
-	DottedOrder string `json:"dotted_order,required"`
-	Name        string `json:"name,required"`
-	QueueRunID  string `json:"queue_run_id,required" format:"uuid"`
+	ID          string `json:"id" api:"required" format:"uuid"`
+	AppPath     string `json:"app_path" api:"required"`
+	DottedOrder string `json:"dotted_order" api:"required"`
+	Name        string `json:"name" api:"required"`
+	QueueRunID  string `json:"queue_run_id" api:"required" format:"uuid"`
 	// Enum for run types.
-	RunType                RunSchemaWithAnnotationQueueInfoRunType   `json:"run_type,required"`
-	SessionID              string                                    `json:"session_id,required" format:"uuid"`
-	Status                 string                                    `json:"status,required"`
-	TraceID                string                                    `json:"trace_id,required" format:"uuid"`
-	AddedAt                time.Time                                 `json:"added_at,nullable" format:"date-time"`
-	ChildRunIDs            []string                                  `json:"child_run_ids,nullable" format:"uuid"`
-	CompletionCost         string                                    `json:"completion_cost,nullable"`
-	CompletionCostDetails  map[string]string                         `json:"completion_cost_details,nullable"`
-	CompletionTokenDetails map[string]int64                          `json:"completion_token_details,nullable"`
+	RunType                RunSchemaWithAnnotationQueueInfoRunType   `json:"run_type" api:"required"`
+	SessionID              string                                    `json:"session_id" api:"required" format:"uuid"`
+	Status                 string                                    `json:"status" api:"required"`
+	TraceID                string                                    `json:"trace_id" api:"required" format:"uuid"`
+	AddedAt                time.Time                                 `json:"added_at" api:"nullable" format:"date-time"`
+	ChildRunIDs            []string                                  `json:"child_run_ids" api:"nullable" format:"uuid"`
+	CompletionCost         string                                    `json:"completion_cost" api:"nullable"`
+	CompletionCostDetails  map[string]string                         `json:"completion_cost_details" api:"nullable"`
+	CompletionTokenDetails map[string]int64                          `json:"completion_token_details" api:"nullable"`
 	CompletionTokens       int64                                     `json:"completion_tokens"`
-	DirectChildRunIDs      []string                                  `json:"direct_child_run_ids,nullable" format:"uuid"`
-	EffectiveAddedAt       time.Time                                 `json:"effective_added_at,nullable" format:"date-time"`
-	EndTime                time.Time                                 `json:"end_time,nullable" format:"date-time"`
-	Error                  string                                    `json:"error,nullable"`
-	Events                 []map[string]interface{}                  `json:"events,nullable"`
+	DirectChildRunIDs      []string                                  `json:"direct_child_run_ids" api:"nullable" format:"uuid"`
+	EffectiveAddedAt       time.Time                                 `json:"effective_added_at" api:"nullable" format:"date-time"`
+	EndTime                time.Time                                 `json:"end_time" api:"nullable" format:"date-time"`
+	Error                  string                                    `json:"error" api:"nullable"`
+	Events                 []map[string]interface{}                  `json:"events" api:"nullable"`
 	ExecutionOrder         int64                                     `json:"execution_order"`
-	Extra                  map[string]interface{}                    `json:"extra,nullable"`
-	FeedbackStats          map[string]map[string]interface{}         `json:"feedback_stats,nullable"`
-	FirstTokenTime         time.Time                                 `json:"first_token_time,nullable" format:"date-time"`
-	InDataset              bool                                      `json:"in_dataset,nullable"`
-	Inputs                 map[string]interface{}                    `json:"inputs,nullable"`
-	InputsPreview          string                                    `json:"inputs_preview,nullable"`
-	InputsS3URLs           map[string]interface{}                    `json:"inputs_s3_urls,nullable"`
-	LastQueuedAt           time.Time                                 `json:"last_queued_at,nullable" format:"date-time"`
-	LastReviewedTime       time.Time                                 `json:"last_reviewed_time,nullable" format:"date-time"`
-	ManifestID             string                                    `json:"manifest_id,nullable" format:"uuid"`
-	ManifestS3ID           string                                    `json:"manifest_s3_id,nullable" format:"uuid"`
-	Messages               []map[string]interface{}                  `json:"messages,nullable"`
-	Outputs                map[string]interface{}                    `json:"outputs,nullable"`
-	OutputsPreview         string                                    `json:"outputs_preview,nullable"`
-	OutputsS3URLs          map[string]interface{}                    `json:"outputs_s3_urls,nullable"`
-	ParentRunID            string                                    `json:"parent_run_id,nullable" format:"uuid"`
-	ParentRunIDs           []string                                  `json:"parent_run_ids,nullable" format:"uuid"`
-	PriceModelID           string                                    `json:"price_model_id,nullable" format:"uuid"`
-	PromptCost             string                                    `json:"prompt_cost,nullable"`
-	PromptCostDetails      map[string]string                         `json:"prompt_cost_details,nullable"`
-	PromptTokenDetails     map[string]int64                          `json:"prompt_token_details,nullable"`
+	Extra                  map[string]interface{}                    `json:"extra" api:"nullable"`
+	FeedbackStats          map[string]map[string]interface{}         `json:"feedback_stats" api:"nullable"`
+	FirstTokenTime         time.Time                                 `json:"first_token_time" api:"nullable" format:"date-time"`
+	InDataset              bool                                      `json:"in_dataset" api:"nullable"`
+	Inputs                 map[string]interface{}                    `json:"inputs" api:"nullable"`
+	InputsPreview          string                                    `json:"inputs_preview" api:"nullable"`
+	InputsS3URLs           map[string]interface{}                    `json:"inputs_s3_urls" api:"nullable"`
+	LastQueuedAt           time.Time                                 `json:"last_queued_at" api:"nullable" format:"date-time"`
+	LastReviewedTime       time.Time                                 `json:"last_reviewed_time" api:"nullable" format:"date-time"`
+	ManifestID             string                                    `json:"manifest_id" api:"nullable" format:"uuid"`
+	ManifestS3ID           string                                    `json:"manifest_s3_id" api:"nullable" format:"uuid"`
+	Messages               []map[string]interface{}                  `json:"messages" api:"nullable"`
+	Outputs                map[string]interface{}                    `json:"outputs" api:"nullable"`
+	OutputsPreview         string                                    `json:"outputs_preview" api:"nullable"`
+	OutputsS3URLs          map[string]interface{}                    `json:"outputs_s3_urls" api:"nullable"`
+	ParentRunID            string                                    `json:"parent_run_id" api:"nullable" format:"uuid"`
+	ParentRunIDs           []string                                  `json:"parent_run_ids" api:"nullable" format:"uuid"`
+	PriceModelID           string                                    `json:"price_model_id" api:"nullable" format:"uuid"`
+	PromptCost             string                                    `json:"prompt_cost" api:"nullable"`
+	PromptCostDetails      map[string]string                         `json:"prompt_cost_details" api:"nullable"`
+	PromptTokenDetails     map[string]int64                          `json:"prompt_token_details" api:"nullable"`
 	PromptTokens           int64                                     `json:"prompt_tokens"`
-	ReferenceDatasetID     string                                    `json:"reference_dataset_id,nullable" format:"uuid"`
-	ReferenceExampleID     string                                    `json:"reference_example_id,nullable" format:"uuid"`
-	S3URLs                 map[string]interface{}                    `json:"s3_urls,nullable"`
-	Serialized             map[string]interface{}                    `json:"serialized,nullable"`
-	ShareToken             string                                    `json:"share_token,nullable" format:"uuid"`
+	ReferenceDatasetID     string                                    `json:"reference_dataset_id" api:"nullable" format:"uuid"`
+	ReferenceExampleID     string                                    `json:"reference_example_id" api:"nullable" format:"uuid"`
+	S3URLs                 map[string]interface{}                    `json:"s3_urls" api:"nullable"`
+	Serialized             map[string]interface{}                    `json:"serialized" api:"nullable"`
+	ShareToken             string                                    `json:"share_token" api:"nullable" format:"uuid"`
 	StartTime              time.Time                                 `json:"start_time" format:"date-time"`
-	Tags                   []string                                  `json:"tags,nullable"`
-	ThreadID               string                                    `json:"thread_id,nullable"`
-	TotalCost              string                                    `json:"total_cost,nullable"`
+	Tags                   []string                                  `json:"tags" api:"nullable"`
+	ThreadID               string                                    `json:"thread_id" api:"nullable"`
+	TotalCost              string                                    `json:"total_cost" api:"nullable"`
 	TotalTokens            int64                                     `json:"total_tokens"`
-	TraceFirstReceivedAt   time.Time                                 `json:"trace_first_received_at,nullable" format:"date-time"`
-	TraceMaxStartTime      time.Time                                 `json:"trace_max_start_time,nullable" format:"date-time"`
-	TraceMinStartTime      time.Time                                 `json:"trace_min_start_time,nullable" format:"date-time"`
-	TraceTier              RunSchemaWithAnnotationQueueInfoTraceTier `json:"trace_tier,nullable"`
+	TraceFirstReceivedAt   time.Time                                 `json:"trace_first_received_at" api:"nullable" format:"date-time"`
+	TraceMaxStartTime      time.Time                                 `json:"trace_max_start_time" api:"nullable" format:"date-time"`
+	TraceMinStartTime      time.Time                                 `json:"trace_min_start_time" api:"nullable" format:"date-time"`
+	TraceTier              RunSchemaWithAnnotationQueueInfoTraceTier `json:"trace_tier" api:"nullable"`
 	TraceUpgrade           bool                                      `json:"trace_upgrade"`
-	TtlSeconds             int64                                     `json:"ttl_seconds,nullable"`
+	TtlSeconds             int64                                     `json:"ttl_seconds" api:"nullable"`
 	JSON                   runSchemaWithAnnotationQueueInfoJSON      `json:"-"`
 }
 
@@ -504,21 +504,21 @@ func (r RunSchemaWithAnnotationQueueInfoTraceTier) IsKnown() bool {
 
 // AnnotationQueue schema with rubric.
 type AnnotationQueueGetResponse struct {
-	ID                  string                              `json:"id,required" format:"uuid"`
-	Name                string                              `json:"name,required"`
-	QueueType           AnnotationQueueGetResponseQueueType `json:"queue_type,required"`
-	TenantID            string                              `json:"tenant_id,required" format:"uuid"`
+	ID                  string                              `json:"id" api:"required" format:"uuid"`
+	Name                string                              `json:"name" api:"required"`
+	QueueType           AnnotationQueueGetResponseQueueType `json:"queue_type" api:"required"`
+	TenantID            string                              `json:"tenant_id" api:"required" format:"uuid"`
 	CreatedAt           time.Time                           `json:"created_at" format:"date-time"`
-	DefaultDataset      string                              `json:"default_dataset,nullable" format:"uuid"`
-	Description         string                              `json:"description,nullable"`
-	EnableReservations  bool                                `json:"enable_reservations,nullable"`
-	Metadata            map[string]interface{}              `json:"metadata,nullable"`
-	NumReviewersPerItem int64                               `json:"num_reviewers_per_item,nullable"`
-	ReservationMinutes  int64                               `json:"reservation_minutes,nullable"`
-	RubricInstructions  string                              `json:"rubric_instructions,nullable"`
-	RubricItems         []AnnotationQueueRubricItemSchema   `json:"rubric_items,nullable"`
-	RunRuleID           string                              `json:"run_rule_id,nullable" format:"uuid"`
-	SourceRuleID        string                              `json:"source_rule_id,nullable" format:"uuid"`
+	DefaultDataset      string                              `json:"default_dataset" api:"nullable" format:"uuid"`
+	Description         string                              `json:"description" api:"nullable"`
+	EnableReservations  bool                                `json:"enable_reservations" api:"nullable"`
+	Metadata            map[string]interface{}              `json:"metadata" api:"nullable"`
+	NumReviewersPerItem int64                               `json:"num_reviewers_per_item" api:"nullable"`
+	ReservationMinutes  int64                               `json:"reservation_minutes" api:"nullable"`
+	RubricInstructions  string                              `json:"rubric_instructions" api:"nullable"`
+	RubricItems         []AnnotationQueueRubricItemSchema   `json:"rubric_items" api:"nullable"`
+	RunRuleID           string                              `json:"run_rule_id" api:"nullable" format:"uuid"`
+	SourceRuleID        string                              `json:"source_rule_id" api:"nullable" format:"uuid"`
 	UpdatedAt           time.Time                           `json:"updated_at" format:"date-time"`
 	JSON                annotationQueueGetResponseJSON      `json:"-"`
 }
@@ -581,20 +581,20 @@ type AnnotationQueuePopulateResponse = interface{}
 
 // AnnotationQueue schema with size.
 type AnnotationQueueGetAnnotationQueuesResponse struct {
-	ID                  string                                              `json:"id,required" format:"uuid"`
-	Name                string                                              `json:"name,required"`
-	QueueType           AnnotationQueueGetAnnotationQueuesResponseQueueType `json:"queue_type,required"`
-	TenantID            string                                              `json:"tenant_id,required" format:"uuid"`
-	TotalRuns           int64                                               `json:"total_runs,required"`
+	ID                  string                                              `json:"id" api:"required" format:"uuid"`
+	Name                string                                              `json:"name" api:"required"`
+	QueueType           AnnotationQueueGetAnnotationQueuesResponseQueueType `json:"queue_type" api:"required"`
+	TenantID            string                                              `json:"tenant_id" api:"required" format:"uuid"`
+	TotalRuns           int64                                               `json:"total_runs" api:"required"`
 	CreatedAt           time.Time                                           `json:"created_at" format:"date-time"`
-	DefaultDataset      string                                              `json:"default_dataset,nullable" format:"uuid"`
-	Description         string                                              `json:"description,nullable"`
-	EnableReservations  bool                                                `json:"enable_reservations,nullable"`
-	Metadata            map[string]interface{}                              `json:"metadata,nullable"`
-	NumReviewersPerItem int64                                               `json:"num_reviewers_per_item,nullable"`
-	ReservationMinutes  int64                                               `json:"reservation_minutes,nullable"`
-	RunRuleID           string                                              `json:"run_rule_id,nullable" format:"uuid"`
-	SourceRuleID        string                                              `json:"source_rule_id,nullable" format:"uuid"`
+	DefaultDataset      string                                              `json:"default_dataset" api:"nullable" format:"uuid"`
+	Description         string                                              `json:"description" api:"nullable"`
+	EnableReservations  bool                                                `json:"enable_reservations" api:"nullable"`
+	Metadata            map[string]interface{}                              `json:"metadata" api:"nullable"`
+	NumReviewersPerItem int64                                               `json:"num_reviewers_per_item" api:"nullable"`
+	ReservationMinutes  int64                                               `json:"reservation_minutes" api:"nullable"`
+	RunRuleID           string                                              `json:"run_rule_id" api:"nullable" format:"uuid"`
+	SourceRuleID        string                                              `json:"source_rule_id" api:"nullable" format:"uuid"`
 	UpdatedAt           time.Time                                           `json:"updated_at" format:"date-time"`
 	JSON                annotationQueueGetAnnotationQueuesResponseJSON      `json:"-"`
 }
@@ -676,7 +676,7 @@ type AnnotationQueueUpdateParamsNumReviewersPerItemUnion interface {
 }
 
 type AnnotationQueueAnnotationQueuesParams struct {
-	Name                param.Field[string]                                 `json:"name,required"`
+	Name                param.Field[string]                                 `json:"name" api:"required"`
 	ID                  param.Field[string]                                 `json:"id" format:"uuid"`
 	CreatedAt           param.Field[time.Time]                              `json:"created_at" format:"date-time"`
 	DefaultDataset      param.Field[string]                                 `json:"default_dataset" format:"uuid"`
@@ -714,8 +714,8 @@ func (r AnnotationQueueExportParams) MarshalJSON() (data []byte, err error) {
 }
 
 type AnnotationQueuePopulateParams struct {
-	QueueID    param.Field[string]   `json:"queue_id,required" format:"uuid"`
-	SessionIDs param.Field[[]string] `json:"session_ids,required" format:"uuid"`
+	QueueID    param.Field[string]   `json:"queue_id" api:"required" format:"uuid"`
+	SessionIDs param.Field[[]string] `json:"session_ids" api:"required" format:"uuid"`
 }
 
 func (r AnnotationQueuePopulateParams) MarshalJSON() (data []byte, err error) {

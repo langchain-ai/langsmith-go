@@ -78,9 +78,9 @@ func (r *DatasetVersionService) GetDiff(ctx context.Context, datasetID string, q
 
 // Dataset diff schema.
 type DatasetVersionGetDiffResponse struct {
-	ExamplesAdded    []string                          `json:"examples_added,required" format:"uuid"`
-	ExamplesModified []string                          `json:"examples_modified,required" format:"uuid"`
-	ExamplesRemoved  []string                          `json:"examples_removed,required" format:"uuid"`
+	ExamplesAdded    []string                          `json:"examples_added" api:"required" format:"uuid"`
+	ExamplesModified []string                          `json:"examples_modified" api:"required" format:"uuid"`
+	ExamplesRemoved  []string                          `json:"examples_removed" api:"required" format:"uuid"`
 	JSON             datasetVersionGetDiffResponseJSON `json:"-"`
 }
 
@@ -119,8 +119,8 @@ func (r DatasetVersionListParams) URLQuery() (v url.Values) {
 }
 
 type DatasetVersionGetDiffParams struct {
-	FromVersion param.Field[DatasetVersionGetDiffParamsFromVersionUnion] `query:"from_version,required" format:"date-time"`
-	ToVersion   param.Field[DatasetVersionGetDiffParamsToVersionUnion]   `query:"to_version,required" format:"date-time"`
+	FromVersion param.Field[DatasetVersionGetDiffParamsFromVersionUnion] `query:"from_version" api:"required" format:"date-time"`
+	ToVersion   param.Field[DatasetVersionGetDiffParamsToVersionUnion]   `query:"to_version" api:"required" format:"date-time"`
 }
 
 // URLQuery serializes [DatasetVersionGetDiffParams]'s query parameters as

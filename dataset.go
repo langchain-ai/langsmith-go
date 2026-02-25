@@ -236,23 +236,23 @@ func (r DataType) implementsDatasetListParamsDataTypeUnion() {}
 
 // Dataset schema.
 type Dataset struct {
-	ID                   string    `json:"id,required" format:"uuid"`
-	ModifiedAt           time.Time `json:"modified_at,required" format:"date-time"`
-	Name                 string    `json:"name,required"`
-	SessionCount         int64     `json:"session_count,required"`
-	TenantID             string    `json:"tenant_id,required" format:"uuid"`
-	BaselineExperimentID string    `json:"baseline_experiment_id,nullable" format:"uuid"`
+	ID                   string    `json:"id" api:"required" format:"uuid"`
+	ModifiedAt           time.Time `json:"modified_at" api:"required" format:"date-time"`
+	Name                 string    `json:"name" api:"required"`
+	SessionCount         int64     `json:"session_count" api:"required"`
+	TenantID             string    `json:"tenant_id" api:"required" format:"uuid"`
+	BaselineExperimentID string    `json:"baseline_experiment_id" api:"nullable" format:"uuid"`
 	CreatedAt            time.Time `json:"created_at" format:"date-time"`
 	// Enum for dataset data types.
-	DataType                DataType                `json:"data_type,nullable"`
-	Description             string                  `json:"description,nullable"`
-	ExampleCount            int64                   `json:"example_count,nullable"`
-	ExternallyManaged       bool                    `json:"externally_managed,nullable"`
-	InputsSchemaDefinition  map[string]interface{}  `json:"inputs_schema_definition,nullable"`
-	LastSessionStartTime    time.Time               `json:"last_session_start_time,nullable" format:"date-time"`
-	Metadata                map[string]interface{}  `json:"metadata,nullable"`
-	OutputsSchemaDefinition map[string]interface{}  `json:"outputs_schema_definition,nullable"`
-	Transformations         []DatasetTransformation `json:"transformations,nullable"`
+	DataType                DataType                `json:"data_type" api:"nullable"`
+	Description             string                  `json:"description" api:"nullable"`
+	ExampleCount            int64                   `json:"example_count" api:"nullable"`
+	ExternallyManaged       bool                    `json:"externally_managed" api:"nullable"`
+	InputsSchemaDefinition  map[string]interface{}  `json:"inputs_schema_definition" api:"nullable"`
+	LastSessionStartTime    time.Time               `json:"last_session_start_time" api:"nullable" format:"date-time"`
+	Metadata                map[string]interface{}  `json:"metadata" api:"nullable"`
+	OutputsSchemaDefinition map[string]interface{}  `json:"outputs_schema_definition" api:"nullable"`
+	Transformations         []DatasetTransformation `json:"transformations" api:"nullable"`
 	JSON                    datasetJSON             `json:"-"`
 }
 
@@ -287,11 +287,11 @@ func (r datasetJSON) RawJSON() string {
 }
 
 type DatasetTransformation struct {
-	Path []string `json:"path,required"`
+	Path []string `json:"path" api:"required"`
 	// Enum for dataset transformation types. Ordering determines the order in which
 	// transformations are applied if there are multiple transformations on the same
 	// path.
-	TransformationType DatasetTransformationTransformationType `json:"transformation_type,required"`
+	TransformationType DatasetTransformationTransformationType `json:"transformation_type" api:"required"`
 	JSON               datasetTransformationJSON               `json:"-"`
 }
 
@@ -334,11 +334,11 @@ func (r DatasetTransformationTransformationType) IsKnown() bool {
 }
 
 type DatasetTransformationParam struct {
-	Path param.Field[[]string] `json:"path,required"`
+	Path param.Field[[]string] `json:"path" api:"required"`
 	// Enum for dataset transformation types. Ordering determines the order in which
 	// transformations are applied if there are multiple transformations on the same
 	// path.
-	TransformationType param.Field[DatasetTransformationTransformationType] `json:"transformation_type,required"`
+	TransformationType param.Field[DatasetTransformationTransformationType] `json:"transformation_type" api:"required"`
 }
 
 func (r DatasetTransformationParam) MarshalJSON() (data []byte, err error) {
@@ -347,8 +347,8 @@ func (r DatasetTransformationParam) MarshalJSON() (data []byte, err error) {
 
 // Dataset version schema.
 type DatasetVersion struct {
-	AsOf time.Time          `json:"as_of,required" format:"date-time"`
-	Tags []string           `json:"tags,nullable"`
+	AsOf time.Time          `json:"as_of" api:"required" format:"date-time"`
+	Tags []string           `json:"tags" api:"nullable"`
 	JSON datasetVersionJSON `json:"-"`
 }
 
@@ -369,7 +369,7 @@ func (r datasetVersionJSON) RawJSON() string {
 }
 
 type MissingParam struct {
-	Missing param.Field[Missing_Missing] `json:"__missing__,required"`
+	Missing param.Field[Missing_Missing] `json:"__missing__" api:"required"`
 }
 
 func (r MissingParam) MarshalJSON() (data []byte, err error) {
@@ -429,17 +429,17 @@ func (r SortByDatasetColumn) IsKnown() bool {
 }
 
 type DatasetUpdateResponse struct {
-	ID        string    `json:"id,required" format:"uuid"`
-	Name      string    `json:"name,required"`
-	TenantID  string    `json:"tenant_id,required" format:"uuid"`
+	ID        string    `json:"id" api:"required" format:"uuid"`
+	Name      string    `json:"name" api:"required"`
+	TenantID  string    `json:"tenant_id" api:"required" format:"uuid"`
 	CreatedAt time.Time `json:"created_at" format:"date-time"`
 	// Enum for dataset data types.
-	DataType                DataType                  `json:"data_type,nullable"`
-	Description             string                    `json:"description,nullable"`
-	ExternallyManaged       bool                      `json:"externally_managed,nullable"`
-	InputsSchemaDefinition  map[string]interface{}    `json:"inputs_schema_definition,nullable"`
-	OutputsSchemaDefinition map[string]interface{}    `json:"outputs_schema_definition,nullable"`
-	Transformations         []DatasetTransformation   `json:"transformations,nullable"`
+	DataType                DataType                  `json:"data_type" api:"nullable"`
+	Description             string                    `json:"description" api:"nullable"`
+	ExternallyManaged       bool                      `json:"externally_managed" api:"nullable"`
+	InputsSchemaDefinition  map[string]interface{}    `json:"inputs_schema_definition" api:"nullable"`
+	OutputsSchemaDefinition map[string]interface{}    `json:"outputs_schema_definition" api:"nullable"`
+	Transformations         []DatasetTransformation   `json:"transformations" api:"nullable"`
 	JSON                    datasetUpdateResponseJSON `json:"-"`
 }
 
@@ -481,7 +481,7 @@ type DatasetGetOpenAIResponse = interface{}
 type DatasetGetOpenAIFtResponse = interface{}
 
 type DatasetNewParams struct {
-	Name      param.Field[string]    `json:"name,required"`
+	Name      param.Field[string]    `json:"name" api:"required"`
 	ID        param.Field[string]    `json:"id" format:"uuid"`
 	CreatedAt param.Field[time.Time] `json:"created_at" format:"date-time"`
 	// Enum for dataset data types.
@@ -643,8 +643,8 @@ func (r DatasetListParamsExclude) IsKnown() bool {
 }
 
 type DatasetCloneParams struct {
-	SourceDatasetID param.Field[string] `json:"source_dataset_id,required" format:"uuid"`
-	TargetDatasetID param.Field[string] `json:"target_dataset_id,required" format:"uuid"`
+	SourceDatasetID param.Field[string] `json:"source_dataset_id" api:"required" format:"uuid"`
+	TargetDatasetID param.Field[string] `json:"target_dataset_id" api:"required" format:"uuid"`
 	// Only modifications made on or before this time are included. If None, the latest
 	// version of the dataset is used.
 	AsOf     param.Field[DatasetCloneParamsAsOfUnion]  `json:"as_of" format:"date-time"`
@@ -747,8 +747,8 @@ func (r DatasetGetVersionParams) URLQuery() (v url.Values) {
 type DatasetUpdateTagsParams struct {
 	// Only modifications made on or before this time are included. If None, the latest
 	// version of the dataset is used.
-	AsOf param.Field[DatasetUpdateTagsParamsAsOfUnion] `json:"as_of,required" format:"date-time"`
-	Tag  param.Field[string]                           `json:"tag,required"`
+	AsOf param.Field[DatasetUpdateTagsParamsAsOfUnion] `json:"as_of" api:"required" format:"date-time"`
+	Tag  param.Field[string]                           `json:"tag" api:"required"`
 }
 
 func (r DatasetUpdateTagsParams) MarshalJSON() (data []byte, err error) {
@@ -764,8 +764,8 @@ type DatasetUpdateTagsParamsAsOfUnion interface {
 }
 
 type DatasetUploadParams struct {
-	File      param.Field[io.Reader] `json:"file,required" format:"binary"`
-	InputKeys param.Field[[]string]  `json:"input_keys,required"`
+	File      param.Field[io.Reader] `json:"file" api:"required" format:"binary"`
+	InputKeys param.Field[[]string]  `json:"input_keys" api:"required"`
 	// Enum for dataset data types.
 	DataType                param.Field[DataType] `json:"data_type"`
 	Description             param.Field[string]   `json:"description"`

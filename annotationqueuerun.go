@@ -106,11 +106,11 @@ func (r *AnnotationQueueRunService) DeleteQueue(ctx context.Context, queueID str
 }
 
 type AnnotationQueueRunNewResponse struct {
-	ID               string                            `json:"id,required" format:"uuid"`
-	QueueID          string                            `json:"queue_id,required" format:"uuid"`
-	RunID            string                            `json:"run_id,required" format:"uuid"`
+	ID               string                            `json:"id" api:"required" format:"uuid"`
+	QueueID          string                            `json:"queue_id" api:"required" format:"uuid"`
+	RunID            string                            `json:"run_id" api:"required" format:"uuid"`
 	AddedAt          time.Time                         `json:"added_at" format:"date-time"`
-	LastReviewedTime time.Time                         `json:"last_reviewed_time,nullable" format:"date-time"`
+	LastReviewedTime time.Time                         `json:"last_reviewed_time" api:"nullable" format:"date-time"`
 	JSON             annotationQueueRunNewResponseJSON `json:"-"`
 }
 
@@ -141,7 +141,7 @@ type AnnotationQueueRunDeleteAllResponse = interface{}
 type AnnotationQueueRunDeleteQueueResponse = interface{}
 
 type AnnotationQueueRunNewParams struct {
-	Body AnnotationQueueRunNewParamsBodyUnion `json:"body,required" format:"uuid"`
+	Body AnnotationQueueRunNewParamsBodyUnion `json:"body" api:"required" format:"uuid"`
 }
 
 func (r AnnotationQueueRunNewParams) MarshalJSON() (data []byte, err error) {
@@ -166,7 +166,7 @@ func (r AnnotationQueueRunNewParamsBodyRunsAnnotationQueueRunAddSchemaArray) imp
 
 // Schema for adding a run to an annotation queue with optional metadata.
 type AnnotationQueueRunNewParamsBodyRunsAnnotationQueueRunAddSchemaArrayItem struct {
-	RunID       param.Field[string]                                                                       `json:"run_id,required" format:"uuid"`
+	RunID       param.Field[string]                                                                       `json:"run_id" api:"required" format:"uuid"`
 	ParentRunID param.Field[string]                                                                       `json:"parent_run_id" format:"uuid"`
 	SessionID   param.Field[string]                                                                       `json:"session_id" format:"uuid"`
 	StartTime   param.Field[time.Time]                                                                    `json:"start_time" format:"date-time"`

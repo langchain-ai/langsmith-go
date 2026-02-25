@@ -42,13 +42,13 @@ func (r *AnnotationQueueInfoService) List(ctx context.Context, opts ...option.Re
 
 // The LangSmith server info.
 type AnnotationQueueInfoListResponse struct {
-	Version string `json:"version,required"`
+	Version string `json:"version" api:"required"`
 	// Batch ingest config.
 	BatchIngestConfig AnnotationQueueInfoListResponseBatchIngestConfig `json:"batch_ingest_config"`
 	// Customer info.
-	CustomerInfo          AnnotationQueueInfoListResponseCustomerInfo `json:"customer_info,nullable"`
+	CustomerInfo          AnnotationQueueInfoListResponseCustomerInfo `json:"customer_info" api:"nullable"`
 	InstanceFlags         map[string]interface{}                      `json:"instance_flags"`
-	LicenseExpirationTime time.Time                                   `json:"license_expiration_time,nullable" format:"date-time"`
+	LicenseExpirationTime time.Time                                   `json:"license_expiration_time" api:"nullable" format:"date-time"`
 	JSON                  annotationQueueInfoListResponseJSON         `json:"-"`
 }
 
@@ -106,8 +106,8 @@ func (r annotationQueueInfoListResponseBatchIngestConfigJSON) RawJSON() string {
 
 // Customer info.
 type AnnotationQueueInfoListResponseCustomerInfo struct {
-	CustomerID   string                                          `json:"customer_id,required"`
-	CustomerName string                                          `json:"customer_name,required"`
+	CustomerID   string                                          `json:"customer_id" api:"required"`
+	CustomerName string                                          `json:"customer_name" api:"required"`
 	JSON         annotationQueueInfoListResponseCustomerInfoJSON `json:"-"`
 }
 

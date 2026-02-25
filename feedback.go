@@ -192,7 +192,7 @@ func (r AutoEvalFeedbackSourceType) IsKnown() bool {
 
 // Schema used for creating feedback.
 type FeedbackCreateSchemaParam struct {
-	Key                     param.Field[string]                                   `json:"key,required"`
+	Key                     param.Field[string]                                   `json:"key" api:"required"`
 	ID                      param.Field[string]                                   `json:"id" format:"uuid"`
 	Comment                 param.Field[string]                                   `json:"comment"`
 	ComparativeExperimentID param.Field[string]                                   `json:"comparative_experiment_id" format:"uuid"`
@@ -229,7 +229,7 @@ func (r FeedbackCreateSchemaCorrectionMapParam) ImplementsFeedbackCreateSchemaCo
 
 type FeedbackCreateSchemaFeedbackConfigParam struct {
 	// Enum for feedback types.
-	Type       param.Field[FeedbackCreateSchemaFeedbackConfigType]            `json:"type,required"`
+	Type       param.Field[FeedbackCreateSchemaFeedbackConfigType]            `json:"type" api:"required"`
 	Categories param.Field[[]FeedbackCreateSchemaFeedbackConfigCategoryParam] `json:"categories"`
 	Max        param.Field[float64]                                           `json:"max"`
 	Min        param.Field[float64]                                           `json:"min"`
@@ -258,7 +258,7 @@ func (r FeedbackCreateSchemaFeedbackConfigType) IsKnown() bool {
 
 // Specific value and label pair for feedback
 type FeedbackCreateSchemaFeedbackConfigCategoryParam struct {
-	Value param.Field[float64] `json:"value,required"`
+	Value param.Field[float64] `json:"value" api:"required"`
 	Label param.Field[string]  `json:"label"`
 }
 
@@ -338,24 +338,24 @@ func (r FeedbackLevel) IsKnown() bool {
 
 // Schema for getting feedback.
 type FeedbackSchema struct {
-	ID                      string                        `json:"id,required" format:"uuid"`
-	Key                     string                        `json:"key,required"`
-	Comment                 string                        `json:"comment,nullable"`
-	ComparativeExperimentID string                        `json:"comparative_experiment_id,nullable" format:"uuid"`
-	Correction              FeedbackSchemaCorrectionUnion `json:"correction,nullable"`
+	ID                      string                        `json:"id" api:"required" format:"uuid"`
+	Key                     string                        `json:"key" api:"required"`
+	Comment                 string                        `json:"comment" api:"nullable"`
+	ComparativeExperimentID string                        `json:"comparative_experiment_id" api:"nullable" format:"uuid"`
+	Correction              FeedbackSchemaCorrectionUnion `json:"correction" api:"nullable"`
 	CreatedAt               time.Time                     `json:"created_at" format:"date-time"`
-	Extra                   map[string]interface{}        `json:"extra,nullable"`
-	FeedbackGroupID         string                        `json:"feedback_group_id,nullable" format:"uuid"`
+	Extra                   map[string]interface{}        `json:"extra" api:"nullable"`
+	FeedbackGroupID         string                        `json:"feedback_group_id" api:"nullable" format:"uuid"`
 	// The feedback source loaded from the database.
-	FeedbackSource   FeedbackSchemaFeedbackSource `json:"feedback_source,nullable"`
-	FeedbackThreadID string                       `json:"feedback_thread_id,nullable"`
+	FeedbackSource   FeedbackSchemaFeedbackSource `json:"feedback_source" api:"nullable"`
+	FeedbackThreadID string                       `json:"feedback_thread_id" api:"nullable"`
 	ModifiedAt       time.Time                    `json:"modified_at" format:"date-time"`
-	RunID            string                       `json:"run_id,nullable" format:"uuid"`
-	Score            FeedbackSchemaScoreUnion     `json:"score,nullable"`
-	SessionID        string                       `json:"session_id,nullable" format:"uuid"`
-	StartTime        time.Time                    `json:"start_time,nullable" format:"date-time"`
-	TraceID          string                       `json:"trace_id,nullable" format:"uuid"`
-	Value            FeedbackSchemaValueUnion     `json:"value,nullable"`
+	RunID            string                       `json:"run_id" api:"nullable" format:"uuid"`
+	Score            FeedbackSchemaScoreUnion     `json:"score" api:"nullable"`
+	SessionID        string                       `json:"session_id" api:"nullable" format:"uuid"`
+	StartTime        time.Time                    `json:"start_time" api:"nullable" format:"date-time"`
+	TraceID          string                       `json:"trace_id" api:"nullable" format:"uuid"`
+	Value            FeedbackSchemaValueUnion     `json:"value" api:"nullable"`
 	JSON             feedbackSchemaJSON           `json:"-"`
 }
 
@@ -416,11 +416,11 @@ func (r FeedbackSchemaCorrectionMap) ImplementsFeedbackSchemaCorrectionUnion() {
 
 // The feedback source loaded from the database.
 type FeedbackSchemaFeedbackSource struct {
-	LsUserID string                           `json:"ls_user_id,nullable" format:"uuid"`
-	Metadata map[string]interface{}           `json:"metadata,nullable"`
-	Type     string                           `json:"type,nullable"`
-	UserID   string                           `json:"user_id,nullable" format:"uuid"`
-	UserName string                           `json:"user_name,nullable"`
+	LsUserID string                           `json:"ls_user_id" api:"nullable" format:"uuid"`
+	Metadata map[string]interface{}           `json:"metadata" api:"nullable"`
+	Type     string                           `json:"type" api:"nullable"`
+	UserID   string                           `json:"user_id" api:"nullable" format:"uuid"`
+	UserName string                           `json:"user_name" api:"nullable"`
 	JSON     feedbackSchemaFeedbackSourceJSON `json:"-"`
 }
 
@@ -553,7 +553,7 @@ type FeedbackDeleteResponse = interface{}
 
 type FeedbackNewParams struct {
 	// Schema used for creating feedback.
-	FeedbackCreateSchema FeedbackCreateSchemaParam `json:"feedback_create_schema,required"`
+	FeedbackCreateSchema FeedbackCreateSchemaParam `json:"feedback_create_schema" api:"required"`
 }
 
 func (r FeedbackNewParams) MarshalJSON() (data []byte, err error) {
@@ -595,7 +595,7 @@ func (r FeedbackUpdateParamsCorrectionMap) ImplementsFeedbackUpdateParamsCorrect
 
 type FeedbackUpdateParamsFeedbackConfig struct {
 	// Enum for feedback types.
-	Type       param.Field[FeedbackUpdateParamsFeedbackConfigType]       `json:"type,required"`
+	Type       param.Field[FeedbackUpdateParamsFeedbackConfigType]       `json:"type" api:"required"`
 	Categories param.Field[[]FeedbackUpdateParamsFeedbackConfigCategory] `json:"categories"`
 	Max        param.Field[float64]                                      `json:"max"`
 	Min        param.Field[float64]                                      `json:"min"`
@@ -624,7 +624,7 @@ func (r FeedbackUpdateParamsFeedbackConfigType) IsKnown() bool {
 
 // Specific value and label pair for feedback
 type FeedbackUpdateParamsFeedbackConfigCategory struct {
-	Value param.Field[float64] `json:"value,required"`
+	Value param.Field[float64] `json:"value" api:"required"`
 	Label param.Field[string]  `json:"label"`
 }
 

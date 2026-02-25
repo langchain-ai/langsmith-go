@@ -73,8 +73,8 @@ func (r *DatasetShareService) DeleteAll(ctx context.Context, datasetID string, o
 }
 
 type DatasetShareSchema struct {
-	DatasetID  string                 `json:"dataset_id,required" format:"uuid"`
-	ShareToken string                 `json:"share_token,required" format:"uuid"`
+	DatasetID  string                 `json:"dataset_id" api:"required" format:"uuid"`
+	ShareToken string                 `json:"share_token" api:"required" format:"uuid"`
 	JSON       datasetShareSchemaJSON `json:"-"`
 }
 
