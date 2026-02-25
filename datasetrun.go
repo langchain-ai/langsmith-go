@@ -72,17 +72,17 @@ func (r *DatasetRunService) Delta(ctx context.Context, datasetID string, body Da
 
 // Example schema with list of runs.
 type ExampleWithRuns struct {
-	ID             string                 `json:"id,required" format:"uuid"`
-	DatasetID      string                 `json:"dataset_id,required" format:"uuid"`
-	Inputs         map[string]interface{} `json:"inputs,required"`
-	Name           string                 `json:"name,required"`
-	Runs           []ExampleWithRunsRun   `json:"runs,required"`
-	AttachmentURLs map[string]interface{} `json:"attachment_urls,nullable"`
+	ID             string                 `json:"id" api:"required" format:"uuid"`
+	DatasetID      string                 `json:"dataset_id" api:"required" format:"uuid"`
+	Inputs         map[string]interface{} `json:"inputs" api:"required"`
+	Name           string                 `json:"name" api:"required"`
+	Runs           []ExampleWithRunsRun   `json:"runs" api:"required"`
+	AttachmentURLs map[string]interface{} `json:"attachment_urls" api:"nullable"`
 	CreatedAt      time.Time              `json:"created_at" format:"date-time"`
-	Metadata       map[string]interface{} `json:"metadata,nullable"`
-	ModifiedAt     time.Time              `json:"modified_at,nullable" format:"date-time"`
-	Outputs        map[string]interface{} `json:"outputs,nullable"`
-	SourceRunID    string                 `json:"source_run_id,nullable" format:"uuid"`
+	Metadata       map[string]interface{} `json:"metadata" api:"nullable"`
+	ModifiedAt     time.Time              `json:"modified_at" api:"nullable" format:"date-time"`
+	Outputs        map[string]interface{} `json:"outputs" api:"nullable"`
+	SourceRunID    string                 `json:"source_run_id" api:"nullable" format:"uuid"`
 	JSON           exampleWithRunsJSON    `json:"-"`
 }
 
@@ -113,62 +113,62 @@ func (r exampleWithRunsJSON) RawJSON() string {
 
 // Run schema.
 type ExampleWithRunsRun struct {
-	ID          string `json:"id,required" format:"uuid"`
-	AppPath     string `json:"app_path,required"`
-	DottedOrder string `json:"dotted_order,required"`
-	Name        string `json:"name,required"`
+	ID          string `json:"id" api:"required" format:"uuid"`
+	AppPath     string `json:"app_path" api:"required"`
+	DottedOrder string `json:"dotted_order" api:"required"`
+	Name        string `json:"name" api:"required"`
 	// Enum for run types.
-	RunType                ExampleWithRunsRunsRunType        `json:"run_type,required"`
-	SessionID              string                            `json:"session_id,required" format:"uuid"`
-	Status                 string                            `json:"status,required"`
-	TraceID                string                            `json:"trace_id,required" format:"uuid"`
-	ChildRunIDs            []string                          `json:"child_run_ids,nullable" format:"uuid"`
-	CompletionCost         string                            `json:"completion_cost,nullable"`
-	CompletionCostDetails  map[string]string                 `json:"completion_cost_details,nullable"`
-	CompletionTokenDetails map[string]int64                  `json:"completion_token_details,nullable"`
+	RunType                ExampleWithRunsRunsRunType        `json:"run_type" api:"required"`
+	SessionID              string                            `json:"session_id" api:"required" format:"uuid"`
+	Status                 string                            `json:"status" api:"required"`
+	TraceID                string                            `json:"trace_id" api:"required" format:"uuid"`
+	ChildRunIDs            []string                          `json:"child_run_ids" api:"nullable" format:"uuid"`
+	CompletionCost         string                            `json:"completion_cost" api:"nullable"`
+	CompletionCostDetails  map[string]string                 `json:"completion_cost_details" api:"nullable"`
+	CompletionTokenDetails map[string]int64                  `json:"completion_token_details" api:"nullable"`
 	CompletionTokens       int64                             `json:"completion_tokens"`
-	DirectChildRunIDs      []string                          `json:"direct_child_run_ids,nullable" format:"uuid"`
-	EndTime                time.Time                         `json:"end_time,nullable" format:"date-time"`
-	Error                  string                            `json:"error,nullable"`
-	Events                 []map[string]interface{}          `json:"events,nullable"`
+	DirectChildRunIDs      []string                          `json:"direct_child_run_ids" api:"nullable" format:"uuid"`
+	EndTime                time.Time                         `json:"end_time" api:"nullable" format:"date-time"`
+	Error                  string                            `json:"error" api:"nullable"`
+	Events                 []map[string]interface{}          `json:"events" api:"nullable"`
 	ExecutionOrder         int64                             `json:"execution_order"`
-	Extra                  map[string]interface{}            `json:"extra,nullable"`
-	FeedbackStats          map[string]map[string]interface{} `json:"feedback_stats,nullable"`
-	FirstTokenTime         time.Time                         `json:"first_token_time,nullable" format:"date-time"`
-	InDataset              bool                              `json:"in_dataset,nullable"`
-	Inputs                 map[string]interface{}            `json:"inputs,nullable"`
-	InputsPreview          string                            `json:"inputs_preview,nullable"`
-	InputsS3URLs           map[string]interface{}            `json:"inputs_s3_urls,nullable"`
-	LastQueuedAt           time.Time                         `json:"last_queued_at,nullable" format:"date-time"`
-	ManifestID             string                            `json:"manifest_id,nullable" format:"uuid"`
-	ManifestS3ID           string                            `json:"manifest_s3_id,nullable" format:"uuid"`
-	Messages               []map[string]interface{}          `json:"messages,nullable"`
-	Outputs                map[string]interface{}            `json:"outputs,nullable"`
-	OutputsPreview         string                            `json:"outputs_preview,nullable"`
-	OutputsS3URLs          map[string]interface{}            `json:"outputs_s3_urls,nullable"`
-	ParentRunID            string                            `json:"parent_run_id,nullable" format:"uuid"`
-	ParentRunIDs           []string                          `json:"parent_run_ids,nullable" format:"uuid"`
-	PriceModelID           string                            `json:"price_model_id,nullable" format:"uuid"`
-	PromptCost             string                            `json:"prompt_cost,nullable"`
-	PromptCostDetails      map[string]string                 `json:"prompt_cost_details,nullable"`
-	PromptTokenDetails     map[string]int64                  `json:"prompt_token_details,nullable"`
+	Extra                  map[string]interface{}            `json:"extra" api:"nullable"`
+	FeedbackStats          map[string]map[string]interface{} `json:"feedback_stats" api:"nullable"`
+	FirstTokenTime         time.Time                         `json:"first_token_time" api:"nullable" format:"date-time"`
+	InDataset              bool                              `json:"in_dataset" api:"nullable"`
+	Inputs                 map[string]interface{}            `json:"inputs" api:"nullable"`
+	InputsPreview          string                            `json:"inputs_preview" api:"nullable"`
+	InputsS3URLs           map[string]interface{}            `json:"inputs_s3_urls" api:"nullable"`
+	LastQueuedAt           time.Time                         `json:"last_queued_at" api:"nullable" format:"date-time"`
+	ManifestID             string                            `json:"manifest_id" api:"nullable" format:"uuid"`
+	ManifestS3ID           string                            `json:"manifest_s3_id" api:"nullable" format:"uuid"`
+	Messages               []map[string]interface{}          `json:"messages" api:"nullable"`
+	Outputs                map[string]interface{}            `json:"outputs" api:"nullable"`
+	OutputsPreview         string                            `json:"outputs_preview" api:"nullable"`
+	OutputsS3URLs          map[string]interface{}            `json:"outputs_s3_urls" api:"nullable"`
+	ParentRunID            string                            `json:"parent_run_id" api:"nullable" format:"uuid"`
+	ParentRunIDs           []string                          `json:"parent_run_ids" api:"nullable" format:"uuid"`
+	PriceModelID           string                            `json:"price_model_id" api:"nullable" format:"uuid"`
+	PromptCost             string                            `json:"prompt_cost" api:"nullable"`
+	PromptCostDetails      map[string]string                 `json:"prompt_cost_details" api:"nullable"`
+	PromptTokenDetails     map[string]int64                  `json:"prompt_token_details" api:"nullable"`
 	PromptTokens           int64                             `json:"prompt_tokens"`
-	ReferenceDatasetID     string                            `json:"reference_dataset_id,nullable" format:"uuid"`
-	ReferenceExampleID     string                            `json:"reference_example_id,nullable" format:"uuid"`
-	S3URLs                 map[string]interface{}            `json:"s3_urls,nullable"`
-	Serialized             map[string]interface{}            `json:"serialized,nullable"`
-	ShareToken             string                            `json:"share_token,nullable" format:"uuid"`
+	ReferenceDatasetID     string                            `json:"reference_dataset_id" api:"nullable" format:"uuid"`
+	ReferenceExampleID     string                            `json:"reference_example_id" api:"nullable" format:"uuid"`
+	S3URLs                 map[string]interface{}            `json:"s3_urls" api:"nullable"`
+	Serialized             map[string]interface{}            `json:"serialized" api:"nullable"`
+	ShareToken             string                            `json:"share_token" api:"nullable" format:"uuid"`
 	StartTime              time.Time                         `json:"start_time" format:"date-time"`
-	Tags                   []string                          `json:"tags,nullable"`
-	ThreadID               string                            `json:"thread_id,nullable"`
-	TotalCost              string                            `json:"total_cost,nullable"`
+	Tags                   []string                          `json:"tags" api:"nullable"`
+	ThreadID               string                            `json:"thread_id" api:"nullable"`
+	TotalCost              string                            `json:"total_cost" api:"nullable"`
 	TotalTokens            int64                             `json:"total_tokens"`
-	TraceFirstReceivedAt   time.Time                         `json:"trace_first_received_at,nullable" format:"date-time"`
-	TraceMaxStartTime      time.Time                         `json:"trace_max_start_time,nullable" format:"date-time"`
-	TraceMinStartTime      time.Time                         `json:"trace_min_start_time,nullable" format:"date-time"`
-	TraceTier              ExampleWithRunsRunsTraceTier      `json:"trace_tier,nullable"`
+	TraceFirstReceivedAt   time.Time                         `json:"trace_first_received_at" api:"nullable" format:"date-time"`
+	TraceMaxStartTime      time.Time                         `json:"trace_max_start_time" api:"nullable" format:"date-time"`
+	TraceMinStartTime      time.Time                         `json:"trace_min_start_time" api:"nullable" format:"date-time"`
+	TraceTier              ExampleWithRunsRunsTraceTier      `json:"trace_tier" api:"nullable"`
 	TraceUpgrade           bool                              `json:"trace_upgrade"`
-	TtlSeconds             int64                             `json:"ttl_seconds,nullable"`
+	TtlSeconds             int64                             `json:"ttl_seconds" api:"nullable"`
 	JSON                   exampleWithRunsRunJSON            `json:"-"`
 }
 
@@ -285,17 +285,17 @@ func (r ExampleWithRunsRunsTraceTier) IsKnown() bool {
 // runs from all sessions, where each run has a session_id field for frontend to
 // determine column placement.
 type ExampleWithRunsCh struct {
-	ID             string                 `json:"id,required" format:"uuid"`
-	DatasetID      string                 `json:"dataset_id,required" format:"uuid"`
-	Inputs         map[string]interface{} `json:"inputs,required"`
-	Name           string                 `json:"name,required"`
-	Runs           []ExampleWithRunsChRun `json:"runs,required"`
-	AttachmentURLs map[string]interface{} `json:"attachment_urls,nullable"`
+	ID             string                 `json:"id" api:"required" format:"uuid"`
+	DatasetID      string                 `json:"dataset_id" api:"required" format:"uuid"`
+	Inputs         map[string]interface{} `json:"inputs" api:"required"`
+	Name           string                 `json:"name" api:"required"`
+	Runs           []ExampleWithRunsChRun `json:"runs" api:"required"`
+	AttachmentURLs map[string]interface{} `json:"attachment_urls" api:"nullable"`
 	CreatedAt      time.Time              `json:"created_at" format:"date-time"`
-	Metadata       map[string]interface{} `json:"metadata,nullable"`
-	ModifiedAt     time.Time              `json:"modified_at,nullable" format:"date-time"`
-	Outputs        map[string]interface{} `json:"outputs,nullable"`
-	SourceRunID    string                 `json:"source_run_id,nullable" format:"uuid"`
+	Metadata       map[string]interface{} `json:"metadata" api:"nullable"`
+	ModifiedAt     time.Time              `json:"modified_at" api:"nullable" format:"date-time"`
+	Outputs        map[string]interface{} `json:"outputs" api:"nullable"`
+	SourceRunID    string                 `json:"source_run_id" api:"nullable" format:"uuid"`
 	JSON           exampleWithRunsChJSON  `json:"-"`
 }
 
@@ -327,44 +327,44 @@ func (r exampleWithRunsChJSON) RawJSON() string {
 
 // Run schema for comparison view.
 type ExampleWithRunsChRun struct {
-	ID   string `json:"id,required" format:"uuid"`
-	Name string `json:"name,required"`
+	ID   string `json:"id" api:"required" format:"uuid"`
+	Name string `json:"name" api:"required"`
 	// Enum for run types.
-	RunType            ExampleWithRunsChRunsRunType      `json:"run_type,required"`
-	SessionID          string                            `json:"session_id,required" format:"uuid"`
-	Status             string                            `json:"status,required"`
-	TraceID            string                            `json:"trace_id,required" format:"uuid"`
-	AppPath            string                            `json:"app_path,nullable"`
-	CompletionCost     string                            `json:"completion_cost,nullable"`
-	CompletionTokens   int64                             `json:"completion_tokens,nullable"`
-	DottedOrder        string                            `json:"dotted_order,nullable"`
-	EndTime            time.Time                         `json:"end_time,nullable" format:"date-time"`
-	Error              string                            `json:"error,nullable"`
-	Events             []map[string]interface{}          `json:"events,nullable"`
+	RunType            ExampleWithRunsChRunsRunType      `json:"run_type" api:"required"`
+	SessionID          string                            `json:"session_id" api:"required" format:"uuid"`
+	Status             string                            `json:"status" api:"required"`
+	TraceID            string                            `json:"trace_id" api:"required" format:"uuid"`
+	AppPath            string                            `json:"app_path" api:"nullable"`
+	CompletionCost     string                            `json:"completion_cost" api:"nullable"`
+	CompletionTokens   int64                             `json:"completion_tokens" api:"nullable"`
+	DottedOrder        string                            `json:"dotted_order" api:"nullable"`
+	EndTime            time.Time                         `json:"end_time" api:"nullable" format:"date-time"`
+	Error              string                            `json:"error" api:"nullable"`
+	Events             []map[string]interface{}          `json:"events" api:"nullable"`
 	ExecutionOrder     int64                             `json:"execution_order"`
-	Extra              map[string]interface{}            `json:"extra,nullable"`
-	FeedbackStats      map[string]map[string]interface{} `json:"feedback_stats,nullable"`
+	Extra              map[string]interface{}            `json:"extra" api:"nullable"`
+	FeedbackStats      map[string]map[string]interface{} `json:"feedback_stats" api:"nullable"`
 	Feedbacks          []FeedbackSchema                  `json:"feedbacks"`
-	Inputs             map[string]interface{}            `json:"inputs,nullable"`
-	InputsPreview      string                            `json:"inputs_preview,nullable"`
-	InputsS3URLs       map[string]interface{}            `json:"inputs_s3_urls,nullable"`
-	ManifestID         string                            `json:"manifest_id,nullable" format:"uuid"`
-	ManifestS3ID       string                            `json:"manifest_s3_id,nullable" format:"uuid"`
-	Outputs            map[string]interface{}            `json:"outputs,nullable"`
-	OutputsPreview     string                            `json:"outputs_preview,nullable"`
-	OutputsS3URLs      map[string]interface{}            `json:"outputs_s3_urls,nullable"`
-	ParentRunID        string                            `json:"parent_run_id,nullable" format:"uuid"`
-	PromptCost         string                            `json:"prompt_cost,nullable"`
-	PromptTokens       int64                             `json:"prompt_tokens,nullable"`
-	ReferenceExampleID string                            `json:"reference_example_id,nullable" format:"uuid"`
-	S3URLs             map[string]interface{}            `json:"s3_urls,nullable"`
-	Serialized         map[string]interface{}            `json:"serialized,nullable"`
+	Inputs             map[string]interface{}            `json:"inputs" api:"nullable"`
+	InputsPreview      string                            `json:"inputs_preview" api:"nullable"`
+	InputsS3URLs       map[string]interface{}            `json:"inputs_s3_urls" api:"nullable"`
+	ManifestID         string                            `json:"manifest_id" api:"nullable" format:"uuid"`
+	ManifestS3ID       string                            `json:"manifest_s3_id" api:"nullable" format:"uuid"`
+	Outputs            map[string]interface{}            `json:"outputs" api:"nullable"`
+	OutputsPreview     string                            `json:"outputs_preview" api:"nullable"`
+	OutputsS3URLs      map[string]interface{}            `json:"outputs_s3_urls" api:"nullable"`
+	ParentRunID        string                            `json:"parent_run_id" api:"nullable" format:"uuid"`
+	PromptCost         string                            `json:"prompt_cost" api:"nullable"`
+	PromptTokens       int64                             `json:"prompt_tokens" api:"nullable"`
+	ReferenceExampleID string                            `json:"reference_example_id" api:"nullable" format:"uuid"`
+	S3URLs             map[string]interface{}            `json:"s3_urls" api:"nullable"`
+	Serialized         map[string]interface{}            `json:"serialized" api:"nullable"`
 	StartTime          time.Time                         `json:"start_time" format:"date-time"`
-	Tags               []string                          `json:"tags,nullable"`
-	TotalCost          string                            `json:"total_cost,nullable"`
-	TotalTokens        int64                             `json:"total_tokens,nullable"`
-	TraceMaxStartTime  time.Time                         `json:"trace_max_start_time,nullable" format:"date-time"`
-	TraceMinStartTime  time.Time                         `json:"trace_min_start_time,nullable" format:"date-time"`
+	Tags               []string                          `json:"tags" api:"nullable"`
+	TotalCost          string                            `json:"total_cost" api:"nullable"`
+	TotalTokens        int64                             `json:"total_tokens" api:"nullable"`
+	TraceMaxStartTime  time.Time                         `json:"trace_max_start_time" api:"nullable" format:"date-time"`
+	TraceMinStartTime  time.Time                         `json:"trace_min_start_time" api:"nullable" format:"date-time"`
 	JSON               exampleWithRunsChRunJSON          `json:"-"`
 }
 
@@ -442,9 +442,9 @@ func (r ExampleWithRunsChRunsRunType) IsKnown() bool {
 }
 
 type QueryFeedbackDeltaParam struct {
-	BaselineSessionID       param.Field[string]              `json:"baseline_session_id,required" format:"uuid"`
-	ComparisonSessionIDs    param.Field[[]string]            `json:"comparison_session_ids,required" format:"uuid"`
-	FeedbackKey             param.Field[string]              `json:"feedback_key,required"`
+	BaselineSessionID       param.Field[string]              `json:"baseline_session_id" api:"required" format:"uuid"`
+	ComparisonSessionIDs    param.Field[[]string]            `json:"comparison_session_ids" api:"required" format:"uuid"`
+	FeedbackKey             param.Field[string]              `json:"feedback_key" api:"required"`
 	ComparativeExperimentID param.Field[string]              `json:"comparative_experiment_id" format:"uuid"`
 	Filters                 param.Field[map[string][]string] `json:"filters"`
 	Limit                   param.Field[int64]               `json:"limit"`
@@ -457,7 +457,7 @@ func (r QueryFeedbackDeltaParam) MarshalJSON() (data []byte, err error) {
 
 // List of feedback keys with number of improvements and regressions for each.
 type SessionFeedbackDelta struct {
-	FeedbackDeltas map[string]SessionFeedbackDeltaFeedbackDelta `json:"feedback_deltas,required"`
+	FeedbackDeltas map[string]SessionFeedbackDeltaFeedbackDelta `json:"feedback_deltas" api:"required"`
 	JSON           sessionFeedbackDeltaJSON                     `json:"-"`
 }
 
@@ -479,8 +479,8 @@ func (r sessionFeedbackDeltaJSON) RawJSON() string {
 
 // Feedback key with number of improvements and regressions.
 type SessionFeedbackDeltaFeedbackDelta struct {
-	ImprovedExamples  []string                              `json:"improved_examples,required" format:"uuid"`
-	RegressedExamples []string                              `json:"regressed_examples,required" format:"uuid"`
+	ImprovedExamples  []string                              `json:"improved_examples" api:"required" format:"uuid"`
+	RegressedExamples []string                              `json:"regressed_examples" api:"required" format:"uuid"`
 	JSON              sessionFeedbackDeltaFeedbackDeltaJSON `json:"-"`
 }
 
@@ -502,7 +502,7 @@ func (r sessionFeedbackDeltaFeedbackDeltaJSON) RawJSON() string {
 }
 
 type SortParamsForRunsComparisonView struct {
-	SortBy    param.Field[string]                                   `json:"sort_by,required"`
+	SortBy    param.Field[string]                                   `json:"sort_by" api:"required"`
 	SortOrder param.Field[SortParamsForRunsComparisonViewSortOrder] `json:"sort_order"`
 }
 
@@ -555,7 +555,7 @@ type DatasetRunNewResponseArray []ExampleWithRunsCh
 func (r DatasetRunNewResponseArray) implementsDatasetRunNewResponseUnion() {}
 
 type DatasetRunNewParams struct {
-	SessionIDs param.Field[[]string] `json:"session_ids,required" format:"uuid"`
+	SessionIDs param.Field[[]string] `json:"session_ids" api:"required" format:"uuid"`
 	// Response format, e.g., 'csv'
 	Format                  param.Field[DatasetRunNewParamsFormat]       `query:"format"`
 	ComparativeExperimentID param.Field[string]                          `json:"comparative_experiment_id" format:"uuid"`
@@ -596,7 +596,7 @@ func (r DatasetRunNewParamsFormat) IsKnown() bool {
 }
 
 type DatasetRunDeltaParams struct {
-	QueryFeedbackDelta QueryFeedbackDeltaParam `json:"query_feedback_delta,required"`
+	QueryFeedbackDelta QueryFeedbackDeltaParam `json:"query_feedback_delta" api:"required"`
 }
 
 func (r DatasetRunDeltaParams) MarshalJSON() (data []byte, err error) {

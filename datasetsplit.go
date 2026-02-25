@@ -61,8 +61,8 @@ func (r *DatasetSplitService) Get(ctx context.Context, datasetID string, query D
 }
 
 type DatasetSplitNewParams struct {
-	Examples  param.Field[[]string] `json:"examples,required" format:"uuid"`
-	SplitName param.Field[string]   `json:"split_name,required"`
+	Examples  param.Field[[]string] `json:"examples" api:"required" format:"uuid"`
+	SplitName param.Field[string]   `json:"split_name" api:"required"`
 	Remove    param.Field[bool]     `json:"remove"`
 }
 

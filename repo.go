@@ -119,7 +119,7 @@ func (r *RepoService) Delete(ctx context.Context, owner string, repo string, opt
 
 type CreateRepoResponse struct {
 	// All database fields for repos, plus helpful computed fields.
-	Repo RepoWithLookups        `json:"repo,required"`
+	Repo RepoWithLookups        `json:"repo" api:"required"`
 	JSON createRepoResponseJSON `json:"-"`
 }
 
@@ -141,7 +141,7 @@ func (r createRepoResponseJSON) RawJSON() string {
 
 type GetRepoResponse struct {
 	// All database fields for repos, plus helpful computed fields.
-	Repo RepoWithLookups     `json:"repo,required"`
+	Repo RepoWithLookups     `json:"repo" api:"required"`
 	JSON getRepoResponseJSON `json:"-"`
 }
 
@@ -162,32 +162,32 @@ func (r getRepoResponseJSON) RawJSON() string {
 
 // All database fields for repos, plus helpful computed fields.
 type RepoWithLookups struct {
-	ID             string    `json:"id,required" format:"uuid"`
-	CreatedAt      time.Time `json:"created_at,required" format:"date-time"`
-	FullName       string    `json:"full_name,required"`
-	IsArchived     bool      `json:"is_archived,required"`
-	IsPublic       bool      `json:"is_public,required"`
-	NumCommits     int64     `json:"num_commits,required"`
-	NumDownloads   int64     `json:"num_downloads,required"`
-	NumLikes       int64     `json:"num_likes,required"`
-	NumViews       int64     `json:"num_views,required"`
-	Owner          string    `json:"owner,required,nullable"`
-	RepoHandle     string    `json:"repo_handle,required"`
-	Tags           []string  `json:"tags,required"`
-	TenantID       string    `json:"tenant_id,required" format:"uuid"`
-	UpdatedAt      time.Time `json:"updated_at,required" format:"date-time"`
+	ID             string    `json:"id" api:"required" format:"uuid"`
+	CreatedAt      time.Time `json:"created_at" api:"required" format:"date-time"`
+	FullName       string    `json:"full_name" api:"required"`
+	IsArchived     bool      `json:"is_archived" api:"required"`
+	IsPublic       bool      `json:"is_public" api:"required"`
+	NumCommits     int64     `json:"num_commits" api:"required"`
+	NumDownloads   int64     `json:"num_downloads" api:"required"`
+	NumLikes       int64     `json:"num_likes" api:"required"`
+	NumViews       int64     `json:"num_views" api:"required"`
+	Owner          string    `json:"owner" api:"required,nullable"`
+	RepoHandle     string    `json:"repo_handle" api:"required"`
+	Tags           []string  `json:"tags" api:"required"`
+	TenantID       string    `json:"tenant_id" api:"required" format:"uuid"`
+	UpdatedAt      time.Time `json:"updated_at" api:"required" format:"date-time"`
 	CommitTags     []string  `json:"commit_tags"`
-	CreatedBy      string    `json:"created_by,nullable"`
-	Description    string    `json:"description,nullable"`
-	LastCommitHash string    `json:"last_commit_hash,nullable"`
+	CreatedBy      string    `json:"created_by" api:"nullable"`
+	Description    string    `json:"description" api:"nullable"`
+	LastCommitHash string    `json:"last_commit_hash" api:"nullable"`
 	// Response model for get_commit_manifest.
-	LatestCommitManifest CommitManifestResponse `json:"latest_commit_manifest,nullable"`
-	LikedByAuthUser      bool                   `json:"liked_by_auth_user,nullable"`
-	OriginalRepoFullName string                 `json:"original_repo_full_name,nullable"`
-	OriginalRepoID       string                 `json:"original_repo_id,nullable" format:"uuid"`
-	Readme               string                 `json:"readme,nullable"`
-	UpstreamRepoFullName string                 `json:"upstream_repo_full_name,nullable"`
-	UpstreamRepoID       string                 `json:"upstream_repo_id,nullable" format:"uuid"`
+	LatestCommitManifest CommitManifestResponse `json:"latest_commit_manifest" api:"nullable"`
+	LikedByAuthUser      bool                   `json:"liked_by_auth_user" api:"nullable"`
+	OriginalRepoFullName string                 `json:"original_repo_full_name" api:"nullable"`
+	OriginalRepoID       string                 `json:"original_repo_id" api:"nullable" format:"uuid"`
+	Readme               string                 `json:"readme" api:"nullable"`
+	UpstreamRepoFullName string                 `json:"upstream_repo_full_name" api:"nullable"`
+	UpstreamRepoID       string                 `json:"upstream_repo_id" api:"nullable" format:"uuid"`
 	JSON                 repoWithLookupsJSON    `json:"-"`
 }
 
@@ -233,8 +233,8 @@ func (r repoWithLookupsJSON) RawJSON() string {
 type RepoDeleteResponse = interface{}
 
 type RepoNewParams struct {
-	IsPublic    param.Field[bool]     `json:"is_public,required"`
-	RepoHandle  param.Field[string]   `json:"repo_handle,required"`
+	IsPublic    param.Field[bool]     `json:"is_public" api:"required"`
+	RepoHandle  param.Field[string]   `json:"repo_handle" api:"required"`
 	Description param.Field[string]   `json:"description"`
 	Readme      param.Field[string]   `json:"readme"`
 	Tags        param.Field[[]string] `json:"tags"`

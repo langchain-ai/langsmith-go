@@ -147,17 +147,17 @@ func (r *PublicDatasetService) GetSessionsBulk(ctx context.Context, query Public
 // Doesn't currently include session counts/stats since public test project sharing
 // is not yet shipped
 type PublicDatasetListResponse struct {
-	ID           string    `json:"id,required" format:"uuid"`
-	ExampleCount int64     `json:"example_count,required"`
-	Name         string    `json:"name,required"`
+	ID           string    `json:"id" api:"required" format:"uuid"`
+	ExampleCount int64     `json:"example_count" api:"required"`
+	Name         string    `json:"name" api:"required"`
 	CreatedAt    time.Time `json:"created_at" format:"date-time"`
 	// Enum for dataset data types.
-	DataType                DataType                      `json:"data_type,nullable"`
-	Description             string                        `json:"description,nullable"`
-	ExternallyManaged       bool                          `json:"externally_managed,nullable"`
-	InputsSchemaDefinition  map[string]interface{}        `json:"inputs_schema_definition,nullable"`
-	OutputsSchemaDefinition map[string]interface{}        `json:"outputs_schema_definition,nullable"`
-	Transformations         []DatasetTransformation       `json:"transformations,nullable"`
+	DataType                DataType                      `json:"data_type" api:"nullable"`
+	Description             string                        `json:"description" api:"nullable"`
+	ExternallyManaged       bool                          `json:"externally_managed" api:"nullable"`
+	InputsSchemaDefinition  map[string]interface{}        `json:"inputs_schema_definition" api:"nullable"`
+	OutputsSchemaDefinition map[string]interface{}        `json:"outputs_schema_definition" api:"nullable"`
+	Transformations         []DatasetTransformation       `json:"transformations" api:"nullable"`
 	JSON                    publicDatasetListResponseJSON `json:"-"`
 }
 
@@ -188,14 +188,14 @@ func (r publicDatasetListResponseJSON) RawJSON() string {
 
 // Publicly-shared ComparativeExperiment schema.
 type PublicDatasetListComparativeResponse struct {
-	ID              string                                   `json:"id,required" format:"uuid"`
-	CreatedAt       time.Time                                `json:"created_at,required" format:"date-time"`
-	ExperimentsInfo []SimpleExperimentInfo                   `json:"experiments_info,required"`
-	ModifiedAt      time.Time                                `json:"modified_at,required" format:"date-time"`
-	Description     string                                   `json:"description,nullable"`
-	Extra           map[string]interface{}                   `json:"extra,nullable"`
-	FeedbackStats   map[string]interface{}                   `json:"feedback_stats,nullable"`
-	Name            string                                   `json:"name,nullable"`
+	ID              string                                   `json:"id" api:"required" format:"uuid"`
+	CreatedAt       time.Time                                `json:"created_at" api:"required" format:"date-time"`
+	ExperimentsInfo []SimpleExperimentInfo                   `json:"experiments_info" api:"required"`
+	ModifiedAt      time.Time                                `json:"modified_at" api:"required" format:"date-time"`
+	Description     string                                   `json:"description" api:"nullable"`
+	Extra           map[string]interface{}                   `json:"extra" api:"nullable"`
+	FeedbackStats   map[string]interface{}                   `json:"feedback_stats" api:"nullable"`
+	Name            string                                   `json:"name" api:"nullable"`
 	JSON            publicDatasetListComparativeResponseJSON `json:"-"`
 }
 
@@ -305,7 +305,7 @@ func (r PublicDatasetListSessionsParams) URLQuery() (v url.Values) {
 }
 
 type PublicDatasetGetSessionsBulkParams struct {
-	ShareTokens param.Field[[]string] `query:"share_tokens,required"`
+	ShareTokens param.Field[[]string] `query:"share_tokens" api:"required"`
 }
 
 // URLQuery serializes [PublicDatasetGetSessionsBulkParams]'s query parameters as
