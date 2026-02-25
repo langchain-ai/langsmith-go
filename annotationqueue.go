@@ -335,7 +335,7 @@ type RunSchemaWithAnnotationQueueInfo struct {
 	Name        string `json:"name" api:"required"`
 	QueueRunID  string `json:"queue_run_id" api:"required" format:"uuid"`
 	// Enum for run types.
-	RunType                RunSchemaWithAnnotationQueueInfoRunType   `json:"run_type" api:"required"`
+	RunType                RunTypeEnum                               `json:"run_type" api:"required"`
 	SessionID              string                                    `json:"session_id" api:"required" format:"uuid"`
 	Status                 string                                    `json:"status" api:"required"`
 	TraceID                string                                    `json:"trace_id" api:"required" format:"uuid"`
@@ -464,27 +464,6 @@ func (r *RunSchemaWithAnnotationQueueInfo) UnmarshalJSON(data []byte) (err error
 
 func (r runSchemaWithAnnotationQueueInfoJSON) RawJSON() string {
 	return r.raw
-}
-
-// Enum for run types.
-type RunSchemaWithAnnotationQueueInfoRunType string
-
-const (
-	RunSchemaWithAnnotationQueueInfoRunTypeTool      RunSchemaWithAnnotationQueueInfoRunType = "tool"
-	RunSchemaWithAnnotationQueueInfoRunTypeChain     RunSchemaWithAnnotationQueueInfoRunType = "chain"
-	RunSchemaWithAnnotationQueueInfoRunTypeLlm       RunSchemaWithAnnotationQueueInfoRunType = "llm"
-	RunSchemaWithAnnotationQueueInfoRunTypeRetriever RunSchemaWithAnnotationQueueInfoRunType = "retriever"
-	RunSchemaWithAnnotationQueueInfoRunTypeEmbedding RunSchemaWithAnnotationQueueInfoRunType = "embedding"
-	RunSchemaWithAnnotationQueueInfoRunTypePrompt    RunSchemaWithAnnotationQueueInfoRunType = "prompt"
-	RunSchemaWithAnnotationQueueInfoRunTypeParser    RunSchemaWithAnnotationQueueInfoRunType = "parser"
-)
-
-func (r RunSchemaWithAnnotationQueueInfoRunType) IsKnown() bool {
-	switch r {
-	case RunSchemaWithAnnotationQueueInfoRunTypeTool, RunSchemaWithAnnotationQueueInfoRunTypeChain, RunSchemaWithAnnotationQueueInfoRunTypeLlm, RunSchemaWithAnnotationQueueInfoRunTypeRetriever, RunSchemaWithAnnotationQueueInfoRunTypeEmbedding, RunSchemaWithAnnotationQueueInfoRunTypePrompt, RunSchemaWithAnnotationQueueInfoRunTypeParser:
-		return true
-	}
-	return false
 }
 
 type RunSchemaWithAnnotationQueueInfoTraceTier string

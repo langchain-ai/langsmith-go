@@ -53,7 +53,7 @@ func (r *RunService) New(ctx context.Context, body RunNewParams, opts ...option.
 }
 
 // Get a specific run.
-func (r *RunService) Get(ctx context.Context, runID string, query RunGetParams, opts ...option.RequestOption) (res *RunGetResponse, err error) {
+func (r *RunService) Get(ctx context.Context, runID string, query RunGetParams, opts ...option.RequestOption) (res *RunSchema, err error) {
 	opts = slices.Concat(r.Options, opts)
 	if runID == "" {
 		err = errors.New("missing required run_id parameter")
@@ -177,35 +177,14 @@ func (r RunRunType) IsKnown() bool {
 	return false
 }
 
-type RunNewResponse map[string]RunNewResponseItem
-
-type RunNewResponseItem struct {
-	JSON runNewResponseItemJSON `json:"-"`
-}
-
-// runNewResponseItemJSON contains the JSON metadata for the struct
-// [RunNewResponseItem]
-type runNewResponseItemJSON struct {
-	raw         string
-	ExtraFields map[string]apijson.Field
-}
-
-func (r *RunNewResponseItem) UnmarshalJSON(data []byte) (err error) {
-	return apijson.UnmarshalRoot(data, r)
-}
-
-func (r runNewResponseItemJSON) RawJSON() string {
-	return r.raw
-}
-
 // Run schema.
-type RunGetResponse struct {
+type RunSchema struct {
 	ID          string `json:"id" api:"required" format:"uuid"`
 	AppPath     string `json:"app_path" api:"required"`
 	DottedOrder string `json:"dotted_order" api:"required"`
 	Name        string `json:"name" api:"required"`
 	// Enum for run types.
-	RunType                RunGetResponseRunType             `json:"run_type" api:"required"`
+	RunType                RunTypeEnum                       `json:"run_type" api:"required"`
 	SessionID              string                            `json:"session_id" api:"required" format:"uuid"`
 	Status                 string                            `json:"status" api:"required"`
 	TraceID                string                            `json:"trace_id" api:"required" format:"uuid"`
@@ -253,14 +232,14 @@ type RunGetResponse struct {
 	TraceFirstReceivedAt   time.Time                         `json:"trace_first_received_at" api:"nullable" format:"date-time"`
 	TraceMaxStartTime      time.Time                         `json:"trace_max_start_time" api:"nullable" format:"date-time"`
 	TraceMinStartTime      time.Time                         `json:"trace_min_start_time" api:"nullable" format:"date-time"`
-	TraceTier              RunGetResponseTraceTier           `json:"trace_tier" api:"nullable"`
+	TraceTier              RunSchemaTraceTier                `json:"trace_tier" api:"nullable"`
 	TraceUpgrade           bool                              `json:"trace_upgrade"`
 	TtlSeconds             int64                             `json:"ttl_seconds" api:"nullable"`
-	JSON                   runGetResponseJSON                `json:"-"`
+	JSON                   runSchemaJSON                     `json:"-"`
 }
 
-// runGetResponseJSON contains the JSON metadata for the struct [RunGetResponse]
-type runGetResponseJSON struct {
+// runSchemaJSON contains the JSON metadata for the struct [RunSchema]
+type runSchemaJSON struct {
 	ID                     apijson.Field
 	AppPath                apijson.Field
 	DottedOrder            apijson.Field
@@ -320,48 +299,88 @@ type runGetResponseJSON struct {
 	ExtraFields            map[string]apijson.Field
 }
 
-func (r *RunGetResponse) UnmarshalJSON(data []byte) (err error) {
+func (r *RunSchema) UnmarshalJSON(data []byte) (err error) {
 	return apijson.UnmarshalRoot(data, r)
 }
 
-func (r runGetResponseJSON) RawJSON() string {
+func (r runSchemaJSON) RawJSON() string {
 	return r.raw
 }
 
-// Enum for run types.
-type RunGetResponseRunType string
+type RunSchemaTraceTier string
 
 const (
-	RunGetResponseRunTypeTool      RunGetResponseRunType = "tool"
-	RunGetResponseRunTypeChain     RunGetResponseRunType = "chain"
-	RunGetResponseRunTypeLlm       RunGetResponseRunType = "llm"
-	RunGetResponseRunTypeRetriever RunGetResponseRunType = "retriever"
-	RunGetResponseRunTypeEmbedding RunGetResponseRunType = "embedding"
-	RunGetResponseRunTypePrompt    RunGetResponseRunType = "prompt"
-	RunGetResponseRunTypeParser    RunGetResponseRunType = "parser"
+	RunSchemaTraceTierLonglived  RunSchemaTraceTier = "longlived"
+	RunSchemaTraceTierShortlived RunSchemaTraceTier = "shortlived"
 )
 
-func (r RunGetResponseRunType) IsKnown() bool {
+func (r RunSchemaTraceTier) IsKnown() bool {
 	switch r {
-	case RunGetResponseRunTypeTool, RunGetResponseRunTypeChain, RunGetResponseRunTypeLlm, RunGetResponseRunTypeRetriever, RunGetResponseRunTypeEmbedding, RunGetResponseRunTypePrompt, RunGetResponseRunTypeParser:
+	case RunSchemaTraceTierLonglived, RunSchemaTraceTierShortlived:
 		return true
 	}
 	return false
 }
 
-type RunGetResponseTraceTier string
+// Enum for run types.
+type RunTypeEnum string
 
 const (
-	RunGetResponseTraceTierLonglived  RunGetResponseTraceTier = "longlived"
-	RunGetResponseTraceTierShortlived RunGetResponseTraceTier = "shortlived"
+	RunTypeEnumTool      RunTypeEnum = "tool"
+	RunTypeEnumChain     RunTypeEnum = "chain"
+	RunTypeEnumLlm       RunTypeEnum = "llm"
+	RunTypeEnumRetriever RunTypeEnum = "retriever"
+	RunTypeEnumEmbedding RunTypeEnum = "embedding"
+	RunTypeEnumPrompt    RunTypeEnum = "prompt"
+	RunTypeEnumParser    RunTypeEnum = "parser"
 )
 
-func (r RunGetResponseTraceTier) IsKnown() bool {
+func (r RunTypeEnum) IsKnown() bool {
 	switch r {
-	case RunGetResponseTraceTierLonglived, RunGetResponseTraceTierShortlived:
+	case RunTypeEnumTool, RunTypeEnumChain, RunTypeEnumLlm, RunTypeEnumRetriever, RunTypeEnumEmbedding, RunTypeEnumPrompt, RunTypeEnumParser:
 		return true
 	}
 	return false
+}
+
+// Enum for run data source types.
+type RunsFilterDataSourceTypeEnum string
+
+const (
+	RunsFilterDataSourceTypeEnumCurrent              RunsFilterDataSourceTypeEnum = "current"
+	RunsFilterDataSourceTypeEnumHistorical           RunsFilterDataSourceTypeEnum = "historical"
+	RunsFilterDataSourceTypeEnumLite                 RunsFilterDataSourceTypeEnum = "lite"
+	RunsFilterDataSourceTypeEnumRootLite             RunsFilterDataSourceTypeEnum = "root_lite"
+	RunsFilterDataSourceTypeEnumRunsFeedbacksRmtWide RunsFilterDataSourceTypeEnum = "runs_feedbacks_rmt_wide"
+)
+
+func (r RunsFilterDataSourceTypeEnum) IsKnown() bool {
+	switch r {
+	case RunsFilterDataSourceTypeEnumCurrent, RunsFilterDataSourceTypeEnumHistorical, RunsFilterDataSourceTypeEnumLite, RunsFilterDataSourceTypeEnumRootLite, RunsFilterDataSourceTypeEnumRunsFeedbacksRmtWide:
+		return true
+	}
+	return false
+}
+
+type RunNewResponse map[string]RunNewResponseItem
+
+type RunNewResponseItem struct {
+	JSON runNewResponseItemJSON `json:"-"`
+}
+
+// runNewResponseItemJSON contains the JSON metadata for the struct
+// [RunNewResponseItem]
+type runNewResponseItemJSON struct {
+	raw         string
+	ExtraFields map[string]apijson.Field
+}
+
+func (r *RunNewResponseItem) UnmarshalJSON(data []byte) (err error) {
+	return apijson.UnmarshalRoot(data, r)
+}
+
+func (r runNewResponseItemJSON) RawJSON() string {
+	return r.raw
 }
 
 type RunUpdateResponse map[string]RunUpdateResponseItem
@@ -410,7 +429,7 @@ type RunIngestMultipartResponse map[string]string
 
 type RunQueryResponse struct {
 	Cursors       map[string]string      `json:"cursors" api:"required"`
-	Runs          []RunQueryResponseRun  `json:"runs" api:"required"`
+	Runs          []RunSchema            `json:"runs" api:"required"`
 	ParsedQuery   string                 `json:"parsed_query" api:"nullable"`
 	SearchCursors map[string]interface{} `json:"search_cursors" api:"nullable"`
 	JSON          runQueryResponseJSON   `json:"-"`
@@ -433,173 +452,6 @@ func (r *RunQueryResponse) UnmarshalJSON(data []byte) (err error) {
 
 func (r runQueryResponseJSON) RawJSON() string {
 	return r.raw
-}
-
-// Run schema.
-type RunQueryResponseRun struct {
-	ID          string `json:"id" api:"required" format:"uuid"`
-	AppPath     string `json:"app_path" api:"required"`
-	DottedOrder string `json:"dotted_order" api:"required"`
-	Name        string `json:"name" api:"required"`
-	// Enum for run types.
-	RunType                RunQueryResponseRunsRunType       `json:"run_type" api:"required"`
-	SessionID              string                            `json:"session_id" api:"required" format:"uuid"`
-	Status                 string                            `json:"status" api:"required"`
-	TraceID                string                            `json:"trace_id" api:"required" format:"uuid"`
-	ChildRunIDs            []string                          `json:"child_run_ids" api:"nullable" format:"uuid"`
-	CompletionCost         string                            `json:"completion_cost" api:"nullable"`
-	CompletionCostDetails  map[string]string                 `json:"completion_cost_details" api:"nullable"`
-	CompletionTokenDetails map[string]int64                  `json:"completion_token_details" api:"nullable"`
-	CompletionTokens       int64                             `json:"completion_tokens"`
-	DirectChildRunIDs      []string                          `json:"direct_child_run_ids" api:"nullable" format:"uuid"`
-	EndTime                time.Time                         `json:"end_time" api:"nullable" format:"date-time"`
-	Error                  string                            `json:"error" api:"nullable"`
-	Events                 []map[string]interface{}          `json:"events" api:"nullable"`
-	ExecutionOrder         int64                             `json:"execution_order"`
-	Extra                  map[string]interface{}            `json:"extra" api:"nullable"`
-	FeedbackStats          map[string]map[string]interface{} `json:"feedback_stats" api:"nullable"`
-	FirstTokenTime         time.Time                         `json:"first_token_time" api:"nullable" format:"date-time"`
-	InDataset              bool                              `json:"in_dataset" api:"nullable"`
-	Inputs                 map[string]interface{}            `json:"inputs" api:"nullable"`
-	InputsPreview          string                            `json:"inputs_preview" api:"nullable"`
-	InputsS3URLs           map[string]interface{}            `json:"inputs_s3_urls" api:"nullable"`
-	LastQueuedAt           time.Time                         `json:"last_queued_at" api:"nullable" format:"date-time"`
-	ManifestID             string                            `json:"manifest_id" api:"nullable" format:"uuid"`
-	ManifestS3ID           string                            `json:"manifest_s3_id" api:"nullable" format:"uuid"`
-	Messages               []map[string]interface{}          `json:"messages" api:"nullable"`
-	Outputs                map[string]interface{}            `json:"outputs" api:"nullable"`
-	OutputsPreview         string                            `json:"outputs_preview" api:"nullable"`
-	OutputsS3URLs          map[string]interface{}            `json:"outputs_s3_urls" api:"nullable"`
-	ParentRunID            string                            `json:"parent_run_id" api:"nullable" format:"uuid"`
-	ParentRunIDs           []string                          `json:"parent_run_ids" api:"nullable" format:"uuid"`
-	PriceModelID           string                            `json:"price_model_id" api:"nullable" format:"uuid"`
-	PromptCost             string                            `json:"prompt_cost" api:"nullable"`
-	PromptCostDetails      map[string]string                 `json:"prompt_cost_details" api:"nullable"`
-	PromptTokenDetails     map[string]int64                  `json:"prompt_token_details" api:"nullable"`
-	PromptTokens           int64                             `json:"prompt_tokens"`
-	ReferenceDatasetID     string                            `json:"reference_dataset_id" api:"nullable" format:"uuid"`
-	ReferenceExampleID     string                            `json:"reference_example_id" api:"nullable" format:"uuid"`
-	S3URLs                 map[string]interface{}            `json:"s3_urls" api:"nullable"`
-	Serialized             map[string]interface{}            `json:"serialized" api:"nullable"`
-	ShareToken             string                            `json:"share_token" api:"nullable" format:"uuid"`
-	StartTime              time.Time                         `json:"start_time" format:"date-time"`
-	Tags                   []string                          `json:"tags" api:"nullable"`
-	ThreadID               string                            `json:"thread_id" api:"nullable"`
-	TotalCost              string                            `json:"total_cost" api:"nullable"`
-	TotalTokens            int64                             `json:"total_tokens"`
-	TraceFirstReceivedAt   time.Time                         `json:"trace_first_received_at" api:"nullable" format:"date-time"`
-	TraceMaxStartTime      time.Time                         `json:"trace_max_start_time" api:"nullable" format:"date-time"`
-	TraceMinStartTime      time.Time                         `json:"trace_min_start_time" api:"nullable" format:"date-time"`
-	TraceTier              RunQueryResponseRunsTraceTier     `json:"trace_tier" api:"nullable"`
-	TraceUpgrade           bool                              `json:"trace_upgrade"`
-	TtlSeconds             int64                             `json:"ttl_seconds" api:"nullable"`
-	JSON                   runQueryResponseRunJSON           `json:"-"`
-}
-
-// runQueryResponseRunJSON contains the JSON metadata for the struct
-// [RunQueryResponseRun]
-type runQueryResponseRunJSON struct {
-	ID                     apijson.Field
-	AppPath                apijson.Field
-	DottedOrder            apijson.Field
-	Name                   apijson.Field
-	RunType                apijson.Field
-	SessionID              apijson.Field
-	Status                 apijson.Field
-	TraceID                apijson.Field
-	ChildRunIDs            apijson.Field
-	CompletionCost         apijson.Field
-	CompletionCostDetails  apijson.Field
-	CompletionTokenDetails apijson.Field
-	CompletionTokens       apijson.Field
-	DirectChildRunIDs      apijson.Field
-	EndTime                apijson.Field
-	Error                  apijson.Field
-	Events                 apijson.Field
-	ExecutionOrder         apijson.Field
-	Extra                  apijson.Field
-	FeedbackStats          apijson.Field
-	FirstTokenTime         apijson.Field
-	InDataset              apijson.Field
-	Inputs                 apijson.Field
-	InputsPreview          apijson.Field
-	InputsS3URLs           apijson.Field
-	LastQueuedAt           apijson.Field
-	ManifestID             apijson.Field
-	ManifestS3ID           apijson.Field
-	Messages               apijson.Field
-	Outputs                apijson.Field
-	OutputsPreview         apijson.Field
-	OutputsS3URLs          apijson.Field
-	ParentRunID            apijson.Field
-	ParentRunIDs           apijson.Field
-	PriceModelID           apijson.Field
-	PromptCost             apijson.Field
-	PromptCostDetails      apijson.Field
-	PromptTokenDetails     apijson.Field
-	PromptTokens           apijson.Field
-	ReferenceDatasetID     apijson.Field
-	ReferenceExampleID     apijson.Field
-	S3URLs                 apijson.Field
-	Serialized             apijson.Field
-	ShareToken             apijson.Field
-	StartTime              apijson.Field
-	Tags                   apijson.Field
-	ThreadID               apijson.Field
-	TotalCost              apijson.Field
-	TotalTokens            apijson.Field
-	TraceFirstReceivedAt   apijson.Field
-	TraceMaxStartTime      apijson.Field
-	TraceMinStartTime      apijson.Field
-	TraceTier              apijson.Field
-	TraceUpgrade           apijson.Field
-	TtlSeconds             apijson.Field
-	raw                    string
-	ExtraFields            map[string]apijson.Field
-}
-
-func (r *RunQueryResponseRun) UnmarshalJSON(data []byte) (err error) {
-	return apijson.UnmarshalRoot(data, r)
-}
-
-func (r runQueryResponseRunJSON) RawJSON() string {
-	return r.raw
-}
-
-// Enum for run types.
-type RunQueryResponseRunsRunType string
-
-const (
-	RunQueryResponseRunsRunTypeTool      RunQueryResponseRunsRunType = "tool"
-	RunQueryResponseRunsRunTypeChain     RunQueryResponseRunsRunType = "chain"
-	RunQueryResponseRunsRunTypeLlm       RunQueryResponseRunsRunType = "llm"
-	RunQueryResponseRunsRunTypeRetriever RunQueryResponseRunsRunType = "retriever"
-	RunQueryResponseRunsRunTypeEmbedding RunQueryResponseRunsRunType = "embedding"
-	RunQueryResponseRunsRunTypePrompt    RunQueryResponseRunsRunType = "prompt"
-	RunQueryResponseRunsRunTypeParser    RunQueryResponseRunsRunType = "parser"
-)
-
-func (r RunQueryResponseRunsRunType) IsKnown() bool {
-	switch r {
-	case RunQueryResponseRunsRunTypeTool, RunQueryResponseRunsRunTypeChain, RunQueryResponseRunsRunTypeLlm, RunQueryResponseRunsRunTypeRetriever, RunQueryResponseRunsRunTypeEmbedding, RunQueryResponseRunsRunTypePrompt, RunQueryResponseRunsRunTypeParser:
-		return true
-	}
-	return false
-}
-
-type RunQueryResponseRunsTraceTier string
-
-const (
-	RunQueryResponseRunsTraceTierLonglived  RunQueryResponseRunsTraceTier = "longlived"
-	RunQueryResponseRunsTraceTierShortlived RunQueryResponseRunsTraceTier = "shortlived"
-)
-
-func (r RunQueryResponseRunsTraceTier) IsKnown() bool {
-	switch r {
-	case RunQueryResponseRunsTraceTierLonglived, RunQueryResponseRunsTraceTierShortlived:
-		return true
-	}
-	return false
 }
 
 type RunUpdate2Response = interface{}
@@ -679,7 +531,7 @@ type RunQueryParams struct {
 	ID     param.Field[[]string] `json:"id" format:"uuid"`
 	Cursor param.Field[string]   `json:"cursor"`
 	// Enum for run data source types.
-	DataSourceType param.Field[RunQueryParamsDataSourceType] `json:"data_source_type"`
+	DataSourceType param.Field[RunsFilterDataSourceTypeEnum] `json:"data_source_type"`
 	EndTime        param.Field[time.Time]                    `json:"end_time" format:"date-time"`
 	Error          param.Field[bool]                         `json:"error"`
 	ExecutionOrder param.Field[int64]                        `json:"execution_order"`
@@ -692,7 +544,7 @@ type RunQueryParams struct {
 	Query            param.Field[string]              `json:"query"`
 	ReferenceExample param.Field[[]string]            `json:"reference_example" format:"uuid"`
 	// Enum for run types.
-	RunType               param.Field[RunQueryParamsRunType]  `json:"run_type"`
+	RunType               param.Field[RunTypeEnum]            `json:"run_type"`
 	SearchFilter          param.Field[string]                 `json:"search_filter"`
 	Select                param.Field[[]RunQueryParamsSelect] `json:"select"`
 	Session               param.Field[[]string]               `json:"session" format:"uuid"`
@@ -709,25 +561,6 @@ func (r RunQueryParams) MarshalJSON() (data []byte, err error) {
 	return apijson.MarshalRoot(r)
 }
 
-// Enum for run data source types.
-type RunQueryParamsDataSourceType string
-
-const (
-	RunQueryParamsDataSourceTypeCurrent              RunQueryParamsDataSourceType = "current"
-	RunQueryParamsDataSourceTypeHistorical           RunQueryParamsDataSourceType = "historical"
-	RunQueryParamsDataSourceTypeLite                 RunQueryParamsDataSourceType = "lite"
-	RunQueryParamsDataSourceTypeRootLite             RunQueryParamsDataSourceType = "root_lite"
-	RunQueryParamsDataSourceTypeRunsFeedbacksRmtWide RunQueryParamsDataSourceType = "runs_feedbacks_rmt_wide"
-)
-
-func (r RunQueryParamsDataSourceType) IsKnown() bool {
-	switch r {
-	case RunQueryParamsDataSourceTypeCurrent, RunQueryParamsDataSourceTypeHistorical, RunQueryParamsDataSourceTypeLite, RunQueryParamsDataSourceTypeRootLite, RunQueryParamsDataSourceTypeRunsFeedbacksRmtWide:
-		return true
-	}
-	return false
-}
-
 // Enum for run start date order.
 type RunQueryParamsOrder string
 
@@ -739,27 +572,6 @@ const (
 func (r RunQueryParamsOrder) IsKnown() bool {
 	switch r {
 	case RunQueryParamsOrderAsc, RunQueryParamsOrderDesc:
-		return true
-	}
-	return false
-}
-
-// Enum for run types.
-type RunQueryParamsRunType string
-
-const (
-	RunQueryParamsRunTypeTool      RunQueryParamsRunType = "tool"
-	RunQueryParamsRunTypeChain     RunQueryParamsRunType = "chain"
-	RunQueryParamsRunTypeLlm       RunQueryParamsRunType = "llm"
-	RunQueryParamsRunTypeRetriever RunQueryParamsRunType = "retriever"
-	RunQueryParamsRunTypeEmbedding RunQueryParamsRunType = "embedding"
-	RunQueryParamsRunTypePrompt    RunQueryParamsRunType = "prompt"
-	RunQueryParamsRunTypeParser    RunQueryParamsRunType = "parser"
-)
-
-func (r RunQueryParamsRunType) IsKnown() bool {
-	switch r {
-	case RunQueryParamsRunTypeTool, RunQueryParamsRunTypeChain, RunQueryParamsRunTypeLlm, RunQueryParamsRunTypeRetriever, RunQueryParamsRunTypeEmbedding, RunQueryParamsRunTypePrompt, RunQueryParamsRunTypeParser:
 		return true
 	}
 	return false
