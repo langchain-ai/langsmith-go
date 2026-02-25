@@ -11,6 +11,7 @@ import (
 	"mime/multipart"
 	"net/http"
 	"net/url"
+	"reflect"
 	"slices"
 	"time"
 
@@ -20,6 +21,7 @@ import (
 	"github.com/langchain-ai/langsmith-go/internal/param"
 	"github.com/langchain-ai/langsmith-go/internal/requestconfig"
 	"github.com/langchain-ai/langsmith-go/option"
+	"github.com/tidwall/gjson"
 )
 
 // RunService contains methods and other services that help with interacting with
@@ -114,6 +116,19 @@ func (r *RunService) Query(ctx context.Context, body RunQueryParams, opts ...opt
 	opts = slices.Concat(r.Options, opts)
 	path := "api/v1/runs/query"
 	err = requestconfig.ExecuteNewRequest(ctx, http.MethodPost, path, body, &res, opts...)
+	return
+}
+
+// Get all runs by query in body payload.
+func (r *RunService) Stats(ctx context.Context, body RunStatsParams, opts ...option.RequestOption) (res *RunStatsResponseUnion, err error) {
+	var env apijson.UnionUnmarshaler[RunStatsResponseUnion]
+	opts = slices.Concat(r.Options, opts)
+	path := "api/v1/runs/stats"
+	err = requestconfig.ExecuteNewRequest(ctx, http.MethodPost, path, body, &env, opts...)
+	if err != nil {
+		return
+	}
+	res = &env.Value
 	return
 }
 
@@ -322,6 +337,86 @@ func (r RunSchemaTraceTier) IsKnown() bool {
 	return false
 }
 
+// Query params for run stats.
+type RunStatsQueryParams struct {
+	ID param.Field[[]string] `json:"id" format:"uuid"`
+	// Enum for run data source types.
+	DataSourceType param.Field[RunsFilterDataSourceTypeEnum] `json:"data_source_type"`
+	EndTime        param.Field[time.Time]                    `json:"end_time" format:"date-time"`
+	Error          param.Field[bool]                         `json:"error"`
+	ExecutionOrder param.Field[int64]                        `json:"execution_order"`
+	Filter         param.Field[string]                       `json:"filter"`
+	// Group by param for run stats.
+	GroupBy          param.Field[RunStatsGroupByParam] `json:"group_by"`
+	Groups           param.Field[[]string]             `json:"groups"`
+	IsRoot           param.Field[bool]                 `json:"is_root"`
+	ParentRun        param.Field[string]               `json:"parent_run" format:"uuid"`
+	Query            param.Field[string]               `json:"query"`
+	ReferenceExample param.Field[[]string]             `json:"reference_example" format:"uuid"`
+	// Enum for run types.
+	RunType               param.Field[RunTypeEnum]                 `json:"run_type"`
+	SearchFilter          param.Field[string]                      `json:"search_filter"`
+	Select                param.Field[[]RunStatsQueryParamsSelect] `json:"select"`
+	Session               param.Field[[]string]                    `json:"session" format:"uuid"`
+	SkipPagination        param.Field[bool]                        `json:"skip_pagination"`
+	StartTime             param.Field[time.Time]                   `json:"start_time" format:"date-time"`
+	Trace                 param.Field[string]                      `json:"trace" format:"uuid"`
+	TraceFilter           param.Field[string]                      `json:"trace_filter"`
+	TreeFilter            param.Field[string]                      `json:"tree_filter"`
+	UseExperimentalSearch param.Field[bool]                        `json:"use_experimental_search"`
+}
+
+func (r RunStatsQueryParams) MarshalJSON() (data []byte, err error) {
+	return apijson.MarshalRoot(r)
+}
+
+// Metrics you can select from run stats endpoint.
+type RunStatsQueryParamsSelect string
+
+const (
+	RunStatsQueryParamsSelectRunCount               RunStatsQueryParamsSelect = "run_count"
+	RunStatsQueryParamsSelectLatencyP50             RunStatsQueryParamsSelect = "latency_p50"
+	RunStatsQueryParamsSelectLatencyP99             RunStatsQueryParamsSelect = "latency_p99"
+	RunStatsQueryParamsSelectLatencyAvg             RunStatsQueryParamsSelect = "latency_avg"
+	RunStatsQueryParamsSelectFirstTokenP50          RunStatsQueryParamsSelect = "first_token_p50"
+	RunStatsQueryParamsSelectFirstTokenP99          RunStatsQueryParamsSelect = "first_token_p99"
+	RunStatsQueryParamsSelectTotalTokens            RunStatsQueryParamsSelect = "total_tokens"
+	RunStatsQueryParamsSelectPromptTokens           RunStatsQueryParamsSelect = "prompt_tokens"
+	RunStatsQueryParamsSelectCompletionTokens       RunStatsQueryParamsSelect = "completion_tokens"
+	RunStatsQueryParamsSelectMedianTokens           RunStatsQueryParamsSelect = "median_tokens"
+	RunStatsQueryParamsSelectCompletionTokensP50    RunStatsQueryParamsSelect = "completion_tokens_p50"
+	RunStatsQueryParamsSelectPromptTokensP50        RunStatsQueryParamsSelect = "prompt_tokens_p50"
+	RunStatsQueryParamsSelectTokensP99              RunStatsQueryParamsSelect = "tokens_p99"
+	RunStatsQueryParamsSelectCompletionTokensP99    RunStatsQueryParamsSelect = "completion_tokens_p99"
+	RunStatsQueryParamsSelectPromptTokensP99        RunStatsQueryParamsSelect = "prompt_tokens_p99"
+	RunStatsQueryParamsSelectLastRunStartTime       RunStatsQueryParamsSelect = "last_run_start_time"
+	RunStatsQueryParamsSelectFeedbackStats          RunStatsQueryParamsSelect = "feedback_stats"
+	RunStatsQueryParamsSelectThreadFeedbackStats    RunStatsQueryParamsSelect = "thread_feedback_stats"
+	RunStatsQueryParamsSelectRunFacets              RunStatsQueryParamsSelect = "run_facets"
+	RunStatsQueryParamsSelectErrorRate              RunStatsQueryParamsSelect = "error_rate"
+	RunStatsQueryParamsSelectStreamingRate          RunStatsQueryParamsSelect = "streaming_rate"
+	RunStatsQueryParamsSelectTotalCost              RunStatsQueryParamsSelect = "total_cost"
+	RunStatsQueryParamsSelectPromptCost             RunStatsQueryParamsSelect = "prompt_cost"
+	RunStatsQueryParamsSelectCompletionCost         RunStatsQueryParamsSelect = "completion_cost"
+	RunStatsQueryParamsSelectCostP50                RunStatsQueryParamsSelect = "cost_p50"
+	RunStatsQueryParamsSelectCostP99                RunStatsQueryParamsSelect = "cost_p99"
+	RunStatsQueryParamsSelectSessionFeedbackStats   RunStatsQueryParamsSelect = "session_feedback_stats"
+	RunStatsQueryParamsSelectAllRunStats            RunStatsQueryParamsSelect = "all_run_stats"
+	RunStatsQueryParamsSelectAllTokenStats          RunStatsQueryParamsSelect = "all_token_stats"
+	RunStatsQueryParamsSelectPromptTokenDetails     RunStatsQueryParamsSelect = "prompt_token_details"
+	RunStatsQueryParamsSelectCompletionTokenDetails RunStatsQueryParamsSelect = "completion_token_details"
+	RunStatsQueryParamsSelectPromptCostDetails      RunStatsQueryParamsSelect = "prompt_cost_details"
+	RunStatsQueryParamsSelectCompletionCostDetails  RunStatsQueryParamsSelect = "completion_cost_details"
+)
+
+func (r RunStatsQueryParamsSelect) IsKnown() bool {
+	switch r {
+	case RunStatsQueryParamsSelectRunCount, RunStatsQueryParamsSelectLatencyP50, RunStatsQueryParamsSelectLatencyP99, RunStatsQueryParamsSelectLatencyAvg, RunStatsQueryParamsSelectFirstTokenP50, RunStatsQueryParamsSelectFirstTokenP99, RunStatsQueryParamsSelectTotalTokens, RunStatsQueryParamsSelectPromptTokens, RunStatsQueryParamsSelectCompletionTokens, RunStatsQueryParamsSelectMedianTokens, RunStatsQueryParamsSelectCompletionTokensP50, RunStatsQueryParamsSelectPromptTokensP50, RunStatsQueryParamsSelectTokensP99, RunStatsQueryParamsSelectCompletionTokensP99, RunStatsQueryParamsSelectPromptTokensP99, RunStatsQueryParamsSelectLastRunStartTime, RunStatsQueryParamsSelectFeedbackStats, RunStatsQueryParamsSelectThreadFeedbackStats, RunStatsQueryParamsSelectRunFacets, RunStatsQueryParamsSelectErrorRate, RunStatsQueryParamsSelectStreamingRate, RunStatsQueryParamsSelectTotalCost, RunStatsQueryParamsSelectPromptCost, RunStatsQueryParamsSelectCompletionCost, RunStatsQueryParamsSelectCostP50, RunStatsQueryParamsSelectCostP99, RunStatsQueryParamsSelectSessionFeedbackStats, RunStatsQueryParamsSelectAllRunStats, RunStatsQueryParamsSelectAllTokenStats, RunStatsQueryParamsSelectPromptTokenDetails, RunStatsQueryParamsSelectCompletionTokenDetails, RunStatsQueryParamsSelectPromptCostDetails, RunStatsQueryParamsSelectCompletionCostDetails:
+		return true
+	}
+	return false
+}
+
 // Enum for run types.
 type RunTypeEnum string
 
@@ -451,6 +546,182 @@ func (r *RunQueryResponse) UnmarshalJSON(data []byte) (err error) {
 }
 
 func (r runQueryResponseJSON) RawJSON() string {
+	return r.raw
+}
+
+// Union satisfied by [RunStatsResponseRunStats] or [RunStatsResponseMap].
+type RunStatsResponseUnion interface {
+	implementsRunStatsResponseUnion()
+}
+
+func init() {
+	apijson.RegisterUnion(
+		reflect.TypeOf((*RunStatsResponseUnion)(nil)).Elem(),
+		"",
+		apijson.UnionVariant{
+			TypeFilter: gjson.JSON,
+			Type:       reflect.TypeOf(RunStatsResponseRunStats{}),
+		},
+		apijson.UnionVariant{
+			TypeFilter: gjson.JSON,
+			Type:       reflect.TypeOf(RunStatsResponseMap{}),
+		},
+	)
+}
+
+type RunStatsResponseRunStats struct {
+	CompletionCost         string                       `json:"completion_cost" api:"nullable"`
+	CompletionCostDetails  map[string]interface{}       `json:"completion_cost_details" api:"nullable"`
+	CompletionTokenDetails map[string]interface{}       `json:"completion_token_details" api:"nullable"`
+	CompletionTokens       int64                        `json:"completion_tokens" api:"nullable"`
+	CompletionTokensP50    int64                        `json:"completion_tokens_p50" api:"nullable"`
+	CompletionTokensP99    int64                        `json:"completion_tokens_p99" api:"nullable"`
+	CostP50                string                       `json:"cost_p50" api:"nullable"`
+	CostP99                string                       `json:"cost_p99" api:"nullable"`
+	ErrorRate              float64                      `json:"error_rate" api:"nullable"`
+	FeedbackStats          map[string]interface{}       `json:"feedback_stats" api:"nullable"`
+	FirstTokenP50          float64                      `json:"first_token_p50" api:"nullable"`
+	FirstTokenP99          float64                      `json:"first_token_p99" api:"nullable"`
+	LastRunStartTime       time.Time                    `json:"last_run_start_time" api:"nullable" format:"date-time"`
+	LatencyP50             float64                      `json:"latency_p50" api:"nullable"`
+	LatencyP99             float64                      `json:"latency_p99" api:"nullable"`
+	MedianTokens           int64                        `json:"median_tokens" api:"nullable"`
+	PromptCost             string                       `json:"prompt_cost" api:"nullable"`
+	PromptCostDetails      map[string]interface{}       `json:"prompt_cost_details" api:"nullable"`
+	PromptTokenDetails     map[string]interface{}       `json:"prompt_token_details" api:"nullable"`
+	PromptTokens           int64                        `json:"prompt_tokens" api:"nullable"`
+	PromptTokensP50        int64                        `json:"prompt_tokens_p50" api:"nullable"`
+	PromptTokensP99        int64                        `json:"prompt_tokens_p99" api:"nullable"`
+	RunCount               int64                        `json:"run_count" api:"nullable"`
+	RunFacets              []map[string]interface{}     `json:"run_facets" api:"nullable"`
+	StreamingRate          float64                      `json:"streaming_rate" api:"nullable"`
+	TokensP99              int64                        `json:"tokens_p99" api:"nullable"`
+	TotalCost              string                       `json:"total_cost" api:"nullable"`
+	TotalTokens            int64                        `json:"total_tokens" api:"nullable"`
+	JSON                   runStatsResponseRunStatsJSON `json:"-"`
+}
+
+// runStatsResponseRunStatsJSON contains the JSON metadata for the struct
+// [RunStatsResponseRunStats]
+type runStatsResponseRunStatsJSON struct {
+	CompletionCost         apijson.Field
+	CompletionCostDetails  apijson.Field
+	CompletionTokenDetails apijson.Field
+	CompletionTokens       apijson.Field
+	CompletionTokensP50    apijson.Field
+	CompletionTokensP99    apijson.Field
+	CostP50                apijson.Field
+	CostP99                apijson.Field
+	ErrorRate              apijson.Field
+	FeedbackStats          apijson.Field
+	FirstTokenP50          apijson.Field
+	FirstTokenP99          apijson.Field
+	LastRunStartTime       apijson.Field
+	LatencyP50             apijson.Field
+	LatencyP99             apijson.Field
+	MedianTokens           apijson.Field
+	PromptCost             apijson.Field
+	PromptCostDetails      apijson.Field
+	PromptTokenDetails     apijson.Field
+	PromptTokens           apijson.Field
+	PromptTokensP50        apijson.Field
+	PromptTokensP99        apijson.Field
+	RunCount               apijson.Field
+	RunFacets              apijson.Field
+	StreamingRate          apijson.Field
+	TokensP99              apijson.Field
+	TotalCost              apijson.Field
+	TotalTokens            apijson.Field
+	raw                    string
+	ExtraFields            map[string]apijson.Field
+}
+
+func (r *RunStatsResponseRunStats) UnmarshalJSON(data []byte) (err error) {
+	return apijson.UnmarshalRoot(data, r)
+}
+
+func (r runStatsResponseRunStatsJSON) RawJSON() string {
+	return r.raw
+}
+
+func (r RunStatsResponseRunStats) implementsRunStatsResponseUnion() {}
+
+type RunStatsResponseMap map[string]RunStatsResponseMapItem
+
+func (r RunStatsResponseMap) implementsRunStatsResponseUnion() {}
+
+type RunStatsResponseMapItem struct {
+	CompletionCost         string                      `json:"completion_cost" api:"nullable"`
+	CompletionCostDetails  map[string]interface{}      `json:"completion_cost_details" api:"nullable"`
+	CompletionTokenDetails map[string]interface{}      `json:"completion_token_details" api:"nullable"`
+	CompletionTokens       int64                       `json:"completion_tokens" api:"nullable"`
+	CompletionTokensP50    int64                       `json:"completion_tokens_p50" api:"nullable"`
+	CompletionTokensP99    int64                       `json:"completion_tokens_p99" api:"nullable"`
+	CostP50                string                      `json:"cost_p50" api:"nullable"`
+	CostP99                string                      `json:"cost_p99" api:"nullable"`
+	ErrorRate              float64                     `json:"error_rate" api:"nullable"`
+	FeedbackStats          map[string]interface{}      `json:"feedback_stats" api:"nullable"`
+	FirstTokenP50          float64                     `json:"first_token_p50" api:"nullable"`
+	FirstTokenP99          float64                     `json:"first_token_p99" api:"nullable"`
+	LastRunStartTime       time.Time                   `json:"last_run_start_time" api:"nullable" format:"date-time"`
+	LatencyP50             float64                     `json:"latency_p50" api:"nullable"`
+	LatencyP99             float64                     `json:"latency_p99" api:"nullable"`
+	MedianTokens           int64                       `json:"median_tokens" api:"nullable"`
+	PromptCost             string                      `json:"prompt_cost" api:"nullable"`
+	PromptCostDetails      map[string]interface{}      `json:"prompt_cost_details" api:"nullable"`
+	PromptTokenDetails     map[string]interface{}      `json:"prompt_token_details" api:"nullable"`
+	PromptTokens           int64                       `json:"prompt_tokens" api:"nullable"`
+	PromptTokensP50        int64                       `json:"prompt_tokens_p50" api:"nullable"`
+	PromptTokensP99        int64                       `json:"prompt_tokens_p99" api:"nullable"`
+	RunCount               int64                       `json:"run_count" api:"nullable"`
+	RunFacets              []map[string]interface{}    `json:"run_facets" api:"nullable"`
+	StreamingRate          float64                     `json:"streaming_rate" api:"nullable"`
+	TokensP99              int64                       `json:"tokens_p99" api:"nullable"`
+	TotalCost              string                      `json:"total_cost" api:"nullable"`
+	TotalTokens            int64                       `json:"total_tokens" api:"nullable"`
+	JSON                   runStatsResponseMapItemJSON `json:"-"`
+}
+
+// runStatsResponseMapItemJSON contains the JSON metadata for the struct
+// [RunStatsResponseMapItem]
+type runStatsResponseMapItemJSON struct {
+	CompletionCost         apijson.Field
+	CompletionCostDetails  apijson.Field
+	CompletionTokenDetails apijson.Field
+	CompletionTokens       apijson.Field
+	CompletionTokensP50    apijson.Field
+	CompletionTokensP99    apijson.Field
+	CostP50                apijson.Field
+	CostP99                apijson.Field
+	ErrorRate              apijson.Field
+	FeedbackStats          apijson.Field
+	FirstTokenP50          apijson.Field
+	FirstTokenP99          apijson.Field
+	LastRunStartTime       apijson.Field
+	LatencyP50             apijson.Field
+	LatencyP99             apijson.Field
+	MedianTokens           apijson.Field
+	PromptCost             apijson.Field
+	PromptCostDetails      apijson.Field
+	PromptTokenDetails     apijson.Field
+	PromptTokens           apijson.Field
+	PromptTokensP50        apijson.Field
+	PromptTokensP99        apijson.Field
+	RunCount               apijson.Field
+	RunFacets              apijson.Field
+	StreamingRate          apijson.Field
+	TokensP99              apijson.Field
+	TotalCost              apijson.Field
+	TotalTokens            apijson.Field
+	raw                    string
+	ExtraFields            map[string]apijson.Field
+}
+
+func (r *RunStatsResponseMapItem) UnmarshalJSON(data []byte) (err error) {
+	return apijson.UnmarshalRoot(data, r)
+}
+
+func (r runStatsResponseMapItemJSON) RawJSON() string {
 	return r.raw
 }
 
@@ -649,4 +920,13 @@ func (r RunQueryParamsSelect) IsKnown() bool {
 		return true
 	}
 	return false
+}
+
+type RunStatsParams struct {
+	// Query params for run stats.
+	RunStatsQueryParams RunStatsQueryParams `json:"run_stats_query_params" api:"required"`
+}
+
+func (r RunStatsParams) MarshalJSON() (data []byte, err error) {
+	return apijson.MarshalRoot(r.RunStatsQueryParams)
 }

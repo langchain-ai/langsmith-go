@@ -363,6 +363,60 @@ func TestRunQueryWithOptionalParams(t *testing.T) {
 	}
 }
 
+func TestRunStatsWithOptionalParams(t *testing.T) {
+	t.Skip("Mock server tests are disabled")
+	baseURL := "http://localhost:4010"
+	if envURL, ok := os.LookupEnv("TEST_API_BASE_URL"); ok {
+		baseURL = envURL
+	}
+	if !testutil.CheckTestServer(t, baseURL) {
+		return
+	}
+	client := langsmith.NewClient(
+		option.WithBaseURL(baseURL),
+		option.WithAPIKey("My API Key"),
+		option.WithTenantID("My Tenant ID"),
+		option.WithOrganizationID("My Organization ID"),
+	)
+	_, err := client.Runs.Stats(context.TODO(), langsmith.RunStatsParams{
+		RunStatsQueryParams: langsmith.RunStatsQueryParams{
+			ID:             langsmith.F([]string{"182bd5e5-6e1a-4fe4-a799-aa6d9a6ab26e"}),
+			DataSourceType: langsmith.F(langsmith.RunsFilterDataSourceTypeEnumCurrent),
+			EndTime:        langsmith.F(time.Now()),
+			Error:          langsmith.F(true),
+			ExecutionOrder: langsmith.F(int64(1)),
+			Filter:         langsmith.F("filter"),
+			GroupBy: langsmith.F(langsmith.RunStatsGroupByParam{
+				Attribute: langsmith.F(langsmith.RunStatsGroupByAttributeName),
+				MaxGroups: langsmith.F(int64(0)),
+				Path:      langsmith.F("path"),
+			}),
+			Groups:                langsmith.F([]string{"string"}),
+			IsRoot:                langsmith.F(true),
+			ParentRun:             langsmith.F("182bd5e5-6e1a-4fe4-a799-aa6d9a6ab26e"),
+			Query:                 langsmith.F("query"),
+			ReferenceExample:      langsmith.F([]string{"182bd5e5-6e1a-4fe4-a799-aa6d9a6ab26e"}),
+			RunType:               langsmith.F(langsmith.RunTypeEnumTool),
+			SearchFilter:          langsmith.F("search_filter"),
+			Select:                langsmith.F([]langsmith.RunStatsQueryParamsSelect{langsmith.RunStatsQueryParamsSelectRunCount}),
+			Session:               langsmith.F([]string{"182bd5e5-6e1a-4fe4-a799-aa6d9a6ab26e"}),
+			SkipPagination:        langsmith.F(true),
+			StartTime:             langsmith.F(time.Now()),
+			Trace:                 langsmith.F("182bd5e5-6e1a-4fe4-a799-aa6d9a6ab26e"),
+			TraceFilter:           langsmith.F("trace_filter"),
+			TreeFilter:            langsmith.F("tree_filter"),
+			UseExperimentalSearch: langsmith.F(true),
+		},
+	})
+	if err != nil {
+		var apierr *langsmith.Error
+		if errors.As(err, &apierr) {
+			t.Log(string(apierr.DumpRequest(true)))
+		}
+		t.Fatalf("err should be nil: %s", err.Error())
+	}
+}
+
 func TestRunUpdate2(t *testing.T) {
 	t.Skip("Mock server tests are disabled")
 	baseURL := "http://localhost:4010"
