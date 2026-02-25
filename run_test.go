@@ -331,7 +331,7 @@ func TestRunQueryWithOptionalParams(t *testing.T) {
 	_, err := client.Runs.Query(context.TODO(), langsmith.RunQueryParams{
 		ID:                    langsmith.F([]string{"182bd5e5-6e1a-4fe4-a799-aa6d9a6ab26e"}),
 		Cursor:                langsmith.F("cursor"),
-		DataSourceType:        langsmith.F(langsmith.RunQueryParamsDataSourceTypeCurrent),
+		DataSourceType:        langsmith.F(langsmith.RunsFilterDataSourceTypeEnumCurrent),
 		EndTime:               langsmith.F(time.Now()),
 		Error:                 langsmith.F(true),
 		ExecutionOrder:        langsmith.F(int64(1)),
@@ -342,7 +342,7 @@ func TestRunQueryWithOptionalParams(t *testing.T) {
 		ParentRun:             langsmith.F("182bd5e5-6e1a-4fe4-a799-aa6d9a6ab26e"),
 		Query:                 langsmith.F("query"),
 		ReferenceExample:      langsmith.F([]string{"182bd5e5-6e1a-4fe4-a799-aa6d9a6ab26e"}),
-		RunType:               langsmith.F(langsmith.RunQueryParamsRunTypeTool),
+		RunType:               langsmith.F(langsmith.RunTypeEnumTool),
 		SearchFilter:          langsmith.F("search_filter"),
 		Select:                langsmith.F([]langsmith.RunQueryParamsSelect{langsmith.RunQueryParamsSelectID}),
 		Session:               langsmith.F([]string{"182bd5e5-6e1a-4fe4-a799-aa6d9a6ab26e"}),
