@@ -230,14 +230,15 @@ func (r sessionInsightDeleteResponseJSON) RawJSON() string {
 
 // Response to get a specific cluster job for a session.
 type SessionInsightGetJobResponse struct {
-	ID       string                                `json:"id" api:"required" format:"uuid"`
-	Clusters []SessionInsightGetJobResponseCluster `json:"clusters" api:"required"`
-	Name     string                                `json:"name" api:"required"`
-	Status   string                                `json:"status" api:"required"`
-	ConfigID string                                `json:"config_id" api:"nullable" format:"uuid"`
-	EndTime  time.Time                             `json:"end_time" api:"nullable" format:"date-time"`
-	Error    string                                `json:"error" api:"nullable"`
-	Metadata map[string]interface{}                `json:"metadata" api:"nullable"`
+	ID        string                                `json:"id" api:"required" format:"uuid"`
+	Clusters  []SessionInsightGetJobResponseCluster `json:"clusters" api:"required"`
+	CreatedAt time.Time                             `json:"created_at" api:"required" format:"date-time"`
+	Name      string                                `json:"name" api:"required"`
+	Status    string                                `json:"status" api:"required"`
+	ConfigID  string                                `json:"config_id" api:"nullable" format:"uuid"`
+	EndTime   time.Time                             `json:"end_time" api:"nullable" format:"date-time"`
+	Error     string                                `json:"error" api:"nullable"`
+	Metadata  map[string]interface{}                `json:"metadata" api:"nullable"`
 	// High level summary of an insights job that pulls out patterns and specific
 	// traces.
 	Report    SessionInsightGetJobResponseReport `json:"report" api:"nullable"`
@@ -251,6 +252,7 @@ type SessionInsightGetJobResponse struct {
 type sessionInsightGetJobResponseJSON struct {
 	ID          apijson.Field
 	Clusters    apijson.Field
+	CreatedAt   apijson.Field
 	Name        apijson.Field
 	Status      apijson.Field
 	ConfigID    apijson.Field
