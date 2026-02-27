@@ -33,6 +33,7 @@ func TestRepoNewWithOptionalParams(t *testing.T) {
 		RepoHandle:  langsmith.F("repo_handle"),
 		Description: langsmith.F("description"),
 		Readme:      langsmith.F("readme"),
+		RepoType:    langsmith.F(langsmith.RepoNewParamsRepoTypePrompt),
 		Tags:        langsmith.F([]string{"string"}),
 	})
 	if err != nil {
@@ -131,6 +132,7 @@ func TestRepoListWithOptionalParams(t *testing.T) {
 		Limit:              langsmith.F(int64(1)),
 		Offset:             langsmith.F(int64(0)),
 		Query:              langsmith.F("query"),
+		RepoType:           langsmith.F(langsmith.RepoListParamsRepoTypePrompt),
 		SortDirection:      langsmith.F(langsmith.RepoListParamsSortDirectionAsc),
 		SortField:          langsmith.F(langsmith.RepoListParamsSortFieldNumLikes),
 		TagValueID:         langsmith.F([]string{"182bd5e5-6e1a-4fe4-a799-aa6d9a6ab26e"}),
