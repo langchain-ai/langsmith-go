@@ -3,15 +3,6 @@
 package langsmith
 
 import (
-	"context"
-	"errors"
-	"fmt"
-	"net/http"
-	"slices"
-
-	"github.com/langchain-ai/langsmith-go/internal/apijson"
-	"github.com/langchain-ai/langsmith-go/internal/param"
-	"github.com/langchain-ai/langsmith-go/internal/requestconfig"
 	"github.com/langchain-ai/langsmith-go/option"
 )
 
@@ -32,40 +23,4 @@ func NewDatasetIndexService(opts ...option.RequestOption) (r *DatasetIndexServic
 	r = &DatasetIndexService{}
 	r.Options = opts
 	return
-}
-
-// Index a dataset.
-func (r *DatasetIndexService) New(ctx context.Context, datasetID string, body DatasetIndexNewParams, opts ...option.RequestOption) (res *DatasetIndexNewResponse, err error) {
-	opts = slices.Concat(r.Options, opts)
-	if datasetID == "" {
-		err = errors.New("missing required dataset_id parameter")
-		return
-	}
-	path := fmt.Sprintf("api/v1/datasets/%s/index", datasetID)
-	err = requestconfig.ExecuteNewRequest(ctx, http.MethodPost, path, body, &res, opts...)
-	return
-}
-
-// Sync an index for a dataset.
-func (r *DatasetIndexService) Sync(ctx context.Context, datasetID string, opts ...option.RequestOption) (res *DatasetIndexSyncResponse, err error) {
-	opts = slices.Concat(r.Options, opts)
-	if datasetID == "" {
-		err = errors.New("missing required dataset_id parameter")
-		return
-	}
-	path := fmt.Sprintf("api/v1/datasets/%s/index/sync", datasetID)
-	err = requestconfig.ExecuteNewRequest(ctx, http.MethodPost, path, nil, &res, opts...)
-	return
-}
-
-type DatasetIndexNewResponse = interface{}
-
-type DatasetIndexSyncResponse = interface{}
-
-type DatasetIndexNewParams struct {
-	Tag param.Field[string] `json:"tag"`
-}
-
-func (r DatasetIndexNewParams) MarshalJSON() (data []byte, err error) {
-	return apijson.MarshalRoot(r)
 }
