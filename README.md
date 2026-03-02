@@ -438,7 +438,7 @@ func Logger(req *http.Request, next option.MiddlewareNext) (res *http.Response, 
 
 	// Handle stuff after the request
 	end := time.Now()
-	LogRes(res, err, start - end)
+	LogRes(res, err, end - start)
 
     return res, err
 }
