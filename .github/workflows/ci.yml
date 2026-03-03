@@ -37,6 +37,7 @@ jobs:
     if: github.event_name == 'push' || github.event.pull_request.head.repo.fork
     env:
       LANGSMITH_API_KEY: ${{ secrets.LANGSMITH_API_KEY_BETA }}
+      LANGSMITH_ENDPOINT: ${{ secrets.LANGSMITH_ENDPOINT }}
     steps:
       - uses: actions/checkout@v6
 

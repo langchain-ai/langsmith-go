@@ -18,21 +18,31 @@ import (
 )
 
 const testAnthropicModel = "claude-sonnet-4-5-20250929"
-const anthropicRunNameBase = "anthropic.messages"
 
-func newAnthropicClient(t *testing.T, tp *sdktrace.TracerProvider, runNameSuffix string) anthropic.Client {
+// Hardcoded run names per test type for identifying traces in the shared integration project.
+const (
+	runNameAnthropicNonstreaming         = "anthropic_nonstreaming"
+	runNameAnthropicStreaming            = "anthropic_streaming"
+	runNameAnthropicEarlyTermination     = "anthropic_early_termination"
+	runNameAnthropicError                = "anthropic_error"
+	runNameAnthropicToolUseNonstream     = "anthropic_tool_use_nonstream"
+	runNameAnthropicToolUseStream        = "anthropic_tool_use_stream"
+	runNameAnthropicSystemMessage        = "anthropic_system_message"
+	runNameAnthropicMultipleMessages     = "anthropic_multiple_messages"
+	runNameAnthropicTokenUsageNonstream  = "anthropic_token_usage_nonstream"
+	runNameAnthropicTokenUsageStream     = "anthropic_token_usage_stream"
+	runNameAnthropicStopReason           = "anthropic_stop_reason"
+)
+
+func newAnthropicClient(t *testing.T, tp *sdktrace.TracerProvider) anthropic.Client {
 	t.Helper()
 	apiKey := os.Getenv("ANTHROPIC_API_KEY")
 	if apiKey == "" {
 		t.Skip("ANTHROPIC_API_KEY not set")
 	}
-	opts := []traceanthropic.Option{traceanthropic.WithTracerProvider(tp)}
-	if runNameSuffix != "" {
-		opts = append(opts, traceanthropic.WithRunNameSuffix(runNameSuffix))
-	}
 	return anthropic.NewClient(
 		option.WithAPIKey(apiKey),
-		option.WithHTTPClient(traceanthropic.Client(opts...)),
+		option.WithHTTPClient(traceanthropic.Client(traceanthropic.WithTracerProvider(tp))),
 	)
 }
 
@@ -41,10 +51,11 @@ func newAnthropicClient(t *testing.T, tp *sdktrace.TracerProvider, runNameSuffix
 func TestAnthropic_NonStreaming(t *testing.T) {
 	tt := newTracedTP(t, "")
 	defer tt.Shutdown(context.Background())
-	client := newAnthropicClient(t, tt.TP, t.Name())
-	expectedRunName := anthropicRunNameBase + "__" + t.Name()
+	client := newAnthropicClient(t, tt.TP)
+	expectedRunName := runNameAnthropicNonstreaming
+	ctx := traceanthropic.WithRunNameContext(context.Background(), expectedRunName)
 
-	msg, err := client.Messages.New(context.Background(), anthropic.MessageNewParams{
+	msg, err := client.Messages.New(ctx, anthropic.MessageNewParams{
 		Model:     anthropic.Model(testAnthropicModel),
 		MaxTokens: 10,
 		Messages: []anthropic.MessageParam{
@@ -69,13 +80,13 @@ func TestAnthropic_NonStreaming(t *testing.T) {
 
 	found := false
 	for _, s := range spans {
-		if s.Name == expectedRunName || strings.HasPrefix(s.Name, anthropicRunNameBase) {
+		if s.Name == expectedRunName {
 			found = true
 			break
 		}
 	}
 	if !found {
-		t.Error("expected span named " + anthropicRunNameBase + " or " + expectedRunName)
+		t.Error("expected span named " + expectedRunName)
 	}
 	if v, ok := getSpanAttr(spans, "gen_ai.system"); !ok || v != "anthropic" {
 		t.Errorf("gen_ai.system = %q, want 'anthropic'", v)
@@ -113,10 +124,11 @@ func TestAnthropic_NonStreaming(t *testing.T) {
 func TestAnthropic_Streaming(t *testing.T) {
 	tt := newTracedTP(t, "")
 	defer tt.Shutdown(context.Background())
-	client := newAnthropicClient(t, tt.TP, t.Name())
-	expectedRunName := anthropicRunNameBase + "__" + t.Name()
+	client := newAnthropicClient(t, tt.TP)
+	expectedRunName := runNameAnthropicStreaming
+	ctx := traceanthropic.WithRunNameContext(context.Background(), expectedRunName)
 
-	stream := client.Messages.NewStreaming(context.Background(), anthropic.MessageNewParams{
+	stream := client.Messages.NewStreaming(ctx, anthropic.MessageNewParams{
 		Model:     anthropic.Model(testAnthropicModel),
 		MaxTokens: 50,
 		Messages: []anthropic.MessageParam{
@@ -157,13 +169,13 @@ func TestAnthropic_Streaming(t *testing.T) {
 	}
 	found := false
 	for _, s := range spans {
-		if s.Name == expectedRunName || strings.HasPrefix(s.Name, anthropicRunNameBase) {
+		if s.Name == expectedRunName {
 			found = true
 			break
 		}
 	}
 	if !found {
-		t.Error("expected span named " + anthropicRunNameBase + " or " + expectedRunName + " in streaming")
+		t.Error("expected span named " + expectedRunName + " in streaming")
 	}
 	if _, ok := getSpanAttr(spans, "gen_ai.completion"); !ok {
 		t.Error("expected gen_ai.completion attribute from streaming")
@@ -193,10 +205,11 @@ func TestAnthropic_Streaming(t *testing.T) {
 func TestAnthropic_EarlyStreamTermination(t *testing.T) {
 	tt := newTracedTP(t, "")
 	defer tt.Shutdown(context.Background())
-	client := newAnthropicClient(t, tt.TP, t.Name())
-	expectedRunName := anthropicRunNameBase + "__" + t.Name()
+	client := newAnthropicClient(t, tt.TP)
+	expectedRunName := runNameAnthropicEarlyTermination
+	ctx := traceanthropic.WithRunNameContext(context.Background(), expectedRunName)
 
-	stream := client.Messages.NewStreaming(context.Background(), anthropic.MessageNewParams{
+	stream := client.Messages.NewStreaming(ctx, anthropic.MessageNewParams{
 		Model:     anthropic.Model(testAnthropicModel),
 		MaxTokens: 200,
 		Messages: []anthropic.MessageParam{
@@ -238,14 +251,15 @@ func TestAnthropic_EarlyStreamTermination(t *testing.T) {
 func TestAnthropic_ErrorHandling(t *testing.T) {
 	tt := newTracedTP(t, "")
 	defer tt.Shutdown(context.Background())
-	expectedRunName := anthropicRunNameBase + "__" + t.Name()
+	expectedRunName := runNameAnthropicError
 
 	client := anthropic.NewClient(
 		option.WithAPIKey("sk-ant-invalid-key-for-testing"),
-		option.WithHTTPClient(traceanthropic.Client(traceanthropic.WithTracerProvider(tt.TP), traceanthropic.WithRunNameSuffix(t.Name()))),
+		option.WithHTTPClient(traceanthropic.Client(traceanthropic.WithTracerProvider(tt.TP))),
 	)
+	ctx := traceanthropic.WithRunNameContext(context.Background(), expectedRunName)
 
-	_, err := client.Messages.New(context.Background(), anthropic.MessageNewParams{
+	_, err := client.Messages.New(ctx, anthropic.MessageNewParams{
 		Model:     anthropic.Model(testAnthropicModel),
 		MaxTokens: 10,
 		Messages: []anthropic.MessageParam{
@@ -280,10 +294,11 @@ func TestAnthropic_ErrorHandling(t *testing.T) {
 func TestAnthropic_ToolUse_NonStreaming(t *testing.T) {
 	tt := newTracedTP(t, "")
 	defer tt.Shutdown(context.Background())
-	client := newAnthropicClient(t, tt.TP, t.Name())
-	expectedRunName := anthropicRunNameBase + "__" + t.Name()
+	client := newAnthropicClient(t, tt.TP)
+	expectedRunName := runNameAnthropicToolUseNonstream
+	ctx := traceanthropic.WithRunNameContext(context.Background(), expectedRunName)
 
-	msg, err := client.Messages.New(context.Background(), anthropic.MessageNewParams{
+	msg, err := client.Messages.New(ctx, anthropic.MessageNewParams{
 		Model:     anthropic.Model(testAnthropicModel),
 		MaxTokens: 1024,
 		Messages: []anthropic.MessageParam{
@@ -354,10 +369,11 @@ func TestAnthropic_ToolUse_NonStreaming(t *testing.T) {
 func TestAnthropic_ToolUse_Streaming(t *testing.T) {
 	tt := newTracedTP(t, "")
 	defer tt.Shutdown(context.Background())
-	client := newAnthropicClient(t, tt.TP, t.Name())
-	expectedRunName := anthropicRunNameBase + "__" + t.Name()
+	client := newAnthropicClient(t, tt.TP)
+	expectedRunName := runNameAnthropicToolUseStream
+	ctx := traceanthropic.WithRunNameContext(context.Background(), expectedRunName)
 
-	stream := client.Messages.NewStreaming(context.Background(), anthropic.MessageNewParams{
+	stream := client.Messages.NewStreaming(ctx, anthropic.MessageNewParams{
 		Model:     anthropic.Model(testAnthropicModel),
 		MaxTokens: 1024,
 		Messages: []anthropic.MessageParam{
@@ -431,10 +447,11 @@ func TestAnthropic_ToolUse_Streaming(t *testing.T) {
 func TestAnthropic_SystemMessage(t *testing.T) {
 	tt := newTracedTP(t, "")
 	defer tt.Shutdown(context.Background())
-	client := newAnthropicClient(t, tt.TP, t.Name())
-	expectedRunName := anthropicRunNameBase + "__" + t.Name()
+	client := newAnthropicClient(t, tt.TP)
+	expectedRunName := runNameAnthropicSystemMessage
+	ctx := traceanthropic.WithRunNameContext(context.Background(), expectedRunName)
 
-	msg, err := client.Messages.New(context.Background(), anthropic.MessageNewParams{
+	msg, err := client.Messages.New(ctx, anthropic.MessageNewParams{
 		Model:     anthropic.Model(testAnthropicModel),
 		MaxTokens: 10,
 		System: []anthropic.TextBlockParam{
@@ -482,10 +499,11 @@ func TestAnthropic_SystemMessage(t *testing.T) {
 func TestAnthropic_MultipleMessages(t *testing.T) {
 	tt := newTracedTP(t, "")
 	defer tt.Shutdown(context.Background())
-	client := newAnthropicClient(t, tt.TP, t.Name())
-	expectedRunName := anthropicRunNameBase + "__" + t.Name()
+	client := newAnthropicClient(t, tt.TP)
+	expectedRunName := runNameAnthropicMultipleMessages
+	ctx := traceanthropic.WithRunNameContext(context.Background(), expectedRunName)
 
-	msg, err := client.Messages.New(context.Background(), anthropic.MessageNewParams{
+	msg, err := client.Messages.New(ctx, anthropic.MessageNewParams{
 		Model:     anthropic.Model(testAnthropicModel),
 		MaxTokens: 10,
 		System: []anthropic.TextBlockParam{
@@ -546,10 +564,11 @@ func TestAnthropic_MultipleMessages(t *testing.T) {
 func TestAnthropic_TokenUsage_NonStreaming(t *testing.T) {
 	tt := newTracedTP(t, "")
 	defer tt.Shutdown(context.Background())
-	client := newAnthropicClient(t, tt.TP, t.Name())
-	expectedRunName := anthropicRunNameBase + "__" + t.Name()
+	client := newAnthropicClient(t, tt.TP)
+	expectedRunName := runNameAnthropicTokenUsageNonstream
+	ctx := traceanthropic.WithRunNameContext(context.Background(), expectedRunName)
 
-	msg, err := client.Messages.New(context.Background(), anthropic.MessageNewParams{
+	msg, err := client.Messages.New(ctx, anthropic.MessageNewParams{
 		Model:     anthropic.Model(testAnthropicModel),
 		MaxTokens: 10,
 		Messages: []anthropic.MessageParam{
@@ -593,10 +612,11 @@ func TestAnthropic_TokenUsage_NonStreaming(t *testing.T) {
 func TestAnthropic_TokenUsage_Streaming(t *testing.T) {
 	tt := newTracedTP(t, "")
 	defer tt.Shutdown(context.Background())
-	client := newAnthropicClient(t, tt.TP, t.Name())
-	expectedRunName := anthropicRunNameBase + "__" + t.Name()
+	client := newAnthropicClient(t, tt.TP)
+	expectedRunName := runNameAnthropicTokenUsageStream
+	ctx := traceanthropic.WithRunNameContext(context.Background(), expectedRunName)
 
-	stream := client.Messages.NewStreaming(context.Background(), anthropic.MessageNewParams{
+	stream := client.Messages.NewStreaming(ctx, anthropic.MessageNewParams{
 		Model:     anthropic.Model(testAnthropicModel),
 		MaxTokens: 10,
 		Messages: []anthropic.MessageParam{
@@ -642,10 +662,11 @@ func TestAnthropic_TokenUsage_Streaming(t *testing.T) {
 func TestAnthropic_StopReason(t *testing.T) {
 	tt := newTracedTP(t, "")
 	defer tt.Shutdown(context.Background())
-	client := newAnthropicClient(t, tt.TP, t.Name())
-	expectedRunName := anthropicRunNameBase + "__" + t.Name()
+	client := newAnthropicClient(t, tt.TP)
+	expectedRunName := runNameAnthropicStopReason
+	ctx := traceanthropic.WithRunNameContext(context.Background(), expectedRunName)
 
-	_, err := client.Messages.New(context.Background(), anthropic.MessageNewParams{
+	_, err := client.Messages.New(ctx, anthropic.MessageNewParams{
 		Model:     anthropic.Model(testAnthropicModel),
 		MaxTokens: 5,
 		Messages: []anthropic.MessageParam{

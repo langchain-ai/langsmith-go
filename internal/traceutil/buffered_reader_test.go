@@ -20,7 +20,7 @@ func (n *nopCloser) Close() error {
 func TestBufferedReader_ReadToEOF(t *testing.T) {
 	src := &nopCloser{Reader: strings.NewReader("hello world")}
 	var captured string
-	br := NewBufferedReader(src, func(r io.Reader) {
+	br := NewBufferedReader(src, func(r io.Reader, _ error) {
 		data, _ := io.ReadAll(r)
 		captured = string(data)
 	})
@@ -40,7 +40,7 @@ func TestBufferedReader_ReadToEOF(t *testing.T) {
 func TestBufferedReader_CloseBeforeEOF(t *testing.T) {
 	src := &nopCloser{Reader: bytes.NewReader([]byte("abcdefghij"))}
 	var captured string
-	br := NewBufferedReader(src, func(r io.Reader) {
+	br := NewBufferedReader(src, func(r io.Reader, _ error) {
 		data, _ := io.ReadAll(r)
 		captured = string(data)
 	})
@@ -60,7 +60,7 @@ func TestBufferedReader_CloseBeforeEOF(t *testing.T) {
 func TestBufferedReader_OnDoneCalledOnce(t *testing.T) {
 	src := &nopCloser{Reader: strings.NewReader("data")}
 	calls := 0
-	br := NewBufferedReader(src, func(r io.Reader) {
+	br := NewBufferedReader(src, func(r io.Reader, _ error) {
 		calls++
 	})
 
@@ -89,7 +89,7 @@ func TestBufferedReader_NilOnDone(t *testing.T) {
 func TestBufferedReader_PassesThroughData(t *testing.T) {
 	content := strings.Repeat("x", 10000)
 	src := &nopCloser{Reader: strings.NewReader(content)}
-	br := NewBufferedReader(src, func(r io.Reader) {})
+	br := NewBufferedReader(src, func(r io.Reader, _ error) {})
 
 	data, err := io.ReadAll(br)
 	if err != nil {

@@ -56,11 +56,10 @@ func MiddlewareWithTracerProvider(req *http.Request, next MiddlewareNext, tp tra
 	// Capture parent span before creating child span (for token propagation)
 	parentSpan := trace.SpanFromContext(ctx)
 
-	// Determine span name based on endpoint; optional suffix for shared-project runs (e.g. integration tests)
 	spanName := getSpanName(req.URL.Path)
-	if v := req.Context().Value(ctxKeyRunNameSuffix); v != nil {
+	if v := req.Context().Value(ctxKeyRunName); v != nil {
 		if s, ok := v.(string); ok && s != "" {
-			spanName = spanName + "__" + s
+			spanName = s
 		}
 	}
 
@@ -149,7 +148,7 @@ func MiddlewareWithTracerProvider(req *http.Request, next MiddlewareNext, tp tra
 		return resp, err
 	}
 
-	resp.Body = traceutil.NewBufferedReader(resp.Body, func(r io.Reader) {
+	resp.Body = traceutil.NewBufferedReader(resp.Body, func(r io.Reader, readErr error) {
 		data, err := io.ReadAll(r)
 		if err != nil {
 			span.RecordError(err)
@@ -162,6 +161,11 @@ func MiddlewareWithTracerProvider(req *http.Request, next MiddlewareNext, tp tra
 				apiErr := fmt.Errorf("HTTP %d", resp.StatusCode)
 				span.RecordError(apiErr)
 				span.SetStatus(codes.Error, apiErr.Error())
+			}
+			// readErr is the error that ended the read (e.g. context.Canceled); record it so run has real error
+			if readErr != nil && readErr != io.EOF {
+				span.RecordError(readErr)
+				span.SetStatus(codes.Error, readErr.Error())
 			}
 			span.End()
 			return
@@ -178,12 +182,15 @@ func MiddlewareWithTracerProvider(req *http.Request, next MiddlewareNext, tp tra
 			span.RecordError(apiErr)
 			span.SetStatus(codes.Error, apiErr.Error())
 		}
-		cancelled := resp.StatusCode < 400 && streaming && !strings.Contains(bodyText, "[DONE]")
-		if cancelled {
-			// Early stream termination: mirror traceable.ts behavior (end with "Cancelled")
-			cancelErr := fmt.Errorf("Cancelled")
-			span.RecordError(cancelErr)
-			span.SetStatus(codes.Error, cancelErr.Error())
+		// Early stream termination: use real error from read (e.g. context.Canceled) or synthetic "Cancelled"
+		incompleteStream := resp.StatusCode < 400 && streaming && !strings.Contains(bodyText, "[DONE]")
+		if incompleteStream {
+			endErr := readErr
+			if endErr == nil || endErr == io.EOF {
+				endErr = fmt.Errorf("Cancelled")
+			}
+			span.RecordError(endErr)
+			span.SetStatus(codes.Error, endErr.Error())
 		}
 
 		var completion string
@@ -217,7 +224,7 @@ func MiddlewareWithTracerProvider(req *http.Request, next MiddlewareNext, tp tra
 				parentSpan.SetAttributes(attribute.Int64("gen_ai.usage.output_tokens", outputTokens))
 			}
 		}
-		if resp.StatusCode < 400 && !cancelled {
+		if resp.StatusCode < 400 && !incompleteStream {
 			span.SetStatus(codes.Ok, "")
 		}
 		span.End()

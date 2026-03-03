@@ -22,6 +22,7 @@ package traceanthropic
 
 import (
 	"bytes"
+	"context"
 	"encoding/json"
 	"fmt"
 	"io"
@@ -37,12 +38,26 @@ import (
 	"github.com/langchain-ai/langsmith-go/internal/traceutil"
 )
 
+type contextKey struct{ name string }
+
+var ctxKeyRunName = contextKey{"run_name"}
+
+// WithRunNameContext sets the span (run) name for the next traced request made with ctx.
+// The run name in LangSmith is the OTLP span name; there is no separate field.
+// Use this so one client can emit runs with different names per call, e.g. in tests:
+//
+//	ctx = traceanthropic.WithRunNameContext(ctx, "anthropic_nonstreaming")
+//	client.Messages.New(ctx, ...)
+func WithRunNameContext(ctx context.Context, name string) context.Context {
+	return context.WithValue(ctx, ctxKeyRunName, name)
+}
+
 // Option configures a traced HTTP client.
 type Option func(*clientOptions)
 
 type clientOptions struct {
 	tracerProvider trace.TracerProvider
-	runNameSuffix  string
+	runName        string
 }
 
 // WithTracerProvider returns an Option that sets the tracer provider.
@@ -53,11 +68,10 @@ func WithTracerProvider(tp trace.TracerProvider) Option {
 	}
 }
 
-// WithRunNameSuffix appends "__" + suffix to the span (run) name so runs can be
-// identified when multiple tests share one project. Used by integration tests.
-func WithRunNameSuffix(suffix string) Option {
+// WithRunName sets the span (run) name to the given string when non-empty. Used by integration tests to identify runs in a shared project.
+func WithRunName(name string) Option {
 	return func(opts *clientOptions) {
-		opts.runNameSuffix = suffix
+		opts.runName = name
 	}
 }
 
@@ -82,21 +96,21 @@ func WrapClient(client *http.Client, opts ...Option) *http.Client {
 	if transport == nil {
 		transport = http.DefaultTransport
 	}
-	client.Transport = newRoundTripper(transport, options.tracerProvider, options.runNameSuffix)
+	client.Transport = newRoundTripper(transport, options.tracerProvider, options.runName)
 	return client
 }
 
 type roundTripper struct {
 	base           http.RoundTripper
 	tracerProvider trace.TracerProvider
-	runNameSuffix  string
+	runName        string
 }
 
-func newRoundTripper(base http.RoundTripper, tp trace.TracerProvider, runNameSuffix string) http.RoundTripper {
+func newRoundTripper(base http.RoundTripper, tp trace.TracerProvider, runName string) http.RoundTripper {
 	return &roundTripper{
 		base:           base,
 		tracerProvider: tp,
-		runNameSuffix:  runNameSuffix,
+		runName:        runName,
 	}
 }
 
@@ -121,10 +135,13 @@ func (rt *roundTripper) RoundTrip(req *http.Request) (*http.Response, error) {
 	// Capture parent span before creating child span (for token propagation)
 	parentSpan := trace.SpanFromContext(ctx)
 
-	// Determine span name based on endpoint; optional suffix for shared-project runs
 	spanName := getSpanName(req.URL.Path)
-	if rt.runNameSuffix != "" {
-		spanName = spanName + "__" + rt.runNameSuffix
+	if v := ctx.Value(ctxKeyRunName); v != nil {
+		if s, ok := v.(string); ok && s != "" {
+			spanName = s
+		}
+	} else if rt.runName != "" {
+		spanName = rt.runName
 	}
 
 	// Start span (child span)
@@ -170,7 +187,7 @@ func (rt *roundTripper) RoundTrip(req *http.Request) (*http.Response, error) {
 		return resp, err
 	}
 
-	resp.Body = traceutil.NewBufferedReader(resp.Body, func(r io.Reader) {
+	resp.Body = traceutil.NewBufferedReader(resp.Body, func(r io.Reader, readErr error) {
 		data, err := io.ReadAll(r)
 		if err != nil {
 			span.RecordError(err)
@@ -184,13 +201,16 @@ func (rt *roundTripper) RoundTrip(req *http.Request) (*http.Response, error) {
 				span.RecordError(apiErr)
 				span.SetStatus(codes.Error, apiErr.Error())
 			}
+			if readErr != nil && readErr != io.EOF {
+				span.RecordError(readErr)
+				span.SetStatus(codes.Error, readErr.Error())
+			}
 			span.End()
 			return
 		}
 
 		bodyText := string(data)
 		if resp.StatusCode >= 400 {
-			// Record an error so backends (e.g. LangSmith) show the trace as failed and populate run.error
 			msg := bodyText
 			if len(msg) > 500 {
 				msg = msg[:500] + "..."
@@ -199,12 +219,14 @@ func (rt *roundTripper) RoundTrip(req *http.Request) (*http.Response, error) {
 			span.RecordError(apiErr)
 			span.SetStatus(codes.Error, apiErr.Error())
 		}
-		cancelled := resp.StatusCode < 400 && streaming && !strings.Contains(bodyText, "message_stop")
-		if cancelled {
-			// Early stream termination: mirror traceable.ts behavior (end with "Cancelled")
-			cancelErr := fmt.Errorf("Cancelled")
-			span.RecordError(cancelErr)
-			span.SetStatus(codes.Error, cancelErr.Error())
+		incompleteStream := resp.StatusCode < 400 && streaming && !strings.Contains(bodyText, "message_stop")
+		if incompleteStream {
+			endErr := readErr
+			if endErr == nil || endErr == io.EOF {
+				endErr = fmt.Errorf("Cancelled")
+			}
+			span.RecordError(endErr)
+			span.SetStatus(codes.Error, endErr.Error())
 		}
 
 		if streaming {
@@ -212,7 +234,7 @@ func (rt *roundTripper) RoundTrip(req *http.Request) (*http.Response, error) {
 		} else {
 			extractResponseAttributes(span, data, parentSpan)
 		}
-		if resp.StatusCode < 400 && !cancelled {
+		if resp.StatusCode < 400 && !incompleteStream {
 			span.SetStatus(codes.Ok, "")
 		}
 		span.End()

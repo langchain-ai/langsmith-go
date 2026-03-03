@@ -24,11 +24,9 @@ var (
 )
 
 // getSharedIntegrationProject returns one project name for the whole test run.
-// Project name uses single underscores with a __test suffix (e.g. go_integ_tracing__test).
-// All trace-sending tests use this project and identify their run by a unique run name (span name + __ + t.Name()).
 func getSharedIntegrationProject() string {
 	sharedIntegrationProjectOnce.Do(func() {
-		sharedIntegrationProject = uniqueName("go_integ_tracing__test")
+		sharedIntegrationProject = uniqueName("__test_go_integ_tracing")
 	})
 	return sharedIntegrationProject
 }
@@ -62,11 +60,9 @@ type tracedTP struct {
 
 // newTracedTP creates a TracerProvider that sends traces to both an in-memory
 // exporter (for local assertions) and the real LangSmith API.
-// When prefix is empty, all tests share one project (getSharedIntegrationProject);
-// use WithRunNameSuffix(t.Name()) when creating the client so runs have unique names.
+// When prefix is empty, all tests share one project (getSharedIntegrationProject); trace tests use WithRunNameContext(ctx, name) with a hardcoded name per test type so runs are identifiable for polling.
 // When prefix is non-empty, a unique project is used (prefix + timestamp + random).
-// Project names use single underscores; shared project has __test suffix (e.g. go_integ_tracing__test).
-// If LANGSMITH_API_KEY is not set, it falls back to in-memory only.
+// Shared project name uses go_integ_tracing__test prefix. If LANGSMITH_API_KEY is not set, it falls back to in-memory only.
 func newTracedTP(t *testing.T, prefix string) *tracedTP {
 	t.Helper()
 	project := prefix
@@ -219,21 +215,6 @@ func pollForRuns(t *testing.T, projectName string, minRuns int, runName string) 
 	return nil
 }
 
-// Trace integration tests align with these expected behaviors (Python run_helpers / wrappers):
-//
-//  1. Non-streaming: one run per call; inputs + full response in outputs; no error unless API failed.
-//  2. Streaming: one run per stream; outputs = reduced/assembled response from chunks.
-//  3. Early stream termination: run completed with partial output and error set.
-//  4. Error handling: when the wrapped call raises, SDK patches run with status='error' and error=<exception traceback> (like Python @traceable).
-//  5. Tool/function calling: inputs include tools/messages; outputs include tool_calls and usage when provided.
-//  6. System messages: system content in run inputs like other roles.
-//  7. Multiple messages: full conversation in run inputs.
-//  8. Token usage: run outputs include usage_metadata when provider sends it.
-//  9. Multiple APIs: separate run type/name per endpoint (chat vs completions vs responses); Go tests cover chat.
-//
-// LangSmithRunAssertions configures what to assert on a run returned from LangSmith
-// (e.g. from OTLP trace ingestion). Used so trace-sending tests assert on full run
-// shape and content, not just existence.
 type LangSmithRunAssertions struct {
 	WantName     string
 	WantRunType  langsmith.RunQueryResponseRunsRunType

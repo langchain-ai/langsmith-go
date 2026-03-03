@@ -310,8 +310,11 @@ func TestRunCreateAndUpdate(t *testing.T) {
 
 	// Poll until run is visible and patch has been applied (eventual consistency)
 	var stored *langsmith.RunQueryResponseRun
-	for i := 0; i < 15; i++ {
-		time.Sleep(2 * time.Second)
+	patchVisible := false
+	const pollAttempts = 25
+	const pollInterval = 2 * time.Second
+	for i := 0; i < pollAttempts; i++ {
+		time.Sleep(pollInterval)
 		result, err := client.Runs.Query(ctx, langsmith.RunQueryParams{
 			ID: langsmith.F([]string{runID}),
 		})
@@ -339,6 +342,7 @@ func TestRunCreateAndUpdate(t *testing.T) {
 					yOk = true
 				}
 				if yOk && vz == "updated" {
+					patchVisible = true
 					break
 				}
 			}
@@ -355,6 +359,10 @@ func TestRunCreateAndUpdate(t *testing.T) {
 	}
 	if stored.StartTime.IsZero() {
 		t.Error("stored_run.start_time should be set")
+	}
+	if !patchVisible {
+		t.Fatalf("patch not visible after %d polls (%v); got outputs[y]=%v, outputs[z]=%v (eventual consistency may need longer)",
+			pollAttempts, pollAttempts*pollInterval, stored.Outputs["y"], stored.Outputs["z"])
 	}
 	if stored.Outputs == nil {
 		t.Fatal("stored_run.outputs should be set")
@@ -646,6 +654,7 @@ func TestFeedbackCRUD(t *testing.T) {
 				StartTime:   langsmith.F(nowStr),
 				EndTime:     langsmith.F(nowStr),
 				Inputs:      langsmith.F(map[string]interface{}{"input": "test"}),
+				Outputs:     langsmith.F(map[string]interface{}{"result": "ok"}),
 			},
 		}),
 	})

@@ -17,20 +17,28 @@ import (
 	"github.com/langchain-ai/langsmith-go/instrumentation/traceopenai"
 )
 
-const openAIRunNameBase = "openai.chat.completion"
+// Hardcoded run names per test type for identifying traces in the shared integration project.
+const (
+	runNameOpenAINonstreaming         = "openai_nonstreaming"
+	runNameOpenAIStreaming            = "openai_streaming"
+	runNameOpenAIEarlyTermination     = "openai_early_termination"
+	runNameOpenAIError                = "openai_error"
+	runNameOpenAIToolCallingNonstream = "openai_tool_calling_nonstream"
+	runNameOpenAIToolCallingStream    = "openai_tool_calling_stream"
+	runNameOpenAISystemMessage        = "openai_system_message"
+	runNameOpenAIMultipleMessages     = "openai_multiple_messages"
+	runNameOpenAITokenUsageNonstream  = "openai_token_usage_nonstream"
+	runNameOpenAITokenUsageStream     = "openai_token_usage_stream"
+)
 
-func newOpenAIClient(t *testing.T, tp *sdktrace.TracerProvider, runNameSuffix string) *openai.Client {
+func newOpenAIClient(t *testing.T, tp *sdktrace.TracerProvider) *openai.Client {
 	t.Helper()
 	apiKey := os.Getenv("OPENAI_API_KEY")
 	if apiKey == "" {
 		t.Skip("OPENAI_API_KEY not set")
 	}
-	opts := []traceopenai.Option{traceopenai.WithTracerProvider(tp)}
-	if runNameSuffix != "" {
-		opts = append(opts, traceopenai.WithRunNameSuffix(runNameSuffix))
-	}
 	cfg := openai.DefaultConfig(apiKey)
-	cfg.HTTPClient = traceopenai.Client(opts...)
+	cfg.HTTPClient = traceopenai.Client(traceopenai.WithTracerProvider(tp))
 	return openai.NewClientWithConfig(cfg)
 }
 
@@ -39,10 +47,11 @@ func newOpenAIClient(t *testing.T, tp *sdktrace.TracerProvider, runNameSuffix st
 func TestOpenAI_NonStreaming(t *testing.T) {
 	tt := newTracedTP(t, "")
 	defer tt.Shutdown(context.Background())
-	client := newOpenAIClient(t, tt.TP, t.Name())
-	expectedRunName := openAIRunNameBase + "__" + t.Name()
+	client := newOpenAIClient(t, tt.TP)
+	expectedRunName := runNameOpenAINonstreaming
+	ctx := traceopenai.WithRunNameContext(context.Background(), expectedRunName)
 
-	resp, err := client.CreateChatCompletion(context.Background(), openai.ChatCompletionRequest{
+	resp, err := client.CreateChatCompletion(ctx, openai.ChatCompletionRequest{
 		Model: openai.GPT4oMini,
 		Messages: []openai.ChatCompletionMessage{
 			{Role: openai.ChatMessageRoleUser, Content: "Say 'foo'"},
@@ -65,13 +74,13 @@ func TestOpenAI_NonStreaming(t *testing.T) {
 
 	found := false
 	for _, s := range spans {
-		if s.Name == expectedRunName || strings.HasPrefix(s.Name, openAIRunNameBase) {
+		if s.Name == expectedRunName {
 			found = true
 			break
 		}
 	}
 	if !found {
-		t.Error("expected span named " + openAIRunNameBase + " or " + expectedRunName)
+		t.Error("expected span named " + expectedRunName)
 	}
 	if v, ok := getSpanAttr(spans, "gen_ai.system"); !ok || v != "openai" {
 		t.Errorf("gen_ai.system = %q, want 'openai'", v)
@@ -108,10 +117,11 @@ func TestOpenAI_NonStreaming(t *testing.T) {
 func TestOpenAI_Streaming(t *testing.T) {
 	tt := newTracedTP(t, "")
 	defer tt.Shutdown(context.Background())
-	client := newOpenAIClient(t, tt.TP, t.Name())
-	expectedRunName := openAIRunNameBase + "__" + t.Name()
+	client := newOpenAIClient(t, tt.TP)
+	expectedRunName := runNameOpenAIStreaming
+	ctx := traceopenai.WithRunNameContext(context.Background(), expectedRunName)
 
-	stream, err := client.CreateChatCompletionStream(context.Background(), openai.ChatCompletionRequest{
+	stream, err := client.CreateChatCompletionStream(ctx, openai.ChatCompletionRequest{
 		Model: openai.GPT4oMini,
 		Messages: []openai.ChatCompletionMessage{
 			{Role: openai.ChatMessageRoleUser, Content: "Count from 1 to 5"},
@@ -157,13 +167,13 @@ func TestOpenAI_Streaming(t *testing.T) {
 	}
 	found := false
 	for _, s := range spans {
-		if s.Name == expectedRunName || strings.HasPrefix(s.Name, openAIRunNameBase) {
+		if s.Name == expectedRunName {
 			found = true
 			break
 		}
 	}
 	if !found {
-		t.Error("expected span named " + openAIRunNameBase + " or " + expectedRunName + " in streaming")
+		t.Error("expected span named " + expectedRunName + " in streaming")
 	}
 	if _, ok := getSpanAttr(spans, "gen_ai.completion"); !ok {
 		t.Error("expected gen_ai.completion attribute from streaming")
@@ -190,10 +200,11 @@ func TestOpenAI_Streaming(t *testing.T) {
 func TestOpenAI_EarlyStreamTermination(t *testing.T) {
 	tt := newTracedTP(t, "")
 	defer tt.Shutdown(context.Background())
-	client := newOpenAIClient(t, tt.TP, t.Name())
-	expectedRunName := openAIRunNameBase + "__" + t.Name()
+	client := newOpenAIClient(t, tt.TP)
+	expectedRunName := runNameOpenAIEarlyTermination
+	ctx := traceopenai.WithRunNameContext(context.Background(), expectedRunName)
 
-	stream, err := client.CreateChatCompletionStream(context.Background(), openai.ChatCompletionRequest{
+	stream, err := client.CreateChatCompletionStream(ctx, openai.ChatCompletionRequest{
 		Model: openai.GPT4oMini,
 		Messages: []openai.ChatCompletionMessage{
 			{Role: openai.ChatMessageRoleUser, Content: "Write a long essay about Go programming"},
@@ -238,13 +249,14 @@ func TestOpenAI_EarlyStreamTermination(t *testing.T) {
 func TestOpenAI_ErrorHandling(t *testing.T) {
 	tt := newTracedTP(t, "")
 	defer tt.Shutdown(context.Background())
-	expectedRunName := openAIRunNameBase + "__" + t.Name()
+	expectedRunName := runNameOpenAIError
 
 	cfg := openai.DefaultConfig("sk-invalid-key-for-testing")
-	cfg.HTTPClient = traceopenai.Client(traceopenai.WithTracerProvider(tt.TP), traceopenai.WithRunNameSuffix(t.Name()))
+	cfg.HTTPClient = traceopenai.Client(traceopenai.WithTracerProvider(tt.TP))
 	client := openai.NewClientWithConfig(cfg)
+	ctx := traceopenai.WithRunNameContext(context.Background(), expectedRunName)
 
-	_, err := client.CreateChatCompletion(context.Background(), openai.ChatCompletionRequest{
+	_, err := client.CreateChatCompletion(ctx, openai.ChatCompletionRequest{
 		Model: openai.GPT4oMini,
 		Messages: []openai.ChatCompletionMessage{
 			{Role: openai.ChatMessageRoleUser, Content: "test"},
@@ -278,10 +290,11 @@ func TestOpenAI_ErrorHandling(t *testing.T) {
 func TestOpenAI_ToolCalling_NonStreaming(t *testing.T) {
 	tt := newTracedTP(t, "")
 	defer tt.Shutdown(context.Background())
-	client := newOpenAIClient(t, tt.TP, t.Name())
-	expectedRunName := openAIRunNameBase + "__" + t.Name()
+	client := newOpenAIClient(t, tt.TP)
+	expectedRunName := runNameOpenAIToolCallingNonstream
+	ctx := traceopenai.WithRunNameContext(context.Background(), expectedRunName)
 
-	resp, err := client.CreateChatCompletion(context.Background(), openai.ChatCompletionRequest{
+	resp, err := client.CreateChatCompletion(ctx, openai.ChatCompletionRequest{
 		Model: openai.GPT4oMini,
 		Messages: []openai.ChatCompletionMessage{
 			{Role: openai.ChatMessageRoleUser, Content: "What's the weather like in Paris?"},
@@ -354,10 +367,11 @@ func TestOpenAI_ToolCalling_NonStreaming(t *testing.T) {
 func TestOpenAI_ToolCalling_Streaming(t *testing.T) {
 	tt := newTracedTP(t, "")
 	defer tt.Shutdown(context.Background())
-	client := newOpenAIClient(t, tt.TP, t.Name())
-	expectedRunName := openAIRunNameBase + "__" + t.Name()
+	client := newOpenAIClient(t, tt.TP)
+	expectedRunName := runNameOpenAIToolCallingStream
+	ctx := traceopenai.WithRunNameContext(context.Background(), expectedRunName)
 
-	stream, err := client.CreateChatCompletionStream(context.Background(), openai.ChatCompletionRequest{
+	stream, err := client.CreateChatCompletionStream(ctx, openai.ChatCompletionRequest{
 		Model: openai.GPT4oMini,
 		Messages: []openai.ChatCompletionMessage{
 			{Role: openai.ChatMessageRoleUser, Content: "What's the weather like in Paris?"},
@@ -436,10 +450,11 @@ func TestOpenAI_ToolCalling_Streaming(t *testing.T) {
 func TestOpenAI_SystemMessage(t *testing.T) {
 	tt := newTracedTP(t, "")
 	defer tt.Shutdown(context.Background())
-	client := newOpenAIClient(t, tt.TP, t.Name())
-	expectedRunName := openAIRunNameBase + "__" + t.Name()
+	client := newOpenAIClient(t, tt.TP)
+	expectedRunName := runNameOpenAISystemMessage
+	ctx := traceopenai.WithRunNameContext(context.Background(), expectedRunName)
 
-	resp, err := client.CreateChatCompletion(context.Background(), openai.ChatCompletionRequest{
+	resp, err := client.CreateChatCompletion(ctx, openai.ChatCompletionRequest{
 		Model: openai.GPT4oMini,
 		Messages: []openai.ChatCompletionMessage{
 			{Role: openai.ChatMessageRoleSystem, Content: "You always respond with exactly one word."},
@@ -486,10 +501,11 @@ func TestOpenAI_SystemMessage(t *testing.T) {
 func TestOpenAI_MultipleMessages(t *testing.T) {
 	tt := newTracedTP(t, "")
 	defer tt.Shutdown(context.Background())
-	client := newOpenAIClient(t, tt.TP, t.Name())
-	expectedRunName := openAIRunNameBase + "__" + t.Name()
+	client := newOpenAIClient(t, tt.TP)
+	expectedRunName := runNameOpenAIMultipleMessages
+	ctx := traceopenai.WithRunNameContext(context.Background(), expectedRunName)
 
-	resp, err := client.CreateChatCompletion(context.Background(), openai.ChatCompletionRequest{
+	resp, err := client.CreateChatCompletion(ctx, openai.ChatCompletionRequest{
 		Model: openai.GPT4oMini,
 		Messages: []openai.ChatCompletionMessage{
 			{Role: openai.ChatMessageRoleSystem, Content: "You are a helpful math tutor."},
@@ -548,10 +564,11 @@ func TestOpenAI_MultipleMessages(t *testing.T) {
 func TestOpenAI_TokenUsage_NonStreaming(t *testing.T) {
 	tt := newTracedTP(t, "")
 	defer tt.Shutdown(context.Background())
-	client := newOpenAIClient(t, tt.TP, t.Name())
-	expectedRunName := openAIRunNameBase + "__" + t.Name()
+	client := newOpenAIClient(t, tt.TP)
+	expectedRunName := runNameOpenAITokenUsageNonstream
+	ctx := traceopenai.WithRunNameContext(context.Background(), expectedRunName)
 
-	resp, err := client.CreateChatCompletion(context.Background(), openai.ChatCompletionRequest{
+	resp, err := client.CreateChatCompletion(ctx, openai.ChatCompletionRequest{
 		Model: openai.GPT4oMini,
 		Messages: []openai.ChatCompletionMessage{
 			{Role: openai.ChatMessageRoleUser, Content: "Say hello"},
@@ -595,10 +612,11 @@ func TestOpenAI_TokenUsage_NonStreaming(t *testing.T) {
 func TestOpenAI_TokenUsage_Streaming(t *testing.T) {
 	tt := newTracedTP(t, "")
 	defer tt.Shutdown(context.Background())
-	client := newOpenAIClient(t, tt.TP, t.Name())
-	expectedRunName := openAIRunNameBase + "__" + t.Name()
+	client := newOpenAIClient(t, tt.TP)
+	expectedRunName := runNameOpenAITokenUsageStream
+	ctx := traceopenai.WithRunNameContext(context.Background(), expectedRunName)
 
-	stream, err := client.CreateChatCompletionStream(context.Background(), openai.ChatCompletionRequest{
+	stream, err := client.CreateChatCompletionStream(ctx, openai.ChatCompletionRequest{
 		Model: openai.GPT4oMini,
 		Messages: []openai.ChatCompletionMessage{
 			{Role: openai.ChatMessageRoleUser, Content: "Say hello"},
