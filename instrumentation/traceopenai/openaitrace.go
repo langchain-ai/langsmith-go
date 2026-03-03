@@ -56,8 +56,13 @@ func MiddlewareWithTracerProvider(req *http.Request, next MiddlewareNext, tp tra
 	// Capture parent span before creating child span (for token propagation)
 	parentSpan := trace.SpanFromContext(ctx)
 
-	// Determine span name based on endpoint
+	// Determine span name based on endpoint; optional suffix for shared-project runs (e.g. integration tests)
 	spanName := getSpanName(req.URL.Path)
+	if v := req.Context().Value(ctxKeyRunNameSuffix); v != nil {
+		if s, ok := v.(string); ok && s != "" {
+			spanName = spanName + "__" + s
+		}
+	}
 
 	// Build attributes for child span
 	spanAttrs := []attribute.KeyValue{
@@ -144,15 +149,41 @@ func MiddlewareWithTracerProvider(req *http.Request, next MiddlewareNext, tp tra
 		return resp, err
 	}
 
-	if resp.StatusCode >= 400 {
-		span.SetStatus(codes.Error, fmt.Sprintf("HTTP %d", resp.StatusCode))
-	}
-
 	resp.Body = traceutil.NewBufferedReader(resp.Body, func(r io.Reader) {
 		data, err := io.ReadAll(r)
-		if err != nil || len(data) == 0 {
+		if err != nil {
+			span.RecordError(err)
+			span.SetStatus(codes.Error, err.Error())
 			span.End()
 			return
+		}
+		if len(data) == 0 {
+			if resp.StatusCode >= 400 {
+				apiErr := fmt.Errorf("HTTP %d", resp.StatusCode)
+				span.RecordError(apiErr)
+				span.SetStatus(codes.Error, apiErr.Error())
+			}
+			span.End()
+			return
+		}
+
+		bodyText := string(data)
+		if resp.StatusCode >= 400 {
+			// Record an error so backends (e.g. LangSmith) show the trace as failed and populate run.error
+			msg := bodyText
+			if len(msg) > 500 {
+				msg = msg[:500] + "..."
+			}
+			apiErr := fmt.Errorf("HTTP %d: %s", resp.StatusCode, msg)
+			span.RecordError(apiErr)
+			span.SetStatus(codes.Error, apiErr.Error())
+		}
+		cancelled := resp.StatusCode < 400 && streaming && !strings.Contains(bodyText, "[DONE]")
+		if cancelled {
+			// Early stream termination: mirror traceable.ts behavior (end with "Cancelled")
+			cancelErr := fmt.Errorf("Cancelled")
+			span.RecordError(cancelErr)
+			span.SetStatus(codes.Error, cancelErr.Error())
 		}
 
 		var completion string
@@ -186,7 +217,7 @@ func MiddlewareWithTracerProvider(req *http.Request, next MiddlewareNext, tp tra
 				parentSpan.SetAttributes(attribute.Int64("gen_ai.usage.output_tokens", outputTokens))
 			}
 		}
-		if resp.StatusCode < 400 {
+		if resp.StatusCode < 400 && !cancelled {
 			span.SetStatus(codes.Ok, "")
 		}
 		span.End()

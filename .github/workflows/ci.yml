@@ -29,11 +29,14 @@ jobs:
 
       - name: Run lints
         run: ./scripts/lint
+
   test:
     timeout-minutes: 10
     name: test
     runs-on: ${{ github.repository == 'stainless-sdks/langsmith-api-go' && 'depot-ubuntu-24.04' || 'ubuntu-latest' }}
     if: github.event_name == 'push' || github.event.pull_request.head.repo.fork
+    env:
+      LANGSMITH_API_KEY: ${{ secrets.LANGSMITH_API_KEY_BETA }}
     steps:
       - uses: actions/checkout@v6
 
@@ -41,9 +44,6 @@ jobs:
         uses: actions/setup-go@v5
         with:
           go-version-file: ./go.mod
-
-      - name: Bootstrap
-        run: ./scripts/bootstrap
 
       - name: Run tests
         run: ./scripts/test
