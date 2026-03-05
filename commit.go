@@ -257,20 +257,24 @@ func (r commitNewResponseJSON) RawJSON() string {
 }
 
 type CommitGetResponse struct {
-	CommitHash string                     `json:"commit_hash"`
-	Examples   []CommitGetResponseExample `json:"examples"`
-	Manifest   interface{}                `json:"manifest"`
-	JSON       commitGetResponseJSON      `json:"-"`
+	CommitHash    string                     `json:"commit_hash"`
+	Examples      []CommitGetResponseExample `json:"examples"`
+	Manifest      interface{}                `json:"manifest"`
+	ModelConfig   interface{}                `json:"model_config"`
+	ModelProvider string                     `json:"model_provider"`
+	JSON          commitGetResponseJSON      `json:"-"`
 }
 
 // commitGetResponseJSON contains the JSON metadata for the struct
 // [CommitGetResponse]
 type commitGetResponseJSON struct {
-	CommitHash  apijson.Field
-	Examples    apijson.Field
-	Manifest    apijson.Field
-	raw         string
-	ExtraFields map[string]apijson.Field
+	CommitHash    apijson.Field
+	Examples      apijson.Field
+	Manifest      apijson.Field
+	ModelConfig   apijson.Field
+	ModelProvider apijson.Field
+	raw           string
+	ExtraFields   map[string]apijson.Field
 }
 
 func (r *CommitGetResponse) UnmarshalJSON(data []byte) (err error) {
