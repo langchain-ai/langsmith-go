@@ -220,8 +220,6 @@ Methods:
 - <code title="put /api/v1/datasets/{dataset_id}/splits">client.Datasets.Splits.<a href="https://pkg.go.dev/github.com/langchain-ai/langsmith-go#DatasetSplitService.New">New</a>(ctx <a href="https://pkg.go.dev/context">context</a>.<a href="https://pkg.go.dev/context#Context">Context</a>, datasetID <a href="https://pkg.go.dev/builtin#string">string</a>, body <a href="https://pkg.go.dev/github.com/langchain-ai/langsmith-go">langsmith</a>.<a href="https://pkg.go.dev/github.com/langchain-ai/langsmith-go#DatasetSplitNewParams">DatasetSplitNewParams</a>) (\*[]<a href="https://pkg.go.dev/builtin#string">string</a>, <a href="https://pkg.go.dev/builtin#error">error</a>)</code>
 - <code title="get /api/v1/datasets/{dataset_id}/splits">client.Datasets.Splits.<a href="https://pkg.go.dev/github.com/langchain-ai/langsmith-go#DatasetSplitService.Get">Get</a>(ctx <a href="https://pkg.go.dev/context">context</a>.<a href="https://pkg.go.dev/context#Context">Context</a>, datasetID <a href="https://pkg.go.dev/builtin#string">string</a>, query <a href="https://pkg.go.dev/github.com/langchain-ai/langsmith-go">langsmith</a>.<a href="https://pkg.go.dev/github.com/langchain-ai/langsmith-go#DatasetSplitGetParams">DatasetSplitGetParams</a>) (\*[]<a href="https://pkg.go.dev/builtin#string">string</a>, <a href="https://pkg.go.dev/builtin#error">error</a>)</code>
 
-## Index
-
 ## PlaygroundExperiment
 
 Params Types:

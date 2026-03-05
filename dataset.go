@@ -38,7 +38,6 @@ type DatasetService struct {
 	Share                *DatasetShareService
 	Comparative          *DatasetComparativeService
 	Splits               *DatasetSplitService
-	Index                *DatasetIndexService
 	PlaygroundExperiment *DatasetPlaygroundExperimentService
 }
 
@@ -55,7 +54,6 @@ func NewDatasetService(opts ...option.RequestOption) (r *DatasetService) {
 	r.Share = NewDatasetShareService(opts...)
 	r.Comparative = NewDatasetComparativeService(opts...)
 	r.Splits = NewDatasetSplitService(opts...)
-	r.Index = NewDatasetIndexService(opts...)
 	r.PlaygroundExperiment = NewDatasetPlaygroundExperimentService(opts...)
 	return
 }
