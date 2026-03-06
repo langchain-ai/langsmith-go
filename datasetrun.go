@@ -8,7 +8,6 @@ import (
 	"fmt"
 	"net/http"
 	"net/url"
-	"reflect"
 	"slices"
 	"time"
 
@@ -17,7 +16,6 @@ import (
 	"github.com/langchain-ai/langsmith-go/internal/param"
 	"github.com/langchain-ai/langsmith-go/internal/requestconfig"
 	"github.com/langchain-ai/langsmith-go/option"
-	"github.com/tidwall/gjson"
 )
 
 // DatasetRunService contains methods and other services that help with interacting
@@ -41,19 +39,14 @@ func NewDatasetRunService(opts ...option.RequestOption) (r *DatasetRunService) {
 
 // Fetch examples for a dataset, and fetch the runs for each example if they are
 // associated with the given session_ids.
-func (r *DatasetRunService) New(ctx context.Context, datasetID string, params DatasetRunNewParams, opts ...option.RequestOption) (res *DatasetRunNewResponseUnion, err error) {
-	var env apijson.UnionUnmarshaler[DatasetRunNewResponseUnion]
+func (r *DatasetRunService) New(ctx context.Context, datasetID string, params DatasetRunNewParams, opts ...option.RequestOption) (res *[]ExampleWithRunsCh, err error) {
 	opts = slices.Concat(r.Options, opts)
 	if datasetID == "" {
 		err = errors.New("missing required dataset_id parameter")
 		return
 	}
 	path := fmt.Sprintf("api/v1/datasets/%s/runs", datasetID)
-	err = requestconfig.ExecuteNewRequest(ctx, http.MethodPost, path, params, &env, opts...)
-	if err != nil {
-		return
-	}
-	res = &env.Value
+	err = requestconfig.ExecuteNewRequest(ctx, http.MethodPost, path, params, &res, opts...)
 	return
 }
 
@@ -68,47 +61,6 @@ func (r *DatasetRunService) Delta(ctx context.Context, datasetID string, body Da
 	path := fmt.Sprintf("api/v1/datasets/%s/runs/delta", datasetID)
 	err = requestconfig.ExecuteNewRequest(ctx, http.MethodPost, path, body, &res, opts...)
 	return
-}
-
-// Example schema with list of runs.
-type ExampleWithRuns struct {
-	ID             string                 `json:"id" api:"required" format:"uuid"`
-	DatasetID      string                 `json:"dataset_id" api:"required" format:"uuid"`
-	Inputs         map[string]interface{} `json:"inputs" api:"required"`
-	Name           string                 `json:"name" api:"required"`
-	Runs           []RunSchema            `json:"runs" api:"required"`
-	AttachmentURLs map[string]interface{} `json:"attachment_urls" api:"nullable"`
-	CreatedAt      time.Time              `json:"created_at" format:"date-time"`
-	Metadata       map[string]interface{} `json:"metadata" api:"nullable"`
-	ModifiedAt     time.Time              `json:"modified_at" api:"nullable" format:"date-time"`
-	Outputs        map[string]interface{} `json:"outputs" api:"nullable"`
-	SourceRunID    string                 `json:"source_run_id" api:"nullable" format:"uuid"`
-	JSON           exampleWithRunsJSON    `json:"-"`
-}
-
-// exampleWithRunsJSON contains the JSON metadata for the struct [ExampleWithRuns]
-type exampleWithRunsJSON struct {
-	ID             apijson.Field
-	DatasetID      apijson.Field
-	Inputs         apijson.Field
-	Name           apijson.Field
-	Runs           apijson.Field
-	AttachmentURLs apijson.Field
-	CreatedAt      apijson.Field
-	Metadata       apijson.Field
-	ModifiedAt     apijson.Field
-	Outputs        apijson.Field
-	SourceRunID    apijson.Field
-	raw            string
-	ExtraFields    map[string]apijson.Field
-}
-
-func (r *ExampleWithRuns) UnmarshalJSON(data []byte) (err error) {
-	return apijson.UnmarshalRoot(data, r)
-}
-
-func (r exampleWithRunsJSON) RawJSON() string {
-	return r.raw
 }
 
 // Example schema with list of runs from ClickHouse.
@@ -336,35 +288,6 @@ func (r SortParamsForRunsComparisonViewSortOrder) IsKnown() bool {
 	}
 	return false
 }
-
-// Union satisfied by [DatasetRunNewResponseExamplesWithRuns] or
-// [DatasetRunNewResponseArray].
-type DatasetRunNewResponseUnion interface {
-	implementsDatasetRunNewResponseUnion()
-}
-
-func init() {
-	apijson.RegisterUnion(
-		reflect.TypeOf((*DatasetRunNewResponseUnion)(nil)).Elem(),
-		"",
-		apijson.UnionVariant{
-			TypeFilter: gjson.JSON,
-			Type:       reflect.TypeOf(DatasetRunNewResponseExamplesWithRuns{}),
-		},
-		apijson.UnionVariant{
-			TypeFilter: gjson.JSON,
-			Type:       reflect.TypeOf(DatasetRunNewResponseArray{}),
-		},
-	)
-}
-
-type DatasetRunNewResponseExamplesWithRuns []ExampleWithRuns
-
-func (r DatasetRunNewResponseExamplesWithRuns) implementsDatasetRunNewResponseUnion() {}
-
-type DatasetRunNewResponseArray []ExampleWithRunsCh
-
-func (r DatasetRunNewResponseArray) implementsDatasetRunNewResponseUnion() {}
 
 type DatasetRunNewParams struct {
 	SessionIDs param.Field[[]string] `json:"session_ids" api:"required" format:"uuid"`
