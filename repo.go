@@ -187,6 +187,7 @@ type RepoWithLookups struct {
 	OriginalRepoFullName string                 `json:"original_repo_full_name" api:"nullable"`
 	OriginalRepoID       string                 `json:"original_repo_id" api:"nullable" format:"uuid"`
 	Readme               string                 `json:"readme" api:"nullable"`
+	RestrictedMode       bool                   `json:"restricted_mode"`
 	UpstreamRepoFullName string                 `json:"upstream_repo_full_name" api:"nullable"`
 	UpstreamRepoID       string                 `json:"upstream_repo_id" api:"nullable" format:"uuid"`
 	JSON                 repoWithLookupsJSON    `json:"-"`
@@ -218,6 +219,7 @@ type repoWithLookupsJSON struct {
 	OriginalRepoFullName apijson.Field
 	OriginalRepoID       apijson.Field
 	Readme               apijson.Field
+	RestrictedMode       apijson.Field
 	UpstreamRepoFullName apijson.Field
 	UpstreamRepoID       apijson.Field
 	raw                  string
@@ -282,11 +284,12 @@ func (r RepoNewParamsRepoType) IsKnown() bool {
 }
 
 type RepoUpdateParams struct {
-	Description param.Field[string]   `json:"description"`
-	IsArchived  param.Field[bool]     `json:"is_archived"`
-	IsPublic    param.Field[bool]     `json:"is_public"`
-	Readme      param.Field[string]   `json:"readme"`
-	Tags        param.Field[[]string] `json:"tags"`
+	Description    param.Field[string]   `json:"description"`
+	IsArchived     param.Field[bool]     `json:"is_archived"`
+	IsPublic       param.Field[bool]     `json:"is_public"`
+	Readme         param.Field[string]   `json:"readme"`
+	RestrictedMode param.Field[bool]     `json:"restricted_mode"`
+	Tags           param.Field[[]string] `json:"tags"`
 }
 
 func (r RepoUpdateParams) MarshalJSON() (data []byte, err error) {

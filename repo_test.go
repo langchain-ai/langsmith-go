@@ -94,11 +94,12 @@ func TestRepoUpdateWithOptionalParams(t *testing.T) {
 		"owner",
 		"repo",
 		langsmith.RepoUpdateParams{
-			Description: langsmith.F("description"),
-			IsArchived:  langsmith.F(true),
-			IsPublic:    langsmith.F(true),
-			Readme:      langsmith.F("readme"),
-			Tags:        langsmith.F([]string{"string"}),
+			Description:    langsmith.F("description"),
+			IsArchived:     langsmith.F(true),
+			IsPublic:       langsmith.F(true),
+			Readme:         langsmith.F("readme"),
+			RestrictedMode: langsmith.F(true),
+			Tags:           langsmith.F([]string{"string"}),
 		},
 	)
 	if err != nil {
