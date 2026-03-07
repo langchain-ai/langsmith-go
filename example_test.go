@@ -283,7 +283,7 @@ func TestExampleUploadFromCsvWithOptionalParams(t *testing.T) {
 		context.TODO(),
 		"182bd5e5-6e1a-4fe4-a799-aa6d9a6ab26e",
 		langsmith.ExampleUploadFromCsvParams{
-			File:         langsmith.F(io.Reader(bytes.NewBuffer([]byte("some file contents")))),
+			File:         langsmith.F(io.Reader(bytes.NewBuffer([]byte("Example data")))),
 			InputKeys:    langsmith.F([]string{"string"}),
 			MetadataKeys: langsmith.F([]string{"string"}),
 			OutputKeys:   langsmith.F([]string{"string"}),

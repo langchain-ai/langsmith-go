@@ -453,7 +453,7 @@ func TestDatasetUploadWithOptionalParams(t *testing.T) {
 		option.WithOrganizationID("My Organization ID"),
 	)
 	_, err := client.Datasets.Upload(context.TODO(), langsmith.DatasetUploadParams{
-		File:                    langsmith.F(io.Reader(bytes.NewBuffer([]byte("some file contents")))),
+		File:                    langsmith.F(io.Reader(bytes.NewBuffer([]byte("Example data")))),
 		InputKeys:               langsmith.F([]string{"string"}),
 		DataType:                langsmith.F(langsmith.DataTypeKv),
 		Description:             langsmith.F("description"),
