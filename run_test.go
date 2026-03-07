@@ -297,12 +297,12 @@ func TestRunIngestMultipartWithOptionalParams(t *testing.T) {
 		option.WithOrganizationID("My Organization ID"),
 	)
 	_, err := client.Runs.IngestMultipart(context.TODO(), langsmith.RunIngestMultipartParams{
-		AttachmentRunIDFilename: langsmith.F(io.Reader(bytes.NewBuffer([]byte("some file contents")))),
-		FeedbackRunID:           langsmith.F(io.Reader(bytes.NewBuffer([]byte("some file contents")))),
-		PatchRunID:              langsmith.F(io.Reader(bytes.NewBuffer([]byte("some file contents")))),
-		PatchRunIDOutputs:       langsmith.F(io.Reader(bytes.NewBuffer([]byte("some file contents")))),
-		PostRunID:               langsmith.F(io.Reader(bytes.NewBuffer([]byte("some file contents")))),
-		PostRunIDInputs:         langsmith.F(io.Reader(bytes.NewBuffer([]byte("some file contents")))),
+		AttachmentRunIDFilename: langsmith.F(io.Reader(bytes.NewBuffer([]byte("Example data")))),
+		FeedbackRunID:           langsmith.F(io.Reader(bytes.NewBuffer([]byte("Example data")))),
+		PatchRunID:              langsmith.F(io.Reader(bytes.NewBuffer([]byte("Example data")))),
+		PatchRunIDOutputs:       langsmith.F(io.Reader(bytes.NewBuffer([]byte("Example data")))),
+		PostRunID:               langsmith.F(io.Reader(bytes.NewBuffer([]byte("Example data")))),
+		PostRunIDInputs:         langsmith.F(io.Reader(bytes.NewBuffer([]byte("Example data")))),
 	})
 	if err != nil {
 		var apierr *langsmith.Error
