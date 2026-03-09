@@ -16,9 +16,9 @@ import (
 )
 
 const (
-	defaultEndpoint     = "api.smith.langchain.com"
-	defaultURLPath      = "/otel/v1/traces"
-	defaultBatchTimeout = 1 * time.Second
+	defaultEndpoint        = "api.smith.langchain.com"
+	defaultURLPath         = "/otel/v1/traces"
+	defaultBatchTimeout    = 1 * time.Second
 	defaultShutdownTimeout = 10 * time.Second
 )
 

@@ -9,6 +9,19 @@ GREEN='\033[0;32m'
 YELLOW='\033[0;33m'
 NC='\033[0m' # No Color
 
+# In CI: build (library + examples), then run unit tests + integration tests.
+# - go build ./... verifies the library and all example mains compile.
+# - go test -tags=integration ./... runs unit tests (all packages), integration tests
+#   (integration/; they skip if LANGSMITH_API_KEY is unset), and example tests.
+# Mock-dependent tests (e.g. pagination) skip when the Prism server is not reachable.
+if [ -n "$GITHUB_ACTIONS" ]; then
+  echo "==> Building library and examples"
+  go build ./...
+  echo "==> Running tests (unit + integration)"
+  go test -tags=integration ./... -count=1 -timeout 300s -v "$@"
+  exit 0
+fi
+
 function prism_is_running() {
   curl --silent "http://localhost:4010" >/dev/null 2>&1
 }

@@ -18,16 +18,32 @@
 package traceopenai
 
 import (
+	"context"
 	"net/http"
 
 	"go.opentelemetry.io/otel/trace"
 )
+
+type contextKey struct{ name string }
+
+var ctxKeyRunName = contextKey{"run_name"}
+
+// WithRunNameContext sets the span (run) name for the next traced request made with ctx.
+// The run name in LangSmith is the OTLP span name; there is no separate field.
+// Use this so one client can emit runs with different names per call, e.g. in tests:
+//
+//	ctx = traceopenai.WithRunNameContext(ctx, "openai_nonstreaming")
+//	client.CreateChatCompletion(ctx, ...)
+func WithRunNameContext(ctx context.Context, name string) context.Context {
+	return context.WithValue(ctx, ctxKeyRunName, name)
+}
 
 // Option configures a traced HTTP client.
 type Option func(*clientOptions)
 
 type clientOptions struct {
 	tracerProvider trace.TracerProvider
+	runName        string
 }
 
 // WithTracerProvider returns an Option that sets the tracer provider.
@@ -35,6 +51,13 @@ type clientOptions struct {
 func WithTracerProvider(tp trace.TracerProvider) Option {
 	return func(opts *clientOptions) {
 		opts.tracerProvider = tp
+	}
+}
+
+// WithRunName sets the span (run) name to the given string when non-empty. Used by integration tests to identify runs in a shared project.
+func WithRunName(name string) Option {
+	return func(opts *clientOptions) {
+		opts.runName = name
 	}
 }
 
@@ -59,33 +82,34 @@ func WrapClient(client *http.Client, opts ...Option) *http.Client {
 	if transport == nil {
 		transport = http.DefaultTransport
 	}
-	client.Transport = newRoundTripper(transport, options.tracerProvider)
+	client.Transport = newRoundTripper(transport, options.tracerProvider, options.runName)
 	return client
 }
 
 type roundTripper struct {
 	base           http.RoundTripper
 	tracerProvider trace.TracerProvider
+	runName        string
 }
 
-func newRoundTripper(base http.RoundTripper, tp trace.TracerProvider) http.RoundTripper {
+func newRoundTripper(base http.RoundTripper, tp trace.TracerProvider, runName string) http.RoundTripper {
 	return &roundTripper{
 		base:           base,
 		tracerProvider: tp,
+		runName:        runName,
 	}
 }
 
 // RoundTrip intercepts requests/responses to add tracing via the OpenAI middleware.
-// This follows the middleware pattern:
-//  1. roundTripper.RoundTrip() intercepts here
-//  2. Calls Middleware() to add tracing
-//  3. Middleware() calls base.RoundTrip() for actual HTTP request
 func (rt *roundTripper) RoundTrip(req *http.Request) (*http.Response, error) {
-	// Use the OpenAI middleware to add tracing
-	// The middleware will call next (base.RoundTrip) to make the actual HTTP request
+	ctx := req.Context()
+	// Prefer run name from context (per-request); fall back to client option.
+	if v := ctx.Value(ctxKeyRunName); v == nil && rt.runName != "" {
+		ctx = context.WithValue(ctx, ctxKeyRunName, rt.runName)
+		req = req.WithContext(ctx)
+	}
 	next := func(r *http.Request) (*http.Response, error) {
 		return rt.base.RoundTrip(r)
 	}
-
 	return MiddlewareWithTracerProvider(req, next, rt.tracerProvider)
 }

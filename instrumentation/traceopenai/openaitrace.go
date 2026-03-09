@@ -56,8 +56,12 @@ func MiddlewareWithTracerProvider(req *http.Request, next MiddlewareNext, tp tra
 	// Capture parent span before creating child span (for token propagation)
 	parentSpan := trace.SpanFromContext(ctx)
 
-	// Determine span name based on endpoint
 	spanName := getSpanName(req.URL.Path)
+	if v := req.Context().Value(ctxKeyRunName); v != nil {
+		if s, ok := v.(string); ok && s != "" {
+			spanName = s
+		}
+	}
 
 	// Build attributes for child span
 	spanAttrs := []attribute.KeyValue{
@@ -76,15 +80,15 @@ func MiddlewareWithTracerProvider(req *http.Request, next MiddlewareNext, tp tra
 	// Check for thread metadata keys in baggage and propagate to span attributes
 	if member := bag.Member("session_id"); member.Key() == "session_id" {
 		value := member.Value()
-		spanAttrs = append(spanAttrs, 
-			attribute.String("session_id", value), // Standard format per docs
+		spanAttrs = append(spanAttrs,
+			attribute.String("session_id", value),                    // Standard format per docs
 			attribute.String("langsmith.metadata.session_id", value), // LangSmith metadata format
-			attribute.String("session.id", value), // Compatibility format
+			attribute.String("session.id", value),                    // Compatibility format
 		)
 	}
 	if member := bag.Member("thread_id"); member.Key() == "thread_id" {
 		value := member.Value()
-		spanAttrs = append(spanAttrs, 
+		spanAttrs = append(spanAttrs,
 			attribute.String("thread_id", value),
 			attribute.String("langsmith.metadata.thread_id", value),
 			attribute.String("thread.id", value),
@@ -92,7 +96,7 @@ func MiddlewareWithTracerProvider(req *http.Request, next MiddlewareNext, tp tra
 	}
 	if member := bag.Member("conversation_id"); member.Key() == "conversation_id" {
 		value := member.Value()
-		spanAttrs = append(spanAttrs, 
+		spanAttrs = append(spanAttrs,
 			attribute.String("conversation_id", value),
 			attribute.String("langsmith.metadata.conversation_id", value),
 			attribute.String("conversation.id", value),
@@ -144,15 +148,49 @@ func MiddlewareWithTracerProvider(req *http.Request, next MiddlewareNext, tp tra
 		return resp, err
 	}
 
-	if resp.StatusCode >= 400 {
-		span.SetStatus(codes.Error, fmt.Sprintf("HTTP %d", resp.StatusCode))
-	}
-
-	resp.Body = traceutil.NewBufferedReader(resp.Body, func(r io.Reader) {
+	resp.Body = traceutil.NewBufferedReader(resp.Body, func(r io.Reader, readErr error) {
 		data, err := io.ReadAll(r)
-		if err != nil || len(data) == 0 {
+		if err != nil {
+			span.RecordError(err)
+			span.SetStatus(codes.Error, err.Error())
 			span.End()
 			return
+		}
+		if len(data) == 0 {
+			if resp.StatusCode >= 400 {
+				apiErr := fmt.Errorf("HTTP %d", resp.StatusCode)
+				span.RecordError(apiErr)
+				span.SetStatus(codes.Error, apiErr.Error())
+			}
+			// readErr is the error that ended the read (e.g. context.Canceled); record it so run has real error
+			if readErr != nil && readErr != io.EOF {
+				span.RecordError(readErr)
+				span.SetStatus(codes.Error, readErr.Error())
+			}
+			span.End()
+			return
+		}
+
+		bodyText := string(data)
+		if resp.StatusCode >= 400 {
+			// Record an error so backends (e.g. LangSmith) show the trace as failed and populate run.error
+			msg := bodyText
+			if len(msg) > 500 {
+				msg = msg[:500] + "..."
+			}
+			apiErr := fmt.Errorf("HTTP %d: %s", resp.StatusCode, msg)
+			span.RecordError(apiErr)
+			span.SetStatus(codes.Error, apiErr.Error())
+		}
+		// Early stream termination: use real error from read (e.g. context.Canceled) or synthetic "Cancelled"
+		incompleteStream := resp.StatusCode < 400 && streaming && !strings.Contains(bodyText, "[DONE]")
+		if incompleteStream {
+			endErr := readErr
+			if endErr == nil || endErr == io.EOF {
+				endErr = fmt.Errorf("Cancelled")
+			}
+			span.RecordError(endErr)
+			span.SetStatus(codes.Error, endErr.Error())
 		}
 
 		var completion string
@@ -186,7 +224,7 @@ func MiddlewareWithTracerProvider(req *http.Request, next MiddlewareNext, tp tra
 				parentSpan.SetAttributes(attribute.Int64("gen_ai.usage.output_tokens", outputTokens))
 			}
 		}
-		if resp.StatusCode < 400 {
+		if resp.StatusCode < 400 && !incompleteStream {
 			span.SetStatus(codes.Ok, "")
 		}
 		span.End()
