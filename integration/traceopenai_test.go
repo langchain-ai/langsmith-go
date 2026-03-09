@@ -352,10 +352,10 @@ func TestOpenAI_ToolCalling_NonStreaming(t *testing.T) {
 			t.Error("expected at least one run in LangSmith for tool calling")
 		} else {
 			assertLangSmithRunFields(t, &runs[0], LangSmithRunAssertions{
-				WantName:               expectedRunName,
-				WantRunType:            langsmith.RunQueryResponseRunsRunTypeLlm,
-				WantInputs:             true,
-				WantOutputs:            true,
+				WantName:                expectedRunName,
+				WantRunType:             langsmith.RunQueryResponseRunsRunTypeLlm,
+				WantInputs:              true,
+				WantOutputs:             true,
 				WantOutputsContainTools: true,
 			})
 		}
@@ -435,10 +435,10 @@ func TestOpenAI_ToolCalling_Streaming(t *testing.T) {
 		} else {
 			// Outputs include tool_calls (behavior 5)
 			assertLangSmithRunFields(t, &runs[0], LangSmithRunAssertions{
-				WantName:               expectedRunName,
-				WantRunType:            langsmith.RunQueryResponseRunsRunTypeLlm,
-				WantInputs:             true,
-				WantOutputs:            true,
+				WantName:                expectedRunName,
+				WantRunType:             langsmith.RunQueryResponseRunsRunTypeLlm,
+				WantInputs:              true,
+				WantOutputs:             true,
 				WantOutputsContainTools: true,
 			})
 		}
@@ -486,11 +486,11 @@ func TestOpenAI_SystemMessage(t *testing.T) {
 		} else {
 			// System content in run inputs (behavior 6)
 			assertLangSmithRunFields(t, &runs[0], LangSmithRunAssertions{
-				WantName:                 expectedRunName,
-				WantRunType:              langsmith.RunQueryResponseRunsRunTypeLlm,
-				WantInputs:               true,
-				WantOutputs:              true,
-				WantInputsContainSystem:  true,
+				WantName:                expectedRunName,
+				WantRunType:             langsmith.RunQueryResponseRunsRunTypeLlm,
+				WantInputs:              true,
+				WantOutputs:             true,
+				WantInputsContainSystem: true,
 			})
 		}
 	}
@@ -549,11 +549,11 @@ func TestOpenAI_MultipleMessages(t *testing.T) {
 		} else {
 			// Full conversation in run inputs (behavior 7)
 			assertLangSmithRunFields(t, &runs[0], LangSmithRunAssertions{
-				WantName:                expectedRunName,
-				WantRunType:             langsmith.RunQueryResponseRunsRunTypeLlm,
-				WantInputs:              true,
-				WantOutputs:             true,
-				WantInputsMessageCount:  4,
+				WantName:               expectedRunName,
+				WantRunType:            langsmith.RunQueryResponseRunsRunTypeLlm,
+				WantInputs:             true,
+				WantOutputs:            true,
+				WantInputsMessageCount: 4,
 			})
 		}
 	}
@@ -599,11 +599,11 @@ func TestOpenAI_TokenUsage_NonStreaming(t *testing.T) {
 		} else {
 			// Run has usage (behavior 8)
 			assertLangSmithRunFields(t, &runs[0], LangSmithRunAssertions{
-				WantName:       expectedRunName,
-				WantRunType:    langsmith.RunQueryResponseRunsRunTypeLlm,
-				WantInputs:     true,
-				WantOutputs:   true,
-				WantUsage:     true,
+				WantName:    expectedRunName,
+				WantRunType: langsmith.RunQueryResponseRunsRunTypeLlm,
+				WantInputs:  true,
+				WantOutputs: true,
+				WantUsage:   true,
 			})
 		}
 	}
@@ -657,13 +657,12 @@ func TestOpenAI_TokenUsage_Streaming(t *testing.T) {
 		} else {
 			// Run has usage (behavior 8)
 			assertLangSmithRunFields(t, &runs[0], LangSmithRunAssertions{
-				WantName:      expectedRunName,
-				WantRunType:   langsmith.RunQueryResponseRunsRunTypeLlm,
-				WantInputs:    true,
-				WantOutputs:  true,
-				WantUsage:     true,
+				WantName:    expectedRunName,
+				WantRunType: langsmith.RunQueryResponseRunsRunTypeLlm,
+				WantInputs:  true,
+				WantOutputs: true,
+				WantUsage:   true,
 			})
 		}
 	}
 }
-

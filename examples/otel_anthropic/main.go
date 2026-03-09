@@ -175,7 +175,6 @@ func run() error {
 	return nil
 }
 
-
 // getProjectName returns the project name from environment or default.
 func getProjectName() string {
 	if projectName := os.Getenv("LANGSMITH_PROJECT"); projectName != "" {

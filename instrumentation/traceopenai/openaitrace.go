@@ -80,15 +80,15 @@ func MiddlewareWithTracerProvider(req *http.Request, next MiddlewareNext, tp tra
 	// Check for thread metadata keys in baggage and propagate to span attributes
 	if member := bag.Member("session_id"); member.Key() == "session_id" {
 		value := member.Value()
-		spanAttrs = append(spanAttrs, 
-			attribute.String("session_id", value), // Standard format per docs
+		spanAttrs = append(spanAttrs,
+			attribute.String("session_id", value),                    // Standard format per docs
 			attribute.String("langsmith.metadata.session_id", value), // LangSmith metadata format
-			attribute.String("session.id", value), // Compatibility format
+			attribute.String("session.id", value),                    // Compatibility format
 		)
 	}
 	if member := bag.Member("thread_id"); member.Key() == "thread_id" {
 		value := member.Value()
-		spanAttrs = append(spanAttrs, 
+		spanAttrs = append(spanAttrs,
 			attribute.String("thread_id", value),
 			attribute.String("langsmith.metadata.thread_id", value),
 			attribute.String("thread.id", value),
@@ -96,7 +96,7 @@ func MiddlewareWithTracerProvider(req *http.Request, next MiddlewareNext, tp tra
 	}
 	if member := bag.Member("conversation_id"); member.Key() == "conversation_id" {
 		value := member.Value()
-		spanAttrs = append(spanAttrs, 
+		spanAttrs = append(spanAttrs,
 			attribute.String("conversation_id", value),
 			attribute.String("langsmith.metadata.conversation_id", value),
 			attribute.String("conversation.id", value),

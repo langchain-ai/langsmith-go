@@ -2,6 +2,7 @@ package traceutil
 
 import (
 	"bytes"
+	"errors"
 	"io"
 	"strings"
 	"testing"
@@ -15,6 +16,14 @@ type nopCloser struct {
 func (n *nopCloser) Close() error {
 	n.closed = true
 	return nil
+}
+
+type errReader struct {
+	err error
+}
+
+func (e *errReader) Read([]byte) (int, error) {
+	return 0, e.err
 }
 
 func TestBufferedReader_ReadToEOF(t *testing.T) {
@@ -84,6 +93,32 @@ func TestBufferedReader_NilOnDone(t *testing.T) {
 		t.Errorf("expected 'data', got %q", string(data))
 	}
 	br.Close()
+}
+
+func TestBufferedReader_ReadErrPropagation(t *testing.T) {
+	readErr := errors.New("connection reset")
+	src := &nopCloser{Reader: io.MultiReader(
+		strings.NewReader("partial"),
+		&errReader{err: readErr},
+	)}
+	var captured string
+	var gotErr error
+	br := NewBufferedReader(src, func(r io.Reader, err error) {
+		data, _ := io.ReadAll(r)
+		captured = string(data)
+		gotErr = err
+	})
+
+	_, err := io.ReadAll(br)
+	if !errors.Is(err, readErr) {
+		t.Fatalf("expected read error %v, got %v", readErr, err)
+	}
+	if captured != "partial" {
+		t.Errorf("onDone captured %q, expected 'partial'", captured)
+	}
+	if !errors.Is(gotErr, readErr) {
+		t.Errorf("onDone error = %v, want %v", gotErr, readErr)
+	}
 }
 
 func TestBufferedReader_PassesThroughData(t *testing.T) {

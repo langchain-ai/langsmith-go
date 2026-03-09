@@ -1,7 +1,6 @@
 package main
 
 import (
-	"os"
 	"strings"
 	"testing"
 
@@ -51,8 +50,7 @@ func TestBuildBulkExampleBody(t *testing.T) {
 }
 
 func TestBuildDatasetURL(t *testing.T) {
-	os.Setenv("LANGSMITH_ENDPOINT", "https://api.smith.langchain.com")
-	defer os.Unsetenv("LANGSMITH_ENDPOINT")
+	t.Setenv("LANGSMITH_ENDPOINT", "https://api.smith.langchain.com")
 
 	ds := &langsmith.Dataset{}
 	ds.TenantID = "tenant-1"
@@ -64,7 +62,7 @@ func TestBuildDatasetURL(t *testing.T) {
 }
 
 func TestBuildDatasetURLDefaultEndpoint(t *testing.T) {
-	os.Unsetenv("LANGSMITH_ENDPOINT")
+	t.Setenv("LANGSMITH_ENDPOINT", "")
 
 	ds := &langsmith.Dataset{}
 	ds.TenantID = "t"

@@ -19,7 +19,7 @@ import (
 )
 
 var (
-	sharedIntegrationProject   string
+	sharedIntegrationProject     string
 	sharedIntegrationProjectOnce sync.Once
 )
 
@@ -140,32 +140,38 @@ func getSpanAttrInt(spans tracetest.SpanStubs, key string) (int64, bool) {
 // minRuns appear (or minRuns matching runName if runName is set). Session is looked up by project name.
 // When runName is non-empty, returned runs are filtered to those with run.Name == runName,
 // so tests that share one project can find their run by unique name.
+//
+// Polling uses exponential backoff (500ms → 1s → 2s → 2s …) with a total
+// budget of 10s for the session lookup and 10s for the run query, keeping the
+// worst-case wall time to ~20s instead of the previous 60s.
 func pollForRuns(t *testing.T, projectName string, minRuns int, runName string) []langsmith.RunQueryResponseRun {
 	t.Helper()
 	client := langsmith.NewClient()
 	ctx := context.Background()
 
+	const pollBudget = 10 * time.Second
+
 	var sessionID string
-	for i := 0; i < 15; i++ {
-		time.Sleep(2 * time.Second)
+	deadline := time.Now().Add(pollBudget)
+	wait := 500 * time.Millisecond
+	for time.Now().Before(deadline) {
+		time.Sleep(wait)
 		sessions, err := client.Sessions.List(ctx, langsmith.SessionListParams{
 			Name: langsmith.F(projectName),
 		})
 		if err != nil {
 			t.Logf("poll sessions: %v", err)
-			continue
-		}
-		if len(sessions.Items) > 0 {
+		} else if len(sessions.Items) > 0 {
 			sessionID = sessions.Items[0].ID
 			break
 		}
+		wait = min(wait*2, 2*time.Second)
 	}
 	if sessionID == "" {
 		t.Errorf("session %q not found after polling", projectName)
 		return nil
 	}
 
-	// Request fields needed for shape + content assertions
 	selectFields := []langsmith.RunQueryParamsSelect{
 		langsmith.RunQueryParamsSelectID,
 		langsmith.RunQueryParamsSelectName,
@@ -182,8 +188,10 @@ func pollForRuns(t *testing.T, projectName string, minRuns int, runName string) 
 		langsmith.RunQueryParamsSelectTotalTokens,
 		langsmith.RunQueryParamsSelectMessages,
 	}
-	for i := 0; i < 15; i++ {
-		time.Sleep(2 * time.Second)
+	deadline = time.Now().Add(pollBudget)
+	wait = 500 * time.Millisecond
+	for time.Now().Before(deadline) {
+		time.Sleep(wait)
 		result, err := client.Runs.Query(ctx, langsmith.RunQueryParams{
 			Session: langsmith.F([]string{sessionID}),
 			Limit:   langsmith.F(int64(100)),
@@ -191,21 +199,22 @@ func pollForRuns(t *testing.T, projectName string, minRuns int, runName string) 
 		})
 		if err != nil {
 			t.Logf("poll runs: %v", err)
-			continue
-		}
-		runs := result.Runs
-		if runName != "" {
-			filtered := runs[:0]
-			for _, r := range runs {
-				if r.Name == runName {
-					filtered = append(filtered, r)
+		} else {
+			runs := result.Runs
+			if runName != "" {
+				filtered := runs[:0]
+				for _, r := range runs {
+					if r.Name == runName {
+						filtered = append(filtered, r)
+					}
 				}
+				runs = filtered
 			}
-			runs = filtered
+			if len(runs) >= minRuns {
+				return runs
+			}
 		}
-		if len(runs) >= minRuns {
-			return runs
-		}
+		wait = min(wait*2, 2*time.Second)
 	}
 	if runName != "" {
 		t.Errorf("expected at least %d run(s) with name %q in session %q, not found after polling", minRuns, runName, projectName)
@@ -216,12 +225,12 @@ func pollForRuns(t *testing.T, projectName string, minRuns int, runName string) 
 }
 
 type LangSmithRunAssertions struct {
-	WantName     string
-	WantRunType  langsmith.RunQueryResponseRunsRunType
-	ExpectError  bool   // if true, run.Error should be non-empty (e.g. exception raised → SDK patches run with error)
-	WantStatus   string // if non-empty, assert run.Status equals this (e.g. "error" when call fails)
-	WantInputs   bool   // assert run has non-empty inputs when backend populates
-	WantOutputs  bool   // assert run has non-empty outputs when backend populates
+	WantName    string
+	WantRunType langsmith.RunQueryResponseRunsRunType
+	ExpectError bool   // if true, run.Error should be non-empty (e.g. exception raised → SDK patches run with error)
+	WantStatus  string // if non-empty, assert run.Status equals this (e.g. "error" when call fails)
+	WantInputs  bool   // assert run has non-empty inputs when backend populates
+	WantOutputs bool   // assert run has non-empty outputs when backend populates
 
 	// Content assertions (run contents match expected behaviors)
 	WantUsage               bool   // run has PromptTokens and CompletionTokens > 0

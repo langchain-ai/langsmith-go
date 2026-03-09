@@ -115,12 +115,12 @@ func run() error {
 	// Trace 1: First API call
 	fmt.Println("Trace 1: Initial question")
 	ctx1 := context.Background()
-	
+
 	// Propagate thread ID through baggage for this trace
 	member1, _ := baggage.NewMember("session_id", threadID)
 	bag1, _ := baggage.New(member1)
 	ctx1 = baggage.ContextWithBaggage(ctx1, bag1)
-	
+
 	ctx1, trace1Root := tracer.Start(ctx1, "trace.1.initial_question",
 		trace.WithAttributes(
 			attribute.String("gen_ai.operation.name", "chat"),
@@ -131,7 +131,7 @@ func run() error {
 			attribute.String("session.id", threadID),
 		),
 	)
-	
+
 	ctx1, trace1Step := tracer.Start(ctx1, "agent.step",
 		trace.WithAttributes(
 			attribute.String("step.type", "initial_query"),
@@ -142,7 +142,7 @@ func run() error {
 			attribute.String("session.id", threadID),
 		),
 	)
-	
+
 	time.Sleep(50 * time.Millisecond)
 
 	req1 := openai.ChatCompletionRequest{
@@ -169,12 +169,12 @@ func run() error {
 		completion1Text = completion1.Choices[0].Message.Content
 		fmt.Printf("   Response: %s\n", completion1Text)
 	}
-	
+
 	// Set output on root span for LangSmith UI
 	if completion1Text != "" {
 		trace1Root.SetAttributes(attribute.String("gen_ai.completion", completion1Text))
 	}
-	
+
 	if completion1.Usage.TotalTokens > 0 {
 		fmt.Printf("   Tokens used: %d\n", completion1.Usage.TotalTokens)
 	}
@@ -186,11 +186,11 @@ func run() error {
 	// Trace 2: Second API call (same thread)
 	fmt.Println("Trace 2: Another question")
 	ctx2 := context.Background()
-	
+
 	member2, _ := baggage.NewMember("session_id", threadID)
 	bag2, _ := baggage.New(member2)
 	ctx2 = baggage.ContextWithBaggage(ctx2, bag2)
-	
+
 	ctx2, trace2Root := tracer.Start(ctx2, "trace.2.simple_math",
 		trace.WithAttributes(
 			attribute.String("gen_ai.operation.name", "chat"),
@@ -200,7 +200,7 @@ func run() error {
 			attribute.String("session.id", threadID),
 		),
 	)
-	
+
 	ctx2, trace2Step := tracer.Start(ctx2, "agent.step",
 		trace.WithAttributes(
 			attribute.String("step.type", "additional_query"),
@@ -210,7 +210,7 @@ func run() error {
 			attribute.String("session.id", threadID),
 		),
 	)
-	
+
 	time.Sleep(50 * time.Millisecond)
 
 	req2 := openai.ChatCompletionRequest{
@@ -237,12 +237,12 @@ func run() error {
 		completion2Text = completion2.Choices[0].Message.Content
 		fmt.Printf("   Response: %s\n", completion2Text)
 	}
-	
+
 	// Set output on root span for LangSmith UI
 	if completion2Text != "" {
 		trace2Root.SetAttributes(attribute.String("gen_ai.completion", completion2Text))
 	}
-	
+
 	if completion2.Usage.TotalTokens > 0 {
 		fmt.Printf("   Tokens used: %d\n", completion2.Usage.TotalTokens)
 	}
@@ -254,11 +254,11 @@ func run() error {
 	// Trace 3: Third API call (same thread)
 	fmt.Println("Trace 3: Final question")
 	ctx3 := context.Background()
-	
+
 	member3, _ := baggage.NewMember("session_id", threadID)
 	bag3, _ := baggage.New(member3)
 	ctx3 = baggage.ContextWithBaggage(ctx3, bag3)
-	
+
 	ctx3, trace3Root := tracer.Start(ctx3, "trace.3.famous_scientist",
 		trace.WithAttributes(
 			attribute.String("gen_ai.operation.name", "chat"),
@@ -268,7 +268,7 @@ func run() error {
 			attribute.String("session.id", threadID),
 		),
 	)
-	
+
 	ctx3, trace3Step := tracer.Start(ctx3, "agent.step",
 		trace.WithAttributes(
 			attribute.String("step.type", "final_query"),
@@ -278,7 +278,7 @@ func run() error {
 			attribute.String("session.id", threadID),
 		),
 	)
-	
+
 	time.Sleep(50 * time.Millisecond)
 
 	req3 := openai.ChatCompletionRequest{
@@ -305,12 +305,12 @@ func run() error {
 		completion3Text = completion3.Choices[0].Message.Content
 		fmt.Printf("   Response: %s\n", completion3Text)
 	}
-	
+
 	// Set output on root span for LangSmith UI
 	if completion3Text != "" {
 		trace3Root.SetAttributes(attribute.String("gen_ai.completion", completion3Text))
 	}
-	
+
 	if completion3.Usage.TotalTokens > 0 {
 		fmt.Printf("   Tokens used: %d\n", completion3.Usage.TotalTokens)
 	}
@@ -325,7 +325,6 @@ func run() error {
 	fmt.Println("✓ All traces flushed successfully")
 	return nil
 }
-
 
 // getProjectName returns the project name from environment or default.
 func getProjectName() string {

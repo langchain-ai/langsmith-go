@@ -21,17 +21,17 @@ const testAnthropicModel = "claude-sonnet-4-5-20250929"
 
 // Hardcoded run names per test type for identifying traces in the shared integration project.
 const (
-	runNameAnthropicNonstreaming         = "anthropic_nonstreaming"
-	runNameAnthropicStreaming            = "anthropic_streaming"
-	runNameAnthropicEarlyTermination     = "anthropic_early_termination"
-	runNameAnthropicError                = "anthropic_error"
-	runNameAnthropicToolUseNonstream     = "anthropic_tool_use_nonstream"
-	runNameAnthropicToolUseStream        = "anthropic_tool_use_stream"
-	runNameAnthropicSystemMessage        = "anthropic_system_message"
-	runNameAnthropicMultipleMessages     = "anthropic_multiple_messages"
-	runNameAnthropicTokenUsageNonstream  = "anthropic_token_usage_nonstream"
-	runNameAnthropicTokenUsageStream     = "anthropic_token_usage_stream"
-	runNameAnthropicStopReason           = "anthropic_stop_reason"
+	runNameAnthropicNonstreaming        = "anthropic_nonstreaming"
+	runNameAnthropicStreaming           = "anthropic_streaming"
+	runNameAnthropicEarlyTermination    = "anthropic_early_termination"
+	runNameAnthropicError               = "anthropic_error"
+	runNameAnthropicToolUseNonstream    = "anthropic_tool_use_nonstream"
+	runNameAnthropicToolUseStream       = "anthropic_tool_use_stream"
+	runNameAnthropicSystemMessage       = "anthropic_system_message"
+	runNameAnthropicMultipleMessages    = "anthropic_multiple_messages"
+	runNameAnthropicTokenUsageNonstream = "anthropic_token_usage_nonstream"
+	runNameAnthropicTokenUsageStream    = "anthropic_token_usage_stream"
+	runNameAnthropicStopReason          = "anthropic_stop_reason"
 )
 
 func newAnthropicClient(t *testing.T, tp *sdktrace.TracerProvider) anthropic.Client {
@@ -484,11 +484,11 @@ func TestAnthropic_SystemMessage(t *testing.T) {
 		} else {
 			// System content in run inputs (behavior 6)
 			assertLangSmithRunFields(t, &runs[0], LangSmithRunAssertions{
-				WantName:                 expectedRunName,
-				WantRunType:              langsmith.RunQueryResponseRunsRunTypeLlm,
-				WantInputs:               true,
-				WantOutputs:              true,
-				WantInputsContainSystem:  true,
+				WantName:                expectedRunName,
+				WantRunType:             langsmith.RunQueryResponseRunsRunTypeLlm,
+				WantInputs:              true,
+				WantOutputs:             true,
+				WantInputsContainSystem: true,
 			})
 		}
 	}
@@ -549,11 +549,11 @@ func TestAnthropic_MultipleMessages(t *testing.T) {
 		} else {
 			// Full conversation in run inputs (behavior 7)
 			assertLangSmithRunFields(t, &runs[0], LangSmithRunAssertions{
-				WantName:                expectedRunName,
-				WantRunType:             langsmith.RunQueryResponseRunsRunTypeLlm,
-				WantInputs:              true,
-				WantOutputs:             true,
-				WantInputsMessageCount:  4,
+				WantName:               expectedRunName,
+				WantRunType:            langsmith.RunQueryResponseRunsRunTypeLlm,
+				WantInputs:             true,
+				WantOutputs:            true,
+				WantInputsMessageCount: 4,
 			})
 		}
 	}
@@ -599,11 +599,11 @@ func TestAnthropic_TokenUsage_NonStreaming(t *testing.T) {
 		} else {
 			// Run has usage (behavior 8)
 			assertLangSmithRunFields(t, &runs[0], LangSmithRunAssertions{
-				WantName:      expectedRunName,
-				WantRunType:   langsmith.RunQueryResponseRunsRunTypeLlm,
-				WantInputs:    true,
-				WantOutputs:   true,
-				WantUsage:     true,
+				WantName:    expectedRunName,
+				WantRunType: langsmith.RunQueryResponseRunsRunTypeLlm,
+				WantInputs:  true,
+				WantOutputs: true,
+				WantUsage:   true,
 			})
 		}
 	}
@@ -647,11 +647,11 @@ func TestAnthropic_TokenUsage_Streaming(t *testing.T) {
 		} else {
 			// Run has usage (behavior 8)
 			assertLangSmithRunFields(t, &runs[0], LangSmithRunAssertions{
-				WantName:      expectedRunName,
-				WantRunType:   langsmith.RunQueryResponseRunsRunTypeLlm,
-				WantInputs:    true,
-				WantOutputs:   true,
-				WantUsage:     true,
+				WantName:    expectedRunName,
+				WantRunType: langsmith.RunQueryResponseRunsRunTypeLlm,
+				WantInputs:  true,
+				WantOutputs: true,
+				WantUsage:   true,
 			})
 		}
 	}

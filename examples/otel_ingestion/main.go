@@ -27,15 +27,15 @@ import (
 //	go run ./examples/otel_ingestion
 
 const (
-	defaultProjectName     = "default"
-	otelEndpoint           = "https://api.smith.langchain.com/otel/v1/traces"
-	serviceName            = "langsmith-go"
-	tracerName             = "langsmith.go.example"
-	traceFlushWait         = 2 * time.Second
-	llmSpan1Duration       = 500 * time.Millisecond
-	toolSpanDuration       = 300 * time.Millisecond
-	retrieverSpanDuration  = 200 * time.Millisecond
-	llmSpan2Duration       = 400 * time.Millisecond
+	defaultProjectName    = "default"
+	otelEndpoint          = "https://api.smith.langchain.com/otel/v1/traces"
+	serviceName           = "langsmith-go"
+	tracerName            = "langsmith.go.example"
+	traceFlushWait        = 2 * time.Second
+	llmSpan1Duration      = 500 * time.Millisecond
+	toolSpanDuration      = 300 * time.Millisecond
+	retrieverSpanDuration = 200 * time.Millisecond
+	llmSpan2Duration      = 400 * time.Millisecond
 )
 
 func main() {
@@ -94,7 +94,7 @@ func run() error {
 
 // config holds the application configuration.
 type config struct {
-	apiKey     string
+	apiKey      string
 	projectName string
 }
 
@@ -234,5 +234,3 @@ func flushTraces() {
 	fmt.Println("\nAll spans ended. Flushing to LangSmith...")
 	time.Sleep(traceFlushWait)
 }
-
-
