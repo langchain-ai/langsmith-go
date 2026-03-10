@@ -28,7 +28,7 @@ func ParseSSEChunks(r io.Reader) ([]map[string]any, error) {
 
 		var chunk map[string]any
 		if err := json.Unmarshal([]byte(line), &chunk); err != nil {
-			continue
+			return chunks, err
 		}
 
 		chunks = append(chunks, chunk)

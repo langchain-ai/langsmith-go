@@ -79,6 +79,16 @@ func NewClient(opts ...option.RequestOption) (r *Client) {
 	return
 }
 
+// CreateRun enqueues a run create (post) for multipart ingestion.
+func (r *Client) CreateRun(run *RunCreate) error {
+	return r.Tracing.CreateRun(run)
+}
+
+// UpdateRun enqueues a run update (patch) for multipart ingestion.
+func (r *Client) UpdateRun(run *RunUpdate) error {
+	return r.Tracing.UpdateRun(run)
+}
+
 // Close flushes pending tracing operations and shuts down background goroutines.
 // Always call Close before the client goes out of scope to ensure all traces are
 // delivered. It is safe to call Close multiple times.
