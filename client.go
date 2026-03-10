@@ -9,6 +9,7 @@ import (
 	"slices"
 
 	"github.com/langchain-ai/langsmith-go/internal/requestconfig"
+	"github.com/langchain-ai/langsmith-go/lib/langsmithtracing"
 	"github.com/langchain-ai/langsmith-go/option"
 )
 
@@ -27,6 +28,7 @@ type Client struct {
 	Repos            *RepoService
 	Commits          *CommitService
 	Settings         *SettingService
+	Tracing          *langsmithtracing.TracingClient
 }
 
 // DefaultClientOptions read from the environment (LANGSMITH_API_KEY,
@@ -72,8 +74,18 @@ func NewClient(opts ...option.RequestOption) (r *Client) {
 	r.Repos = NewRepoService(opts...)
 	r.Commits = NewCommitService(opts...)
 	r.Settings = NewSettingService(opts...)
+	r.Tracing = langsmithtracing.NewTracingClient(context.Background())
 
 	return
+}
+
+// Close flushes pending tracing operations and shuts down background goroutines.
+// Always call Close before the client goes out of scope to ensure all traces are
+// delivered. It is safe to call Close multiple times.
+func (r *Client) Close() {
+	if r.Tracing != nil {
+		r.Tracing.Close()
+	}
 }
 
 // Execute makes a request with the given context, method, URL, request params,

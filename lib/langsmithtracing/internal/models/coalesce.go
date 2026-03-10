@@ -7,8 +7,7 @@ import (
 	"github.com/google/uuid"
 )
 
-// Coalesce merges patch ops into their corresponding post ops for the same run ID,
-// matching the Python SDK's combine_serialized_queue_operations behavior.
+// Coalesce merges patch ops into their corresponding post ops for the same run ID.
 func Coalesce(ops []*SerializedOp) ([]*SerializedOp, error) {
 	posts := make(map[uuid.UUID]int)
 	out := make([]*SerializedOp, 0, len(ops))

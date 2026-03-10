@@ -229,3 +229,30 @@ func TestMergeJSONMaps_NestedMerge(t *testing.T) {
 		t.Errorf("expected c=2, got %v", inner["c"])
 	}
 }
+
+func TestSerializedOp_SizeNilReceiver(t *testing.T) {
+	var op *SerializedOp
+	if op.Size() != 0 {
+		t.Errorf("nil SerializedOp.Size() = %d, want 0", op.Size())
+	}
+}
+
+func TestSerializedOp_SizeIncludesAllFields(t *testing.T) {
+	op := &SerializedOp{
+		RunInfo:  []byte(`{"name":"x"}`),
+		Inputs:   []byte(`{"a":1}`),
+		Outputs:  []byte(`{"b":2}`),
+		Events:   []byte(`[1]`),
+		Extra:    []byte(`{}`),
+		Error:    []byte(`"err"`),
+		Serialized: []byte(`{}`),
+		Attachments: map[string]Attachment{
+			"f": {Data: []byte("12345")},
+		},
+	}
+	expected := len(op.RunInfo) + len(op.Inputs) + len(op.Outputs) +
+		len(op.Events) + len(op.Extra) + len(op.Error) + len(op.Serialized) + 5
+	if got := op.Size(); got != expected {
+		t.Errorf("Size() = %d, want %d", got, expected)
+	}
+}

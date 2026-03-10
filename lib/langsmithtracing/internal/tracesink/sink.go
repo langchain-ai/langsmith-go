@@ -10,8 +10,7 @@ import (
 	"github.com/langchain-ai/langsmith-go/lib/langsmithtracing/internal/multipart"
 )
 
-// RunTransformFunc is a pre-export transform hook matching the Python SDK's
-// process_buffered_run_ops callback. It receives a batch of decoded run
+// RunTransformFunc is a pre-export transform hook. It receives a batch of decoded run
 // operations and returns (possibly modified) operations. The transform runs
 // on every drain cycle, after batching but before coalescing and export.
 type RunTransformFunc func(ops []models.RunOp) []models.RunOp
@@ -28,7 +27,7 @@ type TraceSink struct {
 
 	mu     sync.Mutex
 	queue  []*models.SerializedOp
-	notify chan struct{} // signaled on Submit to wake runLoop
+	notify chan struct{} // signaled on Close to wake runLoop for shutdown
 
 	done   chan struct{}
 	closed bool
@@ -57,8 +56,7 @@ func NewTraceSink(ctx context.Context, exporter *multipart.Exporter, config Drai
 
 // Submit adds a serialized operation to the queue.
 // If the queue is at capacity (MaxQueueSize), the operation is dropped with
-// a warning log, matching the JS SDK's backpressure behavior.
-//
+// a warning log.
 // Submit does not wake the drain loop immediately — the ticker provides
 // a natural batching window so that create+update pairs for the same run
 // are coalesced before export.
@@ -78,6 +76,8 @@ func (s *TraceSink) Submit(op *models.SerializedOp) error {
 
 // Close flushes remaining operations and shuts down the sink.
 // It spawns workers for a concurrent drain when many items remain.
+// The flush is bounded by CloseTimeout (default 60s); any items still
+// queued after the deadline are dropped with a warning.
 func (s *TraceSink) Close() {
 	s.mu.Lock()
 	if s.closed {
@@ -87,21 +87,36 @@ func (s *TraceSink) Close() {
 	s.closed = true
 	s.mu.Unlock()
 
-	// Wake runLoop so it sees closed immediately.
 	select {
 	case s.notify <- struct{}{}:
 	default:
 	}
 	<-s.done
 
+	timeout := s.config.CloseTimeout
+	if timeout <= 0 {
+		timeout = 60 * time.Second
+	}
+	ctx, cancel := context.WithTimeout(context.Background(), timeout)
+	defer cancel()
+
 	s.mu.Lock()
 	queueLen := len(s.queue)
 	s.mu.Unlock()
 	if queueLen > s.config.MaxBatchSize {
-		s.spawnWorkers(s.config.MaxWorkers, context.Background())
+		s.spawnWorkers(s.config.MaxWorkers, ctx)
 	}
 
-	for s.drainOnce(context.Background()) {
+	for s.drainOnce(ctx) {
+		if ctx.Err() != nil {
+			s.mu.Lock()
+			remaining := len(s.queue)
+			s.mu.Unlock()
+			if remaining > 0 {
+				log.Printf("[langsmith] close timed out after %v; dropping %d pending items", timeout, remaining)
+			}
+			break
+		}
 	}
 	s.workerWg.Wait()
 }

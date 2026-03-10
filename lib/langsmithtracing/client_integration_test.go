@@ -308,7 +308,7 @@ func TestMultipartTracing(t *testing.T) {
 		t.Fatalf("UpdateRun (runtime-and-metadata): %v", err)
 	}
 
-	// --- Trace 7: LLM run with first-token event (matching Python's new_token) ---
+	// --- Trace 7: LLM run with first-token event ---
 	streamID := uuid.New()
 	streamStart := now.Add(700 * time.Millisecond)
 	streamDotted := formatDottedOrder(streamStart, streamID)

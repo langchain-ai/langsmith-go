@@ -9,12 +9,13 @@ import (
 // trace sink. When the pending queue exceeds ScaleUpQueueTrigger, additional
 // worker goroutines are spawned (up to MaxWorkers) to export batches
 // concurrently. Workers exit after ScaleDownEmptyTrigger consecutive empty
-// drain cycles, matching the Python SDK's sub-thread scaling model.
+// drain cycles.
 type DrainConfig struct {
 	MaxBatchSize  int
 	MaxBatchBytes int
 	MaxQueueSize  int // pending ops beyond this limit are dropped with a warning (0 = unlimited)
 	DrainInterval time.Duration
+	CloseTimeout  time.Duration // max time Close() will spend flushing; 0 = 60s default
 
 	ScaleUpQueueTrigger   int // queue depth that triggers a new worker goroutine
 	MaxWorkers            int // max concurrent export goroutines (excluding the main loop)
@@ -22,7 +23,7 @@ type DrainConfig struct {
 }
 
 // DefaultDrainConfig returns production-grade defaults.
-// MaxWorkers is capped to min(GOMAXPROCS, 32), matching the Python SDK ceiling.
+// MaxWorkers is capped to min(GOMAXPROCS, 32)
 func DefaultDrainConfig() DrainConfig {
 	maxWorkers := runtime.GOMAXPROCS(0)
 	if maxWorkers > 32 {
@@ -33,6 +34,7 @@ func DefaultDrainConfig() DrainConfig {
 		MaxBatchBytes:         20 * 1024 * 1024, // 20 MiB
 		MaxQueueSize:          10_000,
 		DrainInterval:         250 * time.Millisecond,
+		CloseTimeout:          60 * time.Second,
 		ScaleUpQueueTrigger:   200,
 		MaxWorkers:            maxWorkers,
 		ScaleDownEmptyTrigger: 4,

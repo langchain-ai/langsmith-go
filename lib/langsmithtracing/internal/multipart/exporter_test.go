@@ -454,7 +454,7 @@ func TestExporter_EmptyPartsAreSent(t *testing.T) {
 
 	id := "aaaaaaaa-aaaa-aaaa-aaaa-aaaaaaaaaaaa"
 
-	// Empty-but-provided fields must produce parts (matching Python/JS behavior).
+	// Empty-but-provided fields must produce parts.
 	for _, suffix := range []string{".inputs", ".outputs", ".extra"} {
 		key := "post." + id + suffix
 		p, ok := partsByName[key]
@@ -1131,5 +1131,255 @@ func TestExporter_NoRetryOn422(t *testing.T) {
 	defer mu.Unlock()
 	if calls != 1 {
 		t.Fatalf("expected 1 attempt (no retry on 422), got %d", calls)
+	}
+}
+
+func TestExporter_EmptyOpsNoOp(t *testing.T) {
+	var calls int
+	srv := httptest.NewServer(http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
+		calls++
+		w.WriteHeader(http.StatusAccepted)
+	}))
+	defer srv.Close()
+
+	exp := NewExporter(srv.Client(), RetryConfig{MaxAttempts: 1})
+	ep := models.WriteEndpoint{URL: srv.URL, Key: "k"}
+
+	if err := exp.Export(context.Background(), ep, nil); err != nil {
+		t.Fatalf("Export(nil): %v", err)
+	}
+	if err := exp.Export(context.Background(), ep, []*models.SerializedOp{}); err != nil {
+		t.Fatalf("Export(empty): %v", err)
+	}
+	if calls != 0 {
+		t.Fatalf("expected 0 HTTP calls for empty ops, got %d", calls)
+	}
+}
+
+func TestExporter_MissingRunInfoReturnsError(t *testing.T) {
+	srv := httptest.NewServer(http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
+		io.Copy(io.Discard, r.Body)
+		w.WriteHeader(http.StatusAccepted)
+	}))
+	defer srv.Close()
+
+	exp := NewExporter(srv.Client(), RetryConfig{MaxAttempts: 1})
+	ep := models.WriteEndpoint{URL: srv.URL, Key: "k"}
+
+	ops := []*models.SerializedOp{{
+		Kind:    models.OpKindPost,
+		ID:      uuid.New(),
+		TraceID: uuid.New(),
+		RunInfo: nil,
+	}}
+
+	err := exp.Export(context.Background(), ep, ops)
+	if err == nil {
+		t.Fatal("expected error for missing RunInfo, got nil")
+	}
+	if !strings.Contains(err.Error(), "missing run info") {
+		t.Errorf("error should mention 'missing run info', got: %v", err)
+	}
+}
+
+func TestExporter_EmptyContentTypeFallback(t *testing.T) {
+	runID := uuid.MustParse("bbbbbbbb-bbbb-bbbb-bbbb-bbbbbbbbbbbb")
+	parts := exportAndParseParts(t, []*models.SerializedOp{{
+		Kind:    models.OpKindPost,
+		ID:      runID,
+		TraceID: runID,
+		RunInfo: []byte(`{"id":"bbbbbbbb-bbbb-bbbb-bbbb-bbbbbbbbbbbb","name":"test"}`),
+		Attachments: map[string]models.Attachment{
+			"blob": {ContentType: "", Data: []byte("binary-data")},
+		},
+	}})
+
+	key := "attachment." + runID.String() + ".blob"
+	p, ok := parts[key]
+	if !ok {
+		t.Fatalf("missing attachment part %q", key)
+	}
+	if !strings.HasPrefix(p.contentType, "application/octet-stream") {
+		t.Errorf("expected fallback content type application/octet-stream, got %q", p.contentType)
+	}
+	if string(p.data) != "binary-data" {
+		t.Errorf("attachment data = %q, want %q", string(p.data), "binary-data")
+	}
+}
+
+func TestExporter_BatchDropsAttachments(t *testing.T) {
+	var batchBody []byte
+
+	srv := httptest.NewServer(http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
+		switch r.URL.Path {
+		case "/runs/batch":
+			batchBody, _ = io.ReadAll(r.Body)
+			w.WriteHeader(http.StatusAccepted)
+		default:
+			w.WriteHeader(http.StatusNotFound)
+		}
+	}))
+	defer srv.Close()
+
+	exp := NewExporter(srv.Client(), RetryConfig{MaxAttempts: 1})
+	exp.multipartDisabled.Store(true)
+	ep := models.WriteEndpoint{URL: srv.URL, Key: "k"}
+
+	runID := uuid.New()
+	ops := []*models.SerializedOp{{
+		Kind:    models.OpKindPost,
+		ID:      runID,
+		TraceID: runID,
+		RunInfo: []byte(`{"id":"test","name":"with-attachment"}`),
+		Attachments: map[string]models.Attachment{
+			"file": {ContentType: "text/plain", Data: []byte("file-data")},
+		},
+	}}
+
+	if err := exp.Export(context.Background(), ep, ops); err != nil {
+		t.Fatalf("Export: %v", err)
+	}
+
+	if !strings.Contains(string(batchBody), "with-attachment") {
+		t.Fatal("batch body should contain the run data")
+	}
+	if strings.Contains(string(batchBody), "file-data") {
+		t.Error("batch body should NOT contain attachment data")
+	}
+}
+
+func TestExporter_ContextCancellationAbortsExport(t *testing.T) {
+	srv := httptest.NewServer(http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
+		time.Sleep(5 * time.Second)
+		w.WriteHeader(http.StatusAccepted)
+	}))
+	defer srv.Close()
+
+	exp := NewExporter(srv.Client(), RetryConfig{MaxAttempts: 1})
+	ep := models.WriteEndpoint{URL: srv.URL, Key: "k"}
+	ops := []*models.SerializedOp{makeOp(models.OpKindPost)}
+
+	ctx, cancel := context.WithCancel(context.Background())
+	cancel()
+
+	err := exp.Export(ctx, ep, ops)
+	if err == nil {
+		t.Fatal("expected error from cancelled context")
+	}
+}
+
+func TestExporter_RetriesOn425(t *testing.T) {
+	var mu sync.Mutex
+	var calls int
+
+	srv := httptest.NewServer(http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
+		io.Copy(io.Discard, r.Body)
+		r.Body.Close()
+		mu.Lock()
+		calls++
+		n := calls
+		mu.Unlock()
+		if n == 1 {
+			w.WriteHeader(425) // Too Early
+			return
+		}
+		w.WriteHeader(http.StatusAccepted)
+	}))
+	defer srv.Close()
+
+	rc := RetryConfig{MaxAttempts: 3, BackoffBase: 10 * time.Millisecond, BackoffMax: 50 * time.Millisecond}
+	exp := NewExporter(srv.Client(), rc)
+
+	ops := []*models.SerializedOp{makeOp(models.OpKindPost)}
+	ep := models.WriteEndpoint{URL: srv.URL, Key: "k"}
+
+	if err := exp.Export(context.Background(), ep, ops); err != nil {
+		t.Fatalf("expected success after 425 retry, got: %v", err)
+	}
+
+	mu.Lock()
+	defer mu.Unlock()
+	if calls != 2 {
+		t.Fatalf("expected 2 attempts (425 then 202), got %d", calls)
+	}
+}
+
+func TestExporter_RetriesOn504(t *testing.T) {
+	var mu sync.Mutex
+	var calls int
+
+	srv := httptest.NewServer(http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
+		io.Copy(io.Discard, r.Body)
+		r.Body.Close()
+		mu.Lock()
+		calls++
+		n := calls
+		mu.Unlock()
+		if n == 1 {
+			w.WriteHeader(http.StatusGatewayTimeout)
+			return
+		}
+		w.WriteHeader(http.StatusAccepted)
+	}))
+	defer srv.Close()
+
+	rc := RetryConfig{MaxAttempts: 3, BackoffBase: 10 * time.Millisecond, BackoffMax: 50 * time.Millisecond}
+	exp := NewExporter(srv.Client(), rc)
+
+	ops := []*models.SerializedOp{makeOp(models.OpKindPost)}
+	ep := models.WriteEndpoint{URL: srv.URL, Key: "k"}
+
+	if err := exp.Export(context.Background(), ep, ops); err != nil {
+		t.Fatalf("expected success after 504 retry, got: %v", err)
+	}
+
+	mu.Lock()
+	defer mu.Unlock()
+	if calls != 2 {
+		t.Fatalf("expected 2 attempts (504 then 202), got %d", calls)
+	}
+}
+
+func TestRetryConfig_BackoffJitterBounds(t *testing.T) {
+	rc := RetryConfig{
+		MaxAttempts: 5,
+		BackoffBase: 100 * time.Millisecond,
+		BackoffMax:  1 * time.Second,
+	}
+
+	for attempt := 0; attempt < 4; attempt++ {
+		expectedMax := float64(rc.BackoffBase) * float64(int(1)<<attempt)
+		if expectedMax > float64(rc.BackoffMax) {
+			expectedMax = float64(rc.BackoffMax)
+		}
+
+		for i := 0; i < 100; i++ {
+			d := rc.backoff(attempt)
+			if d < 0 {
+				t.Fatalf("attempt %d: backoff returned negative duration %v", attempt, d)
+			}
+			if d > time.Duration(expectedMax) {
+				t.Fatalf("attempt %d: backoff %v exceeds cap %v", attempt, d, time.Duration(expectedMax))
+			}
+		}
+	}
+}
+
+func TestRetryConfig_RetryDelayUsesRetryAfter(t *testing.T) {
+	rc := RetryConfig{
+		MaxAttempts: 3,
+		BackoffBase: 100 * time.Millisecond,
+		BackoffMax:  1 * time.Second,
+	}
+
+	apiErr := &APIError{StatusCode: 429, RetryAfter: 5 * time.Second}
+	d := rc.retryDelay(apiErr, 0)
+	if d != 5*time.Second {
+		t.Errorf("expected 5s from Retry-After, got %v", d)
+	}
+
+	d = rc.retryDelay(nil, 0)
+	if d < 0 || d > rc.BackoffBase {
+		t.Errorf("expected backoff in [0, %v], got %v", rc.BackoffBase, d)
 	}
 }

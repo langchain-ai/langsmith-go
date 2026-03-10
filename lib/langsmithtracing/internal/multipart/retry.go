@@ -26,7 +26,6 @@ func DefaultRetry() RetryConfig {
 
 const defaultRetryAfter429 = 10 * time.Second
 
-// retryableStatuses matches the JS SDK's AsyncCaller status set.
 var retryableStatuses = map[int]bool{
 	408: true, // Request Timeout
 	425: true, // Too Early
@@ -37,8 +36,7 @@ var retryableStatuses = map[int]bool{
 	504: true, // Gateway Timeout
 }
 
-// isRetryableStatus returns true for HTTP status codes that warrant a retry,
-// matching the JS SDK's retryable set.
+// isRetryableStatus returns true for HTTP status codes that warrant a retry.
 func isRetryableStatus(code int) bool {
 	return retryableStatuses[code]
 }
@@ -63,7 +61,7 @@ func (rc RetryConfig) retryDelay(err *APIError, attempt int) time.Duration {
 
 // parseRetryAfter extracts a Retry-After duration from an HTTP response.
 // It supports the delta-seconds format (e.g. "10"). For 429 responses
-// with no Retry-After header, it defaults to 10 seconds (matching JS SDK).
+// with no Retry-After header, it defaults to 10 seconds.
 func parseRetryAfter(resp *http.Response) time.Duration {
 	val := resp.Header.Get("Retry-After")
 	if val != "" {

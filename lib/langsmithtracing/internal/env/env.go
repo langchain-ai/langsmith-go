@@ -74,8 +74,7 @@ var (
 	runtimeEnvMap  map[string]any
 )
 
-// RuntimeEnvironment returns SDK and platform info for injection into extra.runtime,
-// matching the Python SDK's get_runtime_environment.
+// RuntimeEnvironment returns SDK and platform info for injection into extra.runtime.
 func RuntimeEnvironment() map[string]any {
 	runtimeEnvOnce.Do(func() {
 		runtimeEnvMap = map[string]any{
@@ -91,8 +90,7 @@ func RuntimeEnvironment() map[string]any {
 }
 
 // LangChainEnvMetadata returns filtered LANGCHAIN_*/LANGSMITH_* env vars
-// suitable for injection into extra.metadata, matching the Python SDK's
-// get_langchain_env_var_metadata and the langgraph-api's getDefaultMetadata.
+// suitable for injection into extra.metadata.
 func LangChainEnvMetadata() map[string]any {
 	envMetadataOnce.Do(func() {
 		excluded := map[string]bool{

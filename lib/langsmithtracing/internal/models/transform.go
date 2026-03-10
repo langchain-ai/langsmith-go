@@ -9,8 +9,7 @@ import (
 
 // RunOp is a decoded run operation exposed to transform hooks.
 // It combines all the split-out fields of a SerializedOp into a single
-// map for easy inspection and modification, matching the Python SDK's
-// process_buffered_run_ops interface (Sequence[dict] → Sequence[dict]).
+// map for easy inspection and modification.
 type RunOp struct {
 	Kind    string            // "post" or "patch"
 	ID      uuid.UUID         //
@@ -69,8 +68,10 @@ func DeserializeOp(op *SerializedOp) (RunOp, error) {
 	}, nil
 }
 
-// splitFields are the keys extracted from Data back into separate SerializedOp fields.
-var splitFields = []string{"inputs", "outputs", "events", "extra", "error", "serialized"}
+var splitFields = map[string]bool{
+	"inputs": true, "outputs": true, "events": true,
+	"extra": true, "error": true, "serialized": true,
+}
 
 // SerializeOp converts a RunOp back into a SerializedOp by splitting
 // known fields out of Data into separate byte slices.
@@ -117,14 +118,7 @@ func SerializeOp(r RunOp) (*SerializedOp, error) {
 	// RunInfo is everything in Data except the split-out fields.
 	runInfo := make(map[string]any, len(r.Data))
 	for k, v := range r.Data {
-		skip := false
-		for _, sf := range splitFields {
-			if k == sf {
-				skip = true
-				break
-			}
-		}
-		if !skip {
+		if !splitFields[k] {
 			runInfo[k] = v
 		}
 	}

@@ -24,7 +24,7 @@ import (
 
 const (
 	errorPreviewSize       = 4 << 10
-	defaultBatchSizeLimit  = 20 << 20 // 20 MiB, matching Python _SIZE_LIMIT_BYTES
+	defaultBatchSizeLimit  = 20 << 20 // 20 MiB
 	batchJSONOverheadBytes = 64       // conservative overhead for {"post":[],"patch":[]} framing + commas
 )
 
@@ -41,7 +41,7 @@ func (e *APIError) Error() string {
 
 // Exporter sends batches of serialized operations to LangSmith.
 // It prefers /runs/multipart but falls back to /runs/batch if the
-// server returns 404 (matching the Python/JS SDK behavior).
+// server returns 404.
 type Exporter struct {
 	client              *http.Client
 	retry               RetryConfig
@@ -214,8 +214,7 @@ func (c *batchChunk) add(kind models.OpKind, data json.RawMessage) {
 }
 
 // exportBatch sends ops to POST /runs/batch as JSON: {"post": [...], "patch": [...]},
-// splitting oversized payloads into multiple requests (matching Python/JS behavior)
-// and retrying transient failures.
+// splitting oversized payloads into multiple requests, retrying transient failures.
 // Attachments are not supported on this endpoint and are silently dropped.
 func (e *Exporter) exportBatch(ctx context.Context, endpoint models.WriteEndpoint, ops []*models.SerializedOp) error {
 	limit := e.batchSizeLimitBytes
@@ -356,9 +355,8 @@ func opToRunJSON(op *models.SerializedOp) (json.RawMessage, error) {
 }
 
 // writeMultipartBody streams multipart form data into pw.
-// When compression is enabled (default), the entire body is zstd-compressed,
-// matching the langgraph-api wire format. When disabled via
-// LANGSMITH_DISABLE_RUN_COMPRESSION, the body is written uncompressed.
+// When compression is enabled (default), the entire body is zstd-compressed.
+// When disabled via LANGSMITH_DISABLE_RUN_COMPRESSION the body is written uncompressed.
 func (e *Exporter) writeMultipartBody(pw *io.PipeWriter, boundary string, ops []*models.SerializedOp) (err error) {
 	defer func() {
 		if writerErr := pw.CloseWithError(err); err == nil && writerErr != nil {
@@ -466,4 +464,3 @@ func (e *Exporter) writeMultipartBody(pw *io.PipeWriter, boundary string, ops []
 
 	return nil
 }
-
