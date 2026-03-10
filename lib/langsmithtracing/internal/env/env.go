@@ -47,20 +47,22 @@ func Project() string {
 // LANGSMITH_TRACING_SAMPLING_RATE or LANGCHAIN_TRACING_SAMPLING_RATE.
 // Returns nil if unset, meaning all traces are kept.
 func TracingSampleRate() *float64 {
-	s := os.Getenv("LANGSMITH_TRACING_SAMPLING_RATE")
+	envName := "LANGSMITH_TRACING_SAMPLING_RATE"
+	s := os.Getenv(envName)
 	if s == "" {
-		s = os.Getenv("LANGCHAIN_TRACING_SAMPLING_RATE")
+		envName = "LANGCHAIN_TRACING_SAMPLING_RATE"
+		s = os.Getenv(envName)
 	}
 	if s == "" {
 		return nil
 	}
 	rate, err := strconv.ParseFloat(s, 64)
 	if err != nil {
-		log.Printf("[langsmith] invalid LANGSMITH_TRACING_SAMPLING_RATE %q: %v", s, err)
+		log.Printf("[langsmith] invalid %s %q: %v", envName, s, err)
 		return nil
 	}
 	if rate < 0 || rate > 1 {
-		log.Printf("[langsmith] LANGSMITH_TRACING_SAMPLING_RATE must be between 0 and 1; got %f", rate)
+		log.Printf("[langsmith] %s must be between 0 and 1; got %f", envName, rate)
 		return nil
 	}
 	return &rate
@@ -75,6 +77,7 @@ var (
 )
 
 // RuntimeEnvironment returns SDK and platform info for injection into extra.runtime.
+// Each call returns a fresh shallow copy that is safe to mutate.
 func RuntimeEnvironment() map[string]any {
 	runtimeEnvOnce.Do(func() {
 		runtimeEnvMap = map[string]any{
@@ -86,11 +89,16 @@ func RuntimeEnvironment() map[string]any {
 			"platform":        runtime.GOOS + "/" + runtime.GOARCH,
 		}
 	})
-	return runtimeEnvMap
+	cp := make(map[string]any, len(runtimeEnvMap))
+	for k, v := range runtimeEnvMap {
+		cp[k] = v
+	}
+	return cp
 }
 
 // LangChainEnvMetadata returns filtered LANGCHAIN_*/LANGSMITH_* env vars
 // suitable for injection into extra.metadata.
+// Each call returns a fresh shallow copy that is safe to mutate.
 func LangChainEnvMetadata() map[string]any {
 	envMetadataOnce.Do(func() {
 		excluded := map[string]bool{
@@ -131,5 +139,9 @@ func LangChainEnvMetadata() map[string]any {
 			envMetadataMap["revision_id"] = revisionID
 		}
 	})
-	return envMetadataMap
+	cp := make(map[string]any, len(envMetadataMap))
+	for k, v := range envMetadataMap {
+		cp[k] = v
+	}
+	return cp
 }

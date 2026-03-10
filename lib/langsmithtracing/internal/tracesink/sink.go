@@ -2,6 +2,7 @@ package tracesink
 
 import (
 	"context"
+	"fmt"
 	"log"
 	"sync"
 	"time"
@@ -223,7 +224,18 @@ func (s *TraceSink) applyTransform(batch []*models.SerializedOp) ([]*models.Seri
 		ops[i] = decoded
 	}
 
-	ops = s.transform(ops)
+	var transformErr error
+	func() {
+		defer func() {
+			if r := recover(); r != nil {
+				transformErr = fmt.Errorf("transform panicked: %v", r)
+			}
+		}()
+		ops = s.transform(ops)
+	}()
+	if transformErr != nil {
+		return nil, transformErr
+	}
 
 	result := make([]*models.SerializedOp, len(ops))
 	for i, op := range ops {
@@ -247,7 +259,10 @@ func (s *TraceSink) runWorker(ctx context.Context) {
 	}()
 
 	emptyRuns := 0
-	for emptyRuns <= s.config.ScaleDownEmptyTrigger {
+	for emptyRuns < s.config.ScaleDownEmptyTrigger {
+		if ctx.Err() != nil {
+			return
+		}
 		if s.drainOnce(ctx) {
 			emptyRuns = 0
 			continue

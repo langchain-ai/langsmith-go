@@ -70,7 +70,7 @@ type RunCreate struct {
 }
 
 // RunUpdate holds parameters for updating an existing run (multipart patch).
-// All fields except ID, TraceID, EndTime, and DottedOrder are optional
+// All fields except ID, TraceID, and DottedOrder are optional.
 type RunUpdate struct {
 	ID          uuid.UUID
 	TraceID     uuid.UUID
@@ -270,8 +270,10 @@ func (c *TracingClient) UpdateRun(r *RunUpdate) error {
 	runInfo := map[string]any{
 		"id":           r.ID.String(),
 		"trace_id":     r.TraceID.String(),
-		"end_time":     r.EndTime.UTC().Format(time.RFC3339Nano),
 		"dotted_order": r.DottedOrder,
+	}
+	if !r.EndTime.IsZero() {
+		runInfo["end_time"] = r.EndTime.UTC().Format(time.RFC3339Nano)
 	}
 	if r.Error != "" {
 		runInfo["status"] = "error"
@@ -409,8 +411,10 @@ func (c *TracingClient) pruneFilteredLocked(now time.Time) {
 }
 
 // shouldSampleUpdate decides whether an update (patch) should be kept.
-// Updates for traces that were sampled out are dropped. 
-// Root-run patches clean up the filtered set to prevent unbounded growth.
+// Updates for traces that were sampled out are dropped.
+// Cleanup of the filteredTraces map is handled by TTL-based pruning in
+// pruneFilteredLocked, not here, to avoid prematurely removing entries
+// that child-run updates still need to consult.
 func (c *TracingClient) shouldSampleUpdate(id, traceID uuid.UUID) bool {
 	if c.sampleRate == nil {
 		return true
@@ -419,13 +423,8 @@ func (c *TracingClient) shouldSampleUpdate(id, traceID uuid.UUID) bool {
 	c.filteredMu.Lock()
 	defer c.filteredMu.Unlock()
 
-	if _, filtered := c.filteredTraces[traceID]; !filtered {
-		return true
-	}
-	if id == traceID {
-		delete(c.filteredTraces, traceID)
-	}
-	return false
+	_, filtered := c.filteredTraces[traceID]
+	return !filtered
 }
 
 func mergeRuntimeEnv(extra map[string]any) map[string]any {
