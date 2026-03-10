@@ -142,6 +142,9 @@ func (r *Client) UpdateRun(run *RunUpdate) error {
 // delivered. It is safe to call Close multiple times; it is also safe to call
 // Close on a client that never used tracing (no-op in that case).
 func (r *Client) Close() {
+	r.tracingOnce.Do(func() {
+		r.tracingErr = fmt.Errorf("langsmith: client closed before tracing was initialized")
+	})
 	if r.Tracing != nil {
 		r.Tracing.Close()
 	}
