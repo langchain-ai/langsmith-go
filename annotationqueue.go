@@ -684,8 +684,9 @@ func (r AnnotationQueueNewRunStatusParams) MarshalJSON() (data []byte, err error
 }
 
 type AnnotationQueueExportParams struct {
-	EndTime   param.Field[time.Time] `json:"end_time" format:"date-time"`
-	StartTime param.Field[time.Time] `json:"start_time" format:"date-time"`
+	EndTime                param.Field[time.Time] `json:"end_time" format:"date-time"`
+	IncludeAnnotatorDetail param.Field[bool]      `json:"include_annotator_detail"`
+	StartTime              param.Field[time.Time] `json:"start_time" format:"date-time"`
 }
 
 func (r AnnotationQueueExportParams) MarshalJSON() (data []byte, err error) {

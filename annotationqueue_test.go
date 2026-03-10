@@ -218,8 +218,9 @@ func TestAnnotationQueueExportWithOptionalParams(t *testing.T) {
 		context.TODO(),
 		"182bd5e5-6e1a-4fe4-a799-aa6d9a6ab26e",
 		langsmith.AnnotationQueueExportParams{
-			EndTime:   langsmith.F(time.Now()),
-			StartTime: langsmith.F(time.Now()),
+			EndTime:                langsmith.F(time.Now()),
+			IncludeAnnotatorDetail: langsmith.F(true),
+			StartTime:              langsmith.F(time.Now()),
 		},
 	)
 	if err != nil {
