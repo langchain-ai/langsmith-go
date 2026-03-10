@@ -3,15 +3,25 @@
 package langsmith
 
 import (
+	"bytes"
 	"context"
+	"errors"
+	"fmt"
+	"io"
+	"mime/multipart"
 	"net/http"
+	"net/url"
+	"reflect"
 	"slices"
 	"time"
 
+	"github.com/langchain-ai/langsmith-go/internal/apiform"
 	"github.com/langchain-ai/langsmith-go/internal/apijson"
+	"github.com/langchain-ai/langsmith-go/internal/apiquery"
 	"github.com/langchain-ai/langsmith-go/internal/param"
 	"github.com/langchain-ai/langsmith-go/internal/requestconfig"
 	"github.com/langchain-ai/langsmith-go/option"
+	"github.com/tidwall/gjson"
 )
 
 // RunService contains methods and other services that help with interacting with
@@ -22,6 +32,7 @@ import (
 // the [NewRunService] method instead.
 type RunService struct {
 	Options []option.RequestOption
+	Rules   *RunRuleService
 }
 
 // NewRunService generates a new service that applies the given options to each
@@ -30,6 +41,41 @@ type RunService struct {
 func NewRunService(opts ...option.RequestOption) (r *RunService) {
 	r = &RunService{}
 	r.Options = opts
+	r.Rules = NewRunRuleService(opts...)
+	return
+}
+
+// Queues a single run for ingestion. The request body must be a JSON-encoded run
+// object that follows the Run schema.
+func (r *RunService) New(ctx context.Context, body RunNewParams, opts ...option.RequestOption) (res *RunNewResponse, err error) {
+	opts = slices.Concat(r.Options, opts)
+	path := "runs"
+	err = requestconfig.ExecuteNewRequest(ctx, http.MethodPost, path, body, &res, opts...)
+	return
+}
+
+// Get a specific run.
+func (r *RunService) Get(ctx context.Context, runID string, query RunGetParams, opts ...option.RequestOption) (res *RunSchema, err error) {
+	opts = slices.Concat(r.Options, opts)
+	if runID == "" {
+		err = errors.New("missing required run_id parameter")
+		return
+	}
+	path := fmt.Sprintf("api/v1/runs/%s", runID)
+	err = requestconfig.ExecuteNewRequest(ctx, http.MethodGet, path, query, &res, opts...)
+	return
+}
+
+// Updates a run identified by its ID. The body should contain only the fields to
+// be changed; unknown fields are ignored.
+func (r *RunService) Update(ctx context.Context, runID string, body RunUpdateParams, opts ...option.RequestOption) (res *RunUpdateResponse, err error) {
+	opts = slices.Concat(r.Options, opts)
+	if runID == "" {
+		err = errors.New("missing required run_id parameter")
+		return
+	}
+	path := fmt.Sprintf("runs/%s", runID)
+	err = requestconfig.ExecuteNewRequest(ctx, http.MethodPatch, path, body, &res, opts...)
 	return
 }
 
@@ -44,11 +90,57 @@ func (r *RunService) IngestBatch(ctx context.Context, body RunIngestBatchParams,
 	return
 }
 
+// Ingests multiple runs, feedback objects, and binary attachments in a single
+// `multipart/form-data` request. **Part‑name pattern**:
+// `<event>.<run_id>[.<field>]` where `event` ∈ {`post`, `patch`, `feedback`,
+// `attachment`}.
+//
+//   - `post|patch.<run_id>` – JSON run payload.
+//   - `post|patch.<run_id>.<field>` – out‑of‑band run data (`inputs`, `outputs`,
+//     `events`, `error`, `extra`, `serialized`).
+//   - `feedback.<run_id>` – JSON feedback payload (must include `trace_id`).
+//   - `attachment.<run_id>.<filename>` – arbitrary binary attachment stored in S3.
+//     **Headers**: every part must set `Content-Type` **and** either a
+//     `Content-Length` header or `length` parameter. Per‑part `Content-Encoding` is
+//     **not** allowed; the top‑level request may be `Content-Encoding: gzip` or
+//     `Content-Encoding: zstd`. **Best performance** for high‑volume ingestion.
+func (r *RunService) IngestMultipart(ctx context.Context, body RunIngestMultipartParams, opts ...option.RequestOption) (res *RunIngestMultipartResponse, err error) {
+	opts = slices.Concat(r.Options, opts)
+	path := "runs/multipart"
+	err = requestconfig.ExecuteNewRequest(ctx, http.MethodPost, path, body, &res, opts...)
+	return
+}
+
 // Query Runs
 func (r *RunService) Query(ctx context.Context, body RunQueryParams, opts ...option.RequestOption) (res *RunQueryResponse, err error) {
 	opts = slices.Concat(r.Options, opts)
 	path := "api/v1/runs/query"
 	err = requestconfig.ExecuteNewRequest(ctx, http.MethodPost, path, body, &res, opts...)
+	return
+}
+
+// Get all runs by query in body payload.
+func (r *RunService) Stats(ctx context.Context, body RunStatsParams, opts ...option.RequestOption) (res *RunStatsResponseUnion, err error) {
+	var env apijson.UnionUnmarshaler[RunStatsResponseUnion]
+	opts = slices.Concat(r.Options, opts)
+	path := "api/v1/runs/stats"
+	err = requestconfig.ExecuteNewRequest(ctx, http.MethodPost, path, body, &env, opts...)
+	if err != nil {
+		return
+	}
+	res = &env.Value
+	return
+}
+
+// Update a run.
+func (r *RunService) Update2(ctx context.Context, runID string, opts ...option.RequestOption) (res *RunUpdate2Response, err error) {
+	opts = slices.Concat(r.Options, opts)
+	if runID == "" {
+		err = errors.New("missing required run_id parameter")
+		return
+	}
+	path := fmt.Sprintf("api/v1/runs/%s", runID)
+	err = requestconfig.ExecuteNewRequest(ctx, http.MethodPatch, path, nil, &res, opts...)
 	return
 }
 
@@ -100,118 +192,69 @@ func (r RunRunType) IsKnown() bool {
 	return false
 }
 
-type RunIngestBatchResponse map[string]RunIngestBatchResponseItem
-
-type RunIngestBatchResponseItem struct {
-	JSON runIngestBatchResponseItemJSON `json:"-"`
-}
-
-// runIngestBatchResponseItemJSON contains the JSON metadata for the struct
-// [RunIngestBatchResponseItem]
-type runIngestBatchResponseItemJSON struct {
-	raw         string
-	ExtraFields map[string]apijson.Field
-}
-
-func (r *RunIngestBatchResponseItem) UnmarshalJSON(data []byte) (err error) {
-	return apijson.UnmarshalRoot(data, r)
-}
-
-func (r runIngestBatchResponseItemJSON) RawJSON() string {
-	return r.raw
-}
-
-type RunQueryResponse struct {
-	Cursors       map[string]string      `json:"cursors,required"`
-	Runs          []RunQueryResponseRun  `json:"runs,required"`
-	ParsedQuery   string                 `json:"parsed_query,nullable"`
-	SearchCursors map[string]interface{} `json:"search_cursors,nullable"`
-	JSON          runQueryResponseJSON   `json:"-"`
-}
-
-// runQueryResponseJSON contains the JSON metadata for the struct
-// [RunQueryResponse]
-type runQueryResponseJSON struct {
-	Cursors       apijson.Field
-	Runs          apijson.Field
-	ParsedQuery   apijson.Field
-	SearchCursors apijson.Field
-	raw           string
-	ExtraFields   map[string]apijson.Field
-}
-
-func (r *RunQueryResponse) UnmarshalJSON(data []byte) (err error) {
-	return apijson.UnmarshalRoot(data, r)
-}
-
-func (r runQueryResponseJSON) RawJSON() string {
-	return r.raw
-}
-
 // Run schema.
-type RunQueryResponseRun struct {
-	ID          string `json:"id,required" format:"uuid"`
-	AppPath     string `json:"app_path,required"`
-	DottedOrder string `json:"dotted_order,required"`
-	Name        string `json:"name,required"`
+type RunSchema struct {
+	ID          string `json:"id" api:"required" format:"uuid"`
+	AppPath     string `json:"app_path" api:"required"`
+	DottedOrder string `json:"dotted_order" api:"required"`
+	Name        string `json:"name" api:"required"`
 	// Enum for run types.
-	RunType                RunQueryResponseRunsRunType       `json:"run_type,required"`
-	SessionID              string                            `json:"session_id,required" format:"uuid"`
-	Status                 string                            `json:"status,required"`
-	TraceID                string                            `json:"trace_id,required" format:"uuid"`
-	ChildRunIDs            []string                          `json:"child_run_ids,nullable" format:"uuid"`
-	CompletionCost         string                            `json:"completion_cost,nullable"`
-	CompletionCostDetails  map[string]string                 `json:"completion_cost_details,nullable"`
-	CompletionTokenDetails map[string]int64                  `json:"completion_token_details,nullable"`
+	RunType                RunTypeEnum                       `json:"run_type" api:"required"`
+	SessionID              string                            `json:"session_id" api:"required" format:"uuid"`
+	Status                 string                            `json:"status" api:"required"`
+	TraceID                string                            `json:"trace_id" api:"required" format:"uuid"`
+	ChildRunIDs            []string                          `json:"child_run_ids" api:"nullable" format:"uuid"`
+	CompletionCost         string                            `json:"completion_cost" api:"nullable"`
+	CompletionCostDetails  map[string]string                 `json:"completion_cost_details" api:"nullable"`
+	CompletionTokenDetails map[string]int64                  `json:"completion_token_details" api:"nullable"`
 	CompletionTokens       int64                             `json:"completion_tokens"`
-	DirectChildRunIDs      []string                          `json:"direct_child_run_ids,nullable" format:"uuid"`
-	EndTime                time.Time                         `json:"end_time,nullable" format:"date-time"`
-	Error                  string                            `json:"error,nullable"`
-	Events                 []map[string]interface{}          `json:"events,nullable"`
+	DirectChildRunIDs      []string                          `json:"direct_child_run_ids" api:"nullable" format:"uuid"`
+	EndTime                time.Time                         `json:"end_time" api:"nullable" format:"date-time"`
+	Error                  string                            `json:"error" api:"nullable"`
+	Events                 []map[string]interface{}          `json:"events" api:"nullable"`
 	ExecutionOrder         int64                             `json:"execution_order"`
-	Extra                  map[string]interface{}            `json:"extra,nullable"`
-	FeedbackStats          map[string]map[string]interface{} `json:"feedback_stats,nullable"`
-	FirstTokenTime         time.Time                         `json:"first_token_time,nullable" format:"date-time"`
-	InDataset              bool                              `json:"in_dataset,nullable"`
-	Inputs                 map[string]interface{}            `json:"inputs,nullable"`
-	InputsPreview          string                            `json:"inputs_preview,nullable"`
-	InputsS3URLs           map[string]interface{}            `json:"inputs_s3_urls,nullable"`
-	LastQueuedAt           time.Time                         `json:"last_queued_at,nullable" format:"date-time"`
-	ManifestID             string                            `json:"manifest_id,nullable" format:"uuid"`
-	ManifestS3ID           string                            `json:"manifest_s3_id,nullable" format:"uuid"`
-	Messages               []map[string]interface{}          `json:"messages,nullable"`
-	Outputs                map[string]interface{}            `json:"outputs,nullable"`
-	OutputsPreview         string                            `json:"outputs_preview,nullable"`
-	OutputsS3URLs          map[string]interface{}            `json:"outputs_s3_urls,nullable"`
-	ParentRunID            string                            `json:"parent_run_id,nullable" format:"uuid"`
-	ParentRunIDs           []string                          `json:"parent_run_ids,nullable" format:"uuid"`
-	PriceModelID           string                            `json:"price_model_id,nullable" format:"uuid"`
-	PromptCost             string                            `json:"prompt_cost,nullable"`
-	PromptCostDetails      map[string]string                 `json:"prompt_cost_details,nullable"`
-	PromptTokenDetails     map[string]int64                  `json:"prompt_token_details,nullable"`
+	Extra                  map[string]interface{}            `json:"extra" api:"nullable"`
+	FeedbackStats          map[string]map[string]interface{} `json:"feedback_stats" api:"nullable"`
+	FirstTokenTime         time.Time                         `json:"first_token_time" api:"nullable" format:"date-time"`
+	InDataset              bool                              `json:"in_dataset" api:"nullable"`
+	Inputs                 map[string]interface{}            `json:"inputs" api:"nullable"`
+	InputsPreview          string                            `json:"inputs_preview" api:"nullable"`
+	InputsS3URLs           map[string]interface{}            `json:"inputs_s3_urls" api:"nullable"`
+	LastQueuedAt           time.Time                         `json:"last_queued_at" api:"nullable" format:"date-time"`
+	ManifestID             string                            `json:"manifest_id" api:"nullable" format:"uuid"`
+	ManifestS3ID           string                            `json:"manifest_s3_id" api:"nullable" format:"uuid"`
+	Messages               []map[string]interface{}          `json:"messages" api:"nullable"`
+	Outputs                map[string]interface{}            `json:"outputs" api:"nullable"`
+	OutputsPreview         string                            `json:"outputs_preview" api:"nullable"`
+	OutputsS3URLs          map[string]interface{}            `json:"outputs_s3_urls" api:"nullable"`
+	ParentRunID            string                            `json:"parent_run_id" api:"nullable" format:"uuid"`
+	ParentRunIDs           []string                          `json:"parent_run_ids" api:"nullable" format:"uuid"`
+	PriceModelID           string                            `json:"price_model_id" api:"nullable" format:"uuid"`
+	PromptCost             string                            `json:"prompt_cost" api:"nullable"`
+	PromptCostDetails      map[string]string                 `json:"prompt_cost_details" api:"nullable"`
+	PromptTokenDetails     map[string]int64                  `json:"prompt_token_details" api:"nullable"`
 	PromptTokens           int64                             `json:"prompt_tokens"`
-	ReferenceDatasetID     string                            `json:"reference_dataset_id,nullable" format:"uuid"`
-	ReferenceExampleID     string                            `json:"reference_example_id,nullable" format:"uuid"`
-	S3URLs                 map[string]interface{}            `json:"s3_urls,nullable"`
-	Serialized             map[string]interface{}            `json:"serialized,nullable"`
-	ShareToken             string                            `json:"share_token,nullable" format:"uuid"`
+	ReferenceDatasetID     string                            `json:"reference_dataset_id" api:"nullable" format:"uuid"`
+	ReferenceExampleID     string                            `json:"reference_example_id" api:"nullable" format:"uuid"`
+	S3URLs                 map[string]interface{}            `json:"s3_urls" api:"nullable"`
+	Serialized             map[string]interface{}            `json:"serialized" api:"nullable"`
+	ShareToken             string                            `json:"share_token" api:"nullable" format:"uuid"`
 	StartTime              time.Time                         `json:"start_time" format:"date-time"`
-	Tags                   []string                          `json:"tags,nullable"`
-	ThreadID               string                            `json:"thread_id,nullable"`
-	TotalCost              string                            `json:"total_cost,nullable"`
+	Tags                   []string                          `json:"tags" api:"nullable"`
+	ThreadID               string                            `json:"thread_id" api:"nullable"`
+	TotalCost              string                            `json:"total_cost" api:"nullable"`
 	TotalTokens            int64                             `json:"total_tokens"`
-	TraceFirstReceivedAt   time.Time                         `json:"trace_first_received_at,nullable" format:"date-time"`
-	TraceMaxStartTime      time.Time                         `json:"trace_max_start_time,nullable" format:"date-time"`
-	TraceMinStartTime      time.Time                         `json:"trace_min_start_time,nullable" format:"date-time"`
-	TraceTier              RunQueryResponseRunsTraceTier     `json:"trace_tier,nullable"`
+	TraceFirstReceivedAt   time.Time                         `json:"trace_first_received_at" api:"nullable" format:"date-time"`
+	TraceMaxStartTime      time.Time                         `json:"trace_max_start_time" api:"nullable" format:"date-time"`
+	TraceMinStartTime      time.Time                         `json:"trace_min_start_time" api:"nullable" format:"date-time"`
+	TraceTier              RunSchemaTraceTier                `json:"trace_tier" api:"nullable"`
 	TraceUpgrade           bool                              `json:"trace_upgrade"`
-	TtlSeconds             int64                             `json:"ttl_seconds,nullable"`
-	JSON                   runQueryResponseRunJSON           `json:"-"`
+	TtlSeconds             int64                             `json:"ttl_seconds" api:"nullable"`
+	JSON                   runSchemaJSON                     `json:"-"`
 }
 
-// runQueryResponseRunJSON contains the JSON metadata for the struct
-// [RunQueryResponseRun]
-type runQueryResponseRunJSON struct {
+// runSchemaJSON contains the JSON metadata for the struct [RunSchema]
+type runSchemaJSON struct {
 	ID                     apijson.Field
 	AppPath                apijson.Field
 	DottedOrder            apijson.Field
@@ -271,48 +314,449 @@ type runQueryResponseRunJSON struct {
 	ExtraFields            map[string]apijson.Field
 }
 
-func (r *RunQueryResponseRun) UnmarshalJSON(data []byte) (err error) {
+func (r *RunSchema) UnmarshalJSON(data []byte) (err error) {
 	return apijson.UnmarshalRoot(data, r)
 }
 
-func (r runQueryResponseRunJSON) RawJSON() string {
+func (r runSchemaJSON) RawJSON() string {
 	return r.raw
 }
 
-// Enum for run types.
-type RunQueryResponseRunsRunType string
+type RunSchemaTraceTier string
 
 const (
-	RunQueryResponseRunsRunTypeTool      RunQueryResponseRunsRunType = "tool"
-	RunQueryResponseRunsRunTypeChain     RunQueryResponseRunsRunType = "chain"
-	RunQueryResponseRunsRunTypeLlm       RunQueryResponseRunsRunType = "llm"
-	RunQueryResponseRunsRunTypeRetriever RunQueryResponseRunsRunType = "retriever"
-	RunQueryResponseRunsRunTypeEmbedding RunQueryResponseRunsRunType = "embedding"
-	RunQueryResponseRunsRunTypePrompt    RunQueryResponseRunsRunType = "prompt"
-	RunQueryResponseRunsRunTypeParser    RunQueryResponseRunsRunType = "parser"
+	RunSchemaTraceTierLonglived  RunSchemaTraceTier = "longlived"
+	RunSchemaTraceTierShortlived RunSchemaTraceTier = "shortlived"
 )
 
-func (r RunQueryResponseRunsRunType) IsKnown() bool {
+func (r RunSchemaTraceTier) IsKnown() bool {
 	switch r {
-	case RunQueryResponseRunsRunTypeTool, RunQueryResponseRunsRunTypeChain, RunQueryResponseRunsRunTypeLlm, RunQueryResponseRunsRunTypeRetriever, RunQueryResponseRunsRunTypeEmbedding, RunQueryResponseRunsRunTypePrompt, RunQueryResponseRunsRunTypeParser:
+	case RunSchemaTraceTierLonglived, RunSchemaTraceTierShortlived:
 		return true
 	}
 	return false
 }
 
-type RunQueryResponseRunsTraceTier string
+// Query params for run stats.
+type RunStatsQueryParams struct {
+	ID param.Field[[]string] `json:"id" format:"uuid"`
+	// Enum for run data source types.
+	DataSourceType param.Field[RunsFilterDataSourceTypeEnum] `json:"data_source_type"`
+	EndTime        param.Field[time.Time]                    `json:"end_time" format:"date-time"`
+	Error          param.Field[bool]                         `json:"error"`
+	ExecutionOrder param.Field[int64]                        `json:"execution_order"`
+	Filter         param.Field[string]                       `json:"filter"`
+	// Group by param for run stats.
+	GroupBy          param.Field[RunStatsGroupByParam] `json:"group_by"`
+	Groups           param.Field[[]string]             `json:"groups"`
+	IsRoot           param.Field[bool]                 `json:"is_root"`
+	ParentRun        param.Field[string]               `json:"parent_run" format:"uuid"`
+	Query            param.Field[string]               `json:"query"`
+	ReferenceExample param.Field[[]string]             `json:"reference_example" format:"uuid"`
+	// Enum for run types.
+	RunType               param.Field[RunTypeEnum]                 `json:"run_type"`
+	SearchFilter          param.Field[string]                      `json:"search_filter"`
+	Select                param.Field[[]RunStatsQueryParamsSelect] `json:"select"`
+	Session               param.Field[[]string]                    `json:"session" format:"uuid"`
+	SkipPagination        param.Field[bool]                        `json:"skip_pagination"`
+	StartTime             param.Field[time.Time]                   `json:"start_time" format:"date-time"`
+	Trace                 param.Field[string]                      `json:"trace" format:"uuid"`
+	TraceFilter           param.Field[string]                      `json:"trace_filter"`
+	TreeFilter            param.Field[string]                      `json:"tree_filter"`
+	UseExperimentalSearch param.Field[bool]                        `json:"use_experimental_search"`
+}
+
+func (r RunStatsQueryParams) MarshalJSON() (data []byte, err error) {
+	return apijson.MarshalRoot(r)
+}
+
+// Metrics you can select from run stats endpoint.
+type RunStatsQueryParamsSelect string
 
 const (
-	RunQueryResponseRunsTraceTierLonglived  RunQueryResponseRunsTraceTier = "longlived"
-	RunQueryResponseRunsTraceTierShortlived RunQueryResponseRunsTraceTier = "shortlived"
+	RunStatsQueryParamsSelectRunCount               RunStatsQueryParamsSelect = "run_count"
+	RunStatsQueryParamsSelectLatencyP50             RunStatsQueryParamsSelect = "latency_p50"
+	RunStatsQueryParamsSelectLatencyP99             RunStatsQueryParamsSelect = "latency_p99"
+	RunStatsQueryParamsSelectLatencyAvg             RunStatsQueryParamsSelect = "latency_avg"
+	RunStatsQueryParamsSelectFirstTokenP50          RunStatsQueryParamsSelect = "first_token_p50"
+	RunStatsQueryParamsSelectFirstTokenP99          RunStatsQueryParamsSelect = "first_token_p99"
+	RunStatsQueryParamsSelectTotalTokens            RunStatsQueryParamsSelect = "total_tokens"
+	RunStatsQueryParamsSelectPromptTokens           RunStatsQueryParamsSelect = "prompt_tokens"
+	RunStatsQueryParamsSelectCompletionTokens       RunStatsQueryParamsSelect = "completion_tokens"
+	RunStatsQueryParamsSelectMedianTokens           RunStatsQueryParamsSelect = "median_tokens"
+	RunStatsQueryParamsSelectCompletionTokensP50    RunStatsQueryParamsSelect = "completion_tokens_p50"
+	RunStatsQueryParamsSelectPromptTokensP50        RunStatsQueryParamsSelect = "prompt_tokens_p50"
+	RunStatsQueryParamsSelectTokensP99              RunStatsQueryParamsSelect = "tokens_p99"
+	RunStatsQueryParamsSelectCompletionTokensP99    RunStatsQueryParamsSelect = "completion_tokens_p99"
+	RunStatsQueryParamsSelectPromptTokensP99        RunStatsQueryParamsSelect = "prompt_tokens_p99"
+	RunStatsQueryParamsSelectLastRunStartTime       RunStatsQueryParamsSelect = "last_run_start_time"
+	RunStatsQueryParamsSelectFeedbackStats          RunStatsQueryParamsSelect = "feedback_stats"
+	RunStatsQueryParamsSelectThreadFeedbackStats    RunStatsQueryParamsSelect = "thread_feedback_stats"
+	RunStatsQueryParamsSelectRunFacets              RunStatsQueryParamsSelect = "run_facets"
+	RunStatsQueryParamsSelectErrorRate              RunStatsQueryParamsSelect = "error_rate"
+	RunStatsQueryParamsSelectStreamingRate          RunStatsQueryParamsSelect = "streaming_rate"
+	RunStatsQueryParamsSelectTotalCost              RunStatsQueryParamsSelect = "total_cost"
+	RunStatsQueryParamsSelectPromptCost             RunStatsQueryParamsSelect = "prompt_cost"
+	RunStatsQueryParamsSelectCompletionCost         RunStatsQueryParamsSelect = "completion_cost"
+	RunStatsQueryParamsSelectCostP50                RunStatsQueryParamsSelect = "cost_p50"
+	RunStatsQueryParamsSelectCostP99                RunStatsQueryParamsSelect = "cost_p99"
+	RunStatsQueryParamsSelectSessionFeedbackStats   RunStatsQueryParamsSelect = "session_feedback_stats"
+	RunStatsQueryParamsSelectAllRunStats            RunStatsQueryParamsSelect = "all_run_stats"
+	RunStatsQueryParamsSelectAllTokenStats          RunStatsQueryParamsSelect = "all_token_stats"
+	RunStatsQueryParamsSelectPromptTokenDetails     RunStatsQueryParamsSelect = "prompt_token_details"
+	RunStatsQueryParamsSelectCompletionTokenDetails RunStatsQueryParamsSelect = "completion_token_details"
+	RunStatsQueryParamsSelectPromptCostDetails      RunStatsQueryParamsSelect = "prompt_cost_details"
+	RunStatsQueryParamsSelectCompletionCostDetails  RunStatsQueryParamsSelect = "completion_cost_details"
 )
 
-func (r RunQueryResponseRunsTraceTier) IsKnown() bool {
+func (r RunStatsQueryParamsSelect) IsKnown() bool {
 	switch r {
-	case RunQueryResponseRunsTraceTierLonglived, RunQueryResponseRunsTraceTierShortlived:
+	case RunStatsQueryParamsSelectRunCount, RunStatsQueryParamsSelectLatencyP50, RunStatsQueryParamsSelectLatencyP99, RunStatsQueryParamsSelectLatencyAvg, RunStatsQueryParamsSelectFirstTokenP50, RunStatsQueryParamsSelectFirstTokenP99, RunStatsQueryParamsSelectTotalTokens, RunStatsQueryParamsSelectPromptTokens, RunStatsQueryParamsSelectCompletionTokens, RunStatsQueryParamsSelectMedianTokens, RunStatsQueryParamsSelectCompletionTokensP50, RunStatsQueryParamsSelectPromptTokensP50, RunStatsQueryParamsSelectTokensP99, RunStatsQueryParamsSelectCompletionTokensP99, RunStatsQueryParamsSelectPromptTokensP99, RunStatsQueryParamsSelectLastRunStartTime, RunStatsQueryParamsSelectFeedbackStats, RunStatsQueryParamsSelectThreadFeedbackStats, RunStatsQueryParamsSelectRunFacets, RunStatsQueryParamsSelectErrorRate, RunStatsQueryParamsSelectStreamingRate, RunStatsQueryParamsSelectTotalCost, RunStatsQueryParamsSelectPromptCost, RunStatsQueryParamsSelectCompletionCost, RunStatsQueryParamsSelectCostP50, RunStatsQueryParamsSelectCostP99, RunStatsQueryParamsSelectSessionFeedbackStats, RunStatsQueryParamsSelectAllRunStats, RunStatsQueryParamsSelectAllTokenStats, RunStatsQueryParamsSelectPromptTokenDetails, RunStatsQueryParamsSelectCompletionTokenDetails, RunStatsQueryParamsSelectPromptCostDetails, RunStatsQueryParamsSelectCompletionCostDetails:
 		return true
 	}
 	return false
+}
+
+// Enum for run types.
+type RunTypeEnum string
+
+const (
+	RunTypeEnumTool      RunTypeEnum = "tool"
+	RunTypeEnumChain     RunTypeEnum = "chain"
+	RunTypeEnumLlm       RunTypeEnum = "llm"
+	RunTypeEnumRetriever RunTypeEnum = "retriever"
+	RunTypeEnumEmbedding RunTypeEnum = "embedding"
+	RunTypeEnumPrompt    RunTypeEnum = "prompt"
+	RunTypeEnumParser    RunTypeEnum = "parser"
+)
+
+func (r RunTypeEnum) IsKnown() bool {
+	switch r {
+	case RunTypeEnumTool, RunTypeEnumChain, RunTypeEnumLlm, RunTypeEnumRetriever, RunTypeEnumEmbedding, RunTypeEnumPrompt, RunTypeEnumParser:
+		return true
+	}
+	return false
+}
+
+// Enum for run data source types.
+type RunsFilterDataSourceTypeEnum string
+
+const (
+	RunsFilterDataSourceTypeEnumCurrent              RunsFilterDataSourceTypeEnum = "current"
+	RunsFilterDataSourceTypeEnumHistorical           RunsFilterDataSourceTypeEnum = "historical"
+	RunsFilterDataSourceTypeEnumLite                 RunsFilterDataSourceTypeEnum = "lite"
+	RunsFilterDataSourceTypeEnumRootLite             RunsFilterDataSourceTypeEnum = "root_lite"
+	RunsFilterDataSourceTypeEnumRunsFeedbacksRmtWide RunsFilterDataSourceTypeEnum = "runs_feedbacks_rmt_wide"
+)
+
+func (r RunsFilterDataSourceTypeEnum) IsKnown() bool {
+	switch r {
+	case RunsFilterDataSourceTypeEnumCurrent, RunsFilterDataSourceTypeEnumHistorical, RunsFilterDataSourceTypeEnumLite, RunsFilterDataSourceTypeEnumRootLite, RunsFilterDataSourceTypeEnumRunsFeedbacksRmtWide:
+		return true
+	}
+	return false
+}
+
+type RunNewResponse map[string]RunNewResponseItem
+
+type RunNewResponseItem struct {
+	JSON runNewResponseItemJSON `json:"-"`
+}
+
+// runNewResponseItemJSON contains the JSON metadata for the struct
+// [RunNewResponseItem]
+type runNewResponseItemJSON struct {
+	raw         string
+	ExtraFields map[string]apijson.Field
+}
+
+func (r *RunNewResponseItem) UnmarshalJSON(data []byte) (err error) {
+	return apijson.UnmarshalRoot(data, r)
+}
+
+func (r runNewResponseItemJSON) RawJSON() string {
+	return r.raw
+}
+
+type RunUpdateResponse map[string]RunUpdateResponseItem
+
+type RunUpdateResponseItem struct {
+	JSON runUpdateResponseItemJSON `json:"-"`
+}
+
+// runUpdateResponseItemJSON contains the JSON metadata for the struct
+// [RunUpdateResponseItem]
+type runUpdateResponseItemJSON struct {
+	raw         string
+	ExtraFields map[string]apijson.Field
+}
+
+func (r *RunUpdateResponseItem) UnmarshalJSON(data []byte) (err error) {
+	return apijson.UnmarshalRoot(data, r)
+}
+
+func (r runUpdateResponseItemJSON) RawJSON() string {
+	return r.raw
+}
+
+type RunIngestBatchResponse map[string]RunIngestBatchResponseItem
+
+type RunIngestBatchResponseItem struct {
+	JSON runIngestBatchResponseItemJSON `json:"-"`
+}
+
+// runIngestBatchResponseItemJSON contains the JSON metadata for the struct
+// [RunIngestBatchResponseItem]
+type runIngestBatchResponseItemJSON struct {
+	raw         string
+	ExtraFields map[string]apijson.Field
+}
+
+func (r *RunIngestBatchResponseItem) UnmarshalJSON(data []byte) (err error) {
+	return apijson.UnmarshalRoot(data, r)
+}
+
+func (r runIngestBatchResponseItemJSON) RawJSON() string {
+	return r.raw
+}
+
+type RunIngestMultipartResponse map[string]string
+
+type RunQueryResponse struct {
+	Cursors       map[string]string      `json:"cursors" api:"required"`
+	Runs          []RunSchema            `json:"runs" api:"required"`
+	ParsedQuery   string                 `json:"parsed_query" api:"nullable"`
+	SearchCursors map[string]interface{} `json:"search_cursors" api:"nullable"`
+	JSON          runQueryResponseJSON   `json:"-"`
+}
+
+// runQueryResponseJSON contains the JSON metadata for the struct
+// [RunQueryResponse]
+type runQueryResponseJSON struct {
+	Cursors       apijson.Field
+	Runs          apijson.Field
+	ParsedQuery   apijson.Field
+	SearchCursors apijson.Field
+	raw           string
+	ExtraFields   map[string]apijson.Field
+}
+
+func (r *RunQueryResponse) UnmarshalJSON(data []byte) (err error) {
+	return apijson.UnmarshalRoot(data, r)
+}
+
+func (r runQueryResponseJSON) RawJSON() string {
+	return r.raw
+}
+
+// Union satisfied by [RunStatsResponseRunStats] or [RunStatsResponseMap].
+type RunStatsResponseUnion interface {
+	implementsRunStatsResponseUnion()
+}
+
+func init() {
+	apijson.RegisterUnion(
+		reflect.TypeOf((*RunStatsResponseUnion)(nil)).Elem(),
+		"",
+		apijson.UnionVariant{
+			TypeFilter: gjson.JSON,
+			Type:       reflect.TypeOf(RunStatsResponseRunStats{}),
+		},
+		apijson.UnionVariant{
+			TypeFilter: gjson.JSON,
+			Type:       reflect.TypeOf(RunStatsResponseMap{}),
+		},
+	)
+}
+
+type RunStatsResponseRunStats struct {
+	CompletionCost         string                       `json:"completion_cost" api:"nullable"`
+	CompletionCostDetails  map[string]interface{}       `json:"completion_cost_details" api:"nullable"`
+	CompletionTokenDetails map[string]interface{}       `json:"completion_token_details" api:"nullable"`
+	CompletionTokens       int64                        `json:"completion_tokens" api:"nullable"`
+	CompletionTokensP50    int64                        `json:"completion_tokens_p50" api:"nullable"`
+	CompletionTokensP99    int64                        `json:"completion_tokens_p99" api:"nullable"`
+	CostP50                string                       `json:"cost_p50" api:"nullable"`
+	CostP99                string                       `json:"cost_p99" api:"nullable"`
+	ErrorRate              float64                      `json:"error_rate" api:"nullable"`
+	FeedbackStats          map[string]interface{}       `json:"feedback_stats" api:"nullable"`
+	FirstTokenP50          float64                      `json:"first_token_p50" api:"nullable"`
+	FirstTokenP99          float64                      `json:"first_token_p99" api:"nullable"`
+	LastRunStartTime       time.Time                    `json:"last_run_start_time" api:"nullable" format:"date-time"`
+	LatencyP50             float64                      `json:"latency_p50" api:"nullable"`
+	LatencyP99             float64                      `json:"latency_p99" api:"nullable"`
+	MedianTokens           int64                        `json:"median_tokens" api:"nullable"`
+	PromptCost             string                       `json:"prompt_cost" api:"nullable"`
+	PromptCostDetails      map[string]interface{}       `json:"prompt_cost_details" api:"nullable"`
+	PromptTokenDetails     map[string]interface{}       `json:"prompt_token_details" api:"nullable"`
+	PromptTokens           int64                        `json:"prompt_tokens" api:"nullable"`
+	PromptTokensP50        int64                        `json:"prompt_tokens_p50" api:"nullable"`
+	PromptTokensP99        int64                        `json:"prompt_tokens_p99" api:"nullable"`
+	RunCount               int64                        `json:"run_count" api:"nullable"`
+	RunFacets              []map[string]interface{}     `json:"run_facets" api:"nullable"`
+	StreamingRate          float64                      `json:"streaming_rate" api:"nullable"`
+	TokensP99              int64                        `json:"tokens_p99" api:"nullable"`
+	TotalCost              string                       `json:"total_cost" api:"nullable"`
+	TotalTokens            int64                        `json:"total_tokens" api:"nullable"`
+	JSON                   runStatsResponseRunStatsJSON `json:"-"`
+}
+
+// runStatsResponseRunStatsJSON contains the JSON metadata for the struct
+// [RunStatsResponseRunStats]
+type runStatsResponseRunStatsJSON struct {
+	CompletionCost         apijson.Field
+	CompletionCostDetails  apijson.Field
+	CompletionTokenDetails apijson.Field
+	CompletionTokens       apijson.Field
+	CompletionTokensP50    apijson.Field
+	CompletionTokensP99    apijson.Field
+	CostP50                apijson.Field
+	CostP99                apijson.Field
+	ErrorRate              apijson.Field
+	FeedbackStats          apijson.Field
+	FirstTokenP50          apijson.Field
+	FirstTokenP99          apijson.Field
+	LastRunStartTime       apijson.Field
+	LatencyP50             apijson.Field
+	LatencyP99             apijson.Field
+	MedianTokens           apijson.Field
+	PromptCost             apijson.Field
+	PromptCostDetails      apijson.Field
+	PromptTokenDetails     apijson.Field
+	PromptTokens           apijson.Field
+	PromptTokensP50        apijson.Field
+	PromptTokensP99        apijson.Field
+	RunCount               apijson.Field
+	RunFacets              apijson.Field
+	StreamingRate          apijson.Field
+	TokensP99              apijson.Field
+	TotalCost              apijson.Field
+	TotalTokens            apijson.Field
+	raw                    string
+	ExtraFields            map[string]apijson.Field
+}
+
+func (r *RunStatsResponseRunStats) UnmarshalJSON(data []byte) (err error) {
+	return apijson.UnmarshalRoot(data, r)
+}
+
+func (r runStatsResponseRunStatsJSON) RawJSON() string {
+	return r.raw
+}
+
+func (r RunStatsResponseRunStats) implementsRunStatsResponseUnion() {}
+
+type RunStatsResponseMap map[string]RunStatsResponseMapItem
+
+func (r RunStatsResponseMap) implementsRunStatsResponseUnion() {}
+
+type RunStatsResponseMapItem struct {
+	CompletionCost         string                      `json:"completion_cost" api:"nullable"`
+	CompletionCostDetails  map[string]interface{}      `json:"completion_cost_details" api:"nullable"`
+	CompletionTokenDetails map[string]interface{}      `json:"completion_token_details" api:"nullable"`
+	CompletionTokens       int64                       `json:"completion_tokens" api:"nullable"`
+	CompletionTokensP50    int64                       `json:"completion_tokens_p50" api:"nullable"`
+	CompletionTokensP99    int64                       `json:"completion_tokens_p99" api:"nullable"`
+	CostP50                string                      `json:"cost_p50" api:"nullable"`
+	CostP99                string                      `json:"cost_p99" api:"nullable"`
+	ErrorRate              float64                     `json:"error_rate" api:"nullable"`
+	FeedbackStats          map[string]interface{}      `json:"feedback_stats" api:"nullable"`
+	FirstTokenP50          float64                     `json:"first_token_p50" api:"nullable"`
+	FirstTokenP99          float64                     `json:"first_token_p99" api:"nullable"`
+	LastRunStartTime       time.Time                   `json:"last_run_start_time" api:"nullable" format:"date-time"`
+	LatencyP50             float64                     `json:"latency_p50" api:"nullable"`
+	LatencyP99             float64                     `json:"latency_p99" api:"nullable"`
+	MedianTokens           int64                       `json:"median_tokens" api:"nullable"`
+	PromptCost             string                      `json:"prompt_cost" api:"nullable"`
+	PromptCostDetails      map[string]interface{}      `json:"prompt_cost_details" api:"nullable"`
+	PromptTokenDetails     map[string]interface{}      `json:"prompt_token_details" api:"nullable"`
+	PromptTokens           int64                       `json:"prompt_tokens" api:"nullable"`
+	PromptTokensP50        int64                       `json:"prompt_tokens_p50" api:"nullable"`
+	PromptTokensP99        int64                       `json:"prompt_tokens_p99" api:"nullable"`
+	RunCount               int64                       `json:"run_count" api:"nullable"`
+	RunFacets              []map[string]interface{}    `json:"run_facets" api:"nullable"`
+	StreamingRate          float64                     `json:"streaming_rate" api:"nullable"`
+	TokensP99              int64                       `json:"tokens_p99" api:"nullable"`
+	TotalCost              string                      `json:"total_cost" api:"nullable"`
+	TotalTokens            int64                       `json:"total_tokens" api:"nullable"`
+	JSON                   runStatsResponseMapItemJSON `json:"-"`
+}
+
+// runStatsResponseMapItemJSON contains the JSON metadata for the struct
+// [RunStatsResponseMapItem]
+type runStatsResponseMapItemJSON struct {
+	CompletionCost         apijson.Field
+	CompletionCostDetails  apijson.Field
+	CompletionTokenDetails apijson.Field
+	CompletionTokens       apijson.Field
+	CompletionTokensP50    apijson.Field
+	CompletionTokensP99    apijson.Field
+	CostP50                apijson.Field
+	CostP99                apijson.Field
+	ErrorRate              apijson.Field
+	FeedbackStats          apijson.Field
+	FirstTokenP50          apijson.Field
+	FirstTokenP99          apijson.Field
+	LastRunStartTime       apijson.Field
+	LatencyP50             apijson.Field
+	LatencyP99             apijson.Field
+	MedianTokens           apijson.Field
+	PromptCost             apijson.Field
+	PromptCostDetails      apijson.Field
+	PromptTokenDetails     apijson.Field
+	PromptTokens           apijson.Field
+	PromptTokensP50        apijson.Field
+	PromptTokensP99        apijson.Field
+	RunCount               apijson.Field
+	RunFacets              apijson.Field
+	StreamingRate          apijson.Field
+	TokensP99              apijson.Field
+	TotalCost              apijson.Field
+	TotalTokens            apijson.Field
+	raw                    string
+	ExtraFields            map[string]apijson.Field
+}
+
+func (r *RunStatsResponseMapItem) UnmarshalJSON(data []byte) (err error) {
+	return apijson.UnmarshalRoot(data, r)
+}
+
+func (r runStatsResponseMapItemJSON) RawJSON() string {
+	return r.raw
+}
+
+type RunUpdate2Response = interface{}
+
+type RunNewParams struct {
+	Run RunParam `json:"run" api:"required"`
+}
+
+func (r RunNewParams) MarshalJSON() (data []byte, err error) {
+	return apijson.MarshalRoot(r.Run)
+}
+
+type RunGetParams struct {
+	ExcludeS3StoredAttributes param.Field[bool]      `query:"exclude_s3_stored_attributes"`
+	ExcludeSerialized         param.Field[bool]      `query:"exclude_serialized"`
+	IncludeMessages           param.Field[bool]      `query:"include_messages"`
+	SessionID                 param.Field[string]    `query:"session_id" format:"uuid"`
+	StartTime                 param.Field[time.Time] `query:"start_time" format:"date-time"`
+}
+
+// URLQuery serializes [RunGetParams]'s query parameters as `url.Values`.
+func (r RunGetParams) URLQuery() (v url.Values) {
+	return apiquery.MarshalWithSettings(r, apiquery.QuerySettings{
+		ArrayFormat:  apiquery.ArrayQueryFormatComma,
+		NestedFormat: apiquery.NestedQueryFormatBrackets,
+	})
+}
+
+type RunUpdateParams struct {
+	Run RunParam `json:"run" api:"required"`
+}
+
+func (r RunUpdateParams) MarshalJSON() (data []byte, err error) {
+	return apijson.MarshalRoot(r.Run)
 }
 
 type RunIngestBatchParams struct {
@@ -324,11 +768,41 @@ func (r RunIngestBatchParams) MarshalJSON() (data []byte, err error) {
 	return apijson.MarshalRoot(r)
 }
 
+type RunIngestMultipartParams struct {
+	// Binary attachment linked to run {run_id}
+	AttachmentRunIDFilename param.Field[io.Reader] `json:"attachment.{run_id}.{filename}" format:"binary"`
+	// Feedback object (JSON) – must include trace_id
+	FeedbackRunID param.Field[io.Reader] `json:"feedback.{run_id}" format:"binary"`
+	// Run to update (JSON)
+	PatchRunID param.Field[io.Reader] `json:"patch.{run_id}" format:"binary"`
+	// Large outputs object (JSON) stored out‑of‑band
+	PatchRunIDOutputs param.Field[io.Reader] `json:"patch.{run_id}.outputs" format:"binary"`
+	// Run to create (JSON)
+	PostRunID param.Field[io.Reader] `json:"post.{run_id}" format:"binary"`
+	// Large inputs object (JSON) stored out‑of‑band
+	PostRunIDInputs param.Field[io.Reader] `json:"post.{run_id}.inputs" format:"binary"`
+}
+
+func (r RunIngestMultipartParams) MarshalMultipart() (data []byte, contentType string, err error) {
+	buf := bytes.NewBuffer(nil)
+	writer := multipart.NewWriter(buf)
+	err = apiform.MarshalRoot(r, writer)
+	if err != nil {
+		writer.Close()
+		return nil, "", err
+	}
+	err = writer.Close()
+	if err != nil {
+		return nil, "", err
+	}
+	return buf.Bytes(), writer.FormDataContentType(), nil
+}
+
 type RunQueryParams struct {
 	ID     param.Field[[]string] `json:"id" format:"uuid"`
 	Cursor param.Field[string]   `json:"cursor"`
 	// Enum for run data source types.
-	DataSourceType param.Field[RunQueryParamsDataSourceType] `json:"data_source_type"`
+	DataSourceType param.Field[RunsFilterDataSourceTypeEnum] `json:"data_source_type"`
 	EndTime        param.Field[time.Time]                    `json:"end_time" format:"date-time"`
 	Error          param.Field[bool]                         `json:"error"`
 	ExecutionOrder param.Field[int64]                        `json:"execution_order"`
@@ -341,7 +815,7 @@ type RunQueryParams struct {
 	Query            param.Field[string]              `json:"query"`
 	ReferenceExample param.Field[[]string]            `json:"reference_example" format:"uuid"`
 	// Enum for run types.
-	RunType               param.Field[RunQueryParamsRunType]  `json:"run_type"`
+	RunType               param.Field[RunTypeEnum]            `json:"run_type"`
 	SearchFilter          param.Field[string]                 `json:"search_filter"`
 	Select                param.Field[[]RunQueryParamsSelect] `json:"select"`
 	Session               param.Field[[]string]               `json:"session" format:"uuid"`
@@ -358,25 +832,6 @@ func (r RunQueryParams) MarshalJSON() (data []byte, err error) {
 	return apijson.MarshalRoot(r)
 }
 
-// Enum for run data source types.
-type RunQueryParamsDataSourceType string
-
-const (
-	RunQueryParamsDataSourceTypeCurrent              RunQueryParamsDataSourceType = "current"
-	RunQueryParamsDataSourceTypeHistorical           RunQueryParamsDataSourceType = "historical"
-	RunQueryParamsDataSourceTypeLite                 RunQueryParamsDataSourceType = "lite"
-	RunQueryParamsDataSourceTypeRootLite             RunQueryParamsDataSourceType = "root_lite"
-	RunQueryParamsDataSourceTypeRunsFeedbacksRmtWide RunQueryParamsDataSourceType = "runs_feedbacks_rmt_wide"
-)
-
-func (r RunQueryParamsDataSourceType) IsKnown() bool {
-	switch r {
-	case RunQueryParamsDataSourceTypeCurrent, RunQueryParamsDataSourceTypeHistorical, RunQueryParamsDataSourceTypeLite, RunQueryParamsDataSourceTypeRootLite, RunQueryParamsDataSourceTypeRunsFeedbacksRmtWide:
-		return true
-	}
-	return false
-}
-
 // Enum for run start date order.
 type RunQueryParamsOrder string
 
@@ -388,27 +843,6 @@ const (
 func (r RunQueryParamsOrder) IsKnown() bool {
 	switch r {
 	case RunQueryParamsOrderAsc, RunQueryParamsOrderDesc:
-		return true
-	}
-	return false
-}
-
-// Enum for run types.
-type RunQueryParamsRunType string
-
-const (
-	RunQueryParamsRunTypeTool      RunQueryParamsRunType = "tool"
-	RunQueryParamsRunTypeChain     RunQueryParamsRunType = "chain"
-	RunQueryParamsRunTypeLlm       RunQueryParamsRunType = "llm"
-	RunQueryParamsRunTypeRetriever RunQueryParamsRunType = "retriever"
-	RunQueryParamsRunTypeEmbedding RunQueryParamsRunType = "embedding"
-	RunQueryParamsRunTypePrompt    RunQueryParamsRunType = "prompt"
-	RunQueryParamsRunTypeParser    RunQueryParamsRunType = "parser"
-)
-
-func (r RunQueryParamsRunType) IsKnown() bool {
-	switch r {
-	case RunQueryParamsRunTypeTool, RunQueryParamsRunTypeChain, RunQueryParamsRunTypeLlm, RunQueryParamsRunTypeRetriever, RunQueryParamsRunTypeEmbedding, RunQueryParamsRunTypePrompt, RunQueryParamsRunTypeParser:
 		return true
 	}
 	return false
@@ -486,4 +920,13 @@ func (r RunQueryParamsSelect) IsKnown() bool {
 		return true
 	}
 	return false
+}
+
+type RunStatsParams struct {
+	// Query params for run stats.
+	RunStatsQueryParams RunStatsQueryParams `json:"run_stats_query_params" api:"required"`
+}
+
+func (r RunStatsParams) MarshalJSON() (data []byte, err error) {
+	return apijson.MarshalRoot(r.RunStatsQueryParams)
 }

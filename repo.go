@@ -119,7 +119,7 @@ func (r *RepoService) Delete(ctx context.Context, owner string, repo string, opt
 
 type CreateRepoResponse struct {
 	// All database fields for repos, plus helpful computed fields.
-	Repo RepoWithLookups        `json:"repo,required"`
+	Repo RepoWithLookups        `json:"repo" api:"required"`
 	JSON createRepoResponseJSON `json:"-"`
 }
 
@@ -141,7 +141,7 @@ func (r createRepoResponseJSON) RawJSON() string {
 
 type GetRepoResponse struct {
 	// All database fields for repos, plus helpful computed fields.
-	Repo RepoWithLookups     `json:"repo,required"`
+	Repo RepoWithLookups     `json:"repo" api:"required"`
 	JSON getRepoResponseJSON `json:"-"`
 }
 
@@ -162,32 +162,34 @@ func (r getRepoResponseJSON) RawJSON() string {
 
 // All database fields for repos, plus helpful computed fields.
 type RepoWithLookups struct {
-	ID             string    `json:"id,required" format:"uuid"`
-	CreatedAt      time.Time `json:"created_at,required" format:"date-time"`
-	FullName       string    `json:"full_name,required"`
-	IsArchived     bool      `json:"is_archived,required"`
-	IsPublic       bool      `json:"is_public,required"`
-	NumCommits     int64     `json:"num_commits,required"`
-	NumDownloads   int64     `json:"num_downloads,required"`
-	NumLikes       int64     `json:"num_likes,required"`
-	NumViews       int64     `json:"num_views,required"`
-	Owner          string    `json:"owner,required,nullable"`
-	RepoHandle     string    `json:"repo_handle,required"`
-	Tags           []string  `json:"tags,required"`
-	TenantID       string    `json:"tenant_id,required" format:"uuid"`
-	UpdatedAt      time.Time `json:"updated_at,required" format:"date-time"`
-	CommitTags     []string  `json:"commit_tags"`
-	CreatedBy      string    `json:"created_by,nullable"`
-	Description    string    `json:"description,nullable"`
-	LastCommitHash string    `json:"last_commit_hash,nullable"`
+	ID             string                  `json:"id" api:"required" format:"uuid"`
+	CreatedAt      time.Time               `json:"created_at" api:"required" format:"date-time"`
+	FullName       string                  `json:"full_name" api:"required"`
+	IsArchived     bool                    `json:"is_archived" api:"required"`
+	IsPublic       bool                    `json:"is_public" api:"required"`
+	NumCommits     int64                   `json:"num_commits" api:"required"`
+	NumDownloads   int64                   `json:"num_downloads" api:"required"`
+	NumLikes       int64                   `json:"num_likes" api:"required"`
+	NumViews       int64                   `json:"num_views" api:"required"`
+	Owner          string                  `json:"owner" api:"required,nullable"`
+	RepoHandle     string                  `json:"repo_handle" api:"required"`
+	RepoType       RepoWithLookupsRepoType `json:"repo_type" api:"required"`
+	Tags           []string                `json:"tags" api:"required"`
+	TenantID       string                  `json:"tenant_id" api:"required" format:"uuid"`
+	UpdatedAt      time.Time               `json:"updated_at" api:"required" format:"date-time"`
+	CommitTags     []string                `json:"commit_tags"`
+	CreatedBy      string                  `json:"created_by" api:"nullable"`
+	Description    string                  `json:"description" api:"nullable"`
+	LastCommitHash string                  `json:"last_commit_hash" api:"nullable"`
 	// Response model for get_commit_manifest.
-	LatestCommitManifest CommitManifestResponse `json:"latest_commit_manifest,nullable"`
-	LikedByAuthUser      bool                   `json:"liked_by_auth_user,nullable"`
-	OriginalRepoFullName string                 `json:"original_repo_full_name,nullable"`
-	OriginalRepoID       string                 `json:"original_repo_id,nullable" format:"uuid"`
-	Readme               string                 `json:"readme,nullable"`
-	UpstreamRepoFullName string                 `json:"upstream_repo_full_name,nullable"`
-	UpstreamRepoID       string                 `json:"upstream_repo_id,nullable" format:"uuid"`
+	LatestCommitManifest CommitManifestResponse `json:"latest_commit_manifest" api:"nullable"`
+	LikedByAuthUser      bool                   `json:"liked_by_auth_user" api:"nullable"`
+	OriginalRepoFullName string                 `json:"original_repo_full_name" api:"nullable"`
+	OriginalRepoID       string                 `json:"original_repo_id" api:"nullable" format:"uuid"`
+	Readme               string                 `json:"readme" api:"nullable"`
+	RestrictedMode       bool                   `json:"restricted_mode"`
+	UpstreamRepoFullName string                 `json:"upstream_repo_full_name" api:"nullable"`
+	UpstreamRepoID       string                 `json:"upstream_repo_id" api:"nullable" format:"uuid"`
 	JSON                 repoWithLookupsJSON    `json:"-"`
 }
 
@@ -204,6 +206,7 @@ type repoWithLookupsJSON struct {
 	NumViews             apijson.Field
 	Owner                apijson.Field
 	RepoHandle           apijson.Field
+	RepoType             apijson.Field
 	Tags                 apijson.Field
 	TenantID             apijson.Field
 	UpdatedAt            apijson.Field
@@ -216,6 +219,7 @@ type repoWithLookupsJSON struct {
 	OriginalRepoFullName apijson.Field
 	OriginalRepoID       apijson.Field
 	Readme               apijson.Field
+	RestrictedMode       apijson.Field
 	UpstreamRepoFullName apijson.Field
 	UpstreamRepoID       apijson.Field
 	raw                  string
@@ -230,26 +234,62 @@ func (r repoWithLookupsJSON) RawJSON() string {
 	return r.raw
 }
 
+type RepoWithLookupsRepoType string
+
+const (
+	RepoWithLookupsRepoTypePrompt RepoWithLookupsRepoType = "prompt"
+	RepoWithLookupsRepoTypeFile   RepoWithLookupsRepoType = "file"
+	RepoWithLookupsRepoTypeAgent  RepoWithLookupsRepoType = "agent"
+	RepoWithLookupsRepoTypeSkill  RepoWithLookupsRepoType = "skill"
+)
+
+func (r RepoWithLookupsRepoType) IsKnown() bool {
+	switch r {
+	case RepoWithLookupsRepoTypePrompt, RepoWithLookupsRepoTypeFile, RepoWithLookupsRepoTypeAgent, RepoWithLookupsRepoTypeSkill:
+		return true
+	}
+	return false
+}
+
 type RepoDeleteResponse = interface{}
 
 type RepoNewParams struct {
-	IsPublic    param.Field[bool]     `json:"is_public,required"`
-	RepoHandle  param.Field[string]   `json:"repo_handle,required"`
-	Description param.Field[string]   `json:"description"`
-	Readme      param.Field[string]   `json:"readme"`
-	Tags        param.Field[[]string] `json:"tags"`
+	IsPublic    param.Field[bool]                  `json:"is_public" api:"required"`
+	RepoHandle  param.Field[string]                `json:"repo_handle" api:"required"`
+	Description param.Field[string]                `json:"description"`
+	Readme      param.Field[string]                `json:"readme"`
+	RepoType    param.Field[RepoNewParamsRepoType] `json:"repo_type"`
+	Tags        param.Field[[]string]              `json:"tags"`
 }
 
 func (r RepoNewParams) MarshalJSON() (data []byte, err error) {
 	return apijson.MarshalRoot(r)
 }
 
+type RepoNewParamsRepoType string
+
+const (
+	RepoNewParamsRepoTypePrompt RepoNewParamsRepoType = "prompt"
+	RepoNewParamsRepoTypeFile   RepoNewParamsRepoType = "file"
+	RepoNewParamsRepoTypeAgent  RepoNewParamsRepoType = "agent"
+	RepoNewParamsRepoTypeSkill  RepoNewParamsRepoType = "skill"
+)
+
+func (r RepoNewParamsRepoType) IsKnown() bool {
+	switch r {
+	case RepoNewParamsRepoTypePrompt, RepoNewParamsRepoTypeFile, RepoNewParamsRepoTypeAgent, RepoNewParamsRepoTypeSkill:
+		return true
+	}
+	return false
+}
+
 type RepoUpdateParams struct {
-	Description param.Field[string]   `json:"description"`
-	IsArchived  param.Field[bool]     `json:"is_archived"`
-	IsPublic    param.Field[bool]     `json:"is_public"`
-	Readme      param.Field[string]   `json:"readme"`
-	Tags        param.Field[[]string] `json:"tags"`
+	Description    param.Field[string]   `json:"description"`
+	IsArchived     param.Field[bool]     `json:"is_archived"`
+	IsPublic       param.Field[bool]     `json:"is_public"`
+	Readme         param.Field[string]   `json:"readme"`
+	RestrictedMode param.Field[bool]     `json:"restricted_mode"`
+	Tags           param.Field[[]string] `json:"tags"`
 }
 
 func (r RepoUpdateParams) MarshalJSON() (data []byte, err error) {
@@ -263,6 +303,7 @@ type RepoListParams struct {
 	Limit              param.Field[int64]                       `query:"limit"`
 	Offset             param.Field[int64]                       `query:"offset"`
 	Query              param.Field[string]                      `query:"query"`
+	RepoType           param.Field[RepoListParamsRepoType]      `query:"repo_type"`
 	SortDirection      param.Field[RepoListParamsSortDirection] `query:"sort_direction"`
 	SortField          param.Field[RepoListParamsSortField]     `query:"sort_field"`
 	TagValueID         param.Field[[]string]                    `query:"tag_value_id" format:"uuid"`
@@ -308,6 +349,23 @@ const (
 func (r RepoListParamsIsPublic) IsKnown() bool {
 	switch r {
 	case RepoListParamsIsPublicTrue, RepoListParamsIsPublicFalse:
+		return true
+	}
+	return false
+}
+
+type RepoListParamsRepoType string
+
+const (
+	RepoListParamsRepoTypePrompt RepoListParamsRepoType = "prompt"
+	RepoListParamsRepoTypeFile   RepoListParamsRepoType = "file"
+	RepoListParamsRepoTypeAgent  RepoListParamsRepoType = "agent"
+	RepoListParamsRepoTypeSkill  RepoListParamsRepoType = "skill"
+)
+
+func (r RepoListParamsRepoType) IsKnown() bool {
+	switch r {
+	case RepoListParamsRepoTypePrompt, RepoListParamsRepoTypeFile, RepoListParamsRepoTypeAgent, RepoListParamsRepoTypeSkill:
 		return true
 	}
 	return false

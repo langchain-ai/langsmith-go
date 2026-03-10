@@ -46,7 +46,7 @@ func (r *FeedbackConfigService) Delete(ctx context.Context, body FeedbackConfigD
 }
 
 type FeedbackConfigDeleteParams struct {
-	FeedbackKey param.Field[string] `query:"feedback_key,required"`
+	FeedbackKey param.Field[string] `query:"feedback_key" api:"required"`
 }
 
 // URLQuery serializes [FeedbackConfigDeleteParams]'s query parameters as

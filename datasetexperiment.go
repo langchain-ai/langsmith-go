@@ -50,7 +50,7 @@ func (r *DatasetExperimentService) Grouped(ctx context.Context, datasetID string
 type DatasetExperimentGroupedResponse = interface{}
 
 type DatasetExperimentGroupedParams struct {
-	MetadataKeys    param.Field[[]string]  `json:"metadata_keys,required"`
+	MetadataKeys    param.Field[[]string]  `json:"metadata_keys" api:"required"`
 	DatasetVersion  param.Field[string]    `json:"dataset_version"`
 	ExperimentLimit param.Field[int64]     `json:"experiment_limit"`
 	Filter          param.Field[string]    `json:"filter"`

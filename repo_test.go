@@ -14,7 +14,7 @@ import (
 )
 
 func TestRepoNewWithOptionalParams(t *testing.T) {
-	t.Skip("Prism tests are disabled")
+	t.Skip("Mock server tests are disabled")
 	baseURL := "http://localhost:4010"
 	if envURL, ok := os.LookupEnv("TEST_API_BASE_URL"); ok {
 		baseURL = envURL
@@ -33,6 +33,7 @@ func TestRepoNewWithOptionalParams(t *testing.T) {
 		RepoHandle:  langsmith.F("repo_handle"),
 		Description: langsmith.F("description"),
 		Readme:      langsmith.F("readme"),
+		RepoType:    langsmith.F(langsmith.RepoNewParamsRepoTypePrompt),
 		Tags:        langsmith.F([]string{"string"}),
 	})
 	if err != nil {
@@ -45,7 +46,7 @@ func TestRepoNewWithOptionalParams(t *testing.T) {
 }
 
 func TestRepoGet(t *testing.T) {
-	t.Skip("Prism tests are disabled")
+	t.Skip("Mock server tests are disabled")
 	baseURL := "http://localhost:4010"
 	if envURL, ok := os.LookupEnv("TEST_API_BASE_URL"); ok {
 		baseURL = envURL
@@ -74,7 +75,7 @@ func TestRepoGet(t *testing.T) {
 }
 
 func TestRepoUpdateWithOptionalParams(t *testing.T) {
-	t.Skip("Prism tests are disabled")
+	t.Skip("Mock server tests are disabled")
 	baseURL := "http://localhost:4010"
 	if envURL, ok := os.LookupEnv("TEST_API_BASE_URL"); ok {
 		baseURL = envURL
@@ -93,11 +94,12 @@ func TestRepoUpdateWithOptionalParams(t *testing.T) {
 		"owner",
 		"repo",
 		langsmith.RepoUpdateParams{
-			Description: langsmith.F("description"),
-			IsArchived:  langsmith.F(true),
-			IsPublic:    langsmith.F(true),
-			Readme:      langsmith.F("readme"),
-			Tags:        langsmith.F([]string{"string"}),
+			Description:    langsmith.F("description"),
+			IsArchived:     langsmith.F(true),
+			IsPublic:       langsmith.F(true),
+			Readme:         langsmith.F("readme"),
+			RestrictedMode: langsmith.F(true),
+			Tags:           langsmith.F([]string{"string"}),
 		},
 	)
 	if err != nil {
@@ -110,7 +112,7 @@ func TestRepoUpdateWithOptionalParams(t *testing.T) {
 }
 
 func TestRepoListWithOptionalParams(t *testing.T) {
-	t.Skip("Prism tests are disabled")
+	t.Skip("Mock server tests are disabled")
 	baseURL := "http://localhost:4010"
 	if envURL, ok := os.LookupEnv("TEST_API_BASE_URL"); ok {
 		baseURL = envURL
@@ -131,6 +133,7 @@ func TestRepoListWithOptionalParams(t *testing.T) {
 		Limit:              langsmith.F(int64(1)),
 		Offset:             langsmith.F(int64(0)),
 		Query:              langsmith.F("query"),
+		RepoType:           langsmith.F(langsmith.RepoListParamsRepoTypePrompt),
 		SortDirection:      langsmith.F(langsmith.RepoListParamsSortDirectionAsc),
 		SortField:          langsmith.F(langsmith.RepoListParamsSortFieldNumLikes),
 		TagValueID:         langsmith.F([]string{"182bd5e5-6e1a-4fe4-a799-aa6d9a6ab26e"}),
@@ -151,7 +154,7 @@ func TestRepoListWithOptionalParams(t *testing.T) {
 }
 
 func TestRepoDelete(t *testing.T) {
-	t.Skip("Prism tests are disabled")
+	t.Skip("Mock server tests are disabled")
 	baseURL := "http://localhost:4010"
 	if envURL, ok := os.LookupEnv("TEST_API_BASE_URL"); ok {
 		baseURL = envURL

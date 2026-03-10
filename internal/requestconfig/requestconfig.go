@@ -362,11 +362,9 @@ func (b *bodyWithTimeout) Close() error {
 }
 
 func retryDelay(res *http.Response, retryCount int) time.Duration {
-	// If the API asks us to wait a certain amount of time (and it's a reasonable amount),
-	// just do what it says.
-
-	if retryAfterDelay, ok := parseRetryAfterHeader(res); ok && 0 <= retryAfterDelay && retryAfterDelay < time.Minute {
-		return retryAfterDelay
+	// If the backend tells us to wait a certain amount of time, use that value
+	if retryAfterDelay, ok := parseRetryAfterHeader(res); ok {
+		return max(0, retryAfterDelay)
 	}
 
 	maxDelay := 16 * time.Second
@@ -473,7 +471,11 @@ func (cfg *RequestConfig) Execute() (err error) {
 			res.Body.Close()
 		}
 
-		time.Sleep(retryDelay(res, retryCount))
+		select {
+		case <-ctx.Done():
+			return ctx.Err()
+		case <-time.After(retryDelay(res, retryCount)):
+		}
 	}
 
 	// Save *http.Response if it is requested to, even if there was an error making the request. This is
