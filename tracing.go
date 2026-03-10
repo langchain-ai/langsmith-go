@@ -34,14 +34,16 @@ func DefaultDrainConfig() DrainConfig { return langsmithtracing.DefaultDrainConf
 
 // Tracing option constructors.
 var (
-	WithTracingAPIURL    = langsmithtracing.WithAPIURL
-	WithTracingAPIKey    = langsmithtracing.WithAPIKey
-	WithTracingProject   = langsmithtracing.WithProject
-	WithTracingDrain     = langsmithtracing.WithDrainConfig
-	WithSampleRate       = langsmithtracing.WithSampleRate
-	WithRunTransform     = langsmithtracing.WithRunTransform
+	WithTracingAPIURL        = langsmithtracing.WithAPIURL
+	WithTracingAPIKey        = langsmithtracing.WithAPIKey
+	WithTracingBearerToken   = langsmithtracing.WithBearerToken
+	WithTracingProject       = langsmithtracing.WithProject
+	WithTracingDrain         = langsmithtracing.WithDrainConfig
+	WithSampleRate           = langsmithtracing.WithSampleRate
+	WithRunTransform         = langsmithtracing.WithRunTransform
 )
 
 // NewTracingClient creates a standalone TracingClient. Most users should use
-// [Client].Tracing instead, which is initialized automatically by [NewClient].
+// [Client.CreateRun] / [Client.UpdateRun] instead, which lazily initialize the
+// underlying TracingClient on first use so REST-only clients pay no cost.
 var NewTracingClient = langsmithtracing.NewTracingClient

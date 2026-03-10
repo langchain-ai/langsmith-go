@@ -90,6 +90,62 @@ func TestCoalesce_PatchOverridesAttachment(t *testing.T) {
 	}
 }
 
+func TestCoalesce_ExtraDeepMerged(t *testing.T) {
+	id := uuid.New()
+
+	ops := []*SerializedOp{
+		{
+			Kind:    OpKindPost,
+			ID:      id,
+			TraceID: id,
+			RunInfo: []byte(`{}`),
+			Extra:   []byte(`{"runtime":{"sdk":"langsmith-go","platform":"linux/amd64"},"metadata":{"user_key":"keep"}}`),
+		},
+		{
+			Kind:    OpKindPatch,
+			ID:      id,
+			TraceID: id,
+			RunInfo: []byte(`{}`),
+			Extra:   []byte(`{"metadata":{"v":2}}`),
+		},
+	}
+
+	result, err := Coalesce(ops)
+	if err != nil {
+		t.Fatalf("Coalesce: %v", err)
+	}
+	if len(result) != 1 {
+		t.Fatalf("expected 1 op, got %d", len(result))
+	}
+
+	var extra map[string]any
+	if err := json.Unmarshal(result[0].Extra, &extra); err != nil {
+		t.Fatalf("unmarshal extra: %v", err)
+	}
+
+	runtime, ok := extra["runtime"].(map[string]any)
+	if !ok {
+		t.Fatal("runtime key missing after coalesce — patch clobbered create's runtime env")
+	}
+	if runtime["sdk"] != "langsmith-go" {
+		t.Errorf("runtime.sdk = %v, want langsmith-go", runtime["sdk"])
+	}
+	if runtime["platform"] != "linux/amd64" {
+		t.Errorf("runtime.platform = %v, want linux/amd64", runtime["platform"])
+	}
+
+	metadata, ok := extra["metadata"].(map[string]any)
+	if !ok {
+		t.Fatal("metadata key missing after coalesce")
+	}
+	if metadata["v"] != float64(2) {
+		t.Errorf("metadata.v = %v, want 2 (patch value)", metadata["v"])
+	}
+	if metadata["user_key"] != "keep" {
+		t.Errorf("metadata.user_key = %v, want keep (create value)", metadata["user_key"])
+	}
+}
+
 func TestCoalesce_StandalonePatch(t *testing.T) {
 	id := uuid.New()
 

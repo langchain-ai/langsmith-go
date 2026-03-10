@@ -43,7 +43,7 @@ func mergeInto(dst, src *SerializedOp) {
 		dst.Events = src.Events
 	}
 	if src.Extra != nil {
-		dst.Extra = src.Extra
+		dst.Extra = overlayJSON(dst.Extra, src.Extra)
 	}
 	if src.Error != nil {
 		dst.Error = src.Error

@@ -4,9 +4,11 @@ package langsmith
 
 import (
 	"context"
+	"fmt"
 	"net/http"
 	"os"
 	"slices"
+	"sync"
 
 	"github.com/langchain-ai/langsmith-go/internal/requestconfig"
 	"github.com/langchain-ai/langsmith-go/lib/langsmithtracing"
@@ -29,6 +31,9 @@ type Client struct {
 	Commits          *CommitService
 	Settings         *SettingService
 	Tracing          *langsmithtracing.TracingClient
+
+	tracingOnce sync.Once
+	tracingErr  error
 }
 
 // DefaultClientOptions read from the environment (LANGSMITH_API_KEY,
@@ -74,44 +79,68 @@ func NewClient(opts ...option.RequestOption) (r *Client) {
 	r.Repos = NewRepoService(opts...)
 	r.Commits = NewCommitService(opts...)
 	r.Settings = NewSettingService(opts...)
-	r.Tracing = newTracingClientFromOpts(opts)
 
 	return
 }
 
-func newTracingClientFromOpts(opts []option.RequestOption) *langsmithtracing.TracingClient {
-	req, _ := http.NewRequest("GET", "/", nil)
-	cfg := requestconfig.RequestConfig{
-		Request:    req,
-		HTTPClient: http.DefaultClient,
-	}
-	_ = cfg.Apply(slices.Clone(opts)...)
+// tracing returns the lazily-initialized TracingClient. The background
+// goroutine is only started on the first call, so clients that never use
+// tracing (e.g. REST-only usage) pay no cost and leak no goroutines.
+func (r *Client) tracing() (*langsmithtracing.TracingClient, error) {
+	r.tracingOnce.Do(func() {
+		req, err := http.NewRequest("GET", "/", nil)
+		if err != nil {
+			r.tracingErr = fmt.Errorf("langsmith: init tracing: %w", err)
+			return
+		}
+		cfg := requestconfig.RequestConfig{
+			Request:    req,
+			HTTPClient: http.DefaultClient,
+		}
+		if err := cfg.Apply(slices.Clone(r.Options)...); err != nil {
+			r.tracingErr = fmt.Errorf("langsmith: resolve tracing config: %w", err)
+			return
+		}
 
-	var tracingOpts []langsmithtracing.Option
-	if cfg.APIKey != "" {
-		tracingOpts = append(tracingOpts, langsmithtracing.WithAPIKey(cfg.APIKey))
-	}
-	if cfg.BaseURL != nil {
-		tracingOpts = append(tracingOpts, langsmithtracing.WithAPIURL(cfg.BaseURL.String()))
-	} else if cfg.DefaultBaseURL != nil {
-		tracingOpts = append(tracingOpts, langsmithtracing.WithAPIURL(cfg.DefaultBaseURL.String()))
-	}
-	return langsmithtracing.NewTracingClient(context.Background(), tracingOpts...)
+		var tracingOpts []langsmithtracing.Option
+		if cfg.APIKey != "" {
+			tracingOpts = append(tracingOpts, langsmithtracing.WithAPIKey(cfg.APIKey))
+		}
+		if cfg.BearerToken != "" {
+			tracingOpts = append(tracingOpts, langsmithtracing.WithBearerToken(cfg.BearerToken))
+		}
+		if cfg.BaseURL != nil {
+			tracingOpts = append(tracingOpts, langsmithtracing.WithAPIURL(cfg.BaseURL.String()))
+		} else if cfg.DefaultBaseURL != nil {
+			tracingOpts = append(tracingOpts, langsmithtracing.WithAPIURL(cfg.DefaultBaseURL.String()))
+		}
+		r.Tracing = langsmithtracing.NewTracingClient(context.Background(), tracingOpts...)
+	})
+	return r.Tracing, r.tracingErr
 }
 
 // CreateRun enqueues a run create (post) for multipart ingestion.
 func (r *Client) CreateRun(run *RunCreate) error {
-	return r.Tracing.CreateRun(run)
+	tc, err := r.tracing()
+	if err != nil {
+		return err
+	}
+	return tc.CreateRun(run)
 }
 
 // UpdateRun enqueues a run update (patch) for multipart ingestion.
 func (r *Client) UpdateRun(run *RunUpdate) error {
-	return r.Tracing.UpdateRun(run)
+	tc, err := r.tracing()
+	if err != nil {
+		return err
+	}
+	return tc.UpdateRun(run)
 }
 
 // Close flushes pending tracing operations and shuts down background goroutines.
 // Always call Close before the client goes out of scope to ensure all traces are
-// delivered. It is safe to call Close multiple times.
+// delivered. It is safe to call Close multiple times; it is also safe to call
+// Close on a client that never used tracing (no-op in that case).
 func (r *Client) Close() {
 	if r.Tracing != nil {
 		r.Tracing.Close()

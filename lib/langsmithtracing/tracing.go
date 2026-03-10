@@ -105,6 +105,7 @@ type Option func(*options)
 type options struct {
 	apiURL       string
 	apiKey       string
+	bearerToken  string
 	project      string
 	drainConfig  *tracesink.DrainConfig
 	sampleRate   *float64
@@ -116,6 +117,10 @@ func WithAPIURL(url string) Option { return func(o *options) { o.apiURL = url } 
 
 // WithAPIKey overrides the LangSmith API key.
 func WithAPIKey(key string) Option { return func(o *options) { o.apiKey = key } }
+
+// WithBearerToken sets a bearer token for authentication.
+// When set, it takes precedence over the API key.
+func WithBearerToken(token string) Option { return func(o *options) { o.bearerToken = token } }
 
 // WithProject overrides the LangSmith project name.
 func WithProject(name string) Option { return func(o *options) { o.project = name } }
@@ -160,9 +165,10 @@ func NewTracingClient(ctx context.Context, opts ...Option) *TracingClient {
 	}
 
 	endpoint := models.WriteEndpoint{
-		URL:     cfg.apiURL,
-		Key:     cfg.apiKey,
-		Project: cfg.project,
+		URL:         cfg.apiURL,
+		Key:         cfg.apiKey,
+		BearerToken: cfg.bearerToken,
+		Project:     cfg.project,
 	}
 
 	exp := multipart.NewExporter(nil, multipart.DefaultRetry())
