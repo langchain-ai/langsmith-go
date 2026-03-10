@@ -8,8 +8,10 @@ import (
 )
 
 // NewDottedSegment creates the first segment of a dotted order string.
+// Format: YYYYMMDDTHHMMSSffffffZ<uuid> (no dot before microseconds).
 func NewDottedSegment(t time.Time, id uuid.UUID) string {
-	return fmt.Sprintf("%s%s", t.UTC().Format("20060102T150405.000000"), "Z"+id.String())
+	utc := t.UTC()
+	return fmt.Sprintf("%s%06dZ%s", utc.Format("20060102T150405"), utc.Nanosecond()/1000, id.String())
 }
 
 // AppendDotted appends a new segment to an existing dotted order.

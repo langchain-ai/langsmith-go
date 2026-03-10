@@ -4,6 +4,7 @@ import (
 	"context"
 	"encoding/json"
 	"fmt"
+	"log"
 	"math/rand/v2"
 	"strings"
 	"sync"
@@ -130,9 +131,14 @@ func WithDrainConfig(config DrainConfig) Option {
 	return func(o *options) { o.drainConfig = &config }
 }
 
-// WithSampleRate sets the trace sampling rate.
+// WithSampleRate sets the trace sampling rate (must be between 0 and 1).
 // Overrides the LANGSMITH_TRACING_SAMPLING_RATE env var.
+// Out-of-range values are clamped with a warning log.
 func WithSampleRate(rate float64) Option {
+	if rate < 0 || rate > 1 {
+		log.Printf("[langsmith] WithSampleRate: rate %f out of range, clamping to [0, 1]", rate)
+		rate = max(0, min(1, rate))
+	}
 	return func(o *options) { o.sampleRate = &rate }
 }
 
