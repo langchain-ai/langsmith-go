@@ -11,8 +11,38 @@ on:
     branches-ignore:
       - 'stl-preview-head/**'
       - 'stl-preview-base/**'
+  workflow_dispatch:
+    inputs:
+      run-go-integration:
+        description: "Run Go integration tests (requires LANGSMITH_API_KEY, LANGSMITH_PROJECT_ID)"
+        type: boolean
+        default: true
 
 jobs:
+  integration-changes:
+    name: Integration test changes
+    runs-on: ubuntu-latest
+    outputs:
+      go_changed: ${{ steps.check.outputs.go_changed }}
+    steps:
+      - uses: actions/checkout@v6
+        with:
+          fetch-depth: 0
+      - name: Check for Go-related changes
+        id: check
+        run: |
+          if [ "${{ github.event_name }}" = "push" ]; then
+            echo "go_changed=true" >> $GITHUB_OUTPUT
+          elif [ "${{ github.event_name }}" = "pull_request" ]; then
+            if git diff --name-only ${{ github.event.pull_request.base.sha }} ${{ github.event.pull_request.head.sha }} | grep -qE '\.(go|mod|sum)$|^integration/|^examples/'; then
+              echo "go_changed=true" >> $GITHUB_OUTPUT
+            else
+              echo "go_changed=false" >> $GITHUB_OUTPUT
+            fi
+          else
+            echo "go_changed=true" >> $GITHUB_OUTPUT
+          fi
+
   lint:
     timeout-minutes: 10
     name: lint
@@ -47,3 +77,39 @@ jobs:
 
       - name: Run tests
         run: ./scripts/test
+
+  examples:
+    timeout-minutes: 10
+    name: examples
+    runs-on: ${{ github.repository == 'stainless-sdks/langsmith-api-go' && 'depot-ubuntu-24.04' || 'ubuntu-latest' }}
+    if: github.event_name == 'push' || github.event.pull_request.head.repo.fork
+    steps:
+      - uses: actions/checkout@v6
+
+      - name: Setup Go
+        uses: actions/setup-go@v5
+        with:
+          go-version-file: ./go.mod
+
+      - name: Bootstrap
+        run: ./scripts/bootstrap
+
+      - name: Build examples
+        run: ./scripts/build-examples
+
+  go-integration:
+    name: Go integration tests
+    needs: integration-changes
+    if: >
+      (github.event_name == 'push') ||
+      (github.event_name == 'pull_request' && needs.integration-changes.outputs.go_changed == 'true') ||
+      (github.event_name == 'workflow_dispatch' && github.event.inputs.run-go-integration == 'true')
+    timeout-minutes: 15
+    runs-on: ubuntu-latest
+    steps:
+      - name: Run Go integration tests
+        uses: ./.github/actions/go-integration-tests
+        with:
+          langsmith-api-key: ${{ secrets.LANGSMITH_API_KEY }}
+          langsmith-project-id: ${{ secrets.LANGSMITH_PROJECT_ID }}
+          langsmith-endpoint: ${{ secrets.LANGSMITH_ENDPOINT }}

@@ -92,6 +92,10 @@ type Tracer struct {
 //	}
 //	defer ls.Shutdown(context.Background())
 func New(tp *sdktrace.TracerProvider, opts ...TracerOption) (*Tracer, error) {
+	if tp == nil {
+		return nil, fmt.Errorf("TracerProvider must not be nil (use NewTracer to create one automatically)")
+	}
+
 	cfg := resolveConfig(opts)
 
 	if cfg.apiKey == "" {
