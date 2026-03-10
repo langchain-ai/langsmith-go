@@ -74,9 +74,29 @@ func NewClient(opts ...option.RequestOption) (r *Client) {
 	r.Repos = NewRepoService(opts...)
 	r.Commits = NewCommitService(opts...)
 	r.Settings = NewSettingService(opts...)
-	r.Tracing = langsmithtracing.NewTracingClient(context.Background())
+	r.Tracing = newTracingClientFromOpts(opts)
 
 	return
+}
+
+func newTracingClientFromOpts(opts []option.RequestOption) *langsmithtracing.TracingClient {
+	req, _ := http.NewRequest("GET", "/", nil)
+	cfg := requestconfig.RequestConfig{
+		Request:    req,
+		HTTPClient: http.DefaultClient,
+	}
+	_ = cfg.Apply(slices.Clone(opts)...)
+
+	var tracingOpts []langsmithtracing.Option
+	if cfg.APIKey != "" {
+		tracingOpts = append(tracingOpts, langsmithtracing.WithAPIKey(cfg.APIKey))
+	}
+	if cfg.BaseURL != nil {
+		tracingOpts = append(tracingOpts, langsmithtracing.WithAPIURL(cfg.BaseURL.String()))
+	} else if cfg.DefaultBaseURL != nil {
+		tracingOpts = append(tracingOpts, langsmithtracing.WithAPIURL(cfg.DefaultBaseURL.String()))
+	}
+	return langsmithtracing.NewTracingClient(context.Background(), tracingOpts...)
 }
 
 // CreateRun enqueues a run create (post) for multipart ingestion.

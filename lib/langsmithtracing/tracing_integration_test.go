@@ -50,8 +50,7 @@ func TestMultipartTracing(t *testing.T) {
 	}
 
 	ctx := context.Background()
-	// projectName := fmt.Sprintf("go-multipart-test-%s", time.Now().UTC().Format("20060102-150405"))
-	projectName := fmt.Sprintf("go-multipart-test-gaps")
+	projectName := fmt.Sprintf("go-multipart-test-%s", time.Now().UTC().Format("20060102-150405"))
 
 	client := langsmithtracing.NewTracingClient(ctx,
 		langsmithtracing.WithProject(projectName),
