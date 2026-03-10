@@ -50,7 +50,7 @@ func TestMultipartTracing(t *testing.T) {
 	}
 
 	ctx := context.Background()
-	projectName := fmt.Sprintf("go-multipart-test-%s", time.Now().UTC().Format("20060102-150405"))
+	projectName := fmt.Sprintf("__go-multipart-test-%s", time.Now().UTC().Format("20060102-150405"))
 
 	client := langsmithtracing.NewTracingClient(ctx,
 		langsmithtracing.WithProject(projectName),
@@ -471,7 +471,7 @@ func TestAutoScalingWorkers(t *testing.T) {
 		t.Skip("LANGSMITH_API_KEY not set; skipping integration test")
 	}
 
-	projectName := fmt.Sprintf("go-multipart-test-gaps")
+	projectName := fmt.Sprintf("__go-multipart-test-%s", time.Now().UTC().Format("20060102-150405"))
 
 	cfg := langsmithtracing.DefaultDrainConfig()
 	cfg.MaxBatchSize = 10
@@ -1143,7 +1143,7 @@ func TestUpdateRunFieldsLive(t *testing.T) {
 		t.Skip("LANGSMITH_API_KEY not set; skipping integration test")
 	}
 
-	projectName := "go-multipart-test-gaps"
+	projectName := fmt.Sprintf("__go-multipart-test-%s", time.Now().UTC().Format("20060102-150405"))
 	client := langsmithtracing.NewTracingClient(context.Background(),
 		langsmithtracing.WithProject(projectName),
 	)
@@ -1318,7 +1318,7 @@ func TestRunInfoFieldsLive(t *testing.T) {
 		t.Skip("LANGSMITH_API_KEY not set; skipping integration test")
 	}
 
-	projectName := "go-multipart-test-gaps"
+	projectName := fmt.Sprintf("__go-multipart-test-%s", time.Now().UTC().Format("20060102-150405"))
 	client := langsmithtracing.NewTracingClient(context.Background(),
 		langsmithtracing.WithProject(projectName),
 	)
@@ -1516,7 +1516,7 @@ func TestSingleShotCreateRunLive(t *testing.T) {
 		t.Skip("LANGSMITH_API_KEY not set; skipping integration test")
 	}
 
-	projectName := "go-multipart-test-gaps"
+	projectName := fmt.Sprintf("__go-multipart-test-%s", time.Now().UTC().Format("20060102-150405"))
 	client := langsmithtracing.NewTracingClient(context.Background(),
 		langsmithtracing.WithProject(projectName),
 	)
