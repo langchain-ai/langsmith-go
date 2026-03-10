@@ -17,6 +17,8 @@ func TestManualPagination(t *testing.T) {
 	baseURL := "http://localhost:4010"
 	if envURL, ok := os.LookupEnv("TEST_API_BASE_URL"); ok {
 		baseURL = envURL
+	} else {
+		t.Skip("requires mock Prism server; set TEST_API_BASE_URL to run")
 	}
 	if !testutil.CheckTestServer(t, baseURL) {
 		return

@@ -60,11 +60,18 @@ jobs:
 
       - name: Run lints
         run: ./scripts/lint
+
   test:
     timeout-minutes: 10
     name: test
     runs-on: ${{ github.repository == 'stainless-sdks/langsmith-api-go' && 'depot-ubuntu-24.04' || 'ubuntu-latest' }}
     if: github.event_name == 'push' || github.event.pull_request.head.repo.fork
+    env:
+      LANGSMITH_API_KEY: ${{ secrets.LANGSMITH_API_KEY_BETA }}
+      LANGSMITH_ENDPOINT: ${{ secrets.LANGSMITH_ENDPOINT }}
+      # Optional: set in repo secrets to run OpenAI/Anthropic trace integration tests in CI
+      OPENAI_API_KEY: ${{ secrets.OPENAI_API_KEY }}
+      ANTHROPIC_API_KEY: ${{ secrets.ANTHROPIC_API_KEY }}
     steps:
       - uses: actions/checkout@v6
 
@@ -72,9 +79,6 @@ jobs:
         uses: actions/setup-go@v5
         with:
           go-version-file: ./go.mod
-
-      - name: Bootstrap
-        run: ./scripts/bootstrap
 
       - name: Run tests
         run: ./scripts/test

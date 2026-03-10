@@ -424,9 +424,9 @@ func executeWeatherTool(args map[string]interface{}) string {
 	result := map[string]interface{}{
 		"location":    location,
 		"temperature": "18°C",
-		"condition":    "Partly Cloudy",
-		"humidity":     "65%",
-		"wind":         "15 km/h",
+		"condition":   "Partly Cloudy",
+		"humidity":    "65%",
+		"wind":        "15 km/h",
 	}
 
 	resultJSON, err := json.Marshal(result)
@@ -435,5 +435,3 @@ func executeWeatherTool(args map[string]interface{}) string {
 	}
 	return string(resultJSON)
 }
-
-
