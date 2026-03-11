@@ -40,7 +40,7 @@ func (r *ExampleValidateService) New(ctx context.Context, opts ...option.Request
 	opts = slices.Concat(r.Options, opts)
 	path := "api/v1/examples/validate"
 	err = requestconfig.ExecuteNewRequest(ctx, http.MethodPost, path, nil, &res, opts...)
-	return
+	return res, err
 }
 
 // Validate examples in bulk.
@@ -48,7 +48,7 @@ func (r *ExampleValidateService) Bulk(ctx context.Context, opts ...option.Reques
 	opts = slices.Concat(r.Options, opts)
 	path := "api/v1/examples/validate/bulk"
 	err = requestconfig.ExecuteNewRequest(ctx, http.MethodPost, path, nil, &res, opts...)
-	return
+	return res, err
 }
 
 // Validation result for Example, combining fields from Create/Base/Update schemas.

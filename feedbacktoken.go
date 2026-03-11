@@ -46,10 +46,10 @@ func (r *FeedbackTokenService) New(ctx context.Context, body FeedbackTokenNewPar
 	path := "api/v1/feedback/tokens"
 	err = requestconfig.ExecuteNewRequest(ctx, http.MethodPost, path, body, &env, opts...)
 	if err != nil {
-		return
+		return nil, err
 	}
 	res = &env.Value
-	return
+	return res, nil
 }
 
 // Create a new feedback with a token.
@@ -57,11 +57,11 @@ func (r *FeedbackTokenService) Get(ctx context.Context, token string, query Feed
 	opts = slices.Concat(r.Options, opts)
 	if token == "" {
 		err = errors.New("missing required token parameter")
-		return
+		return nil, err
 	}
 	path := fmt.Sprintf("api/v1/feedback/tokens/%s", token)
 	err = requestconfig.ExecuteNewRequest(ctx, http.MethodGet, path, query, &res, opts...)
-	return
+	return res, err
 }
 
 // Create a new feedback with a token.
@@ -69,11 +69,11 @@ func (r *FeedbackTokenService) Update(ctx context.Context, token string, body Fe
 	opts = slices.Concat(r.Options, opts)
 	if token == "" {
 		err = errors.New("missing required token parameter")
-		return
+		return nil, err
 	}
 	path := fmt.Sprintf("api/v1/feedback/tokens/%s", token)
 	err = requestconfig.ExecuteNewRequest(ctx, http.MethodPost, path, body, &res, opts...)
-	return
+	return res, err
 }
 
 // List all feedback ingest tokens for a run.
@@ -81,7 +81,7 @@ func (r *FeedbackTokenService) List(ctx context.Context, query FeedbackTokenList
 	opts = slices.Concat(r.Options, opts)
 	path := "api/v1/feedback/tokens"
 	err = requestconfig.ExecuteNewRequest(ctx, http.MethodGet, path, query, &res, opts...)
-	return
+	return res, err
 }
 
 // Feedback ingest token create schema.

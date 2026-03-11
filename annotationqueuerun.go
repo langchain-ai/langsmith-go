@@ -42,11 +42,11 @@ func (r *AnnotationQueueRunService) New(ctx context.Context, queueID string, bod
 	opts = slices.Concat(r.Options, opts)
 	if queueID == "" {
 		err = errors.New("missing required queue_id parameter")
-		return
+		return nil, err
 	}
 	path := fmt.Sprintf("api/v1/annotation-queues/%s/runs", queueID)
 	err = requestconfig.ExecuteNewRequest(ctx, http.MethodPost, path, body, &res, opts...)
-	return
+	return res, err
 }
 
 // Update Run In Annotation Queue
@@ -54,15 +54,15 @@ func (r *AnnotationQueueRunService) Update(ctx context.Context, queueID string, 
 	opts = slices.Concat(r.Options, opts)
 	if queueID == "" {
 		err = errors.New("missing required queue_id parameter")
-		return
+		return nil, err
 	}
 	if queueRunID == "" {
 		err = errors.New("missing required queue_run_id parameter")
-		return
+		return nil, err
 	}
 	path := fmt.Sprintf("api/v1/annotation-queues/%s/runs/%s", queueID, queueRunID)
 	err = requestconfig.ExecuteNewRequest(ctx, http.MethodPatch, path, body, &res, opts...)
-	return
+	return res, err
 }
 
 // Get Runs From Annotation Queue
@@ -70,11 +70,11 @@ func (r *AnnotationQueueRunService) List(ctx context.Context, queueID string, qu
 	opts = slices.Concat(r.Options, opts)
 	if queueID == "" {
 		err = errors.New("missing required queue_id parameter")
-		return
+		return nil, err
 	}
 	path := fmt.Sprintf("api/v1/annotation-queues/%s/runs", queueID)
 	err = requestconfig.ExecuteNewRequest(ctx, http.MethodGet, path, query, &res, opts...)
-	return
+	return res, err
 }
 
 // Delete Runs From Annotation Queue
@@ -82,11 +82,11 @@ func (r *AnnotationQueueRunService) DeleteAll(ctx context.Context, queueID strin
 	opts = slices.Concat(r.Options, opts)
 	if queueID == "" {
 		err = errors.New("missing required queue_id parameter")
-		return
+		return nil, err
 	}
 	path := fmt.Sprintf("api/v1/annotation-queues/%s/runs/delete", queueID)
 	err = requestconfig.ExecuteNewRequest(ctx, http.MethodPost, path, body, &res, opts...)
-	return
+	return res, err
 }
 
 // Delete Run From Annotation Queue
@@ -94,15 +94,15 @@ func (r *AnnotationQueueRunService) DeleteQueue(ctx context.Context, queueID str
 	opts = slices.Concat(r.Options, opts)
 	if queueID == "" {
 		err = errors.New("missing required queue_id parameter")
-		return
+		return nil, err
 	}
 	if queueRunID == "" {
 		err = errors.New("missing required queue_run_id parameter")
-		return
+		return nil, err
 	}
 	path := fmt.Sprintf("api/v1/annotation-queues/%s/runs/%s", queueID, queueRunID)
 	err = requestconfig.ExecuteNewRequest(ctx, http.MethodDelete, path, nil, &res, opts...)
-	return
+	return res, err
 }
 
 type AnnotationQueueRunNewResponse struct {

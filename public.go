@@ -45,7 +45,7 @@ func (r *PublicService) GetFeedbacks(ctx context.Context, shareToken string, que
 	opts = append([]option.RequestOption{option.WithResponseInto(&raw)}, opts...)
 	if shareToken == "" {
 		err = errors.New("missing required share_token parameter")
-		return
+		return nil, err
 	}
 	path := fmt.Sprintf("api/v1/public/%s/feedbacks", shareToken)
 	cfg, err := requestconfig.NewRequestConfig(ctx, http.MethodGet, path, query, &res, opts...)

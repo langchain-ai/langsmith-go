@@ -43,7 +43,7 @@ func (r *DatasetComparativeService) New(ctx context.Context, body DatasetCompara
 	opts = slices.Concat(r.Options, opts)
 	path := "api/v1/datasets/comparative"
 	err = requestconfig.ExecuteNewRequest(ctx, http.MethodPost, path, body, &res, opts...)
-	return
+	return res, err
 }
 
 // Get all comparative experiments for a given dataset.
@@ -53,7 +53,7 @@ func (r *DatasetComparativeService) List(ctx context.Context, datasetID string, 
 	opts = append([]option.RequestOption{option.WithResponseInto(&raw)}, opts...)
 	if datasetID == "" {
 		err = errors.New("missing required dataset_id parameter")
-		return
+		return nil, err
 	}
 	path := fmt.Sprintf("api/v1/datasets/%s/comparative", datasetID)
 	cfg, err := requestconfig.NewRequestConfig(ctx, http.MethodGet, path, query, &res, opts...)
@@ -78,11 +78,11 @@ func (r *DatasetComparativeService) Delete(ctx context.Context, comparativeExper
 	opts = slices.Concat(r.Options, opts)
 	if comparativeExperimentID == "" {
 		err = errors.New("missing required comparative_experiment_id parameter")
-		return
+		return nil, err
 	}
 	path := fmt.Sprintf("api/v1/datasets/comparative/%s", comparativeExperimentID)
 	err = requestconfig.ExecuteNewRequest(ctx, http.MethodDelete, path, nil, &res, opts...)
-	return
+	return res, err
 }
 
 // Simple experiment info schema for use with comparative experiments

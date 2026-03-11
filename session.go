@@ -48,7 +48,7 @@ func (r *SessionService) New(ctx context.Context, params SessionNewParams, opts 
 	opts = slices.Concat(r.Options, opts)
 	path := "api/v1/sessions"
 	err = requestconfig.ExecuteNewRequest(ctx, http.MethodPost, path, params, &res, opts...)
-	return
+	return res, err
 }
 
 // Get a specific session.
@@ -59,11 +59,11 @@ func (r *SessionService) Get(ctx context.Context, sessionID string, params Sessi
 	opts = slices.Concat(r.Options, opts)
 	if sessionID == "" {
 		err = errors.New("missing required session_id parameter")
-		return
+		return nil, err
 	}
 	path := fmt.Sprintf("api/v1/sessions/%s", sessionID)
 	err = requestconfig.ExecuteNewRequest(ctx, http.MethodGet, path, params, &res, opts...)
-	return
+	return res, err
 }
 
 // Create a new session.
@@ -71,11 +71,11 @@ func (r *SessionService) Update(ctx context.Context, sessionID string, body Sess
 	opts = slices.Concat(r.Options, opts)
 	if sessionID == "" {
 		err = errors.New("missing required session_id parameter")
-		return
+		return nil, err
 	}
 	path := fmt.Sprintf("api/v1/sessions/%s", sessionID)
 	err = requestconfig.ExecuteNewRequest(ctx, http.MethodPatch, path, body, &res, opts...)
-	return
+	return res, err
 }
 
 // Get all sessions.
@@ -109,11 +109,11 @@ func (r *SessionService) Delete(ctx context.Context, sessionID string, opts ...o
 	opts = slices.Concat(r.Options, opts)
 	if sessionID == "" {
 		err = errors.New("missing required session_id parameter")
-		return
+		return nil, err
 	}
 	path := fmt.Sprintf("api/v1/sessions/%s", sessionID)
 	err = requestconfig.ExecuteNewRequest(ctx, http.MethodDelete, path, nil, &res, opts...)
-	return
+	return res, err
 }
 
 // Get a prebuilt dashboard for a tracing project.
@@ -124,11 +124,11 @@ func (r *SessionService) Dashboard(ctx context.Context, sessionID string, params
 	opts = slices.Concat(r.Options, opts)
 	if sessionID == "" {
 		err = errors.New("missing required session_id parameter")
-		return
+		return nil, err
 	}
 	path := fmt.Sprintf("api/v1/sessions/%s/dashboard", sessionID)
 	err = requestconfig.ExecuteNewRequest(ctx, http.MethodPost, path, params, &res, opts...)
-	return
+	return res, err
 }
 
 type CustomChartsSection struct {

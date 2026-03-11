@@ -37,7 +37,7 @@ func (r *ExampleBulkService) New(ctx context.Context, body ExampleBulkNewParams,
 	opts = slices.Concat(r.Options, opts)
 	path := "api/v1/examples/bulk"
 	err = requestconfig.ExecuteNewRequest(ctx, http.MethodPost, path, body, &res, opts...)
-	return
+	return res, err
 }
 
 // Legacy update examples in bulk. For update involving attachments, use PATCH
@@ -46,7 +46,7 @@ func (r *ExampleBulkService) PatchAll(ctx context.Context, body ExampleBulkPatch
 	opts = slices.Concat(r.Options, opts)
 	path := "api/v1/examples/bulk"
 	err = requestconfig.ExecuteNewRequest(ctx, http.MethodPatch, path, body, &res, opts...)
-	return
+	return res, err
 }
 
 type ExampleBulkPatchAllResponse = interface{}

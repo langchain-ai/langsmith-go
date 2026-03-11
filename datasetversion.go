@@ -44,7 +44,7 @@ func (r *DatasetVersionService) List(ctx context.Context, datasetID string, quer
 	opts = append([]option.RequestOption{option.WithResponseInto(&raw)}, opts...)
 	if datasetID == "" {
 		err = errors.New("missing required dataset_id parameter")
-		return
+		return nil, err
 	}
 	path := fmt.Sprintf("api/v1/datasets/%s/versions", datasetID)
 	cfg, err := requestconfig.NewRequestConfig(ctx, http.MethodGet, path, query, &res, opts...)
@@ -69,11 +69,11 @@ func (r *DatasetVersionService) GetDiff(ctx context.Context, datasetID string, q
 	opts = slices.Concat(r.Options, opts)
 	if datasetID == "" {
 		err = errors.New("missing required dataset_id parameter")
-		return
+		return nil, err
 	}
 	path := fmt.Sprintf("api/v1/datasets/%s/versions/diff", datasetID)
 	err = requestconfig.ExecuteNewRequest(ctx, http.MethodGet, path, query, &res, opts...)
-	return
+	return res, err
 }
 
 // Dataset diff schema.

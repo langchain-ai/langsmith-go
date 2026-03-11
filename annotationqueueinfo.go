@@ -37,7 +37,7 @@ func (r *AnnotationQueueInfoService) List(ctx context.Context, opts ...option.Re
 	opts = slices.Concat(r.Options, opts)
 	path := "api/v1/info"
 	err = requestconfig.ExecuteNewRequest(ctx, http.MethodGet, path, nil, &res, opts...)
-	return
+	return res, err
 }
 
 // The LangSmith server info.

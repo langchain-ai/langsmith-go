@@ -63,7 +63,7 @@ func (r *DatasetService) New(ctx context.Context, body DatasetNewParams, opts ..
 	opts = slices.Concat(r.Options, opts)
 	path := "api/v1/datasets"
 	err = requestconfig.ExecuteNewRequest(ctx, http.MethodPost, path, body, &res, opts...)
-	return
+	return res, err
 }
 
 // Get a specific dataset.
@@ -71,11 +71,11 @@ func (r *DatasetService) Get(ctx context.Context, datasetID string, opts ...opti
 	opts = slices.Concat(r.Options, opts)
 	if datasetID == "" {
 		err = errors.New("missing required dataset_id parameter")
-		return
+		return nil, err
 	}
 	path := fmt.Sprintf("api/v1/datasets/%s", datasetID)
 	err = requestconfig.ExecuteNewRequest(ctx, http.MethodGet, path, nil, &res, opts...)
-	return
+	return res, err
 }
 
 // Update a specific dataset.
@@ -83,11 +83,11 @@ func (r *DatasetService) Update(ctx context.Context, datasetID string, body Data
 	opts = slices.Concat(r.Options, opts)
 	if datasetID == "" {
 		err = errors.New("missing required dataset_id parameter")
-		return
+		return nil, err
 	}
 	path := fmt.Sprintf("api/v1/datasets/%s", datasetID)
 	err = requestconfig.ExecuteNewRequest(ctx, http.MethodPatch, path, body, &res, opts...)
-	return
+	return res, err
 }
 
 // Get all datasets by query params and owner.
@@ -118,11 +118,11 @@ func (r *DatasetService) Delete(ctx context.Context, datasetID string, opts ...o
 	opts = slices.Concat(r.Options, opts)
 	if datasetID == "" {
 		err = errors.New("missing required dataset_id parameter")
-		return
+		return nil, err
 	}
 	path := fmt.Sprintf("api/v1/datasets/%s", datasetID)
 	err = requestconfig.ExecuteNewRequest(ctx, http.MethodDelete, path, nil, &res, opts...)
-	return
+	return res, err
 }
 
 // Clone a dataset.
@@ -130,7 +130,7 @@ func (r *DatasetService) Clone(ctx context.Context, body DatasetCloneParams, opt
 	opts = slices.Concat(r.Options, opts)
 	path := "api/v1/datasets/clone"
 	err = requestconfig.ExecuteNewRequest(ctx, http.MethodPost, path, body, &res, opts...)
-	return
+	return res, err
 }
 
 // Download a dataset as CSV format.
@@ -138,11 +138,11 @@ func (r *DatasetService) GetCsv(ctx context.Context, datasetID string, query Dat
 	opts = slices.Concat(r.Options, opts)
 	if datasetID == "" {
 		err = errors.New("missing required dataset_id parameter")
-		return
+		return nil, err
 	}
 	path := fmt.Sprintf("api/v1/datasets/%s/csv", datasetID)
 	err = requestconfig.ExecuteNewRequest(ctx, http.MethodGet, path, query, &res, opts...)
-	return
+	return res, err
 }
 
 // Download a dataset as CSV format.
@@ -150,11 +150,11 @@ func (r *DatasetService) GetJSONL(ctx context.Context, datasetID string, query D
 	opts = slices.Concat(r.Options, opts)
 	if datasetID == "" {
 		err = errors.New("missing required dataset_id parameter")
-		return
+		return nil, err
 	}
 	path := fmt.Sprintf("api/v1/datasets/%s/jsonl", datasetID)
 	err = requestconfig.ExecuteNewRequest(ctx, http.MethodGet, path, query, &res, opts...)
-	return
+	return res, err
 }
 
 // Download a dataset as OpenAI Evals Jsonl format.
@@ -162,11 +162,11 @@ func (r *DatasetService) GetOpenAI(ctx context.Context, datasetID string, query 
 	opts = slices.Concat(r.Options, opts)
 	if datasetID == "" {
 		err = errors.New("missing required dataset_id parameter")
-		return
+		return nil, err
 	}
 	path := fmt.Sprintf("api/v1/datasets/%s/openai", datasetID)
 	err = requestconfig.ExecuteNewRequest(ctx, http.MethodGet, path, query, &res, opts...)
-	return
+	return res, err
 }
 
 // Download a dataset as OpenAI Jsonl format.
@@ -174,11 +174,11 @@ func (r *DatasetService) GetOpenAIFt(ctx context.Context, datasetID string, quer
 	opts = slices.Concat(r.Options, opts)
 	if datasetID == "" {
 		err = errors.New("missing required dataset_id parameter")
-		return
+		return nil, err
 	}
 	path := fmt.Sprintf("api/v1/datasets/%s/openai_ft", datasetID)
 	err = requestconfig.ExecuteNewRequest(ctx, http.MethodGet, path, query, &res, opts...)
-	return
+	return res, err
 }
 
 // Get dataset version by as_of or exact tag.
@@ -186,11 +186,11 @@ func (r *DatasetService) GetVersion(ctx context.Context, datasetID string, query
 	opts = slices.Concat(r.Options, opts)
 	if datasetID == "" {
 		err = errors.New("missing required dataset_id parameter")
-		return
+		return nil, err
 	}
 	path := fmt.Sprintf("api/v1/datasets/%s/version", datasetID)
 	err = requestconfig.ExecuteNewRequest(ctx, http.MethodGet, path, query, &res, opts...)
-	return
+	return res, err
 }
 
 // Set a tag on a dataset version.
@@ -198,11 +198,11 @@ func (r *DatasetService) UpdateTags(ctx context.Context, datasetID string, body 
 	opts = slices.Concat(r.Options, opts)
 	if datasetID == "" {
 		err = errors.New("missing required dataset_id parameter")
-		return
+		return nil, err
 	}
 	path := fmt.Sprintf("api/v1/datasets/%s/tags", datasetID)
 	err = requestconfig.ExecuteNewRequest(ctx, http.MethodPut, path, body, &res, opts...)
-	return
+	return res, err
 }
 
 // Create a new dataset from a CSV or JSONL file.
@@ -210,7 +210,7 @@ func (r *DatasetService) Upload(ctx context.Context, body DatasetUploadParams, o
 	opts = slices.Concat(r.Options, opts)
 	path := "api/v1/datasets/upload"
 	err = requestconfig.ExecuteNewRequest(ctx, http.MethodPost, path, body, &res, opts...)
-	return
+	return res, err
 }
 
 // Enum for dataset data types.

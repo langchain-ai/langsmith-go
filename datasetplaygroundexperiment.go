@@ -37,7 +37,7 @@ func (r *DatasetPlaygroundExperimentService) Batch(ctx context.Context, body Dat
 	opts = slices.Concat(r.Options, opts)
 	path := "api/v1/datasets/playground_experiment/batch"
 	err = requestconfig.ExecuteNewRequest(ctx, http.MethodPost, path, body, &res, opts...)
-	return
+	return res, err
 }
 
 // Stream Dataset Handler
@@ -45,7 +45,7 @@ func (r *DatasetPlaygroundExperimentService) Stream(ctx context.Context, body Da
 	opts = slices.Concat(r.Options, opts)
 	path := "api/v1/datasets/playground_experiment/stream"
 	err = requestconfig.ExecuteNewRequest(ctx, http.MethodPost, path, body, &res, opts...)
-	return
+	return res, err
 }
 
 // Configuration for a `Runnable`.

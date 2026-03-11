@@ -51,7 +51,7 @@ func (r *ExampleService) New(ctx context.Context, body ExampleNewParams, opts ..
 	opts = slices.Concat(r.Options, opts)
 	path := "api/v1/examples"
 	err = requestconfig.ExecuteNewRequest(ctx, http.MethodPost, path, body, &res, opts...)
-	return
+	return res, err
 }
 
 // Get a specific example.
@@ -59,11 +59,11 @@ func (r *ExampleService) Get(ctx context.Context, exampleID string, query Exampl
 	opts = slices.Concat(r.Options, opts)
 	if exampleID == "" {
 		err = errors.New("missing required example_id parameter")
-		return
+		return nil, err
 	}
 	path := fmt.Sprintf("api/v1/examples/%s", exampleID)
 	err = requestconfig.ExecuteNewRequest(ctx, http.MethodGet, path, query, &res, opts...)
-	return
+	return res, err
 }
 
 // Update a specific example.
@@ -71,11 +71,11 @@ func (r *ExampleService) Update(ctx context.Context, exampleID string, body Exam
 	opts = slices.Concat(r.Options, opts)
 	if exampleID == "" {
 		err = errors.New("missing required example_id parameter")
-		return
+		return nil, err
 	}
 	path := fmt.Sprintf("api/v1/examples/%s", exampleID)
 	err = requestconfig.ExecuteNewRequest(ctx, http.MethodPatch, path, body, &res, opts...)
-	return
+	return res, err
 }
 
 // Get all examples by query params
@@ -107,11 +107,11 @@ func (r *ExampleService) Delete(ctx context.Context, exampleID string, opts ...o
 	opts = slices.Concat(r.Options, opts)
 	if exampleID == "" {
 		err = errors.New("missing required example_id parameter")
-		return
+		return nil, err
 	}
 	path := fmt.Sprintf("api/v1/examples/%s", exampleID)
 	err = requestconfig.ExecuteNewRequest(ctx, http.MethodDelete, path, nil, &res, opts...)
-	return
+	return res, err
 }
 
 // Soft delete examples. Only deletes the examples in the 'latest' version of the
@@ -120,7 +120,7 @@ func (r *ExampleService) DeleteAll(ctx context.Context, body ExampleDeleteAllPar
 	opts = slices.Concat(r.Options, opts)
 	path := "api/v1/examples"
 	err = requestconfig.ExecuteNewRequest(ctx, http.MethodDelete, path, body, &res, opts...)
-	return
+	return res, err
 }
 
 // Count all examples by query params
@@ -128,7 +128,7 @@ func (r *ExampleService) GetCount(ctx context.Context, query ExampleGetCountPara
 	opts = slices.Concat(r.Options, opts)
 	path := "api/v1/examples/count"
 	err = requestconfig.ExecuteNewRequest(ctx, http.MethodGet, path, query, &res, opts...)
-	return
+	return res, err
 }
 
 // Upload examples from a CSV file.
@@ -140,11 +140,11 @@ func (r *ExampleService) UploadFromCsv(ctx context.Context, datasetID string, bo
 	opts = slices.Concat(r.Options, opts)
 	if datasetID == "" {
 		err = errors.New("missing required dataset_id parameter")
-		return
+		return nil, err
 	}
 	path := fmt.Sprintf("api/v1/examples/upload/%s", datasetID)
 	err = requestconfig.ExecuteNewRequest(ctx, http.MethodPost, path, body, &res, opts...)
-	return
+	return res, err
 }
 
 type AttachmentsOperationsParam struct {

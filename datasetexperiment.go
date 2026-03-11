@@ -40,11 +40,11 @@ func (r *DatasetExperimentService) Grouped(ctx context.Context, datasetID string
 	opts = slices.Concat(r.Options, opts)
 	if datasetID == "" {
 		err = errors.New("missing required dataset_id parameter")
-		return
+		return nil, err
 	}
 	path := fmt.Sprintf("api/v1/datasets/%s/experiments/grouped", datasetID)
 	err = requestconfig.ExecuteNewRequest(ctx, http.MethodPost, path, body, &res, opts...)
-	return
+	return res, err
 }
 
 type DatasetExperimentGroupedResponse = interface{}

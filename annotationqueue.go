@@ -47,11 +47,11 @@ func (r *AnnotationQueueService) Get(ctx context.Context, queueID string, opts .
 	opts = slices.Concat(r.Options, opts)
 	if queueID == "" {
 		err = errors.New("missing required queue_id parameter")
-		return
+		return nil, err
 	}
 	path := fmt.Sprintf("api/v1/annotation-queues/%s", queueID)
 	err = requestconfig.ExecuteNewRequest(ctx, http.MethodGet, path, nil, &res, opts...)
-	return
+	return res, err
 }
 
 // Update Annotation Queue
@@ -59,11 +59,11 @@ func (r *AnnotationQueueService) Update(ctx context.Context, queueID string, bod
 	opts = slices.Concat(r.Options, opts)
 	if queueID == "" {
 		err = errors.New("missing required queue_id parameter")
-		return
+		return nil, err
 	}
 	path := fmt.Sprintf("api/v1/annotation-queues/%s", queueID)
 	err = requestconfig.ExecuteNewRequest(ctx, http.MethodPatch, path, body, &res, opts...)
-	return
+	return res, err
 }
 
 // Delete Annotation Queue
@@ -71,11 +71,11 @@ func (r *AnnotationQueueService) Delete(ctx context.Context, queueID string, opt
 	opts = slices.Concat(r.Options, opts)
 	if queueID == "" {
 		err = errors.New("missing required queue_id parameter")
-		return
+		return nil, err
 	}
 	path := fmt.Sprintf("api/v1/annotation-queues/%s", queueID)
 	err = requestconfig.ExecuteNewRequest(ctx, http.MethodDelete, path, nil, &res, opts...)
-	return
+	return res, err
 }
 
 // Create Annotation Queue
@@ -83,7 +83,7 @@ func (r *AnnotationQueueService) AnnotationQueues(ctx context.Context, body Anno
 	opts = slices.Concat(r.Options, opts)
 	path := "api/v1/annotation-queues"
 	err = requestconfig.ExecuteNewRequest(ctx, http.MethodPost, path, body, &res, opts...)
-	return
+	return res, err
 }
 
 // Create Identity Annotation Queue Run Status
@@ -91,11 +91,11 @@ func (r *AnnotationQueueService) NewRunStatus(ctx context.Context, annotationQue
 	opts = slices.Concat(r.Options, opts)
 	if annotationQueueRunID == "" {
 		err = errors.New("missing required annotation_queue_run_id parameter")
-		return
+		return nil, err
 	}
 	path := fmt.Sprintf("api/v1/annotation-queues/status/%s", annotationQueueRunID)
 	err = requestconfig.ExecuteNewRequest(ctx, http.MethodPost, path, body, &res, opts...)
-	return
+	return res, err
 }
 
 // Export Annotation Queue Archived Runs
@@ -103,11 +103,11 @@ func (r *AnnotationQueueService) Export(ctx context.Context, queueID string, bod
 	opts = slices.Concat(r.Options, opts)
 	if queueID == "" {
 		err = errors.New("missing required queue_id parameter")
-		return
+		return nil, err
 	}
 	path := fmt.Sprintf("api/v1/annotation-queues/%s/export", queueID)
 	err = requestconfig.ExecuteNewRequest(ctx, http.MethodPost, path, body, &res, opts...)
-	return
+	return res, err
 }
 
 // Populate annotation queue with runs from an experiment.
@@ -115,7 +115,7 @@ func (r *AnnotationQueueService) Populate(ctx context.Context, body AnnotationQu
 	opts = slices.Concat(r.Options, opts)
 	path := "api/v1/annotation-queues/populate"
 	err = requestconfig.ExecuteNewRequest(ctx, http.MethodPost, path, body, &res, opts...)
-	return
+	return res, err
 }
 
 // Get Annotation Queues
@@ -146,11 +146,11 @@ func (r *AnnotationQueueService) GetQueues(ctx context.Context, runID string, op
 	opts = slices.Concat(r.Options, opts)
 	if runID == "" {
 		err = errors.New("missing required run_id parameter")
-		return
+		return nil, err
 	}
 	path := fmt.Sprintf("api/v1/annotation-queues/%s/queues", runID)
 	err = requestconfig.ExecuteNewRequest(ctx, http.MethodGet, path, nil, &res, opts...)
-	return
+	return res, err
 }
 
 // Get a run from an annotation queue
@@ -158,11 +158,11 @@ func (r *AnnotationQueueService) GetRun(ctx context.Context, queueID string, ind
 	opts = slices.Concat(r.Options, opts)
 	if queueID == "" {
 		err = errors.New("missing required queue_id parameter")
-		return
+		return nil, err
 	}
 	path := fmt.Sprintf("api/v1/annotation-queues/%s/run/%v", queueID, index)
 	err = requestconfig.ExecuteNewRequest(ctx, http.MethodGet, path, query, &res, opts...)
-	return
+	return res, err
 }
 
 // Get Size From Annotation Queue
@@ -170,11 +170,11 @@ func (r *AnnotationQueueService) GetSize(ctx context.Context, queueID string, op
 	opts = slices.Concat(r.Options, opts)
 	if queueID == "" {
 		err = errors.New("missing required queue_id parameter")
-		return
+		return nil, err
 	}
 	path := fmt.Sprintf("api/v1/annotation-queues/%s/size", queueID)
 	err = requestconfig.ExecuteNewRequest(ctx, http.MethodGet, path, nil, &res, opts...)
-	return
+	return res, err
 }
 
 // Get Total Archived From Annotation Queue
@@ -182,11 +182,11 @@ func (r *AnnotationQueueService) GetTotalArchived(ctx context.Context, queueID s
 	opts = slices.Concat(r.Options, opts)
 	if queueID == "" {
 		err = errors.New("missing required queue_id parameter")
-		return
+		return nil, err
 	}
 	path := fmt.Sprintf("api/v1/annotation-queues/%s/total_archived", queueID)
 	err = requestconfig.ExecuteNewRequest(ctx, http.MethodGet, path, query, &res, opts...)
-	return
+	return res, err
 }
 
 // Get Total Size From Annotation Queue
@@ -194,11 +194,11 @@ func (r *AnnotationQueueService) GetTotalSize(ctx context.Context, queueID strin
 	opts = slices.Concat(r.Options, opts)
 	if queueID == "" {
 		err = errors.New("missing required queue_id parameter")
-		return
+		return nil, err
 	}
 	path := fmt.Sprintf("api/v1/annotation-queues/%s/total_size", queueID)
 	err = requestconfig.ExecuteNewRequest(ctx, http.MethodGet, path, nil, &res, opts...)
-	return
+	return res, err
 }
 
 type AnnotationQueueRubricItemSchema struct {

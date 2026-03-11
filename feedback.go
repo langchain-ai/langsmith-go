@@ -50,7 +50,7 @@ func (r *FeedbackService) New(ctx context.Context, body FeedbackNewParams, opts 
 	opts = slices.Concat(r.Options, opts)
 	path := "api/v1/feedback"
 	err = requestconfig.ExecuteNewRequest(ctx, http.MethodPost, path, body, &res, opts...)
-	return
+	return res, err
 }
 
 // Get a specific feedback.
@@ -58,11 +58,11 @@ func (r *FeedbackService) Get(ctx context.Context, feedbackID string, query Feed
 	opts = slices.Concat(r.Options, opts)
 	if feedbackID == "" {
 		err = errors.New("missing required feedback_id parameter")
-		return
+		return nil, err
 	}
 	path := fmt.Sprintf("api/v1/feedback/%s", feedbackID)
 	err = requestconfig.ExecuteNewRequest(ctx, http.MethodGet, path, query, &res, opts...)
-	return
+	return res, err
 }
 
 // Replace an existing feedback entry with a new, modified entry.
@@ -70,11 +70,11 @@ func (r *FeedbackService) Update(ctx context.Context, feedbackID string, body Fe
 	opts = slices.Concat(r.Options, opts)
 	if feedbackID == "" {
 		err = errors.New("missing required feedback_id parameter")
-		return
+		return nil, err
 	}
 	path := fmt.Sprintf("api/v1/feedback/%s", feedbackID)
 	err = requestconfig.ExecuteNewRequest(ctx, http.MethodPatch, path, body, &res, opts...)
-	return
+	return res, err
 }
 
 // List all Feedback by query params.
@@ -105,11 +105,11 @@ func (r *FeedbackService) Delete(ctx context.Context, feedbackID string, opts ..
 	opts = slices.Concat(r.Options, opts)
 	if feedbackID == "" {
 		err = errors.New("missing required feedback_id parameter")
-		return
+		return nil, err
 	}
 	path := fmt.Sprintf("api/v1/feedback/%s", feedbackID)
 	err = requestconfig.ExecuteNewRequest(ctx, http.MethodDelete, path, nil, &res, opts...)
-	return
+	return res, err
 }
 
 // API feedback source.

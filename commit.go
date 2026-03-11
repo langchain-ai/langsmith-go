@@ -44,15 +44,15 @@ func (r *CommitService) New(ctx context.Context, owner string, repo string, body
 	opts = slices.Concat(r.Options, opts)
 	if owner == "" {
 		err = errors.New("missing required owner parameter")
-		return
+		return nil, err
 	}
 	if repo == "" {
 		err = errors.New("missing required repo parameter")
-		return
+		return nil, err
 	}
 	path := fmt.Sprintf("commits/%s/%s", owner, repo)
 	err = requestconfig.ExecuteNewRequest(ctx, http.MethodPost, path, body, &res, opts...)
-	return
+	return res, err
 }
 
 // Retrieves a specific commit by hash, tag, or "latest" for a repository. This
@@ -67,19 +67,19 @@ func (r *CommitService) Get(ctx context.Context, owner string, repo string, comm
 	opts = slices.Concat(r.Options, opts)
 	if owner == "" {
 		err = errors.New("missing required owner parameter")
-		return
+		return nil, err
 	}
 	if repo == "" {
 		err = errors.New("missing required repo parameter")
-		return
+		return nil, err
 	}
 	if commit == "" {
 		err = errors.New("missing required commit parameter")
-		return
+		return nil, err
 	}
 	path := fmt.Sprintf("commits/%s/%s/%s", owner, repo, commit)
 	err = requestconfig.ExecuteNewRequest(ctx, http.MethodGet, path, query, &res, opts...)
-	return
+	return res, err
 }
 
 // Lists all commits for a repository with pagination support. This endpoint
@@ -93,11 +93,11 @@ func (r *CommitService) List(ctx context.Context, owner string, repo string, que
 	opts = append([]option.RequestOption{option.WithResponseInto(&raw)}, opts...)
 	if owner == "" {
 		err = errors.New("missing required owner parameter")
-		return
+		return nil, err
 	}
 	if repo == "" {
 		err = errors.New("missing required repo parameter")
-		return
+		return nil, err
 	}
 	path := fmt.Sprintf("commits/%s/%s", owner, repo)
 	cfg, err := requestconfig.NewRequestConfig(ctx, http.MethodGet, path, query, &res, opts...)

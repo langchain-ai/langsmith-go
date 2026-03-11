@@ -51,7 +51,7 @@ func (r *RunService) New(ctx context.Context, body RunNewParams, opts ...option.
 	opts = slices.Concat(r.Options, opts)
 	path := "runs"
 	err = requestconfig.ExecuteNewRequest(ctx, http.MethodPost, path, body, &res, opts...)
-	return
+	return res, err
 }
 
 // Get a specific run.
@@ -59,11 +59,11 @@ func (r *RunService) Get(ctx context.Context, runID string, query RunGetParams, 
 	opts = slices.Concat(r.Options, opts)
 	if runID == "" {
 		err = errors.New("missing required run_id parameter")
-		return
+		return nil, err
 	}
 	path := fmt.Sprintf("api/v1/runs/%s", runID)
 	err = requestconfig.ExecuteNewRequest(ctx, http.MethodGet, path, query, &res, opts...)
-	return
+	return res, err
 }
 
 // Updates a run identified by its ID. The body should contain only the fields to
@@ -72,11 +72,11 @@ func (r *RunService) Update(ctx context.Context, runID string, body RunUpdatePar
 	opts = slices.Concat(r.Options, opts)
 	if runID == "" {
 		err = errors.New("missing required run_id parameter")
-		return
+		return nil, err
 	}
 	path := fmt.Sprintf("runs/%s", runID)
 	err = requestconfig.ExecuteNewRequest(ctx, http.MethodPatch, path, body, &res, opts...)
-	return
+	return res, err
 }
 
 // Ingests a batch of runs in a single JSON payload. The payload must have `post`
@@ -87,7 +87,7 @@ func (r *RunService) IngestBatch(ctx context.Context, body RunIngestBatchParams,
 	opts = slices.Concat(r.Options, opts)
 	path := "runs/batch"
 	err = requestconfig.ExecuteNewRequest(ctx, http.MethodPost, path, body, &res, opts...)
-	return
+	return res, err
 }
 
 // Ingests multiple runs, feedback objects, and binary attachments in a single
@@ -108,7 +108,7 @@ func (r *RunService) IngestMultipart(ctx context.Context, body RunIngestMultipar
 	opts = slices.Concat(r.Options, opts)
 	path := "runs/multipart"
 	err = requestconfig.ExecuteNewRequest(ctx, http.MethodPost, path, body, &res, opts...)
-	return
+	return res, err
 }
 
 // Query Runs
@@ -116,7 +116,7 @@ func (r *RunService) Query(ctx context.Context, body RunQueryParams, opts ...opt
 	opts = slices.Concat(r.Options, opts)
 	path := "api/v1/runs/query"
 	err = requestconfig.ExecuteNewRequest(ctx, http.MethodPost, path, body, &res, opts...)
-	return
+	return res, err
 }
 
 // Get all runs by query in body payload.
@@ -126,10 +126,10 @@ func (r *RunService) Stats(ctx context.Context, body RunStatsParams, opts ...opt
 	path := "api/v1/runs/stats"
 	err = requestconfig.ExecuteNewRequest(ctx, http.MethodPost, path, body, &env, opts...)
 	if err != nil {
-		return
+		return nil, err
 	}
 	res = &env.Value
-	return
+	return res, nil
 }
 
 // Update a run.
@@ -137,11 +137,11 @@ func (r *RunService) Update2(ctx context.Context, runID string, opts ...option.R
 	opts = slices.Concat(r.Options, opts)
 	if runID == "" {
 		err = errors.New("missing required run_id parameter")
-		return
+		return nil, err
 	}
 	path := fmt.Sprintf("api/v1/runs/%s", runID)
 	err = requestconfig.ExecuteNewRequest(ctx, http.MethodPatch, path, nil, &res, opts...)
-	return
+	return res, err
 }
 
 type RunParam struct {
