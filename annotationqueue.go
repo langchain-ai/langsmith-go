@@ -166,14 +166,14 @@ func (r *AnnotationQueueService) GetRun(ctx context.Context, queueID string, ind
 }
 
 // Get Size From Annotation Queue
-func (r *AnnotationQueueService) GetSize(ctx context.Context, queueID string, opts ...option.RequestOption) (res *AnnotationQueueSizeSchema, err error) {
+func (r *AnnotationQueueService) GetSize(ctx context.Context, queueID string, query AnnotationQueueGetSizeParams, opts ...option.RequestOption) (res *AnnotationQueueSizeSchema, err error) {
 	opts = slices.Concat(r.Options, opts)
 	if queueID == "" {
 		err = errors.New("missing required queue_id parameter")
 		return nil, err
 	}
 	path := fmt.Sprintf("api/v1/annotation-queues/%s/size", queueID)
-	err = requestconfig.ExecuteNewRequest(ctx, http.MethodGet, path, nil, &res, opts...)
+	err = requestconfig.ExecuteNewRequest(ctx, http.MethodGet, path, query, &res, opts...)
 	return res, err
 }
 
@@ -748,6 +748,35 @@ func (r AnnotationQueueGetRunParams) URLQuery() (v url.Values) {
 		ArrayFormat:  apiquery.ArrayQueryFormatComma,
 		NestedFormat: apiquery.NestedQueryFormatBrackets,
 	})
+}
+
+type AnnotationQueueGetSizeParams struct {
+	Status param.Field[AnnotationQueueGetSizeParamsStatus] `query:"status"`
+}
+
+// URLQuery serializes [AnnotationQueueGetSizeParams]'s query parameters as
+// `url.Values`.
+func (r AnnotationQueueGetSizeParams) URLQuery() (v url.Values) {
+	return apiquery.MarshalWithSettings(r, apiquery.QuerySettings{
+		ArrayFormat:  apiquery.ArrayQueryFormatComma,
+		NestedFormat: apiquery.NestedQueryFormatBrackets,
+	})
+}
+
+type AnnotationQueueGetSizeParamsStatus string
+
+const (
+	AnnotationQueueGetSizeParamsStatusNeedsMyReview     AnnotationQueueGetSizeParamsStatus = "needs_my_review"
+	AnnotationQueueGetSizeParamsStatusNeedsOthersReview AnnotationQueueGetSizeParamsStatus = "needs_others_review"
+	AnnotationQueueGetSizeParamsStatusCompleted         AnnotationQueueGetSizeParamsStatus = "completed"
+)
+
+func (r AnnotationQueueGetSizeParamsStatus) IsKnown() bool {
+	switch r {
+	case AnnotationQueueGetSizeParamsStatusNeedsMyReview, AnnotationQueueGetSizeParamsStatusNeedsOthersReview, AnnotationQueueGetSizeParamsStatusCompleted:
+		return true
+	}
+	return false
 }
 
 type AnnotationQueueGetTotalArchivedParams struct {

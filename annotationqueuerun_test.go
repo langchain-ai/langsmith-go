@@ -101,6 +101,7 @@ func TestAnnotationQueueRunListWithOptionalParams(t *testing.T) {
 			IncludeStats: langsmith.F(true),
 			Limit:        langsmith.F(int64(1)),
 			Offset:       langsmith.F(int64(0)),
+			Status:       langsmith.F(langsmith.AnnotationQueueRunListParamsStatusNeedsMyReview),
 		},
 	)
 	if err != nil {

@@ -351,7 +351,7 @@ func TestAnnotationQueueGetRunWithOptionalParams(t *testing.T) {
 	}
 }
 
-func TestAnnotationQueueGetSize(t *testing.T) {
+func TestAnnotationQueueGetSizeWithOptionalParams(t *testing.T) {
 	t.Skip("Mock server tests are disabled")
 	baseURL := "http://localhost:4010"
 	if envURL, ok := os.LookupEnv("TEST_API_BASE_URL"); ok {
@@ -366,7 +366,13 @@ func TestAnnotationQueueGetSize(t *testing.T) {
 		option.WithTenantID("My Tenant ID"),
 		option.WithOrganizationID("My Organization ID"),
 	)
-	_, err := client.AnnotationQueues.GetSize(context.TODO(), "182bd5e5-6e1a-4fe4-a799-aa6d9a6ab26e")
+	_, err := client.AnnotationQueues.GetSize(
+		context.TODO(),
+		"182bd5e5-6e1a-4fe4-a799-aa6d9a6ab26e",
+		langsmith.AnnotationQueueGetSizeParams{
+			Status: langsmith.F(langsmith.AnnotationQueueGetSizeParamsStatusNeedsMyReview),
+		},
+	)
 	if err != nil {
 		var apierr *langsmith.Error
 		if errors.As(err, &apierr) {

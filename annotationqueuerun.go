@@ -203,10 +203,11 @@ func (r AnnotationQueueRunUpdateParams) MarshalJSON() (data []byte, err error) {
 }
 
 type AnnotationQueueRunListParams struct {
-	Archived     param.Field[bool]  `query:"archived"`
-	IncludeStats param.Field[bool]  `query:"include_stats"`
-	Limit        param.Field[int64] `query:"limit"`
-	Offset       param.Field[int64] `query:"offset"`
+	Archived     param.Field[bool]                               `query:"archived"`
+	IncludeStats param.Field[bool]                               `query:"include_stats"`
+	Limit        param.Field[int64]                              `query:"limit"`
+	Offset       param.Field[int64]                              `query:"offset"`
+	Status       param.Field[AnnotationQueueRunListParamsStatus] `query:"status"`
 }
 
 // URLQuery serializes [AnnotationQueueRunListParams]'s query parameters as
@@ -216,6 +217,22 @@ func (r AnnotationQueueRunListParams) URLQuery() (v url.Values) {
 		ArrayFormat:  apiquery.ArrayQueryFormatComma,
 		NestedFormat: apiquery.NestedQueryFormatBrackets,
 	})
+}
+
+type AnnotationQueueRunListParamsStatus string
+
+const (
+	AnnotationQueueRunListParamsStatusNeedsMyReview     AnnotationQueueRunListParamsStatus = "needs_my_review"
+	AnnotationQueueRunListParamsStatusNeedsOthersReview AnnotationQueueRunListParamsStatus = "needs_others_review"
+	AnnotationQueueRunListParamsStatusCompleted         AnnotationQueueRunListParamsStatus = "completed"
+)
+
+func (r AnnotationQueueRunListParamsStatus) IsKnown() bool {
+	switch r {
+	case AnnotationQueueRunListParamsStatusNeedsMyReview, AnnotationQueueRunListParamsStatusNeedsOthersReview, AnnotationQueueRunListParamsStatusCompleted:
+		return true
+	}
+	return false
 }
 
 type AnnotationQueueRunDeleteAllParams struct {
