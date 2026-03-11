@@ -43,11 +43,11 @@ func (r *PublicDatasetService) List(ctx context.Context, shareToken string, quer
 	opts = slices.Concat(r.Options, opts)
 	if shareToken == "" {
 		err = errors.New("missing required share_token parameter")
-		return
+		return nil, err
 	}
 	path := fmt.Sprintf("api/v1/public/%s/datasets", shareToken)
 	err = requestconfig.ExecuteNewRequest(ctx, http.MethodGet, path, query, &res, opts...)
-	return
+	return res, err
 }
 
 // Get all comparative experiments for a given dataset.
@@ -57,7 +57,7 @@ func (r *PublicDatasetService) ListComparative(ctx context.Context, shareToken s
 	opts = append([]option.RequestOption{option.WithResponseInto(&raw)}, opts...)
 	if shareToken == "" {
 		err = errors.New("missing required share_token parameter")
-		return
+		return nil, err
 	}
 	path := fmt.Sprintf("api/v1/public/%s/datasets/comparative", shareToken)
 	cfg, err := requestconfig.NewRequestConfig(ctx, http.MethodGet, path, query, &res, opts...)
@@ -84,7 +84,7 @@ func (r *PublicDatasetService) ListFeedback(ctx context.Context, shareToken stri
 	opts = append([]option.RequestOption{option.WithResponseInto(&raw)}, opts...)
 	if shareToken == "" {
 		err = errors.New("missing required share_token parameter")
-		return
+		return nil, err
 	}
 	path := fmt.Sprintf("api/v1/public/%s/datasets/feedback", shareToken)
 	cfg, err := requestconfig.NewRequestConfig(ctx, http.MethodGet, path, query, &res, opts...)
@@ -114,7 +114,7 @@ func (r *PublicDatasetService) ListSessions(ctx context.Context, shareToken stri
 	opts = append([]option.RequestOption{option.WithResponseInto(&raw)}, opts...)
 	if shareToken == "" {
 		err = errors.New("missing required share_token parameter")
-		return
+		return nil, err
 	}
 	path := fmt.Sprintf("api/v1/public/%s/datasets/sessions", shareToken)
 	cfg, err := requestconfig.NewRequestConfig(ctx, http.MethodGet, path, params, &res, opts...)
@@ -139,7 +139,7 @@ func (r *PublicDatasetService) GetSessionsBulk(ctx context.Context, query Public
 	opts = slices.Concat(r.Options, opts)
 	path := "api/v1/public/datasets/sessions-bulk"
 	err = requestconfig.ExecuteNewRequest(ctx, http.MethodGet, path, query, &res, opts...)
-	return
+	return res, err
 }
 
 // Public schema for datasets.

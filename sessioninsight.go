@@ -42,11 +42,11 @@ func (r *SessionInsightService) New(ctx context.Context, sessionID string, body 
 	opts = slices.Concat(r.Options, opts)
 	if sessionID == "" {
 		err = errors.New("missing required session_id parameter")
-		return
+		return nil, err
 	}
 	path := fmt.Sprintf("api/v1/sessions/%s/insights", sessionID)
 	err = requestconfig.ExecuteNewRequest(ctx, http.MethodPost, path, body, &res, opts...)
-	return
+	return res, err
 }
 
 // Update a session cluster job.
@@ -54,15 +54,15 @@ func (r *SessionInsightService) Update(ctx context.Context, sessionID string, jo
 	opts = slices.Concat(r.Options, opts)
 	if sessionID == "" {
 		err = errors.New("missing required session_id parameter")
-		return
+		return nil, err
 	}
 	if jobID == "" {
 		err = errors.New("missing required job_id parameter")
-		return
+		return nil, err
 	}
 	path := fmt.Sprintf("api/v1/sessions/%s/insights/%s", sessionID, jobID)
 	err = requestconfig.ExecuteNewRequest(ctx, http.MethodPatch, path, body, &res, opts...)
-	return
+	return res, err
 }
 
 // Delete a session cluster job.
@@ -70,15 +70,15 @@ func (r *SessionInsightService) Delete(ctx context.Context, sessionID string, jo
 	opts = slices.Concat(r.Options, opts)
 	if sessionID == "" {
 		err = errors.New("missing required session_id parameter")
-		return
+		return nil, err
 	}
 	if jobID == "" {
 		err = errors.New("missing required job_id parameter")
-		return
+		return nil, err
 	}
 	path := fmt.Sprintf("api/v1/sessions/%s/insights/%s", sessionID, jobID)
 	err = requestconfig.ExecuteNewRequest(ctx, http.MethodDelete, path, nil, &res, opts...)
-	return
+	return res, err
 }
 
 // Get a specific cluster job for a session.
@@ -86,15 +86,15 @@ func (r *SessionInsightService) GetJob(ctx context.Context, sessionID string, jo
 	opts = slices.Concat(r.Options, opts)
 	if sessionID == "" {
 		err = errors.New("missing required session_id parameter")
-		return
+		return nil, err
 	}
 	if jobID == "" {
 		err = errors.New("missing required job_id parameter")
-		return
+		return nil, err
 	}
 	path := fmt.Sprintf("api/v1/sessions/%s/insights/%s", sessionID, jobID)
 	err = requestconfig.ExecuteNewRequest(ctx, http.MethodGet, path, nil, &res, opts...)
-	return
+	return res, err
 }
 
 // Get all runs for a cluster job, optionally filtered by cluster.
@@ -102,15 +102,15 @@ func (r *SessionInsightService) GetRuns(ctx context.Context, sessionID string, j
 	opts = slices.Concat(r.Options, opts)
 	if sessionID == "" {
 		err = errors.New("missing required session_id parameter")
-		return
+		return nil, err
 	}
 	if jobID == "" {
 		err = errors.New("missing required job_id parameter")
-		return
+		return nil, err
 	}
 	path := fmt.Sprintf("api/v1/sessions/%s/insights/%s/runs", sessionID, jobID)
 	err = requestconfig.ExecuteNewRequest(ctx, http.MethodGet, path, query, &res, opts...)
-	return
+	return res, err
 }
 
 // Request to create a run clustering job.

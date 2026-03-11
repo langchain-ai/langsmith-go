@@ -43,7 +43,7 @@ func (r *RepoService) New(ctx context.Context, body RepoNewParams, opts ...optio
 	opts = slices.Concat(r.Options, opts)
 	path := "api/v1/repos"
 	err = requestconfig.ExecuteNewRequest(ctx, http.MethodPost, path, body, &res, opts...)
-	return
+	return res, err
 }
 
 // Get a repo.
@@ -51,15 +51,15 @@ func (r *RepoService) Get(ctx context.Context, owner string, repo string, opts .
 	opts = slices.Concat(r.Options, opts)
 	if owner == "" {
 		err = errors.New("missing required owner parameter")
-		return
+		return nil, err
 	}
 	if repo == "" {
 		err = errors.New("missing required repo parameter")
-		return
+		return nil, err
 	}
 	path := fmt.Sprintf("api/v1/repos/%s/%s", owner, repo)
 	err = requestconfig.ExecuteNewRequest(ctx, http.MethodGet, path, nil, &res, opts...)
-	return
+	return res, err
 }
 
 // Update a repo.
@@ -67,15 +67,15 @@ func (r *RepoService) Update(ctx context.Context, owner string, repo string, bod
 	opts = slices.Concat(r.Options, opts)
 	if owner == "" {
 		err = errors.New("missing required owner parameter")
-		return
+		return nil, err
 	}
 	if repo == "" {
 		err = errors.New("missing required repo parameter")
-		return
+		return nil, err
 	}
 	path := fmt.Sprintf("api/v1/repos/%s/%s", owner, repo)
 	err = requestconfig.ExecuteNewRequest(ctx, http.MethodPatch, path, body, &res, opts...)
-	return
+	return res, err
 }
 
 // Get all repos.
@@ -106,15 +106,15 @@ func (r *RepoService) Delete(ctx context.Context, owner string, repo string, opt
 	opts = slices.Concat(r.Options, opts)
 	if owner == "" {
 		err = errors.New("missing required owner parameter")
-		return
+		return nil, err
 	}
 	if repo == "" {
 		err = errors.New("missing required repo parameter")
-		return
+		return nil, err
 	}
 	path := fmt.Sprintf("api/v1/repos/%s/%s", owner, repo)
 	err = requestconfig.ExecuteNewRequest(ctx, http.MethodDelete, path, nil, &res, opts...)
-	return
+	return res, err
 }
 
 type CreateRepoResponse struct {

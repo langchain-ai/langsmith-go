@@ -43,11 +43,11 @@ func (r *DatasetRunService) New(ctx context.Context, datasetID string, params Da
 	opts = slices.Concat(r.Options, opts)
 	if datasetID == "" {
 		err = errors.New("missing required dataset_id parameter")
-		return
+		return nil, err
 	}
 	path := fmt.Sprintf("api/v1/datasets/%s/runs", datasetID)
 	err = requestconfig.ExecuteNewRequest(ctx, http.MethodPost, path, params, &res, opts...)
-	return
+	return res, err
 }
 
 // Fetch the number of regressions/improvements for each example in a dataset,
@@ -56,11 +56,11 @@ func (r *DatasetRunService) Delta(ctx context.Context, datasetID string, body Da
 	opts = slices.Concat(r.Options, opts)
 	if datasetID == "" {
 		err = errors.New("missing required dataset_id parameter")
-		return
+		return nil, err
 	}
 	path := fmt.Sprintf("api/v1/datasets/%s/runs/delta", datasetID)
 	err = requestconfig.ExecuteNewRequest(ctx, http.MethodPost, path, body, &res, opts...)
-	return
+	return res, err
 }
 
 // Example schema with list of runs from ClickHouse.
