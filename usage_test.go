@@ -13,6 +13,7 @@ import (
 )
 
 func TestUsage(t *testing.T) {
+	t.Skip("Mock server tests are disabled")
 	baseURL := "http://localhost:4010"
 	if envURL, ok := os.LookupEnv("TEST_API_BASE_URL"); ok {
 		baseURL = envURL
@@ -26,7 +27,6 @@ func TestUsage(t *testing.T) {
 		option.WithTenantID("My Tenant ID"),
 		option.WithOrganizationID("My Organization ID"),
 	)
-	t.Skip("Mock server tests are disabled")
 	customChartsSection, err := client.Sessions.Dashboard(
 		context.TODO(),
 		"1ffaeba7-541e-469f-bae7-df3208ea3d45",
