@@ -39,9 +39,10 @@ func TestDatasetRunNewWithOptionalParams(t *testing.T) {
 			Filters: langsmith.F(map[string][]string{
 				"foo": {"string"},
 			}),
-			Limit:   langsmith.F(int64(1)),
-			Offset:  langsmith.F(int64(0)),
-			Preview: langsmith.F(true),
+			IncludeAnnotatorDetail: langsmith.F(true),
+			Limit:                  langsmith.F(int64(1)),
+			Offset:                 langsmith.F(int64(0)),
+			Preview:                langsmith.F(true),
 			SortParams: langsmith.F(langsmith.SortParamsForRunsComparisonView{
 				SortBy:    langsmith.F("sort_by"),
 				SortOrder: langsmith.F(langsmith.SortParamsForRunsComparisonViewSortOrderAsc),

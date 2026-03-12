@@ -296,6 +296,7 @@ type DatasetRunNewParams struct {
 	ComparativeExperimentID param.Field[string]                          `json:"comparative_experiment_id" format:"uuid"`
 	ExampleIDs              param.Field[[]string]                        `json:"example_ids" format:"uuid"`
 	Filters                 param.Field[map[string][]string]             `json:"filters"`
+	IncludeAnnotatorDetail  param.Field[bool]                            `json:"include_annotator_detail"`
 	Limit                   param.Field[int64]                           `json:"limit"`
 	Offset                  param.Field[int64]                           `json:"offset"`
 	Preview                 param.Field[bool]                            `json:"preview"`
