@@ -47,6 +47,7 @@ type AnnotationQueueInfoListResponse struct {
 	BatchIngestConfig AnnotationQueueInfoListResponseBatchIngestConfig `json:"batch_ingest_config"`
 	// Customer info.
 	CustomerInfo          AnnotationQueueInfoListResponseCustomerInfo `json:"customer_info" api:"nullable"`
+	GitSha                string                                      `json:"git_sha" api:"nullable"`
 	InstanceFlags         map[string]interface{}                      `json:"instance_flags"`
 	LicenseExpirationTime time.Time                                   `json:"license_expiration_time" api:"nullable" format:"date-time"`
 	JSON                  annotationQueueInfoListResponseJSON         `json:"-"`
@@ -58,6 +59,7 @@ type annotationQueueInfoListResponseJSON struct {
 	Version               apijson.Field
 	BatchIngestConfig     apijson.Field
 	CustomerInfo          apijson.Field
+	GitSha                apijson.Field
 	InstanceFlags         apijson.Field
 	LicenseExpirationTime apijson.Field
 	raw                   string
