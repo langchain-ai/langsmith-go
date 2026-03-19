@@ -29,12 +29,13 @@ func TestRepoNewWithOptionalParams(t *testing.T) {
 		option.WithOrganizationID("My Organization ID"),
 	)
 	_, err := client.Repos.New(context.TODO(), langsmith.RepoNewParams{
-		IsPublic:    langsmith.F(true),
-		RepoHandle:  langsmith.F("repo_handle"),
-		Description: langsmith.F("description"),
-		Readme:      langsmith.F("readme"),
-		RepoType:    langsmith.F(langsmith.RepoNewParamsRepoTypePrompt),
-		Tags:        langsmith.F([]string{"string"}),
+		IsPublic:       langsmith.F(true),
+		RepoHandle:     langsmith.F("repo_handle"),
+		Description:    langsmith.F("description"),
+		Readme:         langsmith.F("readme"),
+		RepoType:       langsmith.F(langsmith.RepoNewParamsRepoTypePrompt),
+		RestrictedMode: langsmith.F(true),
+		Tags:           langsmith.F([]string{"string"}),
 	})
 	if err != nil {
 		var apierr *langsmith.Error
