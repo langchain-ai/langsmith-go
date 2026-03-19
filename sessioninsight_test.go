@@ -42,6 +42,7 @@ func TestSessionInsightNewWithOptionalParams(t *testing.T) {
 				EndTime:      langsmith.F(time.Now()),
 				Filter:       langsmith.F("filter"),
 				Hierarchy:    langsmith.F([]int64{int64(0)}),
+				IsScheduled:  langsmith.F(true),
 				LastNHours:   langsmith.F(int64(0)),
 				Model:        langsmith.F(langsmith.CreateRunClusteringJobRequestModelOpenAI),
 				Name:         langsmith.F("name"),

@@ -121,6 +121,7 @@ type CreateRunClusteringJobRequestParam struct {
 	EndTime              param.Field[time.Time]                          `json:"end_time" format:"date-time"`
 	Filter               param.Field[string]                             `json:"filter"`
 	Hierarchy            param.Field[[]int64]                            `json:"hierarchy"`
+	IsScheduled          param.Field[bool]                               `json:"is_scheduled"`
 	LastNHours           param.Field[int64]                              `json:"last_n_hours"`
 	Model                param.Field[CreateRunClusteringJobRequestModel] `json:"model"`
 	Name                 param.Field[string]                             `json:"name"`
