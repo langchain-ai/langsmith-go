@@ -27,7 +27,7 @@ import (
 
 func getDefaultHeaders() map[string]string {
 	return map[string]string{
-		"User-Agent": fmt.Sprintf("LangChain/Go %s", internal.PackageVersion),
+		"User-Agent": fmt.Sprintf("langsmith-go/%s", internal.PackageVersion),
 	}
 }
 

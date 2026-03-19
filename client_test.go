@@ -47,7 +47,7 @@ func TestUserAgentHeader(t *testing.T) {
 			CustomChartsSectionRequest: langsmith.CustomChartsSectionRequestParam{},
 		},
 	)
-	if userAgent != fmt.Sprintf("LangChain/Go %s", internal.PackageVersion) {
+	if userAgent != fmt.Sprintf("langsmith-go/%s", internal.PackageVersion) {
 		t.Errorf("Expected User-Agent to be correct, but got: %#v", userAgent)
 	}
 }
