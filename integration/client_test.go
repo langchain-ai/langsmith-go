@@ -216,7 +216,7 @@ func TestRunIngestAndQuery(t *testing.T) {
 	}
 
 	// Query with retries (runs may take a moment to be queryable), then assert round-trip like Python read_run
-	var run *langsmith.RunQueryResponseRun
+	var run *langsmith.RunSchema
 	for i := 0; i < 10; i++ {
 		time.Sleep(2 * time.Second)
 		result, err := client.Runs.Query(ctx, langsmith.RunQueryParams{
@@ -254,7 +254,7 @@ func TestRunIngestAndQuery(t *testing.T) {
 	if v, ok := run.Outputs["output"]; !ok || v != "world" {
 		t.Errorf("stored_run.outputs[output] = %v, want 'world'", run.Outputs["output"])
 	}
-	if run.RunType != langsmith.RunQueryResponseRunsRunTypeChain {
+	if run.RunType != langsmith.RunTypeEnumChain {
 		t.Errorf("stored_run.run_type = %q, want 'chain'", run.RunType)
 	}
 }
@@ -309,7 +309,7 @@ func TestRunCreateAndUpdate(t *testing.T) {
 	}
 
 	// Poll until run is visible and patch has been applied (eventual consistency)
-	var stored *langsmith.RunQueryResponseRun
+	var stored *langsmith.RunSchema
 	patchVisible := false
 	const pollAttempts = 25
 	const pollInterval = 2 * time.Second
@@ -443,7 +443,7 @@ func TestRunBatchIngestRoundTrip(t *testing.T) {
 	}
 
 	// Query by run IDs (shared project has many runs; we only need our three)
-	var runs []langsmith.RunQueryResponseRun
+	var runs []langsmith.RunSchema
 	for i := 0; i < 10; i++ {
 		time.Sleep(2 * time.Second)
 		result, err := client.Runs.Query(ctx, langsmith.RunQueryParams{
@@ -461,7 +461,7 @@ func TestRunBatchIngestRoundTrip(t *testing.T) {
 		t.Fatalf("expected exactly 3 runs, got %d", len(runs))
 	}
 
-	byID := make(map[string]langsmith.RunQueryResponseRun)
+	byID := make(map[string]langsmith.RunSchema)
 	for _, r := range runs {
 		byID[r.ID] = r
 	}
@@ -563,7 +563,7 @@ func TestRunIngestWithChildRuns(t *testing.T) {
 		t.Fatalf("ingest batch with child: %v", err)
 	}
 
-	var parentRun, childRun *langsmith.RunQueryResponseRun
+	var parentRun, childRun *langsmith.RunSchema
 	for i := 0; i < 10; i++ {
 		time.Sleep(2 * time.Second)
 		result, err := client.Runs.Query(ctx, langsmith.RunQueryParams{
@@ -599,10 +599,10 @@ func TestRunIngestWithChildRuns(t *testing.T) {
 	if childRun.ParentRunID != parentID {
 		t.Errorf("child parent_run_id = %q, want %q", childRun.ParentRunID, parentID)
 	}
-	if parentRun.RunType != langsmith.RunQueryResponseRunsRunTypeChain {
+	if parentRun.RunType != langsmith.RunTypeEnumChain {
 		t.Errorf("parent run_type = %q, want 'chain'", parentRun.RunType)
 	}
-	if childRun.RunType != langsmith.RunQueryResponseRunsRunTypeLlm {
+	if childRun.RunType != langsmith.RunTypeEnumLlm {
 		t.Errorf("child run_type = %q, want 'llm'", childRun.RunType)
 	}
 	if parentRun.Name != "parent-chain" {

@@ -111,7 +111,7 @@ func TestAnthropic_NonStreaming(t *testing.T) {
 		} else {
 			assertLangSmithRunFields(t, &runs[0], LangSmithRunAssertions{
 				WantName:    expectedRunName,
-				WantRunType: langsmith.RunQueryResponseRunsRunTypeLlm,
+				WantRunType: langsmith.RunTypeEnumLlm,
 				WantInputs:  true,
 				WantOutputs: true,
 			})
@@ -192,7 +192,7 @@ func TestAnthropic_Streaming(t *testing.T) {
 			// Reduced/assembled stream in outputs (behavior 2)
 			assertLangSmithRunFields(t, &runs[0], LangSmithRunAssertions{
 				WantName:    expectedRunName,
-				WantRunType: langsmith.RunQueryResponseRunsRunTypeLlm,
+				WantRunType: langsmith.RunTypeEnumLlm,
 				WantInputs:  true,
 				WantOutputs: true,
 			})
@@ -237,7 +237,7 @@ func TestAnthropic_EarlyStreamTermination(t *testing.T) {
 			// Per spec: early termination should set error (e.g. "Cancelled") with partial output.
 			assertLangSmithRunFields(t, &runs[0], LangSmithRunAssertions{
 				WantName:    expectedRunName,
-				WantRunType: langsmith.RunQueryResponseRunsRunTypeLlm,
+				WantRunType: langsmith.RunTypeEnumLlm,
 				WantInputs:  true,
 				WantOutputs: true,
 				ExpectError: true,
@@ -282,7 +282,7 @@ func TestAnthropic_ErrorHandling(t *testing.T) {
 		} else {
 			assertLangSmithRunFields(t, &runs[0], LangSmithRunAssertions{
 				WantName:    expectedRunName,
-				WantRunType: langsmith.RunQueryResponseRunsRunTypeLlm,
+				WantRunType: langsmith.RunTypeEnumLlm,
 				ExpectError: true,
 			})
 		}
@@ -355,7 +355,7 @@ func TestAnthropic_ToolUse_NonStreaming(t *testing.T) {
 			// Inputs include tools; outputs include tool_calls (behavior 5)
 			assertLangSmithRunFields(t, &runs[0], LangSmithRunAssertions{
 				WantName:                expectedRunName,
-				WantRunType:             langsmith.RunQueryResponseRunsRunTypeLlm,
+				WantRunType:             langsmith.RunTypeEnumLlm,
 				WantInputs:              true,
 				WantOutputs:             true,
 				WantOutputsContainTools: true,
@@ -433,7 +433,7 @@ func TestAnthropic_ToolUse_Streaming(t *testing.T) {
 			// Outputs include tool_calls (behavior 5)
 			assertLangSmithRunFields(t, &runs[0], LangSmithRunAssertions{
 				WantName:                expectedRunName,
-				WantRunType:             langsmith.RunQueryResponseRunsRunTypeLlm,
+				WantRunType:             langsmith.RunTypeEnumLlm,
 				WantInputs:              true,
 				WantOutputs:             true,
 				WantOutputsContainTools: true,
@@ -485,7 +485,7 @@ func TestAnthropic_SystemMessage(t *testing.T) {
 			// System content in run inputs (behavior 6)
 			assertLangSmithRunFields(t, &runs[0], LangSmithRunAssertions{
 				WantName:                expectedRunName,
-				WantRunType:             langsmith.RunQueryResponseRunsRunTypeLlm,
+				WantRunType:             langsmith.RunTypeEnumLlm,
 				WantInputs:              true,
 				WantOutputs:             true,
 				WantInputsContainSystem: true,
@@ -550,7 +550,7 @@ func TestAnthropic_MultipleMessages(t *testing.T) {
 			// Full conversation in run inputs (behavior 7)
 			assertLangSmithRunFields(t, &runs[0], LangSmithRunAssertions{
 				WantName:               expectedRunName,
-				WantRunType:            langsmith.RunQueryResponseRunsRunTypeLlm,
+				WantRunType:            langsmith.RunTypeEnumLlm,
 				WantInputs:             true,
 				WantOutputs:            true,
 				WantInputsMessageCount: 4,
@@ -600,7 +600,7 @@ func TestAnthropic_TokenUsage_NonStreaming(t *testing.T) {
 			// Run has usage (behavior 8)
 			assertLangSmithRunFields(t, &runs[0], LangSmithRunAssertions{
 				WantName:    expectedRunName,
-				WantRunType: langsmith.RunQueryResponseRunsRunTypeLlm,
+				WantRunType: langsmith.RunTypeEnumLlm,
 				WantInputs:  true,
 				WantOutputs: true,
 				WantUsage:   true,
@@ -648,7 +648,7 @@ func TestAnthropic_TokenUsage_Streaming(t *testing.T) {
 			// Run has usage (behavior 8)
 			assertLangSmithRunFields(t, &runs[0], LangSmithRunAssertions{
 				WantName:    expectedRunName,
-				WantRunType: langsmith.RunQueryResponseRunsRunTypeLlm,
+				WantRunType: langsmith.RunTypeEnumLlm,
 				WantInputs:  true,
 				WantOutputs: true,
 				WantUsage:   true,
@@ -691,7 +691,7 @@ func TestAnthropic_StopReason(t *testing.T) {
 		} else {
 			assertLangSmithRunFields(t, &runs[0], LangSmithRunAssertions{
 				WantName:    expectedRunName,
-				WantRunType: langsmith.RunQueryResponseRunsRunTypeLlm,
+				WantRunType: langsmith.RunTypeEnumLlm,
 				WantInputs:  true,
 				WantOutputs: true,
 			})
