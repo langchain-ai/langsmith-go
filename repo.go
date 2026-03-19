@@ -254,12 +254,13 @@ func (r RepoWithLookupsRepoType) IsKnown() bool {
 type RepoDeleteResponse = interface{}
 
 type RepoNewParams struct {
-	IsPublic    param.Field[bool]                  `json:"is_public" api:"required"`
-	RepoHandle  param.Field[string]                `json:"repo_handle" api:"required"`
-	Description param.Field[string]                `json:"description"`
-	Readme      param.Field[string]                `json:"readme"`
-	RepoType    param.Field[RepoNewParamsRepoType] `json:"repo_type"`
-	Tags        param.Field[[]string]              `json:"tags"`
+	IsPublic       param.Field[bool]                  `json:"is_public" api:"required"`
+	RepoHandle     param.Field[string]                `json:"repo_handle" api:"required"`
+	Description    param.Field[string]                `json:"description"`
+	Readme         param.Field[string]                `json:"readme"`
+	RepoType       param.Field[RepoNewParamsRepoType] `json:"repo_type"`
+	RestrictedMode param.Field[bool]                  `json:"restricted_mode"`
+	Tags           param.Field[[]string]              `json:"tags"`
 }
 
 func (r RepoNewParams) MarshalJSON() (data []byte, err error) {
