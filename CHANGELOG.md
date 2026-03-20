@@ -1,5 +1,14 @@
 # Changelog
 
+## 0.2.1 (2026-03-20)
+
+Full Changelog: [v0.2.0...v0.2.1](https://github.com/langchain-ai/langsmith-go/compare/v0.2.0...v0.2.1)
+
+### Features
+
+* add insights fetching to go sdk ([#40](https://github.com/langchain-ai/langsmith-go/issues/40)) ([21bbebd](https://github.com/langchain-ai/langsmith-go/commit/21bbebdf871402fb3faf11de658cacc5903dc0d1))
+* **api:** manual updates ([174f299](https://github.com/langchain-ai/langsmith-go/commit/174f299ca32d15cda0fe1a1e098afdf7349e1da6))
+
 ## 0.2.0 (2026-03-20)
 
 Full Changelog: [v0.1.0...v0.2.0](https://github.com/langchain-ai/langsmith-go/compare/v0.1.0...v0.2.0)
