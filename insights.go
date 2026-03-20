@@ -19,22 +19,14 @@ const (
 )
 
 // InsightsReport is returned after creating an insights job via [Client.GenerateInsights].
-// It contains the job ID and project info needed to poll for results.
 type InsightsReport struct {
-	// ID is the unique identifier of the insights job.
-	ID string
-	// Name is the display name of the insights job.
-	Name string
-	// Status is the current status of the insights job (e.g. "pending", "success", "error").
-	Status string
-	// Error contains an error message when Status is "error".
-	Error string
-	// ProjectID is the ID of the tracing project that holds the ingested chat histories.
+	ID        string
+	Name      string
+	Status    string
+	Error     string
 	ProjectID string
-	// TenantID is the ID of the tenant/workspace.
-	TenantID string
-	// HostURL is the LangSmith API base URL, used to construct [InsightsReport.Link].
-	HostURL string
+	TenantID  string
+	HostURL   string
 }
 
 // Link returns the LangSmith UI URL where this insights report can be viewed.
@@ -43,101 +35,44 @@ func (r *InsightsReport) Link() string {
 		r.HostURL, r.TenantID, r.ProjectID, r.ID)
 }
 
-// InsightsReportResult contains the full results of a completed insights job,
-// including clusters, summary report, and optionally individual runs.
+// InsightsReportResult contains the full results of a completed insights job.
 type InsightsReportResult struct {
-	// ID is the unique identifier of the insights job.
-	ID string
-	// Name is the display name of the insights job.
-	Name string
-	// Status is the terminal status of the job ("success" or "error").
-	Status string
-	// StartTime is when the job started processing.
+	ID        string
+	Name      string
+	Status    string
 	StartTime *time.Time
-	// EndTime is when the job finished processing.
-	EndTime *time.Time
-	// ConfigID is the ID of the insights configuration used.
-	ConfigID string
-	// Metadata contains arbitrary job metadata.
-	Metadata map[string]interface{}
-	// Shape maps each cluster name to its run count.
-	Shape map[string]int64
-	// Error contains an error message when Status is "error".
-	Error string
-	// Clusters is the list of run clusters produced by the insights agent.
-	Clusters []SessionInsightGetJobResponseCluster
-	// Report is the high-level summary produced by the insights agent.
-	Report *SessionInsightGetJobResponseReport
-	// Runs contains all runs associated with this job.
-	// Populated only when GetInsightsReportParams.IncludeRuns is true.
-	Runs []map[string]interface{}
+	EndTime   *time.Time
+	ConfigID  string
+	Metadata  map[string]interface{}
+	Shape     map[string]int64
+	Error     string
+	Clusters  []SessionInsightGetJobResponseCluster
+	Report    *SessionInsightGetJobResponseReport
+	Runs      []map[string]interface{}
 }
 
-// GenerateInsightsParams contains parameters for [Client.GenerateInsights].
 type GenerateInsightsParams struct {
-	// ChatHistories is a list of conversation histories to analyse.
-	// Each item is a slice of messages; each message is a map with
-	// at least "role" and "content" keys (OpenAI message format).
-	// Truncated to 1000 items automatically.
-	ChatHistories [][]map[string]interface{}
-
-	// Instructions for the insights agent. Should describe what your agent does
-	// and what types of insights you want to generate.
-	// Defaults to "How are people using my agent? What are they asking about?"
-	Instructions string
-
-	// Name for the insights report. A timestamp-based name is used when empty.
-	Name string
-
-	// Model provider: "openai" or "anthropic".
-	// Auto-detected from available workspace secrets when empty.
-	Model string
-
-	// OpenAIAPIKey is an optional OpenAI API key.
-	// Stored as a workspace secret when not already present.
-	OpenAIAPIKey string
-
-	// AnthropicAPIKey is an optional Anthropic API key.
-	// Stored as a workspace secret when not already present.
+	ChatHistories   [][]map[string]interface{}
+	Instructions    string
+	Name            string
+	Model           string
+	OpenAIAPIKey    string
 	AnthropicAPIKey string
 }
 
-// PollInsightsParams contains parameters for [Client.PollInsights].
 type PollInsightsParams struct {
-	// Report is the InsightsReport returned by GenerateInsights.
-	// Mutually exclusive with ID + ProjectID.
-	Report *InsightsReport
-
-	// ID is the insights job ID. Required when Report is nil.
-	ID string
-
-	// ProjectID is the tracing project ID. Required when Report is nil.
+	Report    *InsightsReport
+	ID        string
 	ProjectID string
-
-	// Rate controls how often to poll. Defaults to 30 seconds.
-	Rate time.Duration
-
-	// Timeout is the maximum time to wait before returning an error.
-	// Defaults to 30 minutes.
-	Timeout time.Duration
-
-	// Verbose prints elapsed poll time to stdout when true.
-	Verbose bool
+	Rate      time.Duration
+	Timeout   time.Duration
+	Verbose   bool
 }
 
-// GetInsightsReportParams contains parameters for [Client.GetInsightsReport].
 type GetInsightsReportParams struct {
-	// Report is the InsightsReport returned by GenerateInsights or PollInsights.
-	// Mutually exclusive with ID + ProjectID.
-	Report *InsightsReport
-
-	// ID is the insights job ID. Required when Report is nil.
-	ID string
-
-	// ProjectID is the tracing project ID. Required when Report is nil.
-	ProjectID string
-
-	// IncludeRuns fetches all runs associated with the job when true.
+	Report      *InsightsReport
+	ID          string
+	ProjectID   string
 	IncludeRuns bool
 }
 
@@ -173,7 +108,7 @@ func (r *Client) GenerateInsights(ctx context.Context, params GenerateInsightsPa
 			Model:      F(CreateRunClusteringJobRequestModel(model)),
 			LastNHours: F(int64(1)),
 			UserContext: F(map[string]string{
-				"How are your agent traces structured?":      "The run.outputs.messages field contains a chat history between the user and the agent. This is all the context you need.",
+				"How are your agent traces structured?":          "The run.outputs.messages field contains a chat history between the user and the agent. This is all the context you need.",
 				"What would you like to learn about your agent?": instructions,
 			}),
 		},
@@ -200,11 +135,8 @@ func (r *Client) GenerateInsights(ctx context.Context, params GenerateInsightsPa
 	return report, nil
 }
 
-// PollInsights polls an insights job until it reaches a terminal state
-// ("success" or "error"), or the timeout is exceeded.
-//
-// Provide either Report (from GenerateInsights) or both ID and ProjectID.
-// Returns an error if the job reaches status "error".
+// PollInsights polls an insights job until it reaches a terminal state or the timeout is exceeded.
+// Provide either Report or both ID and ProjectID, but not both.
 func (r *Client) PollInsights(ctx context.Context, params PollInsightsParams, opts ...option.RequestOption) (*InsightsReport, error) {
 	if (params.ID != "" || params.ProjectID != "") && params.Report != nil {
 		return nil, errors.New("langsmith: PollInsights: specify exactly one of (ID and ProjectID) or Report")
@@ -265,11 +197,8 @@ func (r *Client) PollInsights(ctx context.Context, params PollInsightsParams, op
 	return nil, fmt.Errorf("langsmith: timed out waiting for insights job %s after %v", jobID, timeout)
 }
 
-// GetInsightsReport fetches the full results of a completed insights job,
-// including clusters, the high-level summary report, and optionally all runs.
-//
-// Provide either Report (from GenerateInsights/PollInsights) or both ID and ProjectID,
-// but not both.
+// GetInsightsReport fetches the full results of a completed insights job.
+// Provide either Report or both ID and ProjectID, but not both.
 func (r *Client) GetInsightsReport(ctx context.Context, params GetInsightsReportParams, opts ...option.RequestOption) (*InsightsReportResult, error) {
 	if params.Report != nil && (params.ID != "" || params.ProjectID != "") {
 		return nil, errors.New("langsmith: GetInsightsReport: specify exactly one of (ID and ProjectID) or Report")
@@ -318,8 +247,6 @@ func (r *Client) GetInsightsReport(ctx context.Context, params GetInsightsReport
 	return result, nil
 }
 
-// fetchAllInsightsRuns fetches all runs for an insights job, paginating as needed.
-// Pass a non-empty clusterID to filter runs to a specific cluster.
 func (r *Client) fetchAllInsightsRuns(ctx context.Context, projectID, jobID, clusterID string, opts ...option.RequestOption) ([]map[string]interface{}, error) {
 	const pageSize = 100
 	var all []map[string]interface{}
@@ -347,7 +274,6 @@ func (r *Client) fetchAllInsightsRuns(ctx context.Context, projectID, jobID, clu
 	return all, nil
 }
 
-// ingestInsightsRuns creates a tracing project and ingests chat histories as runs.
 func (r *Client) ingestInsightsRuns(ctx context.Context, chatHistories [][]map[string]interface{}, name string, opts ...option.RequestOption) (*TracerSessionWithoutVirtualFields, error) {
 	if len(chatHistories) > maxInsightsChatHistories {
 		fmt.Printf("langsmith: warning: can only generate insights over %d items; truncating to first %d\n",
@@ -398,9 +324,6 @@ func (r *Client) ingestInsightsRuns(ctx context.Context, chatHistories [][]map[s
 	return project, nil
 }
 
-// ensureInsightsAPIKey verifies that an API key for the chosen model provider is
-// available as a workspace secret, storing the provided key if not.
-// Returns the resolved model name ("openai" or "anthropic").
 func (r *Client) ensureInsightsAPIKey(ctx context.Context, openAIKey, anthropicKey, model string, opts ...option.RequestOption) (string, error) {
 	workspaceKeys, _ := r.fetchWorkspaceSecretKeys(ctx, opts...)
 
@@ -444,7 +367,6 @@ func (r *Client) ensureInsightsAPIKey(ctx context.Context, openAIKey, anthropicK
 	}
 }
 
-// fetchWorkspaceSecretKeys fetches all workspace secret keys and returns them as a set.
 func (r *Client) fetchWorkspaceSecretKeys(ctx context.Context, opts ...option.RequestOption) (map[string]bool, error) {
 	var resp []struct {
 		Key string `json:"key"`
@@ -460,13 +382,11 @@ func (r *Client) fetchWorkspaceSecretKeys(ctx context.Context, opts ...option.Re
 	return keys, nil
 }
 
-// storeWorkspaceSecret upserts a workspace secret.
 func (r *Client) storeWorkspaceSecret(ctx context.Context, key, value string, opts ...option.RequestOption) error {
 	body := []map[string]string{{"key": key, "value": value}}
 	return r.Post(ctx, "api/v1/workspaces/current/secrets", body, nil, opts...)
 }
 
-// hostURL returns the base URL of the LangSmith API, stripped of trailing slashes.
 func (r *Client) hostURL(opts ...option.RequestOption) string {
 	cfg, err := requestconfig.NewRequestConfig(context.Background(), http.MethodGet, "", nil, nil,
 		append(r.Options, opts...)...)
@@ -476,7 +396,6 @@ func (r *Client) hostURL(opts ...option.RequestOption) string {
 	return strings.TrimRight(cfg.BaseURL.String(), "/")
 }
 
-// resolveInsightsIDs extracts projectID and jobID from either a report or explicit IDs.
 func resolveInsightsIDs(report *InsightsReport, projectID, jobID string) (string, string, error) {
 	if report != nil {
 		return report.ProjectID, report.ID, nil
@@ -486,4 +405,3 @@ func resolveInsightsIDs(report *InsightsReport, projectID, jobID string) (string
 	}
 	return projectID, jobID, nil
 }
-
