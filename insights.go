@@ -5,6 +5,7 @@ import (
 	"errors"
 	"fmt"
 	"net/http"
+	"slices"
 	"strings"
 	"time"
 
@@ -173,6 +174,9 @@ func (r *Client) PollInsights(ctx context.Context, params PollInsightsParams, op
 				report.TenantID = params.Report.TenantID
 			} else {
 				report.ProjectID = projectID
+				if session, err := r.Sessions.Get(ctx, projectID, SessionGetParams{}, opts...); err == nil {
+					report.TenantID = session.TenantID
+				}
 			}
 			fmt.Printf("Insights report completed! View the results at %s\n", report.Link())
 			return report, nil
@@ -386,7 +390,7 @@ func (r *Client) storeWorkspaceSecret(ctx context.Context, key, value string, op
 
 func (r *Client) hostURL(opts ...option.RequestOption) string {
 	cfg, err := requestconfig.NewRequestConfig(context.Background(), http.MethodGet, "", nil, nil,
-		append(r.Options, opts...)...)
+		slices.Concat(r.Options, opts)...)
 	if err != nil || cfg.BaseURL == nil {
 		return "https://api.smith.langchain.com"
 	}
