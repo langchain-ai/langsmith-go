@@ -16,7 +16,7 @@ import (
 )
 
 func TestFeedbackNewWithOptionalParams(t *testing.T) {
-	t.Skip("Prism tests are disabled")
+	t.Skip("Mock server tests are disabled")
 	baseURL := "http://localhost:4010"
 	if envURL, ok := os.LookupEnv("TEST_API_BASE_URL"); ok {
 		baseURL = envURL
@@ -41,9 +41,6 @@ func TestFeedbackNewWithOptionalParams(t *testing.T) {
 			})),
 			CreatedAt: langsmith.F(time.Now()),
 			Error:     langsmith.F(true),
-			Extra: langsmith.F(map[string]interface{}{
-				"foo": "bar",
-			}),
 			FeedbackConfig: langsmith.F(langsmith.FeedbackCreateSchemaFeedbackConfigParam{
 				Type: langsmith.F(langsmith.FeedbackCreateSchemaFeedbackConfigTypeContinuous),
 				Categories: langsmith.F([]langsmith.FeedbackCreateSchemaFeedbackConfigCategoryParam{{
@@ -79,7 +76,7 @@ func TestFeedbackNewWithOptionalParams(t *testing.T) {
 }
 
 func TestFeedbackGetWithOptionalParams(t *testing.T) {
-	t.Skip("Prism tests are disabled")
+	t.Skip("Mock server tests are disabled")
 	baseURL := "http://localhost:4010"
 	if envURL, ok := os.LookupEnv("TEST_API_BASE_URL"); ok {
 		baseURL = envURL
@@ -110,7 +107,7 @@ func TestFeedbackGetWithOptionalParams(t *testing.T) {
 }
 
 func TestFeedbackUpdateWithOptionalParams(t *testing.T) {
-	t.Skip("Prism tests are disabled")
+	t.Skip("Mock server tests are disabled")
 	baseURL := "http://localhost:4010"
 	if envURL, ok := os.LookupEnv("TEST_API_BASE_URL"); ok {
 		baseURL = envURL
@@ -155,7 +152,7 @@ func TestFeedbackUpdateWithOptionalParams(t *testing.T) {
 }
 
 func TestFeedbackListWithOptionalParams(t *testing.T) {
-	t.Skip("Prism tests are disabled")
+	t.Skip("Mock server tests are disabled")
 	baseURL := "http://localhost:4010"
 	if envURL, ok := os.LookupEnv("TEST_API_BASE_URL"); ok {
 		baseURL = envURL
@@ -195,7 +192,7 @@ func TestFeedbackListWithOptionalParams(t *testing.T) {
 }
 
 func TestFeedbackDelete(t *testing.T) {
-	t.Skip("Prism tests are disabled")
+	t.Skip("Mock server tests are disabled")
 	baseURL := "http://localhost:4010"
 	if envURL, ok := os.LookupEnv("TEST_API_BASE_URL"); ok {
 		baseURL = envURL

@@ -40,17 +40,17 @@ func (r *DatasetExperimentService) Grouped(ctx context.Context, datasetID string
 	opts = slices.Concat(r.Options, opts)
 	if datasetID == "" {
 		err = errors.New("missing required dataset_id parameter")
-		return
+		return nil, err
 	}
 	path := fmt.Sprintf("api/v1/datasets/%s/experiments/grouped", datasetID)
 	err = requestconfig.ExecuteNewRequest(ctx, http.MethodPost, path, body, &res, opts...)
-	return
+	return res, err
 }
 
 type DatasetExperimentGroupedResponse = interface{}
 
 type DatasetExperimentGroupedParams struct {
-	MetadataKeys    param.Field[[]string]  `json:"metadata_keys,required"`
+	MetadataKeys    param.Field[[]string]  `json:"metadata_keys" api:"required"`
 	DatasetVersion  param.Field[string]    `json:"dataset_version"`
 	ExperimentLimit param.Field[int64]     `json:"experiment_limit"`
 	Filter          param.Field[string]    `json:"filter"`

@@ -41,11 +41,11 @@ func (r *DatasetShareService) New(ctx context.Context, datasetID string, body Da
 	opts = slices.Concat(r.Options, opts)
 	if datasetID == "" {
 		err = errors.New("missing required dataset_id parameter")
-		return
+		return nil, err
 	}
 	path := fmt.Sprintf("api/v1/datasets/%s/share", datasetID)
 	err = requestconfig.ExecuteNewRequest(ctx, http.MethodPut, path, body, &res, opts...)
-	return
+	return res, err
 }
 
 // Get the state of sharing a dataset
@@ -53,11 +53,11 @@ func (r *DatasetShareService) Get(ctx context.Context, datasetID string, opts ..
 	opts = slices.Concat(r.Options, opts)
 	if datasetID == "" {
 		err = errors.New("missing required dataset_id parameter")
-		return
+		return nil, err
 	}
 	path := fmt.Sprintf("api/v1/datasets/%s/share", datasetID)
 	err = requestconfig.ExecuteNewRequest(ctx, http.MethodGet, path, nil, &res, opts...)
-	return
+	return res, err
 }
 
 // Unshare a dataset.
@@ -65,16 +65,16 @@ func (r *DatasetShareService) DeleteAll(ctx context.Context, datasetID string, o
 	opts = slices.Concat(r.Options, opts)
 	if datasetID == "" {
 		err = errors.New("missing required dataset_id parameter")
-		return
+		return nil, err
 	}
 	path := fmt.Sprintf("api/v1/datasets/%s/share", datasetID)
 	err = requestconfig.ExecuteNewRequest(ctx, http.MethodDelete, path, nil, &res, opts...)
-	return
+	return res, err
 }
 
 type DatasetShareSchema struct {
-	DatasetID  string                 `json:"dataset_id,required" format:"uuid"`
-	ShareToken string                 `json:"share_token,required" format:"uuid"`
+	DatasetID  string                 `json:"dataset_id" api:"required" format:"uuid"`
+	ShareToken string                 `json:"share_token" api:"required" format:"uuid"`
 	JSON       datasetShareSchemaJSON `json:"-"`
 }
 

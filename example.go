@@ -51,7 +51,7 @@ func (r *ExampleService) New(ctx context.Context, body ExampleNewParams, opts ..
 	opts = slices.Concat(r.Options, opts)
 	path := "api/v1/examples"
 	err = requestconfig.ExecuteNewRequest(ctx, http.MethodPost, path, body, &res, opts...)
-	return
+	return res, err
 }
 
 // Get a specific example.
@@ -59,11 +59,11 @@ func (r *ExampleService) Get(ctx context.Context, exampleID string, query Exampl
 	opts = slices.Concat(r.Options, opts)
 	if exampleID == "" {
 		err = errors.New("missing required example_id parameter")
-		return
+		return nil, err
 	}
 	path := fmt.Sprintf("api/v1/examples/%s", exampleID)
 	err = requestconfig.ExecuteNewRequest(ctx, http.MethodGet, path, query, &res, opts...)
-	return
+	return res, err
 }
 
 // Update a specific example.
@@ -71,11 +71,11 @@ func (r *ExampleService) Update(ctx context.Context, exampleID string, body Exam
 	opts = slices.Concat(r.Options, opts)
 	if exampleID == "" {
 		err = errors.New("missing required example_id parameter")
-		return
+		return nil, err
 	}
 	path := fmt.Sprintf("api/v1/examples/%s", exampleID)
 	err = requestconfig.ExecuteNewRequest(ctx, http.MethodPatch, path, body, &res, opts...)
-	return
+	return res, err
 }
 
 // Get all examples by query params
@@ -107,11 +107,11 @@ func (r *ExampleService) Delete(ctx context.Context, exampleID string, opts ...o
 	opts = slices.Concat(r.Options, opts)
 	if exampleID == "" {
 		err = errors.New("missing required example_id parameter")
-		return
+		return nil, err
 	}
 	path := fmt.Sprintf("api/v1/examples/%s", exampleID)
 	err = requestconfig.ExecuteNewRequest(ctx, http.MethodDelete, path, nil, &res, opts...)
-	return
+	return res, err
 }
 
 // Soft delete examples. Only deletes the examples in the 'latest' version of the
@@ -120,7 +120,7 @@ func (r *ExampleService) DeleteAll(ctx context.Context, body ExampleDeleteAllPar
 	opts = slices.Concat(r.Options, opts)
 	path := "api/v1/examples"
 	err = requestconfig.ExecuteNewRequest(ctx, http.MethodDelete, path, body, &res, opts...)
-	return
+	return res, err
 }
 
 // Count all examples by query params
@@ -128,7 +128,7 @@ func (r *ExampleService) GetCount(ctx context.Context, query ExampleGetCountPara
 	opts = slices.Concat(r.Options, opts)
 	path := "api/v1/examples/count"
 	err = requestconfig.ExecuteNewRequest(ctx, http.MethodGet, path, query, &res, opts...)
-	return
+	return res, err
 }
 
 // Upload examples from a CSV file.
@@ -140,11 +140,11 @@ func (r *ExampleService) UploadFromCsv(ctx context.Context, datasetID string, bo
 	opts = slices.Concat(r.Options, opts)
 	if datasetID == "" {
 		err = errors.New("missing required dataset_id parameter")
-		return
+		return nil, err
 	}
 	path := fmt.Sprintf("api/v1/examples/upload/%s", datasetID)
 	err = requestconfig.ExecuteNewRequest(ctx, http.MethodPost, path, body, &res, opts...)
-	return
+	return res, err
 }
 
 type AttachmentsOperationsParam struct {
@@ -160,16 +160,16 @@ func (r AttachmentsOperationsParam) MarshalJSON() (data []byte, err error) {
 
 // Example schema.
 type Example struct {
-	ID             string                 `json:"id,required" format:"uuid"`
-	DatasetID      string                 `json:"dataset_id,required" format:"uuid"`
-	Inputs         map[string]interface{} `json:"inputs,required"`
-	Name           string                 `json:"name,required"`
-	AttachmentURLs map[string]interface{} `json:"attachment_urls,nullable"`
+	ID             string                 `json:"id" api:"required" format:"uuid"`
+	DatasetID      string                 `json:"dataset_id" api:"required" format:"uuid"`
+	Inputs         map[string]interface{} `json:"inputs" api:"required"`
+	Name           string                 `json:"name" api:"required"`
+	AttachmentURLs map[string]interface{} `json:"attachment_urls" api:"nullable"`
 	CreatedAt      time.Time              `json:"created_at" format:"date-time"`
-	Metadata       map[string]interface{} `json:"metadata,nullable"`
-	ModifiedAt     time.Time              `json:"modified_at,nullable" format:"date-time"`
-	Outputs        map[string]interface{} `json:"outputs,nullable"`
-	SourceRunID    string                 `json:"source_run_id,nullable" format:"uuid"`
+	Metadata       map[string]interface{} `json:"metadata" api:"nullable"`
+	ModifiedAt     time.Time              `json:"modified_at" api:"nullable" format:"date-time"`
+	Outputs        map[string]interface{} `json:"outputs" api:"nullable"`
+	SourceRunID    string                 `json:"source_run_id" api:"nullable" format:"uuid"`
 	JSON           exampleJSON            `json:"-"`
 }
 
@@ -227,7 +227,7 @@ type ExampleDeleteResponse = interface{}
 type ExampleDeleteAllResponse = interface{}
 
 type ExampleNewParams struct {
-	DatasetID   param.Field[string]                     `json:"dataset_id,required" format:"uuid"`
+	DatasetID   param.Field[string]                     `json:"dataset_id" api:"required" format:"uuid"`
 	ID          param.Field[string]                     `json:"id" format:"uuid"`
 	CreatedAt   param.Field[string]                     `json:"created_at"`
 	Inputs      param.Field[map[string]interface{}]     `json:"inputs"`
@@ -352,7 +352,7 @@ func (r ExampleListParamsOrder) IsKnown() bool {
 }
 
 type ExampleDeleteAllParams struct {
-	ExampleIDs param.Field[[]string] `query:"example_ids,required" format:"uuid"`
+	ExampleIDs param.Field[[]string] `query:"example_ids" api:"required" format:"uuid"`
 }
 
 // URLQuery serializes [ExampleDeleteAllParams]'s query parameters as `url.Values`.
@@ -392,8 +392,8 @@ type ExampleGetCountParamsAsOfUnion interface {
 }
 
 type ExampleUploadFromCsvParams struct {
-	File         param.Field[io.Reader] `json:"file,required" format:"binary"`
-	InputKeys    param.Field[[]string]  `json:"input_keys,required"`
+	File         param.Field[io.Reader] `json:"file" api:"required" format:"binary"`
+	InputKeys    param.Field[[]string]  `json:"input_keys" api:"required"`
 	MetadataKeys param.Field[[]string]  `json:"metadata_keys"`
 	OutputKeys   param.Field[[]string]  `json:"output_keys"`
 }

@@ -1,5 +1,55 @@
 # Changelog
 
+## 0.2.0 (2026-03-20)
+
+Full Changelog: [v0.1.0...v0.2.0](https://github.com/langchain-ai/langsmith-go/compare/v0.1.0...v0.2.0)
+
+### Features
+
+* added additional unit, integration, and build tests ([#35](https://github.com/langchain-ai/langsmith-go/issues/35)) ([04d6459](https://github.com/langchain-ai/langsmith-go/commit/04d6459c5b3360ba5b480b47942ca0afcc1bd305))
+* **api:** api update ([8c6ea84](https://github.com/langchain-ai/langsmith-go/commit/8c6ea84c59f26519de8df7c9f0a49f5010d2ae97))
+* **api:** api update ([44b6787](https://github.com/langchain-ai/langsmith-go/commit/44b67875d837ee81272190fa2f6cc3d7d293838d))
+* **api:** api update ([f9a6d01](https://github.com/langchain-ai/langsmith-go/commit/f9a6d01eb7117d07b2c389bc5498274c78a8b09c))
+* **api:** api update ([21524b5](https://github.com/langchain-ai/langsmith-go/commit/21524b5ba8b7c94eb532de1f49aa285e4fd983de))
+* **api:** api update ([b67882f](https://github.com/langchain-ai/langsmith-go/commit/b67882f256ae2a50924554361403a388ba134cc9))
+* **api:** api update ([8f5a97b](https://github.com/langchain-ai/langsmith-go/commit/8f5a97b00167f8147040959411fb3e447c7c4b21))
+* **api:** api update ([cb7bca2](https://github.com/langchain-ai/langsmith-go/commit/cb7bca2e6e8676b3915e628f57bf05568a1b3e1b))
+* **api:** api update ([27c213a](https://github.com/langchain-ai/langsmith-go/commit/27c213a5bb7dac3f4f79a97ffbf6eab70d416074))
+* **api:** api update ([76645a9](https://github.com/langchain-ai/langsmith-go/commit/76645a9523c50eb63caf95b1f82a4de9652dac46))
+* **api:** api update ([e5b911d](https://github.com/langchain-ai/langsmith-go/commit/e5b911d68676a8d6a45137cb063c05413a225123))
+* **api:** api update ([1b97b1f](https://github.com/langchain-ai/langsmith-go/commit/1b97b1f0e2e1b0153eb55c1534a7d722c58b69e7))
+* **api:** api update ([84f0890](https://github.com/langchain-ai/langsmith-go/commit/84f0890c7f9ef2f85a1a2f9b609cb8c885132670))
+* **api:** api update ([5d441d4](https://github.com/langchain-ai/langsmith-go/commit/5d441d4da2ae3f7d9a69af8104168525606dab75))
+* **api:** manual updates ([2c1f662](https://github.com/langchain-ai/langsmith-go/commit/2c1f66280102acb26c02f004ee63ba560bbfe0a5))
+* **api:** manual updates ([fc9015e](https://github.com/langchain-ai/langsmith-go/commit/fc9015e9d5267a0a1aa88ce6a313d4125df9b3f0))
+* **api:** manual updates ([d8c5c5f](https://github.com/langchain-ai/langsmith-go/commit/d8c5c5f475e879a16eb275b2ba89a1e23a13696f))
+* **api:** manual updates ([ee37b62](https://github.com/langchain-ai/langsmith-go/commit/ee37b62b1fa6f54cd0a0f33cda0e70cbe445788c))
+
+
+### Bug Fixes
+
+* allow canceling a request while it is waiting to retry ([1e74640](https://github.com/langchain-ai/langsmith-go/commit/1e74640a8bf7c5ed31666c737ac2e164c0e8e9d2))
+* **internal:** skip tests that depend on mock server ([1a5872b](https://github.com/langchain-ai/langsmith-go/commit/1a5872b68ddb36de94355d0901b1f7ede5e76d56))
+* type mismatch ([#39](https://github.com/langchain-ai/langsmith-go/issues/39)) ([bd78bb5](https://github.com/langchain-ai/langsmith-go/commit/bd78bb585c5538b289f00430921489071ce91e08))
+
+
+### Chores
+
+* change user client ([#38](https://github.com/langchain-ai/langsmith-go/issues/38)) ([76850c7](https://github.com/langchain-ai/langsmith-go/commit/76850c7cfc34065b4a42141e97b794e12e437e6e))
+* **ci:** skip uploading artifacts on stainless-internal branches ([061ca81](https://github.com/langchain-ai/langsmith-go/commit/061ca81134fd8a077295a2764e9c902e055d223d))
+* **deps:** bump go.opentelemetry.io/otel/sdk ([#33](https://github.com/langchain-ai/langsmith-go/issues/33)) ([675dfba](https://github.com/langchain-ai/langsmith-go/commit/675dfba4834e9de34b55580f9cb492061acb7698))
+* **deps:** bump google.golang.org/grpc ([#37](https://github.com/langchain-ai/langsmith-go/issues/37)) ([bd75dd5](https://github.com/langchain-ai/langsmith-go/commit/bd75dd510aed9e68fbb4cc1ee0d7ca0673a847a1))
+* **internal:** codegen related update ([8beb884](https://github.com/langchain-ai/langsmith-go/commit/8beb884529d7bc3dde4ed9cbeb670350f46c6832))
+* **internal:** codegen related update ([de31cba](https://github.com/langchain-ai/langsmith-go/commit/de31cba21aca4195cdc3be341e4a5882d3d8da53))
+* **internal:** minor cleanup ([3bd3438](https://github.com/langchain-ai/langsmith-go/commit/3bd3438e0341b55894667b2979b9e80c1ee788f9))
+* **internal:** move custom custom `json` tags to `api` ([dac02d6](https://github.com/langchain-ai/langsmith-go/commit/dac02d65bd10b3c3b0978ef881cf78cb7c1f49c1))
+* **internal:** remove mock server code ([29de91e](https://github.com/langchain-ai/langsmith-go/commit/29de91e1d14eb45ec8149e451f6b3909cbecb9f9))
+* **internal:** tweak CI branches ([bb0d1e5](https://github.com/langchain-ai/langsmith-go/commit/bb0d1e50b42591f400aad576ae04d030a723229d))
+* **internal:** use explicit returns ([a45d5f9](https://github.com/langchain-ai/langsmith-go/commit/a45d5f9d16e30714eea65fa1c853202f0b509ffc))
+* **internal:** use explicit returns in more places ([49ac557](https://github.com/langchain-ai/langsmith-go/commit/49ac557268964fee91b086ca93d26941bcd4bdcd))
+* update mock server docs ([08bd0c3](https://github.com/langchain-ai/langsmith-go/commit/08bd0c3bbe4a380ef361cbedcef438996806a78b))
+* update placeholder string ([5165a27](https://github.com/langchain-ai/langsmith-go/commit/5165a27b225207cbfd3c9f1aed806a4e30e0db5d))
+
 ## 0.1.0 (2026-02-19)
 
 Full Changelog: [v0.1.0-alpha.10...v0.1.0](https://github.com/langchain-ai/langsmith-go/compare/v0.1.0-alpha.10...v0.1.0)

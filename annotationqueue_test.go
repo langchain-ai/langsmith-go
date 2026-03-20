@@ -16,7 +16,7 @@ import (
 )
 
 func TestAnnotationQueueGet(t *testing.T) {
-	t.Skip("Prism tests are disabled")
+	t.Skip("Mock server tests are disabled")
 	baseURL := "http://localhost:4010"
 	if envURL, ok := os.LookupEnv("TEST_API_BASE_URL"); ok {
 		baseURL = envURL
@@ -41,7 +41,7 @@ func TestAnnotationQueueGet(t *testing.T) {
 }
 
 func TestAnnotationQueueUpdateWithOptionalParams(t *testing.T) {
-	t.Skip("Prism tests are disabled")
+	t.Skip("Mock server tests are disabled")
 	baseURL := "http://localhost:4010"
 	if envURL, ok := os.LookupEnv("TEST_API_BASE_URL"); ok {
 		baseURL = envURL
@@ -92,7 +92,7 @@ func TestAnnotationQueueUpdateWithOptionalParams(t *testing.T) {
 }
 
 func TestAnnotationQueueDelete(t *testing.T) {
-	t.Skip("Prism tests are disabled")
+	t.Skip("Mock server tests are disabled")
 	baseURL := "http://localhost:4010"
 	if envURL, ok := os.LookupEnv("TEST_API_BASE_URL"); ok {
 		baseURL = envURL
@@ -117,7 +117,7 @@ func TestAnnotationQueueDelete(t *testing.T) {
 }
 
 func TestAnnotationQueueAnnotationQueuesWithOptionalParams(t *testing.T) {
-	t.Skip("Prism tests are disabled")
+	t.Skip("Mock server tests are disabled")
 	baseURL := "http://localhost:4010"
 	if envURL, ok := os.LookupEnv("TEST_API_BASE_URL"); ok {
 		baseURL = envURL
@@ -168,7 +168,7 @@ func TestAnnotationQueueAnnotationQueuesWithOptionalParams(t *testing.T) {
 }
 
 func TestAnnotationQueueNewRunStatusWithOptionalParams(t *testing.T) {
-	t.Skip("Prism tests are disabled")
+	t.Skip("Mock server tests are disabled")
 	baseURL := "http://localhost:4010"
 	if envURL, ok := os.LookupEnv("TEST_API_BASE_URL"); ok {
 		baseURL = envURL
@@ -200,7 +200,7 @@ func TestAnnotationQueueNewRunStatusWithOptionalParams(t *testing.T) {
 }
 
 func TestAnnotationQueueExportWithOptionalParams(t *testing.T) {
-	t.Skip("Prism tests are disabled")
+	t.Skip("Mock server tests are disabled")
 	baseURL := "http://localhost:4010"
 	if envURL, ok := os.LookupEnv("TEST_API_BASE_URL"); ok {
 		baseURL = envURL
@@ -218,8 +218,9 @@ func TestAnnotationQueueExportWithOptionalParams(t *testing.T) {
 		context.TODO(),
 		"182bd5e5-6e1a-4fe4-a799-aa6d9a6ab26e",
 		langsmith.AnnotationQueueExportParams{
-			EndTime:   langsmith.F(time.Now()),
-			StartTime: langsmith.F(time.Now()),
+			EndTime:                langsmith.F(time.Now()),
+			IncludeAnnotatorDetail: langsmith.F(true),
+			StartTime:              langsmith.F(time.Now()),
 		},
 	)
 	if err != nil {
@@ -232,7 +233,7 @@ func TestAnnotationQueueExportWithOptionalParams(t *testing.T) {
 }
 
 func TestAnnotationQueuePopulate(t *testing.T) {
-	t.Skip("Prism tests are disabled")
+	t.Skip("Mock server tests are disabled")
 	baseURL := "http://localhost:4010"
 	if envURL, ok := os.LookupEnv("TEST_API_BASE_URL"); ok {
 		baseURL = envURL
@@ -260,7 +261,7 @@ func TestAnnotationQueuePopulate(t *testing.T) {
 }
 
 func TestAnnotationQueueGetAnnotationQueuesWithOptionalParams(t *testing.T) {
-	t.Skip("Prism tests are disabled")
+	t.Skip("Mock server tests are disabled")
 	baseURL := "http://localhost:4010"
 	if envURL, ok := os.LookupEnv("TEST_API_BASE_URL"); ok {
 		baseURL = envURL
@@ -294,7 +295,7 @@ func TestAnnotationQueueGetAnnotationQueuesWithOptionalParams(t *testing.T) {
 }
 
 func TestAnnotationQueueGetQueues(t *testing.T) {
-	t.Skip("Prism tests are disabled")
+	t.Skip("Mock server tests are disabled")
 	baseURL := "http://localhost:4010"
 	if envURL, ok := os.LookupEnv("TEST_API_BASE_URL"); ok {
 		baseURL = envURL
@@ -319,7 +320,7 @@ func TestAnnotationQueueGetQueues(t *testing.T) {
 }
 
 func TestAnnotationQueueGetRunWithOptionalParams(t *testing.T) {
-	t.Skip("Prism tests are disabled")
+	t.Skip("Mock server tests are disabled")
 	baseURL := "http://localhost:4010"
 	if envURL, ok := os.LookupEnv("TEST_API_BASE_URL"); ok {
 		baseURL = envURL
@@ -350,8 +351,8 @@ func TestAnnotationQueueGetRunWithOptionalParams(t *testing.T) {
 	}
 }
 
-func TestAnnotationQueueGetSize(t *testing.T) {
-	t.Skip("Prism tests are disabled")
+func TestAnnotationQueueGetSizeWithOptionalParams(t *testing.T) {
+	t.Skip("Mock server tests are disabled")
 	baseURL := "http://localhost:4010"
 	if envURL, ok := os.LookupEnv("TEST_API_BASE_URL"); ok {
 		baseURL = envURL
@@ -365,7 +366,13 @@ func TestAnnotationQueueGetSize(t *testing.T) {
 		option.WithTenantID("My Tenant ID"),
 		option.WithOrganizationID("My Organization ID"),
 	)
-	_, err := client.AnnotationQueues.GetSize(context.TODO(), "182bd5e5-6e1a-4fe4-a799-aa6d9a6ab26e")
+	_, err := client.AnnotationQueues.GetSize(
+		context.TODO(),
+		"182bd5e5-6e1a-4fe4-a799-aa6d9a6ab26e",
+		langsmith.AnnotationQueueGetSizeParams{
+			Status: langsmith.F(langsmith.AnnotationQueueGetSizeParamsStatusNeedsMyReview),
+		},
+	)
 	if err != nil {
 		var apierr *langsmith.Error
 		if errors.As(err, &apierr) {
@@ -376,7 +383,7 @@ func TestAnnotationQueueGetSize(t *testing.T) {
 }
 
 func TestAnnotationQueueGetTotalArchivedWithOptionalParams(t *testing.T) {
-	t.Skip("Prism tests are disabled")
+	t.Skip("Mock server tests are disabled")
 	baseURL := "http://localhost:4010"
 	if envURL, ok := os.LookupEnv("TEST_API_BASE_URL"); ok {
 		baseURL = envURL
@@ -408,7 +415,7 @@ func TestAnnotationQueueGetTotalArchivedWithOptionalParams(t *testing.T) {
 }
 
 func TestAnnotationQueueGetTotalSize(t *testing.T) {
-	t.Skip("Prism tests are disabled")
+	t.Skip("Mock server tests are disabled")
 	baseURL := "http://localhost:4010"
 	if envURL, ok := os.LookupEnv("TEST_API_BASE_URL"); ok {
 		baseURL = envURL

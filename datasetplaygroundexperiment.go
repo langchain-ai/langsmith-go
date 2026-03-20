@@ -37,7 +37,7 @@ func (r *DatasetPlaygroundExperimentService) Batch(ctx context.Context, body Dat
 	opts = slices.Concat(r.Options, opts)
 	path := "api/v1/datasets/playground_experiment/batch"
 	err = requestconfig.ExecuteNewRequest(ctx, http.MethodPost, path, body, &res, opts...)
-	return
+	return res, err
 }
 
 // Stream Dataset Handler
@@ -45,7 +45,7 @@ func (r *DatasetPlaygroundExperimentService) Stream(ctx context.Context, body Da
 	opts = slices.Concat(r.Options, opts)
 	path := "api/v1/datasets/playground_experiment/stream"
 	err = requestconfig.ExecuteNewRequest(ctx, http.MethodPost, path, body, &res, opts...)
-	return
+	return res, err
 }
 
 // Configuration for a `Runnable`.
@@ -103,8 +103,8 @@ type DatasetPlaygroundExperimentBatchResponse = interface{}
 type DatasetPlaygroundExperimentStreamResponse = interface{}
 
 type DatasetPlaygroundExperimentBatchParams struct {
-	DatasetID param.Field[string]      `json:"dataset_id,required" format:"uuid"`
-	Manifest  param.Field[interface{}] `json:"manifest,required"`
+	DatasetID param.Field[string]      `json:"dataset_id" api:"required" format:"uuid"`
+	Manifest  param.Field[interface{}] `json:"manifest" api:"required"`
 	// Configuration for a `Runnable`.
 	//
 	// !!! note Custom values
@@ -125,9 +125,9 @@ type DatasetPlaygroundExperimentBatchParams struct {
 	//	    # Child automatically inherits and can add:
 	//	    # ensure_config({"tags": ["child"]}) -> {"tags": ["parent", "child"]}
 	//	    ```
-	Options                         param.Field[RunnableConfigParam]    `json:"options,required"`
-	ProjectName                     param.Field[string]                 `json:"project_name,required"`
-	Secrets                         param.Field[map[string]string]      `json:"secrets,required"`
+	Options                         param.Field[RunnableConfigParam]    `json:"options" api:"required"`
+	ProjectName                     param.Field[string]                 `json:"project_name" api:"required"`
+	Secrets                         param.Field[map[string]string]      `json:"secrets" api:"required"`
 	BatchSize                       param.Field[int64]                  `json:"batch_size"`
 	Commit                          param.Field[string]                 `json:"commit"`
 	DatasetSplits                   param.Field[[]string]               `json:"dataset_splits"`
@@ -151,8 +151,8 @@ func (r DatasetPlaygroundExperimentBatchParams) MarshalJSON() (data []byte, err 
 }
 
 type DatasetPlaygroundExperimentStreamParams struct {
-	DatasetID param.Field[string]      `json:"dataset_id,required" format:"uuid"`
-	Manifest  param.Field[interface{}] `json:"manifest,required"`
+	DatasetID param.Field[string]      `json:"dataset_id" api:"required" format:"uuid"`
+	Manifest  param.Field[interface{}] `json:"manifest" api:"required"`
 	// Configuration for a `Runnable`.
 	//
 	// !!! note Custom values
@@ -173,9 +173,9 @@ type DatasetPlaygroundExperimentStreamParams struct {
 	//	    # Child automatically inherits and can add:
 	//	    # ensure_config({"tags": ["child"]}) -> {"tags": ["parent", "child"]}
 	//	    ```
-	Options                         param.Field[RunnableConfigParam]    `json:"options,required"`
-	ProjectName                     param.Field[string]                 `json:"project_name,required"`
-	Secrets                         param.Field[map[string]string]      `json:"secrets,required"`
+	Options                         param.Field[RunnableConfigParam]    `json:"options" api:"required"`
+	ProjectName                     param.Field[string]                 `json:"project_name" api:"required"`
+	Secrets                         param.Field[map[string]string]      `json:"secrets" api:"required"`
 	Commit                          param.Field[string]                 `json:"commit"`
 	DatasetSplits                   param.Field[[]string]               `json:"dataset_splits"`
 	EvaluatorRules                  param.Field[[]string]               `json:"evaluator_rules" format:"uuid"`

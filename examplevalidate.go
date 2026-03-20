@@ -40,7 +40,7 @@ func (r *ExampleValidateService) New(ctx context.Context, opts ...option.Request
 	opts = slices.Concat(r.Options, opts)
 	path := "api/v1/examples/validate"
 	err = requestconfig.ExecuteNewRequest(ctx, http.MethodPost, path, nil, &res, opts...)
-	return
+	return res, err
 }
 
 // Validate examples in bulk.
@@ -48,20 +48,20 @@ func (r *ExampleValidateService) Bulk(ctx context.Context, opts ...option.Reques
 	opts = slices.Concat(r.Options, opts)
 	path := "api/v1/examples/validate/bulk"
 	err = requestconfig.ExecuteNewRequest(ctx, http.MethodPost, path, nil, &res, opts...)
-	return
+	return res, err
 }
 
 // Validation result for Example, combining fields from Create/Base/Update schemas.
 type ExampleValidationResult struct {
-	ID             string                            `json:"id,nullable" format:"uuid"`
-	CreatedAt      time.Time                         `json:"created_at,nullable" format:"date-time"`
-	DatasetID      string                            `json:"dataset_id,nullable" format:"uuid"`
-	Inputs         map[string]interface{}            `json:"inputs,nullable"`
-	Metadata       map[string]interface{}            `json:"metadata,nullable"`
-	Outputs        map[string]interface{}            `json:"outputs,nullable"`
+	ID             string                            `json:"id" api:"nullable" format:"uuid"`
+	CreatedAt      time.Time                         `json:"created_at" api:"nullable" format:"date-time"`
+	DatasetID      string                            `json:"dataset_id" api:"nullable" format:"uuid"`
+	Inputs         map[string]interface{}            `json:"inputs" api:"nullable"`
+	Metadata       map[string]interface{}            `json:"metadata" api:"nullable"`
+	Outputs        map[string]interface{}            `json:"outputs" api:"nullable"`
 	Overwrite      bool                              `json:"overwrite"`
-	SourceRunID    string                            `json:"source_run_id,nullable" format:"uuid"`
-	Split          ExampleValidationResultSplitUnion `json:"split,nullable"`
+	SourceRunID    string                            `json:"source_run_id" api:"nullable" format:"uuid"`
+	Split          ExampleValidationResultSplitUnion `json:"split" api:"nullable"`
 	UseSourceRunIo bool                              `json:"use_source_run_io"`
 	JSON           exampleValidationResultJSON       `json:"-"`
 }

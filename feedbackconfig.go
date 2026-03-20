@@ -42,11 +42,11 @@ func (r *FeedbackConfigService) Delete(ctx context.Context, body FeedbackConfigD
 	opts = append([]option.RequestOption{option.WithHeader("Accept", "*/*")}, opts...)
 	path := "api/v1/feedback-configs"
 	err = requestconfig.ExecuteNewRequest(ctx, http.MethodDelete, path, body, nil, opts...)
-	return
+	return err
 }
 
 type FeedbackConfigDeleteParams struct {
-	FeedbackKey param.Field[string] `query:"feedback_key,required"`
+	FeedbackKey param.Field[string] `query:"feedback_key" api:"required"`
 }
 
 // URLQuery serializes [FeedbackConfigDeleteParams]'s query parameters as

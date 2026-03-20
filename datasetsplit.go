@@ -41,11 +41,11 @@ func (r *DatasetSplitService) New(ctx context.Context, datasetID string, body Da
 	opts = slices.Concat(r.Options, opts)
 	if datasetID == "" {
 		err = errors.New("missing required dataset_id parameter")
-		return
+		return nil, err
 	}
 	path := fmt.Sprintf("api/v1/datasets/%s/splits", datasetID)
 	err = requestconfig.ExecuteNewRequest(ctx, http.MethodPut, path, body, &res, opts...)
-	return
+	return res, err
 }
 
 // Get Dataset Splits
@@ -53,16 +53,16 @@ func (r *DatasetSplitService) Get(ctx context.Context, datasetID string, query D
 	opts = slices.Concat(r.Options, opts)
 	if datasetID == "" {
 		err = errors.New("missing required dataset_id parameter")
-		return
+		return nil, err
 	}
 	path := fmt.Sprintf("api/v1/datasets/%s/splits", datasetID)
 	err = requestconfig.ExecuteNewRequest(ctx, http.MethodGet, path, query, &res, opts...)
-	return
+	return res, err
 }
 
 type DatasetSplitNewParams struct {
-	Examples  param.Field[[]string] `json:"examples,required" format:"uuid"`
-	SplitName param.Field[string]   `json:"split_name,required"`
+	Examples  param.Field[[]string] `json:"examples" api:"required" format:"uuid"`
+	SplitName param.Field[string]   `json:"split_name" api:"required"`
 	Remove    param.Field[bool]     `json:"remove"`
 }
 

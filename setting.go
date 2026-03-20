@@ -37,14 +37,14 @@ func (r *SettingService) List(ctx context.Context, opts ...option.RequestOption)
 	opts = slices.Concat(r.Options, opts)
 	path := "api/v1/settings"
 	err = requestconfig.ExecuteNewRequest(ctx, http.MethodGet, path, nil, &res, opts...)
-	return
+	return res, err
 }
 
 type AppHubCrudTenantsTenant struct {
-	ID           string                      `json:"id,required" format:"uuid"`
-	CreatedAt    time.Time                   `json:"created_at,required" format:"date-time"`
-	DisplayName  string                      `json:"display_name,required"`
-	TenantHandle string                      `json:"tenant_handle,nullable"`
+	ID           string                      `json:"id" api:"required" format:"uuid"`
+	CreatedAt    time.Time                   `json:"created_at" api:"required" format:"date-time"`
+	DisplayName  string                      `json:"display_name" api:"required"`
+	TenantHandle string                      `json:"tenant_handle" api:"nullable"`
 	JSON         appHubCrudTenantsTenantJSON `json:"-"`
 }
 

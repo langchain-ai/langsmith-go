@@ -187,7 +187,7 @@ func TestAnnotationQueueCRUD(t *testing.T) {
 	}
 
 	// Get size
-	size, err := client.AnnotationQueues.GetSize(ctx, queue.ID)
+	size, err := client.AnnotationQueues.GetSize(ctx, queue.ID, langsmith.AnnotationQueueGetSizeParams{})
 	if err != nil {
 		t.Fatalf("get queue size: %v", err)
 	}

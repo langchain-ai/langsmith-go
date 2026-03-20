@@ -37,7 +37,7 @@ func (r *ExampleBulkService) New(ctx context.Context, body ExampleBulkNewParams,
 	opts = slices.Concat(r.Options, opts)
 	path := "api/v1/examples/bulk"
 	err = requestconfig.ExecuteNewRequest(ctx, http.MethodPost, path, body, &res, opts...)
-	return
+	return res, err
 }
 
 // Legacy update examples in bulk. For update involving attachments, use PATCH
@@ -46,14 +46,14 @@ func (r *ExampleBulkService) PatchAll(ctx context.Context, body ExampleBulkPatch
 	opts = slices.Concat(r.Options, opts)
 	path := "api/v1/examples/bulk"
 	err = requestconfig.ExecuteNewRequest(ctx, http.MethodPatch, path, body, &res, opts...)
-	return
+	return res, err
 }
 
 type ExampleBulkPatchAllResponse = interface{}
 
 type ExampleBulkNewParams struct {
 	// Schema for a batch of examples to be created.
-	Body []ExampleBulkNewParamsBody `json:"body,required"`
+	Body []ExampleBulkNewParamsBody `json:"body" api:"required"`
 }
 
 func (r ExampleBulkNewParams) MarshalJSON() (data []byte, err error) {
@@ -63,7 +63,7 @@ func (r ExampleBulkNewParams) MarshalJSON() (data []byte, err error) {
 // Example with optional created_at to prevent duplicate versions in bulk
 // operations.
 type ExampleBulkNewParamsBody struct {
-	DatasetID   param.Field[string]                             `json:"dataset_id,required" format:"uuid"`
+	DatasetID   param.Field[string]                             `json:"dataset_id" api:"required" format:"uuid"`
 	ID          param.Field[string]                             `json:"id" format:"uuid"`
 	CreatedAt   param.Field[string]                             `json:"created_at"`
 	Inputs      param.Field[map[string]interface{}]             `json:"inputs"`
@@ -91,7 +91,7 @@ type ExampleBulkNewParamsBodySplitArray []string
 func (r ExampleBulkNewParamsBodySplitArray) ImplementsExampleBulkNewParamsBodySplitUnion() {}
 
 type ExampleBulkPatchAllParams struct {
-	Body []ExampleBulkPatchAllParamsBody `json:"body,required"`
+	Body []ExampleBulkPatchAllParamsBody `json:"body" api:"required"`
 }
 
 func (r ExampleBulkPatchAllParams) MarshalJSON() (data []byte, err error) {
@@ -100,7 +100,7 @@ func (r ExampleBulkPatchAllParams) MarshalJSON() (data []byte, err error) {
 
 // Bulk update class for Example (includes example id).
 type ExampleBulkPatchAllParamsBody struct {
-	ID                    param.Field[string]                                  `json:"id,required" format:"uuid"`
+	ID                    param.Field[string]                                  `json:"id" api:"required" format:"uuid"`
 	AttachmentsOperations param.Field[AttachmentsOperationsParam]              `json:"attachments_operations"`
 	DatasetID             param.Field[string]                                  `json:"dataset_id" format:"uuid"`
 	Inputs                param.Field[map[string]interface{}]                  `json:"inputs"`

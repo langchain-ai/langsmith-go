@@ -42,11 +42,11 @@ func (r *AnnotationQueueRunService) New(ctx context.Context, queueID string, bod
 	opts = slices.Concat(r.Options, opts)
 	if queueID == "" {
 		err = errors.New("missing required queue_id parameter")
-		return
+		return nil, err
 	}
 	path := fmt.Sprintf("api/v1/annotation-queues/%s/runs", queueID)
 	err = requestconfig.ExecuteNewRequest(ctx, http.MethodPost, path, body, &res, opts...)
-	return
+	return res, err
 }
 
 // Update Run In Annotation Queue
@@ -54,15 +54,15 @@ func (r *AnnotationQueueRunService) Update(ctx context.Context, queueID string, 
 	opts = slices.Concat(r.Options, opts)
 	if queueID == "" {
 		err = errors.New("missing required queue_id parameter")
-		return
+		return nil, err
 	}
 	if queueRunID == "" {
 		err = errors.New("missing required queue_run_id parameter")
-		return
+		return nil, err
 	}
 	path := fmt.Sprintf("api/v1/annotation-queues/%s/runs/%s", queueID, queueRunID)
 	err = requestconfig.ExecuteNewRequest(ctx, http.MethodPatch, path, body, &res, opts...)
-	return
+	return res, err
 }
 
 // Get Runs From Annotation Queue
@@ -70,11 +70,11 @@ func (r *AnnotationQueueRunService) List(ctx context.Context, queueID string, qu
 	opts = slices.Concat(r.Options, opts)
 	if queueID == "" {
 		err = errors.New("missing required queue_id parameter")
-		return
+		return nil, err
 	}
 	path := fmt.Sprintf("api/v1/annotation-queues/%s/runs", queueID)
 	err = requestconfig.ExecuteNewRequest(ctx, http.MethodGet, path, query, &res, opts...)
-	return
+	return res, err
 }
 
 // Delete Runs From Annotation Queue
@@ -82,11 +82,11 @@ func (r *AnnotationQueueRunService) DeleteAll(ctx context.Context, queueID strin
 	opts = slices.Concat(r.Options, opts)
 	if queueID == "" {
 		err = errors.New("missing required queue_id parameter")
-		return
+		return nil, err
 	}
 	path := fmt.Sprintf("api/v1/annotation-queues/%s/runs/delete", queueID)
 	err = requestconfig.ExecuteNewRequest(ctx, http.MethodPost, path, body, &res, opts...)
-	return
+	return res, err
 }
 
 // Delete Run From Annotation Queue
@@ -94,23 +94,23 @@ func (r *AnnotationQueueRunService) DeleteQueue(ctx context.Context, queueID str
 	opts = slices.Concat(r.Options, opts)
 	if queueID == "" {
 		err = errors.New("missing required queue_id parameter")
-		return
+		return nil, err
 	}
 	if queueRunID == "" {
 		err = errors.New("missing required queue_run_id parameter")
-		return
+		return nil, err
 	}
 	path := fmt.Sprintf("api/v1/annotation-queues/%s/runs/%s", queueID, queueRunID)
 	err = requestconfig.ExecuteNewRequest(ctx, http.MethodDelete, path, nil, &res, opts...)
-	return
+	return res, err
 }
 
 type AnnotationQueueRunNewResponse struct {
-	ID               string                            `json:"id,required" format:"uuid"`
-	QueueID          string                            `json:"queue_id,required" format:"uuid"`
-	RunID            string                            `json:"run_id,required" format:"uuid"`
+	ID               string                            `json:"id" api:"required" format:"uuid"`
+	QueueID          string                            `json:"queue_id" api:"required" format:"uuid"`
+	RunID            string                            `json:"run_id" api:"required" format:"uuid"`
 	AddedAt          time.Time                         `json:"added_at" format:"date-time"`
-	LastReviewedTime time.Time                         `json:"last_reviewed_time,nullable" format:"date-time"`
+	LastReviewedTime time.Time                         `json:"last_reviewed_time" api:"nullable" format:"date-time"`
 	JSON             annotationQueueRunNewResponseJSON `json:"-"`
 }
 
@@ -141,7 +141,7 @@ type AnnotationQueueRunDeleteAllResponse = interface{}
 type AnnotationQueueRunDeleteQueueResponse = interface{}
 
 type AnnotationQueueRunNewParams struct {
-	Body AnnotationQueueRunNewParamsBodyUnion `json:"body,required" format:"uuid"`
+	Body AnnotationQueueRunNewParamsBodyUnion `json:"body" api:"required" format:"uuid"`
 }
 
 func (r AnnotationQueueRunNewParams) MarshalJSON() (data []byte, err error) {
@@ -166,7 +166,7 @@ func (r AnnotationQueueRunNewParamsBodyRunsAnnotationQueueRunAddSchemaArray) imp
 
 // Schema for adding a run to an annotation queue with optional metadata.
 type AnnotationQueueRunNewParamsBodyRunsAnnotationQueueRunAddSchemaArrayItem struct {
-	RunID       param.Field[string]                                                                       `json:"run_id,required" format:"uuid"`
+	RunID       param.Field[string]                                                                       `json:"run_id" api:"required" format:"uuid"`
 	ParentRunID param.Field[string]                                                                       `json:"parent_run_id" format:"uuid"`
 	SessionID   param.Field[string]                                                                       `json:"session_id" format:"uuid"`
 	StartTime   param.Field[time.Time]                                                                    `json:"start_time" format:"date-time"`
@@ -203,10 +203,11 @@ func (r AnnotationQueueRunUpdateParams) MarshalJSON() (data []byte, err error) {
 }
 
 type AnnotationQueueRunListParams struct {
-	Archived     param.Field[bool]  `query:"archived"`
-	IncludeStats param.Field[bool]  `query:"include_stats"`
-	Limit        param.Field[int64] `query:"limit"`
-	Offset       param.Field[int64] `query:"offset"`
+	Archived     param.Field[bool]                               `query:"archived"`
+	IncludeStats param.Field[bool]                               `query:"include_stats"`
+	Limit        param.Field[int64]                              `query:"limit"`
+	Offset       param.Field[int64]                              `query:"offset"`
+	Status       param.Field[AnnotationQueueRunListParamsStatus] `query:"status"`
 }
 
 // URLQuery serializes [AnnotationQueueRunListParams]'s query parameters as
@@ -216,6 +217,22 @@ func (r AnnotationQueueRunListParams) URLQuery() (v url.Values) {
 		ArrayFormat:  apiquery.ArrayQueryFormatComma,
 		NestedFormat: apiquery.NestedQueryFormatBrackets,
 	})
+}
+
+type AnnotationQueueRunListParamsStatus string
+
+const (
+	AnnotationQueueRunListParamsStatusNeedsMyReview     AnnotationQueueRunListParamsStatus = "needs_my_review"
+	AnnotationQueueRunListParamsStatusNeedsOthersReview AnnotationQueueRunListParamsStatus = "needs_others_review"
+	AnnotationQueueRunListParamsStatusCompleted         AnnotationQueueRunListParamsStatus = "completed"
+)
+
+func (r AnnotationQueueRunListParamsStatus) IsKnown() bool {
+	switch r {
+	case AnnotationQueueRunListParamsStatusNeedsMyReview, AnnotationQueueRunListParamsStatusNeedsOthersReview, AnnotationQueueRunListParamsStatusCompleted:
+		return true
+	}
+	return false
 }
 
 type AnnotationQueueRunDeleteAllParams struct {

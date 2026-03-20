@@ -44,15 +44,15 @@ func (r *CommitService) New(ctx context.Context, owner string, repo string, body
 	opts = slices.Concat(r.Options, opts)
 	if owner == "" {
 		err = errors.New("missing required owner parameter")
-		return
+		return nil, err
 	}
 	if repo == "" {
 		err = errors.New("missing required repo parameter")
-		return
+		return nil, err
 	}
 	path := fmt.Sprintf("commits/%s/%s", owner, repo)
 	err = requestconfig.ExecuteNewRequest(ctx, http.MethodPost, path, body, &res, opts...)
-	return
+	return res, err
 }
 
 // Retrieves a specific commit by hash, tag, or "latest" for a repository. This
@@ -67,19 +67,19 @@ func (r *CommitService) Get(ctx context.Context, owner string, repo string, comm
 	opts = slices.Concat(r.Options, opts)
 	if owner == "" {
 		err = errors.New("missing required owner parameter")
-		return
+		return nil, err
 	}
 	if repo == "" {
 		err = errors.New("missing required repo parameter")
-		return
+		return nil, err
 	}
 	if commit == "" {
 		err = errors.New("missing required commit parameter")
-		return
+		return nil, err
 	}
 	path := fmt.Sprintf("commits/%s/%s/%s", owner, repo, commit)
 	err = requestconfig.ExecuteNewRequest(ctx, http.MethodGet, path, query, &res, opts...)
-	return
+	return res, err
 }
 
 // Lists all commits for a repository with pagination support. This endpoint
@@ -93,11 +93,11 @@ func (r *CommitService) List(ctx context.Context, owner string, repo string, que
 	opts = append([]option.RequestOption{option.WithResponseInto(&raw)}, opts...)
 	if owner == "" {
 		err = errors.New("missing required owner parameter")
-		return
+		return nil, err
 	}
 	if repo == "" {
 		err = errors.New("missing required repo parameter")
-		return
+		return nil, err
 	}
 	path := fmt.Sprintf("commits/%s/%s", owner, repo)
 	cfg, err := requestconfig.NewRequestConfig(ctx, http.MethodGet, path, query, &res, opts...)
@@ -123,9 +123,9 @@ func (r *CommitService) ListAutoPaging(ctx context.Context, owner string, repo s
 
 // Response model for get_commit_manifest.
 type CommitManifestResponse struct {
-	CommitHash string                          `json:"commit_hash,required"`
-	Manifest   map[string]interface{}          `json:"manifest,required"`
-	Examples   []CommitManifestResponseExample `json:"examples,nullable"`
+	CommitHash string                          `json:"commit_hash" api:"required"`
+	Manifest   map[string]interface{}          `json:"manifest" api:"required"`
+	Examples   []CommitManifestResponseExample `json:"examples" api:"nullable"`
 	JSON       commitManifestResponseJSON      `json:"-"`
 }
 
@@ -149,11 +149,11 @@ func (r commitManifestResponseJSON) RawJSON() string {
 
 // Response model for example runs
 type CommitManifestResponseExample struct {
-	ID        string                            `json:"id,required" format:"uuid"`
-	SessionID string                            `json:"session_id,required" format:"uuid"`
-	Inputs    map[string]interface{}            `json:"inputs,nullable"`
-	Outputs   map[string]interface{}            `json:"outputs,nullable"`
-	StartTime time.Time                         `json:"start_time,nullable" format:"date-time"`
+	ID        string                            `json:"id" api:"required" format:"uuid"`
+	SessionID string                            `json:"session_id" api:"required" format:"uuid"`
+	Inputs    map[string]interface{}            `json:"inputs" api:"nullable"`
+	Outputs   map[string]interface{}            `json:"outputs" api:"nullable"`
+	StartTime time.Time                         `json:"start_time" api:"nullable" format:"date-time"`
 	JSON      commitManifestResponseExampleJSON `json:"-"`
 }
 
@@ -257,20 +257,24 @@ func (r commitNewResponseJSON) RawJSON() string {
 }
 
 type CommitGetResponse struct {
-	CommitHash string                     `json:"commit_hash"`
-	Examples   []CommitGetResponseExample `json:"examples"`
-	Manifest   interface{}                `json:"manifest"`
-	JSON       commitGetResponseJSON      `json:"-"`
+	CommitHash    string                     `json:"commit_hash"`
+	Examples      []CommitGetResponseExample `json:"examples"`
+	Manifest      interface{}                `json:"manifest"`
+	ModelConfig   interface{}                `json:"model_config"`
+	ModelProvider string                     `json:"model_provider"`
+	JSON          commitGetResponseJSON      `json:"-"`
 }
 
 // commitGetResponseJSON contains the JSON metadata for the struct
 // [CommitGetResponse]
 type commitGetResponseJSON struct {
-	CommitHash  apijson.Field
-	Examples    apijson.Field
-	Manifest    apijson.Field
-	raw         string
-	ExtraFields map[string]apijson.Field
+	CommitHash    apijson.Field
+	Examples      apijson.Field
+	Manifest      apijson.Field
+	ModelConfig   apijson.Field
+	ModelProvider apijson.Field
+	raw           string
+	ExtraFields   map[string]apijson.Field
 }
 
 func (r *CommitGetResponse) UnmarshalJSON(data []byte) (err error) {

@@ -14,7 +14,7 @@ import (
 )
 
 func TestDatasetRunNewWithOptionalParams(t *testing.T) {
-	t.Skip("Prism tests are disabled")
+	t.Skip("Mock server tests are disabled")
 	baseURL := "http://localhost:4010"
 	if envURL, ok := os.LookupEnv("TEST_API_BASE_URL"); ok {
 		baseURL = envURL
@@ -39,9 +39,10 @@ func TestDatasetRunNewWithOptionalParams(t *testing.T) {
 			Filters: langsmith.F(map[string][]string{
 				"foo": {"string"},
 			}),
-			Limit:   langsmith.F(int64(1)),
-			Offset:  langsmith.F(int64(0)),
-			Preview: langsmith.F(true),
+			IncludeAnnotatorDetail: langsmith.F(true),
+			Limit:                  langsmith.F(int64(1)),
+			Offset:                 langsmith.F(int64(0)),
+			Preview:                langsmith.F(true),
 			SortParams: langsmith.F(langsmith.SortParamsForRunsComparisonView{
 				SortBy:    langsmith.F("sort_by"),
 				SortOrder: langsmith.F(langsmith.SortParamsForRunsComparisonViewSortOrderAsc),
@@ -59,7 +60,7 @@ func TestDatasetRunNewWithOptionalParams(t *testing.T) {
 }
 
 func TestDatasetRunDeltaWithOptionalParams(t *testing.T) {
-	t.Skip("Prism tests are disabled")
+	t.Skip("Mock server tests are disabled")
 	baseURL := "http://localhost:4010"
 	if envURL, ok := os.LookupEnv("TEST_API_BASE_URL"); ok {
 		baseURL = envURL

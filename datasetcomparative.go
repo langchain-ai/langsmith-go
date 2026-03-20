@@ -43,7 +43,7 @@ func (r *DatasetComparativeService) New(ctx context.Context, body DatasetCompara
 	opts = slices.Concat(r.Options, opts)
 	path := "api/v1/datasets/comparative"
 	err = requestconfig.ExecuteNewRequest(ctx, http.MethodPost, path, body, &res, opts...)
-	return
+	return res, err
 }
 
 // Get all comparative experiments for a given dataset.
@@ -53,7 +53,7 @@ func (r *DatasetComparativeService) List(ctx context.Context, datasetID string, 
 	opts = append([]option.RequestOption{option.WithResponseInto(&raw)}, opts...)
 	if datasetID == "" {
 		err = errors.New("missing required dataset_id parameter")
-		return
+		return nil, err
 	}
 	path := fmt.Sprintf("api/v1/datasets/%s/comparative", datasetID)
 	cfg, err := requestconfig.NewRequestConfig(ctx, http.MethodGet, path, query, &res, opts...)
@@ -78,17 +78,17 @@ func (r *DatasetComparativeService) Delete(ctx context.Context, comparativeExper
 	opts = slices.Concat(r.Options, opts)
 	if comparativeExperimentID == "" {
 		err = errors.New("missing required comparative_experiment_id parameter")
-		return
+		return nil, err
 	}
 	path := fmt.Sprintf("api/v1/datasets/comparative/%s", comparativeExperimentID)
 	err = requestconfig.ExecuteNewRequest(ctx, http.MethodDelete, path, nil, &res, opts...)
-	return
+	return res, err
 }
 
 // Simple experiment info schema for use with comparative experiments
 type SimpleExperimentInfo struct {
-	ID   string                   `json:"id,required" format:"uuid"`
-	Name string                   `json:"name,required"`
+	ID   string                   `json:"id" api:"required" format:"uuid"`
+	Name string                   `json:"name" api:"required"`
 	JSON simpleExperimentInfoJSON `json:"-"`
 }
 
@@ -127,14 +127,14 @@ func (r SortByComparativeExperimentColumn) IsKnown() bool {
 
 // ComparativeExperiment schema.
 type DatasetComparativeNewResponse struct {
-	ID                 string                            `json:"id,required" format:"uuid"`
-	CreatedAt          time.Time                         `json:"created_at,required" format:"date-time"`
-	ModifiedAt         time.Time                         `json:"modified_at,required" format:"date-time"`
-	ReferenceDatasetID string                            `json:"reference_dataset_id,required" format:"uuid"`
-	TenantID           string                            `json:"tenant_id,required" format:"uuid"`
-	Description        string                            `json:"description,nullable"`
-	Extra              map[string]interface{}            `json:"extra,nullable"`
-	Name               string                            `json:"name,nullable"`
+	ID                 string                            `json:"id" api:"required" format:"uuid"`
+	CreatedAt          time.Time                         `json:"created_at" api:"required" format:"date-time"`
+	ModifiedAt         time.Time                         `json:"modified_at" api:"required" format:"date-time"`
+	ReferenceDatasetID string                            `json:"reference_dataset_id" api:"required" format:"uuid"`
+	TenantID           string                            `json:"tenant_id" api:"required" format:"uuid"`
+	Description        string                            `json:"description" api:"nullable"`
+	Extra              map[string]interface{}            `json:"extra" api:"nullable"`
+	Name               string                            `json:"name" api:"nullable"`
 	JSON               datasetComparativeNewResponseJSON `json:"-"`
 }
 
@@ -163,16 +163,16 @@ func (r datasetComparativeNewResponseJSON) RawJSON() string {
 
 // ComparativeExperiment schema.
 type DatasetComparativeListResponse struct {
-	ID                 string                             `json:"id,required" format:"uuid"`
-	CreatedAt          time.Time                          `json:"created_at,required" format:"date-time"`
-	ExperimentsInfo    []SimpleExperimentInfo             `json:"experiments_info,required"`
-	ModifiedAt         time.Time                          `json:"modified_at,required" format:"date-time"`
-	ReferenceDatasetID string                             `json:"reference_dataset_id,required" format:"uuid"`
-	TenantID           string                             `json:"tenant_id,required" format:"uuid"`
-	Description        string                             `json:"description,nullable"`
-	Extra              map[string]interface{}             `json:"extra,nullable"`
-	FeedbackStats      map[string]interface{}             `json:"feedback_stats,nullable"`
-	Name               string                             `json:"name,nullable"`
+	ID                 string                             `json:"id" api:"required" format:"uuid"`
+	CreatedAt          time.Time                          `json:"created_at" api:"required" format:"date-time"`
+	ExperimentsInfo    []SimpleExperimentInfo             `json:"experiments_info" api:"required"`
+	ModifiedAt         time.Time                          `json:"modified_at" api:"required" format:"date-time"`
+	ReferenceDatasetID string                             `json:"reference_dataset_id" api:"required" format:"uuid"`
+	TenantID           string                             `json:"tenant_id" api:"required" format:"uuid"`
+	Description        string                             `json:"description" api:"nullable"`
+	Extra              map[string]interface{}             `json:"extra" api:"nullable"`
+	FeedbackStats      map[string]interface{}             `json:"feedback_stats" api:"nullable"`
+	Name               string                             `json:"name" api:"nullable"`
 	JSON               datasetComparativeListResponseJSON `json:"-"`
 }
 
@@ -204,7 +204,7 @@ func (r datasetComparativeListResponseJSON) RawJSON() string {
 type DatasetComparativeDeleteResponse = interface{}
 
 type DatasetComparativeNewParams struct {
-	ExperimentIDs      param.Field[[]string]               `json:"experiment_ids,required" format:"uuid"`
+	ExperimentIDs      param.Field[[]string]               `json:"experiment_ids" api:"required" format:"uuid"`
 	ID                 param.Field[string]                 `json:"id" format:"uuid"`
 	CreatedAt          param.Field[time.Time]              `json:"created_at" format:"date-time"`
 	Description        param.Field[string]                 `json:"description"`
