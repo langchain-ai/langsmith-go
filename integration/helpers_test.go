@@ -144,7 +144,7 @@ func getSpanAttrInt(spans tracetest.SpanStubs, key string) (int64, bool) {
 // Polling uses exponential backoff (500ms → 1s → 2s → 2s …) with a total
 // budget of 10s for the session lookup and 10s for the run query, keeping the
 // worst-case wall time to ~20s instead of the previous 60s.
-func pollForRuns(t *testing.T, projectName string, minRuns int, runName string) []langsmith.RunQueryResponseRun {
+func pollForRuns(t *testing.T, projectName string, minRuns int, runName string) []langsmith.RunSchema {
 	t.Helper()
 	client := langsmith.NewClient()
 	ctx := context.Background()
@@ -226,7 +226,7 @@ func pollForRuns(t *testing.T, projectName string, minRuns int, runName string) 
 
 type LangSmithRunAssertions struct {
 	WantName    string
-	WantRunType langsmith.RunQueryResponseRunsRunType
+	WantRunType langsmith.RunTypeEnum
 	ExpectError bool   // if true, run.Error should be non-empty (e.g. exception raised → SDK patches run with error)
 	WantStatus  string // if non-empty, assert run.Status equals this (e.g. "error" when call fails)
 	WantInputs  bool   // assert run has non-empty inputs when backend populates
@@ -243,7 +243,7 @@ type LangSmithRunAssertions struct {
 // assertLangSmithRunFields asserts on id, name, run_type, start_time, end_time,
 // parent_run_id, inputs, outputs, error, and tags where relevant (like Python
 // integration tests). revision_id is not in the Go run schema.
-func assertLangSmithRunFields(t *testing.T, r *langsmith.RunQueryResponseRun, a LangSmithRunAssertions) {
+func assertLangSmithRunFields(t *testing.T, r *langsmith.RunSchema, a LangSmithRunAssertions) {
 	t.Helper()
 	if r == nil {
 		t.Fatal("run is nil")
@@ -345,7 +345,7 @@ func mapToJSONString(m map[string]interface{}) string {
 }
 
 // runInputsMessageCount returns the number of messages in run inputs (Inputs["messages"] or run.Messages).
-func runInputsMessageCount(r *langsmith.RunQueryResponseRun) int {
+func runInputsMessageCount(r *langsmith.RunSchema) int {
 	if r.Inputs != nil {
 		if msgs, ok := r.Inputs["messages"].([]interface{}); ok {
 			return len(msgs)

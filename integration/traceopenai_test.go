@@ -104,7 +104,7 @@ func TestOpenAI_NonStreaming(t *testing.T) {
 			// Full response is provider/model-dependent text; assert output presence and run shape.
 			assertLangSmithRunFields(t, &runs[0], LangSmithRunAssertions{
 				WantName:    expectedRunName,
-				WantRunType: langsmith.RunQueryResponseRunsRunTypeLlm,
+				WantRunType: langsmith.RunTypeEnumLlm,
 				WantInputs:  true,
 				WantOutputs: true,
 			})
@@ -187,7 +187,7 @@ func TestOpenAI_Streaming(t *testing.T) {
 			// Reduced/assembled stream in outputs (behavior 2)
 			assertLangSmithRunFields(t, &runs[0], LangSmithRunAssertions{
 				WantName:    expectedRunName,
-				WantRunType: langsmith.RunQueryResponseRunsRunTypeLlm,
+				WantRunType: langsmith.RunTypeEnumLlm,
 				WantInputs:  true,
 				WantOutputs: true,
 			})
@@ -235,7 +235,7 @@ func TestOpenAI_EarlyStreamTermination(t *testing.T) {
 		} else {
 			assertLangSmithRunFields(t, &runs[0], LangSmithRunAssertions{
 				WantName:    expectedRunName,
-				WantRunType: langsmith.RunQueryResponseRunsRunTypeLlm,
+				WantRunType: langsmith.RunTypeEnumLlm,
 				WantInputs:  true,
 				WantOutputs: true,
 				ExpectError: true,
@@ -278,7 +278,7 @@ func TestOpenAI_ErrorHandling(t *testing.T) {
 		} else {
 			assertLangSmithRunFields(t, &runs[0], LangSmithRunAssertions{
 				WantName:    expectedRunName,
-				WantRunType: langsmith.RunQueryResponseRunsRunTypeLlm,
+				WantRunType: langsmith.RunTypeEnumLlm,
 				ExpectError: true,
 			})
 		}
@@ -353,7 +353,7 @@ func TestOpenAI_ToolCalling_NonStreaming(t *testing.T) {
 		} else {
 			assertLangSmithRunFields(t, &runs[0], LangSmithRunAssertions{
 				WantName:                expectedRunName,
-				WantRunType:             langsmith.RunQueryResponseRunsRunTypeLlm,
+				WantRunType:             langsmith.RunTypeEnumLlm,
 				WantInputs:              true,
 				WantOutputs:             true,
 				WantOutputsContainTools: true,
@@ -436,7 +436,7 @@ func TestOpenAI_ToolCalling_Streaming(t *testing.T) {
 			// Outputs include tool_calls (behavior 5)
 			assertLangSmithRunFields(t, &runs[0], LangSmithRunAssertions{
 				WantName:                expectedRunName,
-				WantRunType:             langsmith.RunQueryResponseRunsRunTypeLlm,
+				WantRunType:             langsmith.RunTypeEnumLlm,
 				WantInputs:              true,
 				WantOutputs:             true,
 				WantOutputsContainTools: true,
@@ -487,7 +487,7 @@ func TestOpenAI_SystemMessage(t *testing.T) {
 			// System content in run inputs (behavior 6)
 			assertLangSmithRunFields(t, &runs[0], LangSmithRunAssertions{
 				WantName:                expectedRunName,
-				WantRunType:             langsmith.RunQueryResponseRunsRunTypeLlm,
+				WantRunType:             langsmith.RunTypeEnumLlm,
 				WantInputs:              true,
 				WantOutputs:             true,
 				WantInputsContainSystem: true,
@@ -550,7 +550,7 @@ func TestOpenAI_MultipleMessages(t *testing.T) {
 			// Full conversation in run inputs (behavior 7)
 			assertLangSmithRunFields(t, &runs[0], LangSmithRunAssertions{
 				WantName:               expectedRunName,
-				WantRunType:            langsmith.RunQueryResponseRunsRunTypeLlm,
+				WantRunType:            langsmith.RunTypeEnumLlm,
 				WantInputs:             true,
 				WantOutputs:            true,
 				WantInputsMessageCount: 4,
@@ -600,7 +600,7 @@ func TestOpenAI_TokenUsage_NonStreaming(t *testing.T) {
 			// Run has usage (behavior 8)
 			assertLangSmithRunFields(t, &runs[0], LangSmithRunAssertions{
 				WantName:    expectedRunName,
-				WantRunType: langsmith.RunQueryResponseRunsRunTypeLlm,
+				WantRunType: langsmith.RunTypeEnumLlm,
 				WantInputs:  true,
 				WantOutputs: true,
 				WantUsage:   true,
@@ -658,7 +658,7 @@ func TestOpenAI_TokenUsage_Streaming(t *testing.T) {
 			// Run has usage (behavior 8)
 			assertLangSmithRunFields(t, &runs[0], LangSmithRunAssertions{
 				WantName:    expectedRunName,
-				WantRunType: langsmith.RunQueryResponseRunsRunTypeLlm,
+				WantRunType: langsmith.RunTypeEnumLlm,
 				WantInputs:  true,
 				WantOutputs: true,
 				WantUsage:   true,
