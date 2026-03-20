@@ -18,7 +18,6 @@ const (
 	maxInsightsChatHistories    = 1000
 )
 
-// InsightsReport is returned after creating an insights job via [Client.GenerateInsights].
 type InsightsReport struct {
 	ID        string
 	Name      string
@@ -29,13 +28,11 @@ type InsightsReport struct {
 	HostURL   string
 }
 
-// Link returns the LangSmith UI URL where this insights report can be viewed.
 func (r *InsightsReport) Link() string {
 	return fmt.Sprintf("%s/o/%s/projects/p/%s?tab=4&clusterJobId=%s",
 		r.HostURL, r.TenantID, r.ProjectID, r.ID)
 }
 
-// InsightsReportResult contains the full results of a completed insights job.
 type InsightsReportResult struct {
 	ID        string
 	Name      string
