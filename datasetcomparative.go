@@ -7,16 +7,13 @@ import (
 	"errors"
 	"fmt"
 	"net/http"
-	"net/url"
 	"slices"
 	"time"
 
 	"github.com/langchain-ai/langsmith-go/internal/apijson"
-	"github.com/langchain-ai/langsmith-go/internal/apiquery"
 	"github.com/langchain-ai/langsmith-go/internal/param"
 	"github.com/langchain-ai/langsmith-go/internal/requestconfig"
 	"github.com/langchain-ai/langsmith-go/option"
-	"github.com/langchain-ai/langsmith-go/packages/pagination"
 )
 
 // DatasetComparativeService contains methods and other services that help with
@@ -44,33 +41,6 @@ func (r *DatasetComparativeService) New(ctx context.Context, body DatasetCompara
 	path := "api/v1/datasets/comparative"
 	err = requestconfig.ExecuteNewRequest(ctx, http.MethodPost, path, body, &res, opts...)
 	return res, err
-}
-
-// Get all comparative experiments for a given dataset.
-func (r *DatasetComparativeService) List(ctx context.Context, datasetID string, query DatasetComparativeListParams, opts ...option.RequestOption) (res *pagination.OffsetPaginationTopLevelArray[DatasetComparativeListResponse], err error) {
-	var raw *http.Response
-	opts = slices.Concat(r.Options, opts)
-	opts = append([]option.RequestOption{option.WithResponseInto(&raw)}, opts...)
-	if datasetID == "" {
-		err = errors.New("missing required dataset_id parameter")
-		return nil, err
-	}
-	path := fmt.Sprintf("api/v1/datasets/%s/comparative", datasetID)
-	cfg, err := requestconfig.NewRequestConfig(ctx, http.MethodGet, path, query, &res, opts...)
-	if err != nil {
-		return nil, err
-	}
-	err = cfg.Execute()
-	if err != nil {
-		return nil, err
-	}
-	res.SetPageConfig(cfg, raw)
-	return res, nil
-}
-
-// Get all comparative experiments for a given dataset.
-func (r *DatasetComparativeService) ListAutoPaging(ctx context.Context, datasetID string, query DatasetComparativeListParams, opts ...option.RequestOption) *pagination.OffsetPaginationTopLevelArrayAutoPager[DatasetComparativeListResponse] {
-	return pagination.NewOffsetPaginationTopLevelArrayAutoPager(r.List(ctx, datasetID, query, opts...))
 }
 
 // Delete a specific comparative experiment.
@@ -161,46 +131,6 @@ func (r datasetComparativeNewResponseJSON) RawJSON() string {
 	return r.raw
 }
 
-// ComparativeExperiment schema.
-type DatasetComparativeListResponse struct {
-	ID                 string                             `json:"id" api:"required" format:"uuid"`
-	CreatedAt          time.Time                          `json:"created_at" api:"required" format:"date-time"`
-	ExperimentsInfo    []SimpleExperimentInfo             `json:"experiments_info" api:"required"`
-	ModifiedAt         time.Time                          `json:"modified_at" api:"required" format:"date-time"`
-	ReferenceDatasetID string                             `json:"reference_dataset_id" api:"required" format:"uuid"`
-	TenantID           string                             `json:"tenant_id" api:"required" format:"uuid"`
-	Description        string                             `json:"description" api:"nullable"`
-	Extra              map[string]interface{}             `json:"extra" api:"nullable"`
-	FeedbackStats      map[string]interface{}             `json:"feedback_stats" api:"nullable"`
-	Name               string                             `json:"name" api:"nullable"`
-	JSON               datasetComparativeListResponseJSON `json:"-"`
-}
-
-// datasetComparativeListResponseJSON contains the JSON metadata for the struct
-// [DatasetComparativeListResponse]
-type datasetComparativeListResponseJSON struct {
-	ID                 apijson.Field
-	CreatedAt          apijson.Field
-	ExperimentsInfo    apijson.Field
-	ModifiedAt         apijson.Field
-	ReferenceDatasetID apijson.Field
-	TenantID           apijson.Field
-	Description        apijson.Field
-	Extra              apijson.Field
-	FeedbackStats      apijson.Field
-	Name               apijson.Field
-	raw                string
-	ExtraFields        map[string]apijson.Field
-}
-
-func (r *DatasetComparativeListResponse) UnmarshalJSON(data []byte) (err error) {
-	return apijson.UnmarshalRoot(data, r)
-}
-
-func (r datasetComparativeListResponseJSON) RawJSON() string {
-	return r.raw
-}
-
 type DatasetComparativeDeleteResponse = interface{}
 
 type DatasetComparativeNewParams struct {
@@ -216,24 +146,4 @@ type DatasetComparativeNewParams struct {
 
 func (r DatasetComparativeNewParams) MarshalJSON() (data []byte, err error) {
 	return apijson.MarshalRoot(r)
-}
-
-type DatasetComparativeListParams struct {
-	ID           param.Field[[]string] `query:"id" format:"uuid"`
-	Limit        param.Field[int64]    `query:"limit"`
-	Name         param.Field[string]   `query:"name"`
-	NameContains param.Field[string]   `query:"name_contains"`
-	Offset       param.Field[int64]    `query:"offset"`
-	// Enum for available comparative experiment columns to sort by.
-	SortBy     param.Field[SortByComparativeExperimentColumn] `query:"sort_by"`
-	SortByDesc param.Field[bool]                              `query:"sort_by_desc"`
-}
-
-// URLQuery serializes [DatasetComparativeListParams]'s query parameters as
-// `url.Values`.
-func (r DatasetComparativeListParams) URLQuery() (v url.Values) {
-	return apiquery.MarshalWithSettings(r, apiquery.QuerySettings{
-		ArrayFormat:  apiquery.ArrayQueryFormatComma,
-		NestedFormat: apiquery.NestedQueryFormatBrackets,
-	})
 }
