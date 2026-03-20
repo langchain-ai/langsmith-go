@@ -3,19 +3,15 @@
 package langsmith
 
 import (
-	"bytes"
 	"context"
 	"errors"
 	"fmt"
-	"io"
-	"mime/multipart"
 	"net/http"
 	"net/url"
 	"reflect"
 	"slices"
 	"time"
 
-	"github.com/langchain-ai/langsmith-go/internal/apiform"
 	"github.com/langchain-ai/langsmith-go/internal/apijson"
 	"github.com/langchain-ai/langsmith-go/internal/apiquery"
 	"github.com/langchain-ai/langsmith-go/internal/param"
@@ -86,27 +82,6 @@ func (r *RunService) Update(ctx context.Context, runID string, body RunUpdatePar
 func (r *RunService) IngestBatch(ctx context.Context, body RunIngestBatchParams, opts ...option.RequestOption) (res *RunIngestBatchResponse, err error) {
 	opts = slices.Concat(r.Options, opts)
 	path := "runs/batch"
-	err = requestconfig.ExecuteNewRequest(ctx, http.MethodPost, path, body, &res, opts...)
-	return res, err
-}
-
-// Ingests multiple runs, feedback objects, and binary attachments in a single
-// `multipart/form-data` request. **Part‑name pattern**:
-// `<event>.<run_id>[.<field>]` where `event` ∈ {`post`, `patch`, `feedback`,
-// `attachment`}.
-//
-//   - `post|patch.<run_id>` – JSON run payload.
-//   - `post|patch.<run_id>.<field>` – out‑of‑band run data (`inputs`, `outputs`,
-//     `events`, `error`, `extra`, `serialized`).
-//   - `feedback.<run_id>` – JSON feedback payload (must include `trace_id`).
-//   - `attachment.<run_id>.<filename>` – arbitrary binary attachment stored in S3.
-//     **Headers**: every part must set `Content-Type` **and** either a
-//     `Content-Length` header or `length` parameter. Per‑part `Content-Encoding` is
-//     **not** allowed; the top‑level request may be `Content-Encoding: gzip` or
-//     `Content-Encoding: zstd`. **Best performance** for high‑volume ingestion.
-func (r *RunService) IngestMultipart(ctx context.Context, body RunIngestMultipartParams, opts ...option.RequestOption) (res *RunIngestMultipartResponse, err error) {
-	opts = slices.Concat(r.Options, opts)
-	path := "runs/multipart"
 	err = requestconfig.ExecuteNewRequest(ctx, http.MethodPost, path, body, &res, opts...)
 	return res, err
 }
@@ -520,8 +495,6 @@ func (r runIngestBatchResponseItemJSON) RawJSON() string {
 	return r.raw
 }
 
-type RunIngestMultipartResponse map[string]string
-
 type RunQueryResponse struct {
 	Cursors       map[string]string      `json:"cursors" api:"required"`
 	Runs          []RunSchema            `json:"runs" api:"required"`
@@ -766,36 +739,6 @@ type RunIngestBatchParams struct {
 
 func (r RunIngestBatchParams) MarshalJSON() (data []byte, err error) {
 	return apijson.MarshalRoot(r)
-}
-
-type RunIngestMultipartParams struct {
-	// Binary attachment linked to run {run_id}
-	AttachmentRunIDFilename param.Field[io.Reader] `json:"attachment.{run_id}.{filename}" format:"binary"`
-	// Feedback object (JSON) – must include trace_id
-	FeedbackRunID param.Field[io.Reader] `json:"feedback.{run_id}" format:"binary"`
-	// Run to update (JSON)
-	PatchRunID param.Field[io.Reader] `json:"patch.{run_id}" format:"binary"`
-	// Large outputs object (JSON) stored out‑of‑band
-	PatchRunIDOutputs param.Field[io.Reader] `json:"patch.{run_id}.outputs" format:"binary"`
-	// Run to create (JSON)
-	PostRunID param.Field[io.Reader] `json:"post.{run_id}" format:"binary"`
-	// Large inputs object (JSON) stored out‑of‑band
-	PostRunIDInputs param.Field[io.Reader] `json:"post.{run_id}.inputs" format:"binary"`
-}
-
-func (r RunIngestMultipartParams) MarshalMultipart() (data []byte, contentType string, err error) {
-	buf := bytes.NewBuffer(nil)
-	writer := multipart.NewWriter(buf)
-	err = apiform.MarshalRoot(r, writer)
-	if err != nil {
-		writer.Close()
-		return nil, "", err
-	}
-	err = writer.Close()
-	if err != nil {
-		return nil, "", err
-	}
-	return buf.Bytes(), writer.FormDataContentType(), nil
 }
 
 type RunQueryParams struct {

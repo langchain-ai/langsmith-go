@@ -3,10 +3,8 @@
 package langsmith_test
 
 import (
-	"bytes"
 	"context"
 	"errors"
-	"io"
 	"os"
 	"testing"
 	"time"
@@ -271,38 +269,6 @@ func TestRunIngestBatchWithOptionalParams(t *testing.T) {
 			Tags:        langsmith.F([]string{"string"}),
 			TraceID:     langsmith.F("trace_id"),
 		}}),
-	})
-	if err != nil {
-		var apierr *langsmith.Error
-		if errors.As(err, &apierr) {
-			t.Log(string(apierr.DumpRequest(true)))
-		}
-		t.Fatalf("err should be nil: %s", err.Error())
-	}
-}
-
-func TestRunIngestMultipartWithOptionalParams(t *testing.T) {
-	t.Skip("Mock server tests are disabled")
-	baseURL := "http://localhost:4010"
-	if envURL, ok := os.LookupEnv("TEST_API_BASE_URL"); ok {
-		baseURL = envURL
-	}
-	if !testutil.CheckTestServer(t, baseURL) {
-		return
-	}
-	client := langsmith.NewClient(
-		option.WithBaseURL(baseURL),
-		option.WithAPIKey("My API Key"),
-		option.WithTenantID("My Tenant ID"),
-		option.WithOrganizationID("My Organization ID"),
-	)
-	_, err := client.Runs.IngestMultipart(context.TODO(), langsmith.RunIngestMultipartParams{
-		AttachmentRunIDFilename: langsmith.F(io.Reader(bytes.NewBuffer([]byte("Example data")))),
-		FeedbackRunID:           langsmith.F(io.Reader(bytes.NewBuffer([]byte("Example data")))),
-		PatchRunID:              langsmith.F(io.Reader(bytes.NewBuffer([]byte("Example data")))),
-		PatchRunIDOutputs:       langsmith.F(io.Reader(bytes.NewBuffer([]byte("Example data")))),
-		PostRunID:               langsmith.F(io.Reader(bytes.NewBuffer([]byte("Example data")))),
-		PostRunIDInputs:         langsmith.F(io.Reader(bytes.NewBuffer([]byte("Example data")))),
 	})
 	if err != nil {
 		var apierr *langsmith.Error
