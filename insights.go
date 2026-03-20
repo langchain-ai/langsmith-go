@@ -4,11 +4,12 @@ import (
 	"context"
 	"errors"
 	"fmt"
-	"net/url"
+	"net/http"
+	"strings"
 	"time"
 
 	"github.com/google/uuid"
-	"github.com/langchain-ai/langsmith-go/internal/apiquery"
+	"github.com/langchain-ai/langsmith-go/internal/requestconfig"
 	"github.com/langchain-ai/langsmith-go/option"
 )
 
@@ -32,6 +33,14 @@ type InsightsReport struct {
 	ProjectID string
 	// TenantID is the ID of the tenant/workspace.
 	TenantID string
+	// HostURL is the LangSmith API base URL, used to construct [InsightsReport.Link].
+	HostURL string
+}
+
+// Link returns the LangSmith UI URL where this insights report can be viewed.
+func (r *InsightsReport) Link() string {
+	return fmt.Sprintf("%s/o/%s/projects/p/%s?tab=4&clusterJobId=%s",
+		r.HostURL, r.TenantID, r.ProjectID, r.ID)
 }
 
 // InsightsReportResult contains the full results of a completed insights job,
@@ -72,11 +81,12 @@ type GenerateInsightsParams struct {
 	// Truncated to 1000 items automatically.
 	ChatHistories [][]map[string]interface{}
 
-	// Instructions for the insights agent.
+	// Instructions for the insights agent. Should describe what your agent does
+	// and what types of insights you want to generate.
 	// Defaults to "How are people using my agent? What are they asking about?"
 	Instructions string
 
-	// Name for the insights report. A random name is used when empty.
+	// Name for the insights report. A timestamp-based name is used when empty.
 	Name string
 
 	// Model provider: "openai" or "anthropic".
@@ -111,7 +121,7 @@ type PollInsightsParams struct {
 	// Defaults to 30 minutes.
 	Timeout time.Duration
 
-	// Verbose prints polling timestamps to stdout when true.
+	// Verbose prints elapsed poll time to stdout when true.
 	Verbose bool
 }
 
@@ -128,7 +138,6 @@ type GetInsightsReportParams struct {
 	ProjectID string
 
 	// IncludeRuns fetches all runs associated with the job when true.
-	// Defaults to true.
 	IncludeRuns bool
 }
 
@@ -153,38 +162,53 @@ func (r *Client) GenerateInsights(ctx context.Context, params GenerateInsightsPa
 		return nil, fmt.Errorf("langsmith: ingest insights runs: %w", err)
 	}
 
-	jobParams := SessionInsightNewParams{
-		CreateRunClusteringJobRequest: CreateRunClusteringJobRequestParam{
-			Name:  F(params.Name),
-			Model: F(CreateRunClusteringJobRequestModel(model)),
-		},
-	}
 	instructions := params.Instructions
 	if instructions == "" {
 		instructions = defaultInsightsInstructions
 	}
-	jobParams.CreateRunClusteringJobRequest.SummaryPrompt = F(instructions)
+
+	jobParams := SessionInsightNewParams{
+		CreateRunClusteringJobRequest: CreateRunClusteringJobRequestParam{
+			Name:       F(params.Name),
+			Model:      F(CreateRunClusteringJobRequestModel(model)),
+			LastNHours: F(int64(1)),
+			UserContext: F(map[string]string{
+				"How are your agent traces structured?":      "The run.outputs.messages field contains a chat history between the user and the agent. This is all the context you need.",
+				"What would you like to learn about your agent?": instructions,
+			}),
+		},
+	}
 
 	resp, err := r.Sessions.Insights.New(ctx, project.ID, jobParams, opts...)
 	if err != nil {
 		return nil, fmt.Errorf("langsmith: create insights job: %w", err)
 	}
 
-	return &InsightsReport{
+	report := &InsightsReport{
 		ID:        resp.ID,
 		Name:      resp.Name,
 		Status:    resp.Status,
 		Error:     resp.Error,
 		ProjectID: project.ID,
 		TenantID:  project.TenantID,
-	}, nil
+		HostURL:   r.hostURL(opts...),
+	}
+
+	fmt.Printf("The Insights Agent is running! This can take up to 30 minutes to complete."+
+		" Once the report is completed, you'll be able to see results here: %s\n", report.Link())
+
+	return report, nil
 }
 
 // PollInsights polls an insights job until it reaches a terminal state
 // ("success" or "error"), or the timeout is exceeded.
 //
 // Provide either Report (from GenerateInsights) or both ID and ProjectID.
+// Returns an error if the job reaches status "error".
 func (r *Client) PollInsights(ctx context.Context, params PollInsightsParams, opts ...option.RequestOption) (*InsightsReport, error) {
+	if (params.ID != "" || params.ProjectID != "") && params.Report != nil {
+		return nil, errors.New("langsmith: PollInsights: specify exactly one of (ID and ProjectID) or Report")
+	}
 	projectID, jobID, err := resolveInsightsIDs(params.Report, params.ProjectID, params.ID)
 	if err != nil {
 		return nil, fmt.Errorf("langsmith: PollInsights: %w", err)
@@ -199,24 +223,21 @@ func (r *Client) PollInsights(ctx context.Context, params PollInsightsParams, op
 		timeout = 30 * time.Minute
 	}
 
-	deadline := time.Now().Add(timeout)
-	for {
+	maxTries := max(1, int(timeout/rate))
+	for i := range maxTries {
 		resp, err := r.Sessions.Insights.GetJob(ctx, projectID, jobID, opts...)
 		if err != nil {
 			return nil, fmt.Errorf("langsmith: poll insights: %w", err)
 		}
 
-		if params.Verbose {
-			fmt.Printf("langsmith: polling insights %s at %s — status: %s\n",
-				jobID, time.Now().UTC().Format(time.RFC3339), resp.Status)
-		}
-
-		if resp.Status == "success" || resp.Status == "error" {
+		switch resp.Status {
+		case "success":
 			report := &InsightsReport{
-				ID:     resp.ID,
-				Name:   resp.Name,
-				Status: resp.Status,
-				Error:  resp.Error,
+				ID:      resp.ID,
+				Name:    resp.Name,
+				Status:  resp.Status,
+				Error:   resp.Error,
+				HostURL: r.hostURL(opts...),
 			}
 			if params.Report != nil {
 				report.ProjectID = params.Report.ProjectID
@@ -224,11 +245,14 @@ func (r *Client) PollInsights(ctx context.Context, params PollInsightsParams, op
 			} else {
 				report.ProjectID = projectID
 			}
+			fmt.Printf("Insights report completed! View the results at %s\n", report.Link())
 			return report, nil
+		case "error":
+			return nil, fmt.Errorf("langsmith: failed to generate insights: %s", resp.Error)
 		}
 
-		if time.Now().After(deadline) {
-			return nil, fmt.Errorf("langsmith: timed out waiting for insights job %s after %v", jobID, timeout)
+		if params.Verbose {
+			fmt.Printf("Polling time: %v\n", time.Duration(i)*rate)
 		}
 
 		select {
@@ -237,14 +261,19 @@ func (r *Client) PollInsights(ctx context.Context, params PollInsightsParams, op
 		case <-time.After(rate):
 		}
 	}
+
+	return nil, fmt.Errorf("langsmith: timed out waiting for insights job %s after %v", jobID, timeout)
 }
 
 // GetInsightsReport fetches the full results of a completed insights job,
 // including clusters, the high-level summary report, and optionally all runs.
 //
-// Provide either Report (from GenerateInsights/PollInsights) or both ID and ProjectID.
-// Set GetInsightsReportParams.IncludeRuns to true (the default) to also fetch runs.
+// Provide either Report (from GenerateInsights/PollInsights) or both ID and ProjectID,
+// but not both.
 func (r *Client) GetInsightsReport(ctx context.Context, params GetInsightsReportParams, opts ...option.RequestOption) (*InsightsReportResult, error) {
+	if params.Report != nil && (params.ID != "" || params.ProjectID != "") {
+		return nil, errors.New("langsmith: GetInsightsReport: specify exactly one of (ID and ProjectID) or Report")
+	}
 	projectID, jobID, err := resolveInsightsIDs(params.Report, params.ProjectID, params.ID)
 	if err != nil {
 		return nil, fmt.Errorf("langsmith: GetInsightsReport: %w", err)
@@ -321,12 +350,14 @@ func (r *Client) fetchAllInsightsRuns(ctx context.Context, projectID, jobID, clu
 // ingestInsightsRuns creates a tracing project and ingests chat histories as runs.
 func (r *Client) ingestInsightsRuns(ctx context.Context, chatHistories [][]map[string]interface{}, name string, opts ...option.RequestOption) (*TracerSessionWithoutVirtualFields, error) {
 	if len(chatHistories) > maxInsightsChatHistories {
+		fmt.Printf("langsmith: warning: can only generate insights over %d items; truncating to first %d\n",
+			maxInsightsChatHistories, maxInsightsChatHistories)
 		chatHistories = chatHistories[:maxInsightsChatHistories]
 	}
 
 	projectName := name
 	if projectName == "" {
-		projectName = fmt.Sprintf("insights-%s", uuid.New().String()[:8])
+		projectName = "insights " + time.Now().Format("2006-01-02 15:04:05")
 	}
 
 	project, err := r.Sessions.New(ctx, SessionNewParams{Name: F(projectName)}, opts...)
@@ -335,6 +366,7 @@ func (r *Client) ingestInsightsRuns(ctx context.Context, chatHistories [][]map[s
 	}
 
 	now := time.Now().UTC()
+	startTime := now.Add(-time.Second)
 	timePrefix := fmt.Sprintf("%s%06dZ", now.Format("20060102T150405"), now.Nanosecond()/1000)
 
 	runs := make([]RunParam, 0, len(chatHistories))
@@ -342,18 +374,18 @@ func (r *Client) ingestInsightsRuns(ctx context.Context, chatHistories [][]map[s
 		runID := uuid.New().String()
 		inputs := map[string]interface{}{}
 		if len(history) > 0 {
-			inputs["messages"] = []map[string]interface{}{history[0]}
+			inputs["messages"] = history[:1]
 		}
 		run := RunParam{
 			ID:          F(runID),
-			Name:        F("chat"),
+			Name:        F("trace"),
 			RunType:     F(RunRunTypeChain),
 			Inputs:      F(inputs),
 			Outputs:     F(map[string]interface{}{"messages": history}),
 			SessionID:   F(project.ID),
 			TraceID:     F(runID),
 			DottedOrder: F(timePrefix + runID),
-			StartTime:   F(now.Format(time.RFC3339Nano)),
+			StartTime:   F(startTime.Format(time.RFC3339Nano)),
 			EndTime:     F(now.Format(time.RFC3339Nano)),
 		}
 		runs = append(runs, run)
@@ -370,7 +402,10 @@ func (r *Client) ingestInsightsRuns(ctx context.Context, chatHistories [][]map[s
 // available as a workspace secret, storing the provided key if not.
 // Returns the resolved model name ("openai" or "anthropic").
 func (r *Client) ensureInsightsAPIKey(ctx context.Context, openAIKey, anthropicKey, model string, opts ...option.RequestOption) (string, error) {
-	hasOpenAI, hasAnthropic, secretErr := r.fetchInsightsSecrets(ctx, opts...)
+	workspaceKeys, _ := r.fetchWorkspaceSecretKeys(ctx, opts...)
+
+	hasOpenAI := workspaceKeys["OPENAI_API_KEY"]
+	hasAnthropic := workspaceKeys["ANTHROPIC_API_KEY"]
 
 	switch model {
 	case "":
@@ -380,26 +415,20 @@ func (r *Client) ensureInsightsAPIKey(ctx context.Context, openAIKey, anthropicK
 		case hasAnthropic:
 			return "anthropic", nil
 		case openAIKey != "":
-			if secretErr == nil {
-				_ = r.storeWorkspaceSecret(ctx, "OPENAI_API_KEY", openAIKey, opts...)
-			}
+			_ = r.storeWorkspaceSecret(ctx, "OPENAI_API_KEY", openAIKey, opts...)
 			return "openai", nil
 		case anthropicKey != "":
-			if secretErr == nil {
-				_ = r.storeWorkspaceSecret(ctx, "ANTHROPIC_API_KEY", anthropicKey, opts...)
-			}
+			_ = r.storeWorkspaceSecret(ctx, "ANTHROPIC_API_KEY", anthropicKey, opts...)
 			return "anthropic", nil
 		default:
-			return "", errors.New("no model API key available: provide OpenAIAPIKey or AnthropicAPIKey, or configure workspace secrets")
+			return "", errors.New("must specify OpenAIAPIKey or AnthropicAPIKey")
 		}
 	case "openai":
 		if !hasOpenAI {
 			if openAIKey == "" {
 				return "", errors.New("model is \"openai\" but no OpenAI API key provided and none found in workspace secrets")
 			}
-			if secretErr == nil {
-				_ = r.storeWorkspaceSecret(ctx, "OPENAI_API_KEY", openAIKey, opts...)
-			}
+			_ = r.storeWorkspaceSecret(ctx, "OPENAI_API_KEY", openAIKey, opts...)
 		}
 		return "openai", nil
 	case "anthropic":
@@ -407,9 +436,7 @@ func (r *Client) ensureInsightsAPIKey(ctx context.Context, openAIKey, anthropicK
 			if anthropicKey == "" {
 				return "", errors.New("model is \"anthropic\" but no Anthropic API key provided and none found in workspace secrets")
 			}
-			if secretErr == nil {
-				_ = r.storeWorkspaceSecret(ctx, "ANTHROPIC_API_KEY", anthropicKey, opts...)
-			}
+			_ = r.storeWorkspaceSecret(ctx, "ANTHROPIC_API_KEY", anthropicKey, opts...)
 		}
 		return "anthropic", nil
 	default:
@@ -417,37 +444,36 @@ func (r *Client) ensureInsightsAPIKey(ctx context.Context, openAIKey, anthropicK
 	}
 }
 
-// fetchInsightsSecrets checks whether OPENAI_API_KEY and ANTHROPIC_API_KEY exist
-// as workspace secrets. Errors are non-fatal — the caller decides how to proceed.
-func (r *Client) fetchInsightsSecrets(ctx context.Context, opts ...option.RequestOption) (hasOpenAI, hasAnthropic bool, err error) {
+// fetchWorkspaceSecretKeys fetches all workspace secret keys and returns them as a set.
+func (r *Client) fetchWorkspaceSecretKeys(ctx context.Context, opts ...option.RequestOption) (map[string]bool, error) {
 	var resp []struct {
-		SecretName string `json:"secret_name"`
+		Key string `json:"key"`
 	}
-	q := insightsSecretsQueryParams{
-		SecretNames: []string{"OPENAI_API_KEY", "ANTHROPIC_API_KEY"},
-	}
-	err = r.Get(ctx, "api/v1/workspaces/current/secrets", q, &resp, opts...)
+	err := r.Get(ctx, "api/v1/workspaces/current/secrets", nil, &resp, opts...)
 	if err != nil {
-		return false, false, err
+		return nil, err
 	}
+	keys := make(map[string]bool, len(resp))
 	for _, s := range resp {
-		switch s.SecretName {
-		case "OPENAI_API_KEY":
-			hasOpenAI = true
-		case "ANTHROPIC_API_KEY":
-			hasAnthropic = true
-		}
+		keys[s.Key] = true
 	}
-	return hasOpenAI, hasAnthropic, nil
+	return keys, nil
 }
 
 // storeWorkspaceSecret upserts a workspace secret.
-func (r *Client) storeWorkspaceSecret(ctx context.Context, name, value string, opts ...option.RequestOption) error {
-	body := map[string]string{
-		"secret_name":  name,
-		"secret_value": value,
-	}
+func (r *Client) storeWorkspaceSecret(ctx context.Context, key, value string, opts ...option.RequestOption) error {
+	body := []map[string]string{{"key": key, "value": value}}
 	return r.Post(ctx, "api/v1/workspaces/current/secrets", body, nil, opts...)
+}
+
+// hostURL returns the base URL of the LangSmith API, stripped of trailing slashes.
+func (r *Client) hostURL(opts ...option.RequestOption) string {
+	cfg, err := requestconfig.NewRequestConfig(context.Background(), http.MethodGet, "", nil, nil,
+		append(r.Options, opts...)...)
+	if err != nil || cfg.BaseURL == nil {
+		return "https://api.smith.langchain.com"
+	}
+	return strings.TrimRight(cfg.BaseURL.String(), "/")
 }
 
 // resolveInsightsIDs extracts projectID and jobID from either a report or explicit IDs.
@@ -461,14 +487,3 @@ func resolveInsightsIDs(report *InsightsReport, projectID, jobID string) (string
 	return projectID, jobID, nil
 }
 
-// insightsSecretsQueryParams serialises secret_names as repeated query params.
-type insightsSecretsQueryParams struct {
-	SecretNames []string `query:"secret_names"`
-}
-
-func (r insightsSecretsQueryParams) URLQuery() (v url.Values) {
-	return apiquery.MarshalWithSettings(r, apiquery.QuerySettings{
-		ArrayFormat:  apiquery.ArrayQueryFormatRepeat,
-		NestedFormat: apiquery.NestedQueryFormatBrackets,
-	})
-}
