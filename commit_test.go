@@ -105,6 +105,7 @@ func TestCommitListWithOptionalParams(t *testing.T) {
 			IncludeStats: langsmith.F(true),
 			Limit:        langsmith.F(int64(1)),
 			Offset:       langsmith.F(int64(0)),
+			Tag:          langsmith.F("tag"),
 		},
 	)
 	if err != nil {

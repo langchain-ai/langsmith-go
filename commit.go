@@ -347,6 +347,9 @@ type CommitListParams struct {
 	Limit param.Field[int64] `query:"limit"`
 	// Offset is the pagination offset
 	Offset param.Field[int64] `query:"offset"`
+	// Tag filters commits to only those with a specific tag (e.g. "production",
+	// "staging")
+	Tag param.Field[string] `query:"tag"`
 }
 
 // URLQuery serializes [CommitListParams]'s query parameters as `url.Values`.
