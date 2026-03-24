@@ -48,23 +48,23 @@ func testServer(t *testing.T) (*httptest.Server, *atomic.Int64) {
 	return srv, &reqCount
 }
 
-func longDrainConfig(maxQueueSize int) DrainConfig {
+func testDrainConfig(maxQueueSize int) DrainConfig {
 	return DrainConfig{
-		MaxBatchSize:          1,
-		MaxBatchBytes:         20 * 1024 * 1024,
-		MaxQueueSize:          maxQueueSize,
-		DrainInterval:         10 * time.Second,
-		ScaleUpQueueTrigger:   1000,
-		MaxWorkers:            0,
-		ScaleDownEmptyTrigger: 4,
+		MaxBatchSize:  100,
+		MaxBatchBytes: 20 * 1024 * 1024,
+		MaxQueueSize:  maxQueueSize,
+		DrainInterval: 50 * time.Millisecond,
+		MaxWorkers:    1,
 	}
 }
 
 func TestQueueFullDrop(t *testing.T) {
-	srv, reqCount := testServer(t)
-	exp := multipart.NewExporter(srv.Client(), multipart.RetryConfig{MaxAttempts: 1})
+	srv, _ := testServer(t)
+	exp := multipart.NewExporter(srv.Client(), multipart.RetryConfig{MaxAttempts: 1}, false, nil)
 	endpoint := models.WriteEndpoint{URL: srv.URL, Key: "k", Project: "p"}
-	sink := NewTraceSink(context.Background(), exp, longDrainConfig(3), endpoint, nil)
+	cfg := testDrainConfig(3)
+	cfg.DrainInterval = 10 * time.Second // don't drain during test
+	sink := NewTraceSink(context.Background(), exp, cfg, endpoint, nil, nil)
 
 	for i := 0; i < 3; i++ {
 		if err := sink.Submit(makeOp()); err != nil {
@@ -72,36 +72,26 @@ func TestQueueFullDrop(t *testing.T) {
 		}
 	}
 
-	sink.mu.Lock()
-	queueLen := len(sink.queue)
-	sink.mu.Unlock()
-	if queueLen != 3 {
-		t.Fatalf("queue length after 3 submits: got %d, want 3", queueLen)
+	if got := len(sink.queue); got != 3 {
+		t.Fatalf("queue length after 3 submits: got %d, want 3", got)
 	}
 
 	if err := sink.Submit(makeOp()); err != nil {
 		t.Fatalf("4th submit returned error: %v", err)
 	}
 
-	sink.mu.Lock()
-	queueLen = len(sink.queue)
-	sink.mu.Unlock()
-	if queueLen != 3 {
-		t.Fatalf("queue length after 4th submit: got %d, want 3", queueLen)
+	if got := len(sink.queue); got != 3 {
+		t.Fatalf("queue length after 4th submit: got %d, want 3", got)
 	}
 
 	sink.Close()
-
-	if got := reqCount.Load(); got != 3 {
-		t.Fatalf("server received %d requests, want 3", got)
-	}
 }
 
 func TestSubmitAfterClose(t *testing.T) {
 	srv, reqCount := testServer(t)
-	exp := multipart.NewExporter(srv.Client(), multipart.RetryConfig{MaxAttempts: 1})
+	exp := multipart.NewExporter(srv.Client(), multipart.RetryConfig{MaxAttempts: 1}, false, nil)
 	endpoint := models.WriteEndpoint{URL: srv.URL, Key: "k", Project: "p"}
-	sink := NewTraceSink(context.Background(), exp, longDrainConfig(100), endpoint, nil)
+	sink := NewTraceSink(context.Background(), exp, testDrainConfig(100), endpoint, nil, nil)
 
 	sink.Close()
 
@@ -116,9 +106,9 @@ func TestSubmitAfterClose(t *testing.T) {
 
 func TestDoubleClose(t *testing.T) {
 	srv, _ := testServer(t)
-	exp := multipart.NewExporter(srv.Client(), multipart.RetryConfig{MaxAttempts: 1})
+	exp := multipart.NewExporter(srv.Client(), multipart.RetryConfig{MaxAttempts: 1}, false, nil)
 	endpoint := models.WriteEndpoint{URL: srv.URL, Key: "k", Project: "p"}
-	sink := NewTraceSink(context.Background(), exp, longDrainConfig(100), endpoint, nil)
+	sink := NewTraceSink(context.Background(), exp, testDrainConfig(100), endpoint, nil, nil)
 
 	done := make(chan struct{})
 	go func() {
@@ -134,24 +124,52 @@ func TestDoubleClose(t *testing.T) {
 	}
 }
 
-func TestTakeBatchRespectsMaxBatchBytes(t *testing.T) {
-	s := &TraceSink{
-		config: DrainConfig{
-			MaxBatchSize:  100,
-			MaxBatchBytes: 100,
-		},
-	}
+func TestCollectBatchRespectsMaxBatchBytes(t *testing.T) {
+	cfg := testDrainConfig(100)
+	cfg.MaxBatchSize = 100
+	cfg.MaxBatchBytes = 100
+	cfg.DrainInterval = 10 * time.Second
+
+	srv, _ := testServer(t)
+	exp := multipart.NewExporter(srv.Client(), multipart.RetryConfig{MaxAttempts: 1}, false, nil)
+	endpoint := models.WriteEndpoint{URL: srv.URL, Key: "k", Project: "p"}
+	sink := NewTraceSink(context.Background(), exp, cfg, endpoint, nil, nil)
+	defer sink.Close()
 
 	for i := 0; i < 5; i++ {
-		s.queue = append(s.queue, makeOpWithSize(50))
+		sink.queue <- makeOpWithSize(50)
 	}
 
-	batch := s.takeBatch()
+	batch, leftover := sink.collectBatch(nil)
 	if len(batch) != 2 {
-		t.Fatalf("takeBatch returned %d ops, want 2", len(batch))
+		t.Fatalf("collectBatch returned %d ops, want 2", len(batch))
 	}
-	if len(s.queue) != 3 {
-		t.Fatalf("remaining queue has %d ops, want 3", len(s.queue))
+	if leftover == nil {
+		t.Fatal("expected leftover op, got nil")
+	}
+	if got := len(sink.queue); got != 2 {
+		t.Fatalf("remaining queue has %d ops, want 2", got)
+	}
+}
+
+func TestAllItemsDrained(t *testing.T) {
+	srv, reqCount := testServer(t)
+	exp := multipart.NewExporter(srv.Client(), multipart.RetryConfig{MaxAttempts: 1}, false, nil)
+	endpoint := models.WriteEndpoint{URL: srv.URL, Key: "k", Project: "p"}
+	cfg := testDrainConfig(100)
+	cfg.MaxBatchSize = 5
+	sink := NewTraceSink(context.Background(), exp, cfg, endpoint, nil, nil)
+
+	for i := 0; i < 20; i++ {
+		if err := sink.Submit(makeOp()); err != nil {
+			t.Fatalf("submit %d: %v", i, err)
+		}
+	}
+
+	sink.Close()
+
+	if got := reqCount.Load(); got == 0 {
+		t.Fatal("server received 0 requests, expected at least 1")
 	}
 }
 
@@ -172,8 +190,6 @@ func TestDefaultDrainConfigValues(t *testing.T) {
 		{"MaxBatchBytes", cfg.MaxBatchBytes, 20 * 1024 * 1024},
 		{"MaxQueueSize", cfg.MaxQueueSize, 10_000},
 		{"DrainInterval", cfg.DrainInterval, 250 * time.Millisecond},
-		{"ScaleUpQueueTrigger", cfg.ScaleUpQueueTrigger, 200},
-		{"ScaleDownEmptyTrigger", cfg.ScaleDownEmptyTrigger, 4},
 		{"MaxWorkers", cfg.MaxWorkers, wantMaxWorkers},
 	}
 

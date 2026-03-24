@@ -5,38 +5,36 @@ import (
 	"time"
 )
 
-// DrainConfig controls batching, drain behavior, and auto-scaling for the
-// trace sink. When the pending queue exceeds ScaleUpQueueTrigger, additional
-// worker goroutines are spawned (up to MaxWorkers) to export batches
-// concurrently. Workers exit after ScaleDownEmptyTrigger consecutive empty
-// drain cycles.
+// DrainConfig controls batching, drain behavior, and the worker pool for the
+// trace sink. A fixed pool of MaxWorkers goroutines processes batches
+// dispatched by a single dispatcher goroutine.
 type DrainConfig struct {
 	MaxBatchSize  int
 	MaxBatchBytes int
-	MaxQueueSize  int // pending ops beyond this limit are dropped with a warning (0 = unlimited)
+	MaxQueueSize  int // buffered channel capacity; 0 uses default (10 000)
 	DrainInterval time.Duration
 	CloseTimeout  time.Duration // max time Close() will spend flushing; 0 = 60s default
+	MaxWorkers    int           // fixed worker pool size; 0 uses default
 
-	ScaleUpQueueTrigger   int // queue depth that triggers a new worker goroutine
-	MaxWorkers            int // max concurrent export goroutines (excluding the main loop)
-	ScaleDownEmptyTrigger int // consecutive empty drains before a worker exits
+	// Deprecated: no longer used. Workers are now a fixed pool.
+	ScaleUpQueueTrigger int
+	// Deprecated: no longer used. Workers are now a fixed pool.
+	ScaleDownEmptyTrigger int
 }
 
 // DefaultDrainConfig returns production-grade defaults.
-// MaxWorkers is capped to min(GOMAXPROCS, 32)
+// MaxWorkers is capped to min(GOMAXPROCS, 32).
 func DefaultDrainConfig() DrainConfig {
 	maxWorkers := runtime.GOMAXPROCS(0)
 	if maxWorkers > 32 {
 		maxWorkers = 32
 	}
 	return DrainConfig{
-		MaxBatchSize:          100,
-		MaxBatchBytes:         20 * 1024 * 1024, // 20 MiB
-		MaxQueueSize:          10_000,
-		DrainInterval:         250 * time.Millisecond,
-		CloseTimeout:          60 * time.Second,
-		ScaleUpQueueTrigger:   200,
-		MaxWorkers:            maxWorkers,
-		ScaleDownEmptyTrigger: 4,
+		MaxBatchSize:  100,
+		MaxBatchBytes: 20 * 1024 * 1024, // 20 MiB
+		MaxQueueSize:  10_000,
+		DrainInterval: 250 * time.Millisecond,
+		CloseTimeout:  60 * time.Second,
+		MaxWorkers:    maxWorkers,
 	}
 }

@@ -7,23 +7,32 @@ import (
 	"github.com/google/uuid"
 )
 
-// Coalesce merges patch ops into their corresponding post ops for the same run ID.
-func Coalesce(ops []*SerializedOp) ([]*SerializedOp, error) {
-	posts := make(map[uuid.UUID]int)
+const maxJSONMergeDepth = 5
+
+// MergePatchToPost merges patch ops into their corresponding post ops for the same run ID.
+func MergePatchToPost(ops []*SerializedOp) ([]*SerializedOp, error) {
+	// Pass 1: index all posts by run ID.
+	postIdxs := make(map[uuid.UUID]int)
 	out := make([]*SerializedOp, 0, len(ops))
+	var patches []*SerializedOp
 	for _, op := range ops {
 		switch op.Kind {
 		case OpKindPost:
-			posts[op.ID] = len(out)
+			postIdxs[op.ID] = len(out)
 			out = append(out, op)
 		case OpKindPatch:
-			if idx, ok := posts[op.ID]; ok {
-				mergeInto(out[idx], op)
-			} else {
-				out = append(out, op)
-			}
+			patches = append(patches, op)
 		default:
 			return nil, fmt.Errorf("unknown op kind %s", op.Kind)
+		}
+	}
+
+	// Pass 2: merge each patch into its post, or keep as standalone.
+	for _, op := range patches {
+		if idx, ok := postIdxs[op.ID]; ok {
+			mergeInto(out[idx], op)
+		} else {
+			out = append(out, op)
 		}
 	}
 	return out, nil
@@ -76,7 +85,7 @@ func overlayJSON(base, overlay []byte) []byte {
 	if err := json.Unmarshal(overlay, &overlayMap); err != nil {
 		return base
 	}
-	merged := mergeJSONMaps(baseMap, overlayMap, 5)
+	merged := mergeJSONMaps(baseMap, overlayMap, maxJSONMergeDepth)
 	out, err := json.Marshal(merged)
 	if err != nil {
 		return overlay

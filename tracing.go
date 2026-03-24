@@ -17,6 +17,9 @@ type RunUpdate = langsmithtracing.RunUpdate
 // TracingAttachment is a binary file to upload alongside a run.
 type TracingAttachment = langsmithtracing.Attachment
 
+// TracingLogger is the interface used by [TracingClient] for diagnostic output.
+type TracingLogger = langsmithtracing.Logger
+
 // DrainConfig controls batching and auto-scaling behavior for the trace sink.
 type DrainConfig = langsmithtracing.DrainConfig
 
@@ -39,11 +42,15 @@ var (
 	WithTracingBearerToken   = langsmithtracing.WithBearerToken
 	WithTracingProject       = langsmithtracing.WithProject
 	WithTracingDrain         = langsmithtracing.WithDrainConfig
-	WithSampleRate           = langsmithtracing.WithSampleRate
-	WithRunTransform         = langsmithtracing.WithRunTransform
+	WithSampleRate                        = langsmithtracing.WithSampleRate
+	WithRunTransform                      = langsmithtracing.WithRunTransform
+	WithMergeFilteredEnvIntoExtraMetadata = langsmithtracing.WithMergeFilteredEnvIntoExtraMetadata
+	WithCompressionDisabled               = langsmithtracing.WithCompressionDisabled
+	WithTracingLogger                     = langsmithtracing.WithLogger
 )
 
 // NewTracingClient creates a standalone TracingClient. Most users should use
 // [Client.CreateRun] / [Client.UpdateRun] instead, which lazily initialize the
 // underlying TracingClient on first use so REST-only clients pay no cost.
+// It returns an error if tracing sampling env vars are set but invalid.
 var NewTracingClient = langsmithtracing.NewTracingClient

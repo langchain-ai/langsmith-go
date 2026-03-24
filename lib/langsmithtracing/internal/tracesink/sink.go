@@ -3,97 +3,181 @@ package tracesink
 import (
 	"context"
 	"fmt"
-	"log"
 	"sync"
+	"sync/atomic"
 	"time"
 
+	"github.com/langchain-ai/langsmith-go/lib/langsmithtracing/internal/logger"
 	"github.com/langchain-ai/langsmith-go/lib/langsmithtracing/internal/models"
 	"github.com/langchain-ai/langsmith-go/lib/langsmithtracing/internal/multipart"
 )
 
 // RunTransformFunc is a pre-export transform hook. It receives a batch of decoded run
 // operations and returns (possibly modified) operations. The transform runs
-// on every drain cycle, after batching but before coalescing and export.
+// on every drain cycle, after batching but before merging and export.
 type RunTransformFunc func(ops []models.RunOp) []models.RunOp
 
 // TraceSink asynchronously batches serialized operations and sends them
-// via the multipart exporter. Under load it spawns additional worker
-// goroutines to export batches concurrently.
+// via the multipart exporter. A single dispatcher goroutine reads from the
+// queue channel, builds batches, and dispatches them to a fixed worker pool.
 type TraceSink struct {
 	exporter  *multipart.Exporter
 	config    DrainConfig
 	transform RunTransformFunc
+	logger    logger.Logger
 	endpoint  models.WriteEndpoint
 	ctx       context.Context
 
-	mu     sync.Mutex
-	queue  []*models.SerializedOp
-	notify chan struct{} // signaled on Close to wake runLoop for shutdown
+	queue   chan *models.SerializedOp   // producers: Submit; consumer: dispatcher
+	jobs    chan []*models.SerializedOp // producer: dispatcher; consumers: workers
+	closed  atomic.Bool
+	closeCh chan struct{} // signals dispatcher to drain and exit
 
-	done   chan struct{}
-	closed bool
-
-	workerMu    sync.Mutex
-	workerCount int
-	workerWg    sync.WaitGroup
+	closeOnce sync.Once
+	doneCh    chan struct{} // closed when dispatcher + all workers finish
 }
 
 // NewTraceSink creates and starts a trace sink. The provided context is
 // propagated to HTTP requests during normal operation; Close always drains
 // with a background context to guarantee delivery.
-func NewTraceSink(ctx context.Context, exporter *multipart.Exporter, config DrainConfig, endpoint models.WriteEndpoint, transform RunTransformFunc) *TraceSink {
+func NewTraceSink(ctx context.Context, exporter *multipart.Exporter, config DrainConfig, endpoint models.WriteEndpoint, transform RunTransformFunc, l logger.Logger) *TraceSink {
+	if l == nil {
+		l = logger.DefaultLogger{}
+	}
+	queueSize := config.MaxQueueSize
+	if queueSize <= 0 {
+		queueSize = 10_000
+	}
+	workers := config.MaxWorkers
+	if workers <= 0 {
+		workers = 1
+	}
+
 	s := &TraceSink{
 		exporter:  exporter,
 		config:    config,
 		transform: transform,
+		logger:    l,
 		endpoint:  endpoint,
 		ctx:       ctx,
-		notify:    make(chan struct{}, 1),
-		done:      make(chan struct{}),
+		queue:     make(chan *models.SerializedOp, queueSize),
+		jobs:      make(chan []*models.SerializedOp, workers),
+		closeCh:   make(chan struct{}),
+		doneCh:    make(chan struct{}),
 	}
-	go s.runLoop()
+
+	var wg sync.WaitGroup
+	wg.Add(workers)
+	for range workers {
+		go func() {
+			defer wg.Done()
+			s.runWorker()
+		}()
+	}
+
+	go func() {
+		defer close(s.doneCh)
+		s.runDispatcher()
+		close(s.jobs)
+		wg.Wait()
+	}()
+
 	return s
 }
 
 // Submit adds a serialized operation to the queue.
-// If the queue is at capacity (MaxQueueSize), the operation is dropped with
-// a warning log.
-// Submit does not wake the drain loop immediately — the ticker provides
-// a natural batching window so that create+update pairs for the same run
-// are coalesced before export.
+//
+// If the sink is closed or the queue is full, the operation is dropped.
+// Submit never blocks the caller.
 func (s *TraceSink) Submit(op *models.SerializedOp) error {
-	s.mu.Lock()
-	defer s.mu.Unlock()
-	if s.closed {
+	if s.closed.Load() {
 		return nil
 	}
-	if s.config.MaxQueueSize > 0 && len(s.queue) >= s.config.MaxQueueSize {
-		log.Printf("[langsmith] queue full (%d items); dropping run %s", len(s.queue), op.ID)
+	select {
+	case s.queue <- op:
+		return nil
+	default:
+		s.logger.Error("queue full; dropping run", "queue_size", len(s.queue), "max_queue_size", s.config.MaxQueueSize, "run_id", op.ID)
 		return nil
 	}
-	s.queue = append(s.queue, op)
-	return nil
 }
 
 // Close flushes remaining operations and shuts down the sink.
-// It spawns workers for a concurrent drain when many items remain.
 // The flush is bounded by CloseTimeout (default 60s); any items still
 // queued after the deadline are dropped with a warning.
+// Close is safe to call multiple times; only the first call has any effect.
 func (s *TraceSink) Close() {
-	s.mu.Lock()
-	if s.closed {
-		s.mu.Unlock()
-		return
-	}
-	s.closed = true
-	s.mu.Unlock()
+	s.closeOnce.Do(func() {
+		s.closed.Store(true)
+		close(s.closeCh)
+		<-s.doneCh
+	})
+}
 
-	select {
-	case s.notify <- struct{}{}:
-	default:
-	}
-	<-s.done
+// runDispatcher is the single goroutine that reads from the queue,
+// builds batches on a timer, and dispatches them to workers via the jobs channel.
+func (s *TraceSink) runDispatcher() {
+	ticker := time.NewTicker(s.config.DrainInterval)
+	defer ticker.Stop()
 
+	var pending *models.SerializedOp
+
+	for {
+		select {
+		case <-ticker.C:
+			pending = s.dispatchBatch(s.ctx, pending)
+
+		case <-s.closeCh:
+			ticker.Stop()
+			s.drainRemaining(pending)
+			return
+		}
+	}
+}
+
+// dispatchBatch collects one batch from the queue and sends it to workers.
+// Returns any leftover op that didn't fit in the batch (for the next cycle).
+func (s *TraceSink) dispatchBatch(ctx context.Context, pending *models.SerializedOp) *models.SerializedOp {
+	batch, leftover := s.collectBatch(pending)
+	if len(batch) > 0 {
+		select {
+		case s.jobs <- batch:
+		case <-ctx.Done():
+			s.logger.Warn("context canceled; dropping batch", "batch_size", len(batch))
+		}
+	}
+	return leftover
+}
+
+// collectBatch non-blockingly drains available ops from the queue into a batch,
+// respecting MaxBatchSize and MaxBatchBytes. If an op would exceed the byte
+// limit, it's returned as leftover for the next batch.
+func (s *TraceSink) collectBatch(pending *models.SerializedOp) (batch []*models.SerializedOp, leftover *models.SerializedOp) {
+	var batchBytes int
+
+	if pending != nil {
+		batch = append(batch, pending)
+		batchBytes += pending.SizeBytes()
+	}
+
+	for len(batch) < s.config.MaxBatchSize {
+		select {
+		case op := <-s.queue:
+			sz := op.SizeBytes()
+			if len(batch) > 0 && s.config.MaxBatchBytes > 0 && batchBytes+sz > s.config.MaxBatchBytes {
+				return batch, op
+			}
+			batch = append(batch, op)
+			batchBytes += sz
+		default:
+			return batch, nil
+		}
+	}
+	return batch, nil
+}
+
+// drainRemaining flushes all items left in the queue during shutdown.
+func (s *TraceSink) drainRemaining(pending *models.SerializedOp) {
 	timeout := s.config.CloseTimeout
 	if timeout <= 0 {
 		timeout = 60 * time.Second
@@ -101,117 +185,54 @@ func (s *TraceSink) Close() {
 	ctx, cancel := context.WithTimeout(context.Background(), timeout)
 	defer cancel()
 
-	s.mu.Lock()
-	queueLen := len(s.queue)
-	s.mu.Unlock()
-	if queueLen > s.config.MaxBatchSize {
-		s.spawnWorkers(s.config.MaxWorkers, ctx)
-	}
-
-	for s.drainOnce(ctx) {
-		if ctx.Err() != nil {
-			s.mu.Lock()
-			remaining := len(s.queue)
-			s.mu.Unlock()
-			if remaining > 0 {
-				log.Printf("[langsmith] close timed out after %v; dropping %d pending items", timeout, remaining)
-			}
-			break
-		}
-	}
-	s.workerWg.Wait()
-}
-
-func (s *TraceSink) runLoop() {
-	defer close(s.done)
-	ticker := time.NewTicker(s.config.DrainInterval)
-	defer ticker.Stop()
 	for {
-		select {
-		case <-ticker.C:
-		case <-s.notify:
-		}
-		s.mu.Lock()
-		closed := s.closed
-		queueLen := len(s.queue)
-		s.mu.Unlock()
-		if closed {
+		batch, leftover := s.collectBatch(pending)
+		pending = leftover
+		if len(batch) == 0 {
 			return
 		}
-		if queueLen > s.config.ScaleUpQueueTrigger {
-			s.spawnWorkers(1, s.ctx)
+		select {
+		case s.jobs <- batch:
+		case <-ctx.Done():
+			remaining := len(s.queue)
+			if pending != nil {
+				remaining++
+			}
+			s.logger.Warn("close timed out; dropping pending items", "timeout", timeout, "remaining", remaining)
+			return
 		}
-		s.drainOnce(s.ctx)
 	}
 }
 
-// spawnWorkers starts up to n new worker goroutines, respecting MaxWorkers.
-func (s *TraceSink) spawnWorkers(n int, ctx context.Context) {
-	s.workerMu.Lock()
-	defer s.workerMu.Unlock()
-	for i := 0; i < n && s.workerCount < s.config.MaxWorkers; i++ {
-		s.workerCount++
-		s.workerWg.Add(1)
-		go s.runWorker(ctx)
+// runWorker processes batches from the jobs channel until it's closed.
+func (s *TraceSink) runWorker() {
+	for batch := range s.jobs {
+		s.processBatch(batch)
 	}
 }
 
-// takeBatch removes up to one export-sized batch from the queue.
-func (s *TraceSink) takeBatch() []*models.SerializedOp {
-	s.mu.Lock()
-	defer s.mu.Unlock()
-	if len(s.queue) == 0 {
-		return nil
-	}
-
-	end := len(s.queue)
-	if end > s.config.MaxBatchSize {
-		end = s.config.MaxBatchSize
-	}
-	batchBytes := 0
-	for i := 0; i < end; i++ {
-		sz := s.queue[i].Size()
-		if i > 0 && batchBytes+sz > s.config.MaxBatchBytes {
-			end = i
-			break
-		}
-		batchBytes += sz
-	}
-
-	batch := make([]*models.SerializedOp, end)
-	copy(batch, s.queue[:end])
-	s.queue = s.queue[end:]
-	return batch
-}
-
-// drainOnce takes one batch and exports it. Returns true if work was found.
-func (s *TraceSink) drainOnce(ctx context.Context) bool {
-	batch := s.takeBatch()
-	if len(batch) == 0 {
-		return false
-	}
-
+// processBatch applies the transform hook, merges patches into posts, and exports.
+func (s *TraceSink) processBatch(batch []*models.SerializedOp) {
 	if s.transform != nil {
 		var err error
 		batch, err = s.applyTransform(batch)
 		if err != nil {
-			log.Printf("[langsmith] transform error: %v", err)
-			return true
+			s.logger.Error("transform error", "error", err)
+			return
 		}
 		if len(batch) == 0 {
-			return true
+			return
 		}
 	}
 
-	coalesced, err := models.Coalesce(batch)
+	merged, err := models.MergePatchToPost(batch)
 	if err != nil {
-		log.Printf("[langsmith] coalesce error: %v", err)
-		return true
+		s.logger.Error("merge patch to post error", "error", err)
+		return
 	}
-	if err := s.exporter.Export(ctx, s.endpoint, coalesced); err != nil {
-		log.Printf("[langsmith] export error: %v", err)
+	if err := s.exporter.Export(s.ctx, s.endpoint, merged); err != nil {
+		s.logger.Error("export error", "error", err)
 	}
-	return true
 }
 
 func (s *TraceSink) applyTransform(batch []*models.SerializedOp) ([]*models.SerializedOp, error) {
@@ -246,35 +267,4 @@ func (s *TraceSink) applyTransform(batch []*models.SerializedOp) ([]*models.Seri
 		result[i] = sop
 	}
 	return result, nil
-}
-
-// runWorker drains batches until the queue is consistently empty.
-// During shutdown (closed && empty queue) it exits immediately.
-func (s *TraceSink) runWorker(ctx context.Context) {
-	defer s.workerWg.Done()
-	defer func() {
-		s.workerMu.Lock()
-		s.workerCount--
-		s.workerMu.Unlock()
-	}()
-
-	emptyRuns := 0
-	for emptyRuns < s.config.ScaleDownEmptyTrigger {
-		if ctx.Err() != nil {
-			return
-		}
-		if s.drainOnce(ctx) {
-			emptyRuns = 0
-			continue
-		}
-		s.mu.Lock()
-		closed := s.closed
-		empty := len(s.queue) == 0
-		s.mu.Unlock()
-		if closed && empty {
-			return
-		}
-		emptyRuns++
-		time.Sleep(s.config.DrainInterval)
-	}
 }

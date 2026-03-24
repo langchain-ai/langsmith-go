@@ -60,7 +60,7 @@ func TestExporter_AttachmentParts(t *testing.T) {
 	}))
 	defer srv.Close()
 
-	exp := NewExporter(srv.Client(), RetryConfig{MaxAttempts: 1})
+	exp := NewExporter(srv.Client(), RetryConfig{MaxAttempts: 1}, false, nil)
 
 	runID := uuid.MustParse("11111111-1111-1111-1111-111111111111")
 	traceID := uuid.MustParse("22222222-2222-2222-2222-222222222222")
@@ -179,7 +179,7 @@ func TestExporter_NoAttachments(t *testing.T) {
 	}))
 	defer srv.Close()
 
-	exp := NewExporter(srv.Client(), RetryConfig{MaxAttempts: 1})
+	exp := NewExporter(srv.Client(), RetryConfig{MaxAttempts: 1}, false, nil)
 
 	runID := uuid.New()
 	ops := []*models.SerializedOp{
@@ -236,7 +236,7 @@ func TestExporter_FallbackToBatchOn404(t *testing.T) {
 	}))
 	defer srv.Close()
 
-	exp := NewExporter(srv.Client(), RetryConfig{MaxAttempts: 1})
+	exp := NewExporter(srv.Client(), RetryConfig{MaxAttempts: 1}, false, nil)
 	endpoint := models.WriteEndpoint{URL: srv.URL, Key: "k", Project: "p"}
 
 	runID := uuid.MustParse("aaaaaaaa-aaaa-aaaa-aaaa-aaaaaaaaaaaa")
@@ -294,7 +294,7 @@ func TestExporter_MultipartDisabledSkipsMultipart(t *testing.T) {
 	}))
 	defer srv.Close()
 
-	exp := NewExporter(srv.Client(), RetryConfig{MaxAttempts: 1})
+	exp := NewExporter(srv.Client(), RetryConfig{MaxAttempts: 1}, false, nil)
 	endpoint := models.WriteEndpoint{URL: srv.URL, Key: "k", Project: "p"}
 
 	runID := uuid.New()
@@ -344,7 +344,7 @@ func TestExporter_BatchPostAndPatch(t *testing.T) {
 	}))
 	defer srv.Close()
 
-	exp := NewExporter(srv.Client(), RetryConfig{MaxAttempts: 1})
+	exp := NewExporter(srv.Client(), RetryConfig{MaxAttempts: 1}, false, nil)
 	endpoint := models.WriteEndpoint{URL: srv.URL, Key: "k", Project: "p"}
 
 	postID := uuid.MustParse("11111111-1111-1111-1111-111111111111")
@@ -411,7 +411,7 @@ func TestExporter_NonNotFoundErrorDoesNotFallback(t *testing.T) {
 	}))
 	defer srv.Close()
 
-	exp := NewExporter(srv.Client(), RetryConfig{MaxAttempts: 1})
+	exp := NewExporter(srv.Client(), RetryConfig{MaxAttempts: 1}, false, nil)
 	endpoint := models.WriteEndpoint{URL: srv.URL, Key: "k", Project: "p"}
 
 	ops := []*models.SerializedOp{{
@@ -491,7 +491,7 @@ func exportAndParseParts(t *testing.T, ops []*models.SerializedOp) map[string]pa
 	}))
 	defer srv.Close()
 
-	exp := NewExporter(srv.Client(), RetryConfig{MaxAttempts: 1})
+	exp := NewExporter(srv.Client(), RetryConfig{MaxAttempts: 1}, false, nil)
 	endpoint := models.WriteEndpoint{URL: srv.URL, Key: "k", Project: "p"}
 	if err := exp.Export(context.Background(), endpoint, ops); err != nil {
 		t.Fatalf("Export: %v", err)
@@ -549,7 +549,7 @@ func TestExporter_MultipartRetriesOn500(t *testing.T) {
 	defer srv.Close()
 
 	rc := RetryConfig{MaxAttempts: 3, BackoffBase: 10 * time.Millisecond, BackoffMax: 50 * time.Millisecond}
-	exp := NewExporter(srv.Client(), rc)
+	exp := NewExporter(srv.Client(), rc, false, nil)
 
 	ops := []*models.SerializedOp{makeOp(models.OpKindPost)}
 	ep := models.WriteEndpoint{URL: srv.URL, Key: "k"}
@@ -581,7 +581,7 @@ func TestExporter_MultipartRetriesExhausted(t *testing.T) {
 	defer srv.Close()
 
 	rc := RetryConfig{MaxAttempts: 3, BackoffBase: 10 * time.Millisecond, BackoffMax: 50 * time.Millisecond}
-	exp := NewExporter(srv.Client(), rc)
+	exp := NewExporter(srv.Client(), rc, false, nil)
 
 	ops := []*models.SerializedOp{makeOp(models.OpKindPost)}
 	ep := models.WriteEndpoint{URL: srv.URL, Key: "k"}
@@ -621,7 +621,7 @@ func TestExporter_NoRetryOn400(t *testing.T) {
 	defer srv.Close()
 
 	rc := RetryConfig{MaxAttempts: 3, BackoffBase: 10 * time.Millisecond, BackoffMax: 50 * time.Millisecond}
-	exp := NewExporter(srv.Client(), rc)
+	exp := NewExporter(srv.Client(), rc, false, nil)
 
 	ops := []*models.SerializedOp{makeOp(models.OpKindPost)}
 	ep := models.WriteEndpoint{URL: srv.URL, Key: "k"}
@@ -666,7 +666,7 @@ func TestExporter_RetriesOn408(t *testing.T) {
 	defer srv.Close()
 
 	rc := RetryConfig{MaxAttempts: 3, BackoffBase: 10 * time.Millisecond, BackoffMax: 50 * time.Millisecond}
-	exp := NewExporter(srv.Client(), rc)
+	exp := NewExporter(srv.Client(), rc, false, nil)
 
 	ops := []*models.SerializedOp{makeOp(models.OpKindPost)}
 	ep := models.WriteEndpoint{URL: srv.URL, Key: "k"}
@@ -703,7 +703,7 @@ func TestExporter_BatchRetriesOn500(t *testing.T) {
 	defer srv.Close()
 
 	rc := RetryConfig{MaxAttempts: 3, BackoffBase: 10 * time.Millisecond, BackoffMax: 50 * time.Millisecond}
-	exp := NewExporter(srv.Client(), rc)
+	exp := NewExporter(srv.Client(), rc, false, nil)
 	exp.multipartDisabled.Store(true)
 
 	ops := []*models.SerializedOp{makeOp(models.OpKindPost)}
@@ -735,7 +735,7 @@ func TestExporter_RetriesOnConnectionError(t *testing.T) {
 	defer srv.Close()
 
 	rc := RetryConfig{MaxAttempts: 3, BackoffBase: 10 * time.Millisecond, BackoffMax: 50 * time.Millisecond}
-	exp := NewExporter(&http.Client{Timeout: 120 * time.Second}, rc)
+	exp := NewExporter(&http.Client{Timeout: 120 * time.Second}, rc, false, nil)
 
 	ops := []*models.SerializedOp{makeOp(models.OpKindPost)}
 
@@ -767,7 +767,7 @@ func TestExporter_BatchSplitsOversizedPayload(t *testing.T) {
 	defer srv.Close()
 
 	rc := RetryConfig{MaxAttempts: 1, BackoffBase: time.Millisecond, BackoffMax: time.Millisecond}
-	exp := NewExporter(srv.Client(), rc)
+	exp := NewExporter(srv.Client(), rc, false, nil)
 	exp.multipartDisabled.Store(true)
 	exp.batchSizeLimitBytes = 500 // very small limit to force splitting
 
@@ -837,7 +837,7 @@ func TestExporter_BatchNoSplitWhenUnderLimit(t *testing.T) {
 	defer srv.Close()
 
 	rc := RetryConfig{MaxAttempts: 1, BackoffBase: time.Millisecond, BackoffMax: time.Millisecond}
-	exp := NewExporter(srv.Client(), rc)
+	exp := NewExporter(srv.Client(), rc, false, nil)
 	exp.multipartDisabled.Store(true)
 	// default 20MiB limit — a small batch should fit in one request
 
@@ -872,8 +872,7 @@ func TestExporter_CompressionDisabledEnvVar(t *testing.T) {
 	}))
 	defer srv.Close()
 
-	exp := NewExporter(srv.Client(), RetryConfig{MaxAttempts: 1})
-	exp.compressionDisabled = true
+	exp := NewExporter(srv.Client(), RetryConfig{MaxAttempts: 1}, true, nil)
 
 	ops := []*models.SerializedOp{makeOp(models.OpKindPost)}
 	ep := models.WriteEndpoint{URL: srv.URL, Key: "k"}
@@ -934,7 +933,7 @@ func TestExporter_CompressionEnabledByDefault(t *testing.T) {
 	}))
 	defer srv.Close()
 
-	exp := NewExporter(srv.Client(), RetryConfig{MaxAttempts: 1})
+	exp := NewExporter(srv.Client(), RetryConfig{MaxAttempts: 1}, false, nil)
 
 	ops := []*models.SerializedOp{makeOp(models.OpKindPost)}
 	ep := models.WriteEndpoint{URL: srv.URL, Key: "k"}
@@ -986,7 +985,7 @@ func TestExporter_RetriesOn429WithRetryAfter(t *testing.T) {
 	defer srv.Close()
 
 	rc := RetryConfig{MaxAttempts: 3, BackoffBase: 10 * time.Millisecond, BackoffMax: 50 * time.Millisecond}
-	exp := NewExporter(srv.Client(), rc)
+	exp := NewExporter(srv.Client(), rc, false, nil)
 
 	ops := []*models.SerializedOp{makeOp(models.OpKindPost)}
 	ep := models.WriteEndpoint{URL: srv.URL, Key: "k"}
@@ -1050,7 +1049,7 @@ func TestExporter_RetriesOn502(t *testing.T) {
 	defer srv.Close()
 
 	rc := RetryConfig{MaxAttempts: 3, BackoffBase: 10 * time.Millisecond, BackoffMax: 50 * time.Millisecond}
-	exp := NewExporter(srv.Client(), rc)
+	exp := NewExporter(srv.Client(), rc, false, nil)
 
 	ops := []*models.SerializedOp{makeOp(models.OpKindPost)}
 	ep := models.WriteEndpoint{URL: srv.URL, Key: "k"}
@@ -1086,7 +1085,7 @@ func TestExporter_RetriesOn503(t *testing.T) {
 	defer srv.Close()
 
 	rc := RetryConfig{MaxAttempts: 3, BackoffBase: 10 * time.Millisecond, BackoffMax: 50 * time.Millisecond}
-	exp := NewExporter(srv.Client(), rc)
+	exp := NewExporter(srv.Client(), rc, false, nil)
 
 	ops := []*models.SerializedOp{makeOp(models.OpKindPost)}
 	ep := models.WriteEndpoint{URL: srv.URL, Key: "k"}
@@ -1117,7 +1116,7 @@ func TestExporter_NoRetryOn422(t *testing.T) {
 	defer srv.Close()
 
 	rc := RetryConfig{MaxAttempts: 3, BackoffBase: 10 * time.Millisecond, BackoffMax: 50 * time.Millisecond}
-	exp := NewExporter(srv.Client(), rc)
+	exp := NewExporter(srv.Client(), rc, false, nil)
 
 	ops := []*models.SerializedOp{makeOp(models.OpKindPost)}
 	ep := models.WriteEndpoint{URL: srv.URL, Key: "k"}
@@ -1142,7 +1141,7 @@ func TestExporter_EmptyOpsNoOp(t *testing.T) {
 	}))
 	defer srv.Close()
 
-	exp := NewExporter(srv.Client(), RetryConfig{MaxAttempts: 1})
+	exp := NewExporter(srv.Client(), RetryConfig{MaxAttempts: 1}, false, nil)
 	ep := models.WriteEndpoint{URL: srv.URL, Key: "k"}
 
 	if err := exp.Export(context.Background(), ep, nil); err != nil {
@@ -1163,7 +1162,7 @@ func TestExporter_MissingRunInfoReturnsError(t *testing.T) {
 	}))
 	defer srv.Close()
 
-	exp := NewExporter(srv.Client(), RetryConfig{MaxAttempts: 1})
+	exp := NewExporter(srv.Client(), RetryConfig{MaxAttempts: 1}, false, nil)
 	ep := models.WriteEndpoint{URL: srv.URL, Key: "k"}
 
 	ops := []*models.SerializedOp{{
@@ -1221,7 +1220,7 @@ func TestExporter_BatchDropsAttachments(t *testing.T) {
 	}))
 	defer srv.Close()
 
-	exp := NewExporter(srv.Client(), RetryConfig{MaxAttempts: 1})
+	exp := NewExporter(srv.Client(), RetryConfig{MaxAttempts: 1}, false, nil)
 	exp.multipartDisabled.Store(true)
 	ep := models.WriteEndpoint{URL: srv.URL, Key: "k"}
 
@@ -1255,7 +1254,7 @@ func TestExporter_ContextCancellationAbortsExport(t *testing.T) {
 	}))
 	defer srv.Close()
 
-	exp := NewExporter(srv.Client(), RetryConfig{MaxAttempts: 1})
+	exp := NewExporter(srv.Client(), RetryConfig{MaxAttempts: 1}, false, nil)
 	ep := models.WriteEndpoint{URL: srv.URL, Key: "k"}
 	ops := []*models.SerializedOp{makeOp(models.OpKindPost)}
 
@@ -1288,7 +1287,7 @@ func TestExporter_RetriesOn425(t *testing.T) {
 	defer srv.Close()
 
 	rc := RetryConfig{MaxAttempts: 3, BackoffBase: 10 * time.Millisecond, BackoffMax: 50 * time.Millisecond}
-	exp := NewExporter(srv.Client(), rc)
+	exp := NewExporter(srv.Client(), rc, false, nil)
 
 	ops := []*models.SerializedOp{makeOp(models.OpKindPost)}
 	ep := models.WriteEndpoint{URL: srv.URL, Key: "k"}
@@ -1324,7 +1323,7 @@ func TestExporter_RetriesOn504(t *testing.T) {
 	defer srv.Close()
 
 	rc := RetryConfig{MaxAttempts: 3, BackoffBase: 10 * time.Millisecond, BackoffMax: 50 * time.Millisecond}
-	exp := NewExporter(srv.Client(), rc)
+	exp := NewExporter(srv.Client(), rc, false, nil)
 
 	ops := []*models.SerializedOp{makeOp(models.OpKindPost)}
 	ep := models.WriteEndpoint{URL: srv.URL, Key: "k"}

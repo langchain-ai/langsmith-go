@@ -9,7 +9,7 @@ import (
 	"github.com/google/uuid"
 )
 
-func TestCoalesce_MergesAttachments(t *testing.T) {
+func TestMergePatchToPost_MergesAttachments(t *testing.T) {
 	id := uuid.New()
 	traceID := uuid.New()
 
@@ -34,9 +34,9 @@ func TestCoalesce_MergesAttachments(t *testing.T) {
 		},
 	}
 
-	result, err := Coalesce(ops)
+	result, err := MergePatchToPost(ops)
 	if err != nil {
-		t.Fatalf("Coalesce: %v", err)
+		t.Fatalf("MergePatchToPost: %v", err)
 	}
 	if len(result) != 1 {
 		t.Fatalf("expected 1 op, got %d", len(result))
@@ -57,7 +57,7 @@ func TestCoalesce_MergesAttachments(t *testing.T) {
 	}
 }
 
-func TestCoalesce_PatchOverridesAttachment(t *testing.T) {
+func TestMergePatchToPost_PatchOverridesAttachment(t *testing.T) {
 	id := uuid.New()
 
 	ops := []*SerializedOp{
@@ -81,16 +81,16 @@ func TestCoalesce_PatchOverridesAttachment(t *testing.T) {
 		},
 	}
 
-	result, err := Coalesce(ops)
+	result, err := MergePatchToPost(ops)
 	if err != nil {
-		t.Fatalf("Coalesce: %v", err)
+		t.Fatalf("MergePatchToPost: %v", err)
 	}
 	if string(result[0].Attachments["file"].Data) != "v2" {
 		t.Error("patch should override post attachment with same key")
 	}
 }
 
-func TestCoalesce_ExtraDeepMerged(t *testing.T) {
+func TestMergePatchToPost_ExtraDeepMerged(t *testing.T) {
 	id := uuid.New()
 
 	ops := []*SerializedOp{
@@ -110,9 +110,9 @@ func TestCoalesce_ExtraDeepMerged(t *testing.T) {
 		},
 	}
 
-	result, err := Coalesce(ops)
+	result, err := MergePatchToPost(ops)
 	if err != nil {
-		t.Fatalf("Coalesce: %v", err)
+		t.Fatalf("MergePatchToPost: %v", err)
 	}
 	if len(result) != 1 {
 		t.Fatalf("expected 1 op, got %d", len(result))
@@ -125,7 +125,7 @@ func TestCoalesce_ExtraDeepMerged(t *testing.T) {
 
 	runtime, ok := extra["runtime"].(map[string]any)
 	if !ok {
-		t.Fatal("runtime key missing after coalesce — patch clobbered create's runtime env")
+		t.Fatal("runtime key missing after merge patch to post — patch clobbered create's runtime env")
 	}
 	if runtime["sdk"] != "langsmith-go" {
 		t.Errorf("runtime.sdk = %v, want langsmith-go", runtime["sdk"])
@@ -136,7 +136,7 @@ func TestCoalesce_ExtraDeepMerged(t *testing.T) {
 
 	metadata, ok := extra["metadata"].(map[string]any)
 	if !ok {
-		t.Fatal("metadata key missing after coalesce")
+		t.Fatal("metadata key missing after merge patch to post")
 	}
 	if metadata["v"] != float64(2) {
 		t.Errorf("metadata.v = %v, want 2 (patch value)", metadata["v"])
@@ -146,7 +146,7 @@ func TestCoalesce_ExtraDeepMerged(t *testing.T) {
 	}
 }
 
-func TestCoalesce_StandalonePatch(t *testing.T) {
+func TestMergePatchToPost_StandalonePatch(t *testing.T) {
 	id := uuid.New()
 
 	ops := []*SerializedOp{
@@ -161,9 +161,9 @@ func TestCoalesce_StandalonePatch(t *testing.T) {
 		},
 	}
 
-	result, err := Coalesce(ops)
+	result, err := MergePatchToPost(ops)
 	if err != nil {
-		t.Fatalf("Coalesce: %v", err)
+		t.Fatalf("MergePatchToPost: %v", err)
 	}
 	if len(result) != 1 {
 		t.Fatalf("expected 1 op, got %d", len(result))
@@ -173,7 +173,7 @@ func TestCoalesce_StandalonePatch(t *testing.T) {
 	}
 }
 
-func TestCoalesce_UnknownOpKind(t *testing.T) {
+func TestMergePatchToPost_UnknownOpKind(t *testing.T) {
 	ops := []*SerializedOp{
 		{
 			Kind:    OpKind("unknown"),
@@ -182,7 +182,7 @@ func TestCoalesce_UnknownOpKind(t *testing.T) {
 			RunInfo: []byte(`{}`),
 		},
 	}
-	_, err := Coalesce(ops)
+	_, err := MergePatchToPost(ops)
 	if err == nil {
 		t.Fatal("expected error for unknown op kind, got nil")
 	}
@@ -288,8 +288,8 @@ func TestMergeJSONMaps_NestedMerge(t *testing.T) {
 
 func TestSerializedOp_SizeNilReceiver(t *testing.T) {
 	var op *SerializedOp
-	if op.Size() != 0 {
-		t.Errorf("nil SerializedOp.Size() = %d, want 0", op.Size())
+	if op.SizeBytes() != 0 {
+		t.Errorf("nil SerializedOp.SizeBytes() = %d, want 0", op.SizeBytes())
 	}
 }
 
@@ -308,7 +308,7 @@ func TestSerializedOp_SizeIncludesAllFields(t *testing.T) {
 	}
 	expected := len(op.RunInfo) + len(op.Inputs) + len(op.Outputs) +
 		len(op.Events) + len(op.Extra) + len(op.Error) + len(op.Serialized) + 5
-	if got := op.Size(); got != expected {
+	if got := op.SizeBytes(); got != expected {
 		t.Errorf("Size() = %d, want %d", got, expected)
 	}
 }

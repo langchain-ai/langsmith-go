@@ -39,7 +39,7 @@ type SerializedOp struct {
 }
 
 // Size returns the total byte size of all payload fields.
-func (o *SerializedOp) Size() int {
+func (o *SerializedOp) SizeBytes() int {
 	if o == nil {
 		return 0
 	}

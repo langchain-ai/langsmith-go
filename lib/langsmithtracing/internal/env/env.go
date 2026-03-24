@@ -1,7 +1,7 @@
 package env
 
 import (
-	"log"
+	"fmt"
 	"os"
 	"runtime"
 	"strconv"
@@ -45,8 +45,9 @@ func Project() string {
 
 // TracingSampleRate returns the sampling rate from
 // LANGSMITH_TRACING_SAMPLING_RATE or LANGCHAIN_TRACING_SAMPLING_RATE.
-// Returns nil if unset, meaning all traces are kept.
-func TracingSampleRate() *float64 {
+// Returns (nil, nil) if unset, meaning all traces are kept.
+// Returns an error if the variable is set but not a valid float in [0, 1].
+func TracingSampleRate() (*float64, error) {
 	envName := "LANGSMITH_TRACING_SAMPLING_RATE"
 	s := os.Getenv(envName)
 	if s == "" {
@@ -54,18 +55,31 @@ func TracingSampleRate() *float64 {
 		s = os.Getenv(envName)
 	}
 	if s == "" {
-		return nil
+		return nil, nil
 	}
 	rate, err := strconv.ParseFloat(s, 64)
 	if err != nil {
-		log.Printf("[langsmith] invalid %s %q: %v", envName, s, err)
-		return nil
+		return nil, fmt.Errorf("langsmith: invalid %s %q: %w", envName, s, err)
 	}
 	if rate < 0 || rate > 1 {
-		log.Printf("[langsmith] %s must be between 0 and 1; got %f", envName, rate)
-		return nil
+		return nil, fmt.Errorf("langsmith: %s must be between 0 and 1; got %f", envName, rate)
 	}
-	return &rate
+	return &rate, nil
+}
+
+// CompressionDisabled returns true if LANGSMITH_DISABLE_RUN_COMPRESSION or
+// LANGCHAIN_DISABLE_RUN_COMPRESSION is set to a truthy value ("true", "1", "yes").
+func CompressionDisabled() bool {
+	for _, key := range []string{
+		"LANGSMITH_DISABLE_RUN_COMPRESSION",
+		"LANGCHAIN_DISABLE_RUN_COMPRESSION",
+	} {
+		v := strings.ToLower(strings.TrimSpace(os.Getenv(key)))
+		if v == "true" || v == "1" || v == "yes" {
+			return true
+		}
+	}
+	return false
 }
 
 var (
@@ -77,7 +91,7 @@ var (
 )
 
 // RuntimeEnvironment returns SDK and platform info for injection into extra.runtime.
-// Each call returns a fresh shallow copy that is safe to mutate.
+// The same map may be returned on each call; do not mutate it—copy first if you need to edit.
 func RuntimeEnvironment() map[string]any {
 	runtimeEnvOnce.Do(func() {
 		runtimeEnvMap = map[string]any{
@@ -89,16 +103,13 @@ func RuntimeEnvironment() map[string]any {
 			"platform":        runtime.GOOS + "/" + runtime.GOARCH,
 		}
 	})
-	cp := make(map[string]any, len(runtimeEnvMap))
-	for k, v := range runtimeEnvMap {
-		cp[k] = v
-	}
-	return cp
+	return runtimeEnvMap
 }
 
 // LangChainEnvMetadata returns filtered LANGCHAIN_*/LANGSMITH_* env vars
-// suitable for injection into extra.metadata.
-// Each call returns a fresh shallow copy that is safe to mutate.
+// suitable for merging into extra.metadata. The tracing client only uses this when
+// WithMergeFilteredEnvIntoExtraMetadata(true) is set.
+// The same map may be returned on each call; do not mutate it—copy first if you need to edit.
 func LangChainEnvMetadata() map[string]any {
 	envMetadataOnce.Do(func() {
 		excluded := map[string]bool{
@@ -139,9 +150,5 @@ func LangChainEnvMetadata() map[string]any {
 			envMetadataMap["revision_id"] = revisionID
 		}
 	})
-	cp := make(map[string]any, len(envMetadataMap))
-	for k, v := range envMetadataMap {
-		cp[k] = v
-	}
-	return cp
+	return envMetadataMap
 }

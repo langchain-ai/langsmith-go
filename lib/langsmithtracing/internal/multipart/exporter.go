@@ -6,19 +6,17 @@ import (
 	"encoding/json"
 	"fmt"
 	"io"
-	"log"
 	"mime/multipart"
 	"net/http"
 	"net/textproto"
-	"os"
 	"strconv"
-	"strings"
 	"sync/atomic"
 	"time"
 
 	"github.com/google/uuid"
 	"github.com/klauspost/compress/zstd"
 
+	"github.com/langchain-ai/langsmith-go/lib/langsmithtracing/internal/logger"
 	"github.com/langchain-ai/langsmith-go/lib/langsmithtracing/internal/models"
 )
 
@@ -45,35 +43,27 @@ func (e *APIError) Error() string {
 type Exporter struct {
 	client              *http.Client
 	retry               RetryConfig
+	logger              logger.Logger
 	batchSizeLimitBytes int // max JSON payload per /runs/batch request; 0 uses defaultBatchSizeLimit
 	compressionDisabled bool
 	multipartDisabled   atomic.Bool
 }
 
 // NewExporter creates a new exporter.
-func NewExporter(client *http.Client, retry RetryConfig) *Exporter {
+func NewExporter(client *http.Client, retry RetryConfig, compressionDisabled bool, l logger.Logger) *Exporter {
 	if client == nil {
 		client = &http.Client{Timeout: 120 * time.Second}
+	}
+	if l == nil {
+		l = logger.DefaultLogger{}
 	}
 	return &Exporter{
 		client:              client,
 		retry:               retry,
+		logger:              l,
 		batchSizeLimitBytes: defaultBatchSizeLimit,
-		compressionDisabled: isCompressionDisabledEnv(),
+		compressionDisabled: compressionDisabled,
 	}
-}
-
-func isCompressionDisabledEnv() bool {
-	for _, key := range []string{
-		"LANGSMITH_DISABLE_RUN_COMPRESSION",
-		"LANGCHAIN_DISABLE_RUN_COMPRESSION",
-	} {
-		v := strings.ToLower(strings.TrimSpace(os.Getenv(key)))
-		if v == "true" || v == "1" || v == "yes" {
-			return true
-		}
-	}
-	return false
 }
 
 // Export sends a batch of operations to LangSmith. It tries the multipart
@@ -98,7 +88,7 @@ func (e *Exporter) Export(ctx context.Context, endpoint models.WriteEndpoint, op
 		return err
 	}
 
-	log.Printf("[langsmith] multipart endpoint returned 404; falling back to /runs/batch")
+	e.logger.Warn("multipart endpoint returned 404; falling back to /runs/batch")
 	e.multipartDisabled.Store(true)
 	return e.exportBatch(ctx, endpoint, ops)
 }
@@ -108,7 +98,7 @@ func (e *Exporter) Export(ctx context.Context, endpoint models.WriteEndpoint, op
 func (e *Exporter) exportMultipart(ctx context.Context, endpoint models.WriteEndpoint, ops []*models.SerializedOp) error {
 	var prePayloadBytes int64
 	for _, op := range ops {
-		prePayloadBytes += int64(op.Size())
+		prePayloadBytes += int64(op.SizeBytes())
 	}
 
 	attempts := max(e.retry.MaxAttempts, 1)
@@ -122,11 +112,15 @@ func (e *Exporter) exportMultipart(ctx context.Context, endpoint models.WriteEnd
 
 		boundary := uuid.New().String()
 		pr, pw := io.Pipe()
+		writeErrCh := make(chan error, 1)
 		go func() {
-			e.writeMultipartBody(pw, boundary, ops)
+			writeErrCh <- e.writeMultipartBody(pw, boundary, ops)
 		}()
 
-		err := e.doMultipartRequest(ctx, endpoint, pr, pw, boundary, prePayloadBytes)
+		err := e.doMultipartRequest(ctx, endpoint, pr, boundary, prePayloadBytes)
+		if writeErr := <-writeErrCh; writeErr != nil {
+			return writeErr
+		}
 		if err == nil {
 			return nil
 		}
@@ -136,7 +130,7 @@ func (e *Exporter) exportMultipart(ctx context.Context, endpoint models.WriteEnd
 		apiErr, ok := err.(*APIError)
 		if !ok {
 			if attempt < attempts-1 {
-				log.Printf("[langsmith] multipart request failed (attempt %d/%d): %v", attempt+1, attempts, err)
+				e.logger.Warn("multipart request failed", "attempt", attempt+1, "max_attempts", attempts, "error", err)
 			}
 			continue
 		}
@@ -145,17 +139,16 @@ func (e *Exporter) exportMultipart(ctx context.Context, endpoint models.WriteEnd
 			return apiErr
 		}
 		if attempt < attempts-1 {
-			log.Printf("[langsmith] multipart request returned %d (attempt %d/%d); retrying", apiErr.StatusCode, attempt+1, attempts)
+			e.logger.Warn("multipart request returned error status; retrying", "status", apiErr.StatusCode, "attempt", attempt+1, "max_attempts", attempts)
 		}
 	}
 	return lastErr
 }
 
-func (e *Exporter) doMultipartRequest(ctx context.Context, endpoint models.WriteEndpoint, pr *io.PipeReader, pw *io.PipeWriter, boundary string, prePayloadBytes int64) error {
+func (e *Exporter) doMultipartRequest(ctx context.Context, endpoint models.WriteEndpoint, pr *io.PipeReader, boundary string, prePayloadBytes int64) error {
 	req, err := http.NewRequestWithContext(ctx, "POST", endpoint.URL+"/runs/multipart", pr)
 	if err != nil {
-		pw.CloseWithError(err)
-		pr.Close()
+		pr.CloseWithError(err)
 		return fmt.Errorf("create request: %w", err)
 	}
 	req.Header.Set("Content-Type", "multipart/form-data; boundary="+boundary)
@@ -167,7 +160,6 @@ func (e *Exporter) doMultipartRequest(ctx context.Context, endpoint models.Write
 
 	resp, err := e.client.Do(req)
 	if err != nil {
-		pw.CloseWithError(err)
 		return fmt.Errorf("send multipart: %w", err)
 	}
 	defer func() {
@@ -226,7 +218,7 @@ func (e *Exporter) exportBatch(ctx context.Context, endpoint models.WriteEndpoin
 	cur := newBatchChunk()
 
 	for _, op := range ops {
-		run, err := opToRunJSON(op)
+		run, err := e.opToRunJSON(op)
 		if err != nil {
 			return fmt.Errorf("build batch run JSON for %s: %w", op.ID, err)
 		}
@@ -276,8 +268,7 @@ func (e *Exporter) sendBatchWithRetry(ctx context.Context, endpoint models.Write
 		apiErr, ok := err.(*APIError)
 		if !ok {
 			if attempt < attempts-1 {
-				log.Printf("[langsmith] batch request failed (chunk %d/%d, attempt %d/%d): %v",
-					chunkNum, chunkTotal, attempt+1, attempts, err)
+				e.logger.Warn("batch request failed", "chunk", chunkNum, "chunks", chunkTotal, "attempt", attempt+1, "max_attempts", attempts, "error", err)
 			}
 			continue
 		}
@@ -286,8 +277,7 @@ func (e *Exporter) sendBatchWithRetry(ctx context.Context, endpoint models.Write
 			return apiErr
 		}
 		if attempt < attempts-1 {
-			log.Printf("[langsmith] batch request returned %d (chunk %d/%d, attempt %d/%d); retrying",
-				apiErr.StatusCode, chunkNum, chunkTotal, attempt+1, attempts)
+			e.logger.Warn("batch request returned error status; retrying", "status", apiErr.StatusCode, "chunk", chunkNum, "chunks", chunkTotal, "attempt", attempt+1, "max_attempts", attempts)
 		}
 	}
 	return lastErr
@@ -324,7 +314,7 @@ func (e *Exporter) doBatchRequest(ctx context.Context, endpoint models.WriteEndp
 
 // opToRunJSON reconstructs a single run JSON object from a SerializedOp by
 // merging RunInfo with the split-out fields. Attachments are dropped with a warning.
-func opToRunJSON(op *models.SerializedOp) (json.RawMessage, error) {
+func (e *Exporter) opToRunJSON(op *models.SerializedOp) (json.RawMessage, error) {
 	var m map[string]json.RawMessage
 	if err := json.Unmarshal(op.RunInfo, &m); err != nil {
 		return nil, fmt.Errorf("unmarshal run info: %w", err)
@@ -348,8 +338,7 @@ func opToRunJSON(op *models.SerializedOp) (json.RawMessage, error) {
 		m["serialized"] = op.Serialized
 	}
 	if len(op.Attachments) > 0 {
-		log.Printf("[langsmith] attachments are not supported in batch mode; dropping %d attachment(s) for run %s",
-			len(op.Attachments), op.ID)
+		e.logger.Warn("attachments are not supported in batch mode; dropping", "count", len(op.Attachments), "run_id", op.ID)
 	}
 	return json.Marshal(m)
 }

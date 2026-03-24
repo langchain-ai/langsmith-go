@@ -13,6 +13,7 @@ import (
 	"github.com/google/uuid"
 
 	"github.com/langchain-ai/langsmith-go/lib/langsmithtracing/internal/env"
+	ilog "github.com/langchain-ai/langsmith-go/lib/langsmithtracing/internal/logger"
 	"github.com/langchain-ai/langsmith-go/lib/langsmithtracing/internal/models"
 	"github.com/langchain-ai/langsmith-go/lib/langsmithtracing/internal/multipart"
 	"github.com/langchain-ai/langsmith-go/lib/langsmithtracing/internal/tracesink"
@@ -20,6 +21,9 @@ import (
 
 // Attachment is a binary file to upload alongside a run.
 type Attachment = models.Attachment
+
+// Logger is the interface used by [TracingClient] for diagnostic output.
+type Logger = ilog.Logger
 
 // DrainConfig controls batching and auto-scaling behavior.
 type DrainConfig = tracesink.DrainConfig
@@ -35,11 +39,13 @@ const (
 type TracingClient struct {
 	sink    *tracesink.TraceSink
 	project string
+	logger  ilog.Logger
 
-	sampleRate        *float64
-	filteredMu        sync.Mutex
-	filteredTraces    map[uuid.UUID]time.Time
-	filteredLastPrune time.Time
+	sampleRate         *float64
+	mergeEnvMetadata   bool
+	filteredMu         sync.Mutex
+	filteredTraces     map[uuid.UUID]time.Time
+	filteredLastPrune  time.Time
 }
 
 // RunCreate holds parameters for creating a new run (multipart post).
@@ -104,13 +110,16 @@ type RunTransformFunc = tracesink.RunTransformFunc
 type Option func(*options)
 
 type options struct {
-	apiURL       string
-	apiKey       string
-	bearerToken  string
-	project      string
-	drainConfig  *tracesink.DrainConfig
-	sampleRate   *float64
-	runTransform RunTransformFunc
+	apiURL              string
+	apiKey              string
+	bearerToken         string
+	project             string
+	drainConfig         *tracesink.DrainConfig
+	sampleRate          *float64
+	runTransform        RunTransformFunc
+	logger              ilog.Logger
+	mergeEnvMetadata    bool // see [WithMergeFilteredEnvIntoExtraMetadata]
+	compressionDisabled bool // see [WithCompressionDisabled]
 }
 
 // WithAPIURL overrides the LangSmith API URL.
@@ -147,14 +156,38 @@ func WithRunTransform(fn RunTransformFunc) Option {
 	return func(o *options) { o.runTransform = fn }
 }
 
+// WithMergeFilteredEnvIntoExtraMetadata enables merging filtered process environment
+// variables (LANGCHAIN_* / LANGSMITH_* with secrets and endpoints excluded) into
+// extra.metadata on [TracingClient.CreateRun]. Default is false so metadata only
+// contains what the application sets in Extra; opt in when you want parity with
+// LangGraph-style deployments that surface env context on traces.
+func WithMergeFilteredEnvIntoExtraMetadata(v bool) Option {
+	return func(o *options) { o.mergeEnvMetadata = v }
+}
+
+// WithCompressionDisabled disables zstd compression for multipart requests.
+// Overrides the LANGSMITH_DISABLE_RUN_COMPRESSION env var.
+func WithCompressionDisabled(v bool) Option {
+	return func(o *options) { o.compressionDisabled = v }
+}
+
+// WithLogger sets a custom logger for all diagnostic output from the tracing client.
+// If not set, a default logger that writes to the standard log package is used.
+func WithLogger(l Logger) Option {
+	return func(o *options) { o.logger = l }
+}
+
 // NewTracingClient creates a TracingClient that sends runs via multipart ingestion.
 // The context is propagated to HTTP requests during normal operation.
 // Close always drains with a background context to guarantee delivery.
-func NewTracingClient(ctx context.Context, opts ...Option) *TracingClient {
+// It returns an error if LANGSMITH_TRACING_SAMPLING_RATE / LANGCHAIN_TRACING_SAMPLING_RATE
+// is set but invalid (see [env.TracingSampleRate]).
+func NewTracingClient(ctx context.Context, opts ...Option) (*TracingClient, error) {
 	cfg := options{
-		apiURL:  env.APIURL(),
-		apiKey:  env.APIKey(),
-		project: env.Project(),
+		apiURL:              env.APIURL(),
+		apiKey:              env.APIKey(),
+		project:             env.Project(),
+		compressionDisabled: env.CompressionDisabled(),
 	}
 	for _, o := range opts {
 		o(&cfg)
@@ -167,7 +200,16 @@ func NewTracingClient(ctx context.Context, opts ...Option) *TracingClient {
 
 	sampleRate := cfg.sampleRate
 	if sampleRate == nil {
-		sampleRate = env.TracingSampleRate()
+		var err error
+		sampleRate, err = env.TracingSampleRate()
+		if err != nil {
+			return nil, err
+		}
+	}
+
+	l := cfg.logger
+	if l == nil {
+		l = ilog.DefaultLogger{}
 	}
 
 	endpoint := models.WriteEndpoint{
@@ -177,16 +219,18 @@ func NewTracingClient(ctx context.Context, opts ...Option) *TracingClient {
 		Project:     cfg.project,
 	}
 
-	exp := multipart.NewExporter(nil, multipart.DefaultRetry())
-	sink := tracesink.NewTraceSink(ctx, exp, drainCfg, endpoint, cfg.runTransform)
+	exp := multipart.NewExporter(nil, multipart.DefaultRetry(), cfg.compressionDisabled, l)
+	sink := tracesink.NewTraceSink(ctx, exp, drainCfg, endpoint, cfg.runTransform, l)
 
 	return &TracingClient{
-		sink:              sink,
-		project:           cfg.project,
-		sampleRate:        sampleRate,
-		filteredTraces:    make(map[uuid.UUID]time.Time),
-		filteredLastPrune: time.Now(),
-	}
+		sink:               sink,
+		logger:             l,
+		project:            cfg.project,
+		sampleRate:         sampleRate,
+		mergeEnvMetadata:   cfg.mergeEnvMetadata,
+		filteredTraces:     make(map[uuid.UUID]time.Time),
+		filteredLastPrune:  time.Now(),
+	}, nil
 }
 
 // CreateRun enqueues a run create (post) for multipart ingestion.
@@ -244,7 +288,7 @@ func (c *TracingClient) CreateRun(r *RunCreate) error {
 		return fmt.Errorf("marshal run info: %w", err)
 	}
 
-	extra := mergeRuntimeEnv(r.Extra)
+	extra := mergeRuntimeEnv(r.Extra, c.mergeEnvMetadata)
 
 	var serialized map[string]any
 	if r.Serialized != nil && (r.RunType == "llm" || r.RunType == "prompt") {
@@ -433,7 +477,7 @@ func (c *TracingClient) shouldSampleUpdate(id, traceID uuid.UUID) bool {
 	return !filtered
 }
 
-func mergeRuntimeEnv(extra map[string]any) map[string]any {
+func mergeRuntimeEnv(extra map[string]any, mergeEnvMetadata bool) map[string]any {
 	result := make(map[string]any, len(extra)+2)
 	for k, v := range extra {
 		result[k] = v
@@ -450,17 +494,19 @@ func mergeRuntimeEnv(extra map[string]any) map[string]any {
 	}
 	result["runtime"] = runtime
 
-	envMeta := env.LangChainEnvMetadata()
-	if len(envMeta) > 0 {
-		oldMeta, _ := result["metadata"].(map[string]any)
-		metadata := make(map[string]any, len(envMeta)+len(oldMeta))
-		for k, v := range envMeta {
-			metadata[k] = v
+	if mergeEnvMetadata {
+		envMeta := env.LangChainEnvMetadata()
+		if len(envMeta) > 0 {
+			oldMeta, _ := result["metadata"].(map[string]any)
+			metadata := make(map[string]any, len(envMeta)+len(oldMeta))
+			for k, v := range envMeta {
+				metadata[k] = v
+			}
+			for k, v := range oldMeta {
+				metadata[k] = v
+			}
+			result["metadata"] = metadata
 		}
-		for k, v := range oldMeta {
-			metadata[k] = v
-		}
-		result["metadata"] = metadata
 	}
 
 	return result

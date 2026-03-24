@@ -114,7 +114,12 @@ func (r *Client) tracing() (*langsmithtracing.TracingClient, error) {
 		} else if cfg.DefaultBaseURL != nil {
 			tracingOpts = append(tracingOpts, langsmithtracing.WithAPIURL(cfg.DefaultBaseURL.String()))
 		}
-		r.Tracing = langsmithtracing.NewTracingClient(context.Background(), tracingOpts...)
+		tc, err := langsmithtracing.NewTracingClient(context.Background(), tracingOpts...)
+		if err != nil {
+			r.tracingErr = fmt.Errorf("langsmith: init tracing: %w", err)
+			return
+		}
+		r.Tracing = tc
 	})
 	return r.Tracing, r.tracingErr
 }

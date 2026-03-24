@@ -36,6 +36,15 @@ func zstdDecompress(t *testing.T, data []byte) []byte {
 	return out
 }
 
+func mustTracingClient(t *testing.T, ctx context.Context, opts ...langsmithtracing.Option) *langsmithtracing.TracingClient {
+	t.Helper()
+	c, err := langsmithtracing.NewTracingClient(ctx, opts...)
+	if err != nil {
+		t.Fatal(err)
+	}
+	return c
+}
+
 // This test sends real traces to LangSmith via the multipart ingestion endpoint.
 //
 // Run with:
@@ -52,8 +61,10 @@ func TestMultipartTracing(t *testing.T) {
 	ctx := context.Background()
 	projectName := fmt.Sprintf("__go-multipart-test-%s", time.Now().UTC().Format("20060102-150405"))
 
-	client := langsmithtracing.NewTracingClient(ctx,
+	client := mustTracingClient(t, ctx,
 		langsmithtracing.WithProject(projectName),
+		// Opt in so trace 6 can assert filtered env keys appear alongside user metadata.
+		langsmithtracing.WithMergeFilteredEnvIntoExtraMetadata(true),
 	)
 
 	t.Logf("Sending traces to project %q", projectName)
@@ -395,7 +406,7 @@ func TestBatchFallbackOn404(t *testing.T) {
 	defer srv.Close()
 
 	ctx := context.Background()
-	client := langsmithtracing.NewTracingClient(ctx,
+	client := mustTracingClient(t, ctx,
 		langsmithtracing.WithAPIURL(srv.URL),
 		langsmithtracing.WithAPIKey("test-key"),
 		langsmithtracing.WithProject("fallback-test"),
@@ -476,11 +487,9 @@ func TestAutoScalingWorkers(t *testing.T) {
 	cfg := langsmithtracing.DefaultDrainConfig()
 	cfg.MaxBatchSize = 10
 	cfg.DrainInterval = 50 * time.Millisecond
-	cfg.ScaleUpQueueTrigger = 5
 	cfg.MaxWorkers = 4
-	cfg.ScaleDownEmptyTrigger = 2
 
-	client := langsmithtracing.NewTracingClient(context.Background(),
+	client := mustTracingClient(t, context.Background(),
 		langsmithtracing.WithProject(projectName),
 		langsmithtracing.WithDrainConfig(cfg),
 	)
@@ -570,11 +579,9 @@ func TestAutoScalingConcurrency(t *testing.T) {
 	cfg := langsmithtracing.DefaultDrainConfig()
 	cfg.MaxBatchSize = 10
 	cfg.DrainInterval = 50 * time.Millisecond
-	cfg.ScaleUpQueueTrigger = 5
 	cfg.MaxWorkers = 4
-	cfg.ScaleDownEmptyTrigger = 2
 
-	client := langsmithtracing.NewTracingClient(context.Background(),
+	client := mustTracingClient(t, context.Background(),
 		langsmithtracing.WithAPIURL(srv.URL),
 		langsmithtracing.WithAPIKey("test-key"),
 		langsmithtracing.WithProject("concurrency-test"),
@@ -629,7 +636,7 @@ func TestSamplingRateZero(t *testing.T) {
 	}))
 	defer srv.Close()
 
-	client := langsmithtracing.NewTracingClient(context.Background(),
+	client := mustTracingClient(t, context.Background(),
 		langsmithtracing.WithAPIURL(srv.URL),
 		langsmithtracing.WithAPIKey("test-key"),
 		langsmithtracing.WithProject("sampling-zero"),
@@ -677,7 +684,7 @@ func TestSamplingRateOne(t *testing.T) {
 	}))
 	defer srv.Close()
 
-	client := langsmithtracing.NewTracingClient(context.Background(),
+	client := mustTracingClient(t, context.Background(),
 		langsmithtracing.WithAPIURL(srv.URL),
 		langsmithtracing.WithAPIKey("test-key"),
 		langsmithtracing.WithProject("sampling-one"),
@@ -727,7 +734,7 @@ func TestSamplingChildFollowsParent(t *testing.T) {
 	}))
 	defer srv.Close()
 
-	client := langsmithtracing.NewTracingClient(context.Background(),
+	client := mustTracingClient(t, context.Background(),
 		langsmithtracing.WithAPIURL(srv.URL),
 		langsmithtracing.WithAPIKey("test-key"),
 		langsmithtracing.WithProject("sampling-child"),
@@ -799,7 +806,7 @@ func TestSerializedPartLLMvsChain(t *testing.T) {
 	cfg := langsmithtracing.DefaultDrainConfig()
 	cfg.DrainInterval = 50 * time.Millisecond
 
-	client := langsmithtracing.NewTracingClient(context.Background(),
+	client := mustTracingClient(t, context.Background(),
 		langsmithtracing.WithAPIURL(srv.URL),
 		langsmithtracing.WithAPIKey("test-key"),
 		langsmithtracing.WithProject("serialized-test"),
@@ -979,7 +986,7 @@ func TestUpdateRunFields(t *testing.T) {
 	cfg := langsmithtracing.DefaultDrainConfig()
 	cfg.DrainInterval = 50 * time.Millisecond
 
-	client := langsmithtracing.NewTracingClient(context.Background(),
+	client := mustTracingClient(t, context.Background(),
 		langsmithtracing.WithAPIURL(srv.URL),
 		langsmithtracing.WithAPIKey("test-key"),
 		langsmithtracing.WithProject("update-fields-test"),
@@ -1046,8 +1053,8 @@ func TestUpdateRunFields(t *testing.T) {
 
 	idStr := runID.String()
 
-	// Because create+update for the same run are coalesced into a single "post" op,
-	// the update fields should be merged into the post. Check the coalesced post.
+	// Because create+update for the same run are merged into a single "post" op,
+	// the update fields should be merged into the post. Check the merged post.
 	postKey := "post." + idStr
 	if raw, ok := allParts[postKey]; ok {
 		var info map[string]any
@@ -1061,12 +1068,12 @@ func TestUpdateRunFields(t *testing.T) {
 			t.Errorf("run_type = %v, want llm", info["run_type"])
 		}
 		if _, ok := info["start_time"]; !ok {
-			t.Error("start_time should be present in coalesced run info")
+			t.Error("start_time should be present in merged run info")
 		}
 		if tags, ok := info["tags"].([]any); !ok || len(tags) == 0 {
 			t.Errorf("tags = %v, want non-empty", info["tags"])
 		}
-		t.Logf("coalesced post run info: %s", string(raw))
+		t.Logf("merged post run info: %s", string(raw))
 	} else {
 		// If they arrived in separate batches, check the patch.
 		patchKey := "patch." + idStr
@@ -1144,7 +1151,7 @@ func TestUpdateRunFieldsLive(t *testing.T) {
 	}
 
 	projectName := fmt.Sprintf("__go-multipart-test-%s", time.Now().UTC().Format("20060102-150405"))
-	client := langsmithtracing.NewTracingClient(context.Background(),
+	client := mustTracingClient(t, context.Background(),
 		langsmithtracing.WithProject(projectName),
 	)
 
@@ -1216,7 +1223,7 @@ func TestRunInfoFields(t *testing.T) {
 	cfg := langsmithtracing.DefaultDrainConfig()
 	cfg.DrainInterval = 50 * time.Millisecond
 
-	client := langsmithtracing.NewTracingClient(context.Background(),
+	client := mustTracingClient(t, context.Background(),
 		langsmithtracing.WithAPIURL(srv.URL),
 		langsmithtracing.WithAPIKey("test-key"),
 		langsmithtracing.WithProject("default-project"),
@@ -1319,7 +1326,7 @@ func TestRunInfoFieldsLive(t *testing.T) {
 	}
 
 	projectName := fmt.Sprintf("__go-multipart-test-%s", time.Now().UTC().Format("20060102-150405"))
-	client := langsmithtracing.NewTracingClient(context.Background(),
+	client := mustTracingClient(t, context.Background(),
 		langsmithtracing.WithProject(projectName),
 	)
 
@@ -1383,7 +1390,7 @@ func TestSingleShotCreateRun(t *testing.T) {
 	cfg := langsmithtracing.DefaultDrainConfig()
 	cfg.DrainInterval = 50 * time.Millisecond
 
-	client := langsmithtracing.NewTracingClient(context.Background(),
+	client := mustTracingClient(t, context.Background(),
 		langsmithtracing.WithAPIURL(srv.URL),
 		langsmithtracing.WithAPIKey("test-key"),
 		langsmithtracing.WithProject("single-shot-test"),
@@ -1517,7 +1524,7 @@ func TestSingleShotCreateRunLive(t *testing.T) {
 	}
 
 	projectName := fmt.Sprintf("__go-multipart-test-%s", time.Now().UTC().Format("20060102-150405"))
-	client := langsmithtracing.NewTracingClient(context.Background(),
+	client := mustTracingClient(t, context.Background(),
 		langsmithtracing.WithProject(projectName),
 	)
 
@@ -1592,7 +1599,7 @@ func TestRetryOnServerError(t *testing.T) {
 	cfg := langsmithtracing.DefaultDrainConfig()
 	cfg.DrainInterval = 50 * time.Millisecond
 
-	client := langsmithtracing.NewTracingClient(context.Background(),
+	client := mustTracingClient(t, context.Background(),
 		langsmithtracing.WithAPIURL(srv.URL),
 		langsmithtracing.WithAPIKey("test-key"),
 		langsmithtracing.WithProject("retry-test"),
@@ -1651,7 +1658,7 @@ func TestNoRetryOnClientError(t *testing.T) {
 	cfg := langsmithtracing.DefaultDrainConfig()
 	cfg.DrainInterval = 50 * time.Millisecond
 
-	client := langsmithtracing.NewTracingClient(context.Background(),
+	client := mustTracingClient(t, context.Background(),
 		langsmithtracing.WithAPIURL(srv.URL),
 		langsmithtracing.WithAPIKey("test-key"),
 		langsmithtracing.WithProject("no-retry-test"),
@@ -1720,7 +1727,7 @@ func TestRunTransformHook(t *testing.T) {
 		return ops
 	}
 
-	client := langsmithtracing.NewTracingClient(context.Background(),
+	client := mustTracingClient(t, context.Background(),
 		langsmithtracing.WithAPIURL(srv.URL),
 		langsmithtracing.WithAPIKey("test-key"),
 		langsmithtracing.WithProject("transform-test"),
@@ -1779,7 +1786,7 @@ func TestRunTransformHook(t *testing.T) {
 		}
 	}
 
-	// Find the extra part for the post (which should be coalesced).
+	// Find the extra part for the post (which should be merged).
 	extraKey := "post." + runID.String() + ".extra"
 	raw, ok := allParts[extraKey]
 	if !ok {
