@@ -1,6 +1,7 @@
 package multipart
 
 import (
+	"context"
 	"math"
 	"math/rand/v2"
 	"net/http"
@@ -57,6 +58,19 @@ func (rc RetryConfig) retryDelay(err *APIError, attempt int) time.Duration {
 		return err.RetryAfter
 	}
 	return rc.backoff(attempt)
+}
+
+// sleepWithContext sleeps for the given duration but returns early if
+// the context is canceled. Returns ctx.Err() on cancellation, nil otherwise.
+func sleepWithContext(ctx context.Context, d time.Duration) error {
+	t := time.NewTimer(d)
+	defer t.Stop()
+	select {
+	case <-t.C:
+		return nil
+	case <-ctx.Done():
+		return ctx.Err()
+	}
 }
 
 // parseRetryAfter extracts a Retry-After duration from an HTTP response.

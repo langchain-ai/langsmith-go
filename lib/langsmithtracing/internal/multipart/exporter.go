@@ -107,7 +107,9 @@ func (e *Exporter) exportMultipart(ctx context.Context, endpoint models.WriteEnd
 
 	for attempt := range attempts {
 		if attempt > 0 {
-			time.Sleep(e.retry.retryDelay(lastAPIErr, attempt-1))
+			if err := sleepWithContext(ctx, e.retry.retryDelay(lastAPIErr, attempt-1)); err != nil {
+				return lastErr
+			}
 		}
 
 		boundary := uuid.New().String()
@@ -118,12 +120,24 @@ func (e *Exporter) exportMultipart(ctx context.Context, endpoint models.WriteEnd
 		}()
 
 		err := e.doMultipartRequest(ctx, endpoint, pr, boundary, prePayloadBytes)
-		if writeErr := <-writeErrCh; writeErr != nil {
-			return writeErr
-		}
+		writeErr := <-writeErrCh
+
 		if err == nil {
+			if writeErr != nil {
+				return writeErr
+			}
 			return nil
 		}
+
+		// When the server responded with a status code (APIError), prefer
+		// that over pipe errors in the writer — the pipe error is just a
+		// consequence of the server closing the connection early.
+		if writeErr != nil {
+			if _, isAPI := err.(*APIError); !isAPI {
+				return writeErr
+			}
+		}
+
 		lastErr = err
 		lastAPIErr = nil
 
@@ -255,7 +269,9 @@ func (e *Exporter) sendBatchWithRetry(ctx context.Context, endpoint models.Write
 
 	for attempt := range attempts {
 		if attempt > 0 {
-			time.Sleep(e.retry.retryDelay(lastAPIErr, attempt-1))
+			if err := sleepWithContext(ctx, e.retry.retryDelay(lastAPIErr, attempt-1)); err != nil {
+				return lastErr
+			}
 		}
 
 		err := e.doBatchRequest(ctx, endpoint, data)

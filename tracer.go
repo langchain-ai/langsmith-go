@@ -16,14 +16,14 @@ import (
 )
 
 const (
-	defaultEndpoint     = "api.smith.langchain.com"
-	defaultURLPath      = "/otel/v1/traces"
-	defaultBatchTimeout = 1 * time.Second
+	defaultEndpoint        = "api.smith.langchain.com"
+	defaultURLPath         = "/otel/v1/traces"
+	defaultBatchTimeout    = 1 * time.Second
 	defaultShutdownTimeout = 10 * time.Second
 )
 
-// TracerOption configures a Tracer.
-type TracerOption func(*tracerConfig)
+// OTelTracerOption configures an [OTelTracer].
+type OTelTracerOption func(*tracerConfig)
 
 type tracerConfig struct {
 	apiKey       string
@@ -34,48 +34,48 @@ type tracerConfig struct {
 }
 
 // WithAPIKey sets the LangSmith API key.
-func WithAPIKey(apiKey string) TracerOption {
+func WithAPIKey(apiKey string) OTelTracerOption {
 	return func(c *tracerConfig) {
 		c.apiKey = apiKey
 	}
 }
 
 // WithProjectName sets the LangSmith project name.
-func WithProjectName(projectName string) TracerOption {
+func WithProjectName(projectName string) OTelTracerOption {
 	return func(c *tracerConfig) {
 		c.projectName = projectName
 	}
 }
 
 // WithServiceName sets the service name for the tracer.
-func WithServiceName(serviceName string) TracerOption {
+func WithServiceName(serviceName string) OTelTracerOption {
 	return func(c *tracerConfig) {
 		c.serviceName = serviceName
 	}
 }
 
 // WithEndpoint sets the LangSmith endpoint URL.
-func WithEndpoint(endpoint string) TracerOption {
+func WithEndpoint(endpoint string) OTelTracerOption {
 	return func(c *tracerConfig) {
 		c.endpoint = endpoint
 	}
 }
 
 // WithBatchTimeout sets the batch timeout for trace exports.
-func WithBatchTimeout(timeout time.Duration) TracerOption {
+func WithBatchTimeout(timeout time.Duration) OTelTracerOption {
 	return func(c *tracerConfig) {
 		c.batchTimeout = timeout
 	}
 }
 
-// Tracer manages a LangSmith span processor registered on an OpenTelemetry tracer provider.
-type Tracer struct {
+// OTelTracer manages a LangSmith span processor registered on an OpenTelemetry tracer provider.
+type OTelTracer struct {
 	tp        *sdktrace.TracerProvider
 	processor sdktrace.SpanProcessor
 	ownsTP    bool
 }
 
-// New registers a LangSmith exporter on the provided TracerProvider.
+// NewOTel registers a LangSmith exporter on the provided TracerProvider.
 //
 // Example:
 //
@@ -83,7 +83,7 @@ type Tracer struct {
 //	defer tp.Shutdown(context.Background())
 //	otel.SetTracerProvider(tp)
 //
-//	ls, err := langsmith.New(tp,
+//	ls, err := langsmith.NewOTel(tp,
 //		langsmith.WithAPIKey("your-api-key"),
 //		langsmith.WithProjectName("my-project"),
 //	)
@@ -91,9 +91,9 @@ type Tracer struct {
 //		log.Fatal(err)
 //	}
 //	defer ls.Shutdown(context.Background())
-func New(tp *sdktrace.TracerProvider, opts ...TracerOption) (*Tracer, error) {
+func NewOTel(tp *sdktrace.TracerProvider, opts ...OTelTracerOption) (*OTelTracer, error) {
 	if tp == nil {
-		return nil, fmt.Errorf("TracerProvider must not be nil (use NewTracer to create one automatically)")
+		return nil, fmt.Errorf("TracerProvider must not be nil (use NewOTelTracer to create one automatically)")
 	}
 
 	cfg := resolveConfig(opts)
@@ -109,16 +109,16 @@ func New(tp *sdktrace.TracerProvider, opts ...TracerOption) (*Tracer, error) {
 
 	tp.RegisterSpanProcessor(processor)
 
-	return &Tracer{
+	return &OTelTracer{
 		tp:        tp,
 		processor: processor,
 		ownsTP:    false,
 	}, nil
 }
 
-// NewTracer creates a new Tracer that owns its own TracerProvider.
-// For sharing a TracerProvider with other libraries, use New instead.
-func NewTracer(opts ...TracerOption) (*Tracer, error) {
+// NewOTelTracer creates a new [OTelTracer] that owns its own TracerProvider.
+// For sharing a TracerProvider with other libraries, use [NewOTel] instead.
+func NewOTelTracer(opts ...OTelTracerOption) (*OTelTracer, error) {
 	cfg := resolveConfig(opts)
 
 	if cfg.apiKey == "" {
@@ -157,14 +157,14 @@ func NewTracer(opts ...TracerOption) (*Tracer, error) {
 		propagation.Baggage{},
 	))
 
-	return &Tracer{
+	return &OTelTracer{
 		tp:        tp,
 		processor: processor,
 		ownsTP:    true,
 	}, nil
 }
 
-func resolveConfig(opts []TracerOption) *tracerConfig {
+func resolveConfig(opts []OTelTracerOption) *tracerConfig {
 	cfg := &tracerConfig{
 		endpoint:     defaultEndpoint,
 		batchTimeout: defaultBatchTimeout,
@@ -205,20 +205,19 @@ func createProcessor(cfg *tracerConfig) (sdktrace.SpanProcessor, error) {
 }
 
 // TracerProvider returns the underlying trace.TracerProvider.
-func (t *Tracer) TracerProvider() trace.TracerProvider {
+func (t *OTelTracer) TracerProvider() trace.TracerProvider {
 	return t.tp
 }
 
 // Tracer returns a trace.Tracer with the given name.
-// This is a convenience method that wraps TracerProvider().Tracer(name).
-func (t *Tracer) Tracer(name string) trace.Tracer {
+func (t *OTelTracer) Tracer(name string) trace.Tracer {
 	return t.tp.Tracer(name)
 }
 
 // Shutdown gracefully shuts down the tracer.
-// If the Tracer was created with New, only the LangSmith processor is shut down.
-// If the Tracer was created with NewTracer, the entire TracerProvider is shut down.
-func (t *Tracer) Shutdown(ctx context.Context) error {
+// If the OTelTracer was created with [NewOTel], only the LangSmith processor is shut down.
+// If it was created with [NewOTelTracer], the entire TracerProvider is shut down.
+func (t *OTelTracer) Shutdown(ctx context.Context) error {
 	shutdownCtx, cancel := context.WithTimeout(ctx, defaultShutdownTimeout)
 	defer cancel()
 	if t.ownsTP {
@@ -226,3 +225,15 @@ func (t *Tracer) Shutdown(ctx context.Context) error {
 	}
 	return t.processor.Shutdown(shutdownCtx)
 }
+
+// Deprecated: Use [OTelTracerOption] instead.
+type TracerOption = OTelTracerOption
+
+// Deprecated: Use [OTelTracer] instead.
+type Tracer = OTelTracer
+
+// Deprecated: Use [NewOTel] instead.
+var New = NewOTel
+
+// Deprecated: Use [NewOTelTracer] instead.
+var NewTracer = NewOTelTracer

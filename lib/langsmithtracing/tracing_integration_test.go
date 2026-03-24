@@ -45,6 +45,11 @@ func mustTracingClient(t *testing.T, ctx context.Context, opts ...langsmithtraci
 	return c
 }
 
+func liveProjectName(t *testing.T) string {
+	t.Helper()
+	return fmt.Sprintf("__go-test-%s-%s", t.Name(), time.Now().UTC().Format("20060102-150405"))
+}
+
 // This test sends real traces to LangSmith via the multipart ingestion endpoint.
 //
 // Run with:
@@ -59,7 +64,7 @@ func TestMultipartTracing(t *testing.T) {
 	}
 
 	ctx := context.Background()
-	projectName := fmt.Sprintf("__go-multipart-test-%s", time.Now().UTC().Format("20060102-150405"))
+	projectName := liveProjectName(t)
 
 	client := mustTracingClient(t, ctx,
 		langsmithtracing.WithProject(projectName),
@@ -468,21 +473,21 @@ func TestBatchFallbackOn404(t *testing.T) {
 		multipartCalls, batchCalls, len(parsed.Post), len(parsed.Patch))
 }
 
-// TestAutoScalingWorkers sends a burst of runs to LangSmith to exercise the
-// auto-scaling worker pool. It uses a small batch size and low scale-up trigger
-// so the sink spawns concurrent export goroutines under load.
+// TestWorkerPoolThroughputLive sends a burst of runs to LangSmith to exercise
+// the fixed worker pool. It uses a small batch size so the sink dispatches
+// many batches across MaxWorkers concurrent export goroutines.
 //
 // Run with:
 //
 //	export LANGSMITH_API_KEY="your-key"
-//	go test -v -run TestAutoScalingWorkers ./lib/langsmithtracing/ -count=1
-func TestAutoScalingWorkers(t *testing.T) {
+//	go test -v -run TestWorkerPoolThroughputLive ./lib/langsmithtracing/ -count=1
+func TestWorkerPoolThroughputLive(t *testing.T) {
 	apiKey := os.Getenv("LANGSMITH_API_KEY")
 	if apiKey == "" {
 		t.Skip("LANGSMITH_API_KEY not set; skipping integration test")
 	}
 
-	projectName := fmt.Sprintf("__go-multipart-test-%s", time.Now().UTC().Format("20060102-150405"))
+	projectName := liveProjectName(t)
 
 	cfg := langsmithtracing.DefaultDrainConfig()
 	cfg.MaxBatchSize = 10
@@ -547,9 +552,9 @@ func TestAutoScalingWorkers(t *testing.T) {
 	t.Logf("Done. %d runs flushed in %s. Check project %q in LangSmith.", numRuns, elapsed, projectName)
 }
 
-// TestAutoScalingConcurrency is a local-only test (no API key needed) that
-// verifies the sink actually achieves concurrent exports via a mock server.
-func TestAutoScalingConcurrency(t *testing.T) {
+// TestWorkerPoolConcurrency is a local-only test (no API key needed) that
+// verifies the fixed worker pool achieves concurrent exports via a mock server.
+func TestWorkerPoolConcurrency(t *testing.T) {
 	var (
 		mu           sync.Mutex
 		inflight     int
@@ -1150,7 +1155,7 @@ func TestUpdateRunFieldsLive(t *testing.T) {
 		t.Skip("LANGSMITH_API_KEY not set; skipping integration test")
 	}
 
-	projectName := fmt.Sprintf("__go-multipart-test-%s", time.Now().UTC().Format("20060102-150405"))
+	projectName := liveProjectName(t)
 	client := mustTracingClient(t, context.Background(),
 		langsmithtracing.WithProject(projectName),
 	)
@@ -1325,7 +1330,7 @@ func TestRunInfoFieldsLive(t *testing.T) {
 		t.Skip("LANGSMITH_API_KEY not set; skipping integration test")
 	}
 
-	projectName := fmt.Sprintf("__go-multipart-test-%s", time.Now().UTC().Format("20060102-150405"))
+	projectName := liveProjectName(t)
 	client := mustTracingClient(t, context.Background(),
 		langsmithtracing.WithProject(projectName),
 	)
@@ -1523,7 +1528,7 @@ func TestSingleShotCreateRunLive(t *testing.T) {
 		t.Skip("LANGSMITH_API_KEY not set; skipping integration test")
 	}
 
-	projectName := fmt.Sprintf("__go-multipart-test-%s", time.Now().UTC().Format("20060102-150405"))
+	projectName := liveProjectName(t)
 	client := mustTracingClient(t, context.Background(),
 		langsmithtracing.WithProject(projectName),
 	)

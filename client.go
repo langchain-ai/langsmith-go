@@ -30,10 +30,10 @@ type Client struct {
 	Repos            *RepoService
 	Commits          *CommitService
 	Settings         *SettingService
-	Tracing          *langsmithtracing.TracingClient
 
-	tracingOnce sync.Once
-	tracingErr  error
+	tracingClient *langsmithtracing.TracingClient
+	tracingOnce   sync.Once
+	tracingErr    error
 }
 
 // DefaultClientOptions read from the environment (LANGSMITH_API_KEY,
@@ -119,9 +119,9 @@ func (r *Client) tracing() (*langsmithtracing.TracingClient, error) {
 			r.tracingErr = fmt.Errorf("langsmith: init tracing: %w", err)
 			return
 		}
-		r.Tracing = tc
+		r.tracingClient = tc
 	})
-	return r.Tracing, r.tracingErr
+	return r.tracingClient, r.tracingErr
 }
 
 // CreateRun enqueues a run create (post) for multipart ingestion.
@@ -150,8 +150,8 @@ func (r *Client) Close() {
 	r.tracingOnce.Do(func() {
 		r.tracingErr = fmt.Errorf("langsmith: client closed before tracing was initialized")
 	})
-	if r.Tracing != nil {
-		r.Tracing.Close()
+	if r.tracingClient != nil {
+		r.tracingClient.Close()
 	}
 }
 

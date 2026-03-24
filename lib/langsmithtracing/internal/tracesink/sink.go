@@ -17,6 +17,11 @@ import (
 // on every drain cycle, after batching but before merging and export.
 type RunTransformFunc func(ops []models.RunOp) []models.RunOp
 
+type job struct {
+	ctx   context.Context
+	batch []*models.SerializedOp
+}
+
 // TraceSink asynchronously batches serialized operations and sends them
 // via the multipart exporter. A single dispatcher goroutine reads from the
 // queue channel, builds batches, and dispatches them to a fixed worker pool.
@@ -28,8 +33,8 @@ type TraceSink struct {
 	endpoint  models.WriteEndpoint
 	ctx       context.Context
 
-	queue   chan *models.SerializedOp   // producers: Submit; consumer: dispatcher
-	jobs    chan []*models.SerializedOp // producer: dispatcher; consumers: workers
+	queue   chan *models.SerializedOp // producers: Submit; consumer: dispatcher
+	jobs    chan job                  // producer: dispatcher; consumers: workers
 	closed  atomic.Bool
 	closeCh chan struct{} // signals dispatcher to drain and exit
 
@@ -61,7 +66,7 @@ func NewTraceSink(ctx context.Context, exporter *multipart.Exporter, config Drai
 		endpoint:  endpoint,
 		ctx:       ctx,
 		queue:     make(chan *models.SerializedOp, queueSize),
-		jobs:      make(chan []*models.SerializedOp, workers),
+		jobs:      make(chan job, workers),
 		closeCh:   make(chan struct{}),
 		doneCh:    make(chan struct{}),
 	}
@@ -77,9 +82,12 @@ func NewTraceSink(ctx context.Context, exporter *multipart.Exporter, config Drai
 
 	go func() {
 		defer close(s.doneCh)
-		s.runDispatcher()
+		cancel := s.runDispatcher()
 		close(s.jobs)
 		wg.Wait()
+		if cancel != nil {
+			cancel()
+		}
 	}()
 
 	return s
@@ -116,7 +124,9 @@ func (s *TraceSink) Close() {
 
 // runDispatcher is the single goroutine that reads from the queue,
 // builds batches on a timer, and dispatches them to workers via the jobs channel.
-func (s *TraceSink) runDispatcher() {
+// It returns a cancel function for the drain context (nil if no drain occurred).
+// The caller must defer cancel until after all workers have finished.
+func (s *TraceSink) runDispatcher() context.CancelFunc {
 	ticker := time.NewTicker(s.config.DrainInterval)
 	defer ticker.Stop()
 
@@ -129,8 +139,7 @@ func (s *TraceSink) runDispatcher() {
 
 		case <-s.closeCh:
 			ticker.Stop()
-			s.drainRemaining(pending)
-			return
+			return s.drainRemaining(pending)
 		}
 	}
 }
@@ -141,7 +150,7 @@ func (s *TraceSink) dispatchBatch(ctx context.Context, pending *models.Serialize
 	batch, leftover := s.collectBatch(pending)
 	if len(batch) > 0 {
 		select {
-		case s.jobs <- batch:
+		case s.jobs <- job{ctx: ctx, batch: batch}:
 		case <-ctx.Done():
 			s.logger.Warn("context canceled; dropping batch", "batch_size", len(batch))
 		}
@@ -177,42 +186,43 @@ func (s *TraceSink) collectBatch(pending *models.SerializedOp) (batch []*models.
 }
 
 // drainRemaining flushes all items left in the queue during shutdown.
-func (s *TraceSink) drainRemaining(pending *models.SerializedOp) {
+// It returns a cancel function for the drain context; the caller must
+// not cancel it until all workers have finished processing.
+func (s *TraceSink) drainRemaining(pending *models.SerializedOp) context.CancelFunc {
 	timeout := s.config.CloseTimeout
 	if timeout <= 0 {
 		timeout = 60 * time.Second
 	}
 	ctx, cancel := context.WithTimeout(context.Background(), timeout)
-	defer cancel()
 
 	for {
 		batch, leftover := s.collectBatch(pending)
 		pending = leftover
 		if len(batch) == 0 {
-			return
+			return cancel
 		}
 		select {
-		case s.jobs <- batch:
+		case s.jobs <- job{ctx: ctx, batch: batch}:
 		case <-ctx.Done():
 			remaining := len(s.queue)
 			if pending != nil {
 				remaining++
 			}
 			s.logger.Warn("close timed out; dropping pending items", "timeout", timeout, "remaining", remaining)
-			return
+			return cancel
 		}
 	}
 }
 
 // runWorker processes batches from the jobs channel until it's closed.
 func (s *TraceSink) runWorker() {
-	for batch := range s.jobs {
-		s.processBatch(batch)
+	for j := range s.jobs {
+		s.processBatch(j.ctx, j.batch)
 	}
 }
 
 // processBatch applies the transform hook, merges patches into posts, and exports.
-func (s *TraceSink) processBatch(batch []*models.SerializedOp) {
+func (s *TraceSink) processBatch(ctx context.Context, batch []*models.SerializedOp) {
 	if s.transform != nil {
 		var err error
 		batch, err = s.applyTransform(batch)
@@ -230,7 +240,7 @@ func (s *TraceSink) processBatch(batch []*models.SerializedOp) {
 		s.logger.Error("merge patch to post error", "error", err)
 		return
 	}
-	if err := s.exporter.Export(s.ctx, s.endpoint, merged); err != nil {
+	if err := s.exporter.Export(ctx, s.endpoint, merged); err != nil {
 		s.logger.Error("export error", "error", err)
 	}
 }
