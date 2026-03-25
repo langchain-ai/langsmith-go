@@ -164,14 +164,20 @@ type AnnotationQueueRunNewParamsBodyRunsAnnotationQueueRunAddSchemaArray []Annot
 func (r AnnotationQueueRunNewParamsBodyRunsAnnotationQueueRunAddSchemaArray) implementsAnnotationQueueRunNewParamsBodyUnion() {
 }
 
-// Schema for adding a run to an annotation queue with optional metadata.
+// Deprecated: use plain UUID list or AddRunToQueueByKeyRequest instead.
 type AnnotationQueueRunNewParamsBodyRunsAnnotationQueueRunAddSchemaArrayItem struct {
-	RunID       param.Field[string]                                                                       `json:"run_id" api:"required" format:"uuid"`
-	ParentRunID param.Field[string]                                                                       `json:"parent_run_id" format:"uuid"`
-	SessionID   param.Field[string]                                                                       `json:"session_id" format:"uuid"`
-	StartTime   param.Field[time.Time]                                                                    `json:"start_time" format:"date-time"`
-	TraceID     param.Field[string]                                                                       `json:"trace_id" format:"uuid"`
-	TraceTier   param.Field[AnnotationQueueRunNewParamsBodyRunsAnnotationQueueRunAddSchemaArrayTraceTier] `json:"trace_tier"`
+	// Deprecated: deprecated
+	RunID param.Field[string] `json:"run_id" api:"required" format:"uuid"`
+	// Deprecated: deprecated
+	ParentRunID param.Field[string] `json:"parent_run_id" format:"uuid"`
+	// Deprecated: deprecated
+	SessionID param.Field[string] `json:"session_id" format:"uuid"`
+	// Deprecated: deprecated
+	StartTime param.Field[time.Time] `json:"start_time" format:"date-time"`
+	// Deprecated: deprecated
+	TraceID param.Field[string] `json:"trace_id" format:"uuid"`
+	// Deprecated: deprecated
+	TraceTier param.Field[AnnotationQueueRunNewParamsBodyRunsAnnotationQueueRunAddSchemaArrayTraceTier] `json:"trace_tier"`
 }
 
 func (r AnnotationQueueRunNewParamsBodyRunsAnnotationQueueRunAddSchemaArrayItem) MarshalJSON() (data []byte, err error) {
