@@ -9,10 +9,13 @@ on:
       - '!generated'
       - '!codegen/**'
       - 'codegen/stl/**'
-  pull_request:
+  pull_request_target:
     branches-ignore:
       - 'stl-preview-head/**'
       - 'stl-preview-base/**'
+
+permissions:
+  contents: read
 
 jobs:
   build:
