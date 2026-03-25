@@ -9,7 +9,7 @@ on:
       - '!generated'
       - '!codegen/**'
       - 'codegen/stl/**'
-  pull_request_target:
+  pull_request:
     branches-ignore:
       - 'stl-preview-head/**'
       - 'stl-preview-base/**'
