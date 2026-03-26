@@ -304,7 +304,8 @@ func (c *TracingClient) CreateRun(r *RunCreate) error {
 	if err != nil {
 		return err
 	}
-	return c.sink.Submit(op)
+	c.sink.Submit(op)
+	return nil
 }
 
 // UpdateRun enqueues a run update (patch) for multipart ingestion.
@@ -365,7 +366,8 @@ func (c *TracingClient) UpdateRun(r *RunUpdate) error {
 	if err != nil {
 		return err
 	}
-	return c.sink.Submit(op)
+	c.sink.Submit(op)
+	return nil
 }
 
 func buildOp(

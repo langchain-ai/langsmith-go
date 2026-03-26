@@ -67,18 +67,14 @@ func TestQueueFullDrop(t *testing.T) {
 	sink := NewTraceSink(context.Background(), exp, cfg, endpoint, nil, nil)
 
 	for i := 0; i < 3; i++ {
-		if err := sink.Submit(makeOp()); err != nil {
-			t.Fatalf("submit %d: %v", i, err)
-		}
+		sink.Submit(makeOp())
 	}
 
 	if got := len(sink.queue); got != 3 {
 		t.Fatalf("queue length after 3 submits: got %d, want 3", got)
 	}
 
-	if err := sink.Submit(makeOp()); err != nil {
-		t.Fatalf("4th submit returned error: %v", err)
-	}
+	sink.Submit(makeOp())
 
 	if got := len(sink.queue); got != 3 {
 		t.Fatalf("queue length after 4th submit: got %d, want 3", got)
@@ -95,9 +91,7 @@ func TestSubmitAfterClose(t *testing.T) {
 
 	sink.Close()
 
-	if err := sink.Submit(makeOp()); err != nil {
-		t.Fatalf("submit after close returned error: %v", err)
-	}
+	sink.Submit(makeOp())
 
 	if got := reqCount.Load(); got != 0 {
 		t.Fatalf("server received %d requests, want 0", got)
@@ -161,9 +155,7 @@ func TestAllItemsDrained(t *testing.T) {
 	sink := NewTraceSink(context.Background(), exp, cfg, endpoint, nil, nil)
 
 	for i := 0; i < 20; i++ {
-		if err := sink.Submit(makeOp()); err != nil {
-			t.Fatalf("submit %d: %v", i, err)
-		}
+		sink.Submit(makeOp())
 	}
 
 	sink.Close()
