@@ -96,7 +96,7 @@ func NewTraceSink(ctx context.Context, exporter *multipart.Exporter, config Drai
 // Submit adds a serialized operation to the queue.
 //
 // If the sink is closed or the queue is full, the operation is silently
-// dropped. Submit never blocks.
+// dropped.
 func (s *TraceSink) Submit(op *models.SerializedOp) {
 	if s.closed.Load() {
 		s.logger.Error("Submit after close: dropping run", "run_id", op.ID)
