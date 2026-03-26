@@ -69,6 +69,7 @@ func TestCommitGetWithOptionalParams(t *testing.T) {
 		"commit",
 		langsmith.CommitGetParams{
 			GetExamples:  langsmith.F(true),
+			Include:      langsmith.F("include"),
 			IncludeModel: langsmith.F(true),
 			IsView:       langsmith.F(true),
 		},
