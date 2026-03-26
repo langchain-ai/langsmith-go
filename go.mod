@@ -5,6 +5,7 @@ go 1.25.0
 require (
 	github.com/anthropics/anthropic-sdk-go v1.19.0
 	github.com/google/uuid v1.6.0
+	github.com/klauspost/compress v1.18.4
 	github.com/sashabaranov/go-openai v1.41.2
 	github.com/tidwall/gjson v1.18.0
 	github.com/tidwall/sjson v1.2.5
