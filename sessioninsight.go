@@ -384,7 +384,6 @@ func (r sessionInsightGetJobResponseReportHighlightedTraceJSON) RawJSON() string
 	return r.raw
 }
 
-// An item returned when listing all insights jobs for a session.
 type SessionInsightListResponseItem struct {
 	ID        string                                `json:"id" api:"required" format:"uuid"`
 	Name      string                                `json:"name" api:"required"`
