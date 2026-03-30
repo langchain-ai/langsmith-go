@@ -1,5 +1,34 @@
 # Changelog
 
+## 0.2.2 (2026-03-30)
+
+Full Changelog: [v0.2.1...v0.2.2](https://github.com/langchain-ai/langsmith-go/compare/v0.2.1...v0.2.2)
+
+### Features
+
+* **api:** api update ([4838570](https://github.com/langchain-ai/langsmith-go/commit/483857019c4b3c4111d93b1b5f0044593b25fb82))
+* **api:** api update ([bc2f46b](https://github.com/langchain-ai/langsmith-go/commit/bc2f46b211a935791f8502e0b6eaec6efb45093e))
+* **api:** api update ([31b4977](https://github.com/langchain-ai/langsmith-go/commit/31b497729cfb81551e7dc903c8dd6fb6dacc61e5))
+* **api:** api update ([59aa8e1](https://github.com/langchain-ai/langsmith-go/commit/59aa8e1df6df83d67779335e2881794571472707))
+* **api:** manual updates ([9d68d4c](https://github.com/langchain-ai/langsmith-go/commit/9d68d4c762851ef9b42944e6a1dd5a9a5bb902cf))
+* **internal:** support comma format in multipart form encoding ([8c561c7](https://github.com/langchain-ai/langsmith-go/commit/8c561c72b74ead65cbe4de6005ad8fd3424592e8))
+* multipart ingestion ([#36](https://github.com/langchain-ai/langsmith-go/issues/36)) ([ff6f440](https://github.com/langchain-ai/langsmith-go/commit/ff6f440535e77ebcf805fd5a2fb589df23b135fb))
+
+
+### Bug Fixes
+
+* prevent duplicate ? in query params ([87a3062](https://github.com/langchain-ai/langsmith-go/commit/87a30622638f311349a19b4fcfa4d1f28476ae63))
+
+
+### Chores
+
+* add target-branch next for Stainless posture compliance ([#48](https://github.com/langchain-ai/langsmith-go/issues/48)) ([e190929](https://github.com/langchain-ai/langsmith-go/commit/e190929227183902197ae1a20bd267071bd9b26e))
+* **ci:** skip lint on metadata-only changes ([9a00886](https://github.com/langchain-ai/langsmith-go/commit/9a00886ca5a171d0e5e8dc43e78672b9643c5a70))
+* **ci:** support opting out of skipping builds on metadata-only commits ([d61b04d](https://github.com/langchain-ai/langsmith-go/commit/d61b04dfeb7be85aad1c4acbc09fc2b3250191a0))
+* dependabot ([#26](https://github.com/langchain-ai/langsmith-go/issues/26)) ([02b58a3](https://github.com/langchain-ai/langsmith-go/commit/02b58a3fc5f16b551a0ec87b7017b0eb5f282a66))
+* **internal:** update gitignore ([701ad97](https://github.com/langchain-ai/langsmith-go/commit/701ad973197958f06c57f0ca4a99f13d357b6a96))
+* remove unnecessary error check for url parsing ([3fb1e50](https://github.com/langchain-ai/langsmith-go/commit/3fb1e50adbbda3f8e5bfbdb7ba1da9f198dd77db))
+
 ## 0.2.1 (2026-03-20)
 
 Full Changelog: [v0.2.0...v0.2.1](https://github.com/langchain-ai/langsmith-go/compare/v0.2.0...v0.2.1)
