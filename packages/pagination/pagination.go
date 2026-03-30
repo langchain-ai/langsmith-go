@@ -348,6 +348,117 @@ func (r *OffsetPaginationCommitsAutoPager[T]) Index() int {
 	return r.run
 }
 
+type OffsetPaginationInsightsClusteringJobs[T any] struct {
+	ClusteringJobs []T                                        `json:"clustering_jobs"`
+	JSON           offsetPaginationInsightsClusteringJobsJSON `json:"-"`
+	cfg            *requestconfig.RequestConfig
+	res            *http.Response
+}
+
+// offsetPaginationInsightsClusteringJobsJSON contains the JSON metadata for the
+// struct [OffsetPaginationInsightsClusteringJobs[T]]
+type offsetPaginationInsightsClusteringJobsJSON struct {
+	ClusteringJobs apijson.Field
+	raw            string
+	ExtraFields    map[string]apijson.Field
+}
+
+func (r *OffsetPaginationInsightsClusteringJobs[T]) UnmarshalJSON(data []byte) (err error) {
+	return apijson.UnmarshalRoot(data, r)
+}
+
+func (r offsetPaginationInsightsClusteringJobsJSON) RawJSON() string {
+	return r.raw
+}
+
+// GetNextPage returns the next page as defined by this pagination style. When
+// there is no next page, this function will return a 'nil' for the page value, but
+// will not return an error
+func (r *OffsetPaginationInsightsClusteringJobs[T]) GetNextPage() (res *OffsetPaginationInsightsClusteringJobs[T], err error) {
+	if len(r.ClusteringJobs) == 0 {
+		return nil, nil
+	}
+	cfg := r.cfg.Clone(r.cfg.Context)
+
+	q := cfg.Request.URL.Query()
+	offset, err := strconv.ParseInt(q.Get("offset"), 10, 64)
+	if err != nil {
+		offset = 0
+	}
+	length := int64(len(r.ClusteringJobs))
+	next := offset + length
+
+	if length > 0 && next != 0 {
+		err = cfg.Apply(option.WithQuery("offset", strconv.FormatInt(next, 10)))
+		if err != nil {
+			return nil, err
+		}
+	} else {
+		return nil, nil
+	}
+	var raw *http.Response
+	cfg.ResponseInto = &raw
+	cfg.ResponseBodyInto = &res
+	err = cfg.Execute()
+	if err != nil {
+		return nil, err
+	}
+	res.SetPageConfig(cfg, raw)
+	return res, nil
+}
+
+func (r *OffsetPaginationInsightsClusteringJobs[T]) SetPageConfig(cfg *requestconfig.RequestConfig, res *http.Response) {
+	if r == nil {
+		r = &OffsetPaginationInsightsClusteringJobs[T]{}
+	}
+	r.cfg = cfg
+	r.res = res
+}
+
+type OffsetPaginationInsightsClusteringJobsAutoPager[T any] struct {
+	page *OffsetPaginationInsightsClusteringJobs[T]
+	cur  T
+	idx  int
+	run  int
+	err  error
+}
+
+func NewOffsetPaginationInsightsClusteringJobsAutoPager[T any](page *OffsetPaginationInsightsClusteringJobs[T], err error) *OffsetPaginationInsightsClusteringJobsAutoPager[T] {
+	return &OffsetPaginationInsightsClusteringJobsAutoPager[T]{
+		page: page,
+		err:  err,
+	}
+}
+
+func (r *OffsetPaginationInsightsClusteringJobsAutoPager[T]) Next() bool {
+	if r.page == nil || len(r.page.ClusteringJobs) == 0 {
+		return false
+	}
+	if r.idx >= len(r.page.ClusteringJobs) {
+		r.idx = 0
+		r.page, r.err = r.page.GetNextPage()
+		if r.err != nil || r.page == nil || len(r.page.ClusteringJobs) == 0 {
+			return false
+		}
+	}
+	r.cur = r.page.ClusteringJobs[r.idx]
+	r.run += 1
+	r.idx += 1
+	return true
+}
+
+func (r *OffsetPaginationInsightsClusteringJobsAutoPager[T]) Current() T {
+	return r.cur
+}
+
+func (r *OffsetPaginationInsightsClusteringJobsAutoPager[T]) Err() error {
+	return r.err
+}
+
+func (r *OffsetPaginationInsightsClusteringJobsAutoPager[T]) Index() int {
+	return r.run
+}
+
 type CursorPaginationCursors struct {
 	Next string                      `json:"next"`
 	JSON cursorPaginationCursorsJSON `json:"-"`
