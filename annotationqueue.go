@@ -341,7 +341,7 @@ type RunSchemaWithAnnotationQueueInfo struct {
 	TraceID                string                                    `json:"trace_id" api:"required" format:"uuid"`
 	AddedAt                time.Time                                 `json:"added_at" api:"nullable" format:"date-time"`
 	ChildRunIDs            []string                                  `json:"child_run_ids" api:"nullable" format:"uuid"`
-	CompletedCount         int64                                     `json:"completed_count"`
+	CompletedBy            []string                                  `json:"completed_by" format:"uuid"`
 	CompletionCost         string                                    `json:"completion_cost" api:"nullable"`
 	CompletionCostDetails  map[string]string                         `json:"completion_cost_details" api:"nullable"`
 	CompletionTokenDetails map[string]int64                          `json:"completion_token_details" api:"nullable"`
@@ -376,7 +376,7 @@ type RunSchemaWithAnnotationQueueInfo struct {
 	PromptTokens           int64                                     `json:"prompt_tokens"`
 	ReferenceDatasetID     string                                    `json:"reference_dataset_id" api:"nullable" format:"uuid"`
 	ReferenceExampleID     string                                    `json:"reference_example_id" api:"nullable" format:"uuid"`
-	ReservationCount       int64                                     `json:"reservation_count"`
+	ReservedBy             []string                                  `json:"reserved_by" format:"uuid"`
 	S3URLs                 map[string]interface{}                    `json:"s3_urls" api:"nullable"`
 	Serialized             map[string]interface{}                    `json:"serialized" api:"nullable"`
 	ShareToken             string                                    `json:"share_token" api:"nullable" format:"uuid"`
@@ -408,7 +408,7 @@ type runSchemaWithAnnotationQueueInfoJSON struct {
 	TraceID                apijson.Field
 	AddedAt                apijson.Field
 	ChildRunIDs            apijson.Field
-	CompletedCount         apijson.Field
+	CompletedBy            apijson.Field
 	CompletionCost         apijson.Field
 	CompletionCostDetails  apijson.Field
 	CompletionTokenDetails apijson.Field
@@ -443,7 +443,7 @@ type runSchemaWithAnnotationQueueInfoJSON struct {
 	PromptTokens           apijson.Field
 	ReferenceDatasetID     apijson.Field
 	ReferenceExampleID     apijson.Field
-	ReservationCount       apijson.Field
+	ReservedBy             apijson.Field
 	S3URLs                 apijson.Field
 	Serialized             apijson.Field
 	ShareToken             apijson.Field
