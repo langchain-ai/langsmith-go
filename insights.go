@@ -74,6 +74,15 @@ type GetInsightsReportParams struct {
 	IncludeRuns bool
 }
 
+// ListInsightsJobs returns all insights jobs for a session (project).
+func (r *Client) ListInsightsJobs(ctx context.Context, projectID string, opts ...option.RequestOption) ([]SessionInsightListResponseItem, error) {
+	jobs, err := r.Sessions.Insights.List(ctx, projectID, opts...)
+	if err != nil {
+		return nil, fmt.Errorf("langsmith: list insights jobs: %w", err)
+	}
+	return jobs, nil
+}
+
 // GenerateInsights generates an insights report from a list of chat histories.
 //
 // The method:
