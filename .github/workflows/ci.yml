@@ -14,6 +14,9 @@ on:
       - 'stl-preview-head/**'
       - 'stl-preview-base/**'
 
+permissions:
+  contents: read
+
 jobs:
   build:
     timeout-minutes: 10
@@ -24,7 +27,7 @@ jobs:
     runs-on: ${{ github.repository == 'stainless-sdks/langsmith-api-go' && 'depot-ubuntu-24.04' || 'ubuntu-latest' }}
     if: |-
       github.repository == 'stainless-sdks/langsmith-api-go' &&
-      (github.event_name == 'push' || github.event.pull_request.head.repo.fork)
+      (github.event_name == 'push' || github.event.pull_request.head.repo.fork) && (github.event_name != 'push' || github.event.head_commit.message != 'codegen metadata')
     steps:
       - uses: actions/checkout@v6
 

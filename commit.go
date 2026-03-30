@@ -259,6 +259,7 @@ func (r commitNewResponseJSON) RawJSON() string {
 type CommitGetResponse struct {
 	CommitHash    string                     `json:"commit_hash"`
 	Examples      []CommitGetResponseExample `json:"examples"`
+	IsDraft       bool                       `json:"is_draft"`
 	Manifest      interface{}                `json:"manifest"`
 	ModelConfig   interface{}                `json:"model_config"`
 	ModelProvider string                     `json:"model_provider"`
@@ -270,6 +271,7 @@ type CommitGetResponse struct {
 type commitGetResponseJSON struct {
 	CommitHash    apijson.Field
 	Examples      apijson.Field
+	IsDraft       apijson.Field
 	Manifest      apijson.Field
 	ModelConfig   apijson.Field
 	ModelProvider apijson.Field
@@ -327,7 +329,10 @@ func (r CommitNewParams) MarshalJSON() (data []byte, err error) {
 }
 
 type CommitGetParams struct {
-	GetExamples  param.Field[bool] `query:"get_examples"`
+	GetExamples param.Field[bool] `query:"get_examples"`
+	// Comma-separated list of optional fields: "model", "is_draft"
+	Include param.Field[string] `query:"include"`
+	// Deprecated: use Include instead
 	IncludeModel param.Field[bool] `query:"include_model"`
 	IsView       param.Field[bool] `query:"is_view"`
 }
@@ -347,6 +352,9 @@ type CommitListParams struct {
 	Limit param.Field[int64] `query:"limit"`
 	// Offset is the pagination offset
 	Offset param.Field[int64] `query:"offset"`
+	// Tag filters commits to only those with a specific tag (e.g. "production",
+	// "staging")
+	Tag param.Field[string] `query:"tag"`
 }
 
 // URLQuery serializes [CommitListParams]'s query parameters as `url.Values`.

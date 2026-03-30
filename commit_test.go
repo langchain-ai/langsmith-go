@@ -69,6 +69,7 @@ func TestCommitGetWithOptionalParams(t *testing.T) {
 		"commit",
 		langsmith.CommitGetParams{
 			GetExamples:  langsmith.F(true),
+			Include:      langsmith.F("include"),
 			IncludeModel: langsmith.F(true),
 			IsView:       langsmith.F(true),
 		},
@@ -105,6 +106,7 @@ func TestCommitListWithOptionalParams(t *testing.T) {
 			IncludeStats: langsmith.F(true),
 			Limit:        langsmith.F(int64(1)),
 			Offset:       langsmith.F(int64(0)),
+			Tag:          langsmith.F("tag"),
 		},
 	)
 	if err != nil {
