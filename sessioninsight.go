@@ -16,6 +16,7 @@ import (
 	"github.com/langchain-ai/langsmith-go/internal/param"
 	"github.com/langchain-ai/langsmith-go/internal/requestconfig"
 	"github.com/langchain-ai/langsmith-go/option"
+	"github.com/langchain-ai/langsmith-go/packages/pagination"
 )
 
 // SessionInsightService contains methods and other services that help with
@@ -63,6 +64,33 @@ func (r *SessionInsightService) Update(ctx context.Context, sessionID string, jo
 	path := fmt.Sprintf("api/v1/sessions/%s/insights/%s", sessionID, jobID)
 	err = requestconfig.ExecuteNewRequest(ctx, http.MethodPatch, path, body, &res, opts...)
 	return res, err
+}
+
+// Get all clusters for a session.
+func (r *SessionInsightService) List(ctx context.Context, sessionID string, query SessionInsightListParams, opts ...option.RequestOption) (res *pagination.OffsetPaginationInsightsClusteringJobs[SessionInsightListResponse], err error) {
+	var raw *http.Response
+	opts = slices.Concat(r.Options, opts)
+	opts = append([]option.RequestOption{option.WithResponseInto(&raw)}, opts...)
+	if sessionID == "" {
+		err = errors.New("missing required session_id parameter")
+		return nil, err
+	}
+	path := fmt.Sprintf("api/v1/sessions/%s/insights", sessionID)
+	cfg, err := requestconfig.NewRequestConfig(ctx, http.MethodGet, path, query, &res, opts...)
+	if err != nil {
+		return nil, err
+	}
+	err = cfg.Execute()
+	if err != nil {
+		return nil, err
+	}
+	res.SetPageConfig(cfg, raw)
+	return res, nil
+}
+
+// Get all clusters for a session.
+func (r *SessionInsightService) ListAutoPaging(ctx context.Context, sessionID string, query SessionInsightListParams, opts ...option.RequestOption) *pagination.OffsetPaginationInsightsClusteringJobsAutoPager[SessionInsightListResponse] {
+	return pagination.NewOffsetPaginationInsightsClusteringJobsAutoPager(r.List(ctx, sessionID, query, opts...))
 }
 
 // Delete a session cluster job.
@@ -202,6 +230,46 @@ func (r *SessionInsightUpdateResponse) UnmarshalJSON(data []byte) (err error) {
 }
 
 func (r sessionInsightUpdateResponseJSON) RawJSON() string {
+	return r.raw
+}
+
+// Session cluster job
+type SessionInsightListResponse struct {
+	ID        string                         `json:"id" api:"required" format:"uuid"`
+	CreatedAt time.Time                      `json:"created_at" api:"required" format:"date-time"`
+	Name      string                         `json:"name" api:"required"`
+	Status    string                         `json:"status" api:"required"`
+	ConfigID  string                         `json:"config_id" api:"nullable" format:"uuid"`
+	EndTime   time.Time                      `json:"end_time" api:"nullable" format:"date-time"`
+	Error     string                         `json:"error" api:"nullable"`
+	Metadata  map[string]interface{}         `json:"metadata" api:"nullable"`
+	Shape     map[string]int64               `json:"shape" api:"nullable"`
+	StartTime time.Time                      `json:"start_time" api:"nullable" format:"date-time"`
+	JSON      sessionInsightListResponseJSON `json:"-"`
+}
+
+// sessionInsightListResponseJSON contains the JSON metadata for the struct
+// [SessionInsightListResponse]
+type sessionInsightListResponseJSON struct {
+	ID          apijson.Field
+	CreatedAt   apijson.Field
+	Name        apijson.Field
+	Status      apijson.Field
+	ConfigID    apijson.Field
+	EndTime     apijson.Field
+	Error       apijson.Field
+	Metadata    apijson.Field
+	Shape       apijson.Field
+	StartTime   apijson.Field
+	raw         string
+	ExtraFields map[string]apijson.Field
+}
+
+func (r *SessionInsightListResponse) UnmarshalJSON(data []byte) (err error) {
+	return apijson.UnmarshalRoot(data, r)
+}
+
+func (r sessionInsightListResponseJSON) RawJSON() string {
 	return r.raw
 }
 
@@ -410,6 +478,22 @@ type SessionInsightUpdateParams struct {
 
 func (r SessionInsightUpdateParams) MarshalJSON() (data []byte, err error) {
 	return apijson.MarshalRoot(r)
+}
+
+type SessionInsightListParams struct {
+	ConfigID param.Field[string] `query:"config_id" format:"uuid"`
+	Legacy   param.Field[bool]   `query:"legacy"`
+	Limit    param.Field[int64]  `query:"limit"`
+	Offset   param.Field[int64]  `query:"offset"`
+}
+
+// URLQuery serializes [SessionInsightListParams]'s query parameters as
+// `url.Values`.
+func (r SessionInsightListParams) URLQuery() (v url.Values) {
+	return apiquery.MarshalWithSettings(r, apiquery.QuerySettings{
+		ArrayFormat:  apiquery.ArrayQueryFormatComma,
+		NestedFormat: apiquery.NestedQueryFormatBrackets,
+	})
 }
 
 type SessionInsightGetRunsParams struct {
