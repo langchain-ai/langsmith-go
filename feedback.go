@@ -348,6 +348,7 @@ type FeedbackSchema struct {
 	// The feedback source loaded from the database.
 	FeedbackSource   FeedbackSchemaFeedbackSource `json:"feedback_source" api:"nullable"`
 	FeedbackThreadID string                       `json:"feedback_thread_id" api:"nullable"`
+	IsRoot           bool                         `json:"is_root"`
 	ModifiedAt       time.Time                    `json:"modified_at" format:"date-time"`
 	RunID            string                       `json:"run_id" api:"nullable" format:"uuid"`
 	Score            FeedbackSchemaScoreUnion     `json:"score" api:"nullable"`
@@ -370,6 +371,7 @@ type feedbackSchemaJSON struct {
 	FeedbackGroupID         apijson.Field
 	FeedbackSource          apijson.Field
 	FeedbackThreadID        apijson.Field
+	IsRoot                  apijson.Field
 	ModifiedAt              apijson.Field
 	RunID                   apijson.Field
 	Score                   apijson.Field
