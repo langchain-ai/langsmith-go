@@ -726,6 +726,7 @@ type AnnotationQueueUpdateParams struct {
 	Name                param.Field[string]                                              `json:"name"`
 	NumReviewersPerItem param.Field[AnnotationQueueUpdateParamsNumReviewersPerItemUnion] `json:"num_reviewers_per_item"`
 	ReservationMinutes  param.Field[int64]                                               `json:"reservation_minutes"`
+	ReviewerAccessMode  param.Field[AnnotationQueueUpdateParamsReviewerAccessMode]       `json:"reviewer_access_mode"`
 	RubricInstructions  param.Field[string]                                              `json:"rubric_instructions"`
 	RubricItems         param.Field[[]AnnotationQueueRubricItemSchemaParam]              `json:"rubric_items"`
 }
@@ -747,6 +748,21 @@ func (r AnnotationQueueUpdateParamsMetadataMap) implementsAnnotationQueueUpdateP
 // Satisfied by [shared.UnionInt], [MissingParam].
 type AnnotationQueueUpdateParamsNumReviewersPerItemUnion interface {
 	ImplementsAnnotationQueueUpdateParamsNumReviewersPerItemUnion()
+}
+
+type AnnotationQueueUpdateParamsReviewerAccessMode string
+
+const (
+	AnnotationQueueUpdateParamsReviewerAccessModeAny      AnnotationQueueUpdateParamsReviewerAccessMode = "any"
+	AnnotationQueueUpdateParamsReviewerAccessModeAssigned AnnotationQueueUpdateParamsReviewerAccessMode = "assigned"
+)
+
+func (r AnnotationQueueUpdateParamsReviewerAccessMode) IsKnown() bool {
+	switch r {
+	case AnnotationQueueUpdateParamsReviewerAccessModeAny, AnnotationQueueUpdateParamsReviewerAccessModeAssigned:
+		return true
+	}
+	return false
 }
 
 type AnnotationQueueAnnotationQueuesParams struct {

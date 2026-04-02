@@ -68,6 +68,7 @@ func TestAnnotationQueueUpdateWithOptionalParams(t *testing.T) {
 			Name:                langsmith.F("name"),
 			NumReviewersPerItem: langsmith.F[langsmith.AnnotationQueueUpdateParamsNumReviewersPerItemUnion](shared.UnionInt(int64(0))),
 			ReservationMinutes:  langsmith.F(int64(0)),
+			ReviewerAccessMode:  langsmith.F(langsmith.AnnotationQueueUpdateParamsReviewerAccessModeAny),
 			RubricInstructions:  langsmith.F("rubric_instructions"),
 			RubricItems: langsmith.F([]langsmith.AnnotationQueueRubricItemSchemaParam{{
 				FeedbackKey: langsmith.F("feedback_key"),
