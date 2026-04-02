@@ -161,8 +161,8 @@ func TestGenerateInsights_StoresAPIKey(t *testing.T) {
 	client := newInsightsTestClient(t, srv)
 
 	_, err := client.GenerateInsights(context.Background(), langsmith.GenerateInsightsParams{
-		ChatHistories:   [][]map[string]interface{}{},
-		OpenAIAPIKey:    "sk-test",
+		ChatHistories: [][]map[string]interface{}{},
+		OpenAIAPIKey:  "sk-test",
 	})
 	if err != nil {
 		t.Fatalf("GenerateInsights error: %v", err)

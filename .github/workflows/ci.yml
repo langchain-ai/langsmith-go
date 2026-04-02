@@ -30,6 +30,11 @@ jobs:
       - name: Run lints
         run: ./scripts/lint
 
+      - name: Run golangci-lint
+        uses: golangci/golangci-lint-action@v6
+        with:
+          version: v2.11.4
+
   test:
     timeout-minutes: 10
     name: test
