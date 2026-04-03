@@ -155,3 +155,41 @@ api_url = "` + endpoint + `"
 		t.Fatalf("expected success with 'correct' profile, got: %v", err)
 	}
 }
+
+// TestProfileClient_EnvOverridesProfile verifies that environment variables
+// take precedence over profile values. The profile has an invalid key, but
+// the env var provides the real one.
+func TestProfileClient_EnvOverridesProfile(t *testing.T) {
+	apiKey := os.Getenv("LANGSMITH_API_KEY")
+	if apiKey == "" {
+		t.Skip("LANGSMITH_API_KEY not set, skipping profile integration test")
+	}
+	endpoint := os.Getenv("LANGSMITH_ENDPOINT")
+	if endpoint == "" {
+		endpoint = "https://api.smith.langchain.com"
+	}
+
+	// Profile has a bad key — env var should override it.
+	dir := t.TempDir()
+	path := filepath.Join(dir, "config.toml")
+	config := `[default]
+api_key = "invalid-key-from-profile"
+api_url = "` + endpoint + `"
+`
+	if err := os.WriteFile(path, []byte(config), 0600); err != nil {
+		t.Fatal(err)
+	}
+	t.Setenv("LANGSMITH_CONFIG_FILE", path)
+	// Set the real key via env — this should override the profile's bad key.
+	t.Setenv("LANGSMITH_API_KEY", apiKey)
+	t.Setenv("LANGSMITH_ENDPOINT", endpoint)
+	os.Unsetenv("LANGSMITH_PROFILE")
+
+	client := langsmith.NewClient()
+	_, err := client.Sessions.List(context.Background(), langsmith.SessionListParams{
+		Limit: langsmith.F(int64(1)),
+	})
+	if err != nil {
+		t.Fatalf("env var should override profile's bad key, got: %v", err)
+	}
+}
