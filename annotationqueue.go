@@ -244,21 +244,23 @@ func (r AnnotationQueueRubricItemSchemaParam) MarshalJSON() (data []byte, err er
 
 // AnnotationQueue schema.
 type AnnotationQueueSchema struct {
-	ID                  string                         `json:"id" api:"required" format:"uuid"`
-	Name                string                         `json:"name" api:"required"`
-	QueueType           AnnotationQueueSchemaQueueType `json:"queue_type" api:"required"`
-	TenantID            string                         `json:"tenant_id" api:"required" format:"uuid"`
-	CreatedAt           time.Time                      `json:"created_at" format:"date-time"`
-	DefaultDataset      string                         `json:"default_dataset" api:"nullable" format:"uuid"`
-	Description         string                         `json:"description" api:"nullable"`
-	EnableReservations  bool                           `json:"enable_reservations" api:"nullable"`
-	Metadata            map[string]interface{}         `json:"metadata" api:"nullable"`
-	NumReviewersPerItem int64                          `json:"num_reviewers_per_item" api:"nullable"`
-	ReservationMinutes  int64                          `json:"reservation_minutes" api:"nullable"`
-	RunRuleID           string                         `json:"run_rule_id" api:"nullable" format:"uuid"`
-	SourceRuleID        string                         `json:"source_rule_id" api:"nullable" format:"uuid"`
-	UpdatedAt           time.Time                      `json:"updated_at" format:"date-time"`
-	JSON                annotationQueueSchemaJSON      `json:"-"`
+	ID                  string                                  `json:"id" api:"required" format:"uuid"`
+	Name                string                                  `json:"name" api:"required"`
+	QueueType           AnnotationQueueSchemaQueueType          `json:"queue_type" api:"required"`
+	TenantID            string                                  `json:"tenant_id" api:"required" format:"uuid"`
+	AssignedReviewers   []AnnotationQueueSchemaAssignedReviewer `json:"assigned_reviewers"`
+	CreatedAt           time.Time                               `json:"created_at" format:"date-time"`
+	DefaultDataset      string                                  `json:"default_dataset" api:"nullable" format:"uuid"`
+	Description         string                                  `json:"description" api:"nullable"`
+	EnableReservations  bool                                    `json:"enable_reservations" api:"nullable"`
+	Metadata            map[string]interface{}                  `json:"metadata" api:"nullable"`
+	NumReviewersPerItem int64                                   `json:"num_reviewers_per_item" api:"nullable"`
+	ReservationMinutes  int64                                   `json:"reservation_minutes" api:"nullable"`
+	ReviewerAccessMode  string                                  `json:"reviewer_access_mode"`
+	RunRuleID           string                                  `json:"run_rule_id" api:"nullable" format:"uuid"`
+	SourceRuleID        string                                  `json:"source_rule_id" api:"nullable" format:"uuid"`
+	UpdatedAt           time.Time                               `json:"updated_at" format:"date-time"`
+	JSON                annotationQueueSchemaJSON               `json:"-"`
 }
 
 // annotationQueueSchemaJSON contains the JSON metadata for the struct
@@ -268,6 +270,7 @@ type annotationQueueSchemaJSON struct {
 	Name                apijson.Field
 	QueueType           apijson.Field
 	TenantID            apijson.Field
+	AssignedReviewers   apijson.Field
 	CreatedAt           apijson.Field
 	DefaultDataset      apijson.Field
 	Description         apijson.Field
@@ -275,6 +278,7 @@ type annotationQueueSchemaJSON struct {
 	Metadata            apijson.Field
 	NumReviewersPerItem apijson.Field
 	ReservationMinutes  apijson.Field
+	ReviewerAccessMode  apijson.Field
 	RunRuleID           apijson.Field
 	SourceRuleID        apijson.Field
 	UpdatedAt           apijson.Field
@@ -303,6 +307,32 @@ func (r AnnotationQueueSchemaQueueType) IsKnown() bool {
 		return true
 	}
 	return false
+}
+
+// Identity info for an assigned reviewer on an annotation queue.
+type AnnotationQueueSchemaAssignedReviewer struct {
+	ID    string                                    `json:"id" api:"required" format:"uuid"`
+	Email string                                    `json:"email" api:"nullable"`
+	Name  string                                    `json:"name" api:"nullable"`
+	JSON  annotationQueueSchemaAssignedReviewerJSON `json:"-"`
+}
+
+// annotationQueueSchemaAssignedReviewerJSON contains the JSON metadata for the
+// struct [AnnotationQueueSchemaAssignedReviewer]
+type annotationQueueSchemaAssignedReviewerJSON struct {
+	ID          apijson.Field
+	Email       apijson.Field
+	Name        apijson.Field
+	raw         string
+	ExtraFields map[string]apijson.Field
+}
+
+func (r *AnnotationQueueSchemaAssignedReviewer) UnmarshalJSON(data []byte) (err error) {
+	return apijson.UnmarshalRoot(data, r)
+}
+
+func (r annotationQueueSchemaAssignedReviewerJSON) RawJSON() string {
+	return r.raw
 }
 
 // Size of an Annotation Queue
@@ -341,7 +371,7 @@ type RunSchemaWithAnnotationQueueInfo struct {
 	TraceID                string                                    `json:"trace_id" api:"required" format:"uuid"`
 	AddedAt                time.Time                                 `json:"added_at" api:"nullable" format:"date-time"`
 	ChildRunIDs            []string                                  `json:"child_run_ids" api:"nullable" format:"uuid"`
-	CompletedCount         int64                                     `json:"completed_count"`
+	CompletedBy            []string                                  `json:"completed_by" format:"uuid"`
 	CompletionCost         string                                    `json:"completion_cost" api:"nullable"`
 	CompletionCostDetails  map[string]string                         `json:"completion_cost_details" api:"nullable"`
 	CompletionTokenDetails map[string]int64                          `json:"completion_token_details" api:"nullable"`
@@ -376,7 +406,7 @@ type RunSchemaWithAnnotationQueueInfo struct {
 	PromptTokens           int64                                     `json:"prompt_tokens"`
 	ReferenceDatasetID     string                                    `json:"reference_dataset_id" api:"nullable" format:"uuid"`
 	ReferenceExampleID     string                                    `json:"reference_example_id" api:"nullable" format:"uuid"`
-	ReservationCount       int64                                     `json:"reservation_count"`
+	ReservedBy             []string                                  `json:"reserved_by" format:"uuid"`
 	S3URLs                 map[string]interface{}                    `json:"s3_urls" api:"nullable"`
 	Serialized             map[string]interface{}                    `json:"serialized" api:"nullable"`
 	ShareToken             string                                    `json:"share_token" api:"nullable" format:"uuid"`
@@ -408,7 +438,7 @@ type runSchemaWithAnnotationQueueInfoJSON struct {
 	TraceID                apijson.Field
 	AddedAt                apijson.Field
 	ChildRunIDs            apijson.Field
-	CompletedCount         apijson.Field
+	CompletedBy            apijson.Field
 	CompletionCost         apijson.Field
 	CompletionCostDetails  apijson.Field
 	CompletionTokenDetails apijson.Field
@@ -443,7 +473,7 @@ type runSchemaWithAnnotationQueueInfoJSON struct {
 	PromptTokens           apijson.Field
 	ReferenceDatasetID     apijson.Field
 	ReferenceExampleID     apijson.Field
-	ReservationCount       apijson.Field
+	ReservedBy             apijson.Field
 	S3URLs                 apijson.Field
 	Serialized             apijson.Field
 	ShareToken             apijson.Field
@@ -487,23 +517,25 @@ func (r RunSchemaWithAnnotationQueueInfoTraceTier) IsKnown() bool {
 
 // AnnotationQueue schema with rubric.
 type AnnotationQueueGetResponse struct {
-	ID                  string                              `json:"id" api:"required" format:"uuid"`
-	Name                string                              `json:"name" api:"required"`
-	QueueType           AnnotationQueueGetResponseQueueType `json:"queue_type" api:"required"`
-	TenantID            string                              `json:"tenant_id" api:"required" format:"uuid"`
-	CreatedAt           time.Time                           `json:"created_at" format:"date-time"`
-	DefaultDataset      string                              `json:"default_dataset" api:"nullable" format:"uuid"`
-	Description         string                              `json:"description" api:"nullable"`
-	EnableReservations  bool                                `json:"enable_reservations" api:"nullable"`
-	Metadata            map[string]interface{}              `json:"metadata" api:"nullable"`
-	NumReviewersPerItem int64                               `json:"num_reviewers_per_item" api:"nullable"`
-	ReservationMinutes  int64                               `json:"reservation_minutes" api:"nullable"`
-	RubricInstructions  string                              `json:"rubric_instructions" api:"nullable"`
-	RubricItems         []AnnotationQueueRubricItemSchema   `json:"rubric_items" api:"nullable"`
-	RunRuleID           string                              `json:"run_rule_id" api:"nullable" format:"uuid"`
-	SourceRuleID        string                              `json:"source_rule_id" api:"nullable" format:"uuid"`
-	UpdatedAt           time.Time                           `json:"updated_at" format:"date-time"`
-	JSON                annotationQueueGetResponseJSON      `json:"-"`
+	ID                  string                                       `json:"id" api:"required" format:"uuid"`
+	Name                string                                       `json:"name" api:"required"`
+	QueueType           AnnotationQueueGetResponseQueueType          `json:"queue_type" api:"required"`
+	TenantID            string                                       `json:"tenant_id" api:"required" format:"uuid"`
+	AssignedReviewers   []AnnotationQueueGetResponseAssignedReviewer `json:"assigned_reviewers"`
+	CreatedAt           time.Time                                    `json:"created_at" format:"date-time"`
+	DefaultDataset      string                                       `json:"default_dataset" api:"nullable" format:"uuid"`
+	Description         string                                       `json:"description" api:"nullable"`
+	EnableReservations  bool                                         `json:"enable_reservations" api:"nullable"`
+	Metadata            map[string]interface{}                       `json:"metadata" api:"nullable"`
+	NumReviewersPerItem int64                                        `json:"num_reviewers_per_item" api:"nullable"`
+	ReservationMinutes  int64                                        `json:"reservation_minutes" api:"nullable"`
+	ReviewerAccessMode  string                                       `json:"reviewer_access_mode"`
+	RubricInstructions  string                                       `json:"rubric_instructions" api:"nullable"`
+	RubricItems         []AnnotationQueueRubricItemSchema            `json:"rubric_items" api:"nullable"`
+	RunRuleID           string                                       `json:"run_rule_id" api:"nullable" format:"uuid"`
+	SourceRuleID        string                                       `json:"source_rule_id" api:"nullable" format:"uuid"`
+	UpdatedAt           time.Time                                    `json:"updated_at" format:"date-time"`
+	JSON                annotationQueueGetResponseJSON               `json:"-"`
 }
 
 // annotationQueueGetResponseJSON contains the JSON metadata for the struct
@@ -513,6 +545,7 @@ type annotationQueueGetResponseJSON struct {
 	Name                apijson.Field
 	QueueType           apijson.Field
 	TenantID            apijson.Field
+	AssignedReviewers   apijson.Field
 	CreatedAt           apijson.Field
 	DefaultDataset      apijson.Field
 	Description         apijson.Field
@@ -520,6 +553,7 @@ type annotationQueueGetResponseJSON struct {
 	Metadata            apijson.Field
 	NumReviewersPerItem apijson.Field
 	ReservationMinutes  apijson.Field
+	ReviewerAccessMode  apijson.Field
 	RubricInstructions  apijson.Field
 	RubricItems         apijson.Field
 	RunRuleID           apijson.Field
@@ -552,6 +586,32 @@ func (r AnnotationQueueGetResponseQueueType) IsKnown() bool {
 	return false
 }
 
+// Identity info for an assigned reviewer on an annotation queue.
+type AnnotationQueueGetResponseAssignedReviewer struct {
+	ID    string                                         `json:"id" api:"required" format:"uuid"`
+	Email string                                         `json:"email" api:"nullable"`
+	Name  string                                         `json:"name" api:"nullable"`
+	JSON  annotationQueueGetResponseAssignedReviewerJSON `json:"-"`
+}
+
+// annotationQueueGetResponseAssignedReviewerJSON contains the JSON metadata for
+// the struct [AnnotationQueueGetResponseAssignedReviewer]
+type annotationQueueGetResponseAssignedReviewerJSON struct {
+	ID          apijson.Field
+	Email       apijson.Field
+	Name        apijson.Field
+	raw         string
+	ExtraFields map[string]apijson.Field
+}
+
+func (r *AnnotationQueueGetResponseAssignedReviewer) UnmarshalJSON(data []byte) (err error) {
+	return apijson.UnmarshalRoot(data, r)
+}
+
+func (r annotationQueueGetResponseAssignedReviewerJSON) RawJSON() string {
+	return r.raw
+}
+
 type AnnotationQueueUpdateResponse = interface{}
 
 type AnnotationQueueDeleteResponse = interface{}
@@ -564,22 +624,24 @@ type AnnotationQueuePopulateResponse = interface{}
 
 // AnnotationQueue schema with size.
 type AnnotationQueueGetAnnotationQueuesResponse struct {
-	ID                  string                                              `json:"id" api:"required" format:"uuid"`
-	Name                string                                              `json:"name" api:"required"`
-	QueueType           AnnotationQueueGetAnnotationQueuesResponseQueueType `json:"queue_type" api:"required"`
-	TenantID            string                                              `json:"tenant_id" api:"required" format:"uuid"`
-	TotalRuns           int64                                               `json:"total_runs" api:"required"`
-	CreatedAt           time.Time                                           `json:"created_at" format:"date-time"`
-	DefaultDataset      string                                              `json:"default_dataset" api:"nullable" format:"uuid"`
-	Description         string                                              `json:"description" api:"nullable"`
-	EnableReservations  bool                                                `json:"enable_reservations" api:"nullable"`
-	Metadata            map[string]interface{}                              `json:"metadata" api:"nullable"`
-	NumReviewersPerItem int64                                               `json:"num_reviewers_per_item" api:"nullable"`
-	ReservationMinutes  int64                                               `json:"reservation_minutes" api:"nullable"`
-	RunRuleID           string                                              `json:"run_rule_id" api:"nullable" format:"uuid"`
-	SourceRuleID        string                                              `json:"source_rule_id" api:"nullable" format:"uuid"`
-	UpdatedAt           time.Time                                           `json:"updated_at" format:"date-time"`
-	JSON                annotationQueueGetAnnotationQueuesResponseJSON      `json:"-"`
+	ID                  string                                                       `json:"id" api:"required" format:"uuid"`
+	Name                string                                                       `json:"name" api:"required"`
+	QueueType           AnnotationQueueGetAnnotationQueuesResponseQueueType          `json:"queue_type" api:"required"`
+	TenantID            string                                                       `json:"tenant_id" api:"required" format:"uuid"`
+	TotalRuns           int64                                                        `json:"total_runs" api:"required"`
+	AssignedReviewers   []AnnotationQueueGetAnnotationQueuesResponseAssignedReviewer `json:"assigned_reviewers"`
+	CreatedAt           time.Time                                                    `json:"created_at" format:"date-time"`
+	DefaultDataset      string                                                       `json:"default_dataset" api:"nullable" format:"uuid"`
+	Description         string                                                       `json:"description" api:"nullable"`
+	EnableReservations  bool                                                         `json:"enable_reservations" api:"nullable"`
+	Metadata            map[string]interface{}                                       `json:"metadata" api:"nullable"`
+	NumReviewersPerItem int64                                                        `json:"num_reviewers_per_item" api:"nullable"`
+	ReservationMinutes  int64                                                        `json:"reservation_minutes" api:"nullable"`
+	ReviewerAccessMode  string                                                       `json:"reviewer_access_mode"`
+	RunRuleID           string                                                       `json:"run_rule_id" api:"nullable" format:"uuid"`
+	SourceRuleID        string                                                       `json:"source_rule_id" api:"nullable" format:"uuid"`
+	UpdatedAt           time.Time                                                    `json:"updated_at" format:"date-time"`
+	JSON                annotationQueueGetAnnotationQueuesResponseJSON               `json:"-"`
 }
 
 // annotationQueueGetAnnotationQueuesResponseJSON contains the JSON metadata for
@@ -590,6 +652,7 @@ type annotationQueueGetAnnotationQueuesResponseJSON struct {
 	QueueType           apijson.Field
 	TenantID            apijson.Field
 	TotalRuns           apijson.Field
+	AssignedReviewers   apijson.Field
 	CreatedAt           apijson.Field
 	DefaultDataset      apijson.Field
 	Description         apijson.Field
@@ -597,6 +660,7 @@ type annotationQueueGetAnnotationQueuesResponseJSON struct {
 	Metadata            apijson.Field
 	NumReviewersPerItem apijson.Field
 	ReservationMinutes  apijson.Field
+	ReviewerAccessMode  apijson.Field
 	RunRuleID           apijson.Field
 	SourceRuleID        apijson.Field
 	UpdatedAt           apijson.Field
@@ -627,6 +691,33 @@ func (r AnnotationQueueGetAnnotationQueuesResponseQueueType) IsKnown() bool {
 	return false
 }
 
+// Identity info for an assigned reviewer on an annotation queue.
+type AnnotationQueueGetAnnotationQueuesResponseAssignedReviewer struct {
+	ID    string                                                         `json:"id" api:"required" format:"uuid"`
+	Email string                                                         `json:"email" api:"nullable"`
+	Name  string                                                         `json:"name" api:"nullable"`
+	JSON  annotationQueueGetAnnotationQueuesResponseAssignedReviewerJSON `json:"-"`
+}
+
+// annotationQueueGetAnnotationQueuesResponseAssignedReviewerJSON contains the JSON
+// metadata for the struct
+// [AnnotationQueueGetAnnotationQueuesResponseAssignedReviewer]
+type annotationQueueGetAnnotationQueuesResponseAssignedReviewerJSON struct {
+	ID          apijson.Field
+	Email       apijson.Field
+	Name        apijson.Field
+	raw         string
+	ExtraFields map[string]apijson.Field
+}
+
+func (r *AnnotationQueueGetAnnotationQueuesResponseAssignedReviewer) UnmarshalJSON(data []byte) (err error) {
+	return apijson.UnmarshalRoot(data, r)
+}
+
+func (r annotationQueueGetAnnotationQueuesResponseAssignedReviewerJSON) RawJSON() string {
+	return r.raw
+}
+
 type AnnotationQueueUpdateParams struct {
 	DefaultDataset      param.Field[string]                                              `json:"default_dataset" format:"uuid"`
 	Description         param.Field[string]                                              `json:"description"`
@@ -635,6 +726,7 @@ type AnnotationQueueUpdateParams struct {
 	Name                param.Field[string]                                              `json:"name"`
 	NumReviewersPerItem param.Field[AnnotationQueueUpdateParamsNumReviewersPerItemUnion] `json:"num_reviewers_per_item"`
 	ReservationMinutes  param.Field[int64]                                               `json:"reservation_minutes"`
+	ReviewerAccessMode  param.Field[AnnotationQueueUpdateParamsReviewerAccessMode]       `json:"reviewer_access_mode"`
 	RubricInstructions  param.Field[string]                                              `json:"rubric_instructions"`
 	RubricItems         param.Field[[]AnnotationQueueRubricItemSchemaParam]              `json:"rubric_items"`
 }
@@ -658,6 +750,21 @@ type AnnotationQueueUpdateParamsNumReviewersPerItemUnion interface {
 	ImplementsAnnotationQueueUpdateParamsNumReviewersPerItemUnion()
 }
 
+type AnnotationQueueUpdateParamsReviewerAccessMode string
+
+const (
+	AnnotationQueueUpdateParamsReviewerAccessModeAny      AnnotationQueueUpdateParamsReviewerAccessMode = "any"
+	AnnotationQueueUpdateParamsReviewerAccessModeAssigned AnnotationQueueUpdateParamsReviewerAccessMode = "assigned"
+)
+
+func (r AnnotationQueueUpdateParamsReviewerAccessMode) IsKnown() bool {
+	switch r {
+	case AnnotationQueueUpdateParamsReviewerAccessModeAny, AnnotationQueueUpdateParamsReviewerAccessModeAssigned:
+		return true
+	}
+	return false
+}
+
 type AnnotationQueueAnnotationQueuesParams struct {
 	Name                param.Field[string]                                 `json:"name" api:"required"`
 	ID                  param.Field[string]                                 `json:"id" format:"uuid"`
@@ -668,6 +775,7 @@ type AnnotationQueueAnnotationQueuesParams struct {
 	Metadata            param.Field[map[string]interface{}]                 `json:"metadata"`
 	NumReviewersPerItem param.Field[int64]                                  `json:"num_reviewers_per_item"`
 	ReservationMinutes  param.Field[int64]                                  `json:"reservation_minutes"`
+	ReviewerAccessMode  param.Field[string]                                 `json:"reviewer_access_mode"`
 	RubricInstructions  param.Field[string]                                 `json:"rubric_instructions"`
 	RubricItems         param.Field[[]AnnotationQueueRubricItemSchemaParam] `json:"rubric_items"`
 	SessionIDs          param.Field[[]string]                               `json:"session_ids" format:"uuid"`
@@ -707,6 +815,7 @@ func (r AnnotationQueuePopulateParams) MarshalJSON() (data []byte, err error) {
 }
 
 type AnnotationQueueGetAnnotationQueuesParams struct {
+	AssignedToMe param.Field[bool]                                              `query:"assigned_to_me"`
 	DatasetID    param.Field[string]                                            `query:"dataset_id" format:"uuid"`
 	IDs          param.Field[[]string]                                          `query:"ids" format:"uuid"`
 	Limit        param.Field[int64]                                             `query:"limit"`

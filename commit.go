@@ -184,6 +184,8 @@ type CommitWithLookups struct {
 	CommitHash string `json:"commit_hash"`
 	// When the commit was created
 	CreatedAt time.Time `json:"created_at" format:"date-time"`
+	// Optional human-readable description for the commit
+	Description string `json:"description"`
 	// Example run IDs associated with the commit
 	ExampleRunIDs []string `json:"example_run_ids" format:"uuid"`
 	// Author's full name
@@ -213,6 +215,7 @@ type commitWithLookupsJSON struct {
 	ID               apijson.Field
 	CommitHash       apijson.Field
 	CreatedAt        apijson.Field
+	Description      apijson.Field
 	ExampleRunIDs    apijson.Field
 	FullName         apijson.Field
 	Manifest         apijson.Field
@@ -258,6 +261,7 @@ func (r commitNewResponseJSON) RawJSON() string {
 
 type CommitGetResponse struct {
 	CommitHash    string                     `json:"commit_hash"`
+	Description   string                     `json:"description"`
 	Examples      []CommitGetResponseExample `json:"examples"`
 	IsDraft       bool                       `json:"is_draft"`
 	Manifest      interface{}                `json:"manifest"`
@@ -270,6 +274,7 @@ type CommitGetResponse struct {
 // [CommitGetResponse]
 type commitGetResponseJSON struct {
 	CommitHash    apijson.Field
+	Description   apijson.Field
 	Examples      apijson.Field
 	IsDraft       apijson.Field
 	Manifest      apijson.Field
@@ -317,6 +322,7 @@ func (r commitGetResponseExampleJSON) RawJSON() string {
 }
 
 type CommitNewParams struct {
+	Description  param.Field[string]      `json:"description"`
 	Manifest     param.Field[interface{}] `json:"manifest"`
 	ParentCommit param.Field[string]      `json:"parent_commit"`
 	// SkipWebhooks allows skipping webhook notifications. Can be true (boolean) to
