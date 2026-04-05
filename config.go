@@ -9,8 +9,11 @@ import (
 )
 
 // configProfile holds per-profile configuration from ~/.langsmith/config.toml.
+// A profile uses either api_key (X-API-Key header) or bearer_token
+// (Authorization: Bearer header) for authentication, not both.
 type configProfile struct {
 	APIKey      string `toml:"api_key"`
+	BearerToken string `toml:"bearer_token"`
 	APIURL      string `toml:"api_url"`
 	WorkspaceID string `toml:"workspace_id"`
 }
@@ -52,6 +55,9 @@ func loadProfileOptions() []option.RequestOption {
 	if v, ok := section["api_url"].(string); ok {
 		p.APIURL = v
 	}
+	if v, ok := section["bearer_token"].(string); ok {
+		p.BearerToken = v
+	}
 	if v, ok := section["workspace_id"].(string); ok {
 		p.WorkspaceID = v
 	}
@@ -62,6 +68,9 @@ func loadProfileOptions() []option.RequestOption {
 	}
 	if p.APIKey != "" {
 		opts = append(opts, option.WithAPIKey(p.APIKey))
+	}
+	if p.BearerToken != "" {
+		opts = append(opts, option.WithBearerToken(p.BearerToken))
 	}
 	if p.WorkspaceID != "" {
 		opts = append(opts, option.WithTenantID(p.WorkspaceID))

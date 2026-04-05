@@ -158,3 +158,42 @@ api_key = "profile-key"
 	// Verify it's usable (doesn't panic)
 	_ = option.WithAPIKey("override")
 }
+
+func TestLoadProfileOptions_BearerToken(t *testing.T) {
+	dir := t.TempDir()
+	path := filepath.Join(dir, "config.toml")
+	content := `[default]
+bearer_token = "eyJhbGciOiJSUzI1NiJ9.test"
+api_url = "https://api.smith.langchain.com"
+`
+	if err := os.WriteFile(path, []byte(content), 0600); err != nil {
+		t.Fatal(err)
+	}
+	t.Setenv("LANGSMITH_CONFIG_FILE", path)
+	t.Setenv("LANGSMITH_PROFILE", "")
+
+	opts := loadProfileOptions()
+	if len(opts) != 2 {
+		t.Fatalf("expected 2 options (base_url, bearer_token), got %d", len(opts))
+	}
+}
+
+func TestLoadProfileOptions_BothAPIKeyAndBearerToken(t *testing.T) {
+	dir := t.TempDir()
+	path := filepath.Join(dir, "config.toml")
+	content := `[default]
+api_key = "some-key"
+bearer_token = "eyJhbGciOiJSUzI1NiJ9.test"
+`
+	if err := os.WriteFile(path, []byte(content), 0600); err != nil {
+		t.Fatal(err)
+	}
+	t.Setenv("LANGSMITH_CONFIG_FILE", path)
+	t.Setenv("LANGSMITH_PROFILE", "")
+
+	opts := loadProfileOptions()
+	// Both are emitted — server decides which to honor (matches env var behavior)
+	if len(opts) != 2 {
+		t.Fatalf("expected 2 options (api_key + bearer_token), got %d", len(opts))
+	}
+}
