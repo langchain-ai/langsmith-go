@@ -66,7 +66,7 @@ func (r *SessionService) Get(ctx context.Context, sessionID string, params Sessi
 	return res, err
 }
 
-// Create a new session.
+// Update a session.
 func (r *SessionService) Update(ctx context.Context, sessionID string, body SessionUpdateParams, opts ...option.RequestOption) (res *TracerSessionWithoutVirtualFields, err error) {
 	opts = slices.Concat(r.Options, opts)
 	if sessionID == "" {
