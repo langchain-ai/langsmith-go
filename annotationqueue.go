@@ -204,6 +204,7 @@ func (r *AnnotationQueueService) GetTotalSize(ctx context.Context, queueID strin
 type AnnotationQueueRubricItemSchema struct {
 	FeedbackKey       string                              `json:"feedback_key" api:"required"`
 	Description       string                              `json:"description" api:"nullable"`
+	IsAssertion       bool                                `json:"is_assertion" api:"nullable"`
 	IsRequired        bool                                `json:"is_required" api:"nullable"`
 	ScoreDescriptions map[string]string                   `json:"score_descriptions" api:"nullable"`
 	ValueDescriptions map[string]string                   `json:"value_descriptions" api:"nullable"`
@@ -215,6 +216,7 @@ type AnnotationQueueRubricItemSchema struct {
 type annotationQueueRubricItemSchemaJSON struct {
 	FeedbackKey       apijson.Field
 	Description       apijson.Field
+	IsAssertion       apijson.Field
 	IsRequired        apijson.Field
 	ScoreDescriptions apijson.Field
 	ValueDescriptions apijson.Field
@@ -233,6 +235,7 @@ func (r annotationQueueRubricItemSchemaJSON) RawJSON() string {
 type AnnotationQueueRubricItemSchemaParam struct {
 	FeedbackKey       param.Field[string]            `json:"feedback_key" api:"required"`
 	Description       param.Field[string]            `json:"description"`
+	IsAssertion       param.Field[bool]              `json:"is_assertion"`
 	IsRequired        param.Field[bool]              `json:"is_required"`
 	ScoreDescriptions param.Field[map[string]string] `json:"score_descriptions"`
 	ValueDescriptions param.Field[map[string]string] `json:"value_descriptions"`
