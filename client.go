@@ -41,6 +41,9 @@ type Client struct {
 // LANGSMITH_ENDPOINT). This should be used to initialize new clients.
 func DefaultClientOptions() []option.RequestOption {
 	defaults := []option.RequestOption{option.WithEnvironmentProduction()}
+	// Profile options are applied after the production default but before env
+	// vars, so env vars override profile values (last option wins).
+	defaults = append(defaults, loadProfileOptions()...)
 	if o, ok := os.LookupEnv("LANGSMITH_ENDPOINT"); ok {
 		defaults = append(defaults, option.WithBaseURL(o))
 	}
