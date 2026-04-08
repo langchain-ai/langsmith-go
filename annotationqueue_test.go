@@ -68,10 +68,12 @@ func TestAnnotationQueueUpdateWithOptionalParams(t *testing.T) {
 			Name:                langsmith.F("name"),
 			NumReviewersPerItem: langsmith.F[langsmith.AnnotationQueueUpdateParamsNumReviewersPerItemUnion](shared.UnionInt(int64(0))),
 			ReservationMinutes:  langsmith.F(int64(0)),
+			ReviewerAccessMode:  langsmith.F(langsmith.AnnotationQueueUpdateParamsReviewerAccessModeAny),
 			RubricInstructions:  langsmith.F("rubric_instructions"),
 			RubricItems: langsmith.F([]langsmith.AnnotationQueueRubricItemSchemaParam{{
 				FeedbackKey: langsmith.F("feedback_key"),
 				Description: langsmith.F("description"),
+				IsAssertion: langsmith.F(true),
 				IsRequired:  langsmith.F(true),
 				ScoreDescriptions: langsmith.F(map[string]string{
 					"foo": "string",
@@ -143,10 +145,12 @@ func TestAnnotationQueueAnnotationQueuesWithOptionalParams(t *testing.T) {
 		}),
 		NumReviewersPerItem: langsmith.F(int64(0)),
 		ReservationMinutes:  langsmith.F(int64(0)),
+		ReviewerAccessMode:  langsmith.F("reviewer_access_mode"),
 		RubricInstructions:  langsmith.F("rubric_instructions"),
 		RubricItems: langsmith.F([]langsmith.AnnotationQueueRubricItemSchemaParam{{
 			FeedbackKey: langsmith.F("feedback_key"),
 			Description: langsmith.F("description"),
+			IsAssertion: langsmith.F(true),
 			IsRequired:  langsmith.F(true),
 			ScoreDescriptions: langsmith.F(map[string]string{
 				"foo": "string",
@@ -276,6 +280,7 @@ func TestAnnotationQueueGetAnnotationQueuesWithOptionalParams(t *testing.T) {
 		option.WithOrganizationID("My Organization ID"),
 	)
 	_, err := client.AnnotationQueues.GetAnnotationQueues(context.TODO(), langsmith.AnnotationQueueGetAnnotationQueuesParams{
+		AssignedToMe: langsmith.F(true),
 		DatasetID:    langsmith.F("182bd5e5-6e1a-4fe4-a799-aa6d9a6ab26e"),
 		IDs:          langsmith.F([]string{"182bd5e5-6e1a-4fe4-a799-aa6d9a6ab26e"}),
 		Limit:        langsmith.F(int64(1)),
