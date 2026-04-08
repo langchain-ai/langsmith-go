@@ -343,6 +343,41 @@ func TestGetInsightsReport(t *testing.T) {
 	}
 }
 
+func TestListInsightsJobs(t *testing.T) {
+	sessionID := "aaaabbbb-aaaa-aaaa-aaaa-aaaaaaaaaaaa"
+	job1ID := "11112222-1111-1111-1111-111111111111"
+	job2ID := "22223333-2222-2222-2222-222222222222"
+
+	srv := httptest.NewServer(http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
+		w.Header().Set("Content-Type", "application/json")
+		if r.Method != http.MethodGet || r.URL.Path != "/api/v1/sessions/"+sessionID+"/insights" {
+			http.Error(w, "unexpected: "+r.Method+" "+r.URL.Path, http.StatusInternalServerError)
+			return
+		}
+		json.NewEncoder(w).Encode([]map[string]interface{}{
+			{"id": job1ID, "name": "job-one", "status": "success", "created_at": "2026-01-01T00:00:00Z", "clusters": []interface{}{}},
+			{"id": job2ID, "name": "job-two", "status": "pending", "created_at": "2026-01-02T00:00:00Z", "clusters": []interface{}{}},
+		})
+	}))
+	defer srv.Close()
+
+	client := newInsightsTestClient(t, srv)
+
+	jobs, err := client.ListInsightsJobs(context.Background(), sessionID)
+	if err != nil {
+		t.Fatalf("ListInsightsJobs error: %v", err)
+	}
+	if len(jobs) != 2 {
+		t.Fatalf("want 2 jobs, got %d", len(jobs))
+	}
+	if jobs[0].ID != job1ID || jobs[0].Name != "job-one" || jobs[0].Status != "success" {
+		t.Errorf("unexpected first job: %+v", jobs[0])
+	}
+	if jobs[1].ID != job2ID || jobs[1].Status != "pending" {
+		t.Errorf("unexpected second job: %+v", jobs[1])
+	}
+}
+
 func TestGetInsightsReport_MutuallyExclusive(t *testing.T) {
 	srv := httptest.NewServer(http.HandlerFunc(func(w http.ResponseWriter, _ *http.Request) {
 		w.WriteHeader(http.StatusInternalServerError)

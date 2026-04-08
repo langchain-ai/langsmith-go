@@ -109,6 +109,18 @@ func (r *SessionInsightService) Delete(ctx context.Context, sessionID string, jo
 	return res, err
 }
 
+// List all insights jobs for a session.
+func (r *SessionInsightService) List(ctx context.Context, sessionID string, opts ...option.RequestOption) (res []SessionInsightListResponseItem, err error) {
+	opts = slices.Concat(r.Options, opts)
+	if sessionID == "" {
+		err = errors.New("missing required session_id parameter")
+		return nil, err
+	}
+	path := fmt.Sprintf("api/v1/sessions/%s/insights", sessionID)
+	err = requestconfig.ExecuteNewRequest(ctx, http.MethodGet, path, nil, &res, opts...)
+	return res, err
+}
+
 // Get a specific cluster job for a session.
 func (r *SessionInsightService) GetJob(ctx context.Context, sessionID string, jobID string, opts ...option.RequestOption) (res *SessionInsightGetJobResponse, err error) {
 	opts = slices.Concat(r.Options, opts)
@@ -437,6 +449,45 @@ func (r *SessionInsightGetJobResponseReportHighlightedTrace) UnmarshalJSON(data 
 }
 
 func (r sessionInsightGetJobResponseReportHighlightedTraceJSON) RawJSON() string {
+	return r.raw
+}
+
+type SessionInsightListResponseItem struct {
+	ID        string                                `json:"id" api:"required" format:"uuid"`
+	Name      string                                `json:"name" api:"required"`
+	Status    string                                `json:"status" api:"required"`
+	CreatedAt time.Time                             `json:"created_at" api:"required" format:"date-time"`
+	ConfigID  string                                `json:"config_id" api:"nullable" format:"uuid"`
+	EndTime   time.Time                             `json:"end_time" api:"nullable" format:"date-time"`
+	Error     string                                `json:"error" api:"nullable"`
+	Metadata  map[string]interface{}                `json:"metadata" api:"nullable"`
+	Shape     map[string]int64                      `json:"shape" api:"nullable"`
+	StartTime time.Time                             `json:"start_time" api:"nullable" format:"date-time"`
+	Clusters  []SessionInsightGetJobResponseCluster `json:"clusters"`
+	JSON      sessionInsightListResponseItemJSON    `json:"-"`
+}
+
+type sessionInsightListResponseItemJSON struct {
+	ID          apijson.Field
+	Name        apijson.Field
+	Status      apijson.Field
+	CreatedAt   apijson.Field
+	ConfigID    apijson.Field
+	EndTime     apijson.Field
+	Error       apijson.Field
+	Metadata    apijson.Field
+	Shape       apijson.Field
+	StartTime   apijson.Field
+	Clusters    apijson.Field
+	raw         string
+	ExtraFields map[string]apijson.Field
+}
+
+func (r *SessionInsightListResponseItem) UnmarshalJSON(data []byte) (err error) {
+	return apijson.UnmarshalRoot(data, r)
+}
+
+func (r sessionInsightListResponseItemJSON) RawJSON() string {
 	return r.raw
 }
 
