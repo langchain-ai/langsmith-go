@@ -37,13 +37,20 @@ const (
 func newAnthropicClient(t *testing.T, tp *sdktrace.TracerProvider) anthropic.Client {
 	t.Helper()
 	apiKey := os.Getenv("ANTHROPIC_API_KEY")
-	if apiKey == "" {
-		t.Skip("ANTHROPIC_API_KEY not set")
+	opts := []traceanthropic.Option{traceanthropic.WithTracerProvider(tp)}
+
+	var clientOpts []option.RequestOption
+	if mockURL, ok := mockBaseURL("anthropic"); ok {
+		apiKey = "fake"
+		clientOpts = append(clientOpts, option.WithBaseURL(mockURL))
+		opts = append(opts, traceanthropic.WithTraceAllHosts())
 	}
-	return anthropic.NewClient(
+
+	clientOpts = append(clientOpts,
 		option.WithAPIKey(apiKey),
-		option.WithHTTPClient(traceanthropic.Client(traceanthropic.WithTracerProvider(tp))),
+		option.WithHTTPClient(traceanthropic.Client(opts...)),
 	)
+	return anthropic.NewClient(clientOpts...)
 }
 
 // --- Basic Non-Streaming ---
