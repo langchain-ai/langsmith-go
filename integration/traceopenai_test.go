@@ -1,5 +1,3 @@
-//go:build integration
-
 package integration
 
 import (
@@ -34,10 +32,15 @@ const (
 func newOpenAIClient(t *testing.T, tp *sdktrace.TracerProvider) *openai.Client {
 	t.Helper()
 	apiKey := os.Getenv("OPENAI_API_KEY")
-	if apiKey == "" {
-		t.Skip("OPENAI_API_KEY not set")
+	mockURL, usingMock := mockBaseURL("openai")
+	if usingMock {
+		apiKey = "fake"
 	}
 	cfg := openai.DefaultConfig(apiKey)
+	if usingMock {
+		cfg.BaseURL = mockURL + "/v1"
+	}
+
 	cfg.HTTPClient = traceopenai.Client(traceopenai.WithTracerProvider(tp))
 	return openai.NewClientWithConfig(cfg)
 }

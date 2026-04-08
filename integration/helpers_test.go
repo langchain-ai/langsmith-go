@@ -1,5 +1,3 @@
-//go:build integration
-
 package integration
 
 import (
@@ -14,9 +12,40 @@ import (
 	"time"
 
 	"github.com/langchain-ai/langsmith-go"
+	"github.com/langchain-ai/langsmith-go/internal/mockllm"
 	sdktrace "go.opentelemetry.io/otel/sdk/trace"
 	"go.opentelemetry.io/otel/sdk/trace/tracetest"
 )
+
+var (
+	sharedMockServer     *mockllm.CombinedServer
+	sharedMockServerOnce sync.Once
+)
+
+// getSharedMockServer returns a shared CombinedServer for all tests.
+// Started once, lives for the test process lifetime.
+func getSharedMockServer() *mockllm.CombinedServer {
+	sharedMockServerOnce.Do(func() {
+		sharedMockServer = mockllm.NewCombinedServer(mockllm.WithHandler(mockllm.DefaultHandler()))
+	})
+	return sharedMockServer
+}
+
+// mockBaseURL returns the mock server URL if no real API key is set for the
+// given provider. Returns ("", false) when real keys are available.
+func mockBaseURL(provider string) (string, bool) {
+	switch provider {
+	case "anthropic":
+		if os.Getenv("ANTHROPIC_API_KEY") != "" {
+			return "", false
+		}
+	case "openai":
+		if os.Getenv("OPENAI_API_KEY") != "" {
+			return "", false
+		}
+	}
+	return getSharedMockServer().URL(), true
+}
 
 var (
 	sharedIntegrationProject     string
