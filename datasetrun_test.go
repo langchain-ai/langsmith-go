@@ -47,7 +47,6 @@ func TestDatasetRunNewWithOptionalParams(t *testing.T) {
 				SortBy:    langsmith.F("sort_by"),
 				SortOrder: langsmith.F(langsmith.SortParamsForRunsComparisonViewSortOrderAsc),
 			}),
-			Stream: langsmith.F(true),
 		},
 	)
 	if err != nil {

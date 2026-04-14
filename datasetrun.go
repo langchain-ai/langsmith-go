@@ -301,7 +301,6 @@ type DatasetRunNewParams struct {
 	Offset                  param.Field[int64]                           `json:"offset"`
 	Preview                 param.Field[bool]                            `json:"preview"`
 	SortParams              param.Field[SortParamsForRunsComparisonView] `json:"sort_params"`
-	Stream                  param.Field[bool]                            `json:"stream"`
 }
 
 func (r DatasetRunNewParams) MarshalJSON() (data []byte, err error) {
