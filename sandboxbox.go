@@ -1,0 +1,1326 @@
+// File generated from our OpenAPI spec by Stainless. See CONTRIBUTING.md for details.
+
+package langsmith
+
+import (
+	"context"
+	"errors"
+	"fmt"
+	"net/http"
+	"net/url"
+	"slices"
+
+	"github.com/langchain-ai/langsmith-go/internal/apijson"
+	"github.com/langchain-ai/langsmith-go/internal/apiquery"
+	"github.com/langchain-ai/langsmith-go/internal/param"
+	"github.com/langchain-ai/langsmith-go/internal/requestconfig"
+	"github.com/langchain-ai/langsmith-go/option"
+)
+
+// SandboxBoxService contains methods and other services that help with interacting
+// with the langChain API.
+//
+// Note, unlike clients, this service does not read variables from the environment
+// automatically. You should not instantiate this service directly, and instead use
+// the [NewSandboxBoxService] method instead.
+type SandboxBoxService struct {
+	Options []option.RequestOption
+}
+
+// NewSandboxBoxService generates a new service that applies the given options to
+// each request. These options are applied after the parent client's options (if
+// there is one), and before any request-specific options.
+func NewSandboxBoxService(opts ...option.RequestOption) (r *SandboxBoxService) {
+	r = &SandboxBoxService{}
+	r.Options = opts
+	return
+}
+
+// Create a new sandbox from a template. Optionally blocks until ready or timeout.
+func (r *SandboxBoxService) New(ctx context.Context, body SandboxBoxNewParams, opts ...option.RequestOption) (res *SandboxBoxNewResponse, err error) {
+	opts = slices.Concat(r.Options, opts)
+	path := "v2/sandboxes/boxes"
+	err = requestconfig.ExecuteNewRequest(ctx, http.MethodPost, path, body, &res, opts...)
+	return res, err
+}
+
+// Retrieve a sandbox claim by name. Stale provisioning claims are auto-failed.
+func (r *SandboxBoxService) Get(ctx context.Context, name string, opts ...option.RequestOption) (res *SandboxBoxGetResponse, err error) {
+	opts = slices.Concat(r.Options, opts)
+	if name == "" {
+		err = errors.New("missing required name parameter")
+		return nil, err
+	}
+	path := fmt.Sprintf("v2/sandboxes/boxes/%s", name)
+	err = requestconfig.ExecuteNewRequest(ctx, http.MethodGet, path, nil, &res, opts...)
+	return res, err
+}
+
+// Update a sandbox claim's display name. The name must be unique within the
+// tenant.
+func (r *SandboxBoxService) Update(ctx context.Context, name string, body SandboxBoxUpdateParams, opts ...option.RequestOption) (res *SandboxBoxUpdateResponse, err error) {
+	opts = slices.Concat(r.Options, opts)
+	if name == "" {
+		err = errors.New("missing required name parameter")
+		return nil, err
+	}
+	path := fmt.Sprintf("v2/sandboxes/boxes/%s", name)
+	err = requestconfig.ExecuteNewRequest(ctx, http.MethodPatch, path, body, &res, opts...)
+	return res, err
+}
+
+// List sandbox claims for the authenticated tenant, with optional filtering,
+// sorting, and pagination.
+func (r *SandboxBoxService) List(ctx context.Context, query SandboxBoxListParams, opts ...option.RequestOption) (res *SandboxBoxListResponse, err error) {
+	opts = slices.Concat(r.Options, opts)
+	path := "v2/sandboxes/boxes"
+	err = requestconfig.ExecuteNewRequest(ctx, http.MethodGet, path, query, &res, opts...)
+	return res, err
+}
+
+// Delete a sandbox claim by name. Deletes both the K8s CRD and the DB record.
+func (r *SandboxBoxService) Delete(ctx context.Context, name string, opts ...option.RequestOption) (err error) {
+	opts = slices.Concat(r.Options, opts)
+	opts = append([]option.RequestOption{option.WithHeader("Accept", "*/*")}, opts...)
+	if name == "" {
+		err = errors.New("missing required name parameter")
+		return err
+	}
+	path := fmt.Sprintf("v2/sandboxes/boxes/%s", name)
+	err = requestconfig.ExecuteNewRequest(ctx, http.MethodDelete, path, nil, nil, opts...)
+	return err
+}
+
+// Create a snapshot by capturing the current state of a sandbox or promoting an
+// existing checkpoint.
+func (r *SandboxBoxService) NewSnapshot(ctx context.Context, name string, body SandboxBoxNewSnapshotParams, opts ...option.RequestOption) (res *SandboxBoxNewSnapshotResponse, err error) {
+	opts = slices.Concat(r.Options, opts)
+	if name == "" {
+		err = errors.New("missing required name parameter")
+		return nil, err
+	}
+	path := fmt.Sprintf("v2/sandboxes/boxes/%s/snapshot", name)
+	err = requestconfig.ExecuteNewRequest(ctx, http.MethodPost, path, body, &res, opts...)
+	return res, err
+}
+
+// Create a short-lived JWT for accessing an HTTP service running on a specific
+// port inside a sandbox. Returns a browser_url (sets auth cookie via redirect), a
+// service_url (for use with the X-Langsmith-Sandbox-Service-Token header), the raw
+// token, and its expiry.
+func (r *SandboxBoxService) GenerateServiceURL(ctx context.Context, name string, body SandboxBoxGenerateServiceURLParams, opts ...option.RequestOption) (res *SandboxBoxGenerateServiceURLResponse, err error) {
+	opts = slices.Concat(r.Options, opts)
+	if name == "" {
+		err = errors.New("missing required name parameter")
+		return nil, err
+	}
+	path := fmt.Sprintf("v2/sandboxes/boxes/%s/service-url", name)
+	err = requestconfig.ExecuteNewRequest(ctx, http.MethodPost, path, body, &res, opts...)
+	return res, err
+}
+
+// Retrieve the lightweight status of a sandbox claim for polling.
+func (r *SandboxBoxService) GetStatus(ctx context.Context, name string, opts ...option.RequestOption) (res *SandboxBoxGetStatusResponse, err error) {
+	opts = slices.Concat(r.Options, opts)
+	if name == "" {
+		err = errors.New("missing required name parameter")
+		return nil, err
+	}
+	path := fmt.Sprintf("v2/sandboxes/boxes/%s/status", name)
+	err = requestconfig.ExecuteNewRequest(ctx, http.MethodGet, path, nil, &res, opts...)
+	return res, err
+}
+
+// Start a stopped or failed Firecracker sandbox. This endpoint is not idempotent;
+// it returns 202 immediately, then you can poll status for readiness.
+func (r *SandboxBoxService) Start(ctx context.Context, name string, opts ...option.RequestOption) (res *SandboxBoxStartResponse, err error) {
+	opts = slices.Concat(r.Options, opts)
+	if name == "" {
+		err = errors.New("missing required name parameter")
+		return nil, err
+	}
+	path := fmt.Sprintf("v2/sandboxes/boxes/%s/start", name)
+	err = requestconfig.ExecuteNewRequest(ctx, http.MethodPost, path, nil, &res, opts...)
+	return res, err
+}
+
+// Stop a ready Firecracker sandbox. This endpoint is not idempotent; the rootfs is
+// preserved on JuiceFS for later restart.
+func (r *SandboxBoxService) Stop(ctx context.Context, name string, opts ...option.RequestOption) (err error) {
+	opts = slices.Concat(r.Options, opts)
+	opts = append([]option.RequestOption{option.WithHeader("Accept", "*/*")}, opts...)
+	if name == "" {
+		err = errors.New("missing required name parameter")
+		return err
+	}
+	path := fmt.Sprintf("v2/sandboxes/boxes/%s/stop", name)
+	err = requestconfig.ExecuteNewRequest(ctx, http.MethodPost, path, nil, nil, opts...)
+	return err
+}
+
+type SandboxBoxNewResponse struct {
+	ID              string                           `json:"id"`
+	CreatedAt       string                           `json:"created_at"`
+	DataplaneURL    string                           `json:"dataplane_url"`
+	ExpiresAt       string                           `json:"expires_at"`
+	FsCapacityBytes int64                            `json:"fs_capacity_bytes"`
+	IdleTtlSeconds  int64                            `json:"idle_ttl_seconds"`
+	MemBytes        int64                            `json:"mem_bytes"`
+	Name            string                           `json:"name"`
+	ProxyConfig     SandboxBoxNewResponseProxyConfig `json:"proxy_config"`
+	SnapshotID      string                           `json:"snapshot_id"`
+	Status          string                           `json:"status"`
+	StatusMessage   string                           `json:"status_message"`
+	TemplateName    string                           `json:"template_name"`
+	TtlSeconds      int64                            `json:"ttl_seconds"`
+	UpdatedAt       string                           `json:"updated_at"`
+	Vcpus           int64                            `json:"vcpus"`
+	JSON            sandboxBoxNewResponseJSON        `json:"-"`
+}
+
+// sandboxBoxNewResponseJSON contains the JSON metadata for the struct
+// [SandboxBoxNewResponse]
+type sandboxBoxNewResponseJSON struct {
+	ID              apijson.Field
+	CreatedAt       apijson.Field
+	DataplaneURL    apijson.Field
+	ExpiresAt       apijson.Field
+	FsCapacityBytes apijson.Field
+	IdleTtlSeconds  apijson.Field
+	MemBytes        apijson.Field
+	Name            apijson.Field
+	ProxyConfig     apijson.Field
+	SnapshotID      apijson.Field
+	Status          apijson.Field
+	StatusMessage   apijson.Field
+	TemplateName    apijson.Field
+	TtlSeconds      apijson.Field
+	UpdatedAt       apijson.Field
+	Vcpus           apijson.Field
+	raw             string
+	ExtraFields     map[string]apijson.Field
+}
+
+func (r *SandboxBoxNewResponse) UnmarshalJSON(data []byte) (err error) {
+	return apijson.UnmarshalRoot(data, r)
+}
+
+func (r sandboxBoxNewResponseJSON) RawJSON() string {
+	return r.raw
+}
+
+type SandboxBoxNewResponseProxyConfig struct {
+	AccessControl SandboxBoxNewResponseProxyConfigAccessControl `json:"access_control"`
+	NoProxy       []string                                      `json:"no_proxy"`
+	Rules         []SandboxBoxNewResponseProxyConfigRule        `json:"rules"`
+	JSON          sandboxBoxNewResponseProxyConfigJSON          `json:"-"`
+}
+
+// sandboxBoxNewResponseProxyConfigJSON contains the JSON metadata for the struct
+// [SandboxBoxNewResponseProxyConfig]
+type sandboxBoxNewResponseProxyConfigJSON struct {
+	AccessControl apijson.Field
+	NoProxy       apijson.Field
+	Rules         apijson.Field
+	raw           string
+	ExtraFields   map[string]apijson.Field
+}
+
+func (r *SandboxBoxNewResponseProxyConfig) UnmarshalJSON(data []byte) (err error) {
+	return apijson.UnmarshalRoot(data, r)
+}
+
+func (r sandboxBoxNewResponseProxyConfigJSON) RawJSON() string {
+	return r.raw
+}
+
+type SandboxBoxNewResponseProxyConfigAccessControl struct {
+	AllowList []string                                          `json:"allow_list"`
+	DenyList  []string                                          `json:"deny_list"`
+	JSON      sandboxBoxNewResponseProxyConfigAccessControlJSON `json:"-"`
+}
+
+// sandboxBoxNewResponseProxyConfigAccessControlJSON contains the JSON metadata for
+// the struct [SandboxBoxNewResponseProxyConfigAccessControl]
+type sandboxBoxNewResponseProxyConfigAccessControlJSON struct {
+	AllowList   apijson.Field
+	DenyList    apijson.Field
+	raw         string
+	ExtraFields map[string]apijson.Field
+}
+
+func (r *SandboxBoxNewResponseProxyConfigAccessControl) UnmarshalJSON(data []byte) (err error) {
+	return apijson.UnmarshalRoot(data, r)
+}
+
+func (r sandboxBoxNewResponseProxyConfigAccessControlJSON) RawJSON() string {
+	return r.raw
+}
+
+type SandboxBoxNewResponseProxyConfigRule struct {
+	MatchHosts []string                                      `json:"match_hosts" api:"required"`
+	Name       string                                        `json:"name" api:"required"`
+	Enabled    bool                                          `json:"enabled"`
+	Headers    []SandboxBoxNewResponseProxyConfigRulesHeader `json:"headers"`
+	MatchPaths []string                                      `json:"match_paths"`
+	JSON       sandboxBoxNewResponseProxyConfigRuleJSON      `json:"-"`
+}
+
+// sandboxBoxNewResponseProxyConfigRuleJSON contains the JSON metadata for the
+// struct [SandboxBoxNewResponseProxyConfigRule]
+type sandboxBoxNewResponseProxyConfigRuleJSON struct {
+	MatchHosts  apijson.Field
+	Name        apijson.Field
+	Enabled     apijson.Field
+	Headers     apijson.Field
+	MatchPaths  apijson.Field
+	raw         string
+	ExtraFields map[string]apijson.Field
+}
+
+func (r *SandboxBoxNewResponseProxyConfigRule) UnmarshalJSON(data []byte) (err error) {
+	return apijson.UnmarshalRoot(data, r)
+}
+
+func (r sandboxBoxNewResponseProxyConfigRuleJSON) RawJSON() string {
+	return r.raw
+}
+
+type SandboxBoxNewResponseProxyConfigRulesHeader struct {
+	Name  string                                           `json:"name" api:"required"`
+	Type  SandboxBoxNewResponseProxyConfigRulesHeadersType `json:"type" api:"required"`
+	IsSet bool                                             `json:"is_set"`
+	Value string                                           `json:"value"`
+	JSON  sandboxBoxNewResponseProxyConfigRulesHeaderJSON  `json:"-"`
+}
+
+// sandboxBoxNewResponseProxyConfigRulesHeaderJSON contains the JSON metadata for
+// the struct [SandboxBoxNewResponseProxyConfigRulesHeader]
+type sandboxBoxNewResponseProxyConfigRulesHeaderJSON struct {
+	Name        apijson.Field
+	Type        apijson.Field
+	IsSet       apijson.Field
+	Value       apijson.Field
+	raw         string
+	ExtraFields map[string]apijson.Field
+}
+
+func (r *SandboxBoxNewResponseProxyConfigRulesHeader) UnmarshalJSON(data []byte) (err error) {
+	return apijson.UnmarshalRoot(data, r)
+}
+
+func (r sandboxBoxNewResponseProxyConfigRulesHeaderJSON) RawJSON() string {
+	return r.raw
+}
+
+type SandboxBoxNewResponseProxyConfigRulesHeadersType string
+
+const (
+	SandboxBoxNewResponseProxyConfigRulesHeadersTypePlaintext       SandboxBoxNewResponseProxyConfigRulesHeadersType = "plaintext"
+	SandboxBoxNewResponseProxyConfigRulesHeadersTypeOpaque          SandboxBoxNewResponseProxyConfigRulesHeadersType = "opaque"
+	SandboxBoxNewResponseProxyConfigRulesHeadersTypeWorkspaceSecret SandboxBoxNewResponseProxyConfigRulesHeadersType = "workspace_secret"
+)
+
+func (r SandboxBoxNewResponseProxyConfigRulesHeadersType) IsKnown() bool {
+	switch r {
+	case SandboxBoxNewResponseProxyConfigRulesHeadersTypePlaintext, SandboxBoxNewResponseProxyConfigRulesHeadersTypeOpaque, SandboxBoxNewResponseProxyConfigRulesHeadersTypeWorkspaceSecret:
+		return true
+	}
+	return false
+}
+
+type SandboxBoxGetResponse struct {
+	ID              string                           `json:"id"`
+	CreatedAt       string                           `json:"created_at"`
+	DataplaneURL    string                           `json:"dataplane_url"`
+	ExpiresAt       string                           `json:"expires_at"`
+	FsCapacityBytes int64                            `json:"fs_capacity_bytes"`
+	IdleTtlSeconds  int64                            `json:"idle_ttl_seconds"`
+	MemBytes        int64                            `json:"mem_bytes"`
+	Name            string                           `json:"name"`
+	ProxyConfig     SandboxBoxGetResponseProxyConfig `json:"proxy_config"`
+	SnapshotID      string                           `json:"snapshot_id"`
+	Status          string                           `json:"status"`
+	StatusMessage   string                           `json:"status_message"`
+	TemplateName    string                           `json:"template_name"`
+	TtlSeconds      int64                            `json:"ttl_seconds"`
+	UpdatedAt       string                           `json:"updated_at"`
+	Vcpus           int64                            `json:"vcpus"`
+	JSON            sandboxBoxGetResponseJSON        `json:"-"`
+}
+
+// sandboxBoxGetResponseJSON contains the JSON metadata for the struct
+// [SandboxBoxGetResponse]
+type sandboxBoxGetResponseJSON struct {
+	ID              apijson.Field
+	CreatedAt       apijson.Field
+	DataplaneURL    apijson.Field
+	ExpiresAt       apijson.Field
+	FsCapacityBytes apijson.Field
+	IdleTtlSeconds  apijson.Field
+	MemBytes        apijson.Field
+	Name            apijson.Field
+	ProxyConfig     apijson.Field
+	SnapshotID      apijson.Field
+	Status          apijson.Field
+	StatusMessage   apijson.Field
+	TemplateName    apijson.Field
+	TtlSeconds      apijson.Field
+	UpdatedAt       apijson.Field
+	Vcpus           apijson.Field
+	raw             string
+	ExtraFields     map[string]apijson.Field
+}
+
+func (r *SandboxBoxGetResponse) UnmarshalJSON(data []byte) (err error) {
+	return apijson.UnmarshalRoot(data, r)
+}
+
+func (r sandboxBoxGetResponseJSON) RawJSON() string {
+	return r.raw
+}
+
+type SandboxBoxGetResponseProxyConfig struct {
+	AccessControl SandboxBoxGetResponseProxyConfigAccessControl `json:"access_control"`
+	NoProxy       []string                                      `json:"no_proxy"`
+	Rules         []SandboxBoxGetResponseProxyConfigRule        `json:"rules"`
+	JSON          sandboxBoxGetResponseProxyConfigJSON          `json:"-"`
+}
+
+// sandboxBoxGetResponseProxyConfigJSON contains the JSON metadata for the struct
+// [SandboxBoxGetResponseProxyConfig]
+type sandboxBoxGetResponseProxyConfigJSON struct {
+	AccessControl apijson.Field
+	NoProxy       apijson.Field
+	Rules         apijson.Field
+	raw           string
+	ExtraFields   map[string]apijson.Field
+}
+
+func (r *SandboxBoxGetResponseProxyConfig) UnmarshalJSON(data []byte) (err error) {
+	return apijson.UnmarshalRoot(data, r)
+}
+
+func (r sandboxBoxGetResponseProxyConfigJSON) RawJSON() string {
+	return r.raw
+}
+
+type SandboxBoxGetResponseProxyConfigAccessControl struct {
+	AllowList []string                                          `json:"allow_list"`
+	DenyList  []string                                          `json:"deny_list"`
+	JSON      sandboxBoxGetResponseProxyConfigAccessControlJSON `json:"-"`
+}
+
+// sandboxBoxGetResponseProxyConfigAccessControlJSON contains the JSON metadata for
+// the struct [SandboxBoxGetResponseProxyConfigAccessControl]
+type sandboxBoxGetResponseProxyConfigAccessControlJSON struct {
+	AllowList   apijson.Field
+	DenyList    apijson.Field
+	raw         string
+	ExtraFields map[string]apijson.Field
+}
+
+func (r *SandboxBoxGetResponseProxyConfigAccessControl) UnmarshalJSON(data []byte) (err error) {
+	return apijson.UnmarshalRoot(data, r)
+}
+
+func (r sandboxBoxGetResponseProxyConfigAccessControlJSON) RawJSON() string {
+	return r.raw
+}
+
+type SandboxBoxGetResponseProxyConfigRule struct {
+	MatchHosts []string                                      `json:"match_hosts" api:"required"`
+	Name       string                                        `json:"name" api:"required"`
+	Enabled    bool                                          `json:"enabled"`
+	Headers    []SandboxBoxGetResponseProxyConfigRulesHeader `json:"headers"`
+	MatchPaths []string                                      `json:"match_paths"`
+	JSON       sandboxBoxGetResponseProxyConfigRuleJSON      `json:"-"`
+}
+
+// sandboxBoxGetResponseProxyConfigRuleJSON contains the JSON metadata for the
+// struct [SandboxBoxGetResponseProxyConfigRule]
+type sandboxBoxGetResponseProxyConfigRuleJSON struct {
+	MatchHosts  apijson.Field
+	Name        apijson.Field
+	Enabled     apijson.Field
+	Headers     apijson.Field
+	MatchPaths  apijson.Field
+	raw         string
+	ExtraFields map[string]apijson.Field
+}
+
+func (r *SandboxBoxGetResponseProxyConfigRule) UnmarshalJSON(data []byte) (err error) {
+	return apijson.UnmarshalRoot(data, r)
+}
+
+func (r sandboxBoxGetResponseProxyConfigRuleJSON) RawJSON() string {
+	return r.raw
+}
+
+type SandboxBoxGetResponseProxyConfigRulesHeader struct {
+	Name  string                                           `json:"name" api:"required"`
+	Type  SandboxBoxGetResponseProxyConfigRulesHeadersType `json:"type" api:"required"`
+	IsSet bool                                             `json:"is_set"`
+	Value string                                           `json:"value"`
+	JSON  sandboxBoxGetResponseProxyConfigRulesHeaderJSON  `json:"-"`
+}
+
+// sandboxBoxGetResponseProxyConfigRulesHeaderJSON contains the JSON metadata for
+// the struct [SandboxBoxGetResponseProxyConfigRulesHeader]
+type sandboxBoxGetResponseProxyConfigRulesHeaderJSON struct {
+	Name        apijson.Field
+	Type        apijson.Field
+	IsSet       apijson.Field
+	Value       apijson.Field
+	raw         string
+	ExtraFields map[string]apijson.Field
+}
+
+func (r *SandboxBoxGetResponseProxyConfigRulesHeader) UnmarshalJSON(data []byte) (err error) {
+	return apijson.UnmarshalRoot(data, r)
+}
+
+func (r sandboxBoxGetResponseProxyConfigRulesHeaderJSON) RawJSON() string {
+	return r.raw
+}
+
+type SandboxBoxGetResponseProxyConfigRulesHeadersType string
+
+const (
+	SandboxBoxGetResponseProxyConfigRulesHeadersTypePlaintext       SandboxBoxGetResponseProxyConfigRulesHeadersType = "plaintext"
+	SandboxBoxGetResponseProxyConfigRulesHeadersTypeOpaque          SandboxBoxGetResponseProxyConfigRulesHeadersType = "opaque"
+	SandboxBoxGetResponseProxyConfigRulesHeadersTypeWorkspaceSecret SandboxBoxGetResponseProxyConfigRulesHeadersType = "workspace_secret"
+)
+
+func (r SandboxBoxGetResponseProxyConfigRulesHeadersType) IsKnown() bool {
+	switch r {
+	case SandboxBoxGetResponseProxyConfigRulesHeadersTypePlaintext, SandboxBoxGetResponseProxyConfigRulesHeadersTypeOpaque, SandboxBoxGetResponseProxyConfigRulesHeadersTypeWorkspaceSecret:
+		return true
+	}
+	return false
+}
+
+type SandboxBoxUpdateResponse struct {
+	ID              string                              `json:"id"`
+	CreatedAt       string                              `json:"created_at"`
+	DataplaneURL    string                              `json:"dataplane_url"`
+	ExpiresAt       string                              `json:"expires_at"`
+	FsCapacityBytes int64                               `json:"fs_capacity_bytes"`
+	IdleTtlSeconds  int64                               `json:"idle_ttl_seconds"`
+	MemBytes        int64                               `json:"mem_bytes"`
+	Name            string                              `json:"name"`
+	ProxyConfig     SandboxBoxUpdateResponseProxyConfig `json:"proxy_config"`
+	SnapshotID      string                              `json:"snapshot_id"`
+	Status          string                              `json:"status"`
+	StatusMessage   string                              `json:"status_message"`
+	TemplateName    string                              `json:"template_name"`
+	TtlSeconds      int64                               `json:"ttl_seconds"`
+	UpdatedAt       string                              `json:"updated_at"`
+	Vcpus           int64                               `json:"vcpus"`
+	JSON            sandboxBoxUpdateResponseJSON        `json:"-"`
+}
+
+// sandboxBoxUpdateResponseJSON contains the JSON metadata for the struct
+// [SandboxBoxUpdateResponse]
+type sandboxBoxUpdateResponseJSON struct {
+	ID              apijson.Field
+	CreatedAt       apijson.Field
+	DataplaneURL    apijson.Field
+	ExpiresAt       apijson.Field
+	FsCapacityBytes apijson.Field
+	IdleTtlSeconds  apijson.Field
+	MemBytes        apijson.Field
+	Name            apijson.Field
+	ProxyConfig     apijson.Field
+	SnapshotID      apijson.Field
+	Status          apijson.Field
+	StatusMessage   apijson.Field
+	TemplateName    apijson.Field
+	TtlSeconds      apijson.Field
+	UpdatedAt       apijson.Field
+	Vcpus           apijson.Field
+	raw             string
+	ExtraFields     map[string]apijson.Field
+}
+
+func (r *SandboxBoxUpdateResponse) UnmarshalJSON(data []byte) (err error) {
+	return apijson.UnmarshalRoot(data, r)
+}
+
+func (r sandboxBoxUpdateResponseJSON) RawJSON() string {
+	return r.raw
+}
+
+type SandboxBoxUpdateResponseProxyConfig struct {
+	AccessControl SandboxBoxUpdateResponseProxyConfigAccessControl `json:"access_control"`
+	NoProxy       []string                                         `json:"no_proxy"`
+	Rules         []SandboxBoxUpdateResponseProxyConfigRule        `json:"rules"`
+	JSON          sandboxBoxUpdateResponseProxyConfigJSON          `json:"-"`
+}
+
+// sandboxBoxUpdateResponseProxyConfigJSON contains the JSON metadata for the
+// struct [SandboxBoxUpdateResponseProxyConfig]
+type sandboxBoxUpdateResponseProxyConfigJSON struct {
+	AccessControl apijson.Field
+	NoProxy       apijson.Field
+	Rules         apijson.Field
+	raw           string
+	ExtraFields   map[string]apijson.Field
+}
+
+func (r *SandboxBoxUpdateResponseProxyConfig) UnmarshalJSON(data []byte) (err error) {
+	return apijson.UnmarshalRoot(data, r)
+}
+
+func (r sandboxBoxUpdateResponseProxyConfigJSON) RawJSON() string {
+	return r.raw
+}
+
+type SandboxBoxUpdateResponseProxyConfigAccessControl struct {
+	AllowList []string                                             `json:"allow_list"`
+	DenyList  []string                                             `json:"deny_list"`
+	JSON      sandboxBoxUpdateResponseProxyConfigAccessControlJSON `json:"-"`
+}
+
+// sandboxBoxUpdateResponseProxyConfigAccessControlJSON contains the JSON metadata
+// for the struct [SandboxBoxUpdateResponseProxyConfigAccessControl]
+type sandboxBoxUpdateResponseProxyConfigAccessControlJSON struct {
+	AllowList   apijson.Field
+	DenyList    apijson.Field
+	raw         string
+	ExtraFields map[string]apijson.Field
+}
+
+func (r *SandboxBoxUpdateResponseProxyConfigAccessControl) UnmarshalJSON(data []byte) (err error) {
+	return apijson.UnmarshalRoot(data, r)
+}
+
+func (r sandboxBoxUpdateResponseProxyConfigAccessControlJSON) RawJSON() string {
+	return r.raw
+}
+
+type SandboxBoxUpdateResponseProxyConfigRule struct {
+	MatchHosts []string                                         `json:"match_hosts" api:"required"`
+	Name       string                                           `json:"name" api:"required"`
+	Enabled    bool                                             `json:"enabled"`
+	Headers    []SandboxBoxUpdateResponseProxyConfigRulesHeader `json:"headers"`
+	MatchPaths []string                                         `json:"match_paths"`
+	JSON       sandboxBoxUpdateResponseProxyConfigRuleJSON      `json:"-"`
+}
+
+// sandboxBoxUpdateResponseProxyConfigRuleJSON contains the JSON metadata for the
+// struct [SandboxBoxUpdateResponseProxyConfigRule]
+type sandboxBoxUpdateResponseProxyConfigRuleJSON struct {
+	MatchHosts  apijson.Field
+	Name        apijson.Field
+	Enabled     apijson.Field
+	Headers     apijson.Field
+	MatchPaths  apijson.Field
+	raw         string
+	ExtraFields map[string]apijson.Field
+}
+
+func (r *SandboxBoxUpdateResponseProxyConfigRule) UnmarshalJSON(data []byte) (err error) {
+	return apijson.UnmarshalRoot(data, r)
+}
+
+func (r sandboxBoxUpdateResponseProxyConfigRuleJSON) RawJSON() string {
+	return r.raw
+}
+
+type SandboxBoxUpdateResponseProxyConfigRulesHeader struct {
+	Name  string                                              `json:"name" api:"required"`
+	Type  SandboxBoxUpdateResponseProxyConfigRulesHeadersType `json:"type" api:"required"`
+	IsSet bool                                                `json:"is_set"`
+	Value string                                              `json:"value"`
+	JSON  sandboxBoxUpdateResponseProxyConfigRulesHeaderJSON  `json:"-"`
+}
+
+// sandboxBoxUpdateResponseProxyConfigRulesHeaderJSON contains the JSON metadata
+// for the struct [SandboxBoxUpdateResponseProxyConfigRulesHeader]
+type sandboxBoxUpdateResponseProxyConfigRulesHeaderJSON struct {
+	Name        apijson.Field
+	Type        apijson.Field
+	IsSet       apijson.Field
+	Value       apijson.Field
+	raw         string
+	ExtraFields map[string]apijson.Field
+}
+
+func (r *SandboxBoxUpdateResponseProxyConfigRulesHeader) UnmarshalJSON(data []byte) (err error) {
+	return apijson.UnmarshalRoot(data, r)
+}
+
+func (r sandboxBoxUpdateResponseProxyConfigRulesHeaderJSON) RawJSON() string {
+	return r.raw
+}
+
+type SandboxBoxUpdateResponseProxyConfigRulesHeadersType string
+
+const (
+	SandboxBoxUpdateResponseProxyConfigRulesHeadersTypePlaintext       SandboxBoxUpdateResponseProxyConfigRulesHeadersType = "plaintext"
+	SandboxBoxUpdateResponseProxyConfigRulesHeadersTypeOpaque          SandboxBoxUpdateResponseProxyConfigRulesHeadersType = "opaque"
+	SandboxBoxUpdateResponseProxyConfigRulesHeadersTypeWorkspaceSecret SandboxBoxUpdateResponseProxyConfigRulesHeadersType = "workspace_secret"
+)
+
+func (r SandboxBoxUpdateResponseProxyConfigRulesHeadersType) IsKnown() bool {
+	switch r {
+	case SandboxBoxUpdateResponseProxyConfigRulesHeadersTypePlaintext, SandboxBoxUpdateResponseProxyConfigRulesHeadersTypeOpaque, SandboxBoxUpdateResponseProxyConfigRulesHeadersTypeWorkspaceSecret:
+		return true
+	}
+	return false
+}
+
+type SandboxBoxListResponse struct {
+	Offset    int64                           `json:"offset"`
+	Sandboxes []SandboxBoxListResponseSandbox `json:"sandboxes"`
+	JSON      sandboxBoxListResponseJSON      `json:"-"`
+}
+
+// sandboxBoxListResponseJSON contains the JSON metadata for the struct
+// [SandboxBoxListResponse]
+type sandboxBoxListResponseJSON struct {
+	Offset      apijson.Field
+	Sandboxes   apijson.Field
+	raw         string
+	ExtraFields map[string]apijson.Field
+}
+
+func (r *SandboxBoxListResponse) UnmarshalJSON(data []byte) (err error) {
+	return apijson.UnmarshalRoot(data, r)
+}
+
+func (r sandboxBoxListResponseJSON) RawJSON() string {
+	return r.raw
+}
+
+type SandboxBoxListResponseSandbox struct {
+	ID              string                                     `json:"id"`
+	CreatedAt       string                                     `json:"created_at"`
+	DataplaneURL    string                                     `json:"dataplane_url"`
+	ExpiresAt       string                                     `json:"expires_at"`
+	FsCapacityBytes int64                                      `json:"fs_capacity_bytes"`
+	IdleTtlSeconds  int64                                      `json:"idle_ttl_seconds"`
+	MemBytes        int64                                      `json:"mem_bytes"`
+	Name            string                                     `json:"name"`
+	ProxyConfig     SandboxBoxListResponseSandboxesProxyConfig `json:"proxy_config"`
+	SnapshotID      string                                     `json:"snapshot_id"`
+	Status          string                                     `json:"status"`
+	StatusMessage   string                                     `json:"status_message"`
+	TemplateName    string                                     `json:"template_name"`
+	TtlSeconds      int64                                      `json:"ttl_seconds"`
+	UpdatedAt       string                                     `json:"updated_at"`
+	Vcpus           int64                                      `json:"vcpus"`
+	JSON            sandboxBoxListResponseSandboxJSON          `json:"-"`
+}
+
+// sandboxBoxListResponseSandboxJSON contains the JSON metadata for the struct
+// [SandboxBoxListResponseSandbox]
+type sandboxBoxListResponseSandboxJSON struct {
+	ID              apijson.Field
+	CreatedAt       apijson.Field
+	DataplaneURL    apijson.Field
+	ExpiresAt       apijson.Field
+	FsCapacityBytes apijson.Field
+	IdleTtlSeconds  apijson.Field
+	MemBytes        apijson.Field
+	Name            apijson.Field
+	ProxyConfig     apijson.Field
+	SnapshotID      apijson.Field
+	Status          apijson.Field
+	StatusMessage   apijson.Field
+	TemplateName    apijson.Field
+	TtlSeconds      apijson.Field
+	UpdatedAt       apijson.Field
+	Vcpus           apijson.Field
+	raw             string
+	ExtraFields     map[string]apijson.Field
+}
+
+func (r *SandboxBoxListResponseSandbox) UnmarshalJSON(data []byte) (err error) {
+	return apijson.UnmarshalRoot(data, r)
+}
+
+func (r sandboxBoxListResponseSandboxJSON) RawJSON() string {
+	return r.raw
+}
+
+type SandboxBoxListResponseSandboxesProxyConfig struct {
+	AccessControl SandboxBoxListResponseSandboxesProxyConfigAccessControl `json:"access_control"`
+	NoProxy       []string                                                `json:"no_proxy"`
+	Rules         []SandboxBoxListResponseSandboxesProxyConfigRule        `json:"rules"`
+	JSON          sandboxBoxListResponseSandboxesProxyConfigJSON          `json:"-"`
+}
+
+// sandboxBoxListResponseSandboxesProxyConfigJSON contains the JSON metadata for
+// the struct [SandboxBoxListResponseSandboxesProxyConfig]
+type sandboxBoxListResponseSandboxesProxyConfigJSON struct {
+	AccessControl apijson.Field
+	NoProxy       apijson.Field
+	Rules         apijson.Field
+	raw           string
+	ExtraFields   map[string]apijson.Field
+}
+
+func (r *SandboxBoxListResponseSandboxesProxyConfig) UnmarshalJSON(data []byte) (err error) {
+	return apijson.UnmarshalRoot(data, r)
+}
+
+func (r sandboxBoxListResponseSandboxesProxyConfigJSON) RawJSON() string {
+	return r.raw
+}
+
+type SandboxBoxListResponseSandboxesProxyConfigAccessControl struct {
+	AllowList []string                                                    `json:"allow_list"`
+	DenyList  []string                                                    `json:"deny_list"`
+	JSON      sandboxBoxListResponseSandboxesProxyConfigAccessControlJSON `json:"-"`
+}
+
+// sandboxBoxListResponseSandboxesProxyConfigAccessControlJSON contains the JSON
+// metadata for the struct
+// [SandboxBoxListResponseSandboxesProxyConfigAccessControl]
+type sandboxBoxListResponseSandboxesProxyConfigAccessControlJSON struct {
+	AllowList   apijson.Field
+	DenyList    apijson.Field
+	raw         string
+	ExtraFields map[string]apijson.Field
+}
+
+func (r *SandboxBoxListResponseSandboxesProxyConfigAccessControl) UnmarshalJSON(data []byte) (err error) {
+	return apijson.UnmarshalRoot(data, r)
+}
+
+func (r sandboxBoxListResponseSandboxesProxyConfigAccessControlJSON) RawJSON() string {
+	return r.raw
+}
+
+type SandboxBoxListResponseSandboxesProxyConfigRule struct {
+	MatchHosts []string                                                `json:"match_hosts" api:"required"`
+	Name       string                                                  `json:"name" api:"required"`
+	Enabled    bool                                                    `json:"enabled"`
+	Headers    []SandboxBoxListResponseSandboxesProxyConfigRulesHeader `json:"headers"`
+	MatchPaths []string                                                `json:"match_paths"`
+	JSON       sandboxBoxListResponseSandboxesProxyConfigRuleJSON      `json:"-"`
+}
+
+// sandboxBoxListResponseSandboxesProxyConfigRuleJSON contains the JSON metadata
+// for the struct [SandboxBoxListResponseSandboxesProxyConfigRule]
+type sandboxBoxListResponseSandboxesProxyConfigRuleJSON struct {
+	MatchHosts  apijson.Field
+	Name        apijson.Field
+	Enabled     apijson.Field
+	Headers     apijson.Field
+	MatchPaths  apijson.Field
+	raw         string
+	ExtraFields map[string]apijson.Field
+}
+
+func (r *SandboxBoxListResponseSandboxesProxyConfigRule) UnmarshalJSON(data []byte) (err error) {
+	return apijson.UnmarshalRoot(data, r)
+}
+
+func (r sandboxBoxListResponseSandboxesProxyConfigRuleJSON) RawJSON() string {
+	return r.raw
+}
+
+type SandboxBoxListResponseSandboxesProxyConfigRulesHeader struct {
+	Name  string                                                     `json:"name" api:"required"`
+	Type  SandboxBoxListResponseSandboxesProxyConfigRulesHeadersType `json:"type" api:"required"`
+	IsSet bool                                                       `json:"is_set"`
+	Value string                                                     `json:"value"`
+	JSON  sandboxBoxListResponseSandboxesProxyConfigRulesHeaderJSON  `json:"-"`
+}
+
+// sandboxBoxListResponseSandboxesProxyConfigRulesHeaderJSON contains the JSON
+// metadata for the struct [SandboxBoxListResponseSandboxesProxyConfigRulesHeader]
+type sandboxBoxListResponseSandboxesProxyConfigRulesHeaderJSON struct {
+	Name        apijson.Field
+	Type        apijson.Field
+	IsSet       apijson.Field
+	Value       apijson.Field
+	raw         string
+	ExtraFields map[string]apijson.Field
+}
+
+func (r *SandboxBoxListResponseSandboxesProxyConfigRulesHeader) UnmarshalJSON(data []byte) (err error) {
+	return apijson.UnmarshalRoot(data, r)
+}
+
+func (r sandboxBoxListResponseSandboxesProxyConfigRulesHeaderJSON) RawJSON() string {
+	return r.raw
+}
+
+type SandboxBoxListResponseSandboxesProxyConfigRulesHeadersType string
+
+const (
+	SandboxBoxListResponseSandboxesProxyConfigRulesHeadersTypePlaintext       SandboxBoxListResponseSandboxesProxyConfigRulesHeadersType = "plaintext"
+	SandboxBoxListResponseSandboxesProxyConfigRulesHeadersTypeOpaque          SandboxBoxListResponseSandboxesProxyConfigRulesHeadersType = "opaque"
+	SandboxBoxListResponseSandboxesProxyConfigRulesHeadersTypeWorkspaceSecret SandboxBoxListResponseSandboxesProxyConfigRulesHeadersType = "workspace_secret"
+)
+
+func (r SandboxBoxListResponseSandboxesProxyConfigRulesHeadersType) IsKnown() bool {
+	switch r {
+	case SandboxBoxListResponseSandboxesProxyConfigRulesHeadersTypePlaintext, SandboxBoxListResponseSandboxesProxyConfigRulesHeadersTypeOpaque, SandboxBoxListResponseSandboxesProxyConfigRulesHeadersTypeWorkspaceSecret:
+		return true
+	}
+	return false
+}
+
+type SandboxBoxNewSnapshotResponse struct {
+	ID              string                            `json:"id"`
+	CreatedAt       string                            `json:"created_at"`
+	CreatedBy       string                            `json:"created_by"`
+	DockerImage     string                            `json:"docker_image"`
+	FsCapacityBytes int64                             `json:"fs_capacity_bytes"`
+	FsUsedBytes     int64                             `json:"fs_used_bytes"`
+	ImageDigest     string                            `json:"image_digest"`
+	Name            string                            `json:"name"`
+	RegistryID      string                            `json:"registry_id"`
+	SourceSandboxID string                            `json:"source_sandbox_id"`
+	Status          string                            `json:"status"`
+	StatusMessage   string                            `json:"status_message"`
+	UpdatedAt       string                            `json:"updated_at"`
+	JSON            sandboxBoxNewSnapshotResponseJSON `json:"-"`
+}
+
+// sandboxBoxNewSnapshotResponseJSON contains the JSON metadata for the struct
+// [SandboxBoxNewSnapshotResponse]
+type sandboxBoxNewSnapshotResponseJSON struct {
+	ID              apijson.Field
+	CreatedAt       apijson.Field
+	CreatedBy       apijson.Field
+	DockerImage     apijson.Field
+	FsCapacityBytes apijson.Field
+	FsUsedBytes     apijson.Field
+	ImageDigest     apijson.Field
+	Name            apijson.Field
+	RegistryID      apijson.Field
+	SourceSandboxID apijson.Field
+	Status          apijson.Field
+	StatusMessage   apijson.Field
+	UpdatedAt       apijson.Field
+	raw             string
+	ExtraFields     map[string]apijson.Field
+}
+
+func (r *SandboxBoxNewSnapshotResponse) UnmarshalJSON(data []byte) (err error) {
+	return apijson.UnmarshalRoot(data, r)
+}
+
+func (r sandboxBoxNewSnapshotResponseJSON) RawJSON() string {
+	return r.raw
+}
+
+type SandboxBoxGenerateServiceURLResponse struct {
+	Token      string                                   `json:"token"`
+	BrowserURL string                                   `json:"browser_url"`
+	ExpiresAt  string                                   `json:"expires_at"`
+	ServiceURL string                                   `json:"service_url"`
+	JSON       sandboxBoxGenerateServiceURLResponseJSON `json:"-"`
+}
+
+// sandboxBoxGenerateServiceURLResponseJSON contains the JSON metadata for the
+// struct [SandboxBoxGenerateServiceURLResponse]
+type sandboxBoxGenerateServiceURLResponseJSON struct {
+	Token       apijson.Field
+	BrowserURL  apijson.Field
+	ExpiresAt   apijson.Field
+	ServiceURL  apijson.Field
+	raw         string
+	ExtraFields map[string]apijson.Field
+}
+
+func (r *SandboxBoxGenerateServiceURLResponse) UnmarshalJSON(data []byte) (err error) {
+	return apijson.UnmarshalRoot(data, r)
+}
+
+func (r sandboxBoxGenerateServiceURLResponseJSON) RawJSON() string {
+	return r.raw
+}
+
+type SandboxBoxGetStatusResponse struct {
+	Status        string                          `json:"status"`
+	StatusMessage string                          `json:"status_message"`
+	JSON          sandboxBoxGetStatusResponseJSON `json:"-"`
+}
+
+// sandboxBoxGetStatusResponseJSON contains the JSON metadata for the struct
+// [SandboxBoxGetStatusResponse]
+type sandboxBoxGetStatusResponseJSON struct {
+	Status        apijson.Field
+	StatusMessage apijson.Field
+	raw           string
+	ExtraFields   map[string]apijson.Field
+}
+
+func (r *SandboxBoxGetStatusResponse) UnmarshalJSON(data []byte) (err error) {
+	return apijson.UnmarshalRoot(data, r)
+}
+
+func (r sandboxBoxGetStatusResponseJSON) RawJSON() string {
+	return r.raw
+}
+
+type SandboxBoxStartResponse struct {
+	ID              string                             `json:"id"`
+	CreatedAt       string                             `json:"created_at"`
+	DataplaneURL    string                             `json:"dataplane_url"`
+	ExpiresAt       string                             `json:"expires_at"`
+	FsCapacityBytes int64                              `json:"fs_capacity_bytes"`
+	IdleTtlSeconds  int64                              `json:"idle_ttl_seconds"`
+	MemBytes        int64                              `json:"mem_bytes"`
+	Name            string                             `json:"name"`
+	ProxyConfig     SandboxBoxStartResponseProxyConfig `json:"proxy_config"`
+	SnapshotID      string                             `json:"snapshot_id"`
+	Status          string                             `json:"status"`
+	StatusMessage   string                             `json:"status_message"`
+	TemplateName    string                             `json:"template_name"`
+	TtlSeconds      int64                              `json:"ttl_seconds"`
+	UpdatedAt       string                             `json:"updated_at"`
+	Vcpus           int64                              `json:"vcpus"`
+	JSON            sandboxBoxStartResponseJSON        `json:"-"`
+}
+
+// sandboxBoxStartResponseJSON contains the JSON metadata for the struct
+// [SandboxBoxStartResponse]
+type sandboxBoxStartResponseJSON struct {
+	ID              apijson.Field
+	CreatedAt       apijson.Field
+	DataplaneURL    apijson.Field
+	ExpiresAt       apijson.Field
+	FsCapacityBytes apijson.Field
+	IdleTtlSeconds  apijson.Field
+	MemBytes        apijson.Field
+	Name            apijson.Field
+	ProxyConfig     apijson.Field
+	SnapshotID      apijson.Field
+	Status          apijson.Field
+	StatusMessage   apijson.Field
+	TemplateName    apijson.Field
+	TtlSeconds      apijson.Field
+	UpdatedAt       apijson.Field
+	Vcpus           apijson.Field
+	raw             string
+	ExtraFields     map[string]apijson.Field
+}
+
+func (r *SandboxBoxStartResponse) UnmarshalJSON(data []byte) (err error) {
+	return apijson.UnmarshalRoot(data, r)
+}
+
+func (r sandboxBoxStartResponseJSON) RawJSON() string {
+	return r.raw
+}
+
+type SandboxBoxStartResponseProxyConfig struct {
+	AccessControl SandboxBoxStartResponseProxyConfigAccessControl `json:"access_control"`
+	NoProxy       []string                                        `json:"no_proxy"`
+	Rules         []SandboxBoxStartResponseProxyConfigRule        `json:"rules"`
+	JSON          sandboxBoxStartResponseProxyConfigJSON          `json:"-"`
+}
+
+// sandboxBoxStartResponseProxyConfigJSON contains the JSON metadata for the struct
+// [SandboxBoxStartResponseProxyConfig]
+type sandboxBoxStartResponseProxyConfigJSON struct {
+	AccessControl apijson.Field
+	NoProxy       apijson.Field
+	Rules         apijson.Field
+	raw           string
+	ExtraFields   map[string]apijson.Field
+}
+
+func (r *SandboxBoxStartResponseProxyConfig) UnmarshalJSON(data []byte) (err error) {
+	return apijson.UnmarshalRoot(data, r)
+}
+
+func (r sandboxBoxStartResponseProxyConfigJSON) RawJSON() string {
+	return r.raw
+}
+
+type SandboxBoxStartResponseProxyConfigAccessControl struct {
+	AllowList []string                                            `json:"allow_list"`
+	DenyList  []string                                            `json:"deny_list"`
+	JSON      sandboxBoxStartResponseProxyConfigAccessControlJSON `json:"-"`
+}
+
+// sandboxBoxStartResponseProxyConfigAccessControlJSON contains the JSON metadata
+// for the struct [SandboxBoxStartResponseProxyConfigAccessControl]
+type sandboxBoxStartResponseProxyConfigAccessControlJSON struct {
+	AllowList   apijson.Field
+	DenyList    apijson.Field
+	raw         string
+	ExtraFields map[string]apijson.Field
+}
+
+func (r *SandboxBoxStartResponseProxyConfigAccessControl) UnmarshalJSON(data []byte) (err error) {
+	return apijson.UnmarshalRoot(data, r)
+}
+
+func (r sandboxBoxStartResponseProxyConfigAccessControlJSON) RawJSON() string {
+	return r.raw
+}
+
+type SandboxBoxStartResponseProxyConfigRule struct {
+	MatchHosts []string                                        `json:"match_hosts" api:"required"`
+	Name       string                                          `json:"name" api:"required"`
+	Enabled    bool                                            `json:"enabled"`
+	Headers    []SandboxBoxStartResponseProxyConfigRulesHeader `json:"headers"`
+	MatchPaths []string                                        `json:"match_paths"`
+	JSON       sandboxBoxStartResponseProxyConfigRuleJSON      `json:"-"`
+}
+
+// sandboxBoxStartResponseProxyConfigRuleJSON contains the JSON metadata for the
+// struct [SandboxBoxStartResponseProxyConfigRule]
+type sandboxBoxStartResponseProxyConfigRuleJSON struct {
+	MatchHosts  apijson.Field
+	Name        apijson.Field
+	Enabled     apijson.Field
+	Headers     apijson.Field
+	MatchPaths  apijson.Field
+	raw         string
+	ExtraFields map[string]apijson.Field
+}
+
+func (r *SandboxBoxStartResponseProxyConfigRule) UnmarshalJSON(data []byte) (err error) {
+	return apijson.UnmarshalRoot(data, r)
+}
+
+func (r sandboxBoxStartResponseProxyConfigRuleJSON) RawJSON() string {
+	return r.raw
+}
+
+type SandboxBoxStartResponseProxyConfigRulesHeader struct {
+	Name  string                                             `json:"name" api:"required"`
+	Type  SandboxBoxStartResponseProxyConfigRulesHeadersType `json:"type" api:"required"`
+	IsSet bool                                               `json:"is_set"`
+	Value string                                             `json:"value"`
+	JSON  sandboxBoxStartResponseProxyConfigRulesHeaderJSON  `json:"-"`
+}
+
+// sandboxBoxStartResponseProxyConfigRulesHeaderJSON contains the JSON metadata for
+// the struct [SandboxBoxStartResponseProxyConfigRulesHeader]
+type sandboxBoxStartResponseProxyConfigRulesHeaderJSON struct {
+	Name        apijson.Field
+	Type        apijson.Field
+	IsSet       apijson.Field
+	Value       apijson.Field
+	raw         string
+	ExtraFields map[string]apijson.Field
+}
+
+func (r *SandboxBoxStartResponseProxyConfigRulesHeader) UnmarshalJSON(data []byte) (err error) {
+	return apijson.UnmarshalRoot(data, r)
+}
+
+func (r sandboxBoxStartResponseProxyConfigRulesHeaderJSON) RawJSON() string {
+	return r.raw
+}
+
+type SandboxBoxStartResponseProxyConfigRulesHeadersType string
+
+const (
+	SandboxBoxStartResponseProxyConfigRulesHeadersTypePlaintext       SandboxBoxStartResponseProxyConfigRulesHeadersType = "plaintext"
+	SandboxBoxStartResponseProxyConfigRulesHeadersTypeOpaque          SandboxBoxStartResponseProxyConfigRulesHeadersType = "opaque"
+	SandboxBoxStartResponseProxyConfigRulesHeadersTypeWorkspaceSecret SandboxBoxStartResponseProxyConfigRulesHeadersType = "workspace_secret"
+)
+
+func (r SandboxBoxStartResponseProxyConfigRulesHeadersType) IsKnown() bool {
+	switch r {
+	case SandboxBoxStartResponseProxyConfigRulesHeadersTypePlaintext, SandboxBoxStartResponseProxyConfigRulesHeadersTypeOpaque, SandboxBoxStartResponseProxyConfigRulesHeadersTypeWorkspaceSecret:
+		return true
+	}
+	return false
+}
+
+type SandboxBoxNewParams struct {
+	FsCapacityBytes param.Field[int64]                          `json:"fs_capacity_bytes"`
+	IdleTtlSeconds  param.Field[int64]                          `json:"idle_ttl_seconds"`
+	MemBytes        param.Field[int64]                          `json:"mem_bytes"`
+	Name            param.Field[string]                         `json:"name"`
+	ProxyConfig     param.Field[SandboxBoxNewParamsProxyConfig] `json:"proxy_config"`
+	SnapshotID      param.Field[string]                         `json:"snapshot_id"`
+	// required for Kata path
+	TemplateName param.Field[string] `json:"template_name"`
+	Timeout      param.Field[int64]  `json:"timeout"`
+	TtlSeconds   param.Field[int64]  `json:"ttl_seconds"`
+	Vcpus        param.Field[int64]  `json:"vcpus"`
+	WaitForReady param.Field[bool]   `json:"wait_for_ready"`
+}
+
+func (r SandboxBoxNewParams) MarshalJSON() (data []byte, err error) {
+	return apijson.MarshalRoot(r)
+}
+
+type SandboxBoxNewParamsProxyConfig struct {
+	AccessControl param.Field[SandboxBoxNewParamsProxyConfigAccessControl] `json:"access_control"`
+	NoProxy       param.Field[[]string]                                    `json:"no_proxy"`
+	Rules         param.Field[[]SandboxBoxNewParamsProxyConfigRule]        `json:"rules"`
+}
+
+func (r SandboxBoxNewParamsProxyConfig) MarshalJSON() (data []byte, err error) {
+	return apijson.MarshalRoot(r)
+}
+
+type SandboxBoxNewParamsProxyConfigAccessControl struct {
+	AllowList param.Field[[]string] `json:"allow_list"`
+	DenyList  param.Field[[]string] `json:"deny_list"`
+}
+
+func (r SandboxBoxNewParamsProxyConfigAccessControl) MarshalJSON() (data []byte, err error) {
+	return apijson.MarshalRoot(r)
+}
+
+type SandboxBoxNewParamsProxyConfigRule struct {
+	MatchHosts param.Field[[]string]                                    `json:"match_hosts" api:"required"`
+	Name       param.Field[string]                                      `json:"name" api:"required"`
+	Enabled    param.Field[bool]                                        `json:"enabled"`
+	Headers    param.Field[[]SandboxBoxNewParamsProxyConfigRulesHeader] `json:"headers"`
+	MatchPaths param.Field[[]string]                                    `json:"match_paths"`
+}
+
+func (r SandboxBoxNewParamsProxyConfigRule) MarshalJSON() (data []byte, err error) {
+	return apijson.MarshalRoot(r)
+}
+
+type SandboxBoxNewParamsProxyConfigRulesHeader struct {
+	Name  param.Field[string]                                         `json:"name" api:"required"`
+	Type  param.Field[SandboxBoxNewParamsProxyConfigRulesHeadersType] `json:"type" api:"required"`
+	IsSet param.Field[bool]                                           `json:"is_set"`
+	Value param.Field[string]                                         `json:"value"`
+}
+
+func (r SandboxBoxNewParamsProxyConfigRulesHeader) MarshalJSON() (data []byte, err error) {
+	return apijson.MarshalRoot(r)
+}
+
+type SandboxBoxNewParamsProxyConfigRulesHeadersType string
+
+const (
+	SandboxBoxNewParamsProxyConfigRulesHeadersTypePlaintext       SandboxBoxNewParamsProxyConfigRulesHeadersType = "plaintext"
+	SandboxBoxNewParamsProxyConfigRulesHeadersTypeOpaque          SandboxBoxNewParamsProxyConfigRulesHeadersType = "opaque"
+	SandboxBoxNewParamsProxyConfigRulesHeadersTypeWorkspaceSecret SandboxBoxNewParamsProxyConfigRulesHeadersType = "workspace_secret"
+)
+
+func (r SandboxBoxNewParamsProxyConfigRulesHeadersType) IsKnown() bool {
+	switch r {
+	case SandboxBoxNewParamsProxyConfigRulesHeadersTypePlaintext, SandboxBoxNewParamsProxyConfigRulesHeadersTypeOpaque, SandboxBoxNewParamsProxyConfigRulesHeadersTypeWorkspaceSecret:
+		return true
+	}
+	return false
+}
+
+type SandboxBoxUpdateParams struct {
+	FsCapacityBytes param.Field[int64]                             `json:"fs_capacity_bytes"`
+	IdleTtlSeconds  param.Field[int64]                             `json:"idle_ttl_seconds"`
+	MemBytes        param.Field[int64]                             `json:"mem_bytes"`
+	Name            param.Field[string]                            `json:"name"`
+	ProxyConfig     param.Field[SandboxBoxUpdateParamsProxyConfig] `json:"proxy_config"`
+	TtlSeconds      param.Field[int64]                             `json:"ttl_seconds"`
+	Vcpus           param.Field[int64]                             `json:"vcpus"`
+}
+
+func (r SandboxBoxUpdateParams) MarshalJSON() (data []byte, err error) {
+	return apijson.MarshalRoot(r)
+}
+
+type SandboxBoxUpdateParamsProxyConfig struct {
+	AccessControl param.Field[SandboxBoxUpdateParamsProxyConfigAccessControl] `json:"access_control"`
+	NoProxy       param.Field[[]string]                                       `json:"no_proxy"`
+	Rules         param.Field[[]SandboxBoxUpdateParamsProxyConfigRule]        `json:"rules"`
+}
+
+func (r SandboxBoxUpdateParamsProxyConfig) MarshalJSON() (data []byte, err error) {
+	return apijson.MarshalRoot(r)
+}
+
+type SandboxBoxUpdateParamsProxyConfigAccessControl struct {
+	AllowList param.Field[[]string] `json:"allow_list"`
+	DenyList  param.Field[[]string] `json:"deny_list"`
+}
+
+func (r SandboxBoxUpdateParamsProxyConfigAccessControl) MarshalJSON() (data []byte, err error) {
+	return apijson.MarshalRoot(r)
+}
+
+type SandboxBoxUpdateParamsProxyConfigRule struct {
+	MatchHosts param.Field[[]string]                                       `json:"match_hosts" api:"required"`
+	Name       param.Field[string]                                         `json:"name" api:"required"`
+	Enabled    param.Field[bool]                                           `json:"enabled"`
+	Headers    param.Field[[]SandboxBoxUpdateParamsProxyConfigRulesHeader] `json:"headers"`
+	MatchPaths param.Field[[]string]                                       `json:"match_paths"`
+}
+
+func (r SandboxBoxUpdateParamsProxyConfigRule) MarshalJSON() (data []byte, err error) {
+	return apijson.MarshalRoot(r)
+}
+
+type SandboxBoxUpdateParamsProxyConfigRulesHeader struct {
+	Name  param.Field[string]                                            `json:"name" api:"required"`
+	Type  param.Field[SandboxBoxUpdateParamsProxyConfigRulesHeadersType] `json:"type" api:"required"`
+	IsSet param.Field[bool]                                              `json:"is_set"`
+	Value param.Field[string]                                            `json:"value"`
+}
+
+func (r SandboxBoxUpdateParamsProxyConfigRulesHeader) MarshalJSON() (data []byte, err error) {
+	return apijson.MarshalRoot(r)
+}
+
+type SandboxBoxUpdateParamsProxyConfigRulesHeadersType string
+
+const (
+	SandboxBoxUpdateParamsProxyConfigRulesHeadersTypePlaintext       SandboxBoxUpdateParamsProxyConfigRulesHeadersType = "plaintext"
+	SandboxBoxUpdateParamsProxyConfigRulesHeadersTypeOpaque          SandboxBoxUpdateParamsProxyConfigRulesHeadersType = "opaque"
+	SandboxBoxUpdateParamsProxyConfigRulesHeadersTypeWorkspaceSecret SandboxBoxUpdateParamsProxyConfigRulesHeadersType = "workspace_secret"
+)
+
+func (r SandboxBoxUpdateParamsProxyConfigRulesHeadersType) IsKnown() bool {
+	switch r {
+	case SandboxBoxUpdateParamsProxyConfigRulesHeadersTypePlaintext, SandboxBoxUpdateParamsProxyConfigRulesHeadersTypeOpaque, SandboxBoxUpdateParamsProxyConfigRulesHeadersTypeWorkspaceSecret:
+		return true
+	}
+	return false
+}
+
+type SandboxBoxListParams struct {
+	// Maximum number of results
+	Limit param.Field[int64] `query:"limit"`
+	// Filter by name substring
+	NameContains param.Field[string] `query:"name_contains"`
+	// Pagination offset
+	Offset param.Field[int64] `query:"offset"`
+	// Sort column (name, status, template_name, created_at)
+	SortBy param.Field[string] `query:"sort_by"`
+	// Sort direction (asc, desc)
+	SortDirection param.Field[string] `query:"sort_direction"`
+	// Filter by status (provisioning, ready, failed, stopped)
+	Status param.Field[string] `query:"status"`
+	// Filter by exact template name
+	TemplateName param.Field[string] `query:"template_name"`
+}
+
+// URLQuery serializes [SandboxBoxListParams]'s query parameters as `url.Values`.
+func (r SandboxBoxListParams) URLQuery() (v url.Values) {
+	return apiquery.MarshalWithSettings(r, apiquery.QuerySettings{
+		ArrayFormat:  apiquery.ArrayQueryFormatComma,
+		NestedFormat: apiquery.NestedQueryFormatBrackets,
+	})
+}
+
+type SandboxBoxNewSnapshotParams struct {
+	Name param.Field[string] `json:"name" api:"required"`
+	// if omitted, creates a fresh checkpoint from the running VM
+	Checkpoint param.Field[string] `json:"checkpoint"`
+}
+
+func (r SandboxBoxNewSnapshotParams) MarshalJSON() (data []byte, err error) {
+	return apijson.MarshalRoot(r)
+}
+
+type SandboxBoxGenerateServiceURLParams struct {
+	ExpiresInSeconds param.Field[int64] `json:"expires_in_seconds"`
+	Port             param.Field[int64] `json:"port"`
+}
+
+func (r SandboxBoxGenerateServiceURLParams) MarshalJSON() (data []byte, err error) {
+	return apijson.MarshalRoot(r)
+}
