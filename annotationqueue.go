@@ -826,6 +826,8 @@ type AnnotationQueueGetAnnotationQueuesParams struct {
 	NameContains param.Field[string]                                            `query:"name_contains"`
 	Offset       param.Field[int64]                                             `query:"offset"`
 	QueueType    param.Field[AnnotationQueueGetAnnotationQueuesParamsQueueType] `query:"queue_type"`
+	SortBy       param.Field[string]                                            `query:"sort_by"`
+	SortByDesc   param.Field[bool]                                              `query:"sort_by_desc"`
 	TagValueID   param.Field[[]string]                                          `query:"tag_value_id" format:"uuid"`
 }
 
