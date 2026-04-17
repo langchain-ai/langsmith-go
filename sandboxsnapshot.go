@@ -237,13 +237,10 @@ func (r sandboxSnapshotListResponseSnapshotJSON) RawJSON() string {
 }
 
 type SandboxSnapshotNewParams struct {
-	DockerImage      param.Field[string] `json:"docker_image" api:"required"`
-	FsCapacityBytes  param.Field[int64]  `json:"fs_capacity_bytes" api:"required"`
-	Name             param.Field[string] `json:"name" api:"required"`
-	RegistryID       param.Field[string] `json:"registry_id"`
-	RegistryPassword param.Field[string] `json:"registry_password"`
-	RegistryURL      param.Field[string] `json:"registry_url"`
-	RegistryUsername param.Field[string] `json:"registry_username"`
+	DockerImage     param.Field[string] `json:"docker_image" api:"required"`
+	FsCapacityBytes param.Field[int64]  `json:"fs_capacity_bytes" api:"required"`
+	Name            param.Field[string] `json:"name" api:"required"`
+	RegistryID      param.Field[string] `json:"registry_id"`
 }
 
 func (r SandboxSnapshotNewParams) MarshalJSON() (data []byte, err error) {
