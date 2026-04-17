@@ -29,13 +29,10 @@ func TestSandboxSnapshotNewWithOptionalParams(t *testing.T) {
 		option.WithOrganizationID("My Organization ID"),
 	)
 	_, err := client.Sandboxes.Snapshots.New(context.TODO(), langsmith.SandboxSnapshotNewParams{
-		DockerImage:      langsmith.F("docker_image"),
-		FsCapacityBytes:  langsmith.F(int64(0)),
-		Name:             langsmith.F("name"),
-		RegistryID:       langsmith.F("registry_id"),
-		RegistryPassword: langsmith.F("registry_password"),
-		RegistryURL:      langsmith.F("registry_url"),
-		RegistryUsername: langsmith.F("registry_username"),
+		DockerImage:     langsmith.F("docker_image"),
+		FsCapacityBytes: langsmith.F(int64(0)),
+		Name:            langsmith.F("name"),
+		RegistryID:      langsmith.F("registry_id"),
 	})
 	if err != nil {
 		var apierr *langsmith.Error
