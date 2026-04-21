@@ -1,5 +1,27 @@
 # Changelog
 
+## 0.4.0 (2026-04-21)
+
+Full Changelog: [v0.3.0...v0.4.0](https://github.com/langchain-ai/langsmith-go/compare/v0.3.0...v0.4.0)
+
+### Features
+
+* **api:** api update ([0f99b31](https://github.com/langchain-ai/langsmith-go/commit/0f99b3146284bbd2d2963aa5d42510b2c7ce4a43))
+* **api:** api update ([cd16ebc](https://github.com/langchain-ai/langsmith-go/commit/cd16ebc19568ca9f3acec14a83cdbf2c6d2a6283))
+* **api:** api update ([ce8d1de](https://github.com/langchain-ai/langsmith-go/commit/ce8d1de2b5a1b8854c79edd2aa4e17df382fbe3d))
+* **api:** api update ([c8717cc](https://github.com/langchain-ai/langsmith-go/commit/c8717cc4fc0868e1dd0a579ba3139fc6ec3ccbbd))
+* **api:** sandbox apis ([4ef1a1e](https://github.com/langchain-ai/langsmith-go/commit/4ef1a1e741fc129d81938e24671a0db45875ca03))
+
+
+### Chores
+
+* **deps:** bump go.opentelemetry.io/otel/exporters/otlp/otlptrace/otlptracehttp ([#54](https://github.com/langchain-ai/langsmith-go/issues/54)) ([1d68865](https://github.com/langchain-ai/langsmith-go/commit/1d68865db174a5d058d70ba5b117c7267201eacd))
+
+
+### Documentation
+
+* improve examples ([38a244e](https://github.com/langchain-ai/langsmith-go/commit/38a244efc1139cdc4fc0909065acb5dd033cf240))
+
 ## 0.3.0 (2026-04-08)
 
 Full Changelog: [v0.2.2...v0.3.0](https://github.com/langchain-ai/langsmith-go/compare/v0.2.2...v0.3.0)
