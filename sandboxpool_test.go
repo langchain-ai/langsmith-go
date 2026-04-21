@@ -13,7 +13,7 @@ import (
 	"github.com/langchain-ai/langsmith-go/option"
 )
 
-func TestRepoNewWithOptionalParams(t *testing.T) {
+func TestSandboxPoolNewWithOptionalParams(t *testing.T) {
 	t.Skip("Mock server tests are disabled")
 	baseURL := "http://localhost:4010"
 	if envURL, ok := os.LookupEnv("TEST_API_BASE_URL"); ok {
@@ -28,14 +28,12 @@ func TestRepoNewWithOptionalParams(t *testing.T) {
 		option.WithTenantID("My Tenant ID"),
 		option.WithOrganizationID("My Organization ID"),
 	)
-	_, err := client.Repos.New(context.TODO(), langsmith.RepoNewParams{
-		IsPublic:       langsmith.F(true),
-		RepoHandle:     langsmith.F("repo_handle"),
-		Description:    langsmith.F("description"),
-		Readme:         langsmith.F("readme"),
-		RepoType:       langsmith.F(langsmith.RepoNewParamsRepoTypePrompt),
-		RestrictedMode: langsmith.F(true),
-		Tags:           langsmith.F([]string{"string"}),
+	_, err := client.Sandboxes.Pools.New(context.TODO(), langsmith.SandboxPoolNewParams{
+		Name:         langsmith.F("name"),
+		Replicas:     langsmith.F(int64(1)),
+		TemplateName: langsmith.F("template_name"),
+		Timeout:      langsmith.F(int64(0)),
+		WaitForReady: langsmith.F(true),
 	})
 	if err != nil {
 		var apierr *langsmith.Error
@@ -46,7 +44,7 @@ func TestRepoNewWithOptionalParams(t *testing.T) {
 	}
 }
 
-func TestRepoGet(t *testing.T) {
+func TestSandboxPoolGet(t *testing.T) {
 	t.Skip("Mock server tests are disabled")
 	baseURL := "http://localhost:4010"
 	if envURL, ok := os.LookupEnv("TEST_API_BASE_URL"); ok {
@@ -61,11 +59,7 @@ func TestRepoGet(t *testing.T) {
 		option.WithTenantID("My Tenant ID"),
 		option.WithOrganizationID("My Organization ID"),
 	)
-	_, err := client.Repos.Get(
-		context.TODO(),
-		"owner",
-		"repo",
-	)
+	_, err := client.Sandboxes.Pools.Get(context.TODO(), "name")
 	if err != nil {
 		var apierr *langsmith.Error
 		if errors.As(err, &apierr) {
@@ -75,7 +69,7 @@ func TestRepoGet(t *testing.T) {
 	}
 }
 
-func TestRepoUpdateWithOptionalParams(t *testing.T) {
+func TestSandboxPoolUpdateWithOptionalParams(t *testing.T) {
 	t.Skip("Mock server tests are disabled")
 	baseURL := "http://localhost:4010"
 	if envURL, ok := os.LookupEnv("TEST_API_BASE_URL"); ok {
@@ -90,17 +84,12 @@ func TestRepoUpdateWithOptionalParams(t *testing.T) {
 		option.WithTenantID("My Tenant ID"),
 		option.WithOrganizationID("My Organization ID"),
 	)
-	_, err := client.Repos.Update(
+	_, err := client.Sandboxes.Pools.Update(
 		context.TODO(),
-		"owner",
-		"repo",
-		langsmith.RepoUpdateParams{
-			Description:    langsmith.F("description"),
-			IsArchived:     langsmith.F(true),
-			IsPublic:       langsmith.F(true),
-			Readme:         langsmith.F("readme"),
-			RestrictedMode: langsmith.F(true),
-			Tags:           langsmith.F([]string{"string"}),
+		"name",
+		langsmith.SandboxPoolUpdateParams{
+			Name:     langsmith.F("name"),
+			Replicas: langsmith.F(int64(0)),
 		},
 	)
 	if err != nil {
@@ -112,7 +101,7 @@ func TestRepoUpdateWithOptionalParams(t *testing.T) {
 	}
 }
 
-func TestRepoListWithOptionalParams(t *testing.T) {
+func TestSandboxPoolListWithOptionalParams(t *testing.T) {
 	t.Skip("Mock server tests are disabled")
 	baseURL := "http://localhost:4010"
 	if envURL, ok := os.LookupEnv("TEST_API_BASE_URL"); ok {
@@ -127,24 +116,10 @@ func TestRepoListWithOptionalParams(t *testing.T) {
 		option.WithTenantID("My Tenant ID"),
 		option.WithOrganizationID("My Organization ID"),
 	)
-	_, err := client.Repos.List(context.TODO(), langsmith.RepoListParams{
-		HasCommits:         langsmith.F(true),
-		IsArchived:         langsmith.F(langsmith.RepoListParamsIsArchivedTrue),
-		IsPublic:           langsmith.F(langsmith.RepoListParamsIsPublicTrue),
-		Limit:              langsmith.F(int64(1)),
-		Offset:             langsmith.F(int64(0)),
-		Query:              langsmith.F("query"),
-		RepoType:           langsmith.F(langsmith.RepoListParamsRepoTypePrompt),
-		RepoTypes:          langsmith.F([]langsmith.RepoListParamsRepoType{langsmith.RepoListParamsRepoTypePrompt}),
-		SortDirection:      langsmith.F(langsmith.RepoListParamsSortDirectionAsc),
-		SortField:          langsmith.F(langsmith.RepoListParamsSortFieldNumLikes),
-		TagValueID:         langsmith.F([]string{"182bd5e5-6e1a-4fe4-a799-aa6d9a6ab26e"}),
-		Tags:               langsmith.F([]string{"string"}),
-		TenantHandle:       langsmith.F("tenant_handle"),
-		TenantID:           langsmith.F("182bd5e5-6e1a-4fe4-a799-aa6d9a6ab26e"),
-		UpstreamRepoHandle: langsmith.F("upstream_repo_handle"),
-		UpstreamRepoOwner:  langsmith.F("upstream_repo_owner"),
-		WithLatestManifest: langsmith.F(true),
+	_, err := client.Sandboxes.Pools.List(context.TODO(), langsmith.SandboxPoolListParams{
+		Limit:        langsmith.F(int64(0)),
+		NameContains: langsmith.F("name_contains"),
+		Offset:       langsmith.F(int64(0)),
 	})
 	if err != nil {
 		var apierr *langsmith.Error
@@ -155,7 +130,7 @@ func TestRepoListWithOptionalParams(t *testing.T) {
 	}
 }
 
-func TestRepoDelete(t *testing.T) {
+func TestSandboxPoolDelete(t *testing.T) {
 	t.Skip("Mock server tests are disabled")
 	baseURL := "http://localhost:4010"
 	if envURL, ok := os.LookupEnv("TEST_API_BASE_URL"); ok {
@@ -170,11 +145,7 @@ func TestRepoDelete(t *testing.T) {
 		option.WithTenantID("My Tenant ID"),
 		option.WithOrganizationID("My Organization ID"),
 	)
-	_, err := client.Repos.Delete(
-		context.TODO(),
-		"owner",
-		"repo",
-	)
+	err := client.Sandboxes.Pools.Delete(context.TODO(), "name")
 	if err != nil {
 		var apierr *langsmith.Error
 		if errors.As(err, &apierr) {

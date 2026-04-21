@@ -288,6 +288,8 @@ func TestAnnotationQueueGetAnnotationQueuesWithOptionalParams(t *testing.T) {
 		NameContains: langsmith.F("name_contains"),
 		Offset:       langsmith.F(int64(0)),
 		QueueType:    langsmith.F(langsmith.AnnotationQueueGetAnnotationQueuesParamsQueueTypeSingle),
+		SortBy:       langsmith.F("sort_by"),
+		SortByDesc:   langsmith.F(true),
 		TagValueID:   langsmith.F([]string{"182bd5e5-6e1a-4fe4-a799-aa6d9a6ab26e"}),
 	})
 	if err != nil {

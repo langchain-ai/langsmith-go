@@ -1,0 +1,346 @@
+// File generated from our OpenAPI spec by Stainless. See CONTRIBUTING.md for details.
+
+package langsmith_test
+
+import (
+	"context"
+	"errors"
+	"os"
+	"testing"
+
+	"github.com/langchain-ai/langsmith-go"
+	"github.com/langchain-ai/langsmith-go/internal/testutil"
+	"github.com/langchain-ai/langsmith-go/option"
+)
+
+func TestSandboxBoxNewWithOptionalParams(t *testing.T) {
+	t.Skip("Mock server tests are disabled")
+	baseURL := "http://localhost:4010"
+	if envURL, ok := os.LookupEnv("TEST_API_BASE_URL"); ok {
+		baseURL = envURL
+	}
+	if !testutil.CheckTestServer(t, baseURL) {
+		return
+	}
+	client := langsmith.NewClient(
+		option.WithBaseURL(baseURL),
+		option.WithAPIKey("My API Key"),
+		option.WithTenantID("My Tenant ID"),
+		option.WithOrganizationID("My Organization ID"),
+	)
+	_, err := client.Sandboxes.Boxes.New(context.TODO(), langsmith.SandboxBoxNewParams{
+		FsCapacityBytes: langsmith.F(int64(0)),
+		IdleTtlSeconds:  langsmith.F(int64(0)),
+		MemBytes:        langsmith.F(int64(0)),
+		Name:            langsmith.F("name"),
+		ProxyConfig: langsmith.F(langsmith.SandboxBoxNewParamsProxyConfig{
+			AccessControl: langsmith.F(langsmith.SandboxBoxNewParamsProxyConfigAccessControl{
+				AllowList: langsmith.F([]string{"string"}),
+				DenyList:  langsmith.F([]string{"string"}),
+			}),
+			NoProxy: langsmith.F([]string{"string"}),
+			Rules: langsmith.F([]langsmith.SandboxBoxNewParamsProxyConfigRule{{
+				MatchHosts: langsmith.F([]string{"string"}),
+				Name:       langsmith.F("name"),
+				Enabled:    langsmith.F(true),
+				Headers: langsmith.F([]langsmith.SandboxBoxNewParamsProxyConfigRulesHeader{{
+					Name:  langsmith.F("name"),
+					Type:  langsmith.F(langsmith.SandboxBoxNewParamsProxyConfigRulesHeadersTypePlaintext),
+					IsSet: langsmith.F(true),
+					Value: langsmith.F("value"),
+				}}),
+				MatchPaths: langsmith.F([]string{"string"}),
+			}}),
+		}),
+		SnapshotID:   langsmith.F("snapshot_id"),
+		TemplateName: langsmith.F("template_name"),
+		Timeout:      langsmith.F(int64(0)),
+		TtlSeconds:   langsmith.F(int64(0)),
+		Vcpus:        langsmith.F(int64(0)),
+		WaitForReady: langsmith.F(true),
+	})
+	if err != nil {
+		var apierr *langsmith.Error
+		if errors.As(err, &apierr) {
+			t.Log(string(apierr.DumpRequest(true)))
+		}
+		t.Fatalf("err should be nil: %s", err.Error())
+	}
+}
+
+func TestSandboxBoxGet(t *testing.T) {
+	t.Skip("Mock server tests are disabled")
+	baseURL := "http://localhost:4010"
+	if envURL, ok := os.LookupEnv("TEST_API_BASE_URL"); ok {
+		baseURL = envURL
+	}
+	if !testutil.CheckTestServer(t, baseURL) {
+		return
+	}
+	client := langsmith.NewClient(
+		option.WithBaseURL(baseURL),
+		option.WithAPIKey("My API Key"),
+		option.WithTenantID("My Tenant ID"),
+		option.WithOrganizationID("My Organization ID"),
+	)
+	_, err := client.Sandboxes.Boxes.Get(context.TODO(), "name")
+	if err != nil {
+		var apierr *langsmith.Error
+		if errors.As(err, &apierr) {
+			t.Log(string(apierr.DumpRequest(true)))
+		}
+		t.Fatalf("err should be nil: %s", err.Error())
+	}
+}
+
+func TestSandboxBoxUpdateWithOptionalParams(t *testing.T) {
+	t.Skip("Mock server tests are disabled")
+	baseURL := "http://localhost:4010"
+	if envURL, ok := os.LookupEnv("TEST_API_BASE_URL"); ok {
+		baseURL = envURL
+	}
+	if !testutil.CheckTestServer(t, baseURL) {
+		return
+	}
+	client := langsmith.NewClient(
+		option.WithBaseURL(baseURL),
+		option.WithAPIKey("My API Key"),
+		option.WithTenantID("My Tenant ID"),
+		option.WithOrganizationID("My Organization ID"),
+	)
+	_, err := client.Sandboxes.Boxes.Update(
+		context.TODO(),
+		"name",
+		langsmith.SandboxBoxUpdateParams{
+			FsCapacityBytes: langsmith.F(int64(0)),
+			IdleTtlSeconds:  langsmith.F(int64(0)),
+			MemBytes:        langsmith.F(int64(0)),
+			Name:            langsmith.F("name"),
+			ProxyConfig: langsmith.F(langsmith.SandboxBoxUpdateParamsProxyConfig{
+				AccessControl: langsmith.F(langsmith.SandboxBoxUpdateParamsProxyConfigAccessControl{
+					AllowList: langsmith.F([]string{"string"}),
+					DenyList:  langsmith.F([]string{"string"}),
+				}),
+				NoProxy: langsmith.F([]string{"string"}),
+				Rules: langsmith.F([]langsmith.SandboxBoxUpdateParamsProxyConfigRule{{
+					MatchHosts: langsmith.F([]string{"string"}),
+					Name:       langsmith.F("name"),
+					Enabled:    langsmith.F(true),
+					Headers: langsmith.F([]langsmith.SandboxBoxUpdateParamsProxyConfigRulesHeader{{
+						Name:  langsmith.F("name"),
+						Type:  langsmith.F(langsmith.SandboxBoxUpdateParamsProxyConfigRulesHeadersTypePlaintext),
+						IsSet: langsmith.F(true),
+						Value: langsmith.F("value"),
+					}}),
+					MatchPaths: langsmith.F([]string{"string"}),
+				}}),
+			}),
+			TtlSeconds: langsmith.F(int64(0)),
+			Vcpus:      langsmith.F(int64(0)),
+		},
+	)
+	if err != nil {
+		var apierr *langsmith.Error
+		if errors.As(err, &apierr) {
+			t.Log(string(apierr.DumpRequest(true)))
+		}
+		t.Fatalf("err should be nil: %s", err.Error())
+	}
+}
+
+func TestSandboxBoxListWithOptionalParams(t *testing.T) {
+	t.Skip("Mock server tests are disabled")
+	baseURL := "http://localhost:4010"
+	if envURL, ok := os.LookupEnv("TEST_API_BASE_URL"); ok {
+		baseURL = envURL
+	}
+	if !testutil.CheckTestServer(t, baseURL) {
+		return
+	}
+	client := langsmith.NewClient(
+		option.WithBaseURL(baseURL),
+		option.WithAPIKey("My API Key"),
+		option.WithTenantID("My Tenant ID"),
+		option.WithOrganizationID("My Organization ID"),
+	)
+	_, err := client.Sandboxes.Boxes.List(context.TODO(), langsmith.SandboxBoxListParams{
+		Limit:         langsmith.F(int64(0)),
+		NameContains:  langsmith.F("name_contains"),
+		Offset:        langsmith.F(int64(0)),
+		SortBy:        langsmith.F("sort_by"),
+		SortDirection: langsmith.F("sort_direction"),
+		Status:        langsmith.F("status"),
+		TemplateName:  langsmith.F("template_name"),
+	})
+	if err != nil {
+		var apierr *langsmith.Error
+		if errors.As(err, &apierr) {
+			t.Log(string(apierr.DumpRequest(true)))
+		}
+		t.Fatalf("err should be nil: %s", err.Error())
+	}
+}
+
+func TestSandboxBoxDelete(t *testing.T) {
+	t.Skip("Mock server tests are disabled")
+	baseURL := "http://localhost:4010"
+	if envURL, ok := os.LookupEnv("TEST_API_BASE_URL"); ok {
+		baseURL = envURL
+	}
+	if !testutil.CheckTestServer(t, baseURL) {
+		return
+	}
+	client := langsmith.NewClient(
+		option.WithBaseURL(baseURL),
+		option.WithAPIKey("My API Key"),
+		option.WithTenantID("My Tenant ID"),
+		option.WithOrganizationID("My Organization ID"),
+	)
+	err := client.Sandboxes.Boxes.Delete(context.TODO(), "name")
+	if err != nil {
+		var apierr *langsmith.Error
+		if errors.As(err, &apierr) {
+			t.Log(string(apierr.DumpRequest(true)))
+		}
+		t.Fatalf("err should be nil: %s", err.Error())
+	}
+}
+
+func TestSandboxBoxNewSnapshotWithOptionalParams(t *testing.T) {
+	t.Skip("Mock server tests are disabled")
+	baseURL := "http://localhost:4010"
+	if envURL, ok := os.LookupEnv("TEST_API_BASE_URL"); ok {
+		baseURL = envURL
+	}
+	if !testutil.CheckTestServer(t, baseURL) {
+		return
+	}
+	client := langsmith.NewClient(
+		option.WithBaseURL(baseURL),
+		option.WithAPIKey("My API Key"),
+		option.WithTenantID("My Tenant ID"),
+		option.WithOrganizationID("My Organization ID"),
+	)
+	_, err := client.Sandboxes.Boxes.NewSnapshot(
+		context.TODO(),
+		"name",
+		langsmith.SandboxBoxNewSnapshotParams{
+			Name:       langsmith.F("name"),
+			Checkpoint: langsmith.F("checkpoint"),
+		},
+	)
+	if err != nil {
+		var apierr *langsmith.Error
+		if errors.As(err, &apierr) {
+			t.Log(string(apierr.DumpRequest(true)))
+		}
+		t.Fatalf("err should be nil: %s", err.Error())
+	}
+}
+
+func TestSandboxBoxGenerateServiceURLWithOptionalParams(t *testing.T) {
+	t.Skip("Mock server tests are disabled")
+	baseURL := "http://localhost:4010"
+	if envURL, ok := os.LookupEnv("TEST_API_BASE_URL"); ok {
+		baseURL = envURL
+	}
+	if !testutil.CheckTestServer(t, baseURL) {
+		return
+	}
+	client := langsmith.NewClient(
+		option.WithBaseURL(baseURL),
+		option.WithAPIKey("My API Key"),
+		option.WithTenantID("My Tenant ID"),
+		option.WithOrganizationID("My Organization ID"),
+	)
+	_, err := client.Sandboxes.Boxes.GenerateServiceURL(
+		context.TODO(),
+		"name",
+		langsmith.SandboxBoxGenerateServiceURLParams{
+			ExpiresInSeconds: langsmith.F(int64(0)),
+			Port:             langsmith.F(int64(0)),
+		},
+	)
+	if err != nil {
+		var apierr *langsmith.Error
+		if errors.As(err, &apierr) {
+			t.Log(string(apierr.DumpRequest(true)))
+		}
+		t.Fatalf("err should be nil: %s", err.Error())
+	}
+}
+
+func TestSandboxBoxGetStatus(t *testing.T) {
+	t.Skip("Mock server tests are disabled")
+	baseURL := "http://localhost:4010"
+	if envURL, ok := os.LookupEnv("TEST_API_BASE_URL"); ok {
+		baseURL = envURL
+	}
+	if !testutil.CheckTestServer(t, baseURL) {
+		return
+	}
+	client := langsmith.NewClient(
+		option.WithBaseURL(baseURL),
+		option.WithAPIKey("My API Key"),
+		option.WithTenantID("My Tenant ID"),
+		option.WithOrganizationID("My Organization ID"),
+	)
+	_, err := client.Sandboxes.Boxes.GetStatus(context.TODO(), "name")
+	if err != nil {
+		var apierr *langsmith.Error
+		if errors.As(err, &apierr) {
+			t.Log(string(apierr.DumpRequest(true)))
+		}
+		t.Fatalf("err should be nil: %s", err.Error())
+	}
+}
+
+func TestSandboxBoxStart(t *testing.T) {
+	t.Skip("Mock server tests are disabled")
+	baseURL := "http://localhost:4010"
+	if envURL, ok := os.LookupEnv("TEST_API_BASE_URL"); ok {
+		baseURL = envURL
+	}
+	if !testutil.CheckTestServer(t, baseURL) {
+		return
+	}
+	client := langsmith.NewClient(
+		option.WithBaseURL(baseURL),
+		option.WithAPIKey("My API Key"),
+		option.WithTenantID("My Tenant ID"),
+		option.WithOrganizationID("My Organization ID"),
+	)
+	_, err := client.Sandboxes.Boxes.Start(context.TODO(), "name")
+	if err != nil {
+		var apierr *langsmith.Error
+		if errors.As(err, &apierr) {
+			t.Log(string(apierr.DumpRequest(true)))
+		}
+		t.Fatalf("err should be nil: %s", err.Error())
+	}
+}
+
+func TestSandboxBoxStop(t *testing.T) {
+	t.Skip("Mock server tests are disabled")
+	baseURL := "http://localhost:4010"
+	if envURL, ok := os.LookupEnv("TEST_API_BASE_URL"); ok {
+		baseURL = envURL
+	}
+	if !testutil.CheckTestServer(t, baseURL) {
+		return
+	}
+	client := langsmith.NewClient(
+		option.WithBaseURL(baseURL),
+		option.WithAPIKey("My API Key"),
+		option.WithTenantID("My Tenant ID"),
+		option.WithOrganizationID("My Organization ID"),
+	)
+	err := client.Sandboxes.Boxes.Stop(context.TODO(), "name")
+	if err != nil {
+		var apierr *langsmith.Error
+		if errors.As(err, &apierr) {
+			t.Log(string(apierr.DumpRequest(true)))
+		}
+		t.Fatalf("err should be nil: %s", err.Error())
+	}
+}
