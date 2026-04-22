@@ -53,6 +53,7 @@ func TestSandboxBoxNewWithOptionalParams(t *testing.T) {
 			}}),
 		}),
 		SnapshotID:   langsmith.F("snapshot_id"),
+		SnapshotName: langsmith.F("snapshot_name"),
 		TemplateName: langsmith.F("template_name"),
 		Timeout:      langsmith.F(int64(0)),
 		TtlSeconds:   langsmith.F(int64(0)),
