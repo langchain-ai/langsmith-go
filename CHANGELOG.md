@@ -1,5 +1,19 @@
 # Changelog
 
+## 0.5.0 (2026-04-23)
+
+Full Changelog: [v0.4.0...v0.5.0](https://github.com/langchain-ai/langsmith-go/compare/v0.4.0...v0.5.0)
+
+### Features
+
+* **api:** api update ([7c5a612](https://github.com/langchain-ai/langsmith-go/commit/7c5a612276aa931b0a238d02f329af40c99fb19e))
+* **evaluators:** add list evaluators (GET /api/v1/runs/rules) ([8ddcd54](https://github.com/langchain-ai/langsmith-go/commit/8ddcd545dca0d643137b3f7fc2bd84bf29f9bebe))
+
+
+### Chores
+
+* **internal:** more robust bootstrap script ([592b556](https://github.com/langchain-ai/langsmith-go/commit/592b5568c42e8b3de6db283e68d64676eac197f3))
+
 ## 0.4.0 (2026-04-21)
 
 Full Changelog: [v0.3.0...v0.4.0](https://github.com/langchain-ai/langsmith-go/compare/v0.3.0...v0.4.0)
