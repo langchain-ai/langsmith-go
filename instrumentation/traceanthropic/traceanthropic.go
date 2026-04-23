@@ -58,6 +58,7 @@ type Option func(*clientOptions)
 type clientOptions struct {
 	tracerProvider trace.TracerProvider
 	runName        string
+	traceAllHosts  bool
 }
 
 // WithTracerProvider returns an Option that sets the tracer provider.
@@ -72,6 +73,16 @@ func WithTracerProvider(tp trace.TracerProvider) Option {
 func WithRunName(name string) Option {
 	return func(opts *clientOptions) {
 		opts.runName = name
+	}
+}
+
+// WithTraceAllHosts disables the default host check that limits tracing to
+// api.anthropic.com. When enabled, all requests through this transport are
+// traced regardless of host. This is useful for proxies, gateways, and
+// testing against mock servers.
+func WithTraceAllHosts() Option {
+	return func(opts *clientOptions) {
+		opts.traceAllHosts = true
 	}
 }
 
@@ -96,7 +107,7 @@ func WrapClient(client *http.Client, opts ...Option) *http.Client {
 	if transport == nil {
 		transport = http.DefaultTransport
 	}
-	client.Transport = newRoundTripper(transport, options.tracerProvider, options.runName)
+	client.Transport = newRoundTripper(transport, options.tracerProvider, options.runName, options.traceAllHosts)
 	return client
 }
 
@@ -104,20 +115,22 @@ type roundTripper struct {
 	base           http.RoundTripper
 	tracerProvider trace.TracerProvider
 	runName        string
+	traceAllHosts  bool
 }
 
-func newRoundTripper(base http.RoundTripper, tp trace.TracerProvider, runName string) http.RoundTripper {
+func newRoundTripper(base http.RoundTripper, tp trace.TracerProvider, runName string, traceAllHosts bool) http.RoundTripper {
 	return &roundTripper{
 		base:           base,
 		tracerProvider: tp,
 		runName:        runName,
+		traceAllHosts:  traceAllHosts,
 	}
 }
 
 // RoundTrip intercepts requests/responses to add OpenTelemetry tracing.
 func (rt *roundTripper) RoundTrip(req *http.Request) (*http.Response, error) {
-	// Only trace Anthropic API requests
-	if !strings.Contains(req.URL.Host, "api.anthropic.com") {
+	// Only trace Anthropic API requests (unless traceAllHosts is set)
+	if !rt.traceAllHosts && !strings.Contains(req.URL.Host, "api.anthropic.com") {
 		return rt.base.RoundTrip(req)
 	}
 
