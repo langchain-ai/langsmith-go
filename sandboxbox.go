@@ -36,7 +36,10 @@ func NewSandboxBoxService(opts ...option.RequestOption) (r *SandboxBoxService) {
 	return
 }
 
-// Create a new sandbox from a template. Optionally blocks until ready or timeout.
+// Create a new sandbox. The snapshot may be identified by `snapshot_id` (UUID) or
+// by `snapshot_name` (tenant-scoped unique name); exactly one of `template_name`,
+// `snapshot_id`, or `snapshot_name` must be set. Optionally blocks until ready or
+// timeout.
 func (r *SandboxBoxService) New(ctx context.Context, body SandboxBoxNewParams, opts ...option.RequestOption) (res *SandboxBoxNewResponse, err error) {
 	opts = slices.Concat(r.Options, opts)
 	path := "v2/sandboxes/boxes"
@@ -1139,6 +1142,7 @@ type SandboxBoxNewParams struct {
 	Name            param.Field[string]                         `json:"name"`
 	ProxyConfig     param.Field[SandboxBoxNewParamsProxyConfig] `json:"proxy_config"`
 	SnapshotID      param.Field[string]                         `json:"snapshot_id"`
+	SnapshotName    param.Field[string]                         `json:"snapshot_name"`
 	// required for Kata path
 	TemplateName param.Field[string] `json:"template_name"`
 	Timeout      param.Field[int64]  `json:"timeout"`
