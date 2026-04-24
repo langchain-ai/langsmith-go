@@ -129,7 +129,7 @@ func TestRunUpdateWithOptionalParams(t *testing.T) {
 	)
 	_, err := client.Runs.Update(
 		context.TODO(),
-		"run_id",
+		"182bd5e5-6e1a-4fe4-a799-aa6d9a6ab26e",
 		langsmith.RunUpdateParams{
 			Run: langsmith.RunParam{
 				ID:          langsmith.F("id"),
