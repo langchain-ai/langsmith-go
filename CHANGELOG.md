@@ -1,5 +1,14 @@
 # Changelog
 
+## 0.6.0 (2026-04-26)
+
+Full Changelog: [v0.5.0...v0.6.0](https://github.com/langchain-ai/langsmith-go/compare/v0.5.0...v0.6.0)
+
+### Features
+
+* **api:** api update ([5ad57ee](https://github.com/langchain-ai/langsmith-go/commit/5ad57eefdd4759524da55ccc0b74634377424cf1))
+* **go:** add default http client with timeout ([0a6f0db](https://github.com/langchain-ai/langsmith-go/commit/0a6f0db1a861d7954766b055922d30be104f1945))
+
 ## 0.5.0 (2026-04-23)
 
 Full Changelog: [v0.4.0...v0.5.0](https://github.com/langchain-ai/langsmith-go/compare/v0.4.0...v0.5.0)
