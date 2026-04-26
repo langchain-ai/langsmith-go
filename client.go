@@ -42,7 +42,7 @@ type Client struct {
 // LANGSMITH_TENANT_ID, LANGSMITH_BEARER_TOKEN, LANGSMITH_ORGANIZATION_ID,
 // LANGSMITH_ENDPOINT). This should be used to initialize new clients.
 func DefaultClientOptions() []option.RequestOption {
-	defaults := []option.RequestOption{option.WithEnvironmentProduction()}
+	defaults := []option.RequestOption{option.WithHTTPClient(defaultHTTPClient()), option.WithEnvironmentProduction()}
 	if o, ok := os.LookupEnv("LANGSMITH_ENDPOINT"); ok {
 		defaults = append(defaults, option.WithBaseURL(o))
 	}
