@@ -9,6 +9,7 @@ import (
 	"os"
 	"slices"
 	"sync"
+	"strings"
 
 	"github.com/langchain-ai/langsmith-go/internal/requestconfig"
 	"github.com/langchain-ai/langsmith-go/lib/langsmithtracing"
@@ -57,6 +58,14 @@ func DefaultClientOptions() []option.RequestOption {
 	}
 	if o, ok := os.LookupEnv("LANGSMITH_ORGANIZATION_ID"); ok {
 		defaults = append(defaults, option.WithOrganizationID(o))
+	}
+	if o, ok := os.LookupEnv("LANGCHAIN_CUSTOM_HEADERS"); ok {
+		for _, line := range strings.Split(o, "\n") {
+			colon := strings.Index(line, ":")
+			if colon >= 0 {
+				defaults = append(defaults, option.WithHeader(strings.TrimSpace(line[:colon]), strings.TrimSpace(line[colon+1:])))
+			}
+		}
 	}
 	return defaults
 }
