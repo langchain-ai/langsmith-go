@@ -111,6 +111,7 @@ func (r sandboxTemplateListResponseTemplateJSON) RawJSON() string {
 // instead.
 type SandboxTemplateListResponseTemplatesProxyConfig struct {
 	AccessControl SandboxTemplateListResponseTemplatesProxyConfigAccessControl `json:"access_control"`
+	Callbacks     []SandboxTemplateListResponseTemplatesProxyConfigCallback    `json:"callbacks"`
 	NoProxy       []string                                                     `json:"no_proxy"`
 	Rules         []SandboxTemplateListResponseTemplatesProxyConfigRule        `json:"rules"`
 	JSON          sandboxTemplateListResponseTemplatesProxyConfigJSON          `json:"-"`
@@ -120,6 +121,7 @@ type SandboxTemplateListResponseTemplatesProxyConfig struct {
 // for the struct [SandboxTemplateListResponseTemplatesProxyConfig]
 type sandboxTemplateListResponseTemplatesProxyConfigJSON struct {
 	AccessControl apijson.Field
+	Callbacks     apijson.Field
 	NoProxy       apijson.Field
 	Rules         apijson.Field
 	raw           string
@@ -156,6 +158,80 @@ func (r *SandboxTemplateListResponseTemplatesProxyConfigAccessControl) Unmarshal
 
 func (r sandboxTemplateListResponseTemplatesProxyConfigAccessControlJSON) RawJSON() string {
 	return r.raw
+}
+
+type SandboxTemplateListResponseTemplatesProxyConfigCallback struct {
+	MatchHosts []string `json:"match_hosts" api:"required"`
+	// TTLSeconds is how long resolved headers are cached before the proxy re-invokes
+	// URL. Must be between 60 and 3600 seconds.
+	TtlSeconds     int64                                                                   `json:"ttl_seconds" api:"required"`
+	URL            string                                                                  `json:"url" api:"required"`
+	RequestHeaders []SandboxTemplateListResponseTemplatesProxyConfigCallbacksRequestHeader `json:"request_headers"`
+	JSON           sandboxTemplateListResponseTemplatesProxyConfigCallbackJSON             `json:"-"`
+}
+
+// sandboxTemplateListResponseTemplatesProxyConfigCallbackJSON contains the JSON
+// metadata for the struct
+// [SandboxTemplateListResponseTemplatesProxyConfigCallback]
+type sandboxTemplateListResponseTemplatesProxyConfigCallbackJSON struct {
+	MatchHosts     apijson.Field
+	TtlSeconds     apijson.Field
+	URL            apijson.Field
+	RequestHeaders apijson.Field
+	raw            string
+	ExtraFields    map[string]apijson.Field
+}
+
+func (r *SandboxTemplateListResponseTemplatesProxyConfigCallback) UnmarshalJSON(data []byte) (err error) {
+	return apijson.UnmarshalRoot(data, r)
+}
+
+func (r sandboxTemplateListResponseTemplatesProxyConfigCallbackJSON) RawJSON() string {
+	return r.raw
+}
+
+type SandboxTemplateListResponseTemplatesProxyConfigCallbacksRequestHeader struct {
+	Name  string                                                                     `json:"name" api:"required"`
+	Type  SandboxTemplateListResponseTemplatesProxyConfigCallbacksRequestHeadersType `json:"type" api:"required"`
+	IsSet bool                                                                       `json:"is_set"`
+	Value string                                                                     `json:"value"`
+	JSON  sandboxTemplateListResponseTemplatesProxyConfigCallbacksRequestHeaderJSON  `json:"-"`
+}
+
+// sandboxTemplateListResponseTemplatesProxyConfigCallbacksRequestHeaderJSON
+// contains the JSON metadata for the struct
+// [SandboxTemplateListResponseTemplatesProxyConfigCallbacksRequestHeader]
+type sandboxTemplateListResponseTemplatesProxyConfigCallbacksRequestHeaderJSON struct {
+	Name        apijson.Field
+	Type        apijson.Field
+	IsSet       apijson.Field
+	Value       apijson.Field
+	raw         string
+	ExtraFields map[string]apijson.Field
+}
+
+func (r *SandboxTemplateListResponseTemplatesProxyConfigCallbacksRequestHeader) UnmarshalJSON(data []byte) (err error) {
+	return apijson.UnmarshalRoot(data, r)
+}
+
+func (r sandboxTemplateListResponseTemplatesProxyConfigCallbacksRequestHeaderJSON) RawJSON() string {
+	return r.raw
+}
+
+type SandboxTemplateListResponseTemplatesProxyConfigCallbacksRequestHeadersType string
+
+const (
+	SandboxTemplateListResponseTemplatesProxyConfigCallbacksRequestHeadersTypePlaintext       SandboxTemplateListResponseTemplatesProxyConfigCallbacksRequestHeadersType = "plaintext"
+	SandboxTemplateListResponseTemplatesProxyConfigCallbacksRequestHeadersTypeOpaque          SandboxTemplateListResponseTemplatesProxyConfigCallbacksRequestHeadersType = "opaque"
+	SandboxTemplateListResponseTemplatesProxyConfigCallbacksRequestHeadersTypeWorkspaceSecret SandboxTemplateListResponseTemplatesProxyConfigCallbacksRequestHeadersType = "workspace_secret"
+)
+
+func (r SandboxTemplateListResponseTemplatesProxyConfigCallbacksRequestHeadersType) IsKnown() bool {
+	switch r {
+	case SandboxTemplateListResponseTemplatesProxyConfigCallbacksRequestHeadersTypePlaintext, SandboxTemplateListResponseTemplatesProxyConfigCallbacksRequestHeadersTypeOpaque, SandboxTemplateListResponseTemplatesProxyConfigCallbacksRequestHeadersTypeWorkspaceSecret:
+		return true
+	}
+	return false
 }
 
 type SandboxTemplateListResponseTemplatesProxyConfigRule struct {

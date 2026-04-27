@@ -38,6 +38,17 @@ func TestSandboxBoxNewWithOptionalParams(t *testing.T) {
 				AllowList: langsmith.F([]string{"string"}),
 				DenyList:  langsmith.F([]string{"string"}),
 			}),
+			Callbacks: langsmith.F([]langsmith.SandboxBoxNewParamsProxyConfigCallback{{
+				MatchHosts: langsmith.F([]string{"string"}),
+				TtlSeconds: langsmith.F(int64(60)),
+				URL:        langsmith.F("url"),
+				RequestHeaders: langsmith.F([]langsmith.SandboxBoxNewParamsProxyConfigCallbacksRequestHeader{{
+					Name:  langsmith.F("name"),
+					Type:  langsmith.F(langsmith.SandboxBoxNewParamsProxyConfigCallbacksRequestHeadersTypePlaintext),
+					IsSet: langsmith.F(true),
+					Value: langsmith.F("value"),
+				}}),
+			}}),
 			NoProxy: langsmith.F([]string{"string"}),
 			Rules: langsmith.F([]langsmith.SandboxBoxNewParamsProxyConfigRule{{
 				MatchHosts: langsmith.F([]string{"string"}),
@@ -122,6 +133,17 @@ func TestSandboxBoxUpdateWithOptionalParams(t *testing.T) {
 					AllowList: langsmith.F([]string{"string"}),
 					DenyList:  langsmith.F([]string{"string"}),
 				}),
+				Callbacks: langsmith.F([]langsmith.SandboxBoxUpdateParamsProxyConfigCallback{{
+					MatchHosts: langsmith.F([]string{"string"}),
+					TtlSeconds: langsmith.F(int64(60)),
+					URL:        langsmith.F("url"),
+					RequestHeaders: langsmith.F([]langsmith.SandboxBoxUpdateParamsProxyConfigCallbacksRequestHeader{{
+						Name:  langsmith.F("name"),
+						Type:  langsmith.F(langsmith.SandboxBoxUpdateParamsProxyConfigCallbacksRequestHeadersTypePlaintext),
+						IsSet: langsmith.F(true),
+						Value: langsmith.F("value"),
+					}}),
+				}}),
 				NoProxy: langsmith.F([]string{"string"}),
 				Rules: langsmith.F([]langsmith.SandboxBoxUpdateParamsProxyConfigRule{{
 					MatchHosts: langsmith.F([]string{"string"}),
