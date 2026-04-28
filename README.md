@@ -58,6 +58,7 @@ This repository includes several examples demonstrating common use cases:
 - **[E2E Evaluation](./examples/e2e_eval)** - Run OpenAI experiments with automatic OpenTelemetry tracing linked to dataset examples
 - **[Record Experiment](./examples/record_experiment)** - Create datasets, examples, sessions, and batch ingest runs for experiments
 - **[Prompt Management](./examples/prompt_management)** - Create and manage prompt repositories, commits, and versions
+- **[Feedback Management](./examples/feedback)** - Create, update, list, and delete feedback for runs
 - **[OpenTelemetry Ingestion](./examples/otel_ingestion)** - Send OpenTelemetry traces to LangSmith with hierarchical span structure
 - **[OpenTelemetry + OpenAI](./examples/otel_openai)** - Make OpenAI API calls with manual OpenTelemetry tracing to LangSmith
 - **[OpenTelemetry + OpenAI (Go Client)](./examples/otel_go_client_openai)** - Automatic OpenTelemetry tracing for OpenAI API calls using sashabaranov/go-openai client wrapper
