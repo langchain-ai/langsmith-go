@@ -28,6 +28,7 @@ func TestDatasetVersionListWithOptionalParams(t *testing.T) {
 		option.WithBaseURL(baseURL),
 		option.WithAPIKey("My API Key"),
 		option.WithTenantID("My Tenant ID"),
+		option.WithOrganizationID("My Organization ID"),
 	)
 	_, err := client.Datasets.Versions.List(
 		context.TODO(),
@@ -61,6 +62,7 @@ func TestDatasetVersionGetDiff(t *testing.T) {
 		option.WithBaseURL(baseURL),
 		option.WithAPIKey("My API Key"),
 		option.WithTenantID("My Tenant ID"),
+		option.WithOrganizationID("My Organization ID"),
 	)
 	_, err := client.Datasets.Versions.GetDiff(
 		context.TODO(),

@@ -28,6 +28,7 @@ func TestFeedbackNewWithOptionalParams(t *testing.T) {
 		option.WithBaseURL(baseURL),
 		option.WithAPIKey("My API Key"),
 		option.WithTenantID("My Tenant ID"),
+		option.WithOrganizationID("My Organization ID"),
 	)
 	_, err := client.Feedback.New(context.TODO(), langsmith.FeedbackNewParams{
 		FeedbackCreateSchema: langsmith.FeedbackCreateSchemaParam{
@@ -87,6 +88,7 @@ func TestFeedbackGetWithOptionalParams(t *testing.T) {
 		option.WithBaseURL(baseURL),
 		option.WithAPIKey("My API Key"),
 		option.WithTenantID("My Tenant ID"),
+		option.WithOrganizationID("My Organization ID"),
 	)
 	_, err := client.Feedback.Get(
 		context.TODO(),
@@ -117,6 +119,7 @@ func TestFeedbackUpdateWithOptionalParams(t *testing.T) {
 		option.WithBaseURL(baseURL),
 		option.WithAPIKey("My API Key"),
 		option.WithTenantID("My Tenant ID"),
+		option.WithOrganizationID("My Organization ID"),
 	)
 	_, err := client.Feedback.Update(
 		context.TODO(),
@@ -161,6 +164,7 @@ func TestFeedbackListWithOptionalParams(t *testing.T) {
 		option.WithBaseURL(baseURL),
 		option.WithAPIKey("My API Key"),
 		option.WithTenantID("My Tenant ID"),
+		option.WithOrganizationID("My Organization ID"),
 	)
 	_, err := client.Feedback.List(context.TODO(), langsmith.FeedbackListParams{
 		ComparativeExperimentID: langsmith.F("182bd5e5-6e1a-4fe4-a799-aa6d9a6ab26e"),
@@ -200,6 +204,7 @@ func TestFeedbackDelete(t *testing.T) {
 		option.WithBaseURL(baseURL),
 		option.WithAPIKey("My API Key"),
 		option.WithTenantID("My Tenant ID"),
+		option.WithOrganizationID("My Organization ID"),
 	)
 	_, err := client.Feedback.Delete(context.TODO(), "182bd5e5-6e1a-4fe4-a799-aa6d9a6ab26e")
 	if err != nil {

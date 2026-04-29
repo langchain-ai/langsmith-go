@@ -37,10 +37,11 @@ func DefaultDrainConfig() DrainConfig { return langsmithtracing.DefaultDrainConf
 
 // Tracing option constructors.
 var (
-	WithTracingAPIURL                     = langsmithtracing.WithAPIURL
-	WithTracingAPIKey                     = langsmithtracing.WithAPIKey
-	WithTracingProject                    = langsmithtracing.WithProject
-	WithTracingDrain                      = langsmithtracing.WithDrainConfig
+	WithTracingAPIURL        = langsmithtracing.WithAPIURL
+	WithTracingAPIKey        = langsmithtracing.WithAPIKey
+	WithTracingBearerToken   = langsmithtracing.WithBearerToken
+	WithTracingProject       = langsmithtracing.WithProject
+	WithTracingDrain         = langsmithtracing.WithDrainConfig
 	WithSampleRate                        = langsmithtracing.WithSampleRate
 	WithRunTransform                      = langsmithtracing.WithRunTransform
 	WithMergeFilteredEnvIntoExtraMetadata = langsmithtracing.WithMergeFilteredEnvIntoExtraMetadata

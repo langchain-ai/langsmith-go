@@ -26,6 +26,7 @@ func TestDatasetShareNewWithOptionalParams(t *testing.T) {
 		option.WithBaseURL(baseURL),
 		option.WithAPIKey("My API Key"),
 		option.WithTenantID("My Tenant ID"),
+		option.WithOrganizationID("My Organization ID"),
 	)
 	_, err := client.Datasets.Share.New(
 		context.TODO(),
@@ -56,6 +57,7 @@ func TestDatasetShareGet(t *testing.T) {
 		option.WithBaseURL(baseURL),
 		option.WithAPIKey("My API Key"),
 		option.WithTenantID("My Tenant ID"),
+		option.WithOrganizationID("My Organization ID"),
 	)
 	_, err := client.Datasets.Share.Get(context.TODO(), "182bd5e5-6e1a-4fe4-a799-aa6d9a6ab26e")
 	if err != nil {
@@ -80,6 +82,7 @@ func TestDatasetShareDeleteAll(t *testing.T) {
 		option.WithBaseURL(baseURL),
 		option.WithAPIKey("My API Key"),
 		option.WithTenantID("My Tenant ID"),
+		option.WithOrganizationID("My Organization ID"),
 	)
 	_, err := client.Datasets.Share.DeleteAll(context.TODO(), "182bd5e5-6e1a-4fe4-a799-aa6d9a6ab26e")
 	if err != nil {

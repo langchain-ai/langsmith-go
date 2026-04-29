@@ -41,11 +41,11 @@ type TracingClient struct {
 	project string
 	logger  ilog.Logger
 
-	sampleRate        *float64
-	mergeEnvMetadata  bool
-	filteredMu        sync.Mutex
-	filteredTraces    map[uuid.UUID]time.Time
-	filteredLastPrune time.Time
+	sampleRate         *float64
+	mergeEnvMetadata   bool
+	filteredMu         sync.Mutex
+	filteredTraces     map[uuid.UUID]time.Time
+	filteredLastPrune  time.Time
 }
 
 // RunCreate holds parameters for creating a new run (multipart post).
@@ -58,13 +58,13 @@ type RunCreate struct {
 	Name        string
 	RunType     string // "chain", "llm", "tool", etc.
 	Inputs      map[string]any
-	Outputs     map[string]any // Set to create a complete run in one call.
+	Outputs     map[string]any        // Set to create a complete run in one call.
 	Extra       map[string]any
-	Events      []map[string]any // e.g. [{"name":"new_token","time":"...","kwargs":{...}}]
-	Serialized  map[string]any   // Model manifest; only retained for "llm"/"prompt" run types.
+	Events      []map[string]any      // e.g. [{"name":"new_token","time":"...","kwargs":{...}}]
+	Serialized  map[string]any        // Model manifest; only retained for "llm"/"prompt" run types.
 	Tags        []string
 	StartTime   time.Time
-	EndTime     time.Time // Set to create a complete run in one call.
+	EndTime     time.Time             // Set to create a complete run in one call.
 	DottedOrder string
 	Error       string                // Set to create a failed run in one call.
 	Attachments map[string]Attachment // keyed by name; names must not contain '.'
@@ -82,14 +82,14 @@ type RunUpdate struct {
 	ID          uuid.UUID
 	TraceID     uuid.UUID
 	Outputs     map[string]any
-	Inputs      map[string]any   // override/replace inputs set at create time
-	Extra       map[string]any   // override/replace extra set at create time
-	Events      []map[string]any // e.g. [{"name":"new_token","time":"..."}]
-	Name        string           // rename the run
-	RunType     string           // change run type ("chain", "llm", "tool", etc.)
-	Tags        []string         // add or replace tags
+	Inputs      map[string]any        // override/replace inputs set at create time
+	Extra       map[string]any        // override/replace extra set at create time
+	Events      []map[string]any      // e.g. [{"name":"new_token","time":"..."}]
+	Name        string                // rename the run
+	RunType     string                // change run type ("chain", "llm", "tool", etc.)
+	Tags        []string              // add or replace tags
 	EndTime     time.Time
-	StartTime   time.Time // adjust start time
+	StartTime   time.Time             // adjust start time
 	DottedOrder string
 	Error       string
 	Attachments map[string]Attachment // keyed by name; names must not contain '.'
@@ -112,7 +112,7 @@ type Option func(*options)
 type options struct {
 	apiURL              string
 	apiKey              string
-	oauthAccessToken    string
+	bearerToken         string
 	project             string
 	drainConfig         *tracesink.DrainConfig
 	sampleRate          *float64
@@ -128,11 +128,9 @@ func WithAPIURL(url string) Option { return func(o *options) { o.apiURL = url } 
 // WithAPIKey overrides the LangSmith API key.
 func WithAPIKey(key string) Option { return func(o *options) { o.apiKey = key } }
 
-// WithOAuthAccessToken sets an OAuth access token for authentication.
+// WithBearerToken sets a bearer token for authentication.
 // When set, it takes precedence over the API key.
-func WithOAuthAccessToken(token string) Option {
-	return func(o *options) { o.oauthAccessToken = token }
-}
+func WithBearerToken(token string) Option { return func(o *options) { o.bearerToken = token } }
 
 // WithProject overrides the LangSmith project name.
 func WithProject(name string) Option { return func(o *options) { o.project = name } }
@@ -215,23 +213,23 @@ func NewTracingClient(ctx context.Context, opts ...Option) (*TracingClient, erro
 	}
 
 	endpoint := models.WriteEndpoint{
-		URL:              cfg.apiURL,
-		Key:              cfg.apiKey,
-		OAuthAccessToken: cfg.oauthAccessToken,
-		Project:          cfg.project,
+		URL:         cfg.apiURL,
+		Key:         cfg.apiKey,
+		BearerToken: cfg.bearerToken,
+		Project:     cfg.project,
 	}
 
 	exp := multipart.NewExporter(nil, multipart.DefaultRetry(), cfg.compressionDisabled, l)
 	sink := tracesink.NewTraceSink(ctx, exp, drainCfg, endpoint, cfg.runTransform, l)
 
 	return &TracingClient{
-		sink:              sink,
-		logger:            l,
-		project:           cfg.project,
-		sampleRate:        sampleRate,
-		mergeEnvMetadata:  cfg.mergeEnvMetadata,
-		filteredTraces:    make(map[uuid.UUID]time.Time),
-		filteredLastPrune: time.Now(),
+		sink:               sink,
+		logger:             l,
+		project:            cfg.project,
+		sampleRate:         sampleRate,
+		mergeEnvMetadata:   cfg.mergeEnvMetadata,
+		filteredTraces:     make(map[uuid.UUID]time.Time),
+		filteredLastPrune:  time.Now(),
 	}, nil
 }
 

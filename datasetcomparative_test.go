@@ -27,6 +27,7 @@ func TestDatasetComparativeNewWithOptionalParams(t *testing.T) {
 		option.WithBaseURL(baseURL),
 		option.WithAPIKey("My API Key"),
 		option.WithTenantID("My Tenant ID"),
+		option.WithOrganizationID("My Organization ID"),
 	)
 	_, err := client.Datasets.Comparative.New(context.TODO(), langsmith.DatasetComparativeNewParams{
 		ExperimentIDs: langsmith.F([]string{"182bd5e5-6e1a-4fe4-a799-aa6d9a6ab26e"}),
@@ -62,6 +63,7 @@ func TestDatasetComparativeDelete(t *testing.T) {
 		option.WithBaseURL(baseURL),
 		option.WithAPIKey("My API Key"),
 		option.WithTenantID("My Tenant ID"),
+		option.WithOrganizationID("My Organization ID"),
 	)
 	_, err := client.Datasets.Comparative.Delete(context.TODO(), "182bd5e5-6e1a-4fe4-a799-aa6d9a6ab26e")
 	if err != nil {

@@ -26,6 +26,7 @@ func TestExampleBulkNew(t *testing.T) {
 		option.WithBaseURL(baseURL),
 		option.WithAPIKey("My API Key"),
 		option.WithTenantID("My Tenant ID"),
+		option.WithOrganizationID("My Organization ID"),
 	)
 	_, err := client.Examples.Bulk.New(context.TODO(), langsmith.ExampleBulkNewParams{
 		Body: []langsmith.ExampleBulkNewParamsBody{{
@@ -70,6 +71,7 @@ func TestExampleBulkPatchAll(t *testing.T) {
 		option.WithBaseURL(baseURL),
 		option.WithAPIKey("My API Key"),
 		option.WithTenantID("My Tenant ID"),
+		option.WithOrganizationID("My Organization ID"),
 	)
 	_, err := client.Examples.Bulk.PatchAll(context.TODO(), langsmith.ExampleBulkPatchAllParams{
 		Body: []langsmith.ExampleBulkPatchAllParamsBody{{

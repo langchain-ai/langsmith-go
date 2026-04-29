@@ -27,6 +27,7 @@ func TestSessionInsightNewWithOptionalParams(t *testing.T) {
 		option.WithBaseURL(baseURL),
 		option.WithAPIKey("My API Key"),
 		option.WithTenantID("My Tenant ID"),
+		option.WithOrganizationID("My Organization ID"),
 	)
 	_, err := client.Sessions.Insights.New(
 		context.TODO(),
@@ -81,6 +82,7 @@ func TestSessionInsightUpdate(t *testing.T) {
 		option.WithBaseURL(baseURL),
 		option.WithAPIKey("My API Key"),
 		option.WithTenantID("My Tenant ID"),
+		option.WithOrganizationID("My Organization ID"),
 	)
 	_, err := client.Sessions.Insights.Update(
 		context.TODO(),
@@ -112,6 +114,7 @@ func TestSessionInsightListWithOptionalParams(t *testing.T) {
 		option.WithBaseURL(baseURL),
 		option.WithAPIKey("My API Key"),
 		option.WithTenantID("My Tenant ID"),
+		option.WithOrganizationID("My Organization ID"),
 	)
 	_, err := client.Sessions.Insights.List(
 		context.TODO(),
@@ -145,6 +148,7 @@ func TestSessionInsightDelete(t *testing.T) {
 		option.WithBaseURL(baseURL),
 		option.WithAPIKey("My API Key"),
 		option.WithTenantID("My Tenant ID"),
+		option.WithOrganizationID("My Organization ID"),
 	)
 	_, err := client.Sessions.Insights.Delete(
 		context.TODO(),
@@ -173,6 +177,7 @@ func TestSessionInsightGetJob(t *testing.T) {
 		option.WithBaseURL(baseURL),
 		option.WithAPIKey("My API Key"),
 		option.WithTenantID("My Tenant ID"),
+		option.WithOrganizationID("My Organization ID"),
 	)
 	_, err := client.Sessions.Insights.GetJob(
 		context.TODO(),
@@ -201,6 +206,7 @@ func TestSessionInsightGetRunsWithOptionalParams(t *testing.T) {
 		option.WithBaseURL(baseURL),
 		option.WithAPIKey("My API Key"),
 		option.WithTenantID("My Tenant ID"),
+		option.WithOrganizationID("My Organization ID"),
 	)
 	_, err := client.Sessions.Insights.GetRuns(
 		context.TODO(),
