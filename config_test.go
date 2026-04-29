@@ -15,7 +15,7 @@ import (
 )
 
 func TestLoadProfileOptions_NoFile(t *testing.T) {
-	t.Setenv("LANGSMITH_CONFIG_FILE", "/nonexistent/path/config.toml")
+	t.Setenv("LANGSMITH_CONFIG_FILE", "/nonexistent/path/config.json")
 	opts := loadProfileOptions()
 	if len(opts) != 0 {
 		t.Errorf("expected no options for missing file, got %d", len(opts))
@@ -25,13 +25,17 @@ func TestLoadProfileOptions_NoFile(t *testing.T) {
 func TestLoadProfileOptions_ValidProfile(t *testing.T) {
 	clearAuthEnv(t)
 	dir := t.TempDir()
-	path := filepath.Join(dir, "config.toml")
-	content := `current_profile = "prod"
-
-[prod]
-api_key = "lsv2_pt_prodkey"
-api_url = "https://prod.example.com"
-workspace_id = "ws-prod"
+	path := filepath.Join(dir, "config.json")
+	content := `{
+  "current_profile": "prod",
+  "profiles": {
+    "prod": {
+      "api_key": "lsv2_pt_prodkey",
+      "api_url": "https://prod.example.com",
+      "workspace_id": "ws-prod"
+    }
+  }
+}
 `
 	if err := os.WriteFile(path, []byte(content), 0600); err != nil {
 		t.Fatal(err)
@@ -48,14 +52,18 @@ workspace_id = "ws-prod"
 func TestLoadProfileOptions_EnvProfileOverride(t *testing.T) {
 	clearAuthEnv(t)
 	dir := t.TempDir()
-	path := filepath.Join(dir, "config.toml")
-	content := `current_profile = "prod"
-
-[prod]
-api_key = "prod-key"
-
-[staging]
-api_key = "staging-key"
+	path := filepath.Join(dir, "config.json")
+	content := `{
+  "current_profile": "prod",
+  "profiles": {
+    "prod": {
+      "api_key": "prod-key"
+    },
+    "staging": {
+      "api_key": "staging-key"
+    }
+  }
+}
 `
 	if err := os.WriteFile(path, []byte(content), 0600); err != nil {
 		t.Fatal(err)
@@ -72,10 +80,15 @@ api_key = "staging-key"
 func TestLoadProfileOptions_FallbackToDefault(t *testing.T) {
 	clearAuthEnv(t)
 	dir := t.TempDir()
-	path := filepath.Join(dir, "config.toml")
-	content := `[default]
-api_key = "default-key"
-api_url = "https://default.example.com"
+	path := filepath.Join(dir, "config.json")
+	content := `{
+  "profiles": {
+    "default": {
+      "api_key": "default-key",
+      "api_url": "https://default.example.com"
+    }
+  }
+}
 `
 	if err := os.WriteFile(path, []byte(content), 0600); err != nil {
 		t.Fatal(err)
@@ -91,11 +104,15 @@ api_url = "https://default.example.com"
 
 func TestLoadProfileOptions_NoMatchingProfile(t *testing.T) {
 	dir := t.TempDir()
-	path := filepath.Join(dir, "config.toml")
-	content := `current_profile = "nonexistent"
-
-[prod]
-api_key = "key"
+	path := filepath.Join(dir, "config.json")
+	content := `{
+  "current_profile": "nonexistent",
+  "profiles": {
+    "prod": {
+      "api_key": "key"
+    }
+  }
+}
 `
 	if err := os.WriteFile(path, []byte(content), 0600); err != nil {
 		t.Fatal(err)
@@ -109,26 +126,31 @@ api_key = "key"
 	}
 }
 
-func TestLoadProfileOptions_InvalidTOML(t *testing.T) {
+func TestLoadProfileOptions_InvalidJSON(t *testing.T) {
 	dir := t.TempDir()
-	path := filepath.Join(dir, "config.toml")
-	if err := os.WriteFile(path, []byte("not valid [[ toml"), 0600); err != nil {
+	path := filepath.Join(dir, "config.json")
+	if err := os.WriteFile(path, []byte("not valid json"), 0600); err != nil {
 		t.Fatal(err)
 	}
 	t.Setenv("LANGSMITH_CONFIG_FILE", path)
 
 	opts := loadProfileOptions()
 	if len(opts) != 0 {
-		t.Errorf("expected no options for invalid TOML, got %d", len(opts))
+		t.Errorf("expected no options for invalid JSON, got %d", len(opts))
 	}
 }
 
 func TestLoadProfileOptions_PartialFields(t *testing.T) {
 	clearAuthEnv(t)
 	dir := t.TempDir()
-	path := filepath.Join(dir, "config.toml")
-	content := `[default]
-api_key = "only-key"
+	path := filepath.Join(dir, "config.json")
+	content := `{
+  "profiles": {
+    "default": {
+      "api_key": "only-key"
+    }
+  }
+}
 `
 	if err := os.WriteFile(path, []byte(content), 0600); err != nil {
 		t.Fatal(err)
@@ -144,9 +166,14 @@ api_key = "only-key"
 
 func TestDefaultClientOptions_IncludesProfileOptions(t *testing.T) {
 	dir := t.TempDir()
-	path := filepath.Join(dir, "config.toml")
-	content := `[default]
-api_key = "profile-key"
+	path := filepath.Join(dir, "config.json")
+	content := `{
+  "profiles": {
+    "default": {
+      "api_key": "profile-key"
+    }
+  }
+}
 `
 	if err := os.WriteFile(path, []byte(content), 0600); err != nil {
 		t.Fatal(err)
@@ -168,7 +195,7 @@ api_key = "profile-key"
 }
 
 func TestDefaultClientOptions_WorkspaceIDEnvAlias(t *testing.T) {
-	t.Setenv("LANGSMITH_CONFIG_FILE", "/nonexistent/path/config.toml")
+	t.Setenv("LANGSMITH_CONFIG_FILE", "/nonexistent/path/config.json")
 	t.Setenv("LANGSMITH_API_KEY", "")
 	t.Setenv("LANGSMITH_ENDPOINT", "")
 	t.Setenv("LANGSMITH_TENANT_ID", "tenant-env")
@@ -186,12 +213,17 @@ func TestDefaultClientOptions_WorkspaceIDEnvAlias(t *testing.T) {
 func TestLoadProfileOptions_OAuthAccessToken(t *testing.T) {
 	clearAuthEnv(t)
 	dir := t.TempDir()
-	path := filepath.Join(dir, "config.toml")
-	content := `[default]
-api_url = "https://api.smith.langchain.com"
-
-[default.oauth]
-access_token = "test-access-token"
+	path := filepath.Join(dir, "config.json")
+	content := `{
+  "profiles": {
+    "default": {
+      "api_url": "https://api.smith.langchain.com",
+      "oauth": {
+        "access_token": "test-access-token"
+      }
+    }
+  }
+}
 `
 	if err := os.WriteFile(path, []byte(content), 0600); err != nil {
 		t.Fatal(err)
@@ -239,14 +271,19 @@ func TestLoadProfileOptions_RefreshesExpiredAccessToken(t *testing.T) {
 	defer ts.Close()
 
 	dir := t.TempDir()
-	path := filepath.Join(dir, "config.toml")
-	content := `[default]
-api_url = "` + ts.URL + `"
-
-[default.oauth]
-access_token = "old-access-token"
-refresh_token = "old-refresh-token"
-expires_at = "` + time.Now().Add(-time.Minute).UTC().Format(time.RFC3339) + `"
+	path := filepath.Join(dir, "config.json")
+	content := `{
+  "profiles": {
+    "default": {
+      "api_url": "` + ts.URL + `",
+      "oauth": {
+        "access_token": "old-access-token",
+        "refresh_token": "old-refresh-token",
+        "expires_at": "` + time.Now().Add(-time.Minute).UTC().Format(time.RFC3339) + `"
+      }
+    }
+  }
+}
 `
 	if err := os.WriteFile(path, []byte(content), 0600); err != nil {
 		t.Fatal(err)
@@ -267,10 +304,10 @@ expires_at = "` + time.Now().Add(-time.Minute).UTC().Format(time.RFC3339) + `"
 	if err != nil {
 		t.Fatal(err)
 	}
-	if !strings.Contains(string(data), `access_token = "new-access-token"`) {
+	if !strings.Contains(string(data), `"access_token": "new-access-token"`) {
 		t.Fatalf("expected refreshed access token to be saved, got:\n%s", data)
 	}
-	if !strings.Contains(string(data), `refresh_token = "new-refresh-token"`) {
+	if !strings.Contains(string(data), `"refresh_token": "new-refresh-token"`) {
 		t.Fatalf("expected refreshed refresh token to be saved, got:\n%s", data)
 	}
 	if strings.Contains(string(data), `token_type`) || strings.Contains(string(data), `bearer_token`) {
@@ -281,12 +318,17 @@ expires_at = "` + time.Now().Add(-time.Minute).UTC().Format(time.RFC3339) + `"
 func TestLoadProfileOptions_OAuthAccessTokenOverridesProfileAPIKey(t *testing.T) {
 	clearAuthEnv(t)
 	dir := t.TempDir()
-	path := filepath.Join(dir, "config.toml")
-	content := `[default]
-api_key = "some-key"
-
-[default.oauth]
-access_token = "oauth-access-token"
+	path := filepath.Join(dir, "config.json")
+	content := `{
+  "profiles": {
+    "default": {
+      "api_key": "some-key",
+      "oauth": {
+        "access_token": "oauth-access-token"
+      }
+    }
+  }
+}
 `
 	if err := os.WriteFile(path, []byte(content), 0600); err != nil {
 		t.Fatal(err)
@@ -309,14 +351,19 @@ access_token = "oauth-access-token"
 
 func TestLoadProfileOptions_EnvAuthSuppressesProfileAuth(t *testing.T) {
 	dir := t.TempDir()
-	path := filepath.Join(dir, "config.toml")
-	content := `[default]
-api_key = "profile-key"
-api_url = "https://profile.example.com"
-workspace_id = "ws-profile"
-
-[default.oauth]
-access_token = "profile-access-token"
+	path := filepath.Join(dir, "config.json")
+	content := `{
+  "profiles": {
+    "default": {
+      "api_key": "profile-key",
+      "api_url": "https://profile.example.com",
+      "workspace_id": "ws-profile",
+      "oauth": {
+        "access_token": "profile-access-token"
+      }
+    }
+  }
+}
 `
 	if err := os.WriteFile(path, []byte(content), 0600); err != nil {
 		t.Fatal(err)

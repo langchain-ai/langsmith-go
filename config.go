@@ -13,7 +13,6 @@ import (
 	"strings"
 	"time"
 
-	"github.com/BurntSushi/toml"
 	"github.com/langchain-ai/langsmith-go/internal/requestconfig"
 	"github.com/langchain-ai/langsmith-go/option"
 )
@@ -24,21 +23,26 @@ const (
 	tokenRefreshTimeout = 10 * time.Second
 )
 
-// configProfile holds per-profile configuration from ~/.langsmith/config.toml.
+// configProfile holds per-profile configuration from ~/.langsmith/config.json.
 // A profile uses api_key (X-API-Key header) or OAuth access_token
 // (Authorization: Bearer header) for authentication. access_token is written
-// by `langsmith login` under the profile's oauth section.
+// by `langsmith login` under the profile's oauth object.
 type configProfile struct {
-	APIKey      string      `toml:"api_key"`
-	APIURL      string      `toml:"api_url"`
-	WorkspaceID string      `toml:"workspace_id"`
-	OAuth       configOAuth `toml:"oauth"`
+	APIKey      string      `json:"api_key,omitempty"`
+	APIURL      string      `json:"api_url,omitempty"`
+	WorkspaceID string      `json:"workspace_id,omitempty"`
+	OAuth       configOAuth `json:"oauth,omitempty"`
 }
 
 type configOAuth struct {
-	AccessToken  string `toml:"access_token"`
-	RefreshToken string `toml:"refresh_token"`
-	ExpiresAt    string `toml:"expires_at"`
+	AccessToken  string `json:"access_token,omitempty"`
+	RefreshToken string `json:"refresh_token,omitempty"`
+	ExpiresAt    string `json:"expires_at,omitempty"`
+}
+
+type configFile struct {
+	CurrentProfile string                   `json:"current_profile,omitempty"`
+	Profiles       map[string]configProfile `json:"profiles,omitempty"`
 }
 
 type oauthTokenResponse struct {
@@ -59,7 +63,7 @@ func (e oauthErrorResponse) Error() string {
 	return e.Code + ": " + e.ErrorDescription
 }
 
-// loadProfileOptions reads ~/.langsmith/config.toml and returns RequestOptions
+// loadProfileOptions reads ~/.langsmith/config.json and returns RequestOptions
 // for the active profile. Returns nil if no config file exists or no matching
 // profile is found.
 //
@@ -74,42 +78,21 @@ func loadProfileOptions() []option.RequestOption {
 		return nil
 	}
 
-	var raw map[string]any
-	if err := toml.Unmarshal(data, &raw); err != nil {
+	var cfg configFile
+	if err := json.Unmarshal(data, &cfg); err != nil {
 		return nil
 	}
 
-	profileName := resolveProfileName(raw)
+	profileName := resolveProfileName(cfg)
 	if profileName == "" {
 		return nil
 	}
 
-	section, ok := raw[profileName].(map[string]any)
+	p, ok := cfg.Profiles[profileName]
 	if !ok {
 		return nil
 	}
 
-	var p configProfile
-	if v, ok := section["api_key"].(string); ok {
-		p.APIKey = v
-	}
-	if v, ok := section["api_url"].(string); ok {
-		p.APIURL = v
-	}
-	if v, ok := section["workspace_id"].(string); ok {
-		p.WorkspaceID = v
-	}
-	if oauthSection, ok := section["oauth"].(map[string]any); ok {
-		if v, ok := oauthSection["access_token"].(string); ok {
-			p.OAuth.AccessToken = v
-		}
-		if v, ok := oauthSection["refresh_token"].(string); ok {
-			p.OAuth.RefreshToken = v
-		}
-		if v, ok := oauthSection["expires_at"].(string); ok {
-			p.OAuth.ExpiresAt = v
-		}
-	}
 	refreshURL := p.APIURL
 	if envURL := os.Getenv("LANGSMITH_ENDPOINT"); envURL != "" {
 		refreshURL = envURL
@@ -121,11 +104,8 @@ func loadProfileOptions() []option.RequestOption {
 		defer cancel()
 		if token, err := refreshOAuthToken(ctx, refreshURL, p.OAuth.RefreshToken); err == nil {
 			applyTokenResponse(&p, token, time.Now())
-			oauthSection := ensureOAuthSection(section)
-			oauthSection["access_token"] = p.OAuth.AccessToken
-			oauthSection["refresh_token"] = p.OAuth.RefreshToken
-			oauthSection["expires_at"] = p.OAuth.ExpiresAt
-			_ = saveRawConfig(path, raw)
+			cfg.Profiles[profileName] = p
+			_ = saveConfig(path, cfg)
 		}
 	}
 
@@ -154,17 +134,17 @@ func withOAuthAccessToken(token string) option.RequestOption {
 }
 
 // resolveProfileName determines which profile to use.
-func resolveProfileName(raw map[string]any) string {
+func resolveProfileName(cfg configFile) string {
 	// 1. LANGSMITH_PROFILE env var
 	if name, ok := os.LookupEnv("LANGSMITH_PROFILE"); ok && name != "" {
 		return name
 	}
 	// 2. current_profile from config
-	if cp, ok := raw["current_profile"].(string); ok && cp != "" {
-		return cp
+	if cfg.CurrentProfile != "" {
+		return cfg.CurrentProfile
 	}
 	// 3. "default" if it exists
-	if _, ok := raw["default"]; ok {
+	if _, ok := cfg.Profiles["default"]; ok {
 		return "default"
 	}
 	return ""
@@ -179,7 +159,7 @@ func configPath() string {
 	if err != nil {
 		return ""
 	}
-	return filepath.Join(home, ".langsmith", "config.toml")
+	return filepath.Join(home, ".langsmith", "config.json")
 }
 
 func shouldRefreshProfileToken(p configProfile) bool {
@@ -253,20 +233,12 @@ func applyTokenResponse(p *configProfile, token *oauthTokenResponse, now time.Ti
 	}
 }
 
-func ensureOAuthSection(profile map[string]any) map[string]any {
-	if oauthSection, ok := profile["oauth"].(map[string]any); ok {
-		return oauthSection
-	}
-	oauthSection := make(map[string]any)
-	profile["oauth"] = oauthSection
-	return oauthSection
-}
-
-func saveRawConfig(path string, raw map[string]any) error {
-	data, err := toml.Marshal(raw)
+func saveConfig(path string, cfg configFile) error {
+	data, err := json.MarshalIndent(cfg, "", "  ")
 	if err != nil {
 		return err
 	}
+	data = append(data, '\n')
 	if err := os.MkdirAll(filepath.Dir(path), 0700); err != nil {
 		return err
 	}

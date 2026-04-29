@@ -16,7 +16,7 @@ import (
 func newClientFromProfile(t *testing.T, profileName, configContent string) *langsmith.Client {
 	t.Helper()
 	dir := t.TempDir()
-	path := filepath.Join(dir, "config.toml")
+	path := filepath.Join(dir, "config.json")
 	if err := os.WriteFile(path, []byte(configContent), 0600); err != nil {
 		t.Fatal(err)
 	}
@@ -58,11 +58,15 @@ func TestProfileClient_ListSessions(t *testing.T) {
 		endpoint = "https://api.smith.langchain.com"
 	}
 
-	config := `current_profile = "integ"
-
-[integ]
-api_key = "` + apiKey + `"
-api_url = "` + endpoint + `"
+	config := `{
+  "current_profile": "integ",
+  "profiles": {
+    "integ": {
+      "api_key": "` + apiKey + `",
+      "api_url": "` + endpoint + `"
+    }
+  }
+}
 `
 	client := newClientFromProfile(t, "integ", config)
 
@@ -87,9 +91,14 @@ func TestProfileClient_DatasetCRUD(t *testing.T) {
 		endpoint = "https://api.smith.langchain.com"
 	}
 
-	config := `[default]
-api_key = "` + apiKey + `"
-api_url = "` + endpoint + `"
+	config := `{
+  "profiles": {
+    "default": {
+      "api_key": "` + apiKey + `",
+      "api_url": "` + endpoint + `"
+    }
+  }
+}
 `
 	// Uses "default" profile via fallback (no current_profile, no LANGSMITH_PROFILE).
 	client := newClientFromProfile(t, "", config)
@@ -135,15 +144,19 @@ func TestProfileClient_EnvProfileSelection(t *testing.T) {
 		endpoint = "https://api.smith.langchain.com"
 	}
 
-	config := `current_profile = "wrong"
-
-[wrong]
-api_key = "invalid-key-should-not-be-used"
-api_url = "` + endpoint + `"
-
-[correct]
-api_key = "` + apiKey + `"
-api_url = "` + endpoint + `"
+	config := `{
+  "current_profile": "wrong",
+  "profiles": {
+    "wrong": {
+      "api_key": "invalid-key-should-not-be-used",
+      "api_url": "` + endpoint + `"
+    },
+    "correct": {
+      "api_key": "` + apiKey + `",
+      "api_url": "` + endpoint + `"
+    }
+  }
+}
 `
 	// LANGSMITH_PROFILE should override current_profile.
 	client := newClientFromProfile(t, "correct", config)
@@ -171,10 +184,15 @@ func TestProfileClient_EnvOverridesProfile(t *testing.T) {
 
 	// Profile has a bad key — env var should override it.
 	dir := t.TempDir()
-	path := filepath.Join(dir, "config.toml")
-	config := `[default]
-api_key = "invalid-key-from-profile"
-api_url = "` + endpoint + `"
+	path := filepath.Join(dir, "config.json")
+	config := `{
+  "profiles": {
+    "default": {
+      "api_key": "invalid-key-from-profile",
+      "api_url": "` + endpoint + `"
+    }
+  }
+}
 `
 	if err := os.WriteFile(path, []byte(config), 0600); err != nil {
 		t.Fatal(err)
