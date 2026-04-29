@@ -27,7 +27,6 @@ func TestAnnotationQueueRunNew(t *testing.T) {
 		option.WithBaseURL(baseURL),
 		option.WithAPIKey("My API Key"),
 		option.WithTenantID("My Tenant ID"),
-		option.WithOrganizationID("My Organization ID"),
 	)
 	_, err := client.AnnotationQueues.Runs.New(
 		context.TODO(),
@@ -58,7 +57,6 @@ func TestAnnotationQueueRunUpdateWithOptionalParams(t *testing.T) {
 		option.WithBaseURL(baseURL),
 		option.WithAPIKey("My API Key"),
 		option.WithTenantID("My Tenant ID"),
-		option.WithOrganizationID("My Organization ID"),
 	)
 	_, err := client.AnnotationQueues.Runs.Update(
 		context.TODO(),
@@ -91,7 +89,6 @@ func TestAnnotationQueueRunListWithOptionalParams(t *testing.T) {
 		option.WithBaseURL(baseURL),
 		option.WithAPIKey("My API Key"),
 		option.WithTenantID("My Tenant ID"),
-		option.WithOrganizationID("My Organization ID"),
 	)
 	_, err := client.AnnotationQueues.Runs.List(
 		context.TODO(),
@@ -126,7 +123,6 @@ func TestAnnotationQueueRunDeleteAllWithOptionalParams(t *testing.T) {
 		option.WithBaseURL(baseURL),
 		option.WithAPIKey("My API Key"),
 		option.WithTenantID("My Tenant ID"),
-		option.WithOrganizationID("My Organization ID"),
 	)
 	_, err := client.AnnotationQueues.Runs.DeleteAll(
 		context.TODO(),
@@ -159,7 +155,6 @@ func TestAnnotationQueueRunDeleteQueue(t *testing.T) {
 		option.WithBaseURL(baseURL),
 		option.WithAPIKey("My API Key"),
 		option.WithTenantID("My Tenant ID"),
-		option.WithOrganizationID("My Organization ID"),
 	)
 	_, err := client.AnnotationQueues.Runs.DeleteQueue(
 		context.TODO(),

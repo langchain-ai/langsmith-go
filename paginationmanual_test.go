@@ -27,7 +27,6 @@ func TestManualPagination(t *testing.T) {
 		option.WithBaseURL(baseURL),
 		option.WithAPIKey("My API Key"),
 		option.WithTenantID("My Tenant ID"),
-		option.WithOrganizationID("My Organization ID"),
 	)
 	page, err := client.Datasets.List(context.TODO(), langsmith.DatasetListParams{
 		Limit: langsmith.F(int64(100)),
