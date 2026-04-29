@@ -26,7 +26,6 @@ func TestSandboxBoxNewWithOptionalParams(t *testing.T) {
 		option.WithBaseURL(baseURL),
 		option.WithAPIKey("My API Key"),
 		option.WithTenantID("My Tenant ID"),
-		option.WithOrganizationID("My Organization ID"),
 	)
 	_, err := client.Sandboxes.Boxes.New(context.TODO(), langsmith.SandboxBoxNewParams{
 		FsCapacityBytes: langsmith.F(int64(0)),
@@ -38,6 +37,17 @@ func TestSandboxBoxNewWithOptionalParams(t *testing.T) {
 				AllowList: langsmith.F([]string{"string"}),
 				DenyList:  langsmith.F([]string{"string"}),
 			}),
+			Callbacks: langsmith.F([]langsmith.SandboxBoxNewParamsProxyConfigCallback{{
+				MatchHosts: langsmith.F([]string{"string"}),
+				TtlSeconds: langsmith.F(int64(60)),
+				URL:        langsmith.F("url"),
+				RequestHeaders: langsmith.F([]langsmith.SandboxBoxNewParamsProxyConfigCallbacksRequestHeader{{
+					Name:  langsmith.F("name"),
+					Type:  langsmith.F(langsmith.SandboxBoxNewParamsProxyConfigCallbacksRequestHeadersTypePlaintext),
+					IsSet: langsmith.F(true),
+					Value: langsmith.F("value"),
+				}}),
+			}}),
 			NoProxy: langsmith.F([]string{"string"}),
 			Rules: langsmith.F([]langsmith.SandboxBoxNewParamsProxyConfigRule{{
 				MatchHosts: langsmith.F([]string{"string"}),
@@ -82,7 +92,6 @@ func TestSandboxBoxGet(t *testing.T) {
 		option.WithBaseURL(baseURL),
 		option.WithAPIKey("My API Key"),
 		option.WithTenantID("My Tenant ID"),
-		option.WithOrganizationID("My Organization ID"),
 	)
 	_, err := client.Sandboxes.Boxes.Get(context.TODO(), "name")
 	if err != nil {
@@ -107,7 +116,6 @@ func TestSandboxBoxUpdateWithOptionalParams(t *testing.T) {
 		option.WithBaseURL(baseURL),
 		option.WithAPIKey("My API Key"),
 		option.WithTenantID("My Tenant ID"),
-		option.WithOrganizationID("My Organization ID"),
 	)
 	_, err := client.Sandboxes.Boxes.Update(
 		context.TODO(),
@@ -122,6 +130,17 @@ func TestSandboxBoxUpdateWithOptionalParams(t *testing.T) {
 					AllowList: langsmith.F([]string{"string"}),
 					DenyList:  langsmith.F([]string{"string"}),
 				}),
+				Callbacks: langsmith.F([]langsmith.SandboxBoxUpdateParamsProxyConfigCallback{{
+					MatchHosts: langsmith.F([]string{"string"}),
+					TtlSeconds: langsmith.F(int64(60)),
+					URL:        langsmith.F("url"),
+					RequestHeaders: langsmith.F([]langsmith.SandboxBoxUpdateParamsProxyConfigCallbacksRequestHeader{{
+						Name:  langsmith.F("name"),
+						Type:  langsmith.F(langsmith.SandboxBoxUpdateParamsProxyConfigCallbacksRequestHeadersTypePlaintext),
+						IsSet: langsmith.F(true),
+						Value: langsmith.F("value"),
+					}}),
+				}}),
 				NoProxy: langsmith.F([]string{"string"}),
 				Rules: langsmith.F([]langsmith.SandboxBoxUpdateParamsProxyConfigRule{{
 					MatchHosts: langsmith.F([]string{"string"}),
@@ -162,7 +181,6 @@ func TestSandboxBoxListWithOptionalParams(t *testing.T) {
 		option.WithBaseURL(baseURL),
 		option.WithAPIKey("My API Key"),
 		option.WithTenantID("My Tenant ID"),
-		option.WithOrganizationID("My Organization ID"),
 	)
 	_, err := client.Sandboxes.Boxes.List(context.TODO(), langsmith.SandboxBoxListParams{
 		Limit:         langsmith.F(int64(0)),
@@ -195,7 +213,6 @@ func TestSandboxBoxDelete(t *testing.T) {
 		option.WithBaseURL(baseURL),
 		option.WithAPIKey("My API Key"),
 		option.WithTenantID("My Tenant ID"),
-		option.WithOrganizationID("My Organization ID"),
 	)
 	err := client.Sandboxes.Boxes.Delete(context.TODO(), "name")
 	if err != nil {
@@ -220,7 +237,6 @@ func TestSandboxBoxNewSnapshotWithOptionalParams(t *testing.T) {
 		option.WithBaseURL(baseURL),
 		option.WithAPIKey("My API Key"),
 		option.WithTenantID("My Tenant ID"),
-		option.WithOrganizationID("My Organization ID"),
 	)
 	_, err := client.Sandboxes.Boxes.NewSnapshot(
 		context.TODO(),
@@ -252,7 +268,6 @@ func TestSandboxBoxGenerateServiceURLWithOptionalParams(t *testing.T) {
 		option.WithBaseURL(baseURL),
 		option.WithAPIKey("My API Key"),
 		option.WithTenantID("My Tenant ID"),
-		option.WithOrganizationID("My Organization ID"),
 	)
 	_, err := client.Sandboxes.Boxes.GenerateServiceURL(
 		context.TODO(),
@@ -284,7 +299,6 @@ func TestSandboxBoxGetStatus(t *testing.T) {
 		option.WithBaseURL(baseURL),
 		option.WithAPIKey("My API Key"),
 		option.WithTenantID("My Tenant ID"),
-		option.WithOrganizationID("My Organization ID"),
 	)
 	_, err := client.Sandboxes.Boxes.GetStatus(context.TODO(), "name")
 	if err != nil {
@@ -309,7 +323,6 @@ func TestSandboxBoxStart(t *testing.T) {
 		option.WithBaseURL(baseURL),
 		option.WithAPIKey("My API Key"),
 		option.WithTenantID("My Tenant ID"),
-		option.WithOrganizationID("My Organization ID"),
 	)
 	_, err := client.Sandboxes.Boxes.Start(context.TODO(), "name")
 	if err != nil {
@@ -334,7 +347,6 @@ func TestSandboxBoxStop(t *testing.T) {
 		option.WithBaseURL(baseURL),
 		option.WithAPIKey("My API Key"),
 		option.WithTenantID("My Tenant ID"),
-		option.WithOrganizationID("My Organization ID"),
 	)
 	err := client.Sandboxes.Boxes.Stop(context.TODO(), "name")
 	if err != nil {

@@ -28,7 +28,6 @@ func TestFeedbackTokenNewWithOptionalParams(t *testing.T) {
 		option.WithBaseURL(baseURL),
 		option.WithAPIKey("My API Key"),
 		option.WithTenantID("My Tenant ID"),
-		option.WithOrganizationID("My Organization ID"),
 	)
 	_, err := client.Feedback.Tokens.New(context.TODO(), langsmith.FeedbackTokenNewParams{
 		Body: langsmith.FeedbackIngestTokenCreateSchemaParam{
@@ -73,7 +72,6 @@ func TestFeedbackTokenGetWithOptionalParams(t *testing.T) {
 		option.WithBaseURL(baseURL),
 		option.WithAPIKey("My API Key"),
 		option.WithTenantID("My Tenant ID"),
-		option.WithOrganizationID("My Organization ID"),
 	)
 	_, err := client.Feedback.Tokens.Get(
 		context.TODO(),
@@ -107,7 +105,6 @@ func TestFeedbackTokenUpdateWithOptionalParams(t *testing.T) {
 		option.WithBaseURL(baseURL),
 		option.WithAPIKey("My API Key"),
 		option.WithTenantID("My Tenant ID"),
-		option.WithOrganizationID("My Organization ID"),
 	)
 	_, err := client.Feedback.Tokens.Update(
 		context.TODO(),
@@ -146,7 +143,6 @@ func TestFeedbackTokenList(t *testing.T) {
 		option.WithBaseURL(baseURL),
 		option.WithAPIKey("My API Key"),
 		option.WithTenantID("My Tenant ID"),
-		option.WithOrganizationID("My Organization ID"),
 	)
 	_, err := client.Feedback.Tokens.List(context.TODO(), langsmith.FeedbackTokenListParams{
 		RunID: langsmith.F("182bd5e5-6e1a-4fe4-a799-aa6d9a6ab26e"),

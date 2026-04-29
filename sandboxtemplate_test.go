@@ -26,7 +26,6 @@ func TestSandboxTemplateListWithOptionalParams(t *testing.T) {
 		option.WithBaseURL(baseURL),
 		option.WithAPIKey("My API Key"),
 		option.WithTenantID("My Tenant ID"),
-		option.WithOrganizationID("My Organization ID"),
 	)
 	_, err := client.Sandboxes.Templates.List(context.TODO(), langsmith.SandboxTemplateListParams{
 		Limit:         langsmith.F(int64(0)),

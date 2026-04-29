@@ -24,7 +24,7 @@ Or to pin the version:
 <!-- x-release-please-start-version -->
 
 ```sh
-go get -u 'github.com/langchain-ai/langsmith-go@v0.5.0'
+go get -u 'github.com/langchain-ai/langsmith-go@v0.6.0'
 ```
 
 <!-- x-release-please-end -->
@@ -41,13 +41,9 @@ The client can be configured using environment variables or by passing options d
 
 | Variable | Required | Description |
 |----------|----------|-------------|
-| `LANGSMITH_API_KEY` | Optional* | Your LangSmith API key for authentication |
-| `LANGSMITH_BEARER_TOKEN` | Optional* | Bearer token for authentication (alternative to API key) |
+| `LANGSMITH_API_KEY` | Optional | Your LangSmith API key for authentication |
 | `LANGSMITH_TENANT_ID` | Optional | Your LangSmith tenant ID |
-| `LANGSMITH_ORGANIZATION_ID` | Optional | Your LangSmith organization ID |
 | `LANGSMITH_ENDPOINT` | Optional | Custom base URL for the LangSmith API (defaults to `https://api.smith.langchain.com`) |
-
-\* Either `LANGSMITH_API_KEY` or `LANGSMITH_BEARER_TOKEN` is required for authentication.
 
 ## Examples
 
