@@ -26,7 +26,6 @@ func TestCommitNewWithOptionalParams(t *testing.T) {
 		option.WithBaseURL(baseURL),
 		option.WithAPIKey("My API Key"),
 		option.WithTenantID("My Tenant ID"),
-		option.WithOrganizationID("My Organization ID"),
 	)
 	_, err := client.Commits.New(
 		context.TODO(),
@@ -61,7 +60,6 @@ func TestCommitGetWithOptionalParams(t *testing.T) {
 		option.WithBaseURL(baseURL),
 		option.WithAPIKey("My API Key"),
 		option.WithTenantID("My Tenant ID"),
-		option.WithOrganizationID("My Organization ID"),
 	)
 	_, err := client.Commits.Get(
 		context.TODO(),
@@ -97,7 +95,6 @@ func TestCommitListWithOptionalParams(t *testing.T) {
 		option.WithBaseURL(baseURL),
 		option.WithAPIKey("My API Key"),
 		option.WithTenantID("My Tenant ID"),
-		option.WithOrganizationID("My Organization ID"),
 	)
 	_, err := client.Commits.List(
 		context.TODO(),
