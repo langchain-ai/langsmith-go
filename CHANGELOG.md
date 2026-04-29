@@ -1,5 +1,27 @@
 # Changelog
 
+## 0.6.0 (2026-04-29)
+
+Full Changelog: [v0.5.0...v0.6.0](https://github.com/langchain-ai/langsmith-go/compare/v0.5.0...v0.6.0)
+
+### Features
+
+* **api:** api update ([f478bad](https://github.com/langchain-ai/langsmith-go/commit/f478bad4cb70beadb709b5318b9984cd86dd490c))
+* **api:** api update ([fa2dbdb](https://github.com/langchain-ai/langsmith-go/commit/fa2dbdb60e9e570876d006655aae7556604ef05b))
+* **go:** add default http client with timeout ([14b7982](https://github.com/langchain-ai/langsmith-go/commit/14b7982638dca6d1e8c057176f9a8717e03d25f8))
+* load LangSmith profile auth in client ([#53](https://github.com/langchain-ai/langsmith-go/issues/53)) ([f15e14e](https://github.com/langchain-ai/langsmith-go/commit/f15e14e16b5e67a688b900e59ffc3e9f134c0a98))
+* support setting headers via env ([cdb1356](https://github.com/langchain-ai/langsmith-go/commit/cdb13565cbe6016081c90e9f1cef88c89036d92e))
+
+
+### Reverts
+
+* load LangSmith profile auth in client ([#65](https://github.com/langchain-ai/langsmith-go/issues/65)) ([03d2f40](https://github.com/langchain-ai/langsmith-go/commit/03d2f400a3bedca1e131a6197f1e19dfed58eee3))
+
+
+### Chores
+
+* sync next with main for release ([#64](https://github.com/langchain-ai/langsmith-go/issues/64)) ([1458751](https://github.com/langchain-ai/langsmith-go/commit/14587513b78b4f4c81163b40c1235d8e4662d4bc))
+
 ## 0.5.0 (2026-04-23)
 
 Full Changelog: [v0.4.0...v0.5.0](https://github.com/langchain-ai/langsmith-go/compare/v0.4.0...v0.5.0)
