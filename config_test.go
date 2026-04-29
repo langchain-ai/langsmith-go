@@ -1,10 +1,16 @@
 package langsmith
 
 import (
+	"encoding/json"
+	"net/http"
+	"net/http/httptest"
 	"os"
 	"path/filepath"
+	"strings"
 	"testing"
+	"time"
 
+	"github.com/langchain-ai/langsmith-go/internal/requestconfig"
 	"github.com/langchain-ai/langsmith-go/option"
 )
 
@@ -17,6 +23,7 @@ func TestLoadProfileOptions_NoFile(t *testing.T) {
 }
 
 func TestLoadProfileOptions_ValidProfile(t *testing.T) {
+	clearAuthEnv(t)
 	dir := t.TempDir()
 	path := filepath.Join(dir, "config.toml")
 	content := `current_profile = "prod"
@@ -39,6 +46,7 @@ workspace_id = "ws-prod"
 }
 
 func TestLoadProfileOptions_EnvProfileOverride(t *testing.T) {
+	clearAuthEnv(t)
 	dir := t.TempDir()
 	path := filepath.Join(dir, "config.toml")
 	content := `current_profile = "prod"
@@ -62,6 +70,7 @@ api_key = "staging-key"
 }
 
 func TestLoadProfileOptions_FallbackToDefault(t *testing.T) {
+	clearAuthEnv(t)
 	dir := t.TempDir()
 	path := filepath.Join(dir, "config.toml")
 	content := `[default]
@@ -115,6 +124,7 @@ func TestLoadProfileOptions_InvalidTOML(t *testing.T) {
 }
 
 func TestLoadProfileOptions_PartialFields(t *testing.T) {
+	clearAuthEnv(t)
 	dir := t.TempDir()
 	path := filepath.Join(dir, "config.toml")
 	content := `[default]
@@ -159,7 +169,26 @@ api_key = "profile-key"
 	_ = option.WithAPIKey("override")
 }
 
+func TestDefaultClientOptions_WorkspaceIDEnvAlias(t *testing.T) {
+	t.Setenv("LANGSMITH_CONFIG_FILE", "/nonexistent/path/config.toml")
+	t.Setenv("LANGSMITH_API_KEY", "")
+	t.Setenv("LANGSMITH_ENDPOINT", "")
+	t.Setenv("LANGSMITH_TENANT_ID", "tenant-env")
+	t.Setenv("LANGSMITH_WORKSPACE_ID", "workspace-env")
+	t.Setenv("LANGSMITH_BEARER_TOKEN", "")
+	t.Setenv("LANGSMITH_ORGANIZATION_ID", "")
+
+	cfg := applyOptions(t, DefaultClientOptions())
+	if cfg.TenantID != "workspace-env" {
+		t.Fatalf("expected LANGSMITH_WORKSPACE_ID to override tenant ID, got %q", cfg.TenantID)
+	}
+	if got := cfg.Request.Header.Get("X-Tenant-Id"); got != "workspace-env" {
+		t.Fatalf("expected X-Tenant-Id header from workspace env, got %q", got)
+	}
+}
+
 func TestLoadProfileOptions_BearerToken(t *testing.T) {
+	clearAuthEnv(t)
 	dir := t.TempDir()
 	path := filepath.Join(dir, "config.toml")
 	content := `[default]
@@ -178,7 +207,99 @@ api_url = "https://api.smith.langchain.com"
 	}
 }
 
+func TestLoadProfileOptions_AccessToken(t *testing.T) {
+	clearAuthEnv(t)
+	dir := t.TempDir()
+	path := filepath.Join(dir, "config.toml")
+	content := `[default]
+access_token = "test-access-token"
+api_url = "https://api.smith.langchain.com"
+`
+	if err := os.WriteFile(path, []byte(content), 0600); err != nil {
+		t.Fatal(err)
+	}
+	t.Setenv("LANGSMITH_CONFIG_FILE", path)
+	t.Setenv("LANGSMITH_PROFILE", "")
+
+	opts := loadProfileOptions()
+	cfg := applyOptions(t, opts)
+	if cfg.BearerToken != "test-access-token" {
+		t.Fatalf("expected profile access token to become bearer token, got %q", cfg.BearerToken)
+	}
+	if got := cfg.Request.Header.Get("authorization"); got != "Bearer test-access-token" {
+		t.Fatalf("expected Authorization bearer header, got %q", got)
+	}
+}
+
+func TestLoadProfileOptions_RefreshesExpiredAccessToken(t *testing.T) {
+	tokenRequests := 0
+	ts := httptest.NewServer(http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
+		if r.URL.Path != "/oauth/token" {
+			http.NotFound(w, r)
+			return
+		}
+		tokenRequests++
+		if err := r.ParseForm(); err != nil {
+			t.Fatal(err)
+		}
+		if got := r.FormValue("grant_type"); got != "refresh_token" {
+			t.Fatalf("expected refresh_token grant, got %q", got)
+		}
+		if got := r.FormValue("client_id"); got != oauthClientID {
+			t.Fatalf("expected client_id %q, got %q", oauthClientID, got)
+		}
+		if got := r.FormValue("refresh_token"); got != "old-refresh-token" {
+			t.Fatalf("expected old refresh token, got %q", got)
+		}
+		_ = json.NewEncoder(w).Encode(oauthTokenResponse{
+			AccessToken:  "new-access-token",
+			TokenType:    "Bearer",
+			ExpiresIn:    300,
+			RefreshToken: "new-refresh-token",
+		})
+	}))
+	defer ts.Close()
+
+	dir := t.TempDir()
+	path := filepath.Join(dir, "config.toml")
+	content := `[default]
+api_url = "` + ts.URL + `"
+access_token = "old-access-token"
+refresh_token = "old-refresh-token"
+token_type = "Bearer"
+token_expires_at = "` + time.Now().Add(-time.Minute).UTC().Format(time.RFC3339) + `"
+`
+	if err := os.WriteFile(path, []byte(content), 0600); err != nil {
+		t.Fatal(err)
+	}
+	t.Setenv("LANGSMITH_CONFIG_FILE", path)
+	t.Setenv("LANGSMITH_PROFILE", "")
+	t.Setenv("LANGSMITH_API_KEY", "")
+	t.Setenv("LANGSMITH_BEARER_TOKEN", "")
+
+	opts := loadProfileOptions()
+	cfg := applyOptions(t, opts)
+	if cfg.BearerToken != "new-access-token" {
+		t.Fatalf("expected refreshed access token, got %q", cfg.BearerToken)
+	}
+	if tokenRequests != 1 {
+		t.Fatalf("expected one token request, got %d", tokenRequests)
+	}
+
+	data, err := os.ReadFile(path)
+	if err != nil {
+		t.Fatal(err)
+	}
+	if !strings.Contains(string(data), `access_token = "new-access-token"`) {
+		t.Fatalf("expected refreshed access token to be saved, got:\n%s", data)
+	}
+	if !strings.Contains(string(data), `refresh_token = "new-refresh-token"`) {
+		t.Fatalf("expected refreshed refresh token to be saved, got:\n%s", data)
+	}
+}
+
 func TestLoadProfileOptions_BothAPIKeyAndBearerToken(t *testing.T) {
+	clearAuthEnv(t)
 	dir := t.TempDir()
 	path := filepath.Join(dir, "config.toml")
 	content := `[default]
@@ -192,8 +313,62 @@ bearer_token = "eyJhbGciOiJSUzI1NiJ9.test"
 	t.Setenv("LANGSMITH_PROFILE", "")
 
 	opts := loadProfileOptions()
-	// Both are emitted — server decides which to honor (matches env var behavior)
-	if len(opts) != 2 {
-		t.Fatalf("expected 2 options (api_key + bearer_token), got %d", len(opts))
+	cfg := applyOptions(t, opts)
+	if cfg.APIKey != "" {
+		t.Fatalf("expected profile bearer token to take precedence over profile API key")
 	}
+	if cfg.BearerToken != "eyJhbGciOiJSUzI1NiJ9.test" {
+		t.Fatalf("expected profile bearer token, got %q", cfg.BearerToken)
+	}
+	if got := cfg.Request.Header.Get("X-API-Key"); got != "" {
+		t.Fatalf("expected no X-API-Key header, got %q", got)
+	}
+}
+
+func TestLoadProfileOptions_EnvAuthSuppressesProfileAuth(t *testing.T) {
+	dir := t.TempDir()
+	path := filepath.Join(dir, "config.toml")
+	content := `[default]
+api_key = "profile-key"
+bearer_token = "profile-bearer"
+api_url = "https://profile.example.com"
+workspace_id = "ws-profile"
+`
+	if err := os.WriteFile(path, []byte(content), 0600); err != nil {
+		t.Fatal(err)
+	}
+	t.Setenv("LANGSMITH_CONFIG_FILE", path)
+	t.Setenv("LANGSMITH_PROFILE", "")
+	t.Setenv("LANGSMITH_BEARER_TOKEN", "env-bearer")
+
+	opts := loadProfileOptions()
+	cfg := applyOptions(t, opts)
+	if cfg.APIKey != "" || cfg.BearerToken != "" {
+		t.Fatalf("expected profile auth to be suppressed when env auth is set")
+	}
+	if got := cfg.Request.Header.Get("authorization"); got != "" {
+		t.Fatalf("expected no profile Authorization header, got %q", got)
+	}
+	if cfg.TenantID != "ws-profile" {
+		t.Fatalf("expected profile workspace to remain available, got %q", cfg.TenantID)
+	}
+}
+
+func applyOptions(t *testing.T, opts []option.RequestOption) requestconfig.RequestConfig {
+	t.Helper()
+	req, err := http.NewRequest(http.MethodGet, "https://example.com", nil)
+	if err != nil {
+		t.Fatal(err)
+	}
+	cfg := requestconfig.RequestConfig{Request: req, HTTPClient: http.DefaultClient}
+	if err := cfg.Apply(opts...); err != nil {
+		t.Fatal(err)
+	}
+	return cfg
+}
+
+func clearAuthEnv(t *testing.T) {
+	t.Helper()
+	t.Setenv("LANGSMITH_API_KEY", "")
+	t.Setenv("LANGSMITH_BEARER_TOKEN", "")
 }
