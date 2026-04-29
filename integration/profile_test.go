@@ -29,7 +29,7 @@ func newClientFromProfile(t *testing.T, profileName, configContent string) *lang
 	// Unset env vars so the profile is the only credential source.
 	// os.Unsetenv is needed because t.Setenv("X", "") makes LookupEnv
 	// return (true, ""), which the SDK interprets as an explicit empty override.
-	envVars := []string{"LANGSMITH_API_KEY", "LANGSMITH_ENDPOINT", "LANGSMITH_TENANT_ID", "LANGSMITH_BEARER_TOKEN", "LANGSMITH_ORGANIZATION_ID"}
+	envVars := []string{"LANGSMITH_API_KEY", "LANGSMITH_ENDPOINT", "LANGSMITH_TENANT_ID"}
 	saved := make(map[string]string)
 	for _, k := range envVars {
 		if v, ok := os.LookupEnv(k); ok {

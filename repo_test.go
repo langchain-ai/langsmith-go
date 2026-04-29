@@ -26,7 +26,6 @@ func TestRepoNewWithOptionalParams(t *testing.T) {
 		option.WithBaseURL(baseURL),
 		option.WithAPIKey("My API Key"),
 		option.WithTenantID("My Tenant ID"),
-		option.WithOrganizationID("My Organization ID"),
 	)
 	_, err := client.Repos.New(context.TODO(), langsmith.RepoNewParams{
 		IsPublic:       langsmith.F(true),
@@ -59,7 +58,6 @@ func TestRepoGet(t *testing.T) {
 		option.WithBaseURL(baseURL),
 		option.WithAPIKey("My API Key"),
 		option.WithTenantID("My Tenant ID"),
-		option.WithOrganizationID("My Organization ID"),
 	)
 	_, err := client.Repos.Get(
 		context.TODO(),
@@ -88,7 +86,6 @@ func TestRepoUpdateWithOptionalParams(t *testing.T) {
 		option.WithBaseURL(baseURL),
 		option.WithAPIKey("My API Key"),
 		option.WithTenantID("My Tenant ID"),
-		option.WithOrganizationID("My Organization ID"),
 	)
 	_, err := client.Repos.Update(
 		context.TODO(),
@@ -125,7 +122,6 @@ func TestRepoListWithOptionalParams(t *testing.T) {
 		option.WithBaseURL(baseURL),
 		option.WithAPIKey("My API Key"),
 		option.WithTenantID("My Tenant ID"),
-		option.WithOrganizationID("My Organization ID"),
 	)
 	_, err := client.Repos.List(context.TODO(), langsmith.RepoListParams{
 		HasCommits:         langsmith.F(true),
@@ -167,7 +163,6 @@ func TestRepoDelete(t *testing.T) {
 		option.WithBaseURL(baseURL),
 		option.WithAPIKey("My API Key"),
 		option.WithTenantID("My Tenant ID"),
-		option.WithOrganizationID("My Organization ID"),
 	)
 	_, err := client.Repos.Delete(
 		context.TODO(),

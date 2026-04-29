@@ -157,8 +157,6 @@ api_key = "profile-key"
 	t.Setenv("LANGSMITH_API_KEY", "")
 	t.Setenv("LANGSMITH_ENDPOINT", "")
 	t.Setenv("LANGSMITH_TENANT_ID", "")
-	t.Setenv("LANGSMITH_BEARER_TOKEN", "")
-	t.Setenv("LANGSMITH_ORGANIZATION_ID", "")
 
 	opts := DefaultClientOptions()
 	// Should have at least: WithEnvironmentProduction + profile api_key
@@ -175,8 +173,6 @@ func TestDefaultClientOptions_WorkspaceIDEnvAlias(t *testing.T) {
 	t.Setenv("LANGSMITH_ENDPOINT", "")
 	t.Setenv("LANGSMITH_TENANT_ID", "tenant-env")
 	t.Setenv("LANGSMITH_WORKSPACE_ID", "workspace-env")
-	t.Setenv("LANGSMITH_BEARER_TOKEN", "")
-	t.Setenv("LANGSMITH_ORGANIZATION_ID", "")
 
 	cfg := applyOptions(t, DefaultClientOptions())
 	if cfg.TenantID != "workspace-env" {
@@ -205,8 +201,8 @@ access_token = "test-access-token"
 
 	opts := loadProfileOptions()
 	cfg := applyOptions(t, opts)
-	if cfg.BearerToken != "test-access-token" {
-		t.Fatalf("expected profile access token to become bearer token, got %q", cfg.BearerToken)
+	if cfg.OAuthAccessToken != "test-access-token" {
+		t.Fatalf("expected profile access token to become OAuth access token, got %q", cfg.OAuthAccessToken)
 	}
 	if got := cfg.Request.Header.Get("authorization"); got != "Bearer test-access-token" {
 		t.Fatalf("expected Authorization bearer header, got %q", got)
@@ -257,12 +253,11 @@ expires_at = "` + time.Now().Add(-time.Minute).UTC().Format(time.RFC3339) + `"
 	t.Setenv("LANGSMITH_CONFIG_FILE", path)
 	t.Setenv("LANGSMITH_PROFILE", "")
 	t.Setenv("LANGSMITH_API_KEY", "")
-	t.Setenv("LANGSMITH_BEARER_TOKEN", "")
 
 	opts := loadProfileOptions()
 	cfg := applyOptions(t, opts)
-	if cfg.BearerToken != "new-access-token" {
-		t.Fatalf("expected refreshed access token, got %q", cfg.BearerToken)
+	if cfg.OAuthAccessToken != "new-access-token" {
+		t.Fatalf("expected refreshed access token, got %q", cfg.OAuthAccessToken)
 	}
 	if tokenRequests != 1 {
 		t.Fatalf("expected one token request, got %d", tokenRequests)
@@ -304,8 +299,8 @@ access_token = "oauth-access-token"
 	if cfg.APIKey != "" {
 		t.Fatalf("expected profile OAuth token to take precedence over profile API key")
 	}
-	if cfg.BearerToken != "oauth-access-token" {
-		t.Fatalf("expected profile OAuth token, got %q", cfg.BearerToken)
+	if cfg.OAuthAccessToken != "oauth-access-token" {
+		t.Fatalf("expected profile OAuth token, got %q", cfg.OAuthAccessToken)
 	}
 	if got := cfg.Request.Header.Get("X-API-Key"); got != "" {
 		t.Fatalf("expected no X-API-Key header, got %q", got)
@@ -328,11 +323,11 @@ access_token = "profile-access-token"
 	}
 	t.Setenv("LANGSMITH_CONFIG_FILE", path)
 	t.Setenv("LANGSMITH_PROFILE", "")
-	t.Setenv("LANGSMITH_BEARER_TOKEN", "env-bearer")
+	t.Setenv("LANGSMITH_API_KEY", "env-api-key")
 
 	opts := loadProfileOptions()
 	cfg := applyOptions(t, opts)
-	if cfg.APIKey != "" || cfg.BearerToken != "" {
+	if cfg.APIKey != "" || cfg.OAuthAccessToken != "" {
 		t.Fatalf("expected profile auth to be suppressed when env auth is set")
 	}
 	if got := cfg.Request.Header.Get("authorization"); got != "" {
@@ -359,5 +354,4 @@ func applyOptions(t *testing.T, opts []option.RequestOption) requestconfig.Reque
 func clearAuthEnv(t *testing.T) {
 	t.Helper()
 	t.Setenv("LANGSMITH_API_KEY", "")
-	t.Setenv("LANGSMITH_BEARER_TOKEN", "")
 }

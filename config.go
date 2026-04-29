@@ -14,6 +14,7 @@ import (
 	"time"
 
 	"github.com/BurntSushi/toml"
+	"github.com/langchain-ai/langsmith-go/internal/requestconfig"
 	"github.com/langchain-ai/langsmith-go/option"
 )
 
@@ -113,7 +114,7 @@ func loadProfileOptions() []option.RequestOption {
 	if envURL := os.Getenv("LANGSMITH_ENDPOINT"); envURL != "" {
 		refreshURL = envURL
 	}
-	envAuthSet := os.Getenv("LANGSMITH_API_KEY") != "" || os.Getenv("LANGSMITH_BEARER_TOKEN") != ""
+	envAuthSet := os.Getenv("LANGSMITH_API_KEY") != ""
 	if shouldRefreshProfileToken(p) &&
 		!envAuthSet {
 		ctx, cancel := context.WithTimeout(context.Background(), tokenRefreshTimeout)
@@ -134,7 +135,7 @@ func loadProfileOptions() []option.RequestOption {
 	}
 	if !envAuthSet {
 		if token := p.OAuth.AccessToken; token != "" {
-			opts = append(opts, option.WithBearerToken(token))
+			opts = append(opts, withOAuthAccessToken(token))
 		} else if p.APIKey != "" {
 			opts = append(opts, option.WithAPIKey(p.APIKey))
 		}
@@ -143,6 +144,13 @@ func loadProfileOptions() []option.RequestOption {
 		opts = append(opts, option.WithTenantID(p.WorkspaceID))
 	}
 	return opts
+}
+
+func withOAuthAccessToken(token string) option.RequestOption {
+	return requestconfig.RequestOptionFunc(func(r *requestconfig.RequestConfig) error {
+		r.OAuthAccessToken = token
+		return r.Apply(option.WithHeader("authorization", "Bearer "+token))
+	})
 }
 
 // resolveProfileName determines which profile to use.

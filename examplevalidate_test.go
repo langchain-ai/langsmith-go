@@ -26,7 +26,6 @@ func TestExampleValidateNew(t *testing.T) {
 		option.WithBaseURL(baseURL),
 		option.WithAPIKey("My API Key"),
 		option.WithTenantID("My Tenant ID"),
-		option.WithOrganizationID("My Organization ID"),
 	)
 	_, err := client.Examples.Validate.New(context.TODO())
 	if err != nil {
@@ -51,7 +50,6 @@ func TestExampleValidateBulk(t *testing.T) {
 		option.WithBaseURL(baseURL),
 		option.WithAPIKey("My API Key"),
 		option.WithTenantID("My Tenant ID"),
-		option.WithOrganizationID("My Organization ID"),
 	)
 	_, err := client.Examples.Validate.Bulk(context.TODO())
 	if err != nil {
