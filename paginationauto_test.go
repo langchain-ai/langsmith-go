@@ -27,6 +27,7 @@ func TestAutoPagination(t *testing.T) {
 		option.WithBaseURL(baseURL),
 		option.WithAPIKey("My API Key"),
 		option.WithTenantID("My Tenant ID"),
+		option.WithOrganizationID("My Organization ID"),
 	)
 	iter := client.Datasets.ListAutoPaging(context.TODO(), langsmith.DatasetListParams{
 		Limit: langsmith.F(int64(100)),

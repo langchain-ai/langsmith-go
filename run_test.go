@@ -27,6 +27,7 @@ func TestRunNewWithOptionalParams(t *testing.T) {
 		option.WithBaseURL(baseURL),
 		option.WithAPIKey("My API Key"),
 		option.WithTenantID("My Tenant ID"),
+		option.WithOrganizationID("My Organization ID"),
 	)
 	_, err := client.Runs.New(context.TODO(), langsmith.RunNewParams{
 		Run: langsmith.RunParam{
@@ -89,6 +90,7 @@ func TestRunGetWithOptionalParams(t *testing.T) {
 		option.WithBaseURL(baseURL),
 		option.WithAPIKey("My API Key"),
 		option.WithTenantID("My Tenant ID"),
+		option.WithOrganizationID("My Organization ID"),
 	)
 	_, err := client.Runs.Get(
 		context.TODO(),
@@ -123,6 +125,7 @@ func TestRunUpdateWithOptionalParams(t *testing.T) {
 		option.WithBaseURL(baseURL),
 		option.WithAPIKey("My API Key"),
 		option.WithTenantID("My Tenant ID"),
+		option.WithOrganizationID("My Organization ID"),
 	)
 	_, err := client.Runs.Update(
 		context.TODO(),
@@ -189,6 +192,7 @@ func TestRunIngestBatchWithOptionalParams(t *testing.T) {
 		option.WithBaseURL(baseURL),
 		option.WithAPIKey("My API Key"),
 		option.WithTenantID("My Tenant ID"),
+		option.WithOrganizationID("My Organization ID"),
 	)
 	_, err := client.Runs.IngestBatch(context.TODO(), langsmith.RunIngestBatchParams{
 		Patch: langsmith.F([]langsmith.RunParam{{
@@ -288,6 +292,7 @@ func TestRunQueryWithOptionalParams(t *testing.T) {
 		option.WithBaseURL(baseURL),
 		option.WithAPIKey("My API Key"),
 		option.WithTenantID("My Tenant ID"),
+		option.WithOrganizationID("My Organization ID"),
 	)
 	_, err := client.Runs.Query(context.TODO(), langsmith.RunQueryParams{
 		ID:                    langsmith.F([]string{"182bd5e5-6e1a-4fe4-a799-aa6d9a6ab26e"}),
@@ -337,6 +342,7 @@ func TestRunStatsWithOptionalParams(t *testing.T) {
 		option.WithBaseURL(baseURL),
 		option.WithAPIKey("My API Key"),
 		option.WithTenantID("My Tenant ID"),
+		option.WithOrganizationID("My Organization ID"),
 	)
 	_, err := client.Runs.Stats(context.TODO(), langsmith.RunStatsParams{
 		RunStatsQueryParams: langsmith.RunStatsQueryParams{
@@ -390,6 +396,7 @@ func TestRunUpdate2(t *testing.T) {
 		option.WithBaseURL(baseURL),
 		option.WithAPIKey("My API Key"),
 		option.WithTenantID("My Tenant ID"),
+		option.WithOrganizationID("My Organization ID"),
 	)
 	_, err := client.Runs.Update2(context.TODO(), "182bd5e5-6e1a-4fe4-a799-aa6d9a6ab26e")
 	if err != nil {

@@ -26,6 +26,7 @@ func TestDatasetRunNewWithOptionalParams(t *testing.T) {
 		option.WithBaseURL(baseURL),
 		option.WithAPIKey("My API Key"),
 		option.WithTenantID("My Tenant ID"),
+		option.WithOrganizationID("My Organization ID"),
 	)
 	_, err := client.Datasets.Runs.New(
 		context.TODO(),
@@ -70,6 +71,7 @@ func TestDatasetRunDeltaWithOptionalParams(t *testing.T) {
 		option.WithBaseURL(baseURL),
 		option.WithAPIKey("My API Key"),
 		option.WithTenantID("My Tenant ID"),
+		option.WithOrganizationID("My Organization ID"),
 	)
 	_, err := client.Datasets.Runs.Delta(
 		context.TODO(),

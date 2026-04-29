@@ -26,6 +26,7 @@ func TestFeedbackConfigDelete(t *testing.T) {
 		option.WithBaseURL(baseURL),
 		option.WithAPIKey("My API Key"),
 		option.WithTenantID("My Tenant ID"),
+		option.WithOrganizationID("My Organization ID"),
 	)
 	err := client.Feedback.Configs.Delete(context.TODO(), langsmith.FeedbackConfigDeleteParams{
 		FeedbackKey: langsmith.F("feedback_key"),

@@ -281,3 +281,19 @@ func WithTenantID(value string) RequestOption {
 		return r.Apply(WithHeader("X-Tenant-Id", r.TenantID))
 	})
 }
+
+// WithBearerToken returns a RequestOption that sets the client setting "bearer_token".
+func WithBearerToken(value string) RequestOption {
+	return requestconfig.RequestOptionFunc(func(r *requestconfig.RequestConfig) error {
+		r.BearerToken = value
+		return r.Apply(WithHeader("authorization", fmt.Sprintf("Bearer %s", r.BearerToken)))
+	})
+}
+
+// WithOrganizationID returns a RequestOption that sets the client setting "organization_id".
+func WithOrganizationID(value string) RequestOption {
+	return requestconfig.RequestOptionFunc(func(r *requestconfig.RequestConfig) error {
+		r.OrganizationID = value
+		return r.Apply(WithHeader("X-Organization-Id", r.OrganizationID))
+	})
+}

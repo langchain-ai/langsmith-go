@@ -26,6 +26,7 @@ func TestPublicDatasetListWithOptionalParams(t *testing.T) {
 		option.WithBaseURL(baseURL),
 		option.WithAPIKey("My API Key"),
 		option.WithTenantID("My Tenant ID"),
+		option.WithOrganizationID("My Organization ID"),
 	)
 	_, err := client.Public.Datasets.List(
 		context.TODO(),
@@ -59,6 +60,7 @@ func TestPublicDatasetListComparativeWithOptionalParams(t *testing.T) {
 		option.WithBaseURL(baseURL),
 		option.WithAPIKey("My API Key"),
 		option.WithTenantID("My Tenant ID"),
+		option.WithOrganizationID("My Organization ID"),
 	)
 	_, err := client.Public.Datasets.ListComparative(
 		context.TODO(),
@@ -94,6 +96,7 @@ func TestPublicDatasetListFeedbackWithOptionalParams(t *testing.T) {
 		option.WithBaseURL(baseURL),
 		option.WithAPIKey("My API Key"),
 		option.WithTenantID("My Tenant ID"),
+		option.WithOrganizationID("My Organization ID"),
 	)
 	_, err := client.Public.Datasets.ListFeedback(
 		context.TODO(),
@@ -133,6 +136,7 @@ func TestPublicDatasetListSessionsWithOptionalParams(t *testing.T) {
 		option.WithBaseURL(baseURL),
 		option.WithAPIKey("My API Key"),
 		option.WithTenantID("My Tenant ID"),
+		option.WithOrganizationID("My Organization ID"),
 	)
 	_, err := client.Public.Datasets.ListSessions(
 		context.TODO(),
@@ -173,6 +177,7 @@ func TestPublicDatasetGetSessionsBulk(t *testing.T) {
 		option.WithBaseURL(baseURL),
 		option.WithAPIKey("My API Key"),
 		option.WithTenantID("My Tenant ID"),
+		option.WithOrganizationID("My Organization ID"),
 	)
 	_, err := client.Public.Datasets.GetSessionsBulk(context.TODO(), langsmith.PublicDatasetGetSessionsBulkParams{
 		ShareTokens: langsmith.F([]string{"string"}),
