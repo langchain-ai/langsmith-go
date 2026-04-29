@@ -26,7 +26,6 @@ func TestEvaluatorListWithOptionalParams(t *testing.T) {
 		option.WithBaseURL(baseURL),
 		option.WithAPIKey("My API Key"),
 		option.WithTenantID("My Tenant ID"),
-		option.WithOrganizationID("My Organization ID"),
 	)
 	_, err := client.Evaluators.List(context.TODO(), langsmith.EvaluatorListParams{
 		ID:                      langsmith.F([]string{"182bd5e5-6e1a-4fe4-a799-aa6d9a6ab26e"}),

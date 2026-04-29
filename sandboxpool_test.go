@@ -26,7 +26,6 @@ func TestSandboxPoolNewWithOptionalParams(t *testing.T) {
 		option.WithBaseURL(baseURL),
 		option.WithAPIKey("My API Key"),
 		option.WithTenantID("My Tenant ID"),
-		option.WithOrganizationID("My Organization ID"),
 	)
 	_, err := client.Sandboxes.Pools.New(context.TODO(), langsmith.SandboxPoolNewParams{
 		Name:         langsmith.F("name"),
@@ -57,7 +56,6 @@ func TestSandboxPoolGet(t *testing.T) {
 		option.WithBaseURL(baseURL),
 		option.WithAPIKey("My API Key"),
 		option.WithTenantID("My Tenant ID"),
-		option.WithOrganizationID("My Organization ID"),
 	)
 	_, err := client.Sandboxes.Pools.Get(context.TODO(), "name")
 	if err != nil {
@@ -82,7 +80,6 @@ func TestSandboxPoolUpdateWithOptionalParams(t *testing.T) {
 		option.WithBaseURL(baseURL),
 		option.WithAPIKey("My API Key"),
 		option.WithTenantID("My Tenant ID"),
-		option.WithOrganizationID("My Organization ID"),
 	)
 	_, err := client.Sandboxes.Pools.Update(
 		context.TODO(),
@@ -114,7 +111,6 @@ func TestSandboxPoolListWithOptionalParams(t *testing.T) {
 		option.WithBaseURL(baseURL),
 		option.WithAPIKey("My API Key"),
 		option.WithTenantID("My Tenant ID"),
-		option.WithOrganizationID("My Organization ID"),
 	)
 	_, err := client.Sandboxes.Pools.List(context.TODO(), langsmith.SandboxPoolListParams{
 		Limit:        langsmith.F(int64(0)),
@@ -143,7 +139,6 @@ func TestSandboxPoolDelete(t *testing.T) {
 		option.WithBaseURL(baseURL),
 		option.WithAPIKey("My API Key"),
 		option.WithTenantID("My Tenant ID"),
-		option.WithOrganizationID("My Organization ID"),
 	)
 	err := client.Sandboxes.Pools.Delete(context.TODO(), "name")
 	if err != nil {

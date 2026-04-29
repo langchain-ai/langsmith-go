@@ -26,7 +26,6 @@ func TestSandboxSnapshotNewWithOptionalParams(t *testing.T) {
 		option.WithBaseURL(baseURL),
 		option.WithAPIKey("My API Key"),
 		option.WithTenantID("My Tenant ID"),
-		option.WithOrganizationID("My Organization ID"),
 	)
 	_, err := client.Sandboxes.Snapshots.New(context.TODO(), langsmith.SandboxSnapshotNewParams{
 		DockerImage:     langsmith.F("docker_image"),
@@ -56,7 +55,6 @@ func TestSandboxSnapshotGet(t *testing.T) {
 		option.WithBaseURL(baseURL),
 		option.WithAPIKey("My API Key"),
 		option.WithTenantID("My Tenant ID"),
-		option.WithOrganizationID("My Organization ID"),
 	)
 	_, err := client.Sandboxes.Snapshots.Get(context.TODO(), "snapshot_id")
 	if err != nil {
@@ -81,7 +79,6 @@ func TestSandboxSnapshotListWithOptionalParams(t *testing.T) {
 		option.WithBaseURL(baseURL),
 		option.WithAPIKey("My API Key"),
 		option.WithTenantID("My Tenant ID"),
-		option.WithOrganizationID("My Organization ID"),
 	)
 	_, err := client.Sandboxes.Snapshots.List(context.TODO(), langsmith.SandboxSnapshotListParams{
 		Limit:         langsmith.F(int64(0)),
@@ -113,7 +110,6 @@ func TestSandboxSnapshotDelete(t *testing.T) {
 		option.WithBaseURL(baseURL),
 		option.WithAPIKey("My API Key"),
 		option.WithTenantID("My Tenant ID"),
-		option.WithOrganizationID("My Organization ID"),
 	)
 	err := client.Sandboxes.Snapshots.Delete(context.TODO(), "snapshot_id")
 	if err != nil {
