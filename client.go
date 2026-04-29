@@ -8,8 +8,8 @@ import (
 	"net/http"
 	"os"
 	"slices"
-	"sync"
 	"strings"
+	"sync"
 
 	"github.com/langchain-ai/langsmith-go/internal/requestconfig"
 	"github.com/langchain-ai/langsmith-go/lib/langsmithtracing"
@@ -36,14 +36,17 @@ type Client struct {
 	tracingClient *langsmithtracing.TracingClient
 	tracingOnce   sync.Once
 	tracingErr    error
-	Sandboxes        *SandboxService
+	Sandboxes     *SandboxService
 }
 
 // DefaultClientOptions read from the environment (LANGSMITH_API_KEY,
-// LANGSMITH_TENANT_ID, LANGSMITH_BEARER_TOKEN, LANGSMITH_ORGANIZATION_ID,
-// LANGSMITH_ENDPOINT). This should be used to initialize new clients.
+// LANGSMITH_TENANT_ID, LANGSMITH_WORKSPACE_ID, LANGSMITH_ENDPOINT). This
+// should be used to initialize new clients.
 func DefaultClientOptions() []option.RequestOption {
 	defaults := []option.RequestOption{option.WithHTTPClient(defaultHTTPClient()), option.WithEnvironmentProduction()}
+	// Profile options are applied after the production default but before env
+	// vars, so env vars override profile values (last option wins).
+	defaults = append(defaults, loadProfileOptions()...)
 	if o, ok := os.LookupEnv("LANGSMITH_ENDPOINT"); ok {
 		defaults = append(defaults, option.WithBaseURL(o))
 	}
@@ -53,11 +56,8 @@ func DefaultClientOptions() []option.RequestOption {
 	if o, ok := os.LookupEnv("LANGSMITH_TENANT_ID"); ok {
 		defaults = append(defaults, option.WithTenantID(o))
 	}
-	if o, ok := os.LookupEnv("LANGSMITH_BEARER_TOKEN"); ok {
-		defaults = append(defaults, option.WithBearerToken(o))
-	}
-	if o, ok := os.LookupEnv("LANGSMITH_ORGANIZATION_ID"); ok {
-		defaults = append(defaults, option.WithOrganizationID(o))
+	if o, ok := os.LookupEnv("LANGSMITH_WORKSPACE_ID"); ok {
+		defaults = append(defaults, option.WithTenantID(o))
 	}
 	if o, ok := os.LookupEnv("LANGCHAIN_CUSTOM_HEADERS"); ok {
 		for _, line := range strings.Split(o, "\n") {
@@ -71,10 +71,10 @@ func DefaultClientOptions() []option.RequestOption {
 }
 
 // NewClient generates a new client with the default option read from the
-// environment (LANGSMITH_API_KEY, LANGSMITH_TENANT_ID, LANGSMITH_BEARER_TOKEN,
-// LANGSMITH_ORGANIZATION_ID, LANGSMITH_ENDPOINT). The option passed in as
-// arguments are applied after these default arguments, and all option will be
-// passed down to the services and requests that this client makes.
+// environment (LANGSMITH_API_KEY, LANGSMITH_TENANT_ID, LANGSMITH_WORKSPACE_ID,
+// LANGSMITH_ENDPOINT). The option passed in as arguments are applied after
+// these default arguments, and all option will be passed down to the services
+// and requests that this client makes.
 func NewClient(opts ...option.RequestOption) (r *Client) {
 	opts = append(DefaultClientOptions(), opts...)
 
@@ -119,8 +119,8 @@ func (r *Client) tracing() (*langsmithtracing.TracingClient, error) {
 		if cfg.APIKey != "" {
 			tracingOpts = append(tracingOpts, langsmithtracing.WithAPIKey(cfg.APIKey))
 		}
-		if cfg.BearerToken != "" {
-			tracingOpts = append(tracingOpts, langsmithtracing.WithBearerToken(cfg.BearerToken))
+		if cfg.OAuthAccessToken != "" {
+			tracingOpts = append(tracingOpts, langsmithtracing.WithOAuthAccessToken(cfg.OAuthAccessToken))
 		}
 		if cfg.BaseURL != nil {
 			tracingOpts = append(tracingOpts, langsmithtracing.WithAPIURL(cfg.BaseURL.String()))
