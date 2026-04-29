@@ -210,6 +210,7 @@ access_token = "test-access-token"
 }
 
 func TestLoadProfileOptions_RefreshesExpiredAccessToken(t *testing.T) {
+	clearAuthEnv(t)
 	tokenRequests := 0
 	ts := httptest.NewServer(http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
 		if r.URL.Path != "/oauth/token" {
@@ -252,7 +253,6 @@ expires_at = "` + time.Now().Add(-time.Minute).UTC().Format(time.RFC3339) + `"
 	}
 	t.Setenv("LANGSMITH_CONFIG_FILE", path)
 	t.Setenv("LANGSMITH_PROFILE", "")
-	t.Setenv("LANGSMITH_API_KEY", "")
 
 	opts := loadProfileOptions()
 	cfg := applyOptions(t, opts)
@@ -354,4 +354,5 @@ func applyOptions(t *testing.T, opts []option.RequestOption) requestconfig.Reque
 func clearAuthEnv(t *testing.T) {
 	t.Helper()
 	t.Setenv("LANGSMITH_API_KEY", "")
+	t.Setenv("LANGSMITH_ENDPOINT", "")
 }
