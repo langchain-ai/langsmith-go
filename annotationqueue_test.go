@@ -28,7 +28,6 @@ func TestAnnotationQueueGet(t *testing.T) {
 		option.WithBaseURL(baseURL),
 		option.WithAPIKey("My API Key"),
 		option.WithTenantID("My Tenant ID"),
-		option.WithOrganizationID("My Organization ID"),
 	)
 	_, err := client.AnnotationQueues.Get(context.TODO(), "182bd5e5-6e1a-4fe4-a799-aa6d9a6ab26e")
 	if err != nil {
@@ -53,7 +52,6 @@ func TestAnnotationQueueUpdateWithOptionalParams(t *testing.T) {
 		option.WithBaseURL(baseURL),
 		option.WithAPIKey("My API Key"),
 		option.WithTenantID("My Tenant ID"),
-		option.WithOrganizationID("My Organization ID"),
 	)
 	_, err := client.AnnotationQueues.Update(
 		context.TODO(),
@@ -106,7 +104,6 @@ func TestAnnotationQueueDelete(t *testing.T) {
 		option.WithBaseURL(baseURL),
 		option.WithAPIKey("My API Key"),
 		option.WithTenantID("My Tenant ID"),
-		option.WithOrganizationID("My Organization ID"),
 	)
 	_, err := client.AnnotationQueues.Delete(context.TODO(), "182bd5e5-6e1a-4fe4-a799-aa6d9a6ab26e")
 	if err != nil {
@@ -131,7 +128,6 @@ func TestAnnotationQueueAnnotationQueuesWithOptionalParams(t *testing.T) {
 		option.WithBaseURL(baseURL),
 		option.WithAPIKey("My API Key"),
 		option.WithTenantID("My Tenant ID"),
-		option.WithOrganizationID("My Organization ID"),
 	)
 	_, err := client.AnnotationQueues.AnnotationQueues(context.TODO(), langsmith.AnnotationQueueAnnotationQueuesParams{
 		Name:               langsmith.F("name"),
@@ -184,7 +180,6 @@ func TestAnnotationQueueNewRunStatusWithOptionalParams(t *testing.T) {
 		option.WithBaseURL(baseURL),
 		option.WithAPIKey("My API Key"),
 		option.WithTenantID("My Tenant ID"),
-		option.WithOrganizationID("My Organization ID"),
 	)
 	_, err := client.AnnotationQueues.NewRunStatus(
 		context.TODO(),
@@ -216,7 +211,6 @@ func TestAnnotationQueueExportWithOptionalParams(t *testing.T) {
 		option.WithBaseURL(baseURL),
 		option.WithAPIKey("My API Key"),
 		option.WithTenantID("My Tenant ID"),
-		option.WithOrganizationID("My Organization ID"),
 	)
 	_, err := client.AnnotationQueues.Export(
 		context.TODO(),
@@ -249,7 +243,6 @@ func TestAnnotationQueuePopulate(t *testing.T) {
 		option.WithBaseURL(baseURL),
 		option.WithAPIKey("My API Key"),
 		option.WithTenantID("My Tenant ID"),
-		option.WithOrganizationID("My Organization ID"),
 	)
 	_, err := client.AnnotationQueues.Populate(context.TODO(), langsmith.AnnotationQueuePopulateParams{
 		QueueID:    langsmith.F("182bd5e5-6e1a-4fe4-a799-aa6d9a6ab26e"),
@@ -277,7 +270,6 @@ func TestAnnotationQueueGetAnnotationQueuesWithOptionalParams(t *testing.T) {
 		option.WithBaseURL(baseURL),
 		option.WithAPIKey("My API Key"),
 		option.WithTenantID("My Tenant ID"),
-		option.WithOrganizationID("My Organization ID"),
 	)
 	_, err := client.AnnotationQueues.GetAnnotationQueues(context.TODO(), langsmith.AnnotationQueueGetAnnotationQueuesParams{
 		AssignedToMe: langsmith.F(true),
@@ -314,7 +306,6 @@ func TestAnnotationQueueGetQueues(t *testing.T) {
 		option.WithBaseURL(baseURL),
 		option.WithAPIKey("My API Key"),
 		option.WithTenantID("My Tenant ID"),
-		option.WithOrganizationID("My Organization ID"),
 	)
 	_, err := client.AnnotationQueues.GetQueues(context.TODO(), "182bd5e5-6e1a-4fe4-a799-aa6d9a6ab26e")
 	if err != nil {
@@ -339,7 +330,6 @@ func TestAnnotationQueueGetRunWithOptionalParams(t *testing.T) {
 		option.WithBaseURL(baseURL),
 		option.WithAPIKey("My API Key"),
 		option.WithTenantID("My Tenant ID"),
-		option.WithOrganizationID("My Organization ID"),
 	)
 	_, err := client.AnnotationQueues.GetRun(
 		context.TODO(),
@@ -371,7 +361,6 @@ func TestAnnotationQueueGetSizeWithOptionalParams(t *testing.T) {
 		option.WithBaseURL(baseURL),
 		option.WithAPIKey("My API Key"),
 		option.WithTenantID("My Tenant ID"),
-		option.WithOrganizationID("My Organization ID"),
 	)
 	_, err := client.AnnotationQueues.GetSize(
 		context.TODO(),
@@ -402,7 +391,6 @@ func TestAnnotationQueueGetTotalArchivedWithOptionalParams(t *testing.T) {
 		option.WithBaseURL(baseURL),
 		option.WithAPIKey("My API Key"),
 		option.WithTenantID("My Tenant ID"),
-		option.WithOrganizationID("My Organization ID"),
 	)
 	_, err := client.AnnotationQueues.GetTotalArchived(
 		context.TODO(),
@@ -434,7 +422,6 @@ func TestAnnotationQueueGetTotalSize(t *testing.T) {
 		option.WithBaseURL(baseURL),
 		option.WithAPIKey("My API Key"),
 		option.WithTenantID("My Tenant ID"),
-		option.WithOrganizationID("My Organization ID"),
 	)
 	_, err := client.AnnotationQueues.GetTotalSize(context.TODO(), "182bd5e5-6e1a-4fe4-a799-aa6d9a6ab26e")
 	if err != nil {

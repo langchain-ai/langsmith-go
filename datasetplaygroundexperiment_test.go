@@ -26,7 +26,6 @@ func TestDatasetPlaygroundExperimentBatchWithOptionalParams(t *testing.T) {
 		option.WithBaseURL(baseURL),
 		option.WithAPIKey("My API Key"),
 		option.WithTenantID("My Tenant ID"),
-		option.WithOrganizationID("My Organization ID"),
 	)
 	_, err := client.Datasets.PlaygroundExperiment.Batch(context.TODO(), langsmith.DatasetPlaygroundExperimentBatchParams{
 		DatasetID: langsmith.F("182bd5e5-6e1a-4fe4-a799-aa6d9a6ab26e"),
@@ -90,7 +89,6 @@ func TestDatasetPlaygroundExperimentStreamWithOptionalParams(t *testing.T) {
 		option.WithBaseURL(baseURL),
 		option.WithAPIKey("My API Key"),
 		option.WithTenantID("My Tenant ID"),
-		option.WithOrganizationID("My Organization ID"),
 	)
 	_, err := client.Datasets.PlaygroundExperiment.Stream(context.TODO(), langsmith.DatasetPlaygroundExperimentStreamParams{
 		DatasetID: langsmith.F("182bd5e5-6e1a-4fe4-a799-aa6d9a6ab26e"),
