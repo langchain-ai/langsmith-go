@@ -1,5 +1,16 @@
 # Changelog
 
+## 0.7.0 (2026-04-30)
+
+Full Changelog: [v0.6.0...v0.7.0](https://github.com/langchain-ai/langsmith-go/compare/v0.6.0...v0.7.0)
+
+### Features
+
+* **api:** add workspaces ([ed50eeb](https://github.com/langchain-ai/langsmith-go/commit/ed50eebd3d9ac08fc1fec472bfb4a5d40a1e590c))
+* **api:** api update ([b5910ea](https://github.com/langchain-ai/langsmith-go/commit/b5910eaefeba8720ff240d9178392d5d6773d307))
+* **api:** manual updates ([5e08957](https://github.com/langchain-ai/langsmith-go/commit/5e089576d81cde6a023e8700b0b93e86f62cd07c))
+* **api:** manual updates ([a1398c9](https://github.com/langchain-ai/langsmith-go/commit/a1398c9a11d955882bf9a10ff8448ab7bb3d163a))
+
 ## 0.6.0 (2026-04-29)
 
 Full Changelog: [v0.5.0...v0.6.0](https://github.com/langchain-ai/langsmith-go/compare/v0.5.0...v0.6.0)
