@@ -1164,6 +1164,7 @@ type SessionListParams struct {
 	SortBy            param.Field[SessionSortableColumns] `query:"sort_by"`
 	SortByDesc        param.Field[bool]                   `query:"sort_by_desc"`
 	SortByFeedbackKey param.Field[string]                 `query:"sort_by_feedback_key"`
+	StatsSelect       param.Field[[]string]               `query:"stats_select"`
 	StatsStartTime    param.Field[time.Time]              `query:"stats_start_time" format:"date-time"`
 	TagValueID        param.Field[[]string]               `query:"tag_value_id" format:"uuid"`
 	UseApproxStats    param.Field[bool]                   `query:"use_approx_stats"`
