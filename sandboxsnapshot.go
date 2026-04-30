@@ -65,7 +65,7 @@ func (r *SandboxSnapshotService) List(ctx context.Context, query SandboxSnapshot
 	return res, err
 }
 
-// Delete a snapshot by ID. The ext4 rootfs is removed from JuiceFS asynchronously.
+// Delete a snapshot by ID. The underlying storage is reclaimed asynchronously.
 func (r *SandboxSnapshotService) Delete(ctx context.Context, snapshotID string, opts ...option.RequestOption) (err error) {
 	opts = slices.Concat(r.Options, opts)
 	opts = append([]option.RequestOption{option.WithHeader("Accept", "*/*")}, opts...)

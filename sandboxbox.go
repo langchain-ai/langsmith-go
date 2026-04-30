@@ -36,10 +36,9 @@ func NewSandboxBoxService(opts ...option.RequestOption) (r *SandboxBoxService) {
 	return
 }
 
-// Create a new sandbox. The snapshot may be identified by `snapshot_id` (UUID) or
-// by `snapshot_name` (tenant-scoped unique name); exactly one of `template_name`,
-// `snapshot_id`, or `snapshot_name` must be set. Optionally blocks until ready or
-// timeout.
+// Create a new sandbox from a snapshot. The snapshot may be identified by
+// `snapshot_id` (UUID) or by `snapshot_name` (tenant-scoped unique name); exactly
+// one must be set. Optionally blocks until ready or timeout.
 func (r *SandboxBoxService) New(ctx context.Context, body SandboxBoxNewParams, opts ...option.RequestOption) (res *SandboxBoxNewResponse, err error) {
 	opts = slices.Concat(r.Options, opts)
 	path := "v2/sandboxes/boxes"
@@ -81,7 +80,8 @@ func (r *SandboxBoxService) List(ctx context.Context, query SandboxBoxListParams
 	return res, err
 }
 
-// Delete a sandbox claim by name. Deletes both the K8s CRD and the DB record.
+// Delete a sandbox claim by name. Deletes the Firecracker pod/service and DB
+// record.
 func (r *SandboxBoxService) Delete(ctx context.Context, name string, opts ...option.RequestOption) (err error) {
 	opts = slices.Concat(r.Options, opts)
 	opts = append([]option.RequestOption{option.WithHeader("Accept", "*/*")}, opts...)
@@ -134,8 +134,8 @@ func (r *SandboxBoxService) GetStatus(ctx context.Context, name string, opts ...
 	return res, err
 }
 
-// Start a stopped or failed Firecracker sandbox. This endpoint is not idempotent;
-// it returns 202 immediately, then you can poll status for readiness.
+// Start a stopped or failed sandbox. This endpoint is not idempotent; it returns
+// 202 immediately, then you can poll status for readiness.
 func (r *SandboxBoxService) Start(ctx context.Context, name string, opts ...option.RequestOption) (res *SandboxBoxStartResponse, err error) {
 	opts = slices.Concat(r.Options, opts)
 	if name == "" {
@@ -147,8 +147,8 @@ func (r *SandboxBoxService) Start(ctx context.Context, name string, opts ...opti
 	return res, err
 }
 
-// Stop a ready Firecracker sandbox. This endpoint is not idempotent; the rootfs is
-// preserved on JuiceFS for later restart.
+// Stop a ready sandbox. This endpoint is not idempotent; the filesystem is
+// preserved for later restart.
 func (r *SandboxBoxService) Stop(ctx context.Context, name string, opts ...option.RequestOption) (err error) {
 	opts = slices.Concat(r.Options, opts)
 	opts = append([]option.RequestOption{option.WithHeader("Accept", "*/*")}, opts...)
@@ -171,10 +171,10 @@ type SandboxBoxNewResponse struct {
 	MemBytes        int64                            `json:"mem_bytes"`
 	Name            string                           `json:"name"`
 	ProxyConfig     SandboxBoxNewResponseProxyConfig `json:"proxy_config"`
+	SizeClass       string                           `json:"size_class"`
 	SnapshotID      string                           `json:"snapshot_id"`
 	Status          string                           `json:"status"`
 	StatusMessage   string                           `json:"status_message"`
-	TemplateName    string                           `json:"template_name"`
 	TtlSeconds      int64                            `json:"ttl_seconds"`
 	UpdatedAt       string                           `json:"updated_at"`
 	Vcpus           int64                            `json:"vcpus"`
@@ -193,10 +193,10 @@ type sandboxBoxNewResponseJSON struct {
 	MemBytes        apijson.Field
 	Name            apijson.Field
 	ProxyConfig     apijson.Field
+	SizeClass       apijson.Field
 	SnapshotID      apijson.Field
 	Status          apijson.Field
 	StatusMessage   apijson.Field
-	TemplateName    apijson.Field
 	TtlSeconds      apijson.Field
 	UpdatedAt       apijson.Field
 	Vcpus           apijson.Field
@@ -263,9 +263,7 @@ func (r sandboxBoxNewResponseProxyConfigAccessControlJSON) RawJSON() string {
 }
 
 type SandboxBoxNewResponseProxyConfigCallback struct {
-	MatchHosts []string `json:"match_hosts" api:"required"`
-	// TTLSeconds is how long resolved headers are cached before the proxy re-invokes
-	// URL. Must be between 60 and 3600 seconds.
+	MatchHosts     []string                                                 `json:"match_hosts" api:"required"`
 	TtlSeconds     int64                                                    `json:"ttl_seconds" api:"required"`
 	URL            string                                                   `json:"url" api:"required"`
 	RequestHeaders []SandboxBoxNewResponseProxyConfigCallbacksRequestHeader `json:"request_headers"`
@@ -416,10 +414,10 @@ type SandboxBoxGetResponse struct {
 	MemBytes        int64                            `json:"mem_bytes"`
 	Name            string                           `json:"name"`
 	ProxyConfig     SandboxBoxGetResponseProxyConfig `json:"proxy_config"`
+	SizeClass       string                           `json:"size_class"`
 	SnapshotID      string                           `json:"snapshot_id"`
 	Status          string                           `json:"status"`
 	StatusMessage   string                           `json:"status_message"`
-	TemplateName    string                           `json:"template_name"`
 	TtlSeconds      int64                            `json:"ttl_seconds"`
 	UpdatedAt       string                           `json:"updated_at"`
 	Vcpus           int64                            `json:"vcpus"`
@@ -438,10 +436,10 @@ type sandboxBoxGetResponseJSON struct {
 	MemBytes        apijson.Field
 	Name            apijson.Field
 	ProxyConfig     apijson.Field
+	SizeClass       apijson.Field
 	SnapshotID      apijson.Field
 	Status          apijson.Field
 	StatusMessage   apijson.Field
-	TemplateName    apijson.Field
 	TtlSeconds      apijson.Field
 	UpdatedAt       apijson.Field
 	Vcpus           apijson.Field
@@ -508,9 +506,7 @@ func (r sandboxBoxGetResponseProxyConfigAccessControlJSON) RawJSON() string {
 }
 
 type SandboxBoxGetResponseProxyConfigCallback struct {
-	MatchHosts []string `json:"match_hosts" api:"required"`
-	// TTLSeconds is how long resolved headers are cached before the proxy re-invokes
-	// URL. Must be between 60 and 3600 seconds.
+	MatchHosts     []string                                                 `json:"match_hosts" api:"required"`
 	TtlSeconds     int64                                                    `json:"ttl_seconds" api:"required"`
 	URL            string                                                   `json:"url" api:"required"`
 	RequestHeaders []SandboxBoxGetResponseProxyConfigCallbacksRequestHeader `json:"request_headers"`
@@ -661,10 +657,10 @@ type SandboxBoxUpdateResponse struct {
 	MemBytes        int64                               `json:"mem_bytes"`
 	Name            string                              `json:"name"`
 	ProxyConfig     SandboxBoxUpdateResponseProxyConfig `json:"proxy_config"`
+	SizeClass       string                              `json:"size_class"`
 	SnapshotID      string                              `json:"snapshot_id"`
 	Status          string                              `json:"status"`
 	StatusMessage   string                              `json:"status_message"`
-	TemplateName    string                              `json:"template_name"`
 	TtlSeconds      int64                               `json:"ttl_seconds"`
 	UpdatedAt       string                              `json:"updated_at"`
 	Vcpus           int64                               `json:"vcpus"`
@@ -683,10 +679,10 @@ type sandboxBoxUpdateResponseJSON struct {
 	MemBytes        apijson.Field
 	Name            apijson.Field
 	ProxyConfig     apijson.Field
+	SizeClass       apijson.Field
 	SnapshotID      apijson.Field
 	Status          apijson.Field
 	StatusMessage   apijson.Field
-	TemplateName    apijson.Field
 	TtlSeconds      apijson.Field
 	UpdatedAt       apijson.Field
 	Vcpus           apijson.Field
@@ -753,9 +749,7 @@ func (r sandboxBoxUpdateResponseProxyConfigAccessControlJSON) RawJSON() string {
 }
 
 type SandboxBoxUpdateResponseProxyConfigCallback struct {
-	MatchHosts []string `json:"match_hosts" api:"required"`
-	// TTLSeconds is how long resolved headers are cached before the proxy re-invokes
-	// URL. Must be between 60 and 3600 seconds.
+	MatchHosts     []string                                                    `json:"match_hosts" api:"required"`
 	TtlSeconds     int64                                                       `json:"ttl_seconds" api:"required"`
 	URL            string                                                      `json:"url" api:"required"`
 	RequestHeaders []SandboxBoxUpdateResponseProxyConfigCallbacksRequestHeader `json:"request_headers"`
@@ -930,10 +924,10 @@ type SandboxBoxListResponseSandbox struct {
 	MemBytes        int64                                      `json:"mem_bytes"`
 	Name            string                                     `json:"name"`
 	ProxyConfig     SandboxBoxListResponseSandboxesProxyConfig `json:"proxy_config"`
+	SizeClass       string                                     `json:"size_class"`
 	SnapshotID      string                                     `json:"snapshot_id"`
 	Status          string                                     `json:"status"`
 	StatusMessage   string                                     `json:"status_message"`
-	TemplateName    string                                     `json:"template_name"`
 	TtlSeconds      int64                                      `json:"ttl_seconds"`
 	UpdatedAt       string                                     `json:"updated_at"`
 	Vcpus           int64                                      `json:"vcpus"`
@@ -952,10 +946,10 @@ type sandboxBoxListResponseSandboxJSON struct {
 	MemBytes        apijson.Field
 	Name            apijson.Field
 	ProxyConfig     apijson.Field
+	SizeClass       apijson.Field
 	SnapshotID      apijson.Field
 	Status          apijson.Field
 	StatusMessage   apijson.Field
-	TemplateName    apijson.Field
 	TtlSeconds      apijson.Field
 	UpdatedAt       apijson.Field
 	Vcpus           apijson.Field
@@ -1023,9 +1017,7 @@ func (r sandboxBoxListResponseSandboxesProxyConfigAccessControlJSON) RawJSON() s
 }
 
 type SandboxBoxListResponseSandboxesProxyConfigCallback struct {
-	MatchHosts []string `json:"match_hosts" api:"required"`
-	// TTLSeconds is how long resolved headers are cached before the proxy re-invokes
-	// URL. Must be between 60 and 3600 seconds.
+	MatchHosts     []string                                                           `json:"match_hosts" api:"required"`
 	TtlSeconds     int64                                                              `json:"ttl_seconds" api:"required"`
 	URL            string                                                             `json:"url" api:"required"`
 	RequestHeaders []SandboxBoxListResponseSandboxesProxyConfigCallbacksRequestHeader `json:"request_headers"`
@@ -1272,10 +1264,10 @@ type SandboxBoxStartResponse struct {
 	MemBytes        int64                              `json:"mem_bytes"`
 	Name            string                             `json:"name"`
 	ProxyConfig     SandboxBoxStartResponseProxyConfig `json:"proxy_config"`
+	SizeClass       string                             `json:"size_class"`
 	SnapshotID      string                             `json:"snapshot_id"`
 	Status          string                             `json:"status"`
 	StatusMessage   string                             `json:"status_message"`
-	TemplateName    string                             `json:"template_name"`
 	TtlSeconds      int64                              `json:"ttl_seconds"`
 	UpdatedAt       string                             `json:"updated_at"`
 	Vcpus           int64                              `json:"vcpus"`
@@ -1294,10 +1286,10 @@ type sandboxBoxStartResponseJSON struct {
 	MemBytes        apijson.Field
 	Name            apijson.Field
 	ProxyConfig     apijson.Field
+	SizeClass       apijson.Field
 	SnapshotID      apijson.Field
 	Status          apijson.Field
 	StatusMessage   apijson.Field
-	TemplateName    apijson.Field
 	TtlSeconds      apijson.Field
 	UpdatedAt       apijson.Field
 	Vcpus           apijson.Field
@@ -1364,9 +1356,7 @@ func (r sandboxBoxStartResponseProxyConfigAccessControlJSON) RawJSON() string {
 }
 
 type SandboxBoxStartResponseProxyConfigCallback struct {
-	MatchHosts []string `json:"match_hosts" api:"required"`
-	// TTLSeconds is how long resolved headers are cached before the proxy re-invokes
-	// URL. Must be between 60 and 3600 seconds.
+	MatchHosts     []string                                                   `json:"match_hosts" api:"required"`
 	TtlSeconds     int64                                                      `json:"ttl_seconds" api:"required"`
 	URL            string                                                     `json:"url" api:"required"`
 	RequestHeaders []SandboxBoxStartResponseProxyConfigCallbacksRequestHeader `json:"request_headers"`
@@ -1516,12 +1506,10 @@ type SandboxBoxNewParams struct {
 	ProxyConfig     param.Field[SandboxBoxNewParamsProxyConfig] `json:"proxy_config"`
 	SnapshotID      param.Field[string]                         `json:"snapshot_id"`
 	SnapshotName    param.Field[string]                         `json:"snapshot_name"`
-	// required for Kata path
-	TemplateName param.Field[string] `json:"template_name"`
-	Timeout      param.Field[int64]  `json:"timeout"`
-	TtlSeconds   param.Field[int64]  `json:"ttl_seconds"`
-	Vcpus        param.Field[int64]  `json:"vcpus"`
-	WaitForReady param.Field[bool]   `json:"wait_for_ready"`
+	Timeout         param.Field[int64]                          `json:"timeout"`
+	TtlSeconds      param.Field[int64]                          `json:"ttl_seconds"`
+	Vcpus           param.Field[int64]                          `json:"vcpus"`
+	WaitForReady    param.Field[bool]                           `json:"wait_for_ready"`
 }
 
 func (r SandboxBoxNewParams) MarshalJSON() (data []byte, err error) {
@@ -1549,9 +1537,7 @@ func (r SandboxBoxNewParamsProxyConfigAccessControl) MarshalJSON() (data []byte,
 }
 
 type SandboxBoxNewParamsProxyConfigCallback struct {
-	MatchHosts param.Field[[]string] `json:"match_hosts" api:"required"`
-	// TTLSeconds is how long resolved headers are cached before the proxy re-invokes
-	// URL. Must be between 60 and 3600 seconds.
+	MatchHosts     param.Field[[]string]                                               `json:"match_hosts" api:"required"`
 	TtlSeconds     param.Field[int64]                                                  `json:"ttl_seconds" api:"required"`
 	URL            param.Field[string]                                                 `json:"url" api:"required"`
 	RequestHeaders param.Field[[]SandboxBoxNewParamsProxyConfigCallbacksRequestHeader] `json:"request_headers"`
@@ -1662,9 +1648,7 @@ func (r SandboxBoxUpdateParamsProxyConfigAccessControl) MarshalJSON() (data []by
 }
 
 type SandboxBoxUpdateParamsProxyConfigCallback struct {
-	MatchHosts param.Field[[]string] `json:"match_hosts" api:"required"`
-	// TTLSeconds is how long resolved headers are cached before the proxy re-invokes
-	// URL. Must be between 60 and 3600 seconds.
+	MatchHosts     param.Field[[]string]                                                  `json:"match_hosts" api:"required"`
 	TtlSeconds     param.Field[int64]                                                     `json:"ttl_seconds" api:"required"`
 	URL            param.Field[string]                                                    `json:"url" api:"required"`
 	RequestHeaders param.Field[[]SandboxBoxUpdateParamsProxyConfigCallbacksRequestHeader] `json:"request_headers"`
@@ -1747,14 +1731,12 @@ type SandboxBoxListParams struct {
 	NameContains param.Field[string] `query:"name_contains"`
 	// Pagination offset
 	Offset param.Field[int64] `query:"offset"`
-	// Sort column (name, status, template_name, created_at)
+	// Sort column (name, status, created_at)
 	SortBy param.Field[string] `query:"sort_by"`
 	// Sort direction (asc, desc)
 	SortDirection param.Field[string] `query:"sort_direction"`
 	// Filter by status (provisioning, ready, failed, stopped)
 	Status param.Field[string] `query:"status"`
-	// Filter by exact template name
-	TemplateName param.Field[string] `query:"template_name"`
 }
 
 // URLQuery serializes [SandboxBoxListParams]'s query parameters as `url.Values`.

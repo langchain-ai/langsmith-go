@@ -13,7 +13,7 @@ import (
 	"github.com/langchain-ai/langsmith-go/option"
 )
 
-func TestSandboxPoolNewWithOptionalParams(t *testing.T) {
+func TestWorkspaceNewWithOptionalParams(t *testing.T) {
 	t.Skip("Mock server tests are disabled")
 	baseURL := "http://localhost:4010"
 	if envURL, ok := os.LookupEnv("TEST_API_BASE_URL"); ok {
@@ -27,12 +27,10 @@ func TestSandboxPoolNewWithOptionalParams(t *testing.T) {
 		option.WithAPIKey("My API Key"),
 		option.WithTenantID("My Tenant ID"),
 	)
-	_, err := client.Sandboxes.Pools.New(context.TODO(), langsmith.SandboxPoolNewParams{
-		Name:         langsmith.F("name"),
-		Replicas:     langsmith.F(int64(1)),
-		TemplateName: langsmith.F("template_name"),
-		Timeout:      langsmith.F(int64(0)),
-		WaitForReady: langsmith.F(true),
+	_, err := client.Workspaces.New(context.TODO(), langsmith.WorkspaceNewParams{
+		DisplayName:  langsmith.F("display_name"),
+		ID:           langsmith.F("182bd5e5-6e1a-4fe4-a799-aa6d9a6ab26e"),
+		TenantHandle: langsmith.F("tenant_handle"),
 	})
 	if err != nil {
 		var apierr *langsmith.Error
@@ -43,7 +41,7 @@ func TestSandboxPoolNewWithOptionalParams(t *testing.T) {
 	}
 }
 
-func TestSandboxPoolGet(t *testing.T) {
+func TestWorkspaceUpdate(t *testing.T) {
 	t.Skip("Mock server tests are disabled")
 	baseURL := "http://localhost:4010"
 	if envURL, ok := os.LookupEnv("TEST_API_BASE_URL"); ok {
@@ -57,36 +55,11 @@ func TestSandboxPoolGet(t *testing.T) {
 		option.WithAPIKey("My API Key"),
 		option.WithTenantID("My Tenant ID"),
 	)
-	_, err := client.Sandboxes.Pools.Get(context.TODO(), "name")
-	if err != nil {
-		var apierr *langsmith.Error
-		if errors.As(err, &apierr) {
-			t.Log(string(apierr.DumpRequest(true)))
-		}
-		t.Fatalf("err should be nil: %s", err.Error())
-	}
-}
-
-func TestSandboxPoolUpdateWithOptionalParams(t *testing.T) {
-	t.Skip("Mock server tests are disabled")
-	baseURL := "http://localhost:4010"
-	if envURL, ok := os.LookupEnv("TEST_API_BASE_URL"); ok {
-		baseURL = envURL
-	}
-	if !testutil.CheckTestServer(t, baseURL) {
-		return
-	}
-	client := langsmith.NewClient(
-		option.WithBaseURL(baseURL),
-		option.WithAPIKey("My API Key"),
-		option.WithTenantID("My Tenant ID"),
-	)
-	_, err := client.Sandboxes.Pools.Update(
+	_, err := client.Workspaces.Update(
 		context.TODO(),
-		"name",
-		langsmith.SandboxPoolUpdateParams{
-			Name:     langsmith.F("name"),
-			Replicas: langsmith.F(int64(0)),
+		"182bd5e5-6e1a-4fe4-a799-aa6d9a6ab26e",
+		langsmith.WorkspaceUpdateParams{
+			DisplayName: langsmith.F("display_name"),
 		},
 	)
 	if err != nil {
@@ -98,7 +71,7 @@ func TestSandboxPoolUpdateWithOptionalParams(t *testing.T) {
 	}
 }
 
-func TestSandboxPoolListWithOptionalParams(t *testing.T) {
+func TestWorkspaceListWithOptionalParams(t *testing.T) {
 	t.Skip("Mock server tests are disabled")
 	baseURL := "http://localhost:4010"
 	if envURL, ok := os.LookupEnv("TEST_API_BASE_URL"); ok {
@@ -112,10 +85,8 @@ func TestSandboxPoolListWithOptionalParams(t *testing.T) {
 		option.WithAPIKey("My API Key"),
 		option.WithTenantID("My Tenant ID"),
 	)
-	_, err := client.Sandboxes.Pools.List(context.TODO(), langsmith.SandboxPoolListParams{
-		Limit:        langsmith.F(int64(0)),
-		NameContains: langsmith.F("name_contains"),
-		Offset:       langsmith.F(int64(0)),
+	_, err := client.Workspaces.List(context.TODO(), langsmith.WorkspaceListParams{
+		IncludeDeleted: langsmith.F(true),
 	})
 	if err != nil {
 		var apierr *langsmith.Error
@@ -126,7 +97,7 @@ func TestSandboxPoolListWithOptionalParams(t *testing.T) {
 	}
 }
 
-func TestSandboxPoolDelete(t *testing.T) {
+func TestWorkspaceDelete(t *testing.T) {
 	t.Skip("Mock server tests are disabled")
 	baseURL := "http://localhost:4010"
 	if envURL, ok := os.LookupEnv("TEST_API_BASE_URL"); ok {
@@ -140,7 +111,7 @@ func TestSandboxPoolDelete(t *testing.T) {
 		option.WithAPIKey("My API Key"),
 		option.WithTenantID("My Tenant ID"),
 	)
-	err := client.Sandboxes.Pools.Delete(context.TODO(), "name")
+	_, err := client.Workspaces.Delete(context.TODO(), "182bd5e5-6e1a-4fe4-a799-aa6d9a6ab26e")
 	if err != nil {
 		var apierr *langsmith.Error
 		if errors.As(err, &apierr) {

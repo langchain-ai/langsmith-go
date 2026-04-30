@@ -150,6 +150,7 @@ func TestSessionListWithOptionalParams(t *testing.T) {
 		SortBy:            langsmith.F(langsmith.SessionSortableColumnsName),
 		SortByDesc:        langsmith.F(true),
 		SortByFeedbackKey: langsmith.F("sort_by_feedback_key"),
+		StatsSelect:       langsmith.F([]string{"string"}),
 		StatsStartTime:    langsmith.F(time.Now()),
 		TagValueID:        langsmith.F([]string{"182bd5e5-6e1a-4fe4-a799-aa6d9a6ab26e"}),
 		UseApproxStats:    langsmith.F(true),
