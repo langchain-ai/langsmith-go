@@ -15,9 +15,7 @@ import (
 type SandboxService struct {
 	Options   []option.RequestOption
 	Boxes     *SandboxBoxService
-	Pools     *SandboxPoolService
 	Snapshots *SandboxSnapshotService
-	Templates *SandboxTemplateService
 }
 
 // NewSandboxService generates a new service that applies the given options to each
@@ -27,8 +25,6 @@ func NewSandboxService(opts ...option.RequestOption) (r *SandboxService) {
 	r = &SandboxService{}
 	r.Options = opts
 	r.Boxes = NewSandboxBoxService(opts...)
-	r.Pools = NewSandboxPoolService(opts...)
 	r.Snapshots = NewSandboxSnapshotService(opts...)
-	r.Templates = NewSandboxTemplateService(opts...)
 	return
 }
