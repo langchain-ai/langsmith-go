@@ -26,6 +26,8 @@ type Client struct {
 	Feedback         *FeedbackService
 	Public           *PublicService
 	AnnotationQueues *AnnotationQueueService
+	Info             *InfoService
+	Workspaces       *WorkspaceService
 	Repos            *RepoService
 	Commits          *CommitService
 	Settings         *SettingService
@@ -81,6 +83,8 @@ func NewClient(opts ...option.RequestOption) (r *Client) {
 	r.Feedback = NewFeedbackService(opts...)
 	r.Public = NewPublicService(opts...)
 	r.AnnotationQueues = NewAnnotationQueueService(opts...)
+	r.Info = NewInfoService(opts...)
+	r.Workspaces = NewWorkspaceService(opts...)
 	r.Repos = NewRepoService(opts...)
 	r.Commits = NewCommitService(opts...)
 	r.Settings = NewSettingService(opts...)

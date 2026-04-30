@@ -26,10 +26,8 @@ import (
 // automatically. You should not instantiate this service directly, and instead use
 // the [NewAnnotationQueueService] method instead.
 type AnnotationQueueService struct {
-	Options    []option.RequestOption
-	Runs       *AnnotationQueueRunService
-	Info       *AnnotationQueueInfoService
-	Workspaces *AnnotationQueueWorkspaceService
+	Options []option.RequestOption
+	Runs    *AnnotationQueueRunService
 }
 
 // NewAnnotationQueueService generates a new service that applies the given options
@@ -39,8 +37,6 @@ func NewAnnotationQueueService(opts ...option.RequestOption) (r *AnnotationQueue
 	r = &AnnotationQueueService{}
 	r.Options = opts
 	r.Runs = NewAnnotationQueueRunService(opts...)
-	r.Info = NewAnnotationQueueInfoService(opts...)
-	r.Workspaces = NewAnnotationQueueWorkspaceService(opts...)
 	return
 }
 

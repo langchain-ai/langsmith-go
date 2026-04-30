@@ -13,7 +13,7 @@ import (
 	"github.com/langchain-ai/langsmith-go/option"
 )
 
-func TestAnnotationQueueWorkspaceNewWithOptionalParams(t *testing.T) {
+func TestWorkspaceNewWithOptionalParams(t *testing.T) {
 	t.Skip("Mock server tests are disabled")
 	baseURL := "http://localhost:4010"
 	if envURL, ok := os.LookupEnv("TEST_API_BASE_URL"); ok {
@@ -28,7 +28,7 @@ func TestAnnotationQueueWorkspaceNewWithOptionalParams(t *testing.T) {
 		option.WithTenantID("My Tenant ID"),
 		option.WithOrganizationID("My Organization ID"),
 	)
-	_, err := client.AnnotationQueues.Workspaces.New(context.TODO(), langsmith.AnnotationQueueWorkspaceNewParams{
+	_, err := client.Workspaces.New(context.TODO(), langsmith.WorkspaceNewParams{
 		DisplayName:  langsmith.F("display_name"),
 		ID:           langsmith.F("182bd5e5-6e1a-4fe4-a799-aa6d9a6ab26e"),
 		TenantHandle: langsmith.F("tenant_handle"),
@@ -42,7 +42,7 @@ func TestAnnotationQueueWorkspaceNewWithOptionalParams(t *testing.T) {
 	}
 }
 
-func TestAnnotationQueueWorkspaceUpdate(t *testing.T) {
+func TestWorkspaceUpdate(t *testing.T) {
 	t.Skip("Mock server tests are disabled")
 	baseURL := "http://localhost:4010"
 	if envURL, ok := os.LookupEnv("TEST_API_BASE_URL"); ok {
@@ -57,10 +57,10 @@ func TestAnnotationQueueWorkspaceUpdate(t *testing.T) {
 		option.WithTenantID("My Tenant ID"),
 		option.WithOrganizationID("My Organization ID"),
 	)
-	_, err := client.AnnotationQueues.Workspaces.Update(
+	_, err := client.Workspaces.Update(
 		context.TODO(),
 		"182bd5e5-6e1a-4fe4-a799-aa6d9a6ab26e",
-		langsmith.AnnotationQueueWorkspaceUpdateParams{
+		langsmith.WorkspaceUpdateParams{
 			DisplayName: langsmith.F("display_name"),
 		},
 	)
@@ -73,7 +73,7 @@ func TestAnnotationQueueWorkspaceUpdate(t *testing.T) {
 	}
 }
 
-func TestAnnotationQueueWorkspaceListWithOptionalParams(t *testing.T) {
+func TestWorkspaceListWithOptionalParams(t *testing.T) {
 	t.Skip("Mock server tests are disabled")
 	baseURL := "http://localhost:4010"
 	if envURL, ok := os.LookupEnv("TEST_API_BASE_URL"); ok {
@@ -88,7 +88,7 @@ func TestAnnotationQueueWorkspaceListWithOptionalParams(t *testing.T) {
 		option.WithTenantID("My Tenant ID"),
 		option.WithOrganizationID("My Organization ID"),
 	)
-	_, err := client.AnnotationQueues.Workspaces.List(context.TODO(), langsmith.AnnotationQueueWorkspaceListParams{
+	_, err := client.Workspaces.List(context.TODO(), langsmith.WorkspaceListParams{
 		IncludeDeleted: langsmith.F(true),
 	})
 	if err != nil {
@@ -100,7 +100,7 @@ func TestAnnotationQueueWorkspaceListWithOptionalParams(t *testing.T) {
 	}
 }
 
-func TestAnnotationQueueWorkspaceDelete(t *testing.T) {
+func TestWorkspaceDelete(t *testing.T) {
 	t.Skip("Mock server tests are disabled")
 	baseURL := "http://localhost:4010"
 	if envURL, ok := os.LookupEnv("TEST_API_BASE_URL"); ok {
@@ -115,7 +115,7 @@ func TestAnnotationQueueWorkspaceDelete(t *testing.T) {
 		option.WithTenantID("My Tenant ID"),
 		option.WithOrganizationID("My Organization ID"),
 	)
-	_, err := client.AnnotationQueues.Workspaces.Delete(context.TODO(), "182bd5e5-6e1a-4fe4-a799-aa6d9a6ab26e")
+	_, err := client.Workspaces.Delete(context.TODO(), "182bd5e5-6e1a-4fe4-a799-aa6d9a6ab26e")
 	if err != nil {
 		var apierr *langsmith.Error
 		if errors.As(err, &apierr) {

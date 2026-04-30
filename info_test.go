@@ -13,7 +13,7 @@ import (
 	"github.com/langchain-ai/langsmith-go/option"
 )
 
-func TestAnnotationQueueInfoList(t *testing.T) {
+func TestInfoList(t *testing.T) {
 	t.Skip("Mock server tests are disabled")
 	baseURL := "http://localhost:4010"
 	if envURL, ok := os.LookupEnv("TEST_API_BASE_URL"); ok {
@@ -28,7 +28,7 @@ func TestAnnotationQueueInfoList(t *testing.T) {
 		option.WithTenantID("My Tenant ID"),
 		option.WithOrganizationID("My Organization ID"),
 	)
-	_, err := client.AnnotationQueues.Info.List(context.TODO())
+	_, err := client.Info.List(context.TODO())
 	if err != nil {
 		var apierr *langsmith.Error
 		if errors.As(err, &apierr) {
