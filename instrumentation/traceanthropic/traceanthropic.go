@@ -187,7 +187,7 @@ func (rt *roundTripper) RoundTrip(req *http.Request) (*http.Response, error) {
 		return resp, err
 	}
 
-	resp.Body = traceutil.NewBufferedReader(resp.Body, func(r io.Reader, readErr error) {
+	br := traceutil.NewBufferedReader(resp.Body, func(r io.Reader, readErr error) {
 		data, err := io.ReadAll(r)
 		if err != nil {
 			span.RecordError(err)
@@ -239,8 +239,21 @@ func (rt *roundTripper) RoundTrip(req *http.Request) (*http.Response, error) {
 		}
 		span.End()
 	})
+	// LangSmith ingest reads new_token to derive first_token_time; skip on
+	// HTTP errors so an error body doesn't inflate it.
+	if streaming && resp.StatusCode < 400 {
+		traceutil.OnFirstSSEMatch(br, isFirstContent, func() { span.AddEvent("new_token") })
+	}
+	resp.Body = br
 
 	return resp, nil
+}
+
+// Anthropic streams open with message_start and content_block_start before
+// any tokens; content_block_delta is the first real token.
+func isFirstContent(chunk map[string]any) bool {
+	t, _ := chunk["type"].(string)
+	return t == "content_block_delta"
 }
 
 // getSpanName returns an appropriate span name based on the API endpoint.
