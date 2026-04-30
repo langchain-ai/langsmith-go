@@ -1,10 +1,265 @@
 package traceopenai
 
 import (
+	"bytes"
+	"context"
 	"encoding/json"
+	"io"
+	"net/http"
 	"strings"
 	"testing"
+
+	sdktrace "go.opentelemetry.io/otel/sdk/trace"
+	"go.opentelemetry.io/otel/sdk/trace/tracetest"
 )
+
+// fakeTransport returns a canned response, capturing the request for inspection.
+type fakeTransport struct {
+	body []byte
+}
+
+func (t *fakeTransport) RoundTrip(req *http.Request) (*http.Response, error) {
+	return &http.Response{
+		StatusCode: http.StatusOK,
+		Body:       io.NopCloser(bytes.NewReader(t.body)),
+		Header:     make(http.Header),
+		Request:    req,
+	}, nil
+}
+
+// hasEvent reports whether any exported span contains an event with the given name.
+func hasEvent(spans tracetest.SpanStubs, name string) bool {
+	for _, s := range spans {
+		for _, e := range s.Events {
+			if e.Name == name {
+				return true
+			}
+		}
+	}
+	return false
+}
+
+func newTracedClient(t *testing.T, body []byte) (*http.Client, *tracetest.InMemoryExporter) {
+	t.Helper()
+	exporter := tracetest.NewInMemoryExporter()
+	tp := sdktrace.NewTracerProvider(sdktrace.WithSyncer(exporter))
+	client := WrapClient(&http.Client{Transport: &fakeTransport{body: body}}, WithTracerProvider(tp))
+	return client, exporter
+}
+
+// doStreamingChat sends a chat-completions stream request through client and
+// drains the response body so the SSE chunks flow through the wrapper.
+func doStreamingChat(t *testing.T, client *http.Client) {
+	t.Helper()
+	body := `{"model":"gpt-4","messages":[{"role":"user","content":"hello"}],"stream":true}`
+	req, err := http.NewRequestWithContext(context.Background(), http.MethodPost,
+		"https://api.openai.com/v1/chat/completions", strings.NewReader(body))
+	if err != nil {
+		t.Fatal(err)
+	}
+	resp, err := client.Do(req)
+	if err != nil {
+		t.Fatal(err)
+	}
+	if _, err := io.ReadAll(resp.Body); err != nil {
+		t.Fatal(err)
+	}
+	resp.Body.Close()
+}
+
+func TestRoundTrip_StreamingEmitsNewTokenOnFirstContentDelta(t *testing.T) {
+	// The role chunk is preamble — it must NOT trip new_token. Only the
+	// content chunk that follows should.
+	sse := "data: {\"choices\":[{\"delta\":{\"role\":\"assistant\"}}]}\n\n" +
+		"data: {\"choices\":[{\"delta\":{\"content\":\"hi\"}}]}\n\n" +
+		"data: [DONE]\n\n"
+	client, exporter := newTracedClient(t, []byte(sse))
+	doStreamingChat(t, client)
+
+	if !hasEvent(exporter.GetSpans(), "new_token") {
+		t.Fatalf("expected new_token event, got %v", exporter.GetSpans())
+	}
+}
+
+func TestRoundTrip_StreamingEmitsNewTokenOnToolCallDelta(t *testing.T) {
+	// A stream that only ever emits tool_calls (no text content) must still
+	// register first-token time.
+	sse := "data: {\"choices\":[{\"delta\":{\"role\":\"assistant\"}}]}\n\n" +
+		"data: {\"choices\":[{\"delta\":{\"tool_calls\":[{\"index\":0,\"id\":\"c\",\"function\":{\"name\":\"x\"}}]}}]}\n\n" +
+		"data: [DONE]\n\n"
+	client, exporter := newTracedClient(t, []byte(sse))
+	doStreamingChat(t, client)
+
+	if !hasEvent(exporter.GetSpans(), "new_token") {
+		t.Fatalf("expected new_token event for tool_calls delta, got %v", exporter.GetSpans())
+	}
+}
+
+func TestRoundTrip_StreamingPreambleOnlyDoesNotEmitNewToken(t *testing.T) {
+	// Stream that contains only the role preamble and then ends — there's no
+	// content, so new_token must NOT be emitted.
+	sse := "data: {\"choices\":[{\"delta\":{\"role\":\"assistant\"}}]}\n\n" +
+		"data: [DONE]\n\n"
+	client, exporter := newTracedClient(t, []byte(sse))
+	doStreamingChat(t, client)
+
+	if hasEvent(exporter.GetSpans(), "new_token") {
+		t.Errorf("preamble-only stream should not emit new_token, got %v", exporter.GetSpans())
+	}
+}
+
+func TestRoundTrip_NonStreamingDoesNotEmitNewTokenEvent(t *testing.T) {
+	resp := `{"choices":[{"message":{"role":"assistant","content":"hi"}}],"usage":{"prompt_tokens":1,"completion_tokens":1}}`
+	client, exporter := newTracedClient(t, []byte(resp))
+
+	body := `{"model":"gpt-4","messages":[{"role":"user","content":"hello"}]}`
+	req, err := http.NewRequestWithContext(context.Background(), http.MethodPost,
+		"https://api.openai.com/v1/chat/completions", strings.NewReader(body))
+	if err != nil {
+		t.Fatal(err)
+	}
+	httpResp, err := client.Do(req)
+	if err != nil {
+		t.Fatal(err)
+	}
+	if _, err := io.ReadAll(httpResp.Body); err != nil {
+		t.Fatal(err)
+	}
+	httpResp.Body.Close()
+
+	if hasEvent(exporter.GetSpans(), "new_token") {
+		t.Errorf("non-streaming span should not record a new_token event")
+	}
+}
+
+// errStatusTransport returns a non-streaming JSON error body with a 429.
+type errStatusTransport struct{ body []byte }
+
+func (e *errStatusTransport) RoundTrip(req *http.Request) (*http.Response, error) {
+	return &http.Response{
+		StatusCode: http.StatusTooManyRequests,
+		Body:       io.NopCloser(bytes.NewReader(e.body)),
+		Header:     make(http.Header),
+		Request:    req,
+	}, nil
+}
+
+func TestRoundTrip_StreamingHTTPErrorDoesNotEmitNewToken(t *testing.T) {
+	// stream=true but the API returns an error JSON body — first-token time is
+	// undefined and we must not record one.
+	exporter := tracetest.NewInMemoryExporter()
+	tp := sdktrace.NewTracerProvider(sdktrace.WithSyncer(exporter))
+	client := WrapClient(&http.Client{
+		Transport: &errStatusTransport{body: []byte(`{"error":{"message":"rate limited"}}`)},
+	}, WithTracerProvider(tp))
+
+	body := `{"model":"gpt-4","messages":[{"role":"user","content":"hello"}],"stream":true}`
+	req, _ := http.NewRequestWithContext(context.Background(), http.MethodPost,
+		"https://api.openai.com/v1/chat/completions", strings.NewReader(body))
+	resp, err := client.Do(req)
+	if err != nil {
+		t.Fatal(err)
+	}
+	if _, err := io.ReadAll(resp.Body); err != nil {
+		t.Fatal(err)
+	}
+	resp.Body.Close()
+
+	if hasEvent(exporter.GetSpans(), "new_token") {
+		t.Errorf("streamed HTTP error should not emit new_token, got %v", exporter.GetSpans())
+	}
+}
+
+func TestRoundTrip_ResponsesAPIStreamingFirstTextDelta(t *testing.T) {
+	// Responses API: lifecycle envelopes (response.created, output_item.added)
+	// arrive before the first text delta. Only the delta should register.
+	sse := "data: {\"type\":\"response.created\",\"response\":{}}\n\n" +
+		"data: {\"type\":\"response.in_progress\",\"response\":{}}\n\n" +
+		"data: {\"type\":\"response.output_item.added\",\"item\":{}}\n\n" +
+		"data: {\"type\":\"response.output_text.delta\",\"delta\":\"Hi\"}\n\n" +
+		"data: {\"type\":\"response.completed\",\"response\":{\"output\":[{\"type\":\"message\",\"content\":[{\"type\":\"output_text\",\"text\":\"Hi\"}]}]}}\n\n"
+	client, exporter := newTracedClient(t, []byte(sse))
+
+	body := `{"model":"gpt-4o","input":"hi","stream":true}`
+	req, _ := http.NewRequestWithContext(context.Background(), http.MethodPost,
+		"https://api.openai.com/v1/responses", strings.NewReader(body))
+	resp, _ := client.Do(req)
+	io.ReadAll(resp.Body)
+	resp.Body.Close()
+
+	if !hasEvent(exporter.GetSpans(), "new_token") {
+		t.Errorf("expected new_token on response.output_text.delta, got %v", exporter.GetSpans())
+	}
+}
+
+func TestRoundTrip_ResponsesAPIStreamingLifecycleOnlyDoesNotEmit(t *testing.T) {
+	// Responses API stream that never produces a delta event must not emit
+	// new_token even though many bytes flow through.
+	sse := "data: {\"type\":\"response.created\",\"response\":{}}\n\n" +
+		"data: {\"type\":\"response.in_progress\",\"response\":{}}\n\n" +
+		"data: {\"type\":\"response.output_item.added\",\"item\":{}}\n\n" +
+		"data: {\"type\":\"response.completed\",\"response\":{\"output\":[]}}\n\n"
+	client, exporter := newTracedClient(t, []byte(sse))
+
+	body := `{"model":"gpt-4o","input":"hi","stream":true}`
+	req, _ := http.NewRequestWithContext(context.Background(), http.MethodPost,
+		"https://api.openai.com/v1/responses", strings.NewReader(body))
+	resp, _ := client.Do(req)
+	io.ReadAll(resp.Body)
+	resp.Body.Close()
+
+	if hasEvent(exporter.GetSpans(), "new_token") {
+		t.Errorf("lifecycle-only Responses stream should not emit new_token")
+	}
+}
+
+func TestIsFirstContentChat(t *testing.T) {
+	tests := []struct {
+		name string
+		body string
+		want bool
+	}{
+		{"role preamble", `{"choices":[{"delta":{"role":"assistant"}}]}`, false},
+		{"empty content", `{"choices":[{"delta":{"content":""}}]}`, false},
+		{"content delta", `{"choices":[{"delta":{"content":"hi"}}]}`, true},
+		{"tool_calls delta", `{"choices":[{"delta":{"tool_calls":[{"id":"x"}]}}]}`, true},
+		{"legacy text", `{"choices":[{"text":"hi"}]}`, true},
+		{"no choices", `{"id":"x"}`, false},
+		{"empty choices", `{"choices":[]}`, false},
+		{"n>1 content on second choice", `{"choices":[{"index":0,"delta":{"role":"assistant"}},{"index":1,"delta":{"content":"hi"}}]}`, true},
+		{"n>1 all preamble", `{"choices":[{"index":0,"delta":{"role":"assistant"}},{"index":1,"delta":{"role":"assistant"}}]}`, false},
+	}
+	for _, tt := range tests {
+		var c map[string]any
+		_ = json.Unmarshal([]byte(tt.body), &c)
+		if got := isFirstContentChat(c); got != tt.want {
+			t.Errorf("%s: got %v, want %v", tt.name, got, tt.want)
+		}
+	}
+}
+
+func TestIsFirstContentResponses(t *testing.T) {
+	tests := []struct {
+		name string
+		body string
+		want bool
+	}{
+		{"created lifecycle", `{"type":"response.created"}`, false},
+		{"in_progress", `{"type":"response.in_progress"}`, false},
+		{"output_item.added", `{"type":"response.output_item.added"}`, false},
+		{"output_text.delta", `{"type":"response.output_text.delta","delta":"hi"}`, true},
+		{"function_call_arguments.delta", `{"type":"response.function_call_arguments.delta"}`, true},
+		{"reasoning_summary_text.delta", `{"type":"response.reasoning_summary_text.delta"}`, true},
+		{"completed lifecycle", `{"type":"response.completed"}`, false},
+	}
+	for _, tt := range tests {
+		var c map[string]any
+		_ = json.Unmarshal([]byte(tt.body), &c)
+		if got := isFirstContentResponses(c); got != tt.want {
+			t.Errorf("%s: got %v, want %v", tt.name, got, tt.want)
+		}
+	}
+}
 
 func TestIsOpenAIEndpoint(t *testing.T) {
 	tests := []struct {

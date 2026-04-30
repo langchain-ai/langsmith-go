@@ -1,8 +1,11 @@
 package traceanthropic
 
 import (
+	"bytes"
 	"context"
 	"encoding/json"
+	"io"
+	"net/http"
 	"strings"
 	"testing"
 
@@ -10,6 +13,158 @@ import (
 	sdktrace "go.opentelemetry.io/otel/sdk/trace"
 	"go.opentelemetry.io/otel/sdk/trace/tracetest"
 )
+
+// fakeTransport returns a canned response, capturing the request for inspection.
+type fakeTransport struct {
+	body []byte
+}
+
+func (t *fakeTransport) RoundTrip(req *http.Request) (*http.Response, error) {
+	return &http.Response{
+		StatusCode: http.StatusOK,
+		Body:       io.NopCloser(bytes.NewReader(t.body)),
+		Header:     make(http.Header),
+		Request:    req,
+	}, nil
+}
+
+// hasEvent reports whether any exported span contains an event with the given name.
+func hasEvent(spans tracetest.SpanStubs, name string) bool {
+	for _, s := range spans {
+		for _, e := range s.Events {
+			if e.Name == name {
+				return true
+			}
+		}
+	}
+	return false
+}
+
+func newTracedClient(t *testing.T, body []byte) (*http.Client, *tracetest.InMemoryExporter) {
+	t.Helper()
+	exporter := tracetest.NewInMemoryExporter()
+	tp := sdktrace.NewTracerProvider(sdktrace.WithSyncer(exporter))
+	client := WrapClient(&http.Client{Transport: &fakeTransport{body: body}}, WithTracerProvider(tp))
+	return client, exporter
+}
+
+func doStreamingMessages(t *testing.T, client *http.Client) {
+	t.Helper()
+	body := `{"model":"claude-sonnet-4-20250514","messages":[{"role":"user","content":"hi"}],"max_tokens":16,"stream":true}`
+	req, err := http.NewRequestWithContext(context.Background(), http.MethodPost,
+		"https://api.anthropic.com/v1/messages", strings.NewReader(body))
+	if err != nil {
+		t.Fatal(err)
+	}
+	resp, err := client.Do(req)
+	if err != nil {
+		t.Fatal(err)
+	}
+	if _, err := io.ReadAll(resp.Body); err != nil {
+		t.Fatal(err)
+	}
+	resp.Body.Close()
+}
+
+func TestRoundTrip_StreamingEmitsNewTokenOnFirstContentDelta(t *testing.T) {
+	// message_start and content_block_start arrive before any text — only the
+	// first content_block_delta should trip new_token.
+	sse := "data: {\"type\":\"message_start\",\"message\":{\"model\":\"claude-sonnet-4-20250514\",\"usage\":{\"input_tokens\":3}}}\n" +
+		"data: {\"type\":\"content_block_start\",\"index\":0,\"content_block\":{\"type\":\"text\"}}\n" +
+		"data: {\"type\":\"content_block_delta\",\"index\":0,\"delta\":{\"type\":\"text_delta\",\"text\":\"hi\"}}\n" +
+		"data: {\"type\":\"message_delta\",\"delta\":{\"stop_reason\":\"end_turn\"},\"usage\":{\"output_tokens\":1}}\n" +
+		"data: {\"type\":\"message_stop\"}\n"
+	client, exporter := newTracedClient(t, []byte(sse))
+	doStreamingMessages(t, client)
+
+	if !hasEvent(exporter.GetSpans(), "new_token") {
+		t.Errorf("expected new_token event, got events=%v", exporter.GetSpans())
+	}
+}
+
+func TestRoundTrip_StreamingPreambleOnlyDoesNotEmitNewToken(t *testing.T) {
+	// Stream cancelled after content_block_start but before any content_block_delta.
+	sse := "data: {\"type\":\"message_start\",\"message\":{\"model\":\"claude-sonnet-4-20250514\",\"usage\":{\"input_tokens\":3}}}\n" +
+		"data: {\"type\":\"content_block_start\",\"index\":0,\"content_block\":{\"type\":\"text\"}}\n"
+	client, exporter := newTracedClient(t, []byte(sse))
+	doStreamingMessages(t, client)
+
+	if hasEvent(exporter.GetSpans(), "new_token") {
+		t.Errorf("preamble-only stream should not emit new_token, got %v", exporter.GetSpans())
+	}
+}
+
+// errStatusTransport returns an HTTP error body with no SSE frames.
+type errStatusTransport struct{ body []byte }
+
+func (e *errStatusTransport) RoundTrip(req *http.Request) (*http.Response, error) {
+	return &http.Response{
+		StatusCode: http.StatusTooManyRequests,
+		Body:       io.NopCloser(bytes.NewReader(e.body)),
+		Header:     make(http.Header),
+		Request:    req,
+	}, nil
+}
+
+func TestRoundTrip_StreamingHTTPErrorDoesNotEmitNewToken(t *testing.T) {
+	// stream=true but the API returns an error JSON body — first-token time is
+	// undefined and we must not record one.
+	exporter := tracetest.NewInMemoryExporter()
+	tp := sdktrace.NewTracerProvider(sdktrace.WithSyncer(exporter))
+	client := WrapClient(&http.Client{
+		Transport: &errStatusTransport{body: []byte(`{"type":"error","error":{"message":"overloaded"}}`)},
+	}, WithTracerProvider(tp))
+	doStreamingMessages(t, client)
+
+	if hasEvent(exporter.GetSpans(), "new_token") {
+		t.Errorf("streamed HTTP error should not emit new_token, got %v", exporter.GetSpans())
+	}
+}
+
+func TestIsFirstContent(t *testing.T) {
+	tests := []struct {
+		name string
+		body string
+		want bool
+	}{
+		{"message_start", `{"type":"message_start","message":{}}`, false},
+		{"content_block_start", `{"type":"content_block_start","index":0}`, false},
+		{"content_block_delta", `{"type":"content_block_delta","index":0,"delta":{"type":"text_delta","text":"hi"}}`, true},
+		{"message_delta", `{"type":"message_delta"}`, false},
+		{"message_stop", `{"type":"message_stop"}`, false},
+	}
+	for _, tt := range tests {
+		var c map[string]any
+		_ = json.Unmarshal([]byte(tt.body), &c)
+		if got := isFirstContent(c); got != tt.want {
+			t.Errorf("%s: got %v, want %v", tt.name, got, tt.want)
+		}
+	}
+}
+
+func TestRoundTrip_NonStreamingDoesNotEmitNewTokenEvent(t *testing.T) {
+	respBody := `{"model":"claude-sonnet-4-20250514","content":[{"type":"text","text":"hi"}],"usage":{"input_tokens":3,"output_tokens":1},"stop_reason":"end_turn"}`
+	client, exporter := newTracedClient(t, []byte(respBody))
+
+	body := `{"model":"claude-sonnet-4-20250514","messages":[{"role":"user","content":"hi"}],"max_tokens":16}`
+	req, err := http.NewRequestWithContext(context.Background(), http.MethodPost,
+		"https://api.anthropic.com/v1/messages", strings.NewReader(body))
+	if err != nil {
+		t.Fatal(err)
+	}
+	resp, err := client.Do(req)
+	if err != nil {
+		t.Fatal(err)
+	}
+	if _, err := io.ReadAll(resp.Body); err != nil {
+		t.Fatal(err)
+	}
+	resp.Body.Close()
+
+	if hasEvent(exporter.GetSpans(), "new_token") {
+		t.Errorf("non-streaming span should not record a new_token event")
+	}
+}
 
 func TestGetSpanName(t *testing.T) {
 	tests := []struct {

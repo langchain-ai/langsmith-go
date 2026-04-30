@@ -148,7 +148,7 @@ func MiddlewareWithTracerProvider(req *http.Request, next MiddlewareNext, tp tra
 		return resp, err
 	}
 
-	resp.Body = traceutil.NewBufferedReader(resp.Body, func(r io.Reader, readErr error) {
+	br := traceutil.NewBufferedReader(resp.Body, func(r io.Reader, readErr error) {
 		data, err := io.ReadAll(r)
 		if err != nil {
 			span.RecordError(err)
@@ -229,8 +229,55 @@ func MiddlewareWithTracerProvider(req *http.Request, next MiddlewareNext, tp tra
 		}
 		span.End()
 	})
+	// LangSmith ingest reads new_token to derive first_token_time; skip on
+	// HTTP errors so an error body doesn't inflate it.
+	if streaming && resp.StatusCode < 400 {
+		isMatch := isFirstContentChat
+		if responsesAPI {
+			isMatch = isFirstContentResponses
+		}
+		traceutil.OnFirstSSEMatch(br, isMatch, func() { span.AddEvent("new_token") })
+	}
+	resp.Body = br
 
 	return resp, nil
+}
+
+// Chat streams open with a delta.role-only preamble; with n>1, content can
+// land first on any choice index.
+func isFirstContentChat(chunk map[string]any) bool {
+	choices, ok := chunk["choices"].([]any)
+	if !ok {
+		return false
+	}
+	for _, raw := range choices {
+		choice, ok := raw.(map[string]any)
+		if !ok {
+			continue
+		}
+		// Legacy /v1/completions: text on the choice itself.
+		if text, ok := choice["text"].(string); ok && text != "" {
+			return true
+		}
+		delta, ok := choice["delta"].(map[string]any)
+		if !ok {
+			continue
+		}
+		if text, ok := delta["content"].(string); ok && text != "" {
+			return true
+		}
+		if tcs, ok := delta["tool_calls"].([]any); ok && len(tcs) > 0 {
+			return true
+		}
+	}
+	return false
+}
+
+// Responses API uses *.delta event types for tokens; lifecycle envelopes
+// (response.created, .in_progress, .completed, …) don't.
+func isFirstContentResponses(chunk map[string]any) bool {
+	t, _ := chunk["type"].(string)
+	return strings.HasSuffix(t, ".delta")
 }
 
 // isOpenAIEndpoint returns true if the path matches a known OpenAI API endpoint.
