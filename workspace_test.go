@@ -26,7 +26,6 @@ func TestWorkspaceNewWithOptionalParams(t *testing.T) {
 		option.WithBaseURL(baseURL),
 		option.WithAPIKey("My API Key"),
 		option.WithTenantID("My Tenant ID"),
-		option.WithOrganizationID("My Organization ID"),
 	)
 	_, err := client.Workspaces.New(context.TODO(), langsmith.WorkspaceNewParams{
 		DisplayName:  langsmith.F("display_name"),
@@ -55,7 +54,6 @@ func TestWorkspaceUpdate(t *testing.T) {
 		option.WithBaseURL(baseURL),
 		option.WithAPIKey("My API Key"),
 		option.WithTenantID("My Tenant ID"),
-		option.WithOrganizationID("My Organization ID"),
 	)
 	_, err := client.Workspaces.Update(
 		context.TODO(),
@@ -86,7 +84,6 @@ func TestWorkspaceListWithOptionalParams(t *testing.T) {
 		option.WithBaseURL(baseURL),
 		option.WithAPIKey("My API Key"),
 		option.WithTenantID("My Tenant ID"),
-		option.WithOrganizationID("My Organization ID"),
 	)
 	_, err := client.Workspaces.List(context.TODO(), langsmith.WorkspaceListParams{
 		IncludeDeleted: langsmith.F(true),
@@ -113,7 +110,6 @@ func TestWorkspaceDelete(t *testing.T) {
 		option.WithBaseURL(baseURL),
 		option.WithAPIKey("My API Key"),
 		option.WithTenantID("My Tenant ID"),
-		option.WithOrganizationID("My Organization ID"),
 	)
 	_, err := client.Workspaces.Delete(context.TODO(), "182bd5e5-6e1a-4fe4-a799-aa6d9a6ab26e")
 	if err != nil {
