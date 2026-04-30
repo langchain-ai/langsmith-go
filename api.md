@@ -488,21 +488,6 @@ Methods:
 
 ## Pools
 
-Response Types:
-
-- <a href="https://pkg.go.dev/github.com/langchain-ai/langsmith-go">langsmith</a>.<a href="https://pkg.go.dev/github.com/langchain-ai/langsmith-go#SandboxPoolNewResponse">SandboxPoolNewResponse</a>
-- <a href="https://pkg.go.dev/github.com/langchain-ai/langsmith-go">langsmith</a>.<a href="https://pkg.go.dev/github.com/langchain-ai/langsmith-go#SandboxPoolGetResponse">SandboxPoolGetResponse</a>
-- <a href="https://pkg.go.dev/github.com/langchain-ai/langsmith-go">langsmith</a>.<a href="https://pkg.go.dev/github.com/langchain-ai/langsmith-go#SandboxPoolUpdateResponse">SandboxPoolUpdateResponse</a>
-- <a href="https://pkg.go.dev/github.com/langchain-ai/langsmith-go">langsmith</a>.<a href="https://pkg.go.dev/github.com/langchain-ai/langsmith-go#SandboxPoolListResponse">SandboxPoolListResponse</a>
-
-Methods:
-
-- <code title="post /v2/sandboxes/pools">client.Sandboxes.Pools.<a href="https://pkg.go.dev/github.com/langchain-ai/langsmith-go#SandboxPoolService.New">New</a>(ctx <a href="https://pkg.go.dev/context">context</a>.<a href="https://pkg.go.dev/context#Context">Context</a>, body <a href="https://pkg.go.dev/github.com/langchain-ai/langsmith-go">langsmith</a>.<a href="https://pkg.go.dev/github.com/langchain-ai/langsmith-go#SandboxPoolNewParams">SandboxPoolNewParams</a>) (\*<a href="https://pkg.go.dev/github.com/langchain-ai/langsmith-go">langsmith</a>.<a href="https://pkg.go.dev/github.com/langchain-ai/langsmith-go#SandboxPoolNewResponse">SandboxPoolNewResponse</a>, <a href="https://pkg.go.dev/builtin#error">error</a>)</code>
-- <code title="get /v2/sandboxes/pools/{name}">client.Sandboxes.Pools.<a href="https://pkg.go.dev/github.com/langchain-ai/langsmith-go#SandboxPoolService.Get">Get</a>(ctx <a href="https://pkg.go.dev/context">context</a>.<a href="https://pkg.go.dev/context#Context">Context</a>, name <a href="https://pkg.go.dev/builtin#string">string</a>) (\*<a href="https://pkg.go.dev/github.com/langchain-ai/langsmith-go">langsmith</a>.<a href="https://pkg.go.dev/github.com/langchain-ai/langsmith-go#SandboxPoolGetResponse">SandboxPoolGetResponse</a>, <a href="https://pkg.go.dev/builtin#error">error</a>)</code>
-- <code title="patch /v2/sandboxes/pools/{name}">client.Sandboxes.Pools.<a href="https://pkg.go.dev/github.com/langchain-ai/langsmith-go#SandboxPoolService.Update">Update</a>(ctx <a href="https://pkg.go.dev/context">context</a>.<a href="https://pkg.go.dev/context#Context">Context</a>, name <a href="https://pkg.go.dev/builtin#string">string</a>, body <a href="https://pkg.go.dev/github.com/langchain-ai/langsmith-go">langsmith</a>.<a href="https://pkg.go.dev/github.com/langchain-ai/langsmith-go#SandboxPoolUpdateParams">SandboxPoolUpdateParams</a>) (\*<a href="https://pkg.go.dev/github.com/langchain-ai/langsmith-go">langsmith</a>.<a href="https://pkg.go.dev/github.com/langchain-ai/langsmith-go#SandboxPoolUpdateResponse">SandboxPoolUpdateResponse</a>, <a href="https://pkg.go.dev/builtin#error">error</a>)</code>
-- <code title="get /v2/sandboxes/pools">client.Sandboxes.Pools.<a href="https://pkg.go.dev/github.com/langchain-ai/langsmith-go#SandboxPoolService.List">List</a>(ctx <a href="https://pkg.go.dev/context">context</a>.<a href="https://pkg.go.dev/context#Context">Context</a>, query <a href="https://pkg.go.dev/github.com/langchain-ai/langsmith-go">langsmith</a>.<a href="https://pkg.go.dev/github.com/langchain-ai/langsmith-go#SandboxPoolListParams">SandboxPoolListParams</a>) (\*<a href="https://pkg.go.dev/github.com/langchain-ai/langsmith-go">langsmith</a>.<a href="https://pkg.go.dev/github.com/langchain-ai/langsmith-go#SandboxPoolListResponse">SandboxPoolListResponse</a>, <a href="https://pkg.go.dev/builtin#error">error</a>)</code>
-- <code title="delete /v2/sandboxes/pools/{name}">client.Sandboxes.Pools.<a href="https://pkg.go.dev/github.com/langchain-ai/langsmith-go#SandboxPoolService.Delete">Delete</a>(ctx <a href="https://pkg.go.dev/context">context</a>.<a href="https://pkg.go.dev/context#Context">Context</a>, name <a href="https://pkg.go.dev/builtin#string">string</a>) <a href="https://pkg.go.dev/builtin#error">error</a></code>
-
 ## Snapshots
 
 Response Types:
@@ -519,11 +504,3 @@ Methods:
 - <code title="delete /v2/sandboxes/snapshots/{snapshot_id}">client.Sandboxes.Snapshots.<a href="https://pkg.go.dev/github.com/langchain-ai/langsmith-go#SandboxSnapshotService.Delete">Delete</a>(ctx <a href="https://pkg.go.dev/context">context</a>.<a href="https://pkg.go.dev/context#Context">Context</a>, snapshotID <a href="https://pkg.go.dev/builtin#string">string</a>) <a href="https://pkg.go.dev/builtin#error">error</a></code>
 
 ## Templates
-
-Response Types:
-
-- <a href="https://pkg.go.dev/github.com/langchain-ai/langsmith-go">langsmith</a>.<a href="https://pkg.go.dev/github.com/langchain-ai/langsmith-go#SandboxTemplateListResponse">SandboxTemplateListResponse</a>
-
-Methods:
-
-- <code title="get /v2/sandboxes/templates">client.Sandboxes.Templates.<a href="https://pkg.go.dev/github.com/langchain-ai/langsmith-go#SandboxTemplateService.List">List</a>(ctx <a href="https://pkg.go.dev/context">context</a>.<a href="https://pkg.go.dev/context#Context">Context</a>, query <a href="https://pkg.go.dev/github.com/langchain-ai/langsmith-go">langsmith</a>.<a href="https://pkg.go.dev/github.com/langchain-ai/langsmith-go#SandboxTemplateListParams">SandboxTemplateListParams</a>) (\*<a href="https://pkg.go.dev/github.com/langchain-ai/langsmith-go">langsmith</a>.<a href="https://pkg.go.dev/github.com/langchain-ai/langsmith-go#SandboxTemplateListResponse">SandboxTemplateListResponse</a>, <a href="https://pkg.go.dev/builtin#error">error</a>)</code>

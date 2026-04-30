@@ -64,7 +64,6 @@ func TestSandboxBoxNewWithOptionalParams(t *testing.T) {
 		}),
 		SnapshotID:   langsmith.F("snapshot_id"),
 		SnapshotName: langsmith.F("snapshot_name"),
-		TemplateName: langsmith.F("template_name"),
 		Timeout:      langsmith.F(int64(0)),
 		TtlSeconds:   langsmith.F(int64(0)),
 		Vcpus:        langsmith.F(int64(0)),
@@ -189,7 +188,6 @@ func TestSandboxBoxListWithOptionalParams(t *testing.T) {
 		SortBy:        langsmith.F("sort_by"),
 		SortDirection: langsmith.F("sort_direction"),
 		Status:        langsmith.F("status"),
-		TemplateName:  langsmith.F("template_name"),
 	})
 	if err != nil {
 		var apierr *langsmith.Error
