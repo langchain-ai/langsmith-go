@@ -36,7 +36,7 @@ jobs:
           github.repository == 'stainless-sdks/langsmith-api-go' &&
           !startsWith(github.ref, 'refs/heads/stl/')
         id: github-oidc
-        uses: actions/github-script@v8
+        uses: actions/github-script@v9
         with:
           script: core.setOutput('github_token', await core.getIDToken());
 
