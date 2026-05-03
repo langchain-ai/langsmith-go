@@ -1,5 +1,19 @@
 # Changelog
 
+## 0.8.0 (2026-05-03)
+
+Full Changelog: [v0.7.0...v0.8.0](https://github.com/langchain-ai/langsmith-go/compare/v0.7.0...v0.8.0)
+
+### Features
+
+* **api:** api update ([8bbec4d](https://github.com/langchain-ai/langsmith-go/commit/8bbec4d9272a9435eb7ce2b6413ea6cb762c20f8))
+* emit new_token span event on first content delta in streaming wrappers ([#67](https://github.com/langchain-ai/langsmith-go/issues/67)) ([54da463](https://github.com/langchain-ai/langsmith-go/commit/54da46347b7fb28e2c6df6aa535ba6a98790f533))
+
+
+### Chores
+
+* avoid embedding reflect.Type for dead code elimination ([f6f1dab](https://github.com/langchain-ai/langsmith-go/commit/f6f1dab8bdba8fc6caeef6c4ee2b834e0c7a89d6))
+
 ## 0.7.0 (2026-04-30)
 
 Full Changelog: [v0.6.0...v0.7.0](https://github.com/langchain-ai/langsmith-go/compare/v0.6.0...v0.7.0)

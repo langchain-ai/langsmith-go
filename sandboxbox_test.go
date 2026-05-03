@@ -64,10 +64,8 @@ func TestSandboxBoxNewWithOptionalParams(t *testing.T) {
 		}),
 		SnapshotID:   langsmith.F("snapshot_id"),
 		SnapshotName: langsmith.F("snapshot_name"),
-		Timeout:      langsmith.F(int64(0)),
 		TtlSeconds:   langsmith.F(int64(0)),
 		Vcpus:        langsmith.F(int64(0)),
-		WaitForReady: langsmith.F(true),
 	})
 	if err != nil {
 		var apierr *langsmith.Error

@@ -38,7 +38,7 @@ func NewSandboxBoxService(opts ...option.RequestOption) (r *SandboxBoxService) {
 
 // Create a new sandbox from a snapshot. The snapshot may be identified by
 // `snapshot_id` (UUID) or by `snapshot_name` (tenant-scoped unique name); exactly
-// one must be set. Optionally blocks until ready or timeout.
+// one must be set.
 func (r *SandboxBoxService) New(ctx context.Context, body SandboxBoxNewParams, opts ...option.RequestOption) (res *SandboxBoxNewResponse, err error) {
 	opts = slices.Concat(r.Options, opts)
 	path := "v2/sandboxes/boxes"
@@ -134,8 +134,7 @@ func (r *SandboxBoxService) GetStatus(ctx context.Context, name string, opts ...
 	return res, err
 }
 
-// Start a stopped or failed sandbox. This endpoint is not idempotent; it returns
-// 202 immediately, then you can poll status for readiness.
+// Start a stopped or failed sandbox. This endpoint is not idempotent.
 func (r *SandboxBoxService) Start(ctx context.Context, name string, opts ...option.RequestOption) (res *SandboxBoxStartResponse, err error) {
 	opts = slices.Concat(r.Options, opts)
 	if name == "" {
@@ -1506,10 +1505,8 @@ type SandboxBoxNewParams struct {
 	ProxyConfig     param.Field[SandboxBoxNewParamsProxyConfig] `json:"proxy_config"`
 	SnapshotID      param.Field[string]                         `json:"snapshot_id"`
 	SnapshotName    param.Field[string]                         `json:"snapshot_name"`
-	Timeout         param.Field[int64]                          `json:"timeout"`
 	TtlSeconds      param.Field[int64]                          `json:"ttl_seconds"`
 	Vcpus           param.Field[int64]                          `json:"vcpus"`
-	WaitForReady    param.Field[bool]                           `json:"wait_for_ready"`
 }
 
 func (r SandboxBoxNewParams) MarshalJSON() (data []byte, err error) {
