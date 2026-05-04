@@ -106,24 +106,26 @@ func (r *AnnotationQueueRunService) DeleteQueue(ctx context.Context, queueID str
 }
 
 type AnnotationQueueRunNewResponse struct {
-	ID               string                            `json:"id" api:"required" format:"uuid"`
-	QueueID          string                            `json:"queue_id" api:"required" format:"uuid"`
-	RunID            string                            `json:"run_id" api:"required" format:"uuid"`
-	AddedAt          time.Time                         `json:"added_at" format:"date-time"`
-	LastReviewedTime time.Time                         `json:"last_reviewed_time" api:"nullable" format:"date-time"`
-	JSON             annotationQueueRunNewResponseJSON `json:"-"`
+	ID                      string                            `json:"id" api:"required" format:"uuid"`
+	QueueID                 string                            `json:"queue_id" api:"required" format:"uuid"`
+	RunID                   string                            `json:"run_id" api:"required" format:"uuid"`
+	AddedAt                 time.Time                         `json:"added_at" format:"date-time"`
+	LastReviewedTime        time.Time                         `json:"last_reviewed_time" api:"nullable" format:"date-time"`
+	SourceProposedExampleID string                            `json:"source_proposed_example_id" api:"nullable" format:"uuid"`
+	JSON                    annotationQueueRunNewResponseJSON `json:"-"`
 }
 
 // annotationQueueRunNewResponseJSON contains the JSON metadata for the struct
 // [AnnotationQueueRunNewResponse]
 type annotationQueueRunNewResponseJSON struct {
-	ID               apijson.Field
-	QueueID          apijson.Field
-	RunID            apijson.Field
-	AddedAt          apijson.Field
-	LastReviewedTime apijson.Field
-	raw              string
-	ExtraFields      map[string]apijson.Field
+	ID                      apijson.Field
+	QueueID                 apijson.Field
+	RunID                   apijson.Field
+	AddedAt                 apijson.Field
+	LastReviewedTime        apijson.Field
+	SourceProposedExampleID apijson.Field
+	raw                     string
+	ExtraFields             map[string]apijson.Field
 }
 
 func (r *AnnotationQueueRunNewResponse) UnmarshalJSON(data []byte) (err error) {
@@ -149,7 +151,8 @@ func (r AnnotationQueueRunNewParams) MarshalJSON() (data []byte, err error) {
 }
 
 // Satisfied by [AnnotationQueueRunNewParamsBodyRunsUuidArray],
-// [AnnotationQueueRunNewParamsBodyRunsAnnotationQueueRunAddSchemaArray].
+// [AnnotationQueueRunNewParamsBodyRunsAnnotationQueueRunAddSchemaArray],
+// [AnnotationQueueRunNewParamsBodyArray].
 type AnnotationQueueRunNewParamsBodyUnion interface {
 	implementsAnnotationQueueRunNewParamsBodyUnion()
 }
@@ -164,8 +167,25 @@ type AnnotationQueueRunNewParamsBodyRunsAnnotationQueueRunAddSchemaArray []Annot
 func (r AnnotationQueueRunNewParamsBodyRunsAnnotationQueueRunAddSchemaArray) implementsAnnotationQueueRunNewParamsBodyUnion() {
 }
 
-// Deprecated: use plain UUID list or AddRunToQueueByKeyRequest instead.
+// Add a single run to AQ (CH path) with an optional back-pointer to the
+// issues-agent proposal that seeded this add. Use when bulk-adding runs that come
+// from different proposals — each row carries its own source_proposed_example_id.
+// For unrelated bulk adds, prefer plain List[UUID] on the same endpoint.
 type AnnotationQueueRunNewParamsBodyRunsAnnotationQueueRunAddSchemaArrayItem struct {
+	RunID                   param.Field[string] `json:"run_id" api:"required" format:"uuid"`
+	SourceProposedExampleID param.Field[string] `json:"source_proposed_example_id" format:"uuid"`
+}
+
+func (r AnnotationQueueRunNewParamsBodyRunsAnnotationQueueRunAddSchemaArrayItem) MarshalJSON() (data []byte, err error) {
+	return apijson.MarshalRoot(r)
+}
+
+type AnnotationQueueRunNewParamsBodyArray []AnnotationQueueRunNewParamsBodyArrayItem
+
+func (r AnnotationQueueRunNewParamsBodyArray) implementsAnnotationQueueRunNewParamsBodyUnion() {}
+
+// Deprecated: use plain UUID list or AddRunToQueueByKeyRequest instead.
+type AnnotationQueueRunNewParamsBodyArrayItem struct {
 	// Deprecated: deprecated
 	RunID param.Field[string] `json:"run_id" api:"required" format:"uuid"`
 	// Deprecated: deprecated
@@ -177,23 +197,23 @@ type AnnotationQueueRunNewParamsBodyRunsAnnotationQueueRunAddSchemaArrayItem str
 	// Deprecated: deprecated
 	TraceID param.Field[string] `json:"trace_id" format:"uuid"`
 	// Deprecated: deprecated
-	TraceTier param.Field[AnnotationQueueRunNewParamsBodyRunsAnnotationQueueRunAddSchemaArrayTraceTier] `json:"trace_tier"`
+	TraceTier param.Field[AnnotationQueueRunNewParamsBodyArrayTraceTier] `json:"trace_tier"`
 }
 
-func (r AnnotationQueueRunNewParamsBodyRunsAnnotationQueueRunAddSchemaArrayItem) MarshalJSON() (data []byte, err error) {
+func (r AnnotationQueueRunNewParamsBodyArrayItem) MarshalJSON() (data []byte, err error) {
 	return apijson.MarshalRoot(r)
 }
 
-type AnnotationQueueRunNewParamsBodyRunsAnnotationQueueRunAddSchemaArrayTraceTier string
+type AnnotationQueueRunNewParamsBodyArrayTraceTier string
 
 const (
-	AnnotationQueueRunNewParamsBodyRunsAnnotationQueueRunAddSchemaArrayTraceTierLonglived  AnnotationQueueRunNewParamsBodyRunsAnnotationQueueRunAddSchemaArrayTraceTier = "longlived"
-	AnnotationQueueRunNewParamsBodyRunsAnnotationQueueRunAddSchemaArrayTraceTierShortlived AnnotationQueueRunNewParamsBodyRunsAnnotationQueueRunAddSchemaArrayTraceTier = "shortlived"
+	AnnotationQueueRunNewParamsBodyArrayTraceTierLonglived  AnnotationQueueRunNewParamsBodyArrayTraceTier = "longlived"
+	AnnotationQueueRunNewParamsBodyArrayTraceTierShortlived AnnotationQueueRunNewParamsBodyArrayTraceTier = "shortlived"
 )
 
-func (r AnnotationQueueRunNewParamsBodyRunsAnnotationQueueRunAddSchemaArrayTraceTier) IsKnown() bool {
+func (r AnnotationQueueRunNewParamsBodyArrayTraceTier) IsKnown() bool {
 	switch r {
-	case AnnotationQueueRunNewParamsBodyRunsAnnotationQueueRunAddSchemaArrayTraceTierLonglived, AnnotationQueueRunNewParamsBodyRunsAnnotationQueueRunAddSchemaArrayTraceTierShortlived:
+	case AnnotationQueueRunNewParamsBodyArrayTraceTierLonglived, AnnotationQueueRunNewParamsBodyArrayTraceTierShortlived:
 		return true
 	}
 	return false

@@ -366,131 +366,133 @@ type RunSchemaWithAnnotationQueueInfo struct {
 	Name        string `json:"name" api:"required"`
 	QueueRunID  string `json:"queue_run_id" api:"required" format:"uuid"`
 	// Enum for run types.
-	RunType                RunTypeEnum                               `json:"run_type" api:"required"`
-	SessionID              string                                    `json:"session_id" api:"required" format:"uuid"`
-	Status                 string                                    `json:"status" api:"required"`
-	TraceID                string                                    `json:"trace_id" api:"required" format:"uuid"`
-	AddedAt                time.Time                                 `json:"added_at" api:"nullable" format:"date-time"`
-	ChildRunIDs            []string                                  `json:"child_run_ids" api:"nullable" format:"uuid"`
-	CompletedBy            []string                                  `json:"completed_by" format:"uuid"`
-	CompletionCost         string                                    `json:"completion_cost" api:"nullable"`
-	CompletionCostDetails  map[string]string                         `json:"completion_cost_details" api:"nullable"`
-	CompletionTokenDetails map[string]int64                          `json:"completion_token_details" api:"nullable"`
-	CompletionTokens       int64                                     `json:"completion_tokens"`
-	DirectChildRunIDs      []string                                  `json:"direct_child_run_ids" api:"nullable" format:"uuid"`
-	EffectiveAddedAt       time.Time                                 `json:"effective_added_at" api:"nullable" format:"date-time"`
-	EndTime                time.Time                                 `json:"end_time" api:"nullable" format:"date-time"`
-	Error                  string                                    `json:"error" api:"nullable"`
-	Events                 []map[string]interface{}                  `json:"events" api:"nullable"`
-	ExecutionOrder         int64                                     `json:"execution_order"`
-	Extra                  map[string]interface{}                    `json:"extra" api:"nullable"`
-	FeedbackStats          map[string]map[string]interface{}         `json:"feedback_stats" api:"nullable"`
-	FirstTokenTime         time.Time                                 `json:"first_token_time" api:"nullable" format:"date-time"`
-	InDataset              bool                                      `json:"in_dataset" api:"nullable"`
-	Inputs                 map[string]interface{}                    `json:"inputs" api:"nullable"`
-	InputsPreview          string                                    `json:"inputs_preview" api:"nullable"`
-	InputsS3URLs           map[string]interface{}                    `json:"inputs_s3_urls" api:"nullable"`
-	LastQueuedAt           time.Time                                 `json:"last_queued_at" api:"nullable" format:"date-time"`
-	LastReviewedTime       time.Time                                 `json:"last_reviewed_time" api:"nullable" format:"date-time"`
-	ManifestID             string                                    `json:"manifest_id" api:"nullable" format:"uuid"`
-	ManifestS3ID           string                                    `json:"manifest_s3_id" api:"nullable" format:"uuid"`
-	Messages               []map[string]interface{}                  `json:"messages" api:"nullable"`
-	Outputs                map[string]interface{}                    `json:"outputs" api:"nullable"`
-	OutputsPreview         string                                    `json:"outputs_preview" api:"nullable"`
-	OutputsS3URLs          map[string]interface{}                    `json:"outputs_s3_urls" api:"nullable"`
-	ParentRunID            string                                    `json:"parent_run_id" api:"nullable" format:"uuid"`
-	ParentRunIDs           []string                                  `json:"parent_run_ids" api:"nullable" format:"uuid"`
-	PriceModelID           string                                    `json:"price_model_id" api:"nullable" format:"uuid"`
-	PromptCost             string                                    `json:"prompt_cost" api:"nullable"`
-	PromptCostDetails      map[string]string                         `json:"prompt_cost_details" api:"nullable"`
-	PromptTokenDetails     map[string]int64                          `json:"prompt_token_details" api:"nullable"`
-	PromptTokens           int64                                     `json:"prompt_tokens"`
-	ReferenceDatasetID     string                                    `json:"reference_dataset_id" api:"nullable" format:"uuid"`
-	ReferenceExampleID     string                                    `json:"reference_example_id" api:"nullable" format:"uuid"`
-	ReservedBy             []string                                  `json:"reserved_by" format:"uuid"`
-	S3URLs                 map[string]interface{}                    `json:"s3_urls" api:"nullable"`
-	Serialized             map[string]interface{}                    `json:"serialized" api:"nullable"`
-	ShareToken             string                                    `json:"share_token" api:"nullable" format:"uuid"`
-	StartTime              time.Time                                 `json:"start_time" format:"date-time"`
-	Tags                   []string                                  `json:"tags" api:"nullable"`
-	ThreadID               string                                    `json:"thread_id" api:"nullable"`
-	TotalCost              string                                    `json:"total_cost" api:"nullable"`
-	TotalTokens            int64                                     `json:"total_tokens"`
-	TraceFirstReceivedAt   time.Time                                 `json:"trace_first_received_at" api:"nullable" format:"date-time"`
-	TraceMaxStartTime      time.Time                                 `json:"trace_max_start_time" api:"nullable" format:"date-time"`
-	TraceMinStartTime      time.Time                                 `json:"trace_min_start_time" api:"nullable" format:"date-time"`
-	TraceTier              RunSchemaWithAnnotationQueueInfoTraceTier `json:"trace_tier" api:"nullable"`
-	TraceUpgrade           bool                                      `json:"trace_upgrade"`
-	TtlSeconds             int64                                     `json:"ttl_seconds" api:"nullable"`
-	JSON                   runSchemaWithAnnotationQueueInfoJSON      `json:"-"`
+	RunType                 RunTypeEnum                               `json:"run_type" api:"required"`
+	SessionID               string                                    `json:"session_id" api:"required" format:"uuid"`
+	Status                  string                                    `json:"status" api:"required"`
+	TraceID                 string                                    `json:"trace_id" api:"required" format:"uuid"`
+	AddedAt                 time.Time                                 `json:"added_at" api:"nullable" format:"date-time"`
+	ChildRunIDs             []string                                  `json:"child_run_ids" api:"nullable" format:"uuid"`
+	CompletedBy             []string                                  `json:"completed_by" format:"uuid"`
+	CompletionCost          string                                    `json:"completion_cost" api:"nullable"`
+	CompletionCostDetails   map[string]string                         `json:"completion_cost_details" api:"nullable"`
+	CompletionTokenDetails  map[string]int64                          `json:"completion_token_details" api:"nullable"`
+	CompletionTokens        int64                                     `json:"completion_tokens"`
+	DirectChildRunIDs       []string                                  `json:"direct_child_run_ids" api:"nullable" format:"uuid"`
+	EffectiveAddedAt        time.Time                                 `json:"effective_added_at" api:"nullable" format:"date-time"`
+	EndTime                 time.Time                                 `json:"end_time" api:"nullable" format:"date-time"`
+	Error                   string                                    `json:"error" api:"nullable"`
+	Events                  []map[string]interface{}                  `json:"events" api:"nullable"`
+	ExecutionOrder          int64                                     `json:"execution_order"`
+	Extra                   map[string]interface{}                    `json:"extra" api:"nullable"`
+	FeedbackStats           map[string]map[string]interface{}         `json:"feedback_stats" api:"nullable"`
+	FirstTokenTime          time.Time                                 `json:"first_token_time" api:"nullable" format:"date-time"`
+	InDataset               bool                                      `json:"in_dataset" api:"nullable"`
+	Inputs                  map[string]interface{}                    `json:"inputs" api:"nullable"`
+	InputsPreview           string                                    `json:"inputs_preview" api:"nullable"`
+	InputsS3URLs            map[string]interface{}                    `json:"inputs_s3_urls" api:"nullable"`
+	LastQueuedAt            time.Time                                 `json:"last_queued_at" api:"nullable" format:"date-time"`
+	LastReviewedTime        time.Time                                 `json:"last_reviewed_time" api:"nullable" format:"date-time"`
+	ManifestID              string                                    `json:"manifest_id" api:"nullable" format:"uuid"`
+	ManifestS3ID            string                                    `json:"manifest_s3_id" api:"nullable" format:"uuid"`
+	Messages                []map[string]interface{}                  `json:"messages" api:"nullable"`
+	Outputs                 map[string]interface{}                    `json:"outputs" api:"nullable"`
+	OutputsPreview          string                                    `json:"outputs_preview" api:"nullable"`
+	OutputsS3URLs           map[string]interface{}                    `json:"outputs_s3_urls" api:"nullable"`
+	ParentRunID             string                                    `json:"parent_run_id" api:"nullable" format:"uuid"`
+	ParentRunIDs            []string                                  `json:"parent_run_ids" api:"nullable" format:"uuid"`
+	PriceModelID            string                                    `json:"price_model_id" api:"nullable" format:"uuid"`
+	PromptCost              string                                    `json:"prompt_cost" api:"nullable"`
+	PromptCostDetails       map[string]string                         `json:"prompt_cost_details" api:"nullable"`
+	PromptTokenDetails      map[string]int64                          `json:"prompt_token_details" api:"nullable"`
+	PromptTokens            int64                                     `json:"prompt_tokens"`
+	ReferenceDatasetID      string                                    `json:"reference_dataset_id" api:"nullable" format:"uuid"`
+	ReferenceExampleID      string                                    `json:"reference_example_id" api:"nullable" format:"uuid"`
+	ReservedBy              []string                                  `json:"reserved_by" format:"uuid"`
+	S3URLs                  map[string]interface{}                    `json:"s3_urls" api:"nullable"`
+	Serialized              map[string]interface{}                    `json:"serialized" api:"nullable"`
+	ShareToken              string                                    `json:"share_token" api:"nullable" format:"uuid"`
+	SourceProposedExampleID string                                    `json:"source_proposed_example_id" api:"nullable" format:"uuid"`
+	StartTime               time.Time                                 `json:"start_time" format:"date-time"`
+	Tags                    []string                                  `json:"tags" api:"nullable"`
+	ThreadID                string                                    `json:"thread_id" api:"nullable"`
+	TotalCost               string                                    `json:"total_cost" api:"nullable"`
+	TotalTokens             int64                                     `json:"total_tokens"`
+	TraceFirstReceivedAt    time.Time                                 `json:"trace_first_received_at" api:"nullable" format:"date-time"`
+	TraceMaxStartTime       time.Time                                 `json:"trace_max_start_time" api:"nullable" format:"date-time"`
+	TraceMinStartTime       time.Time                                 `json:"trace_min_start_time" api:"nullable" format:"date-time"`
+	TraceTier               RunSchemaWithAnnotationQueueInfoTraceTier `json:"trace_tier" api:"nullable"`
+	TraceUpgrade            bool                                      `json:"trace_upgrade"`
+	TtlSeconds              int64                                     `json:"ttl_seconds" api:"nullable"`
+	JSON                    runSchemaWithAnnotationQueueInfoJSON      `json:"-"`
 }
 
 // runSchemaWithAnnotationQueueInfoJSON contains the JSON metadata for the struct
 // [RunSchemaWithAnnotationQueueInfo]
 type runSchemaWithAnnotationQueueInfoJSON struct {
-	ID                     apijson.Field
-	AppPath                apijson.Field
-	DottedOrder            apijson.Field
-	Name                   apijson.Field
-	QueueRunID             apijson.Field
-	RunType                apijson.Field
-	SessionID              apijson.Field
-	Status                 apijson.Field
-	TraceID                apijson.Field
-	AddedAt                apijson.Field
-	ChildRunIDs            apijson.Field
-	CompletedBy            apijson.Field
-	CompletionCost         apijson.Field
-	CompletionCostDetails  apijson.Field
-	CompletionTokenDetails apijson.Field
-	CompletionTokens       apijson.Field
-	DirectChildRunIDs      apijson.Field
-	EffectiveAddedAt       apijson.Field
-	EndTime                apijson.Field
-	Error                  apijson.Field
-	Events                 apijson.Field
-	ExecutionOrder         apijson.Field
-	Extra                  apijson.Field
-	FeedbackStats          apijson.Field
-	FirstTokenTime         apijson.Field
-	InDataset              apijson.Field
-	Inputs                 apijson.Field
-	InputsPreview          apijson.Field
-	InputsS3URLs           apijson.Field
-	LastQueuedAt           apijson.Field
-	LastReviewedTime       apijson.Field
-	ManifestID             apijson.Field
-	ManifestS3ID           apijson.Field
-	Messages               apijson.Field
-	Outputs                apijson.Field
-	OutputsPreview         apijson.Field
-	OutputsS3URLs          apijson.Field
-	ParentRunID            apijson.Field
-	ParentRunIDs           apijson.Field
-	PriceModelID           apijson.Field
-	PromptCost             apijson.Field
-	PromptCostDetails      apijson.Field
-	PromptTokenDetails     apijson.Field
-	PromptTokens           apijson.Field
-	ReferenceDatasetID     apijson.Field
-	ReferenceExampleID     apijson.Field
-	ReservedBy             apijson.Field
-	S3URLs                 apijson.Field
-	Serialized             apijson.Field
-	ShareToken             apijson.Field
-	StartTime              apijson.Field
-	Tags                   apijson.Field
-	ThreadID               apijson.Field
-	TotalCost              apijson.Field
-	TotalTokens            apijson.Field
-	TraceFirstReceivedAt   apijson.Field
-	TraceMaxStartTime      apijson.Field
-	TraceMinStartTime      apijson.Field
-	TraceTier              apijson.Field
-	TraceUpgrade           apijson.Field
-	TtlSeconds             apijson.Field
-	raw                    string
-	ExtraFields            map[string]apijson.Field
+	ID                      apijson.Field
+	AppPath                 apijson.Field
+	DottedOrder             apijson.Field
+	Name                    apijson.Field
+	QueueRunID              apijson.Field
+	RunType                 apijson.Field
+	SessionID               apijson.Field
+	Status                  apijson.Field
+	TraceID                 apijson.Field
+	AddedAt                 apijson.Field
+	ChildRunIDs             apijson.Field
+	CompletedBy             apijson.Field
+	CompletionCost          apijson.Field
+	CompletionCostDetails   apijson.Field
+	CompletionTokenDetails  apijson.Field
+	CompletionTokens        apijson.Field
+	DirectChildRunIDs       apijson.Field
+	EffectiveAddedAt        apijson.Field
+	EndTime                 apijson.Field
+	Error                   apijson.Field
+	Events                  apijson.Field
+	ExecutionOrder          apijson.Field
+	Extra                   apijson.Field
+	FeedbackStats           apijson.Field
+	FirstTokenTime          apijson.Field
+	InDataset               apijson.Field
+	Inputs                  apijson.Field
+	InputsPreview           apijson.Field
+	InputsS3URLs            apijson.Field
+	LastQueuedAt            apijson.Field
+	LastReviewedTime        apijson.Field
+	ManifestID              apijson.Field
+	ManifestS3ID            apijson.Field
+	Messages                apijson.Field
+	Outputs                 apijson.Field
+	OutputsPreview          apijson.Field
+	OutputsS3URLs           apijson.Field
+	ParentRunID             apijson.Field
+	ParentRunIDs            apijson.Field
+	PriceModelID            apijson.Field
+	PromptCost              apijson.Field
+	PromptCostDetails       apijson.Field
+	PromptTokenDetails      apijson.Field
+	PromptTokens            apijson.Field
+	ReferenceDatasetID      apijson.Field
+	ReferenceExampleID      apijson.Field
+	ReservedBy              apijson.Field
+	S3URLs                  apijson.Field
+	Serialized              apijson.Field
+	ShareToken              apijson.Field
+	SourceProposedExampleID apijson.Field
+	StartTime               apijson.Field
+	Tags                    apijson.Field
+	ThreadID                apijson.Field
+	TotalCost               apijson.Field
+	TotalTokens             apijson.Field
+	TraceFirstReceivedAt    apijson.Field
+	TraceMaxStartTime       apijson.Field
+	TraceMinStartTime       apijson.Field
+	TraceTier               apijson.Field
+	TraceUpgrade            apijson.Field
+	TtlSeconds              apijson.Field
+	raw                     string
+	ExtraFields             map[string]apijson.Field
 }
 
 func (r *RunSchemaWithAnnotationQueueInfo) UnmarshalJSON(data []byte) (err error) {
