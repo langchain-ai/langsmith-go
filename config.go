@@ -150,7 +150,7 @@ func withProfileAuth(auth *profileAuth) option.RequestOption {
 				req.Header.Del("Authorization")
 				return next(req)
 			}
-			name, value, _ := auth.authHeader(req.Context(), refreshURLFromRequest(req))
+			name, value, _ := auth.authHeader(req.Context())
 			if name != "" {
 				if strings.EqualFold(name, "X-API-Key") {
 					req.Header.Del("Authorization")
@@ -172,7 +172,7 @@ func (a *profileAuth) currentAuthHeader() (name string, value string, token stri
 	return currentAuthHeaderFromProfile(p)
 }
 
-func (a *profileAuth) authHeader(ctx context.Context, apiURL string) (name string, value string, token string) {
+func (a *profileAuth) authHeader(ctx context.Context) (name string, value string, token string) {
 	a.mu.Lock()
 	defer a.mu.Unlock()
 	p, ok := a.state.cfg.Profiles[a.state.profileName]
@@ -182,7 +182,7 @@ func (a *profileAuth) authHeader(ctx context.Context, apiURL string) (name strin
 	if shouldRefreshProfileToken(p) {
 		refreshCtx, cancel := context.WithTimeout(ctx, tokenRefreshTimeout)
 		defer cancel()
-		if token, err := refreshOAuthToken(refreshCtx, apiURL, p.OAuth.RefreshToken); err == nil {
+		if token, err := refreshOAuthToken(refreshCtx, p.APIURL, p.OAuth.RefreshToken); err == nil {
 			applyTokenResponse(&p, token, time.Now())
 			a.state.cfg.Profiles[a.state.profileName] = p
 			_ = saveConfig(a.state.path, a.state.cfg)
@@ -209,21 +209,6 @@ func authHeaderFromProfile(p configProfile) (name string, value string, token st
 		return "X-API-Key", p.APIKey, ""
 	}
 	return "", "", ""
-}
-
-func refreshURLFromRequest(req *http.Request) string {
-	if req == nil || req.URL == nil {
-		return ""
-	}
-	u := *req.URL
-	u.RawQuery = ""
-	u.Fragment = ""
-	if idx := strings.Index(u.Path, "/api/v1"); idx >= 0 {
-		u.Path = u.Path[:idx+len("/api/v1")]
-	} else {
-		u.Path = ""
-	}
-	return u.String()
 }
 
 // resolveProfileName determines which profile to use.
