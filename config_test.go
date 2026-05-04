@@ -1,6 +1,7 @@
 package langsmith
 
 import (
+	"context"
 	"encoding/json"
 	"net/http"
 	"net/http/httptest"
@@ -244,8 +245,18 @@ func TestLoadProfileOptions_OAuthAccessToken(t *testing.T) {
 func TestLoadProfileOptions_RefreshesExpiredAccessToken(t *testing.T) {
 	clearAuthEnv(t)
 	tokenRequests := 0
+	apiRequests := 0
+	var apiAuth string
 	ts := httptest.NewServer(http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
-		if r.URL.Path != "/oauth/token" {
+		switch r.URL.Path {
+		case "/oauth/token":
+		case "/info":
+			apiRequests++
+			apiAuth = r.Header.Get("Authorization")
+			w.Header().Set("Content-Type", "application/json")
+			_ = json.NewEncoder(w).Encode(map[string]string{"ok": "true"})
+			return
+		default:
 			http.NotFound(w, r)
 			return
 		}
@@ -293,11 +304,25 @@ func TestLoadProfileOptions_RefreshesExpiredAccessToken(t *testing.T) {
 
 	opts := loadProfileOptions()
 	cfg := applyOptions(t, opts)
-	if cfg.OAuthAccessToken != "new-access-token" {
-		t.Fatalf("expected refreshed access token, got %q", cfg.OAuthAccessToken)
+	if cfg.OAuthAccessToken != "old-access-token" {
+		t.Fatalf("expected initial access token before request, got %q", cfg.OAuthAccessToken)
+	}
+	if tokenRequests != 0 {
+		t.Fatalf("expected no token request before API request, got %d", tokenRequests)
+	}
+
+	var out map[string]string
+	if err := requestconfig.ExecuteNewRequest(context.Background(), http.MethodGet, "/info", nil, &out, opts...); err != nil {
+		t.Fatal(err)
 	}
 	if tokenRequests != 1 {
-		t.Fatalf("expected one token request, got %d", tokenRequests)
+		t.Fatalf("expected one token request during API request, got %d", tokenRequests)
+	}
+	if apiRequests != 1 {
+		t.Fatalf("expected one API request, got %d", apiRequests)
+	}
+	if apiAuth != "Bearer new-access-token" {
+		t.Fatalf("expected refreshed bearer token on API request, got %q", apiAuth)
 	}
 
 	data, err := os.ReadFile(path)
@@ -312,6 +337,157 @@ func TestLoadProfileOptions_RefreshesExpiredAccessToken(t *testing.T) {
 	}
 	if strings.Contains(string(data), `token_type`) || strings.Contains(string(data), `bearer_token`) {
 		t.Fatalf("expected no token_type or bearer_token fields, got:\n%s", data)
+	}
+}
+
+func TestLoadProfileOptions_RefreshTokenOnlyBeforeProfileAPIKey(t *testing.T) {
+	clearAuthEnv(t)
+	tokenRequests := 0
+	var apiAuth string
+	var apiKey string
+	ts := httptest.NewServer(http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
+		switch r.URL.Path {
+		case "/oauth/token":
+			tokenRequests++
+			if err := r.ParseForm(); err != nil {
+				t.Fatal(err)
+			}
+			if got := r.FormValue("refresh_token"); got != "profile-refresh-token" {
+				t.Fatalf("expected profile refresh token, got %q", got)
+			}
+			_ = json.NewEncoder(w).Encode(oauthTokenResponse{
+				AccessToken:  "new-access-token",
+				ExpiresIn:    300,
+				RefreshToken: "new-refresh-token",
+			})
+		case "/info":
+			apiAuth = r.Header.Get("Authorization")
+			apiKey = r.Header.Get("X-API-Key")
+			w.Header().Set("Content-Type", "application/json")
+			_ = json.NewEncoder(w).Encode(map[string]string{"ok": "true"})
+		default:
+			http.NotFound(w, r)
+		}
+	}))
+	defer ts.Close()
+
+	dir := t.TempDir()
+	path := filepath.Join(dir, "config.json")
+	content := `{
+  "profiles": {
+    "default": {
+      "api_key": "profile-api-key",
+      "api_url": "` + ts.URL + `",
+      "oauth": {
+        "refresh_token": "profile-refresh-token"
+      }
+    }
+  }
+}
+`
+	if err := os.WriteFile(path, []byte(content), 0600); err != nil {
+		t.Fatal(err)
+	}
+	t.Setenv("LANGSMITH_CONFIG_FILE", path)
+	t.Setenv("LANGSMITH_PROFILE", "")
+
+	opts := loadProfileOptions()
+	cfg := applyOptions(t, opts)
+	if got := cfg.Request.Header.Get("X-API-Key"); got != "" {
+		t.Fatalf("expected no initial X-API-Key before refresh, got %q", got)
+	}
+	if tokenRequests != 0 {
+		t.Fatalf("expected no token request before API request, got %d", tokenRequests)
+	}
+
+	var out map[string]string
+	if err := requestconfig.ExecuteNewRequest(context.Background(), http.MethodGet, "/info", nil, &out, opts...); err != nil {
+		t.Fatal(err)
+	}
+	if tokenRequests != 1 {
+		t.Fatalf("expected one token request during API request, got %d", tokenRequests)
+	}
+	if apiKey != "" {
+		t.Fatalf("expected refreshed OAuth to suppress profile API key, got %q", apiKey)
+	}
+	if apiAuth != "Bearer new-access-token" {
+		t.Fatalf("expected refreshed bearer token on API request, got %q", apiAuth)
+	}
+}
+
+func TestLoadProfileOptions_RefreshUsesProfileAPIURL(t *testing.T) {
+	clearAuthEnv(t)
+	tokenRequests := 0
+	profileTS := httptest.NewServer(http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
+		if r.URL.Path != "/oauth/token" {
+			http.NotFound(w, r)
+			return
+		}
+		tokenRequests++
+		_ = json.NewEncoder(w).Encode(oauthTokenResponse{
+			AccessToken:  "new-access-token",
+			ExpiresIn:    300,
+			RefreshToken: "new-refresh-token",
+		})
+	}))
+	defer profileTS.Close()
+
+	apiRequests := 0
+	overrideTokenRequests := 0
+	var apiAuth string
+	apiTS := httptest.NewServer(http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
+		switch r.URL.Path {
+		case "/info":
+			apiRequests++
+			apiAuth = r.Header.Get("Authorization")
+			w.Header().Set("Content-Type", "application/json")
+			_ = json.NewEncoder(w).Encode(map[string]string{"ok": "true"})
+		case "/oauth/token":
+			overrideTokenRequests++
+			http.Error(w, "refresh should use profile api_url", http.StatusTeapot)
+		default:
+			http.NotFound(w, r)
+		}
+	}))
+	defer apiTS.Close()
+
+	dir := t.TempDir()
+	path := filepath.Join(dir, "config.json")
+	content := `{
+  "profiles": {
+    "default": {
+      "api_url": "` + profileTS.URL + `",
+      "oauth": {
+        "access_token": "old-access-token",
+        "refresh_token": "old-refresh-token",
+        "expires_at": "` + time.Now().Add(-time.Minute).UTC().Format(time.RFC3339) + `"
+      }
+    }
+  }
+}
+`
+	if err := os.WriteFile(path, []byte(content), 0600); err != nil {
+		t.Fatal(err)
+	}
+	t.Setenv("LANGSMITH_CONFIG_FILE", path)
+	t.Setenv("LANGSMITH_PROFILE", "")
+
+	opts := append(loadProfileOptions(), option.WithBaseURL(apiTS.URL))
+	var out map[string]string
+	if err := requestconfig.ExecuteNewRequest(context.Background(), http.MethodGet, "/info", nil, &out, opts...); err != nil {
+		t.Fatal(err)
+	}
+	if tokenRequests != 1 {
+		t.Fatalf("expected refresh against profile api_url, got %d token requests", tokenRequests)
+	}
+	if overrideTokenRequests != 0 {
+		t.Fatalf("expected no refresh against request base URL, got %d", overrideTokenRequests)
+	}
+	if apiRequests != 1 {
+		t.Fatalf("expected one API request, got %d", apiRequests)
+	}
+	if apiAuth != "Bearer new-access-token" {
+		t.Fatalf("expected refreshed bearer token on API request, got %q", apiAuth)
 	}
 }
 

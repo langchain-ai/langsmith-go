@@ -11,6 +11,7 @@ import (
 	"os"
 	"path/filepath"
 	"strings"
+	"sync"
 	"time"
 
 	"github.com/langchain-ai/langsmith-go/internal/requestconfig"
@@ -45,6 +46,17 @@ type configFile struct {
 	Profiles       map[string]configProfile `json:"profiles,omitempty"`
 }
 
+type profileState struct {
+	path        string
+	cfg         configFile
+	profileName string
+}
+
+type profileAuth struct {
+	state *profileState
+	mu    sync.Mutex
+}
+
 type oauthTokenResponse struct {
 	AccessToken  string `json:"access_token"`
 	ExpiresIn    int    `json:"expires_in"`
@@ -72,6 +84,36 @@ func (e oauthErrorResponse) Error() string {
 //  2. current_profile key in config file
 //  3. "default" profile
 func loadProfileOptions() []option.RequestOption {
+	state := loadProfileState()
+	if state == nil {
+		return nil
+	}
+	p, ok := state.cfg.Profiles[state.profileName]
+	if !ok {
+		return nil
+	}
+
+	envAuthSet := os.Getenv("LANGSMITH_API_KEY") != ""
+	hasOAuth := p.OAuth.AccessToken != "" || p.OAuth.RefreshToken != ""
+
+	var opts []option.RequestOption
+	if p.APIURL != "" {
+		opts = append(opts, option.WithBaseURL(p.APIURL))
+	}
+	if !envAuthSet {
+		if hasOAuth {
+			opts = append(opts, withProfileAuth(&profileAuth{state: state}))
+		} else if p.APIKey != "" {
+			opts = append(opts, option.WithAPIKey(p.APIKey))
+		}
+	}
+	if p.WorkspaceID != "" {
+		opts = append(opts, option.WithTenantID(p.WorkspaceID))
+	}
+	return opts
+}
+
+func loadProfileState() *profileState {
 	path := configPath()
 	data, err := os.ReadFile(path)
 	if err != nil {
@@ -88,49 +130,85 @@ func loadProfileOptions() []option.RequestOption {
 		return nil
 	}
 
-	p, ok := cfg.Profiles[profileName]
-	if !ok {
+	if _, ok := cfg.Profiles[profileName]; !ok {
 		return nil
 	}
-
-	refreshURL := p.APIURL
-	if envURL := os.Getenv("LANGSMITH_ENDPOINT"); envURL != "" {
-		refreshURL = envURL
-	}
-	envAuthSet := os.Getenv("LANGSMITH_API_KEY") != ""
-	if shouldRefreshProfileToken(p) &&
-		!envAuthSet {
-		ctx, cancel := context.WithTimeout(context.Background(), tokenRefreshTimeout)
-		defer cancel()
-		if token, err := refreshOAuthToken(ctx, refreshURL, p.OAuth.RefreshToken); err == nil {
-			applyTokenResponse(&p, token, time.Now())
-			cfg.Profiles[profileName] = p
-			_ = saveConfig(path, cfg)
-		}
-	}
-
-	var opts []option.RequestOption
-	if p.APIURL != "" {
-		opts = append(opts, option.WithBaseURL(p.APIURL))
-	}
-	if !envAuthSet {
-		if token := p.OAuth.AccessToken; token != "" {
-			opts = append(opts, withOAuthAccessToken(token))
-		} else if p.APIKey != "" {
-			opts = append(opts, option.WithAPIKey(p.APIKey))
-		}
-	}
-	if p.WorkspaceID != "" {
-		opts = append(opts, option.WithTenantID(p.WorkspaceID))
-	}
-	return opts
+	return &profileState{path: path, cfg: cfg, profileName: profileName}
 }
 
-func withOAuthAccessToken(token string) option.RequestOption {
+func withProfileAuth(auth *profileAuth) option.RequestOption {
 	return requestconfig.RequestOptionFunc(func(r *requestconfig.RequestConfig) error {
-		r.OAuthAccessToken = token
-		return r.Apply(option.WithHeader("authorization", "Bearer "+token))
+		name, value, token := auth.currentAuthHeader()
+		if token != "" {
+			r.OAuthAccessToken = token
+		}
+		if name != "" && r.APIKey == "" {
+			r.Request.Header.Set(name, value)
+		}
+		return r.Apply(option.WithMiddleware(func(req *http.Request, next option.MiddlewareNext) (*http.Response, error) {
+			if req.Header.Get("X-API-Key") != "" {
+				req.Header.Del("Authorization")
+				return next(req)
+			}
+			name, value, _ := auth.authHeader(req.Context())
+			if name != "" {
+				if strings.EqualFold(name, "X-API-Key") {
+					req.Header.Del("Authorization")
+				}
+				req.Header.Set(name, value)
+			}
+			return next(req)
+		}))
 	})
+}
+
+func (a *profileAuth) currentAuthHeader() (name string, value string, token string) {
+	a.mu.Lock()
+	defer a.mu.Unlock()
+	p, ok := a.state.cfg.Profiles[a.state.profileName]
+	if !ok {
+		return "", "", ""
+	}
+	return currentAuthHeaderFromProfile(p)
+}
+
+func (a *profileAuth) authHeader(ctx context.Context) (name string, value string, token string) {
+	a.mu.Lock()
+	defer a.mu.Unlock()
+	p, ok := a.state.cfg.Profiles[a.state.profileName]
+	if !ok {
+		return "", "", ""
+	}
+	if shouldRefreshProfileToken(p) {
+		refreshCtx, cancel := context.WithTimeout(ctx, tokenRefreshTimeout)
+		defer cancel()
+		if token, err := refreshOAuthToken(refreshCtx, p.APIURL, p.OAuth.RefreshToken); err == nil {
+			applyTokenResponse(&p, token, time.Now())
+			a.state.cfg.Profiles[a.state.profileName] = p
+			_ = saveConfig(a.state.path, a.state.cfg)
+		}
+	}
+	return authHeaderFromProfile(p)
+}
+
+func currentAuthHeaderFromProfile(p configProfile) (name string, value string, token string) {
+	if p.OAuth.AccessToken != "" {
+		return "Authorization", "Bearer " + p.OAuth.AccessToken, p.OAuth.AccessToken
+	}
+	if p.OAuth.RefreshToken != "" {
+		return "", "", ""
+	}
+	return authHeaderFromProfile(p)
+}
+
+func authHeaderFromProfile(p configProfile) (name string, value string, token string) {
+	if p.OAuth.AccessToken != "" {
+		return "Authorization", "Bearer " + p.OAuth.AccessToken, p.OAuth.AccessToken
+	}
+	if p.APIKey != "" {
+		return "X-API-Key", p.APIKey, ""
+	}
+	return "", "", ""
 }
 
 // resolveProfileName determines which profile to use.
