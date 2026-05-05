@@ -53,8 +53,9 @@ type profileState struct {
 }
 
 type profileAuth struct {
-	state *profileState
-	mu    sync.Mutex
+	state                       *profileState
+	mu                          sync.Mutex
+	managedAuthorizationHeaders map[string]struct{}
 }
 
 type oauthTokenResponse struct {
@@ -102,7 +103,7 @@ func loadProfileOptions() []option.RequestOption {
 	}
 	if !envAuthSet {
 		if hasOAuth {
-			opts = append(opts, withProfileAuth(&profileAuth{state: state}))
+			opts = append(opts, withProfileAuth(newProfileAuth(state)))
 		} else if p.APIKey != "" {
 			opts = append(opts, option.WithAPIKey(p.APIKey))
 		}
@@ -111,6 +112,13 @@ func loadProfileOptions() []option.RequestOption {
 		opts = append(opts, option.WithTenantID(p.WorkspaceID))
 	}
 	return opts
+}
+
+func newProfileAuth(state *profileState) *profileAuth {
+	return &profileAuth{
+		state:                       state,
+		managedAuthorizationHeaders: make(map[string]struct{}),
+	}
 }
 
 func loadProfileState() *profileState {
@@ -150,6 +158,9 @@ func withProfileAuth(auth *profileAuth) option.RequestOption {
 				req.Header.Del("Authorization")
 				return next(req)
 			}
+			if authorization := req.Header.Get("Authorization"); authorization != "" && !auth.isProfileAuthorizationHeader(authorization) {
+				return next(req)
+			}
 			name, value, _ := auth.authHeader(req.Context())
 			if name != "" {
 				if strings.EqualFold(name, "X-API-Key") {
@@ -169,7 +180,9 @@ func (a *profileAuth) currentAuthHeader() (name string, value string, token stri
 	if !ok {
 		return "", "", ""
 	}
-	return currentAuthHeaderFromProfile(p)
+	name, value, token = currentAuthHeaderFromProfile(p)
+	a.rememberProfileAuthHeaderLocked(name, value)
+	return name, value, token
 }
 
 func (a *profileAuth) authHeader(ctx context.Context) (name string, value string, token string) {
@@ -188,7 +201,22 @@ func (a *profileAuth) authHeader(ctx context.Context) (name string, value string
 			_ = saveConfig(a.state.path, a.state.cfg)
 		}
 	}
-	return authHeaderFromProfile(p)
+	name, value, token = authHeaderFromProfile(p)
+	a.rememberProfileAuthHeaderLocked(name, value)
+	return name, value, token
+}
+
+func (a *profileAuth) isProfileAuthorizationHeader(value string) bool {
+	a.mu.Lock()
+	defer a.mu.Unlock()
+	_, ok := a.managedAuthorizationHeaders[value]
+	return ok
+}
+
+func (a *profileAuth) rememberProfileAuthHeaderLocked(name, value string) {
+	if strings.EqualFold(name, "Authorization") && value != "" {
+		a.managedAuthorizationHeaders[value] = struct{}{}
+	}
 }
 
 func currentAuthHeaderFromProfile(p configProfile) (name string, value string, token string) {
