@@ -118,6 +118,7 @@ type Evaluator struct {
 	NumFewShotExamples           int64                     `json:"num_few_shot_examples" api:"nullable"`
 	SessionID                    string                    `json:"session_id" api:"nullable" format:"uuid"`
 	SessionName                  string                    `json:"session_name" api:"nullable"`
+	SpendLimit                   EvaluatorSpendLimit       `json:"spend_limit" api:"nullable"`
 	TraceFilter                  string                    `json:"trace_filter" api:"nullable"`
 	Transient                    bool                      `json:"transient"`
 	TreeFilter                   string                    `json:"tree_filter" api:"nullable"`
@@ -162,6 +163,7 @@ type evaluatorJSON struct {
 	NumFewShotExamples           apijson.Field
 	SessionID                    apijson.Field
 	SessionName                  apijson.Field
+	SpendLimit                   apijson.Field
 	TraceFilter                  apijson.Field
 	Transient                    apijson.Field
 	TreeFilter                   apijson.Field
@@ -187,6 +189,43 @@ const (
 func (r EvaluatorGroupBy) IsKnown() bool {
 	switch r {
 	case EvaluatorGroupByThreadID:
+		return true
+	}
+	return false
+}
+
+type EvaluatorSpendLimit struct {
+	LimitUsd string                    `json:"limit_usd" api:"required"`
+	Window   EvaluatorSpendLimitWindow `json:"window" api:"required"`
+	JSON     evaluatorSpendLimitJSON   `json:"-"`
+}
+
+// evaluatorSpendLimitJSON contains the JSON metadata for the struct
+// [EvaluatorSpendLimit]
+type evaluatorSpendLimitJSON struct {
+	LimitUsd    apijson.Field
+	Window      apijson.Field
+	raw         string
+	ExtraFields map[string]apijson.Field
+}
+
+func (r *EvaluatorSpendLimit) UnmarshalJSON(data []byte) (err error) {
+	return apijson.UnmarshalRoot(data, r)
+}
+
+func (r evaluatorSpendLimitJSON) RawJSON() string {
+	return r.raw
+}
+
+type EvaluatorSpendLimitWindow string
+
+const (
+	EvaluatorSpendLimitWindowWeekly EvaluatorSpendLimitWindow = "weekly"
+)
+
+func (r EvaluatorSpendLimitWindow) IsKnown() bool {
+	switch r {
+	case EvaluatorSpendLimitWindowWeekly:
 		return true
 	}
 	return false
