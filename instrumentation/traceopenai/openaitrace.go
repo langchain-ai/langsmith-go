@@ -182,8 +182,18 @@ func MiddlewareWithTracerProvider(req *http.Request, next MiddlewareNext, tp tra
 			span.RecordError(apiErr)
 			span.SetStatus(codes.Error, apiErr.Error())
 		}
-		// Early stream termination: use real error from read (e.g. context.Canceled) or synthetic "Cancelled"
-		incompleteStream := resp.StatusCode < 400 && streaming && !strings.Contains(bodyText, "[DONE]")
+		// Early stream termination: use real error from read (e.g. context.Canceled) or synthetic "Cancelled".
+		// Chat Completions streams end with "data: [DONE]"; Responses API streams
+		// end with a "response.completed" event, not [DONE].
+		// See https://developers.openai.com/api/docs/guides/streaming-responses#read-the-responses
+		var incompleteStream bool
+		if resp.StatusCode < 400 && streaming {
+			if responsesAPI {
+				incompleteStream = !strings.Contains(bodyText, `"response.completed"`)
+			} else {
+				incompleteStream = !strings.Contains(bodyText, "[DONE]")
+			}
+		}
 		if incompleteStream {
 			endErr := readErr
 			if endErr == nil || endErr == io.EOF {
