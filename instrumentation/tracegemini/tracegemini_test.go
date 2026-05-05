@@ -541,18 +541,18 @@ func TestExtractRequestAttributes_FunctionCall(t *testing.T) {
 	}
 	prompt := v.AsString()
 
-	// Model message with function call should use typed parts format
-	if !strings.Contains(prompt, "function_call") {
-		t.Errorf("prompt should contain function_call typed part: %s", prompt)
-	}
 	if !strings.Contains(prompt, "get_weather") {
 		t.Errorf("prompt should contain function name: %s", prompt)
 	}
-	// Function response should use typed parts format
-	if !strings.Contains(prompt, "function_response") {
-		t.Errorf("prompt should contain function_response typed part: %s", prompt)
+	// Assistant message should have OpenAI-style tool_calls
+	if !strings.Contains(prompt, "tool_calls") {
+		t.Errorf("prompt should contain tool_calls: %s", prompt)
 	}
-	// User text-only message should use simple string content
+	// Tool response should be a separate "tool" role message
+	if !strings.Contains(prompt, `"role":"tool"`) {
+		t.Errorf("prompt should contain tool role message: %s", prompt)
+	}
+
 	var parsed map[string]any
 	if err := json.Unmarshal([]byte(prompt), &parsed); err != nil {
 		t.Fatalf("invalid JSON: %v", err)
@@ -567,10 +567,22 @@ func TestExtractRequestAttributes_FunctionCall(t *testing.T) {
 			t.Error("text-only user message should have string content")
 		}
 	}
-	// Second message (model, function call) should have list content
+	// Second message (assistant with tool_calls) should have null content and tool_calls
 	if second, ok := msgs[1].(map[string]any); ok {
-		if _, isList := second["content"].([]any); !isList {
-			t.Error("function_call message should have list content (typed parts)")
+		if second["role"] != "assistant" {
+			t.Errorf("expected assistant role, got %v", second["role"])
+		}
+		if _, hasTC := second["tool_calls"].([]any); !hasTC {
+			t.Error("assistant message should have tool_calls array")
+		}
+	}
+	// Third message (tool response)
+	if third, ok := msgs[2].(map[string]any); ok {
+		if third["role"] != "tool" {
+			t.Errorf("expected tool role, got %v", third["role"])
+		}
+		if third["name"] != "get_weather" {
+			t.Errorf("expected tool name get_weather, got %v", third["name"])
 		}
 	}
 }
