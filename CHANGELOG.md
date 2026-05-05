@@ -1,5 +1,14 @@
 # Changelog
 
+## 0.8.1 (2026-05-05)
+
+Full Changelog: [v0.8.0...v0.8.1](https://github.com/langchain-ai/langsmith-go/compare/v0.8.0...v0.8.1)
+
+### Features
+
+* **api:** api update ([4797308](https://github.com/langchain-ai/langsmith-go/commit/4797308a9e8b3d61d88778e62fc99a5727ad36a4))
+* **api:** api update ([83870c6](https://github.com/langchain-ai/langsmith-go/commit/83870c621fe79207ae365ad25b591a024a83dbf4))
+
 ## 0.8.0 (2026-05-04)
 
 Full Changelog: [v0.7.0...v0.8.0](https://github.com/langchain-ai/langsmith-go/compare/v0.7.0...v0.8.0)
