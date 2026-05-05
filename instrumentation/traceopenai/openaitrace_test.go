@@ -9,6 +9,7 @@ import (
 	"strings"
 	"testing"
 
+	"go.opentelemetry.io/otel/codes"
 	sdktrace "go.opentelemetry.io/otel/sdk/trace"
 	"go.opentelemetry.io/otel/sdk/trace/tracetest"
 )
@@ -210,6 +211,61 @@ func TestRoundTrip_ResponsesAPIStreamingLifecycleOnlyDoesNotEmit(t *testing.T) {
 
 	if hasEvent(exporter.GetSpans(), "new_token") {
 		t.Errorf("lifecycle-only Responses stream should not emit new_token")
+	}
+}
+
+func TestRoundTrip_ResponsesAPIStreamingCompleteIsNotError(t *testing.T) {
+	// A Responses API stream that ends with response.completed must NOT be
+	// marked as an incomplete/cancelled stream — it completed normally.
+	sse := "data: {\"type\":\"response.created\",\"response\":{}}\n\n" +
+		"data: {\"type\":\"response.output_text.delta\",\"delta\":\"Hi\"}\n\n" +
+		"data: {\"type\":\"response.completed\",\"response\":{\"output\":[{\"type\":\"message\",\"content\":[{\"type\":\"output_text\",\"text\":\"Hi\"}]}],\"usage\":{\"input_tokens\":2,\"output_tokens\":1}}}\n\n"
+	client, exporter := newTracedClient(t, []byte(sse))
+
+	body := `{"model":"gpt-4o","input":"hi","stream":true}`
+	req, _ := http.NewRequestWithContext(context.Background(), http.MethodPost,
+		"https://api.openai.com/v1/responses", strings.NewReader(body))
+	resp, _ := client.Do(req)
+	io.ReadAll(resp.Body)
+	resp.Body.Close()
+
+	spans := exporter.GetSpans()
+	if len(spans) == 0 {
+		t.Fatal("expected at least one span")
+	}
+	for _, s := range spans {
+		if s.Status.Code == codes.Error {
+			t.Errorf("span %q should not be errored, got status %v", s.Name, s.Status)
+		}
+	}
+}
+
+func TestRoundTrip_ResponsesAPIStreamingIncompleteIsError(t *testing.T) {
+	// A Responses API stream that ends WITHOUT response.completed should be
+	// flagged as incomplete (e.g. cancelled or network failure).
+	sse := "data: {\"type\":\"response.created\",\"response\":{}}\n\n" +
+		"data: {\"type\":\"response.output_text.delta\",\"delta\":\"Hi\"}\n\n"
+	client, exporter := newTracedClient(t, []byte(sse))
+
+	body := `{"model":"gpt-4o","input":"hi","stream":true}`
+	req, _ := http.NewRequestWithContext(context.Background(), http.MethodPost,
+		"https://api.openai.com/v1/responses", strings.NewReader(body))
+	resp, _ := client.Do(req)
+	io.ReadAll(resp.Body)
+	resp.Body.Close()
+
+	spans := exporter.GetSpans()
+	if len(spans) == 0 {
+		t.Fatal("expected at least one span")
+	}
+	found := false
+	for _, s := range spans {
+		if s.Status.Code == codes.Error {
+			found = true
+		}
+	}
+	if !found {
+		t.Error("incomplete Responses stream should have error status")
 	}
 }
 
@@ -514,9 +570,10 @@ func TestExtractResponsesCompletion_FunctionCall(t *testing.T) {
 }
 
 func TestExtractStreamingResponsesCompletion(t *testing.T) {
+	// Responses API streams do not send [DONE]; the stream ends after the
+	// response.completed event and the connection closes.
 	sse := "data: {\"type\":\"response.created\"}\n" +
-		"data: {\"type\":\"response.completed\",\"response\":{\"output\":[{\"type\":\"message\",\"content\":[{\"type\":\"output_text\",\"text\":\"done\"}]}],\"usage\":{\"input_tokens\":7,\"output_tokens\":3}}}\n" +
-		"data: [DONE]\n"
+		"data: {\"type\":\"response.completed\",\"response\":{\"output\":[{\"type\":\"message\",\"content\":[{\"type\":\"output_text\",\"text\":\"done\"}]}],\"usage\":{\"input_tokens\":7,\"output_tokens\":3}}}\n"
 	completion, usage := extractStreamingResponsesCompletion([]byte(sse))
 
 	if !strings.Contains(completion, "done") {
@@ -528,7 +585,7 @@ func TestExtractStreamingResponsesCompletion(t *testing.T) {
 }
 
 func TestExtractStreamingResponsesCompletion_NoCompletedEvent(t *testing.T) {
-	sse := "data: {\"type\":\"response.created\"}\ndata: [DONE]\n"
+	sse := "data: {\"type\":\"response.created\"}\n"
 	completion, usage := extractStreamingResponsesCompletion([]byte(sse))
 	if completion != "" {
 		t.Errorf("expected empty completion, got %q", completion)
