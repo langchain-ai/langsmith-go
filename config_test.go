@@ -491,6 +491,68 @@ func TestLoadProfileOptions_RefreshUsesProfileAPIURL(t *testing.T) {
 	}
 }
 
+func TestLoadProfileOptions_PreservesExplicitAuthorizationHeader(t *testing.T) {
+	clearAuthEnv(t)
+	tokenRequests := 0
+	apiRequests := 0
+	var apiAuth string
+	ts := httptest.NewServer(http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
+		switch r.URL.Path {
+		case "/oauth/token":
+			tokenRequests++
+			_ = json.NewEncoder(w).Encode(oauthTokenResponse{
+				AccessToken:  "new-access-token",
+				ExpiresIn:    300,
+				RefreshToken: "new-refresh-token",
+			})
+		case "/info":
+			apiRequests++
+			apiAuth = r.Header.Get("Authorization")
+			w.Header().Set("Content-Type", "application/json")
+			_ = json.NewEncoder(w).Encode(map[string]string{"ok": "true"})
+		default:
+			http.NotFound(w, r)
+		}
+	}))
+	defer ts.Close()
+
+	dir := t.TempDir()
+	path := filepath.Join(dir, "config.json")
+	content := `{
+  "profiles": {
+    "default": {
+      "api_url": "` + ts.URL + `",
+      "oauth": {
+        "access_token": "old-access-token",
+        "refresh_token": "old-refresh-token",
+        "expires_at": "` + time.Now().Add(-time.Minute).UTC().Format(time.RFC3339) + `"
+      }
+    }
+  }
+}
+`
+	if err := os.WriteFile(path, []byte(content), 0600); err != nil {
+		t.Fatal(err)
+	}
+	t.Setenv("LANGSMITH_CONFIG_FILE", path)
+	t.Setenv("LANGSMITH_PROFILE", "")
+
+	opts := append(loadProfileOptions(), option.WithHeader("Authorization", "Bearer explicit-token"))
+	var out map[string]string
+	if err := requestconfig.ExecuteNewRequest(context.Background(), http.MethodGet, "/info", nil, &out, opts...); err != nil {
+		t.Fatal(err)
+	}
+	if tokenRequests != 0 {
+		t.Fatalf("expected explicit Authorization to avoid profile refresh, got %d token requests", tokenRequests)
+	}
+	if apiRequests != 1 {
+		t.Fatalf("expected one API request, got %d", apiRequests)
+	}
+	if apiAuth != "Bearer explicit-token" {
+		t.Fatalf("expected explicit Authorization header, got %q", apiAuth)
+	}
+}
+
 func TestLoadProfileOptions_OAuthAccessTokenOverridesProfileAPIKey(t *testing.T) {
 	clearAuthEnv(t)
 	dir := t.TempDir()
