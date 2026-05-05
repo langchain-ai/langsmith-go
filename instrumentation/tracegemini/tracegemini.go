@@ -244,11 +244,10 @@ func (rt *roundTripper) RoundTrip(req *http.Request) (*http.Response, error) {
 			span.RecordError(apiErr)
 			span.SetStatus(codes.Error, apiErr.Error())
 		}
-		// Gemini streams include finishReason in the final chunk; absence means early termination.
-		incompleteStream := resp.StatusCode < 400 && streaming && !strings.Contains(bodyText, "\"finishReason\"")
+		incompleteStream := resp.StatusCode < 400 && streaming && readErr != io.EOF
 		if incompleteStream {
 			endErr := readErr
-			if endErr == nil || endErr == io.EOF {
+			if endErr == nil {
 				endErr = fmt.Errorf("Cancelled")
 			}
 			span.RecordError(endErr)
