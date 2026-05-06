@@ -53,8 +53,9 @@ type profileState struct {
 }
 
 type profileAuth struct {
-	state *profileState
-	mu    sync.Mutex
+	state    *profileState
+	override bool
+	mu       sync.Mutex
 }
 
 type oauthTokenResponse struct {
@@ -84,13 +85,21 @@ func (e oauthErrorResponse) Error() string {
 //  2. current_profile key in config file
 //  3. "default" profile
 func loadProfileOptions() []option.RequestOption {
-	state := loadProfileState()
+	opts, _ := loadProfileOptionsForProfile("", false)
+	return opts
+}
+
+func loadProfileOptionsForProfile(profileName string, explicit bool) ([]option.RequestOption, error) {
+	state, err := loadProfileState(profileName, explicit)
+	if err != nil {
+		return nil, err
+	}
 	if state == nil {
-		return nil
+		return nil, nil
 	}
 	p, ok := state.cfg.Profiles[state.profileName]
 	if !ok {
-		return nil
+		return nil, nil
 	}
 
 	envAuthSet := os.Getenv("LANGSMITH_API_KEY") != ""
@@ -102,7 +111,7 @@ func loadProfileOptions() []option.RequestOption {
 	}
 	if !envAuthSet {
 		if hasOAuth {
-			opts = append(opts, withProfileAuth(&profileAuth{state: state}))
+			opts = append(opts, withProfileAuth(&profileAuth{state: state, override: explicit}))
 		} else if p.APIKey != "" {
 			opts = append(opts, option.WithAPIKey(p.APIKey))
 		}
@@ -110,30 +119,54 @@ func loadProfileOptions() []option.RequestOption {
 	if p.WorkspaceID != "" {
 		opts = append(opts, option.WithTenantID(p.WorkspaceID))
 	}
-	return opts
+	return opts, nil
 }
 
-func loadProfileState() *profileState {
+func loadProfileState(profileName string, explicit bool) (*profileState, error) {
 	path := configPath()
 	data, err := os.ReadFile(path)
 	if err != nil {
-		return nil
+		if explicit {
+			return nil, fmt.Errorf("reading LangSmith config: %w", err)
+		}
+		return nil, nil
 	}
 
 	var cfg configFile
 	if err := json.Unmarshal(data, &cfg); err != nil {
-		return nil
+		if explicit {
+			return nil, fmt.Errorf("parsing LangSmith config: %w", err)
+		}
+		return nil, nil
 	}
 
-	profileName := resolveProfileName(cfg)
 	if profileName == "" {
-		return nil
+		profileName = resolveProfileName(cfg)
+	}
+	if profileName == "" {
+		return nil, nil
 	}
 
 	if _, ok := cfg.Profiles[profileName]; !ok {
-		return nil
+		if explicit {
+			return nil, fmt.Errorf("LangSmith profile not found: %s", profileName)
+		}
+		return nil, nil
 	}
-	return &profileState{path: path, cfg: cfg, profileName: profileName}
+	return &profileState{path: path, cfg: cfg, profileName: profileName}, nil
+}
+
+// WithProfile returns a request option that uses a named profile from the
+// LangSmith config file. It is equivalent to selecting LANGSMITH_PROFILE for a
+// single client without mutating process-wide environment variables.
+func WithProfile(profileName string) option.RequestOption {
+	return requestconfig.RequestOptionFunc(func(r *requestconfig.RequestConfig) error {
+		opts, err := loadProfileOptionsForProfile(profileName, true)
+		if err != nil {
+			return err
+		}
+		return r.Apply(opts...)
+	})
 }
 
 func withProfileAuth(auth *profileAuth) option.RequestOption {
@@ -142,16 +175,23 @@ func withProfileAuth(auth *profileAuth) option.RequestOption {
 		if token != "" {
 			r.OAuthAccessToken = token
 		}
-		if name != "" && r.APIKey == "" {
+		if name != "" && (r.APIKey == "" || auth.override) {
+			if auth.override && !strings.EqualFold(name, "X-API-Key") {
+				r.APIKey = ""
+				r.Request.Header.Del("X-API-Key")
+			}
 			r.Request.Header.Set(name, value)
 		}
 		return r.Apply(option.WithMiddleware(func(req *http.Request, next option.MiddlewareNext) (*http.Response, error) {
-			if req.Header.Get("X-API-Key") != "" {
+			if req.Header.Get("X-API-Key") != "" && !auth.override {
 				req.Header.Del("Authorization")
 				return next(req)
 			}
 			name, value, _ := auth.authHeader(req.Context())
 			if name != "" {
+				if auth.override && !strings.EqualFold(name, "X-API-Key") {
+					req.Header.Del("X-API-Key")
+				}
 				if strings.EqualFold(name, "X-API-Key") {
 					req.Header.Del("Authorization")
 				}
