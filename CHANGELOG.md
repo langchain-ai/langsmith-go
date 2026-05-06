@@ -1,5 +1,14 @@
 # Changelog
 
+## 0.9.1 (2026-05-06)
+
+Full Changelog: [v0.9.0...v0.9.1](https://github.com/langchain-ai/langsmith-go/compare/v0.9.0...v0.9.1)
+
+### Features
+
+* **api:** api update ([2491248](https://github.com/langchain-ai/langsmith-go/commit/24912489c843b0fd600c9abab0e3a31d8e0fc561))
+* **sandbox:** add Go command runtime helpers ([#79](https://github.com/langchain-ai/langsmith-go/issues/79)) ([e2d8350](https://github.com/langchain-ai/langsmith-go/commit/e2d8350b69cfde81d2f378792f0fcec81a6b5c37))
+
 ## 0.9.0 (2026-05-05)
 
 Full Changelog: [v0.8.1...v0.9.0](https://github.com/langchain-ai/langsmith-go/compare/v0.8.1...v0.9.0)
