@@ -163,6 +163,7 @@ func (r *SandboxBoxService) Stop(ctx context.Context, name string, opts ...optio
 type SandboxBoxNewResponse struct {
 	ID              string                           `json:"id"`
 	CreatedAt       string                           `json:"created_at"`
+	CreatedBy       string                           `json:"created_by"`
 	DataplaneURL    string                           `json:"dataplane_url"`
 	ExpiresAt       string                           `json:"expires_at"`
 	FsCapacityBytes int64                            `json:"fs_capacity_bytes"`
@@ -176,6 +177,7 @@ type SandboxBoxNewResponse struct {
 	StatusMessage   string                           `json:"status_message"`
 	TtlSeconds      int64                            `json:"ttl_seconds"`
 	UpdatedAt       string                           `json:"updated_at"`
+	UpdatedBy       string                           `json:"updated_by"`
 	Vcpus           int64                            `json:"vcpus"`
 	JSON            sandboxBoxNewResponseJSON        `json:"-"`
 }
@@ -185,6 +187,7 @@ type SandboxBoxNewResponse struct {
 type sandboxBoxNewResponseJSON struct {
 	ID              apijson.Field
 	CreatedAt       apijson.Field
+	CreatedBy       apijson.Field
 	DataplaneURL    apijson.Field
 	ExpiresAt       apijson.Field
 	FsCapacityBytes apijson.Field
@@ -198,6 +201,7 @@ type sandboxBoxNewResponseJSON struct {
 	StatusMessage   apijson.Field
 	TtlSeconds      apijson.Field
 	UpdatedAt       apijson.Field
+	UpdatedBy       apijson.Field
 	Vcpus           apijson.Field
 	raw             string
 	ExtraFields     map[string]apijson.Field
@@ -406,6 +410,7 @@ func (r SandboxBoxNewResponseProxyConfigRulesHeadersType) IsKnown() bool {
 type SandboxBoxGetResponse struct {
 	ID              string                           `json:"id"`
 	CreatedAt       string                           `json:"created_at"`
+	CreatedBy       string                           `json:"created_by"`
 	DataplaneURL    string                           `json:"dataplane_url"`
 	ExpiresAt       string                           `json:"expires_at"`
 	FsCapacityBytes int64                            `json:"fs_capacity_bytes"`
@@ -419,6 +424,7 @@ type SandboxBoxGetResponse struct {
 	StatusMessage   string                           `json:"status_message"`
 	TtlSeconds      int64                            `json:"ttl_seconds"`
 	UpdatedAt       string                           `json:"updated_at"`
+	UpdatedBy       string                           `json:"updated_by"`
 	Vcpus           int64                            `json:"vcpus"`
 	JSON            sandboxBoxGetResponseJSON        `json:"-"`
 }
@@ -428,6 +434,7 @@ type SandboxBoxGetResponse struct {
 type sandboxBoxGetResponseJSON struct {
 	ID              apijson.Field
 	CreatedAt       apijson.Field
+	CreatedBy       apijson.Field
 	DataplaneURL    apijson.Field
 	ExpiresAt       apijson.Field
 	FsCapacityBytes apijson.Field
@@ -441,6 +448,7 @@ type sandboxBoxGetResponseJSON struct {
 	StatusMessage   apijson.Field
 	TtlSeconds      apijson.Field
 	UpdatedAt       apijson.Field
+	UpdatedBy       apijson.Field
 	Vcpus           apijson.Field
 	raw             string
 	ExtraFields     map[string]apijson.Field
@@ -649,6 +657,7 @@ func (r SandboxBoxGetResponseProxyConfigRulesHeadersType) IsKnown() bool {
 type SandboxBoxUpdateResponse struct {
 	ID              string                              `json:"id"`
 	CreatedAt       string                              `json:"created_at"`
+	CreatedBy       string                              `json:"created_by"`
 	DataplaneURL    string                              `json:"dataplane_url"`
 	ExpiresAt       string                              `json:"expires_at"`
 	FsCapacityBytes int64                               `json:"fs_capacity_bytes"`
@@ -662,6 +671,7 @@ type SandboxBoxUpdateResponse struct {
 	StatusMessage   string                              `json:"status_message"`
 	TtlSeconds      int64                               `json:"ttl_seconds"`
 	UpdatedAt       string                              `json:"updated_at"`
+	UpdatedBy       string                              `json:"updated_by"`
 	Vcpus           int64                               `json:"vcpus"`
 	JSON            sandboxBoxUpdateResponseJSON        `json:"-"`
 }
@@ -671,6 +681,7 @@ type SandboxBoxUpdateResponse struct {
 type sandboxBoxUpdateResponseJSON struct {
 	ID              apijson.Field
 	CreatedAt       apijson.Field
+	CreatedBy       apijson.Field
 	DataplaneURL    apijson.Field
 	ExpiresAt       apijson.Field
 	FsCapacityBytes apijson.Field
@@ -684,6 +695,7 @@ type sandboxBoxUpdateResponseJSON struct {
 	StatusMessage   apijson.Field
 	TtlSeconds      apijson.Field
 	UpdatedAt       apijson.Field
+	UpdatedBy       apijson.Field
 	Vcpus           apijson.Field
 	raw             string
 	ExtraFields     map[string]apijson.Field
@@ -916,6 +928,7 @@ func (r sandboxBoxListResponseJSON) RawJSON() string {
 type SandboxBoxListResponseSandbox struct {
 	ID              string                                     `json:"id"`
 	CreatedAt       string                                     `json:"created_at"`
+	CreatedBy       string                                     `json:"created_by"`
 	DataplaneURL    string                                     `json:"dataplane_url"`
 	ExpiresAt       string                                     `json:"expires_at"`
 	FsCapacityBytes int64                                      `json:"fs_capacity_bytes"`
@@ -929,6 +942,7 @@ type SandboxBoxListResponseSandbox struct {
 	StatusMessage   string                                     `json:"status_message"`
 	TtlSeconds      int64                                      `json:"ttl_seconds"`
 	UpdatedAt       string                                     `json:"updated_at"`
+	UpdatedBy       string                                     `json:"updated_by"`
 	Vcpus           int64                                      `json:"vcpus"`
 	JSON            sandboxBoxListResponseSandboxJSON          `json:"-"`
 }
@@ -938,6 +952,7 @@ type SandboxBoxListResponseSandbox struct {
 type sandboxBoxListResponseSandboxJSON struct {
 	ID              apijson.Field
 	CreatedAt       apijson.Field
+	CreatedBy       apijson.Field
 	DataplaneURL    apijson.Field
 	ExpiresAt       apijson.Field
 	FsCapacityBytes apijson.Field
@@ -951,6 +966,7 @@ type sandboxBoxListResponseSandboxJSON struct {
 	StatusMessage   apijson.Field
 	TtlSeconds      apijson.Field
 	UpdatedAt       apijson.Field
+	UpdatedBy       apijson.Field
 	Vcpus           apijson.Field
 	raw             string
 	ExtraFields     map[string]apijson.Field
@@ -1256,6 +1272,7 @@ func (r sandboxBoxGetStatusResponseJSON) RawJSON() string {
 type SandboxBoxStartResponse struct {
 	ID              string                             `json:"id"`
 	CreatedAt       string                             `json:"created_at"`
+	CreatedBy       string                             `json:"created_by"`
 	DataplaneURL    string                             `json:"dataplane_url"`
 	ExpiresAt       string                             `json:"expires_at"`
 	FsCapacityBytes int64                              `json:"fs_capacity_bytes"`
@@ -1269,6 +1286,7 @@ type SandboxBoxStartResponse struct {
 	StatusMessage   string                             `json:"status_message"`
 	TtlSeconds      int64                              `json:"ttl_seconds"`
 	UpdatedAt       string                             `json:"updated_at"`
+	UpdatedBy       string                             `json:"updated_by"`
 	Vcpus           int64                              `json:"vcpus"`
 	JSON            sandboxBoxStartResponseJSON        `json:"-"`
 }
@@ -1278,6 +1296,7 @@ type SandboxBoxStartResponse struct {
 type sandboxBoxStartResponseJSON struct {
 	ID              apijson.Field
 	CreatedAt       apijson.Field
+	CreatedBy       apijson.Field
 	DataplaneURL    apijson.Field
 	ExpiresAt       apijson.Field
 	FsCapacityBytes apijson.Field
@@ -1291,6 +1310,7 @@ type sandboxBoxStartResponseJSON struct {
 	StatusMessage   apijson.Field
 	TtlSeconds      apijson.Field
 	UpdatedAt       apijson.Field
+	UpdatedBy       apijson.Field
 	Vcpus           apijson.Field
 	raw             string
 	ExtraFields     map[string]apijson.Field
