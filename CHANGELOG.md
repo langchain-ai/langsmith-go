@@ -1,5 +1,13 @@
 # Changelog
 
+## 0.10.0 (2026-05-06)
+
+Full Changelog: [v0.9.1...v0.10.0](https://github.com/langchain-ai/langsmith-go/compare/v0.9.1...v0.10.0)
+
+### Features
+
+* add explicit profile client option ([#82](https://github.com/langchain-ai/langsmith-go/issues/82)) ([75abe5d](https://github.com/langchain-ai/langsmith-go/commit/75abe5d418912d74058a7df7be422914a1d9bdb6))
+
 ## 0.9.1 (2026-05-06)
 
 Full Changelog: [v0.9.0...v0.9.1](https://github.com/langchain-ai/langsmith-go/compare/v0.9.0...v0.9.1)
