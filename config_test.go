@@ -561,6 +561,86 @@ func TestLoadProfileOptions_EnvAuthSuppressesProfileAuth(t *testing.T) {
 	}
 }
 
+func TestWithProfileOverridesDefaultProfile(t *testing.T) {
+	clearAuthEnv(t)
+	var gotAPIKey string
+	var gotAuth string
+	ts := httptest.NewServer(http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
+		if r.URL.Path != "/api/v1/info" {
+			t.Fatalf("unexpected path: %s", r.URL.Path)
+		}
+		gotAPIKey = r.Header.Get("X-API-Key")
+		gotAuth = r.Header.Get("Authorization")
+		w.Header().Set("Content-Type", "application/json")
+		_ = json.NewEncoder(w).Encode(map[string]any{"version": "test"})
+	}))
+	defer ts.Close()
+
+	dir := t.TempDir()
+	path := filepath.Join(dir, "config.json")
+	content := `{
+  "current_profile": "default",
+  "profiles": {
+    "default": {
+      "api_key": "default-api-key"
+    },
+    "prod": {
+      "oauth": {
+        "access_token": "prod-access-token"
+      }
+    }
+  }
+}
+`
+	if err := os.WriteFile(path, []byte(content), 0600); err != nil {
+		t.Fatal(err)
+	}
+	t.Setenv("LANGSMITH_CONFIG_FILE", path)
+	t.Setenv("LANGSMITH_PROFILE", "")
+
+	client := NewClient(WithProfile("prod"), option.WithBaseURL(ts.URL), option.WithMaxRetries(0))
+	if _, err := client.Info.List(context.Background()); err != nil {
+		t.Fatal(err)
+	}
+	if gotAuth != "Bearer prod-access-token" {
+		t.Fatalf("expected explicit profile bearer auth, got %q", gotAuth)
+	}
+	if gotAPIKey != "" {
+		t.Fatalf("expected explicit OAuth profile to override default API key, got %q", gotAPIKey)
+	}
+}
+
+func TestWithProfileMissingProfileReturnsError(t *testing.T) {
+	clearAuthEnv(t)
+	dir := t.TempDir()
+	path := filepath.Join(dir, "config.json")
+	content := `{
+  "profiles": {
+    "default": {
+      "api_key": "default-api-key"
+    }
+  }
+}
+`
+	if err := os.WriteFile(path, []byte(content), 0600); err != nil {
+		t.Fatal(err)
+	}
+	t.Setenv("LANGSMITH_CONFIG_FILE", path)
+
+	req, err := http.NewRequest(http.MethodGet, "https://example.com", nil)
+	if err != nil {
+		t.Fatal(err)
+	}
+	cfg := requestconfig.RequestConfig{Request: req, HTTPClient: http.DefaultClient}
+	err = cfg.Apply(WithProfile("missing"))
+	if err == nil {
+		t.Fatal("expected missing profile error")
+	}
+	if !strings.Contains(err.Error(), "profile not found: missing") {
+		t.Fatalf("unexpected error: %v", err)
+	}
+}
+
 func applyOptions(t *testing.T, opts []option.RequestOption) requestconfig.RequestConfig {
 	t.Helper()
 	req, err := http.NewRequest(http.MethodGet, "https://example.com", nil)
