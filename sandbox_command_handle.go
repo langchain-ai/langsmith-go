@@ -2,6 +2,7 @@ package langsmith
 
 import (
 	"context"
+	"encoding/base64"
 	"encoding/json"
 	"errors"
 	"fmt"
@@ -136,6 +137,40 @@ func (h *SandboxCommandHandle) SendInput(data string) error {
 	return websocket.JSON.Send(h.ws, map[string]string{"type": "input", "data": data})
 }
 
+// Resize updates the command PTY size.
+func (h *SandboxCommandHandle) Resize(cols int, rows int) error {
+	if cols <= 0 || rows <= 0 {
+		return errors.New("cols and rows must be greater than zero")
+	}
+	h.sendMu.Lock()
+	defer h.sendMu.Unlock()
+	return websocket.JSON.Send(h.ws, map[string]any{"type": "resize", "cols": cols, "rows": rows})
+}
+
+// SendSSHAgentData sends SSH agent response bytes for a forwarded channel.
+func (h *SandboxCommandHandle) SendSSHAgentData(channelID string, data []byte) error {
+	if channelID == "" {
+		return errors.New("missing SSH agent channel ID")
+	}
+	h.sendMu.Lock()
+	defer h.sendMu.Unlock()
+	return websocket.JSON.Send(h.ws, map[string]string{
+		"type":       "ssh_agent_data",
+		"channel_id": channelID,
+		"data":       base64.StdEncoding.EncodeToString(data),
+	})
+}
+
+// CloseSSHAgentChannel tells the sandbox that a forwarded SSH agent channel is closed.
+func (h *SandboxCommandHandle) CloseSSHAgentChannel(channelID string) error {
+	if channelID == "" {
+		return errors.New("missing SSH agent channel ID")
+	}
+	h.sendMu.Lock()
+	defer h.sendMu.Unlock()
+	return websocket.JSON.Send(h.ws, map[string]string{"type": "ssh_agent_close", "channel_id": channelID})
+}
+
 // Kill sends a kill request for the running command.
 func (h *SandboxCommandHandle) Kill() error {
 	h.sendMu.Lock()
@@ -205,6 +240,10 @@ func (h *SandboxCommandHandle) readLoop() {
 		case "error":
 			h.setErr(sandboxErrorFromWSMessage(msg, h.CommandID))
 			return
+		case "ssh_agent_data":
+			h.invokeSSHAgentData(msg)
+		case "ssh_agent_close":
+			h.invokeSSHAgentClose(msg.ChannelID)
 		case "started":
 			if h.CommandID == "" {
 				h.CommandID = msg.CommandID
@@ -283,6 +322,23 @@ func (h *SandboxCommandHandle) invokeCallback(chunk SandboxOutputChunk) {
 	}
 	if chunk.Stream == "stderr" && h.callbacks.OnStderr != nil {
 		h.callbacks.OnStderr(chunk.Data)
+	}
+}
+
+func (h *SandboxCommandHandle) invokeSSHAgentData(msg sandboxWSMessage) {
+	if h.callbacks.OnSSHAgentData == nil || msg.ChannelID == "" || msg.Data == "" {
+		return
+	}
+	data, err := base64.StdEncoding.DecodeString(msg.Data)
+	if err != nil {
+		return
+	}
+	h.callbacks.OnSSHAgentData(msg.ChannelID, data)
+}
+
+func (h *SandboxCommandHandle) invokeSSHAgentClose(channelID string) {
+	if h.callbacks.OnSSHAgentClose != nil && channelID != "" {
+		h.callbacks.OnSSHAgentClose(channelID)
 	}
 }
 
