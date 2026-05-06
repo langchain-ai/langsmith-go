@@ -51,6 +51,8 @@ func (r SandboxBoxRunParams) MarshalJSON() (data []byte, err error) {
 }
 
 // SandboxCommandStartParams configures a streaming WebSocket command execution.
+// Command is optional when Pty is true, in which case the sandbox starts the
+// selected shell directly.
 type SandboxCommandStartParams struct {
 	Command            param.Field[string]            `json:"command" api:"required"`
 	TimeoutSeconds     param.Field[int64]             `json:"timeout_seconds"`
@@ -325,12 +327,12 @@ func normalizeSandboxRunParams(body SandboxBoxRunParams) (SandboxBoxRunParams, i
 
 func normalizeSandboxCommandStartParams(body SandboxCommandStartParams) (sandboxCommandStartRequest, error) {
 	command, ok := sandboxRequiredString(body.Command)
-	if !ok {
+	pty := sandboxFieldValue(body.Pty, false)
+	if !ok && !pty {
 		return sandboxCommandStartRequest{}, errors.New("missing required command parameter")
 	}
-	return sandboxCommandStartRequest{
+	out := sandboxCommandStartRequest{
 		Type:               F("execute"),
-		Command:            F(command),
 		TimeoutSeconds:     F(sandboxFieldValue(body.TimeoutSeconds, defaultSandboxCommandTimeoutSeconds)),
 		Env:                body.Env,
 		CWD:                body.CWD,
@@ -340,5 +342,9 @@ func normalizeSandboxCommandStartParams(body SandboxCommandStartParams) (sandbox
 		TTLSeconds:         F(sandboxFieldValue(body.TTLSeconds, defaultSandboxCommandTTLSeconds)),
 		Pty:                body.Pty,
 		SSHAgentForward:    body.SSHAgentForward,
-	}, nil
+	}
+	if ok {
+		out.Command = F(command)
+	}
+	return out, nil
 }

@@ -300,9 +300,10 @@ func TestSandboxCommandConsoleControls(t *testing.T) {
 		option.WithMaxRetries(0),
 	)
 	handle, err := client.Sandboxes.Boxes.StartCommandWithDataplaneURLAndCallbacks(context.Background(), srv.URL, langsmith.SandboxCommandStartParams{
-		Command:         langsmith.String("/bin/bash"),
-		Pty:             langsmith.Bool(true),
-		SSHAgentForward: langsmith.Bool(true),
+		Shell:              langsmith.String("/bin/bash"),
+		IdleTimeoutSeconds: langsmith.Int(-1),
+		Pty:                langsmith.Bool(true),
+		SSHAgentForward:    langsmith.Bool(true),
 	}, langsmith.SandboxCommandCallbacks{
 		OnSSHAgentData: func(channelID string, data []byte) {
 			if channelID != "ch-1" {
@@ -319,8 +320,17 @@ func TestSandboxCommandConsoleControls(t *testing.T) {
 	}
 
 	execute := <-executePayload
-	if execute["type"] != "execute" || execute["command"] != "/bin/bash" {
+	if execute["type"] != "execute" {
 		t.Fatalf("unexpected execute payload: %#v", execute)
+	}
+	if _, ok := execute["command"]; ok {
+		t.Fatalf("expected no command for interactive PTY payload, got %#v", execute["command"])
+	}
+	if execute["shell"] != "/bin/bash" {
+		t.Fatalf("unexpected shell: %#v", execute["shell"])
+	}
+	if execute["idle_timeout_seconds"] != float64(-1) {
+		t.Fatalf("unexpected idle_timeout_seconds: %#v", execute["idle_timeout_seconds"])
 	}
 	if execute["pty"] != true {
 		t.Fatalf("unexpected pty: %#v", execute["pty"])
