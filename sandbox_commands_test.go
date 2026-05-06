@@ -2,6 +2,7 @@ package langsmith_test
 
 import (
 	"context"
+	"encoding/base64"
 	"encoding/json"
 	"net/http"
 	"net/http/httptest"
@@ -235,6 +236,151 @@ func TestSandboxCommandHandleWebSocketLifecycle(t *testing.T) {
 		t.Fatalf("Result returned error: %v", err)
 	}
 	if result.Stdout != "ready\n" || result.ExitCode != 137 {
+		t.Fatalf("unexpected result: %#v", result)
+	}
+}
+
+func TestSandboxCommandConsoleControls(t *testing.T) {
+	executePayload := make(chan map[string]any, 1)
+	resizePayload := make(chan map[string]any, 1)
+	agentResponsePayload := make(chan map[string]any, 1)
+	agentClosePayload := make(chan map[string]any, 1)
+
+	srv := httptest.NewServer(websocket.Handler(func(ws *websocket.Conn) {
+		var msg map[string]any
+		if err := websocket.JSON.Receive(ws, &msg); err != nil {
+			t.Errorf("receive execute: %v", err)
+			return
+		}
+		executePayload <- msg
+		if err := websocket.Message.Send(ws, `{"type":"started","command_id":"cmd-123","pid":42}`); err != nil {
+			t.Errorf("send started: %v", err)
+			return
+		}
+		if err := websocket.JSON.Receive(ws, &msg); err != nil {
+			t.Errorf("receive resize: %v", err)
+			return
+		}
+		resizePayload <- msg
+		if err := websocket.Message.Send(ws, `{"type":"stdout","data":"shell ready\n","offset":0}`); err != nil {
+			t.Errorf("send stdout: %v", err)
+			return
+		}
+		agentRequest := base64.StdEncoding.EncodeToString([]byte("agent-request"))
+		if err := websocket.Message.Send(ws, `{"type":"ssh_agent_data","channel_id":"ch-1","data":"`+agentRequest+`"}`); err != nil {
+			t.Errorf("send agent data: %v", err)
+			return
+		}
+		if err := websocket.JSON.Receive(ws, &msg); err != nil {
+			t.Errorf("receive agent response: %v", err)
+			return
+		}
+		agentResponsePayload <- msg
+		if err := websocket.Message.Send(ws, `{"type":"ssh_agent_close","channel_id":"ch-1"}`); err != nil {
+			t.Errorf("send agent close: %v", err)
+			return
+		}
+		if err := websocket.JSON.Receive(ws, &msg); err != nil {
+			t.Errorf("receive close response: %v", err)
+			return
+		}
+		agentClosePayload <- msg
+		if err := websocket.Message.Send(ws, `{"type":"exit","exit_code":0}`); err != nil {
+			t.Errorf("send exit: %v", err)
+			return
+		}
+	}))
+	defer srv.Close()
+
+	agentData := make(chan []byte, 1)
+	agentClose := make(chan string, 1)
+	client := langsmith.NewClient(
+		option.WithBaseURL("http://control-plane.test"),
+		option.WithAPIKey("test-api-key"),
+		option.WithMaxRetries(0),
+	)
+	handle, err := client.Sandboxes.Boxes.StartCommandWithDataplaneURLAndCallbacks(context.Background(), srv.URL, langsmith.SandboxCommandStartParams{
+		Command:         langsmith.String("/bin/bash"),
+		Pty:             langsmith.Bool(true),
+		SSHAgentForward: langsmith.Bool(true),
+	}, langsmith.SandboxCommandCallbacks{
+		OnSSHAgentData: func(channelID string, data []byte) {
+			if channelID != "ch-1" {
+				t.Errorf("unexpected channel ID: %s", channelID)
+			}
+			agentData <- data
+		},
+		OnSSHAgentClose: func(channelID string) {
+			agentClose <- channelID
+		},
+	})
+	if err != nil {
+		t.Fatalf("StartCommandWithDataplaneURLAndCallbacks returned error: %v", err)
+	}
+
+	execute := <-executePayload
+	if execute["type"] != "execute" || execute["command"] != "/bin/bash" {
+		t.Fatalf("unexpected execute payload: %#v", execute)
+	}
+	if execute["pty"] != true {
+		t.Fatalf("unexpected pty: %#v", execute["pty"])
+	}
+	if execute["ssh_agent_forward"] != true {
+		t.Fatalf("unexpected ssh_agent_forward: %#v", execute["ssh_agent_forward"])
+	}
+
+	if err := handle.Resize(120, 40); err != nil {
+		t.Fatalf("Resize returned error: %v", err)
+	}
+	resize := <-resizePayload
+	if resize["type"] != "resize" || resize["cols"] != float64(120) || resize["rows"] != float64(40) {
+		t.Fatalf("unexpected resize payload: %#v", resize)
+	}
+
+	ctx, cancel := context.WithTimeout(context.Background(), time.Second)
+	defer cancel()
+	chunk, ok, err := handle.Next(ctx)
+	if err != nil {
+		t.Fatalf("Next returned error: %v", err)
+	}
+	if !ok || chunk.Data != "shell ready\n" {
+		t.Fatalf("unexpected output chunk: %#v", chunk)
+	}
+
+	if got := <-agentData; string(got) != "agent-request" {
+		t.Fatalf("unexpected agent data: %q", string(got))
+	}
+	if err := handle.SendSSHAgentData("ch-1", []byte("agent-response")); err != nil {
+		t.Fatalf("SendSSHAgentData returned error: %v", err)
+	}
+	agentResponse := <-agentResponsePayload
+	if agentResponse["type"] != "ssh_agent_data" || agentResponse["channel_id"] != "ch-1" {
+		t.Fatalf("unexpected agent response payload: %#v", agentResponse)
+	}
+	decoded, err := base64.StdEncoding.DecodeString(agentResponse["data"].(string))
+	if err != nil {
+		t.Fatalf("decode agent response: %v", err)
+	}
+	if string(decoded) != "agent-response" {
+		t.Fatalf("unexpected agent response data: %q", string(decoded))
+	}
+
+	if got := <-agentClose; got != "ch-1" {
+		t.Fatalf("unexpected agent close channel: %q", got)
+	}
+	if err := handle.CloseSSHAgentChannel("ch-1"); err != nil {
+		t.Fatalf("CloseSSHAgentChannel returned error: %v", err)
+	}
+	closePayload := <-agentClosePayload
+	if closePayload["type"] != "ssh_agent_close" || closePayload["channel_id"] != "ch-1" {
+		t.Fatalf("unexpected agent close payload: %#v", closePayload)
+	}
+
+	result, err := handle.Result(ctx)
+	if err != nil {
+		t.Fatalf("Result returned error: %v", err)
+	}
+	if result.Stdout != "shell ready\n" || result.ExitCode != 0 {
 		t.Fatalf("unexpected result: %#v", result)
 	}
 }

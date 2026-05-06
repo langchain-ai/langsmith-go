@@ -61,6 +61,7 @@ type SandboxCommandStartParams struct {
 	KillOnDisconnect   param.Field[bool]              `json:"kill_on_disconnect"`
 	TTLSeconds         param.Field[int64]             `json:"ttl_seconds"`
 	Pty                param.Field[bool]              `json:"pty"`
+	SSHAgentForward    param.Field[bool]              `json:"ssh_agent_forward"`
 }
 
 func (r SandboxCommandStartParams) MarshalJSON() (data []byte, err error) {
@@ -86,8 +87,10 @@ type SandboxOutputChunk struct {
 
 // SandboxCommandCallbacks are invoked as streaming command output arrives.
 type SandboxCommandCallbacks struct {
-	OnStdout func(string)
-	OnStderr func(string)
+	OnStdout        func(string)
+	OnStderr        func(string)
+	OnSSHAgentData  func(channelID string, data []byte)
+	OnSSHAgentClose func(channelID string)
 }
 
 // Run executes a command in the named sandbox and waits for completion. The
@@ -280,6 +283,7 @@ type sandboxCommandStartRequest struct {
 	KillOnDisconnect   param.Field[bool]              `json:"kill_on_disconnect"`
 	TTLSeconds         param.Field[int64]             `json:"ttl_seconds"`
 	Pty                param.Field[bool]              `json:"pty"`
+	SSHAgentForward    param.Field[bool]              `json:"ssh_agent_forward"`
 }
 
 func (r sandboxCommandStartRequest) MarshalJSON() (data []byte, err error) {
@@ -299,6 +303,7 @@ type sandboxWSMessage struct {
 	PID       int64  `json:"pid"`
 	Stream    string `json:"stream"`
 	Data      string `json:"data"`
+	ChannelID string `json:"channel_id"`
 	Offset    int64  `json:"offset"`
 	ExitCode  int64  `json:"exit_code"`
 	Error     string `json:"error"`
@@ -334,5 +339,6 @@ func normalizeSandboxCommandStartParams(body SandboxCommandStartParams) (sandbox
 		KillOnDisconnect:   F(sandboxFieldValue(body.KillOnDisconnect, false)),
 		TTLSeconds:         F(sandboxFieldValue(body.TTLSeconds, defaultSandboxCommandTTLSeconds)),
 		Pty:                body.Pty,
+		SSHAgentForward:    body.SSHAgentForward,
 	}, nil
 }
