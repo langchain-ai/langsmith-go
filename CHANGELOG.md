@@ -1,5 +1,13 @@
 # Changelog
 
+## 0.9.4 (2026-05-06)
+
+Full Changelog: [v0.9.3...v0.9.4](https://github.com/langchain-ai/langsmith-go/compare/v0.9.3...v0.9.4)
+
+### Bug Fixes
+
+* gemini intermediate tool use ([#77](https://github.com/langchain-ai/langsmith-go/issues/77)) ([bd778e3](https://github.com/langchain-ai/langsmith-go/commit/bd778e312b7015a1254c3a9e9cb08e60838cb8b0))
+
 ## 0.9.3 (2026-05-06)
 
 Full Changelog: [v0.10.0...v0.9.3](https://github.com/langchain-ai/langsmith-go/compare/v0.10.0...v0.9.3)
