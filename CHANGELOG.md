@@ -1,5 +1,41 @@
 # Changelog
 
+## 0.9.3 (2026-05-06)
+
+Full Changelog: [v0.10.0...v0.9.3](https://github.com/langchain-ai/langsmith-go/compare/v0.10.0...v0.9.3)
+
+### Features
+
+* add insights fetching to go sdk ([#40](https://github.com/langchain-ai/langsmith-go/issues/40)) ([21bbebd](https://github.com/langchain-ai/langsmith-go/commit/21bbebdf871402fb3faf11de658cacc5903dc0d1))
+* added additional unit, integration, and build tests ([#35](https://github.com/langchain-ai/langsmith-go/issues/35)) ([04d6459](https://github.com/langchain-ai/langsmith-go/commit/04d6459c5b3360ba5b480b47942ca0afcc1bd305))
+* added high level tracer initialization ([#21](https://github.com/langchain-ai/langsmith-go/issues/21)) ([031e9e8](https://github.com/langchain-ai/langsmith-go/commit/031e9e89a644ca7e5ca518e3c8bbec50461e0585))
+* added tracing with go openai client ([#16](https://github.com/langchain-ai/langsmith-go/issues/16)) ([49d5dce](https://github.com/langchain-ai/langsmith-go/commit/49d5dce40aced07d8fef90dd4bcc5eb6391221fc))
+* **api:** add go target ([07c2406](https://github.com/langchain-ai/langsmith-go/commit/07c240666a7c39e1d684090b20286dd3e5dae6ec))
+* emit new_token span event on first content delta in streaming wrappers ([#67](https://github.com/langchain-ai/langsmith-go/issues/67)) ([54da463](https://github.com/langchain-ai/langsmith-go/commit/54da46347b7fb28e2c6df6aa535ba6a98790f533))
+* load LangSmith profile auth in client ([#53](https://github.com/langchain-ai/langsmith-go/issues/53)) ([f15e14e](https://github.com/langchain-ai/langsmith-go/commit/f15e14e16b5e67a688b900e59ffc3e9f134c0a98))
+* multipart ingestion ([#36](https://github.com/langchain-ai/langsmith-go/issues/36)) ([ff6f440](https://github.com/langchain-ai/langsmith-go/commit/ff6f440535e77ebcf805fd5a2fb589df23b135fb))
+* **sandbox:** expose console command controls ([#85](https://github.com/langchain-ai/langsmith-go/issues/85)) ([d04e4ed](https://github.com/langchain-ai/langsmith-go/commit/d04e4ed15038ec6b0344f130f64a11d724167eb2))
+
+
+### Bug Fixes
+
+* added fix for missing thread token counts ([#19](https://github.com/langchain-ai/langsmith-go/issues/19)) ([6c54b0f](https://github.com/langchain-ai/langsmith-go/commit/6c54b0fbac81a2df9b0de9d38f3e3fd54180637d))
+
+
+### Reverts
+
+* load LangSmith profile auth in client ([#65](https://github.com/langchain-ai/langsmith-go/issues/65)) ([03d2f40](https://github.com/langchain-ai/langsmith-go/commit/03d2f400a3bedca1e131a6197f1e19dfed58eee3))
+
+
+### Chores
+
+* dependabot ([#26](https://github.com/langchain-ai/langsmith-go/issues/26)) ([02b58a3](https://github.com/langchain-ai/langsmith-go/commit/02b58a3fc5f16b551a0ec87b7017b0eb5f282a66))
+* **deps:** bump go.opentelemetry.io/otel/sdk ([#33](https://github.com/langchain-ai/langsmith-go/issues/33)) ([675dfba](https://github.com/langchain-ai/langsmith-go/commit/675dfba4834e9de34b55580f9cb492061acb7698))
+* **deps:** bump google.golang.org/grpc ([#37](https://github.com/langchain-ai/langsmith-go/issues/37)) ([bd75dd5](https://github.com/langchain-ai/langsmith-go/commit/bd75dd510aed9e68fbb4cc1ee0d7ca0673a847a1))
+* rename langchain_base_url to langsmith_endpoint ([#22](https://github.com/langchain-ai/langsmith-go/issues/22)) ([66b5cb4](https://github.com/langchain-ai/langsmith-go/commit/66b5cb449050d5fff16ed86bad49fe82a99b3eee))
+* stable release ([#28](https://github.com/langchain-ai/langsmith-go/issues/28)) ([127e4a7](https://github.com/langchain-ai/langsmith-go/commit/127e4a7027ff8066289a4f0407a07730209e2ee0))
+* stable release ([#31](https://github.com/langchain-ai/langsmith-go/issues/31)) ([3e69fc6](https://github.com/langchain-ai/langsmith-go/commit/3e69fc60056c409c53389d5ccb2746a93eaf0107))
+
 ## 0.10.0 (2026-05-06)
 
 Full Changelog: [v0.9.1...v0.10.0](https://github.com/langchain-ai/langsmith-go/compare/v0.9.1...v0.10.0)
