@@ -24,7 +24,7 @@ Or to pin the version:
 <!-- x-release-please-start-version -->
 
 ```sh
-go get -u 'github.com/langchain-ai/langsmith-go@v0.9.3'
+go get -u 'github.com/langchain-ai/langsmith-go@v0.9.4'
 ```
 
 <!-- x-release-please-end -->

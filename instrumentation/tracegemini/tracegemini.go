@@ -354,8 +354,12 @@ func extractRequestAttributes(span trace.Span, body []byte) {
 
 	// systemInstruction → system message (prepended)
 	if sysInstr, ok := req["systemInstruction"].(map[string]any); ok {
-		if text := partsText(sysInstr); text != "" {
-			messages = append(messages, map[string]any{"role": "system", "content": text})
+		rawParts, _ := sysInstr["parts"].([]any)
+		if p := parseParts(rawParts); len(p.texts) > 0 {
+			messages = append(messages, map[string]any{
+				"role":    "system",
+				"content": strings.Join(p.texts, "\n"),
+			})
 		}
 	}
 
@@ -365,7 +369,7 @@ func extractRequestAttributes(span trace.Span, body []byte) {
 			if !ok {
 				continue
 			}
-			messages = append(messages, contentToMessage(cm))
+			messages = append(messages, contentToMessages(cm)...)
 		}
 	}
 
@@ -376,76 +380,96 @@ func extractRequestAttributes(span trace.Span, body []byte) {
 	}
 }
 
-// contentToMessage converts a Gemini Content object to a LangSmith-style message,
-// matching the format produced by langsmith-python's _process_gemini_inputs:
-//   - text-only parts → content is a simple "\n"-joined string
-//   - mixed parts (text + function calls/responses) → content is a typed parts list
-func contentToMessage(content map[string]any) map[string]any {
-	role := mapGeminiRole(content["role"])
-	msg := map[string]any{"role": role}
+// parsedParts holds the result of scanning Gemini content parts.
+type parsedParts struct {
+	texts         []string
+	toolCalls     []any
+	toolResponses []any
+}
 
-	parts, _ := content["parts"].([]any)
-	var textParts []string
-	var structured []any
-	var hasNonText bool
-
-	for _, p := range parts {
-		part, ok := p.(map[string]any)
+// parseParts scans Gemini content parts and returns text, tool calls
+// (OpenAI-compatible format), and tool response messages.
+func parseParts(parts []any) parsedParts {
+	var p parsedParts
+	for _, raw := range parts {
+		part, ok := raw.(map[string]any)
 		if !ok {
 			continue
 		}
 		if text, ok := part["text"].(string); ok && text != "" {
-			textParts = append(textParts, text)
-			structured = append(structured, map[string]any{"type": "text", "text": text})
+			p.texts = append(p.texts, text)
 		}
 		if fc, ok := part["functionCall"].(map[string]any); ok {
-			hasNonText = true
-			formatted := map[string]any{"name": fc["name"]}
+			name, _ := fc["name"].(string)
+			argsJSON := "{}"
 			if args, ok := fc["args"]; ok {
-				formatted["arguments"] = args
+				if ab, err := json.Marshal(args); err == nil {
+					argsJSON = string(ab)
+				}
 			}
-			structured = append(structured, map[string]any{
-				"type":          "function_call",
-				"function_call": formatted,
-			})
-		}
-		if fr, ok := part["functionResponse"].(map[string]any); ok {
-			hasNonText = true
-			structured = append(structured, map[string]any{
-				"type": "function_response",
-				"function_response": map[string]any{
-					"name":     fr["name"],
-					"response": fr["response"],
+			id, _ := fc["id"].(string)
+			if id == "" {
+				id = fmt.Sprintf("call_%d", len(p.toolCalls))
+			}
+			p.toolCalls = append(p.toolCalls, map[string]any{
+				"id":    id,
+				"type":  "function",
+				"index": len(p.toolCalls),
+				"function": map[string]any{
+					"name":      name,
+					"arguments": argsJSON,
 				},
 			})
 		}
+		if fr, ok := part["functionResponse"].(map[string]any); ok {
+			name, _ := fr["name"].(string)
+			respContent := "{}"
+			if r, ok := fr["response"]; ok {
+				if rb, err := json.Marshal(r); err == nil {
+					respContent = string(rb)
+				}
+			}
+			p.toolResponses = append(p.toolResponses, map[string]any{
+				"role":    "tool",
+				"name":    name,
+				"content": respContent,
+			})
+		}
 	}
-
-	if !hasNonText && len(textParts) > 0 {
-		msg["content"] = strings.Join(textParts, "\n")
-	} else if len(structured) > 0 {
-		msg["content"] = structured
-	}
-	return msg
+	return p
 }
 
-// partsText concatenates text from all parts in a Content-like object.
-func partsText(content map[string]any) string {
-	parts, ok := content["parts"].([]any)
-	if !ok {
-		return ""
-	}
-	var texts []string
-	for _, p := range parts {
-		part, ok := p.(map[string]any)
-		if !ok {
-			continue
+// contentToMessages converts a Gemini Content object to one or more
+// OpenAI-compatible messages. A single Gemini content turn may expand to
+// multiple messages:
+//   - text-only → one message with string content
+//   - function calls → one assistant message with tool_calls array
+//   - function responses → one "tool" message per response
+func contentToMessages(content map[string]any) []any {
+	role := mapGeminiRole(content["role"])
+	rawParts, _ := content["parts"].([]any)
+	p := parseParts(rawParts)
+
+	if len(p.toolCalls) > 0 {
+		msg := map[string]any{"role": "assistant"}
+		if len(p.texts) > 0 {
+			msg["content"] = strings.Join(p.texts, "\n")
+		} else {
+			msg["content"] = nil
 		}
-		if text, ok := part["text"].(string); ok {
-			texts = append(texts, text)
-		}
+		msg["tool_calls"] = p.toolCalls
+		return append([]any{msg}, p.toolResponses...)
 	}
-	return strings.Join(texts, "\n")
+
+	if len(p.toolResponses) > 0 {
+		return p.toolResponses
+	}
+
+	msg := map[string]any{"role": role}
+	if len(p.texts) > 0 {
+		msg["content"] = strings.Join(p.texts, "\n")
+	}
+	return []any{msg}
 }
 
 func mapGeminiRole(role any) string {
@@ -553,10 +577,7 @@ func processResponse(span trace.Span, resp map[string]any, parentSpan trace.Span
 }
 
 // buildCompletion builds a {"messages":[...]} JSON string from candidates,
-// matching langsmith-python's _process_generate_content_response:
-//   - tool calls use OpenAI-compatible format (id, type, index, function)
-//   - finish_reason is included in the message
-//   - content is null (not omitted) when only tool calls are present
+// using OpenAI-compatible format for tool calls.
 func buildCompletion(resp map[string]any) (completion, finishReason string) {
 	candidates, ok := resp["candidates"].([]any)
 	if !ok || len(candidates) == 0 {
@@ -577,40 +598,8 @@ func buildCompletion(resp map[string]any) (completion, finishReason string) {
 		return "", finishReason
 	}
 
-	var texts []string
-	var toolCalls []any
-	for _, p := range parts {
-		part, ok := p.(map[string]any)
-		if !ok {
-			continue
-		}
-		if text, ok := part["text"].(string); ok && text != "" {
-			texts = append(texts, text)
-		}
-		if fc, ok := part["functionCall"].(map[string]any); ok {
-			name, _ := fc["name"].(string)
-			argsJSON := "{}"
-			if args, ok := fc["args"]; ok {
-				if ab, err := json.Marshal(args); err == nil {
-					argsJSON = string(ab)
-				}
-			}
-			id, _ := fc["id"].(string)
-			if id == "" {
-				id = fmt.Sprintf("call_%d", len(toolCalls))
-			}
-			toolCalls = append(toolCalls, map[string]any{
-				"id":    id,
-				"type":  "function",
-				"index": len(toolCalls),
-				"function": map[string]any{
-					"name":      name,
-					"arguments": argsJSON,
-				},
-			})
-		}
-	}
-	if len(texts) == 0 && len(toolCalls) == 0 {
+	p := parseParts(parts)
+	if len(p.texts) == 0 && len(p.toolCalls) == 0 {
 		return "", finishReason
 	}
 
@@ -618,15 +607,15 @@ func buildCompletion(resp map[string]any) (completion, finishReason string) {
 	if finishReason != "" {
 		msg["finish_reason"] = finishReason
 	}
-	if len(toolCalls) > 0 {
-		if len(texts) > 0 {
-			msg["content"] = strings.Join(texts, "")
+	if len(p.toolCalls) > 0 {
+		if len(p.texts) > 0 {
+			msg["content"] = strings.Join(p.texts, "")
 		} else {
 			msg["content"] = nil
 		}
-		msg["tool_calls"] = toolCalls
+		msg["tool_calls"] = p.toolCalls
 	} else {
-		msg["content"] = strings.Join(texts, "")
+		msg["content"] = strings.Join(p.texts, "")
 	}
 
 	out, err := json.Marshal(map[string]any{"messages": []any{msg}})
