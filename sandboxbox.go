@@ -80,8 +80,8 @@ func (r *SandboxBoxService) List(ctx context.Context, query SandboxBoxListParams
 	return res, err
 }
 
-// Delete a sandbox claim by name. Deletes the Firecracker pod/service and DB
-// record.
+// Delete a sandbox claim by name or UUID. Tears down the sandbox runtime and
+// removes the DB record.
 func (r *SandboxBoxService) Delete(ctx context.Context, name string, opts ...option.RequestOption) (err error) {
 	opts = slices.Concat(r.Options, opts)
 	opts = append([]option.RequestOption{option.WithHeader("Accept", "*/*")}, opts...)
@@ -1732,7 +1732,7 @@ type SandboxBoxListParams struct {
 	SortBy param.Field[string] `query:"sort_by"`
 	// Sort direction (asc, desc)
 	SortDirection param.Field[string] `query:"sort_direction"`
-	// Filter by status (provisioning, ready, failed, stopped)
+	// Filter by status (provisioning, ready, failed, stopped, deleting)
 	Status param.Field[string] `query:"status"`
 }
 
