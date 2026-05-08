@@ -269,6 +269,7 @@ type SandboxBoxNewResponseProxyConfigCallback struct {
 	MatchHosts     []string                                                 `json:"match_hosts" api:"required"`
 	TtlSeconds     int64                                                    `json:"ttl_seconds" api:"required"`
 	URL            string                                                   `json:"url" api:"required"`
+	FullRequest    bool                                                     `json:"full_request"`
 	RequestHeaders []SandboxBoxNewResponseProxyConfigCallbacksRequestHeader `json:"request_headers"`
 	JSON           sandboxBoxNewResponseProxyConfigCallbackJSON             `json:"-"`
 }
@@ -279,6 +280,7 @@ type sandboxBoxNewResponseProxyConfigCallbackJSON struct {
 	MatchHosts     apijson.Field
 	TtlSeconds     apijson.Field
 	URL            apijson.Field
+	FullRequest    apijson.Field
 	RequestHeaders apijson.Field
 	raw            string
 	ExtraFields    map[string]apijson.Field
@@ -516,6 +518,7 @@ type SandboxBoxGetResponseProxyConfigCallback struct {
 	MatchHosts     []string                                                 `json:"match_hosts" api:"required"`
 	TtlSeconds     int64                                                    `json:"ttl_seconds" api:"required"`
 	URL            string                                                   `json:"url" api:"required"`
+	FullRequest    bool                                                     `json:"full_request"`
 	RequestHeaders []SandboxBoxGetResponseProxyConfigCallbacksRequestHeader `json:"request_headers"`
 	JSON           sandboxBoxGetResponseProxyConfigCallbackJSON             `json:"-"`
 }
@@ -526,6 +529,7 @@ type sandboxBoxGetResponseProxyConfigCallbackJSON struct {
 	MatchHosts     apijson.Field
 	TtlSeconds     apijson.Field
 	URL            apijson.Field
+	FullRequest    apijson.Field
 	RequestHeaders apijson.Field
 	raw            string
 	ExtraFields    map[string]apijson.Field
@@ -763,6 +767,7 @@ type SandboxBoxUpdateResponseProxyConfigCallback struct {
 	MatchHosts     []string                                                    `json:"match_hosts" api:"required"`
 	TtlSeconds     int64                                                       `json:"ttl_seconds" api:"required"`
 	URL            string                                                      `json:"url" api:"required"`
+	FullRequest    bool                                                        `json:"full_request"`
 	RequestHeaders []SandboxBoxUpdateResponseProxyConfigCallbacksRequestHeader `json:"request_headers"`
 	JSON           sandboxBoxUpdateResponseProxyConfigCallbackJSON             `json:"-"`
 }
@@ -773,6 +778,7 @@ type sandboxBoxUpdateResponseProxyConfigCallbackJSON struct {
 	MatchHosts     apijson.Field
 	TtlSeconds     apijson.Field
 	URL            apijson.Field
+	FullRequest    apijson.Field
 	RequestHeaders apijson.Field
 	raw            string
 	ExtraFields    map[string]apijson.Field
@@ -1035,6 +1041,7 @@ type SandboxBoxListResponseSandboxesProxyConfigCallback struct {
 	MatchHosts     []string                                                           `json:"match_hosts" api:"required"`
 	TtlSeconds     int64                                                              `json:"ttl_seconds" api:"required"`
 	URL            string                                                             `json:"url" api:"required"`
+	FullRequest    bool                                                               `json:"full_request"`
 	RequestHeaders []SandboxBoxListResponseSandboxesProxyConfigCallbacksRequestHeader `json:"request_headers"`
 	JSON           sandboxBoxListResponseSandboxesProxyConfigCallbackJSON             `json:"-"`
 }
@@ -1045,6 +1052,7 @@ type sandboxBoxListResponseSandboxesProxyConfigCallbackJSON struct {
 	MatchHosts     apijson.Field
 	TtlSeconds     apijson.Field
 	URL            apijson.Field
+	FullRequest    apijson.Field
 	RequestHeaders apijson.Field
 	raw            string
 	ExtraFields    map[string]apijson.Field
@@ -1378,6 +1386,7 @@ type SandboxBoxStartResponseProxyConfigCallback struct {
 	MatchHosts     []string                                                   `json:"match_hosts" api:"required"`
 	TtlSeconds     int64                                                      `json:"ttl_seconds" api:"required"`
 	URL            string                                                     `json:"url" api:"required"`
+	FullRequest    bool                                                       `json:"full_request"`
 	RequestHeaders []SandboxBoxStartResponseProxyConfigCallbacksRequestHeader `json:"request_headers"`
 	JSON           sandboxBoxStartResponseProxyConfigCallbackJSON             `json:"-"`
 }
@@ -1388,6 +1397,7 @@ type sandboxBoxStartResponseProxyConfigCallbackJSON struct {
 	MatchHosts     apijson.Field
 	TtlSeconds     apijson.Field
 	URL            apijson.Field
+	FullRequest    apijson.Field
 	RequestHeaders apijson.Field
 	raw            string
 	ExtraFields    map[string]apijson.Field
@@ -1557,6 +1567,7 @@ type SandboxBoxNewParamsProxyConfigCallback struct {
 	MatchHosts     param.Field[[]string]                                               `json:"match_hosts" api:"required"`
 	TtlSeconds     param.Field[int64]                                                  `json:"ttl_seconds" api:"required"`
 	URL            param.Field[string]                                                 `json:"url" api:"required"`
+	FullRequest    param.Field[bool]                                                   `json:"full_request"`
 	RequestHeaders param.Field[[]SandboxBoxNewParamsProxyConfigCallbacksRequestHeader] `json:"request_headers"`
 }
 
@@ -1668,6 +1679,7 @@ type SandboxBoxUpdateParamsProxyConfigCallback struct {
 	MatchHosts     param.Field[[]string]                                                  `json:"match_hosts" api:"required"`
 	TtlSeconds     param.Field[int64]                                                     `json:"ttl_seconds" api:"required"`
 	URL            param.Field[string]                                                    `json:"url" api:"required"`
+	FullRequest    param.Field[bool]                                                      `json:"full_request"`
 	RequestHeaders param.Field[[]SandboxBoxUpdateParamsProxyConfigCallbacksRequestHeader] `json:"request_headers"`
 }
 

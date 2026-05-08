@@ -190,6 +190,7 @@ type RepoWithLookups struct {
 	OriginalRepoID       string                 `json:"original_repo_id" api:"nullable" format:"uuid"`
 	Readme               string                 `json:"readme" api:"nullable"`
 	RestrictedMode       bool                   `json:"restricted_mode"`
+	Source               RepoWithLookupsSource  `json:"source" api:"nullable"`
 	UpstreamRepoFullName string                 `json:"upstream_repo_full_name" api:"nullable"`
 	UpstreamRepoID       string                 `json:"upstream_repo_id" api:"nullable" format:"uuid"`
 	JSON                 repoWithLookupsJSON    `json:"-"`
@@ -222,6 +223,7 @@ type repoWithLookupsJSON struct {
 	OriginalRepoID       apijson.Field
 	Readme               apijson.Field
 	RestrictedMode       apijson.Field
+	Source               apijson.Field
 	UpstreamRepoFullName apijson.Field
 	UpstreamRepoID       apijson.Field
 	raw                  string
@@ -253,6 +255,21 @@ func (r RepoWithLookupsRepoType) IsKnown() bool {
 	return false
 }
 
+type RepoWithLookupsSource string
+
+const (
+	RepoWithLookupsSourceInternal RepoWithLookupsSource = "internal"
+	RepoWithLookupsSourceExternal RepoWithLookupsSource = "external"
+)
+
+func (r RepoWithLookupsSource) IsKnown() bool {
+	switch r {
+	case RepoWithLookupsSourceInternal, RepoWithLookupsSourceExternal:
+		return true
+	}
+	return false
+}
+
 type RepoDeleteResponse = interface{}
 
 type RepoNewParams struct {
@@ -262,6 +279,7 @@ type RepoNewParams struct {
 	Readme         param.Field[string]                `json:"readme"`
 	RepoType       param.Field[RepoNewParamsRepoType] `json:"repo_type"`
 	RestrictedMode param.Field[bool]                  `json:"restricted_mode"`
+	Source         param.Field[RepoNewParamsSource]   `json:"source"`
 	Tags           param.Field[[]string]              `json:"tags"`
 }
 
@@ -281,6 +299,21 @@ const (
 func (r RepoNewParamsRepoType) IsKnown() bool {
 	switch r {
 	case RepoNewParamsRepoTypePrompt, RepoNewParamsRepoTypeFile, RepoNewParamsRepoTypeAgent, RepoNewParamsRepoTypeSkill:
+		return true
+	}
+	return false
+}
+
+type RepoNewParamsSource string
+
+const (
+	RepoNewParamsSourceInternal RepoNewParamsSource = "internal"
+	RepoNewParamsSourceExternal RepoNewParamsSource = "external"
+)
+
+func (r RepoNewParamsSource) IsKnown() bool {
+	switch r {
+	case RepoNewParamsSourceInternal, RepoNewParamsSourceExternal:
 		return true
 	}
 	return false
@@ -310,6 +343,7 @@ type RepoListParams struct {
 	RepoTypes          param.Field[[]RepoListParamsRepoType]    `query:"repo_types"`
 	SortDirection      param.Field[RepoListParamsSortDirection] `query:"sort_direction"`
 	SortField          param.Field[RepoListParamsSortField]     `query:"sort_field"`
+	Source             param.Field[RepoListParamsSource]        `query:"source"`
 	TagValueID         param.Field[[]string]                    `query:"tag_value_id" format:"uuid"`
 	Tags               param.Field[[]string]                    `query:"tags"`
 	TenantHandle       param.Field[string]                      `query:"tenant_handle"`
@@ -403,6 +437,21 @@ const (
 func (r RepoListParamsSortField) IsKnown() bool {
 	switch r {
 	case RepoListParamsSortFieldNumLikes, RepoListParamsSortFieldNumDownloads, RepoListParamsSortFieldNumViews, RepoListParamsSortFieldUpdatedAt, RepoListParamsSortFieldRelevance:
+		return true
+	}
+	return false
+}
+
+type RepoListParamsSource string
+
+const (
+	RepoListParamsSourceInternal RepoListParamsSource = "internal"
+	RepoListParamsSourceExternal RepoListParamsSource = "external"
+)
+
+func (r RepoListParamsSource) IsKnown() bool {
+	switch r {
+	case RepoListParamsSourceInternal, RepoListParamsSourceExternal:
 		return true
 	}
 	return false
