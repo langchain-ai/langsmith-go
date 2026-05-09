@@ -363,11 +363,18 @@ func parseRequestBody(body []byte) requestFields {
 
 	// Input — Responses API (string or array)
 	if input, ok := req["input"]; ok {
+		var msgs []any
+		if instr, ok := req["instructions"].(string); ok && instr != "" {
+			msgs = append(msgs, map[string]any{"role": "system", "content": instr})
+		}
 		switch v := input.(type) {
 		case string:
-			fields.inputMessages = marshalMessages([]any{map[string]any{"role": "user", "content": v}})
+			msgs = append(msgs, map[string]any{"role": "user", "content": v})
 		case []any:
-			fields.inputMessages = marshalMessages(v)
+			msgs = append(msgs, normalizeResponsesInput(v)...)
+		}
+		if len(msgs) > 0 {
+			fields.inputMessages = marshalMessages(msgs)
 		}
 		return fields
 	}
@@ -387,6 +394,227 @@ func marshalMessages(messages []any) string {
 		return ""
 	}
 	return string(out)
+}
+
+// normalizeResponsesInput converts Responses API input items into
+// chat-completions messages that LangSmith can render.
+func normalizeResponsesInput(items []any) []any {
+	out := make([]any, 0, len(items))
+	for _, item := range items {
+		m, ok := item.(map[string]any)
+		if !ok {
+			out = append(out, item)
+			continue
+		}
+
+		itemType, _ := m["type"].(string)
+
+		// Items with a role are messages.
+		if role, ok := m["role"].(string); ok {
+			msg := map[string]any{"role": role}
+			switch content := m["content"].(type) {
+			case string:
+				msg["content"] = content
+			case []any:
+				if text := flattenContentParts(content); text != "" {
+					msg["content"] = text
+				} else {
+					b, _ := json.Marshal(content)
+					msg["content"] = string(b)
+				}
+			}
+			out = append(out, msg)
+			continue
+		}
+
+		// Non-message items: convert to chat-completions equivalents.
+		switch itemType {
+		case "function_call_output":
+			out = append(out, toolOutputFromItem(m, "call_id"))
+		case "computer_call_output":
+			out = append(out, toolOutputFromItem(m, "call_id"))
+		case "mcp_call_output":
+			out = append(out, toolOutputFromItem(m, "id"))
+		case "mcp_approval_response":
+			msg := map[string]any{"role": "tool"}
+			if reqID, ok := m["approval_request_id"].(string); ok {
+				msg["tool_call_id"] = reqID
+			}
+			approved, _ := m["approve"].(bool)
+			msg["content"] = fmt.Sprintf("approved: %v", approved)
+			out = append(out, msg)
+		case "reasoning":
+			if text := extractSummaryText(m); text != "" {
+				out = append(out, map[string]any{
+					"role":    "assistant",
+					"content": "[reasoning] " + text,
+				})
+			}
+		case "item_reference", "compaction":
+			continue
+		default:
+			if tc, ok := responsesItemToToolCall(itemType, m); ok {
+				out = append(out, map[string]any{
+					"role":       "assistant",
+					"tool_calls": []any{tc},
+				})
+			} else if itemType != "" {
+				out = append(out, map[string]any{
+					"role":    "assistant",
+					"content": "[" + itemType + "]",
+				})
+			}
+		}
+	}
+	return out
+}
+
+// toolOutputFromItem builds a tool-output message from a Responses API output item.
+func toolOutputFromItem(m map[string]any, idKey string) map[string]any {
+	msg := map[string]any{"role": "tool"}
+	if callID, ok := m[idKey].(string); ok {
+		msg["tool_call_id"] = callID
+	}
+	switch v := m["output"].(type) {
+	case string:
+		msg["content"] = v
+	case []any:
+		if text := flattenContentParts(v); text != "" {
+			msg["content"] = text
+		} else {
+			b, _ := json.Marshal(v)
+			msg["content"] = string(b)
+		}
+	}
+	return msg
+}
+
+// responsesItemToToolCall converts a Responses API tool item into a
+// chat-completions tool_call. Returns false for unknown types.
+func responsesItemToToolCall(itemType string, m map[string]any) (map[string]any, bool) {
+	switch itemType {
+	case "function_call":
+		name, _ := m["name"].(string)
+		args, _ := m["arguments"].(string)
+		return chatToolCall(m["call_id"], name, args), true
+	case "web_search_call":
+		args := make(map[string]any)
+		if status, ok := m["status"].(string); ok {
+			args["status"] = status
+		}
+		if action, ok := m["action"].(map[string]any); ok {
+			if q, ok := action["query"].(string); ok {
+				args["query"] = q
+			}
+		}
+		b, _ := json.Marshal(args)
+		return chatToolCall(m["id"], "web_search", string(b)), true
+	case "file_search_call":
+		args := make(map[string]any)
+		if q, ok := m["queries"].([]any); ok {
+			args["queries"] = q
+		}
+		if r, ok := m["results"].([]any); ok {
+			args["results"] = r
+		}
+		b, _ := json.Marshal(args)
+		return chatToolCall(m["id"], "file_search", string(b)), true
+	case "code_interpreter_call":
+		args := make(map[string]any)
+		if code, ok := m["code"].(string); ok {
+			args["code"] = code
+		}
+		if r, ok := m["results"].([]any); ok {
+			args["results"] = r
+		}
+		b, _ := json.Marshal(args)
+		return chatToolCall(m["id"], "code_interpreter", string(b)), true
+	case "computer_call":
+		args := make(map[string]any)
+		if action, ok := m["action"].(map[string]any); ok {
+			args["action"] = action
+		}
+		b, _ := json.Marshal(args)
+		return chatToolCall(m["call_id"], "computer", string(b)), true
+	case "mcp_call":
+		name := "mcp"
+		if sl, ok := m["server_label"].(string); ok {
+			if tn, ok := m["name"].(string); ok {
+				name = sl + ":" + tn
+			}
+		}
+		args, _ := m["arguments"].(string)
+		if args == "" {
+			args = "{}"
+		}
+		return chatToolCall(m["id"], name, args), true
+	case "mcp_list_tools":
+		return chatToolCall(m["id"], "mcp_list_tools", marshalToolArgs(m, "server_label")), true
+	case "mcp_approval_request":
+		name := "mcp_approval_request"
+		if n, ok := m["name"].(string); ok {
+			name = n
+		}
+		args, _ := m["arguments"].(string)
+		if args == "" {
+			args = "{}"
+		}
+		return chatToolCall(m["id"], name, args), true
+	case "image_generation_call":
+		return chatToolCall(m["id"], "image_generation", marshalToolArgs(m, "status")), true
+	default:
+		return nil, false
+	}
+}
+
+// extractSummaryText extracts text from a reasoning item's summary.
+func extractSummaryText(m map[string]any) string {
+	summary, ok := m["summary"].([]any)
+	if !ok {
+		return ""
+	}
+	var b strings.Builder
+	for _, s := range summary {
+		sMap, ok := s.(map[string]any)
+		if !ok {
+			continue
+		}
+		if text, ok := sMap["text"].(string); ok {
+			if b.Len() > 0 {
+				b.WriteByte('\n')
+			}
+			b.WriteString(text)
+		}
+	}
+	return b.String()
+}
+
+// flattenContentParts extracts text from Responses API content part arrays.
+func flattenContentParts(parts []any) string {
+	var b strings.Builder
+	for _, part := range parts {
+		pm, ok := part.(map[string]any)
+		if !ok {
+			continue
+		}
+		switch pm["type"] {
+		case "input_text", "output_text", "text":
+			if text, ok := pm["text"].(string); ok {
+				if b.Len() > 0 {
+					b.WriteByte('\n')
+				}
+				b.WriteString(text)
+			}
+		case "refusal":
+			if text, ok := pm["refusal"].(string); ok {
+				if b.Len() > 0 {
+					b.WriteByte('\n')
+				}
+				b.WriteString(text)
+			}
+		}
+	}
+	return b.String()
 }
 
 // extractStreamingCompletion parses an SSE response body, aggregates
@@ -579,8 +807,7 @@ func extractResponsesUsage(resp map[string]any) usageInfo {
 	return usage
 }
 
-// extractResponsesOutput extracts a {"messages":[...]} JSON string from a
-// Responses API response. Handles message (output_text) and function_call items.
+// extractResponsesOutput builds a chat-completions output from a Responses API response.
 func extractResponsesOutput(resp map[string]any) string {
 	output, ok := resp["output"].([]any)
 	if !ok || len(output) == 0 {
@@ -588,14 +815,17 @@ func extractResponsesOutput(resp map[string]any) string {
 	}
 
 	var textParts []string
-	var functionCalls []map[string]any
+	var refusalParts []string
+	var reasoningParts []string
+	var toolCalls []map[string]any
 
 	for _, item := range output {
 		itemMap, ok := item.(map[string]any)
 		if !ok {
 			continue
 		}
-		switch itemType, _ := itemMap["type"].(string); itemType {
+		itemType, _ := itemMap["type"].(string)
+		switch itemType {
 		case "message":
 			if content, ok := itemMap["content"].([]any); ok {
 				for _, block := range content {
@@ -603,22 +833,26 @@ func extractResponsesOutput(resp map[string]any) string {
 					if !ok {
 						continue
 					}
-					if blockType, _ := blockMap["type"].(string); blockType == "output_text" {
+					switch blockType, _ := blockMap["type"].(string); blockType {
+					case "output_text":
 						if text, ok := blockMap["text"].(string); ok {
 							textParts = append(textParts, text)
+						}
+					case "refusal":
+						if text, ok := blockMap["refusal"].(string); ok {
+							refusalParts = append(refusalParts, text)
 						}
 					}
 				}
 			}
-		case "function_call":
-			fc := map[string]any{
-				"name":      itemMap["name"],
-				"arguments": itemMap["arguments"],
+		case "reasoning":
+			if text := extractSummaryText(itemMap); text != "" {
+				reasoningParts = append(reasoningParts, text)
 			}
-			if callID, ok := itemMap["call_id"].(string); ok {
-				fc["call_id"] = callID
+		default:
+			if tc, ok := responsesItemToToolCall(itemType, itemMap); ok {
+				toolCalls = append(toolCalls, tc)
 			}
-			functionCalls = append(functionCalls, fc)
 		}
 	}
 
@@ -626,11 +860,44 @@ func extractResponsesOutput(resp map[string]any) string {
 	if len(textParts) > 0 {
 		msg["content"] = strings.Join(textParts, "\n")
 	}
-	if len(functionCalls) > 0 {
-		msg["function_calls"] = functionCalls
+	if len(refusalParts) > 0 {
+		msg["refusal"] = strings.Join(refusalParts, "\n")
+	}
+	if len(reasoningParts) > 0 {
+		msg["reasoning"] = strings.Join(reasoningParts, "\n")
+	}
+	if len(toolCalls) > 0 {
+		msg["tool_calls"] = toolCalls
 	}
 	if len(msg) == 1 {
 		return ""
 	}
 	return marshalMessages([]any{msg})
+}
+
+// chatToolCall builds a tool_call in the chat-completions format.
+func chatToolCall(id any, name, arguments string) map[string]any {
+	tc := map[string]any{
+		"type": "function",
+		"function": map[string]any{
+			"name":      name,
+			"arguments": arguments,
+		},
+	}
+	if s, ok := id.(string); ok {
+		tc["id"] = s
+	}
+	return tc
+}
+
+// marshalToolArgs extracts the given keys from src into a JSON object string.
+func marshalToolArgs(src map[string]any, keys ...string) string {
+	args := make(map[string]any, len(keys))
+	for _, k := range keys {
+		if v, ok := src[k].(string); ok {
+			args[k] = v
+		}
+	}
+	b, _ := json.Marshal(args)
+	return string(b)
 }

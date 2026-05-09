@@ -650,3 +650,394 @@ func TestExtractResponsesOutput_Empty(t *testing.T) {
 		t.Errorf("expected empty output, got %q", output)
 	}
 }
+
+func TestExtractResponsesOutput_Refusal(t *testing.T) {
+	resp := map[string]any{
+		"output": []any{
+			map[string]any{
+				"type": "message",
+				"content": []any{
+					map[string]any{"type": "refusal", "refusal": "I cannot help with that"},
+				},
+			},
+		},
+	}
+	output := extractResponsesOutput(resp)
+	if !strings.Contains(output, "I cannot help with that") {
+		t.Errorf("output should contain refusal text: %s", output)
+	}
+}
+
+func TestExtractResponsesOutput_Reasoning(t *testing.T) {
+	resp := map[string]any{
+		"output": []any{
+			map[string]any{
+				"type": "reasoning",
+				"summary": []any{
+					map[string]any{"type": "summary_text", "text": "Let me think about this"},
+				},
+			},
+			map[string]any{
+				"type": "message",
+				"content": []any{
+					map[string]any{"type": "output_text", "text": "The answer is 42"},
+				},
+			},
+		},
+	}
+	output := extractResponsesOutput(resp)
+	if !strings.Contains(output, "Let me think about this") {
+		t.Errorf("output should contain reasoning summary: %s", output)
+	}
+	if !strings.Contains(output, "The answer is 42") {
+		t.Errorf("output should contain message text: %s", output)
+	}
+}
+
+func TestExtractResponsesOutput_WebSearchCall(t *testing.T) {
+	resp := map[string]any{
+		"output": []any{
+			map[string]any{
+				"type":   "web_search_call",
+				"id":     "ws_1",
+				"status": "completed",
+			},
+		},
+	}
+	output := extractResponsesOutput(resp)
+	if !strings.Contains(output, "web_search") {
+		t.Errorf("output should contain web_search tool call: %s", output)
+	}
+	if !strings.Contains(output, `"type":"function"`) {
+		t.Errorf("output should use chat-completions tool_calls format: %s", output)
+	}
+}
+
+func TestExtractResponsesOutput_FileSearchCall(t *testing.T) {
+	resp := map[string]any{
+		"output": []any{
+			map[string]any{
+				"type":    "file_search_call",
+				"id":      "fs_1",
+				"queries": []any{"search query"},
+				"results": []any{map[string]any{"file_id": "f1", "text": "result"}},
+			},
+		},
+	}
+	output := extractResponsesOutput(resp)
+	if !strings.Contains(output, "file_search") {
+		t.Errorf("output should contain file_search tool call: %s", output)
+	}
+	if !strings.Contains(output, "search query") {
+		t.Errorf("output should contain query: %s", output)
+	}
+}
+
+func TestExtractResponsesOutput_CodeInterpreterCall(t *testing.T) {
+	resp := map[string]any{
+		"output": []any{
+			map[string]any{
+				"type":    "code_interpreter_call",
+				"id":      "ci_1",
+				"code":    "print('hello')",
+				"results": []any{map[string]any{"type": "logs", "logs": "hello"}},
+			},
+		},
+	}
+	output := extractResponsesOutput(resp)
+	if !strings.Contains(output, "code_interpreter") {
+		t.Errorf("output should contain code_interpreter tool call: %s", output)
+	}
+	if !strings.Contains(output, "print") {
+		t.Errorf("output should contain code: %s", output)
+	}
+}
+
+func TestExtractResponsesOutput_ComputerCall(t *testing.T) {
+	resp := map[string]any{
+		"output": []any{
+			map[string]any{
+				"type":    "computer_call",
+				"call_id": "comp_1",
+				"action":  map[string]any{"type": "click", "x": float64(100), "y": float64(200)},
+			},
+		},
+	}
+	output := extractResponsesOutput(resp)
+	if !strings.Contains(output, "computer") {
+		t.Errorf("output should contain computer tool call: %s", output)
+	}
+	if !strings.Contains(output, "click") {
+		t.Errorf("output should contain action: %s", output)
+	}
+}
+
+func TestExtractResponsesOutput_McpCall(t *testing.T) {
+	resp := map[string]any{
+		"output": []any{
+			map[string]any{
+				"type":         "mcp_call",
+				"id":           "mcp_1",
+				"server_label": "my_server",
+				"name":         "my_tool",
+				"arguments":    `{"key":"value"}`,
+			},
+		},
+	}
+	output := extractResponsesOutput(resp)
+	if !strings.Contains(output, "my_server:my_tool") {
+		t.Errorf("output should contain server_label:name: %s", output)
+	}
+}
+
+func TestExtractResponsesOutput_McpListTools(t *testing.T) {
+	resp := map[string]any{
+		"output": []any{
+			map[string]any{
+				"type":         "mcp_list_tools",
+				"id":           "mlt_1",
+				"server_label": "my_server",
+			},
+		},
+	}
+	output := extractResponsesOutput(resp)
+	if !strings.Contains(output, "mcp_list_tools") {
+		t.Errorf("output should contain mcp_list_tools: %s", output)
+	}
+}
+
+func TestExtractResponsesOutput_ImageGenerationCall(t *testing.T) {
+	resp := map[string]any{
+		"output": []any{
+			map[string]any{
+				"type":   "image_generation_call",
+				"id":     "ig_1",
+				"status": "completed",
+			},
+		},
+	}
+	output := extractResponsesOutput(resp)
+	if !strings.Contains(output, "image_generation") {
+		t.Errorf("output should contain image_generation tool call: %s", output)
+	}
+}
+
+func TestExtractResponsesOutput_FunctionCallFormat(t *testing.T) {
+	resp := map[string]any{
+		"output": []any{
+			map[string]any{
+				"type":      "function_call",
+				"name":      "get_weather",
+				"arguments": `{"city":"SF"}`,
+				"call_id":   "fc_1",
+			},
+		},
+	}
+	output := extractResponsesOutput(resp)
+	if !strings.Contains(output, `"type":"function"`) {
+		t.Errorf("function_call should use chat-completions format: %s", output)
+	}
+	if !strings.Contains(output, `"name":"get_weather"`) {
+		t.Errorf("should contain function name: %s", output)
+	}
+	if !strings.Contains(output, `"id":"fc_1"`) {
+		t.Errorf("should contain call id: %s", output)
+	}
+}
+
+func TestParseRequestBody_ResponsesAPI_ArrayInput(t *testing.T) {
+	body := []byte(`{
+		"model": "gpt-4o",
+		"instructions": "You are a helpful assistant.",
+		"input": [
+			{"role": "user", "content": [{"type": "input_text", "text": "Hello"}]},
+			{"role": "assistant", "content": [{"type": "output_text", "text": "Hi there"}]},
+			{"role": "user", "content": "What is 2+2?"}
+		]
+	}`)
+	fields := parseRequestBody(body)
+	if fields.model != "gpt-4o" {
+		t.Errorf("model = %q, want gpt-4o", fields.model)
+	}
+	if !strings.Contains(fields.inputMessages, "You are a helpful assistant.") {
+		t.Errorf("should contain instructions as system message: %s", fields.inputMessages)
+	}
+	if !strings.Contains(fields.inputMessages, "Hello") {
+		t.Errorf("should contain flattened input_text: %s", fields.inputMessages)
+	}
+	if !strings.Contains(fields.inputMessages, "Hi there") {
+		t.Errorf("should contain flattened output_text: %s", fields.inputMessages)
+	}
+	if !strings.Contains(fields.inputMessages, "What is 2+2?") {
+		t.Errorf("should contain plain string content: %s", fields.inputMessages)
+	}
+}
+
+func TestParseRequestBody_ResponsesAPI_MultiTurnWithToolCalls(t *testing.T) {
+	body := []byte(`{
+		"model": "gpt-4o",
+		"input": [
+			{"role": "user", "content": "What is the weather in SF?"},
+			{"type": "function_call", "name": "get_weather", "arguments": "{\"city\":\"SF\"}", "call_id": "fc_1"},
+			{"type": "function_call_output", "call_id": "fc_1", "output": "72°F and sunny"},
+			{"role": "assistant", "content": "The weather in SF is 72°F and sunny."},
+			{"role": "user", "content": "Thanks!"}
+		]
+	}`)
+	fields := parseRequestBody(body)
+
+	if !strings.Contains(fields.inputMessages, "What is the weather in SF?") {
+		t.Errorf("should contain user message: %s", fields.inputMessages)
+	}
+	if !strings.Contains(fields.inputMessages, "get_weather") {
+		t.Errorf("should contain function_call as tool_calls: %s", fields.inputMessages)
+	}
+	if !strings.Contains(fields.inputMessages, `"role":"tool"`) {
+		t.Errorf("function_call_output should become role:tool message: %s", fields.inputMessages)
+	}
+	if !strings.Contains(fields.inputMessages, "72°F and sunny") {
+		t.Errorf("should contain tool output: %s", fields.inputMessages)
+	}
+	if !strings.Contains(fields.inputMessages, "Thanks!") {
+		t.Errorf("should contain final user message: %s", fields.inputMessages)
+	}
+}
+
+func TestNormalizeResponsesInput_WebSearchInInput(t *testing.T) {
+	items := []any{
+		map[string]any{
+			"type":   "web_search_call",
+			"id":     "ws_1",
+			"status": "completed",
+		},
+	}
+	result := normalizeResponsesInput(items)
+	if len(result) != 1 {
+		t.Fatalf("expected 1 item, got %d", len(result))
+	}
+	msg, ok := result[0].(map[string]any)
+	if !ok {
+		t.Fatal("expected map")
+	}
+	if msg["role"] != "assistant" {
+		t.Errorf("role = %v, want assistant", msg["role"])
+	}
+	tcs, ok := msg["tool_calls"].([]any)
+	if !ok || len(tcs) == 0 {
+		t.Errorf("expected tool_calls: %+v", msg)
+	}
+}
+
+func TestNormalizeResponsesInput_ItemReferenceSkipped(t *testing.T) {
+	items := []any{
+		map[string]any{
+			"type": "item_reference",
+			"id":   "ref_123",
+		},
+		map[string]any{
+			"role":    "user",
+			"content": "Hello",
+		},
+	}
+	result := normalizeResponsesInput(items)
+	if len(result) != 1 {
+		t.Fatalf("expected 1 item (item_reference skipped), got %d", len(result))
+	}
+	msg := result[0].(map[string]any)
+	if msg["content"] != "Hello" {
+		t.Errorf("content = %v, want Hello", msg["content"])
+	}
+}
+
+func TestNormalizeResponsesInput_ComputerCallOutput(t *testing.T) {
+	items := []any{
+		map[string]any{
+			"type":    "computer_call",
+			"call_id": "comp_1",
+			"action":  map[string]any{"type": "click", "x": float64(50), "y": float64(100)},
+		},
+		map[string]any{
+			"type":    "computer_call_output",
+			"call_id": "comp_1",
+			"output":  "screenshot captured",
+		},
+	}
+	result := normalizeResponsesInput(items)
+	if len(result) != 2 {
+		t.Fatalf("expected 2 items, got %d", len(result))
+	}
+	call := result[0].(map[string]any)
+	if call["role"] != "assistant" {
+		t.Errorf("computer_call role = %v, want assistant", call["role"])
+	}
+	output := result[1].(map[string]any)
+	if output["role"] != "tool" {
+		t.Errorf("computer_call_output role = %v, want tool", output["role"])
+	}
+	if output["content"] != "screenshot captured" {
+		t.Errorf("content = %v, want 'screenshot captured'", output["content"])
+	}
+}
+
+func TestNormalizeResponsesInput_ReasoningItem(t *testing.T) {
+	items := []any{
+		map[string]any{
+			"type": "reasoning",
+			"id":   "rs_1",
+			"summary": []any{
+				map[string]any{"type": "summary_text", "text": "Let me think about this"},
+			},
+		},
+	}
+	result := normalizeResponsesInput(items)
+	if len(result) != 1 {
+		t.Fatalf("expected 1 item, got %d", len(result))
+	}
+	msg := result[0].(map[string]any)
+	if msg["role"] != "assistant" {
+		t.Errorf("role = %v, want assistant", msg["role"])
+	}
+	content, _ := msg["content"].(string)
+	if !strings.Contains(content, "Let me think about this") {
+		t.Errorf("content should contain reasoning summary: %s", content)
+	}
+}
+
+func TestNormalizeResponsesInput_ReasoningEmptySummarySkipped(t *testing.T) {
+	items := []any{
+		map[string]any{
+			"type":    "reasoning",
+			"id":      "rs_1",
+			"summary": []any{},
+		},
+		map[string]any{
+			"role":    "user",
+			"content": "Hello",
+		},
+	}
+	result := normalizeResponsesInput(items)
+	if len(result) != 1 {
+		t.Fatalf("expected 1 item (empty reasoning skipped), got %d", len(result))
+	}
+}
+
+func TestNormalizeResponsesInput_UnknownTypeGetsRole(t *testing.T) {
+	items := []any{
+		map[string]any{
+			"type": "some_future_type",
+			"id":   "x_1",
+		},
+	}
+	result := normalizeResponsesInput(items)
+	if len(result) != 1 {
+		t.Fatalf("expected 1 item, got %d", len(result))
+	}
+	msg := result[0].(map[string]any)
+	if msg["role"] != "assistant" {
+		t.Errorf("unknown type should get role=assistant, got %v", msg["role"])
+	}
+	content, _ := msg["content"].(string)
+	if !strings.Contains(content, "some_future_type") {
+		t.Errorf("content should contain the type name: %s", content)
+	}
+}
