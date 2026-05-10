@@ -1,5 +1,26 @@
 # Changelog
 
+## 0.10.0 (2026-05-10)
+
+Full Changelog: [v0.9.4...v0.10.0](https://github.com/langchain-ai/langsmith-go/compare/v0.9.4...v0.10.0)
+
+### Features
+
+* **api:** api update ([f5cd01b](https://github.com/langchain-ai/langsmith-go/commit/f5cd01b5a28a97159266db12855770085022a6bc))
+* **api:** api update ([d9ea784](https://github.com/langchain-ai/langsmith-go/commit/d9ea7844591ac1c55fff39623854a91c506276ed))
+* **api:** api update ([c3a03c0](https://github.com/langchain-ai/langsmith-go/commit/c3a03c04f4b17628232169b19013d79d302fded6))
+* **api:** api update ([48d267b](https://github.com/langchain-ai/langsmith-go/commit/48d267b2690a0b24ae6fde9cd22d42665d2a1b83))
+
+
+### Bug Fixes
+
+* **go:** avoid panic when http.DefaultTransport is wrapped ([f481a00](https://github.com/langchain-ai/langsmith-go/commit/f481a005dabc8fb7115a289fa805b80b80deb832))
+
+
+### Chores
+
+* redact api-key headers in debug logs ([e3add2c](https://github.com/langchain-ai/langsmith-go/commit/e3add2cfc0982c78935bb2b91e29711f0aadba41))
+
 ## 0.9.4 (2026-05-06)
 
 Full Changelog: [v0.9.3...v0.9.4](https://github.com/langchain-ai/langsmith-go/compare/v0.9.3...v0.9.4)

@@ -28,19 +28,21 @@ func TestSandboxBoxNewWithOptionalParams(t *testing.T) {
 		option.WithTenantID("My Tenant ID"),
 	)
 	_, err := client.Sandboxes.Boxes.New(context.TODO(), langsmith.SandboxBoxNewParams{
-		FsCapacityBytes: langsmith.F(int64(0)),
-		IdleTtlSeconds:  langsmith.F(int64(0)),
-		MemBytes:        langsmith.F(int64(0)),
-		Name:            langsmith.F("name"),
+		DeleteAfterStopSeconds: langsmith.F(int64(0)),
+		FsCapacityBytes:        langsmith.F(int64(0)),
+		IdleTtlSeconds:         langsmith.F(int64(0)),
+		MemBytes:               langsmith.F(int64(0)),
+		Name:                   langsmith.F("name"),
 		ProxyConfig: langsmith.F(langsmith.SandboxBoxNewParamsProxyConfig{
 			AccessControl: langsmith.F(langsmith.SandboxBoxNewParamsProxyConfigAccessControl{
 				AllowList: langsmith.F([]string{"string"}),
 				DenyList:  langsmith.F([]string{"string"}),
 			}),
 			Callbacks: langsmith.F([]langsmith.SandboxBoxNewParamsProxyConfigCallback{{
-				MatchHosts: langsmith.F([]string{"string"}),
-				TtlSeconds: langsmith.F(int64(60)),
-				URL:        langsmith.F("url"),
+				MatchHosts:  langsmith.F([]string{"string"}),
+				TtlSeconds:  langsmith.F(int64(60)),
+				URL:         langsmith.F("url"),
+				FullRequest: langsmith.F(true),
 				RequestHeaders: langsmith.F([]langsmith.SandboxBoxNewParamsProxyConfigCallbacksRequestHeader{{
 					Name:  langsmith.F("name"),
 					Type:  langsmith.F(langsmith.SandboxBoxNewParamsProxyConfigCallbacksRequestHeadersTypePlaintext),
@@ -64,7 +66,6 @@ func TestSandboxBoxNewWithOptionalParams(t *testing.T) {
 		}),
 		SnapshotID:   langsmith.F("snapshot_id"),
 		SnapshotName: langsmith.F("snapshot_name"),
-		TtlSeconds:   langsmith.F(int64(0)),
 		Vcpus:        langsmith.F(int64(0)),
 	})
 	if err != nil {
@@ -118,19 +119,21 @@ func TestSandboxBoxUpdateWithOptionalParams(t *testing.T) {
 		context.TODO(),
 		"name",
 		langsmith.SandboxBoxUpdateParams{
-			FsCapacityBytes: langsmith.F(int64(0)),
-			IdleTtlSeconds:  langsmith.F(int64(0)),
-			MemBytes:        langsmith.F(int64(0)),
-			Name:            langsmith.F("name"),
+			DeleteAfterStopSeconds: langsmith.F(int64(0)),
+			FsCapacityBytes:        langsmith.F(int64(0)),
+			IdleTtlSeconds:         langsmith.F(int64(0)),
+			MemBytes:               langsmith.F(int64(0)),
+			Name:                   langsmith.F("name"),
 			ProxyConfig: langsmith.F(langsmith.SandboxBoxUpdateParamsProxyConfig{
 				AccessControl: langsmith.F(langsmith.SandboxBoxUpdateParamsProxyConfigAccessControl{
 					AllowList: langsmith.F([]string{"string"}),
 					DenyList:  langsmith.F([]string{"string"}),
 				}),
 				Callbacks: langsmith.F([]langsmith.SandboxBoxUpdateParamsProxyConfigCallback{{
-					MatchHosts: langsmith.F([]string{"string"}),
-					TtlSeconds: langsmith.F(int64(60)),
-					URL:        langsmith.F("url"),
+					MatchHosts:  langsmith.F([]string{"string"}),
+					TtlSeconds:  langsmith.F(int64(60)),
+					URL:         langsmith.F("url"),
+					FullRequest: langsmith.F(true),
 					RequestHeaders: langsmith.F([]langsmith.SandboxBoxUpdateParamsProxyConfigCallbacksRequestHeader{{
 						Name:  langsmith.F("name"),
 						Type:  langsmith.F(langsmith.SandboxBoxUpdateParamsProxyConfigCallbacksRequestHeadersTypePlaintext),
@@ -152,8 +155,7 @@ func TestSandboxBoxUpdateWithOptionalParams(t *testing.T) {
 					MatchPaths: langsmith.F([]string{"string"}),
 				}}),
 			}),
-			TtlSeconds: langsmith.F(int64(0)),
-			Vcpus:      langsmith.F(int64(0)),
+			Vcpus: langsmith.F(int64(0)),
 		},
 	)
 	if err != nil {

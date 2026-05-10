@@ -161,46 +161,50 @@ func (r *SandboxBoxService) Stop(ctx context.Context, name string, opts ...optio
 }
 
 type SandboxBoxNewResponse struct {
-	ID              string                           `json:"id"`
-	CreatedAt       string                           `json:"created_at"`
-	DataplaneURL    string                           `json:"dataplane_url"`
-	ExpiresAt       string                           `json:"expires_at"`
-	FsCapacityBytes int64                            `json:"fs_capacity_bytes"`
-	IdleTtlSeconds  int64                            `json:"idle_ttl_seconds"`
-	MemBytes        int64                            `json:"mem_bytes"`
-	Name            string                           `json:"name"`
-	ProxyConfig     SandboxBoxNewResponseProxyConfig `json:"proxy_config"`
-	SizeClass       string                           `json:"size_class"`
-	SnapshotID      string                           `json:"snapshot_id"`
-	Status          string                           `json:"status"`
-	StatusMessage   string                           `json:"status_message"`
-	TtlSeconds      int64                            `json:"ttl_seconds"`
-	UpdatedAt       string                           `json:"updated_at"`
-	Vcpus           int64                            `json:"vcpus"`
-	JSON            sandboxBoxNewResponseJSON        `json:"-"`
+	ID                     string                           `json:"id"`
+	CreatedAt              string                           `json:"created_at"`
+	CreatedBy              string                           `json:"created_by"`
+	DataplaneURL           string                           `json:"dataplane_url"`
+	DeleteAfterStopSeconds int64                            `json:"delete_after_stop_seconds"`
+	FsCapacityBytes        int64                            `json:"fs_capacity_bytes"`
+	IdleTtlSeconds         int64                            `json:"idle_ttl_seconds"`
+	MemBytes               int64                            `json:"mem_bytes"`
+	Name                   string                           `json:"name"`
+	ProxyConfig            SandboxBoxNewResponseProxyConfig `json:"proxy_config"`
+	SizeClass              string                           `json:"size_class"`
+	SnapshotID             string                           `json:"snapshot_id"`
+	Status                 string                           `json:"status"`
+	StatusMessage          string                           `json:"status_message"`
+	StoppedAt              string                           `json:"stopped_at"`
+	UpdatedAt              string                           `json:"updated_at"`
+	UpdatedBy              string                           `json:"updated_by"`
+	Vcpus                  int64                            `json:"vcpus"`
+	JSON                   sandboxBoxNewResponseJSON        `json:"-"`
 }
 
 // sandboxBoxNewResponseJSON contains the JSON metadata for the struct
 // [SandboxBoxNewResponse]
 type sandboxBoxNewResponseJSON struct {
-	ID              apijson.Field
-	CreatedAt       apijson.Field
-	DataplaneURL    apijson.Field
-	ExpiresAt       apijson.Field
-	FsCapacityBytes apijson.Field
-	IdleTtlSeconds  apijson.Field
-	MemBytes        apijson.Field
-	Name            apijson.Field
-	ProxyConfig     apijson.Field
-	SizeClass       apijson.Field
-	SnapshotID      apijson.Field
-	Status          apijson.Field
-	StatusMessage   apijson.Field
-	TtlSeconds      apijson.Field
-	UpdatedAt       apijson.Field
-	Vcpus           apijson.Field
-	raw             string
-	ExtraFields     map[string]apijson.Field
+	ID                     apijson.Field
+	CreatedAt              apijson.Field
+	CreatedBy              apijson.Field
+	DataplaneURL           apijson.Field
+	DeleteAfterStopSeconds apijson.Field
+	FsCapacityBytes        apijson.Field
+	IdleTtlSeconds         apijson.Field
+	MemBytes               apijson.Field
+	Name                   apijson.Field
+	ProxyConfig            apijson.Field
+	SizeClass              apijson.Field
+	SnapshotID             apijson.Field
+	Status                 apijson.Field
+	StatusMessage          apijson.Field
+	StoppedAt              apijson.Field
+	UpdatedAt              apijson.Field
+	UpdatedBy              apijson.Field
+	Vcpus                  apijson.Field
+	raw                    string
+	ExtraFields            map[string]apijson.Field
 }
 
 func (r *SandboxBoxNewResponse) UnmarshalJSON(data []byte) (err error) {
@@ -265,6 +269,7 @@ type SandboxBoxNewResponseProxyConfigCallback struct {
 	MatchHosts     []string                                                 `json:"match_hosts" api:"required"`
 	TtlSeconds     int64                                                    `json:"ttl_seconds" api:"required"`
 	URL            string                                                   `json:"url" api:"required"`
+	FullRequest    bool                                                     `json:"full_request"`
 	RequestHeaders []SandboxBoxNewResponseProxyConfigCallbacksRequestHeader `json:"request_headers"`
 	JSON           sandboxBoxNewResponseProxyConfigCallbackJSON             `json:"-"`
 }
@@ -275,6 +280,7 @@ type sandboxBoxNewResponseProxyConfigCallbackJSON struct {
 	MatchHosts     apijson.Field
 	TtlSeconds     apijson.Field
 	URL            apijson.Field
+	FullRequest    apijson.Field
 	RequestHeaders apijson.Field
 	raw            string
 	ExtraFields    map[string]apijson.Field
@@ -404,46 +410,50 @@ func (r SandboxBoxNewResponseProxyConfigRulesHeadersType) IsKnown() bool {
 }
 
 type SandboxBoxGetResponse struct {
-	ID              string                           `json:"id"`
-	CreatedAt       string                           `json:"created_at"`
-	DataplaneURL    string                           `json:"dataplane_url"`
-	ExpiresAt       string                           `json:"expires_at"`
-	FsCapacityBytes int64                            `json:"fs_capacity_bytes"`
-	IdleTtlSeconds  int64                            `json:"idle_ttl_seconds"`
-	MemBytes        int64                            `json:"mem_bytes"`
-	Name            string                           `json:"name"`
-	ProxyConfig     SandboxBoxGetResponseProxyConfig `json:"proxy_config"`
-	SizeClass       string                           `json:"size_class"`
-	SnapshotID      string                           `json:"snapshot_id"`
-	Status          string                           `json:"status"`
-	StatusMessage   string                           `json:"status_message"`
-	TtlSeconds      int64                            `json:"ttl_seconds"`
-	UpdatedAt       string                           `json:"updated_at"`
-	Vcpus           int64                            `json:"vcpus"`
-	JSON            sandboxBoxGetResponseJSON        `json:"-"`
+	ID                     string                           `json:"id"`
+	CreatedAt              string                           `json:"created_at"`
+	CreatedBy              string                           `json:"created_by"`
+	DataplaneURL           string                           `json:"dataplane_url"`
+	DeleteAfterStopSeconds int64                            `json:"delete_after_stop_seconds"`
+	FsCapacityBytes        int64                            `json:"fs_capacity_bytes"`
+	IdleTtlSeconds         int64                            `json:"idle_ttl_seconds"`
+	MemBytes               int64                            `json:"mem_bytes"`
+	Name                   string                           `json:"name"`
+	ProxyConfig            SandboxBoxGetResponseProxyConfig `json:"proxy_config"`
+	SizeClass              string                           `json:"size_class"`
+	SnapshotID             string                           `json:"snapshot_id"`
+	Status                 string                           `json:"status"`
+	StatusMessage          string                           `json:"status_message"`
+	StoppedAt              string                           `json:"stopped_at"`
+	UpdatedAt              string                           `json:"updated_at"`
+	UpdatedBy              string                           `json:"updated_by"`
+	Vcpus                  int64                            `json:"vcpus"`
+	JSON                   sandboxBoxGetResponseJSON        `json:"-"`
 }
 
 // sandboxBoxGetResponseJSON contains the JSON metadata for the struct
 // [SandboxBoxGetResponse]
 type sandboxBoxGetResponseJSON struct {
-	ID              apijson.Field
-	CreatedAt       apijson.Field
-	DataplaneURL    apijson.Field
-	ExpiresAt       apijson.Field
-	FsCapacityBytes apijson.Field
-	IdleTtlSeconds  apijson.Field
-	MemBytes        apijson.Field
-	Name            apijson.Field
-	ProxyConfig     apijson.Field
-	SizeClass       apijson.Field
-	SnapshotID      apijson.Field
-	Status          apijson.Field
-	StatusMessage   apijson.Field
-	TtlSeconds      apijson.Field
-	UpdatedAt       apijson.Field
-	Vcpus           apijson.Field
-	raw             string
-	ExtraFields     map[string]apijson.Field
+	ID                     apijson.Field
+	CreatedAt              apijson.Field
+	CreatedBy              apijson.Field
+	DataplaneURL           apijson.Field
+	DeleteAfterStopSeconds apijson.Field
+	FsCapacityBytes        apijson.Field
+	IdleTtlSeconds         apijson.Field
+	MemBytes               apijson.Field
+	Name                   apijson.Field
+	ProxyConfig            apijson.Field
+	SizeClass              apijson.Field
+	SnapshotID             apijson.Field
+	Status                 apijson.Field
+	StatusMessage          apijson.Field
+	StoppedAt              apijson.Field
+	UpdatedAt              apijson.Field
+	UpdatedBy              apijson.Field
+	Vcpus                  apijson.Field
+	raw                    string
+	ExtraFields            map[string]apijson.Field
 }
 
 func (r *SandboxBoxGetResponse) UnmarshalJSON(data []byte) (err error) {
@@ -508,6 +518,7 @@ type SandboxBoxGetResponseProxyConfigCallback struct {
 	MatchHosts     []string                                                 `json:"match_hosts" api:"required"`
 	TtlSeconds     int64                                                    `json:"ttl_seconds" api:"required"`
 	URL            string                                                   `json:"url" api:"required"`
+	FullRequest    bool                                                     `json:"full_request"`
 	RequestHeaders []SandboxBoxGetResponseProxyConfigCallbacksRequestHeader `json:"request_headers"`
 	JSON           sandboxBoxGetResponseProxyConfigCallbackJSON             `json:"-"`
 }
@@ -518,6 +529,7 @@ type sandboxBoxGetResponseProxyConfigCallbackJSON struct {
 	MatchHosts     apijson.Field
 	TtlSeconds     apijson.Field
 	URL            apijson.Field
+	FullRequest    apijson.Field
 	RequestHeaders apijson.Field
 	raw            string
 	ExtraFields    map[string]apijson.Field
@@ -647,46 +659,50 @@ func (r SandboxBoxGetResponseProxyConfigRulesHeadersType) IsKnown() bool {
 }
 
 type SandboxBoxUpdateResponse struct {
-	ID              string                              `json:"id"`
-	CreatedAt       string                              `json:"created_at"`
-	DataplaneURL    string                              `json:"dataplane_url"`
-	ExpiresAt       string                              `json:"expires_at"`
-	FsCapacityBytes int64                               `json:"fs_capacity_bytes"`
-	IdleTtlSeconds  int64                               `json:"idle_ttl_seconds"`
-	MemBytes        int64                               `json:"mem_bytes"`
-	Name            string                              `json:"name"`
-	ProxyConfig     SandboxBoxUpdateResponseProxyConfig `json:"proxy_config"`
-	SizeClass       string                              `json:"size_class"`
-	SnapshotID      string                              `json:"snapshot_id"`
-	Status          string                              `json:"status"`
-	StatusMessage   string                              `json:"status_message"`
-	TtlSeconds      int64                               `json:"ttl_seconds"`
-	UpdatedAt       string                              `json:"updated_at"`
-	Vcpus           int64                               `json:"vcpus"`
-	JSON            sandboxBoxUpdateResponseJSON        `json:"-"`
+	ID                     string                              `json:"id"`
+	CreatedAt              string                              `json:"created_at"`
+	CreatedBy              string                              `json:"created_by"`
+	DataplaneURL           string                              `json:"dataplane_url"`
+	DeleteAfterStopSeconds int64                               `json:"delete_after_stop_seconds"`
+	FsCapacityBytes        int64                               `json:"fs_capacity_bytes"`
+	IdleTtlSeconds         int64                               `json:"idle_ttl_seconds"`
+	MemBytes               int64                               `json:"mem_bytes"`
+	Name                   string                              `json:"name"`
+	ProxyConfig            SandboxBoxUpdateResponseProxyConfig `json:"proxy_config"`
+	SizeClass              string                              `json:"size_class"`
+	SnapshotID             string                              `json:"snapshot_id"`
+	Status                 string                              `json:"status"`
+	StatusMessage          string                              `json:"status_message"`
+	StoppedAt              string                              `json:"stopped_at"`
+	UpdatedAt              string                              `json:"updated_at"`
+	UpdatedBy              string                              `json:"updated_by"`
+	Vcpus                  int64                               `json:"vcpus"`
+	JSON                   sandboxBoxUpdateResponseJSON        `json:"-"`
 }
 
 // sandboxBoxUpdateResponseJSON contains the JSON metadata for the struct
 // [SandboxBoxUpdateResponse]
 type sandboxBoxUpdateResponseJSON struct {
-	ID              apijson.Field
-	CreatedAt       apijson.Field
-	DataplaneURL    apijson.Field
-	ExpiresAt       apijson.Field
-	FsCapacityBytes apijson.Field
-	IdleTtlSeconds  apijson.Field
-	MemBytes        apijson.Field
-	Name            apijson.Field
-	ProxyConfig     apijson.Field
-	SizeClass       apijson.Field
-	SnapshotID      apijson.Field
-	Status          apijson.Field
-	StatusMessage   apijson.Field
-	TtlSeconds      apijson.Field
-	UpdatedAt       apijson.Field
-	Vcpus           apijson.Field
-	raw             string
-	ExtraFields     map[string]apijson.Field
+	ID                     apijson.Field
+	CreatedAt              apijson.Field
+	CreatedBy              apijson.Field
+	DataplaneURL           apijson.Field
+	DeleteAfterStopSeconds apijson.Field
+	FsCapacityBytes        apijson.Field
+	IdleTtlSeconds         apijson.Field
+	MemBytes               apijson.Field
+	Name                   apijson.Field
+	ProxyConfig            apijson.Field
+	SizeClass              apijson.Field
+	SnapshotID             apijson.Field
+	Status                 apijson.Field
+	StatusMessage          apijson.Field
+	StoppedAt              apijson.Field
+	UpdatedAt              apijson.Field
+	UpdatedBy              apijson.Field
+	Vcpus                  apijson.Field
+	raw                    string
+	ExtraFields            map[string]apijson.Field
 }
 
 func (r *SandboxBoxUpdateResponse) UnmarshalJSON(data []byte) (err error) {
@@ -751,6 +767,7 @@ type SandboxBoxUpdateResponseProxyConfigCallback struct {
 	MatchHosts     []string                                                    `json:"match_hosts" api:"required"`
 	TtlSeconds     int64                                                       `json:"ttl_seconds" api:"required"`
 	URL            string                                                      `json:"url" api:"required"`
+	FullRequest    bool                                                        `json:"full_request"`
 	RequestHeaders []SandboxBoxUpdateResponseProxyConfigCallbacksRequestHeader `json:"request_headers"`
 	JSON           sandboxBoxUpdateResponseProxyConfigCallbackJSON             `json:"-"`
 }
@@ -761,6 +778,7 @@ type sandboxBoxUpdateResponseProxyConfigCallbackJSON struct {
 	MatchHosts     apijson.Field
 	TtlSeconds     apijson.Field
 	URL            apijson.Field
+	FullRequest    apijson.Field
 	RequestHeaders apijson.Field
 	raw            string
 	ExtraFields    map[string]apijson.Field
@@ -914,46 +932,50 @@ func (r sandboxBoxListResponseJSON) RawJSON() string {
 }
 
 type SandboxBoxListResponseSandbox struct {
-	ID              string                                     `json:"id"`
-	CreatedAt       string                                     `json:"created_at"`
-	DataplaneURL    string                                     `json:"dataplane_url"`
-	ExpiresAt       string                                     `json:"expires_at"`
-	FsCapacityBytes int64                                      `json:"fs_capacity_bytes"`
-	IdleTtlSeconds  int64                                      `json:"idle_ttl_seconds"`
-	MemBytes        int64                                      `json:"mem_bytes"`
-	Name            string                                     `json:"name"`
-	ProxyConfig     SandboxBoxListResponseSandboxesProxyConfig `json:"proxy_config"`
-	SizeClass       string                                     `json:"size_class"`
-	SnapshotID      string                                     `json:"snapshot_id"`
-	Status          string                                     `json:"status"`
-	StatusMessage   string                                     `json:"status_message"`
-	TtlSeconds      int64                                      `json:"ttl_seconds"`
-	UpdatedAt       string                                     `json:"updated_at"`
-	Vcpus           int64                                      `json:"vcpus"`
-	JSON            sandboxBoxListResponseSandboxJSON          `json:"-"`
+	ID                     string                                     `json:"id"`
+	CreatedAt              string                                     `json:"created_at"`
+	CreatedBy              string                                     `json:"created_by"`
+	DataplaneURL           string                                     `json:"dataplane_url"`
+	DeleteAfterStopSeconds int64                                      `json:"delete_after_stop_seconds"`
+	FsCapacityBytes        int64                                      `json:"fs_capacity_bytes"`
+	IdleTtlSeconds         int64                                      `json:"idle_ttl_seconds"`
+	MemBytes               int64                                      `json:"mem_bytes"`
+	Name                   string                                     `json:"name"`
+	ProxyConfig            SandboxBoxListResponseSandboxesProxyConfig `json:"proxy_config"`
+	SizeClass              string                                     `json:"size_class"`
+	SnapshotID             string                                     `json:"snapshot_id"`
+	Status                 string                                     `json:"status"`
+	StatusMessage          string                                     `json:"status_message"`
+	StoppedAt              string                                     `json:"stopped_at"`
+	UpdatedAt              string                                     `json:"updated_at"`
+	UpdatedBy              string                                     `json:"updated_by"`
+	Vcpus                  int64                                      `json:"vcpus"`
+	JSON                   sandboxBoxListResponseSandboxJSON          `json:"-"`
 }
 
 // sandboxBoxListResponseSandboxJSON contains the JSON metadata for the struct
 // [SandboxBoxListResponseSandbox]
 type sandboxBoxListResponseSandboxJSON struct {
-	ID              apijson.Field
-	CreatedAt       apijson.Field
-	DataplaneURL    apijson.Field
-	ExpiresAt       apijson.Field
-	FsCapacityBytes apijson.Field
-	IdleTtlSeconds  apijson.Field
-	MemBytes        apijson.Field
-	Name            apijson.Field
-	ProxyConfig     apijson.Field
-	SizeClass       apijson.Field
-	SnapshotID      apijson.Field
-	Status          apijson.Field
-	StatusMessage   apijson.Field
-	TtlSeconds      apijson.Field
-	UpdatedAt       apijson.Field
-	Vcpus           apijson.Field
-	raw             string
-	ExtraFields     map[string]apijson.Field
+	ID                     apijson.Field
+	CreatedAt              apijson.Field
+	CreatedBy              apijson.Field
+	DataplaneURL           apijson.Field
+	DeleteAfterStopSeconds apijson.Field
+	FsCapacityBytes        apijson.Field
+	IdleTtlSeconds         apijson.Field
+	MemBytes               apijson.Field
+	Name                   apijson.Field
+	ProxyConfig            apijson.Field
+	SizeClass              apijson.Field
+	SnapshotID             apijson.Field
+	Status                 apijson.Field
+	StatusMessage          apijson.Field
+	StoppedAt              apijson.Field
+	UpdatedAt              apijson.Field
+	UpdatedBy              apijson.Field
+	Vcpus                  apijson.Field
+	raw                    string
+	ExtraFields            map[string]apijson.Field
 }
 
 func (r *SandboxBoxListResponseSandbox) UnmarshalJSON(data []byte) (err error) {
@@ -1019,6 +1041,7 @@ type SandboxBoxListResponseSandboxesProxyConfigCallback struct {
 	MatchHosts     []string                                                           `json:"match_hosts" api:"required"`
 	TtlSeconds     int64                                                              `json:"ttl_seconds" api:"required"`
 	URL            string                                                             `json:"url" api:"required"`
+	FullRequest    bool                                                               `json:"full_request"`
 	RequestHeaders []SandboxBoxListResponseSandboxesProxyConfigCallbacksRequestHeader `json:"request_headers"`
 	JSON           sandboxBoxListResponseSandboxesProxyConfigCallbackJSON             `json:"-"`
 }
@@ -1029,6 +1052,7 @@ type sandboxBoxListResponseSandboxesProxyConfigCallbackJSON struct {
 	MatchHosts     apijson.Field
 	TtlSeconds     apijson.Field
 	URL            apijson.Field
+	FullRequest    apijson.Field
 	RequestHeaders apijson.Field
 	raw            string
 	ExtraFields    map[string]apijson.Field
@@ -1254,46 +1278,50 @@ func (r sandboxBoxGetStatusResponseJSON) RawJSON() string {
 }
 
 type SandboxBoxStartResponse struct {
-	ID              string                             `json:"id"`
-	CreatedAt       string                             `json:"created_at"`
-	DataplaneURL    string                             `json:"dataplane_url"`
-	ExpiresAt       string                             `json:"expires_at"`
-	FsCapacityBytes int64                              `json:"fs_capacity_bytes"`
-	IdleTtlSeconds  int64                              `json:"idle_ttl_seconds"`
-	MemBytes        int64                              `json:"mem_bytes"`
-	Name            string                             `json:"name"`
-	ProxyConfig     SandboxBoxStartResponseProxyConfig `json:"proxy_config"`
-	SizeClass       string                             `json:"size_class"`
-	SnapshotID      string                             `json:"snapshot_id"`
-	Status          string                             `json:"status"`
-	StatusMessage   string                             `json:"status_message"`
-	TtlSeconds      int64                              `json:"ttl_seconds"`
-	UpdatedAt       string                             `json:"updated_at"`
-	Vcpus           int64                              `json:"vcpus"`
-	JSON            sandboxBoxStartResponseJSON        `json:"-"`
+	ID                     string                             `json:"id"`
+	CreatedAt              string                             `json:"created_at"`
+	CreatedBy              string                             `json:"created_by"`
+	DataplaneURL           string                             `json:"dataplane_url"`
+	DeleteAfterStopSeconds int64                              `json:"delete_after_stop_seconds"`
+	FsCapacityBytes        int64                              `json:"fs_capacity_bytes"`
+	IdleTtlSeconds         int64                              `json:"idle_ttl_seconds"`
+	MemBytes               int64                              `json:"mem_bytes"`
+	Name                   string                             `json:"name"`
+	ProxyConfig            SandboxBoxStartResponseProxyConfig `json:"proxy_config"`
+	SizeClass              string                             `json:"size_class"`
+	SnapshotID             string                             `json:"snapshot_id"`
+	Status                 string                             `json:"status"`
+	StatusMessage          string                             `json:"status_message"`
+	StoppedAt              string                             `json:"stopped_at"`
+	UpdatedAt              string                             `json:"updated_at"`
+	UpdatedBy              string                             `json:"updated_by"`
+	Vcpus                  int64                              `json:"vcpus"`
+	JSON                   sandboxBoxStartResponseJSON        `json:"-"`
 }
 
 // sandboxBoxStartResponseJSON contains the JSON metadata for the struct
 // [SandboxBoxStartResponse]
 type sandboxBoxStartResponseJSON struct {
-	ID              apijson.Field
-	CreatedAt       apijson.Field
-	DataplaneURL    apijson.Field
-	ExpiresAt       apijson.Field
-	FsCapacityBytes apijson.Field
-	IdleTtlSeconds  apijson.Field
-	MemBytes        apijson.Field
-	Name            apijson.Field
-	ProxyConfig     apijson.Field
-	SizeClass       apijson.Field
-	SnapshotID      apijson.Field
-	Status          apijson.Field
-	StatusMessage   apijson.Field
-	TtlSeconds      apijson.Field
-	UpdatedAt       apijson.Field
-	Vcpus           apijson.Field
-	raw             string
-	ExtraFields     map[string]apijson.Field
+	ID                     apijson.Field
+	CreatedAt              apijson.Field
+	CreatedBy              apijson.Field
+	DataplaneURL           apijson.Field
+	DeleteAfterStopSeconds apijson.Field
+	FsCapacityBytes        apijson.Field
+	IdleTtlSeconds         apijson.Field
+	MemBytes               apijson.Field
+	Name                   apijson.Field
+	ProxyConfig            apijson.Field
+	SizeClass              apijson.Field
+	SnapshotID             apijson.Field
+	Status                 apijson.Field
+	StatusMessage          apijson.Field
+	StoppedAt              apijson.Field
+	UpdatedAt              apijson.Field
+	UpdatedBy              apijson.Field
+	Vcpus                  apijson.Field
+	raw                    string
+	ExtraFields            map[string]apijson.Field
 }
 
 func (r *SandboxBoxStartResponse) UnmarshalJSON(data []byte) (err error) {
@@ -1358,6 +1386,7 @@ type SandboxBoxStartResponseProxyConfigCallback struct {
 	MatchHosts     []string                                                   `json:"match_hosts" api:"required"`
 	TtlSeconds     int64                                                      `json:"ttl_seconds" api:"required"`
 	URL            string                                                     `json:"url" api:"required"`
+	FullRequest    bool                                                       `json:"full_request"`
 	RequestHeaders []SandboxBoxStartResponseProxyConfigCallbacksRequestHeader `json:"request_headers"`
 	JSON           sandboxBoxStartResponseProxyConfigCallbackJSON             `json:"-"`
 }
@@ -1368,6 +1397,7 @@ type sandboxBoxStartResponseProxyConfigCallbackJSON struct {
 	MatchHosts     apijson.Field
 	TtlSeconds     apijson.Field
 	URL            apijson.Field
+	FullRequest    apijson.Field
 	RequestHeaders apijson.Field
 	raw            string
 	ExtraFields    map[string]apijson.Field
@@ -1498,15 +1528,15 @@ func (r SandboxBoxStartResponseProxyConfigRulesHeadersType) IsKnown() bool {
 }
 
 type SandboxBoxNewParams struct {
-	FsCapacityBytes param.Field[int64]                          `json:"fs_capacity_bytes"`
-	IdleTtlSeconds  param.Field[int64]                          `json:"idle_ttl_seconds"`
-	MemBytes        param.Field[int64]                          `json:"mem_bytes"`
-	Name            param.Field[string]                         `json:"name"`
-	ProxyConfig     param.Field[SandboxBoxNewParamsProxyConfig] `json:"proxy_config"`
-	SnapshotID      param.Field[string]                         `json:"snapshot_id"`
-	SnapshotName    param.Field[string]                         `json:"snapshot_name"`
-	TtlSeconds      param.Field[int64]                          `json:"ttl_seconds"`
-	Vcpus           param.Field[int64]                          `json:"vcpus"`
+	DeleteAfterStopSeconds param.Field[int64]                          `json:"delete_after_stop_seconds"`
+	FsCapacityBytes        param.Field[int64]                          `json:"fs_capacity_bytes"`
+	IdleTtlSeconds         param.Field[int64]                          `json:"idle_ttl_seconds"`
+	MemBytes               param.Field[int64]                          `json:"mem_bytes"`
+	Name                   param.Field[string]                         `json:"name"`
+	ProxyConfig            param.Field[SandboxBoxNewParamsProxyConfig] `json:"proxy_config"`
+	SnapshotID             param.Field[string]                         `json:"snapshot_id"`
+	SnapshotName           param.Field[string]                         `json:"snapshot_name"`
+	Vcpus                  param.Field[int64]                          `json:"vcpus"`
 }
 
 func (r SandboxBoxNewParams) MarshalJSON() (data []byte, err error) {
@@ -1537,6 +1567,7 @@ type SandboxBoxNewParamsProxyConfigCallback struct {
 	MatchHosts     param.Field[[]string]                                               `json:"match_hosts" api:"required"`
 	TtlSeconds     param.Field[int64]                                                  `json:"ttl_seconds" api:"required"`
 	URL            param.Field[string]                                                 `json:"url" api:"required"`
+	FullRequest    param.Field[bool]                                                   `json:"full_request"`
 	RequestHeaders param.Field[[]SandboxBoxNewParamsProxyConfigCallbacksRequestHeader] `json:"request_headers"`
 }
 
@@ -1611,13 +1642,13 @@ func (r SandboxBoxNewParamsProxyConfigRulesHeadersType) IsKnown() bool {
 }
 
 type SandboxBoxUpdateParams struct {
-	FsCapacityBytes param.Field[int64]                             `json:"fs_capacity_bytes"`
-	IdleTtlSeconds  param.Field[int64]                             `json:"idle_ttl_seconds"`
-	MemBytes        param.Field[int64]                             `json:"mem_bytes"`
-	Name            param.Field[string]                            `json:"name"`
-	ProxyConfig     param.Field[SandboxBoxUpdateParamsProxyConfig] `json:"proxy_config"`
-	TtlSeconds      param.Field[int64]                             `json:"ttl_seconds"`
-	Vcpus           param.Field[int64]                             `json:"vcpus"`
+	DeleteAfterStopSeconds param.Field[int64]                             `json:"delete_after_stop_seconds"`
+	FsCapacityBytes        param.Field[int64]                             `json:"fs_capacity_bytes"`
+	IdleTtlSeconds         param.Field[int64]                             `json:"idle_ttl_seconds"`
+	MemBytes               param.Field[int64]                             `json:"mem_bytes"`
+	Name                   param.Field[string]                            `json:"name"`
+	ProxyConfig            param.Field[SandboxBoxUpdateParamsProxyConfig] `json:"proxy_config"`
+	Vcpus                  param.Field[int64]                             `json:"vcpus"`
 }
 
 func (r SandboxBoxUpdateParams) MarshalJSON() (data []byte, err error) {
@@ -1648,6 +1679,7 @@ type SandboxBoxUpdateParamsProxyConfigCallback struct {
 	MatchHosts     param.Field[[]string]                                                  `json:"match_hosts" api:"required"`
 	TtlSeconds     param.Field[int64]                                                     `json:"ttl_seconds" api:"required"`
 	URL            param.Field[string]                                                    `json:"url" api:"required"`
+	FullRequest    param.Field[bool]                                                      `json:"full_request"`
 	RequestHeaders param.Field[[]SandboxBoxUpdateParamsProxyConfigCallbacksRequestHeader] `json:"request_headers"`
 }
 
