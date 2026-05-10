@@ -2,6 +2,7 @@ package langsmith
 
 import (
 	"context"
+	"encoding/json"
 
 	"github.com/langchain-ai/langsmith-go/option"
 )
@@ -114,9 +115,9 @@ func sandboxFromNewResponse(res *SandboxBoxNewResponse, boxes *SandboxBoxService
 		StatusMessage:   res.StatusMessage,
 		CreatedAt:       res.CreatedAt,
 		UpdatedAt:       res.UpdatedAt,
-		TTLSeconds:      res.TtlSeconds,
+		TTLSeconds:      sandboxTTLSeconds(res.DeleteAfterStopSeconds, res.JSON.RawJSON()),
 		IdleTTLSeconds:  res.IdleTtlSeconds,
-		ExpiresAt:       res.ExpiresAt,
+		ExpiresAt:       sandboxExpiresAt(res.JSON.RawJSON()),
 		SnapshotID:      res.SnapshotID,
 		Vcpus:           res.Vcpus,
 		MemBytes:        res.MemBytes,
@@ -146,9 +147,9 @@ func sandboxFromListResponse(res *SandboxBoxListResponseSandbox, boxes *SandboxB
 		StatusMessage:   res.StatusMessage,
 		CreatedAt:       res.CreatedAt,
 		UpdatedAt:       res.UpdatedAt,
-		TTLSeconds:      res.TtlSeconds,
+		TTLSeconds:      sandboxTTLSeconds(res.DeleteAfterStopSeconds, res.JSON.RawJSON()),
 		IdleTTLSeconds:  res.IdleTtlSeconds,
-		ExpiresAt:       res.ExpiresAt,
+		ExpiresAt:       sandboxExpiresAt(res.JSON.RawJSON()),
 		SnapshotID:      res.SnapshotID,
 		Vcpus:           res.Vcpus,
 		MemBytes:        res.MemBytes,
@@ -165,9 +166,9 @@ func (s *Sandbox) applyGetResponse(res *SandboxBoxGetResponse) {
 	s.StatusMessage = res.StatusMessage
 	s.CreatedAt = res.CreatedAt
 	s.UpdatedAt = res.UpdatedAt
-	s.TTLSeconds = res.TtlSeconds
+	s.TTLSeconds = sandboxTTLSeconds(res.DeleteAfterStopSeconds, res.JSON.RawJSON())
 	s.IdleTTLSeconds = res.IdleTtlSeconds
-	s.ExpiresAt = res.ExpiresAt
+	s.ExpiresAt = sandboxExpiresAt(res.JSON.RawJSON())
 	s.SnapshotID = res.SnapshotID
 	s.Vcpus = res.Vcpus
 	s.MemBytes = res.MemBytes
@@ -182,11 +183,60 @@ func (s *Sandbox) applyUpdateResponse(res *SandboxBoxUpdateResponse) {
 	s.StatusMessage = res.StatusMessage
 	s.CreatedAt = res.CreatedAt
 	s.UpdatedAt = res.UpdatedAt
-	s.TTLSeconds = res.TtlSeconds
+	s.TTLSeconds = sandboxTTLSeconds(res.DeleteAfterStopSeconds, res.JSON.RawJSON())
 	s.IdleTTLSeconds = res.IdleTtlSeconds
-	s.ExpiresAt = res.ExpiresAt
+	s.ExpiresAt = sandboxExpiresAt(res.JSON.RawJSON())
 	s.SnapshotID = res.SnapshotID
 	s.Vcpus = res.Vcpus
 	s.MemBytes = res.MemBytes
 	s.FsCapacityBytes = res.FsCapacityBytes
+}
+
+func sandboxTTLSeconds(deleteAfterStopSeconds int64, rawJSON string) int64 {
+	if deleteAfterStopSeconds != 0 {
+		return deleteAfterStopSeconds
+	}
+	return sandboxLegacyInt64Field(rawJSON, "ttl_seconds")
+}
+
+func sandboxExpiresAt(rawJSON string) string {
+	return sandboxLegacyStringField(rawJSON, "expires_at")
+}
+
+func sandboxLegacyInt64Field(rawJSON string, key string) int64 {
+	if rawJSON == "" {
+		return 0
+	}
+	payload := map[string]json.RawMessage{}
+	if err := json.Unmarshal([]byte(rawJSON), &payload); err != nil {
+		return 0
+	}
+	raw, ok := payload[key]
+	if !ok {
+		return 0
+	}
+	var value int64
+	if err := json.Unmarshal(raw, &value); err != nil {
+		return 0
+	}
+	return value
+}
+
+func sandboxLegacyStringField(rawJSON string, key string) string {
+	if rawJSON == "" {
+		return ""
+	}
+	payload := map[string]json.RawMessage{}
+	if err := json.Unmarshal([]byte(rawJSON), &payload); err != nil {
+		return ""
+	}
+	raw, ok := payload[key]
+	if !ok {
+		return ""
+	}
+	var value string
+	if err := json.Unmarshal(raw, &value); err != nil {
+		return ""
+	}
+	return value
 }
