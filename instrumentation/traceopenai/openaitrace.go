@@ -443,6 +443,21 @@ func normalizeResponsesInput(items []any) []any {
 			approved, _ := m["approve"].(bool)
 			msg["content"] = fmt.Sprintf("approved: %v", approved)
 			out = append(out, msg)
+		case "local_shell_call_output":
+			out = append(out, toolOutputFromItem(m, "id"))
+		case "shell_call_output":
+			out = append(out, toolOutputFromShellCall(m))
+		case "apply_patch_call_output":
+			out = append(out, toolOutputFromItem(m, "call_id"))
+		case "custom_tool_call_output":
+			out = append(out, toolOutputFromItem(m, "call_id"))
+		case "tool_search_output":
+			msg := map[string]any{"role": "tool"}
+			if tools, ok := m["tools"].([]any); ok {
+				b, _ := json.Marshal(tools)
+				msg["content"] = string(b)
+			}
+			out = append(out, msg)
 		case "reasoning":
 			if text := extractSummaryText(m); text != "" {
 				out = append(out, map[string]any{
@@ -489,6 +504,35 @@ func toolOutputFromItem(m map[string]any, idKey string) map[string]any {
 	return msg
 }
 
+// toolOutputFromShellCall builds a tool-output message from a shell_call_output.
+// The output field is an array of {stdout, stderr, outcome} objects.
+func toolOutputFromShellCall(m map[string]any) map[string]any {
+	msg := map[string]any{"role": "tool"}
+	if callID, ok := m["call_id"].(string); ok {
+		msg["tool_call_id"] = callID
+	}
+	if outputs, ok := m["output"].([]any); ok {
+		var sb strings.Builder
+		for _, o := range outputs {
+			om, ok := o.(map[string]any)
+			if !ok {
+				continue
+			}
+			if s, ok := om["stdout"].(string); ok && s != "" {
+				sb.WriteString(s)
+			}
+			if s, ok := om["stderr"].(string); ok && s != "" {
+				if sb.Len() > 0 {
+					sb.WriteByte('\n')
+				}
+				sb.WriteString(s)
+			}
+		}
+		msg["content"] = sb.String()
+	}
+	return msg
+}
+
 // responsesItemToToolCall converts a Responses API tool item into a
 // chat-completions tool_call. Returns false for unknown types.
 func responsesItemToToolCall(itemType string, m map[string]any) (map[string]any, bool) {
@@ -524,8 +568,8 @@ func responsesItemToToolCall(itemType string, m map[string]any) (map[string]any,
 		if code, ok := m["code"].(string); ok {
 			args["code"] = code
 		}
-		if r, ok := m["results"].([]any); ok {
-			args["results"] = r
+		if r, ok := m["outputs"].([]any); ok {
+			args["outputs"] = r
 		}
 		b, _ := json.Marshal(args)
 		return chatToolCall(m["id"], "code_interpreter", string(b)), true
@@ -562,6 +606,34 @@ func responsesItemToToolCall(itemType string, m map[string]any) (map[string]any,
 		return chatToolCall(m["id"], name, args), true
 	case "image_generation_call":
 		return chatToolCall(m["id"], "image_generation", marshalToolArgs(m, "status")), true
+	case "local_shell_call":
+		args := make(map[string]any)
+		if action, ok := m["action"].(map[string]any); ok {
+			args["action"] = action
+		}
+		b, _ := json.Marshal(args)
+		return chatToolCall(m["call_id"], "local_shell", string(b)), true
+	case "shell_call":
+		args := make(map[string]any)
+		if action, ok := m["action"].(map[string]any); ok {
+			args["action"] = action
+		}
+		b, _ := json.Marshal(args)
+		return chatToolCall(m["call_id"], "shell", string(b)), true
+	case "apply_patch_call":
+		args := make(map[string]any)
+		if op, ok := m["operation"].(map[string]any); ok {
+			args["operation"] = op
+		}
+		b, _ := json.Marshal(args)
+		return chatToolCall(m["call_id"], "apply_patch", string(b)), true
+	case "tool_search_call":
+		args := make(map[string]any)
+		if a, ok := m["arguments"]; ok {
+			args["arguments"] = a
+		}
+		b, _ := json.Marshal(args)
+		return chatToolCall(m["call_id"], "tool_search", string(b)), true
 	default:
 		return nil, false
 	}

@@ -822,6 +822,75 @@ func TestExtractResponsesOutput_ImageGenerationCall(t *testing.T) {
 	}
 }
 
+func TestExtractResponsesOutput_AgentToolCalls(t *testing.T) {
+	tests := []struct {
+		name     string
+		item     map[string]any
+		contains []string
+	}{
+		{
+			name: "local_shell_call",
+			item: map[string]any{
+				"type": "local_shell_call", "id": "ls_1", "call_id": "lsc_1",
+				"action": map[string]any{"type": "exec", "command": []any{"ls", "-la"}},
+			},
+			contains: []string{"local_shell", "lsc_1", `"type":"function"`},
+		},
+		{
+			name: "shell_call",
+			item: map[string]any{
+				"type": "shell_call", "call_id": "sc_1",
+				"action": map[string]any{"commands": []any{"echo hello"}},
+			},
+			contains: []string{`"shell"`, "sc_1", `"type":"function"`},
+		},
+		{
+			name: "apply_patch_call",
+			item: map[string]any{
+				"type": "apply_patch_call", "call_id": "ap_1",
+				"operation": map[string]any{"type": "create", "path": "foo.txt", "diff": "+hello"},
+			},
+			contains: []string{"apply_patch", `"type":"function"`},
+		},
+		{
+			name: "tool_search_call",
+			item: map[string]any{
+				"type": "tool_search_call", "call_id": "ts_1",
+				"arguments": map[string]any{"query": "find files"},
+			},
+			contains: []string{"tool_search", `"type":"function"`},
+		},
+	}
+	for _, tt := range tests {
+		t.Run(tt.name, func(t *testing.T) {
+			resp := map[string]any{"output": []any{tt.item}}
+			result := extractResponsesOutput(resp)
+			for _, s := range tt.contains {
+				if !strings.Contains(result, s) {
+					t.Errorf("expected %q in output: %s", s, result)
+				}
+			}
+		})
+	}
+}
+
+func TestExtractResponsesOutput_CodeInterpreterUsesOutputs(t *testing.T) {
+	resp := map[string]any{
+		"output": []any{
+			map[string]any{
+				"type": "code_interpreter_call", "id": "ci_1",
+				"code": "print('hi')", "container_id": "ctr_1",
+				"outputs": []any{map[string]any{"type": "logs", "logs": "hi"}},
+				"status":  "completed",
+			},
+		},
+	}
+	result := extractResponsesOutput(resp)
+	if !strings.Contains(result, "outputs") {
+		t.Errorf("expected 'outputs' key (not 'results'), got %s", result)
+	}
+}
+
 func TestExtractResponsesOutput_FunctionCallFormat(t *testing.T) {
 	resp := map[string]any{
 		"output": []any{
@@ -1039,5 +1108,142 @@ func TestNormalizeResponsesInput_UnknownTypeGetsRole(t *testing.T) {
 	content, _ := msg["content"].(string)
 	if !strings.Contains(content, "some_future_type") {
 		t.Errorf("content should contain the type name: %s", content)
+	}
+}
+
+func TestNormalizeResponsesInput_AgentToolCallsBecomeAssistant(t *testing.T) {
+	toolCallItems := []map[string]any{
+		{"type": "local_shell_call", "call_id": "ls_1", "action": map[string]any{"type": "exec"}},
+		{"type": "shell_call", "call_id": "sc_1", "action": map[string]any{"commands": []any{"ls"}}},
+		{"type": "apply_patch_call", "call_id": "ap_1", "operation": map[string]any{"type": "create"}},
+		{"type": "tool_search_call", "call_id": "ts_1"},
+	}
+	for _, item := range toolCallItems {
+		t.Run(item["type"].(string), func(t *testing.T) {
+			result := normalizeResponsesInput([]any{item})
+			if len(result) != 1 {
+				t.Fatalf("expected 1 item, got %d", len(result))
+			}
+			msg := result[0].(map[string]any)
+			if msg["role"] != "assistant" {
+				t.Errorf("role = %v, want assistant", msg["role"])
+			}
+			if _, ok := msg["tool_calls"].([]any); !ok {
+				t.Errorf("expected tool_calls: %+v", msg)
+			}
+		})
+	}
+}
+
+func TestNormalizeResponsesInput_AgentToolOutputs(t *testing.T) {
+	tests := []struct {
+		name       string
+		item       map[string]any
+		wantCallID string
+		wantIn     string
+	}{
+		{
+			name:       "local_shell_call_output",
+			item:       map[string]any{"type": "local_shell_call_output", "id": "lso_1", "output": "command output here"},
+			wantCallID: "lso_1",
+			wantIn:     "command output here",
+		},
+		{
+			name:       "apply_patch_call_output",
+			item:       map[string]any{"type": "apply_patch_call_output", "call_id": "ap_1", "output": "patch applied"},
+			wantCallID: "ap_1",
+			wantIn:     "patch applied",
+		},
+		{
+			name:       "custom_tool_call_output",
+			item:       map[string]any{"type": "custom_tool_call_output", "call_id": "ct_1", "output": "custom result"},
+			wantCallID: "ct_1",
+			wantIn:     "custom result",
+		},
+		{
+			name:       "mcp_approval_response",
+			item:       map[string]any{"type": "mcp_approval_response", "approval_request_id": "ar_1", "approve": true},
+			wantCallID: "ar_1",
+			wantIn:     "approved: true",
+		},
+		{
+			name: "tool_search_output",
+			item: map[string]any{
+				"type":  "tool_search_output",
+				"tools": []any{map[string]any{"name": "grep", "description": "search files"}},
+			},
+			wantIn: "grep",
+		},
+	}
+	for _, tt := range tests {
+		t.Run(tt.name, func(t *testing.T) {
+			result := normalizeResponsesInput([]any{tt.item})
+			if len(result) != 1 {
+				t.Fatalf("expected 1 item, got %d", len(result))
+			}
+			msg := result[0].(map[string]any)
+			if msg["role"] != "tool" {
+				t.Errorf("role = %v, want tool", msg["role"])
+			}
+			if tt.wantCallID != "" && msg["tool_call_id"] != tt.wantCallID {
+				t.Errorf("tool_call_id = %v, want %s", msg["tool_call_id"], tt.wantCallID)
+			}
+			content, _ := msg["content"].(string)
+			if !strings.Contains(content, tt.wantIn) {
+				t.Errorf("content %q should contain %q", content, tt.wantIn)
+			}
+		})
+	}
+}
+
+func TestNormalizeResponsesInput_ShellCallOutputExtractsStdout(t *testing.T) {
+	items := []any{
+		map[string]any{
+			"type":    "shell_call_output",
+			"call_id": "sc_1",
+			"output": []any{
+				map[string]any{
+					"stdout":  "hello world",
+					"stderr":  "",
+					"outcome": map[string]any{"type": "exit", "exit_code": float64(0)},
+				},
+			},
+		},
+	}
+	result := normalizeResponsesInput(items)
+	msg := result[0].(map[string]any)
+	if msg["role"] != "tool" {
+		t.Errorf("role = %v, want tool", msg["role"])
+	}
+	if msg["tool_call_id"] != "sc_1" {
+		t.Errorf("tool_call_id = %v, want sc_1", msg["tool_call_id"])
+	}
+	if !strings.Contains(msg["content"].(string), "hello world") {
+		t.Errorf("content should contain stdout: %v", msg["content"])
+	}
+}
+
+func TestNormalizeResponsesInput_ShellCallOutputConcatsStderr(t *testing.T) {
+	items := []any{
+		map[string]any{
+			"type":    "shell_call_output",
+			"call_id": "sc_2",
+			"output": []any{
+				map[string]any{
+					"stdout":  "some output",
+					"stderr":  "warning: something",
+					"outcome": map[string]any{"type": "exit", "exit_code": float64(1)},
+				},
+			},
+		},
+	}
+	result := normalizeResponsesInput(items)
+	msg := result[0].(map[string]any)
+	content := msg["content"].(string)
+	if !strings.Contains(content, "some output") {
+		t.Errorf("content should contain stdout: %s", content)
+	}
+	if !strings.Contains(content, "warning: something") {
+		t.Errorf("content should contain stderr: %s", content)
 	}
 }
