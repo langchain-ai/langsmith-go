@@ -1247,3 +1247,171 @@ func TestNormalizeResponsesInput_ShellCallOutputConcatsStderr(t *testing.T) {
 		t.Errorf("content should contain stderr: %s", content)
 	}
 }
+
+// TestResponsesAPI_RoundTrip exercises parseRequestBody and extractResponsesOutput
+// with a multi-turn conversation modeled after a Codex coding agent session.
+// Field shapes match captured OpenAI wire format (content arrays with input_text,
+// reasoning with encrypted_content, web_search_call with action.queries, etc.).
+func TestResponsesAPI_RoundTrip(t *testing.T) {
+	reqBody := []byte(`{
+		"model": "gpt-5.5",
+		"instructions": "You are a coding agent.",
+		"input": [
+			{"type": "message", "role": "developer", "content": [
+				{"type": "input_text", "text": "Sandbox mode is workspace-write."}
+			]},
+			{"type": "message", "role": "user", "content": [
+				{"type": "input_text", "text": "List the files in my home directory"}
+			]},
+
+			{"type": "reasoning", "summary": [
+				{"type": "summary_text", "text": "I'll run ls to list the directory contents."}
+			], "content": null, "encrypted_content": "enc_abc"},
+			{"type": "function_call", "name": "exec_command", "call_id": "call_ls1",
+			 "arguments": "{\"cmd\":\"ls\",\"workdir\":\"/Users/dev\"}"},
+			{"type": "function_call_output", "call_id": "call_ls1",
+			 "output": "Desktop\nDocuments\nDownloads\nsrc\n"},
+			{"type": "message", "role": "assistant", "content": [
+				{"type": "output_text", "text": "Here are the files in your home directory."}
+			]},
+
+			{"type": "message", "role": "user", "content": [
+				{"type": "input_text", "text": "Now search for recent Go news"}
+			]},
+
+			{"type": "reasoning", "summary": [], "content": null, "encrypted_content": "enc_def"},
+			{"type": "web_search_call", "status": "completed", "action": {
+				"type": "search",
+				"query": "Go programming language news 2026",
+				"queries": ["Go programming language news 2026", "Go 1.25 release"]
+			}},
+			{"type": "message", "role": "assistant", "content": [
+				{"type": "output_text", "text": "Go 1.25 was released with improved generics."}
+			]},
+
+			{"type": "message", "role": "user", "content": [
+				{"type": "input_text", "text": "Create a hello.go file and run it"}
+			]},
+
+			{"type": "shell_call", "call_id": "sc_1", "action": {
+				"type": "exec", "commands": ["echo 'package main' > hello.go"]
+			}},
+			{"type": "shell_call_output", "call_id": "sc_1", "output": [
+				{"stdout": "", "stderr": "", "outcome": {"type": "exit", "exit_code": 0}}
+			]},
+			{"type": "apply_patch_call", "call_id": "ap_1", "operation": {
+				"type": "create", "path": "hello.go",
+				"diff": "+package main\n+\n+func main() {\n+\tprintln(\"hello\")\n+}"
+			}},
+			{"type": "apply_patch_call_output", "call_id": "ap_1", "output": "patch applied"},
+
+			{"type": "message", "role": "user", "content": [
+				{"type": "input_text", "text": "Run it"}
+			]}
+		]
+	}`)
+
+	fields := parseRequestBody(reqBody)
+	if fields.model != "gpt-5.5" {
+		t.Errorf("model = %q, want gpt-5.5", fields.model)
+	}
+
+	in := fields.inputMessages
+	checks := []struct {
+		desc string
+		want string
+	}{
+		{"instructions as system message", "coding agent"},
+		{"developer message", "Sandbox mode"},
+		{"first user message", "List the files"},
+		{"reasoning summary", "run ls"},
+		{"function_call tool_calls", "exec_command"},
+		{"function_call_output as tool role", `"role":"tool"`},
+		{"function output content", "Desktop"},
+		{"assistant reply", "files in your home"},
+		{"second user turn", "search for recent Go"},
+		{"web_search_call", "web_search"},
+		{"third user turn", "Create a hello.go"},
+		{"shell_call", `"shell"`},
+		{"shell_call_output as tool", "sc_1"},
+		{"apply_patch_call", "apply_patch"},
+		{"apply_patch_call_output as tool", "patch applied"},
+		{"final user turn", "Run it"},
+	}
+	for _, c := range checks {
+		if !strings.Contains(in, c.want) {
+			t.Errorf("%s: %q not found in input", c.desc, c.want)
+		}
+	}
+
+	respBody := map[string]any{
+		"id": "resp_abc", "object": "response", "model": "gpt-5.5-2026-04-23",
+		"output": []any{
+			map[string]any{
+				"id": "rs_1", "type": "reasoning",
+				"encrypted_content": "enc_xyz",
+				"summary":           []any{},
+			},
+			map[string]any{
+				"id": "ws_1", "type": "web_search_call",
+				"status": "completed",
+				"action": map[string]any{
+					"type":    "search",
+					"query":   "how to run Go programs",
+					"queries": []any{"how to run Go programs", "go run command"},
+				},
+			},
+			map[string]any{
+				"id": "sc_2", "type": "shell_call", "call_id": "sc_2",
+				"action": map[string]any{"commands": []any{"go run hello.go"}},
+			},
+			map[string]any{
+				"id": "fc_1", "type": "function_call", "call_id": "call_run1",
+				"name": "exec_command", "arguments": `{"cmd":"go run hello.go"}`,
+				"status": "completed",
+			},
+			map[string]any{
+				"id": "msg_1", "type": "message", "role": "assistant",
+				"status": "completed",
+				"content": []any{
+					map[string]any{
+						"type":        "output_text",
+						"text":        "The program printed hello.",
+						"logprobs":    []any{},
+						"annotations": []any{},
+					},
+				},
+			},
+		},
+		"usage": map[string]any{
+			"input_tokens":  float64(500),
+			"output_tokens": float64(50),
+			"total_tokens":  float64(550),
+			"output_tokens_details": map[string]any{
+				"reasoning_tokens": float64(22),
+			},
+		},
+	}
+
+	out := extractResponsesOutput(respBody)
+	if out == "" {
+		t.Fatal("extractResponsesOutput returned empty")
+	}
+
+	outChecks := []struct {
+		desc string
+		want string
+	}{
+		{"web_search as tool call", "web_search"},
+		{"web_search uses function format", `"type":"function"`},
+		{"shell_call name", `"shell"`},
+		{"function_call name", "exec_command"},
+		{"function_call args", "go run hello.go"},
+		{"message text", "printed hello"},
+	}
+	for _, c := range outChecks {
+		if !strings.Contains(out, c.want) {
+			t.Errorf("%s: %q not found in output", c.desc, c.want)
+		}
+	}
+}
