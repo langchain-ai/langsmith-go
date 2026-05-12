@@ -36,9 +36,9 @@ func NewSandboxBoxService(opts ...option.RequestOption) (r *SandboxBoxService) {
 	return
 }
 
-// Create a new sandbox from a snapshot. The snapshot may be identified by
-// `snapshot_id` (UUID) or by `snapshot_name` (tenant-scoped unique name); exactly
-// one must be set.
+// Create a new sandbox from a snapshot. Provide at most one of `snapshot_id` or
+// `snapshot_name`; if neither is provided, the server uses the default static
+// blueprint.
 func (r *SandboxBoxService) New(ctx context.Context, body SandboxBoxNewParams, opts ...option.RequestOption) (res *SandboxBoxNewResponse, err error) {
 	opts = slices.Concat(r.Options, opts)
 	path := "v2/sandboxes/boxes"

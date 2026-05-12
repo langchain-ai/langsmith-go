@@ -1149,27 +1149,28 @@ func (r SessionUpdateParamsTraceTier) IsKnown() bool {
 }
 
 type SessionListParams struct {
-	ID                param.Field[[]string]               `query:"id" format:"uuid"`
-	DatasetVersion    param.Field[string]                 `query:"dataset_version"`
-	Facets            param.Field[bool]                   `query:"facets"`
-	Filter            param.Field[string]                 `query:"filter"`
-	IncludeStats      param.Field[bool]                   `query:"include_stats"`
-	Limit             param.Field[int64]                  `query:"limit"`
-	Metadata          param.Field[string]                 `query:"metadata"`
-	Name              param.Field[string]                 `query:"name"`
-	NameContains      param.Field[string]                 `query:"name_contains"`
-	Offset            param.Field[int64]                  `query:"offset"`
-	ReferenceDataset  param.Field[[]string]               `query:"reference_dataset" format:"uuid"`
-	ReferenceFree     param.Field[bool]                   `query:"reference_free"`
-	SortBy            param.Field[SessionSortableColumns] `query:"sort_by"`
-	SortByDesc        param.Field[bool]                   `query:"sort_by_desc"`
-	SortByFeedbackKey param.Field[string]                 `query:"sort_by_feedback_key"`
-	StatsFilter       param.Field[string]                 `query:"stats_filter"`
-	StatsSelect       param.Field[[]string]               `query:"stats_select"`
-	StatsStartTime    param.Field[time.Time]              `query:"stats_start_time" format:"date-time"`
-	TagValueID        param.Field[[]string]               `query:"tag_value_id" format:"uuid"`
-	UseApproxStats    param.Field[bool]                   `query:"use_approx_stats"`
-	Accept            param.Field[string]                 `header:"accept"`
+	ID                   param.Field[[]string]                              `query:"id" format:"uuid"`
+	DatasetVersion       param.Field[string]                                `query:"dataset_version"`
+	Facets               param.Field[bool]                                  `query:"facets"`
+	Filter               param.Field[string]                                `query:"filter"`
+	IncludeStats         param.Field[bool]                                  `query:"include_stats"`
+	Limit                param.Field[int64]                                 `query:"limit"`
+	Metadata             param.Field[string]                                `query:"metadata"`
+	Name                 param.Field[string]                                `query:"name"`
+	NameContains         param.Field[string]                                `query:"name_contains"`
+	Offset               param.Field[int64]                                 `query:"offset"`
+	ReferenceDataset     param.Field[[]string]                              `query:"reference_dataset" format:"uuid"`
+	ReferenceFree        param.Field[bool]                                  `query:"reference_free"`
+	SortBy               param.Field[SessionSortableColumns]                `query:"sort_by"`
+	SortByDesc           param.Field[bool]                                  `query:"sort_by_desc"`
+	SortByFeedbackKey    param.Field[string]                                `query:"sort_by_feedback_key"`
+	SortByFeedbackSource param.Field[SessionListParamsSortByFeedbackSource] `query:"sort_by_feedback_source"`
+	StatsFilter          param.Field[string]                                `query:"stats_filter"`
+	StatsSelect          param.Field[[]string]                              `query:"stats_select"`
+	StatsStartTime       param.Field[time.Time]                             `query:"stats_start_time" format:"date-time"`
+	TagValueID           param.Field[[]string]                              `query:"tag_value_id" format:"uuid"`
+	UseApproxStats       param.Field[bool]                                  `query:"use_approx_stats"`
+	Accept               param.Field[string]                                `header:"accept"`
 }
 
 // URLQuery serializes [SessionListParams]'s query parameters as `url.Values`.
@@ -1178,6 +1179,21 @@ func (r SessionListParams) URLQuery() (v url.Values) {
 		ArrayFormat:  apiquery.ArrayQueryFormatComma,
 		NestedFormat: apiquery.NestedQueryFormatBrackets,
 	})
+}
+
+type SessionListParamsSortByFeedbackSource string
+
+const (
+	SessionListParamsSortByFeedbackSourceSession SessionListParamsSortByFeedbackSource = "session"
+	SessionListParamsSortByFeedbackSourceRun     SessionListParamsSortByFeedbackSource = "run"
+)
+
+func (r SessionListParamsSortByFeedbackSource) IsKnown() bool {
+	switch r {
+	case SessionListParamsSortByFeedbackSourceSession, SessionListParamsSortByFeedbackSourceRun:
+		return true
+	}
+	return false
 }
 
 type SessionDashboardParams struct {
