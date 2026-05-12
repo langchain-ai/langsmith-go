@@ -1,5 +1,21 @@
 # Changelog
 
+## 0.11.0 (2026-05-12)
+
+Full Changelog: [v0.10.0...v0.11.0](https://github.com/langchain-ai/langsmith-go/compare/v0.10.0...v0.11.0)
+
+### Features
+
+* **api:** api update ([73eda1e](https://github.com/langchain-ai/langsmith-go/commit/73eda1eba07a8472bc64f33cfd3c9cc5e90d1d2c))
+* **api:** api update ([352e0fe](https://github.com/langchain-ai/langsmith-go/commit/352e0fe3320e843810574ba40961aa5a899bfdf6))
+* **api:** api update ([7f92f2d](https://github.com/langchain-ai/langsmith-go/commit/7f92f2d45907613d2893850d7fb2b71d27726063))
+* openai: add tool calls to `/responses` ([#88](https://github.com/langchain-ai/langsmith-go/issues/88)) ([a4a374a](https://github.com/langchain-ai/langsmith-go/commit/a4a374a798a8b5734199317fa6fa4187f81bb8b0))
+
+
+### Bug Fixes
+
+* type RunStats cost fields as float64, not string ([#90](https://github.com/langchain-ai/langsmith-go/issues/90)) ([8c3e934](https://github.com/langchain-ai/langsmith-go/commit/8c3e934887b918073ba9bd0af7c2b74394e9dc44))
+
 ## 0.10.0 (2026-05-10)
 
 Full Changelog: [v0.9.4...v0.10.0](https://github.com/langchain-ai/langsmith-go/compare/v0.9.4...v0.10.0)
