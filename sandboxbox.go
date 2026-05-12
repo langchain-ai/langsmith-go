@@ -1536,6 +1536,7 @@ type SandboxBoxNewParams struct {
 	ProxyConfig            param.Field[SandboxBoxNewParamsProxyConfig] `json:"proxy_config"`
 	SnapshotID             param.Field[string]                         `json:"snapshot_id"`
 	SnapshotName           param.Field[string]                         `json:"snapshot_name"`
+	TagValueIDs            param.Field[[]string]                       `json:"tag_value_ids"`
 	Vcpus                  param.Field[int64]                          `json:"vcpus"`
 }
 
@@ -1648,6 +1649,7 @@ type SandboxBoxUpdateParams struct {
 	MemBytes               param.Field[int64]                             `json:"mem_bytes"`
 	Name                   param.Field[string]                            `json:"name"`
 	ProxyConfig            param.Field[SandboxBoxUpdateParamsProxyConfig] `json:"proxy_config"`
+	TagValueIDs            param.Field[[]string]                          `json:"tag_value_ids"`
 	Vcpus                  param.Field[int64]                             `json:"vcpus"`
 }
 
