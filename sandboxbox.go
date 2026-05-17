@@ -36,9 +36,8 @@ func NewSandboxBoxService(opts ...option.RequestOption) (r *SandboxBoxService) {
 	return
 }
 
-// Create a new sandbox from a snapshot. Provide at most one of `snapshot_id` or
-// `snapshot_name`; if neither is provided, the server uses the default static
-// blueprint.
+// Create a new sandbox using server defaults. Provide at most one of
+// `snapshot_id` or `snapshot_name` only when booting from a reusable snapshot.
 func (r *SandboxBoxService) New(ctx context.Context, body SandboxBoxNewParams, opts ...option.RequestOption) (res *SandboxBoxNewResponse, err error) {
 	opts = slices.Concat(r.Options, opts)
 	path := "v2/sandboxes/boxes"
@@ -1536,6 +1535,7 @@ type SandboxBoxNewParams struct {
 	ProxyConfig            param.Field[SandboxBoxNewParamsProxyConfig] `json:"proxy_config"`
 	SnapshotID             param.Field[string]                         `json:"snapshot_id"`
 	SnapshotName           param.Field[string]                         `json:"snapshot_name"`
+	TagValueIDs            param.Field[[]string]                       `json:"tag_value_ids"`
 	Vcpus                  param.Field[int64]                          `json:"vcpus"`
 }
 
@@ -1648,6 +1648,7 @@ type SandboxBoxUpdateParams struct {
 	MemBytes               param.Field[int64]                             `json:"mem_bytes"`
 	Name                   param.Field[string]                            `json:"name"`
 	ProxyConfig            param.Field[SandboxBoxUpdateParamsProxyConfig] `json:"proxy_config"`
+	TagValueIDs            param.Field[[]string]                          `json:"tag_value_ids"`
 	Vcpus                  param.Field[int64]                             `json:"vcpus"`
 }
 

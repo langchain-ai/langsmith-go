@@ -4,6 +4,7 @@ package langsmith_test
 
 import (
 	"context"
+	"encoding/json"
 	"errors"
 	"os"
 	"testing"
@@ -11,7 +12,23 @@ import (
 	"github.com/langchain-ai/langsmith-go"
 	"github.com/langchain-ai/langsmith-go/internal/testutil"
 	"github.com/langchain-ai/langsmith-go/option"
+	"github.com/stretchr/testify/assert"
+	"github.com/stretchr/testify/require"
 )
+
+func TestSandboxBoxNewParamsOmitEmptySnapshotID(t *testing.T) {
+	params := langsmith.SandboxBoxNewParams{
+		Name: langsmith.F("my-vm"),
+	}
+
+	raw, err := json.Marshal(params)
+	require.NoError(t, err)
+
+	var body map[string]any
+	require.NoError(t, json.Unmarshal(raw, &body))
+	assert.Equal(t, "my-vm", body["name"])
+	assert.NotContains(t, body, "snapshot_id")
+}
 
 func TestSandboxBoxNewWithOptionalParams(t *testing.T) {
 	t.Skip("Mock server tests are disabled")
@@ -66,6 +83,7 @@ func TestSandboxBoxNewWithOptionalParams(t *testing.T) {
 		}),
 		SnapshotID:   langsmith.F("snapshot_id"),
 		SnapshotName: langsmith.F("snapshot_name"),
+		TagValueIDs:  langsmith.F([]string{"string"}),
 		Vcpus:        langsmith.F(int64(0)),
 	})
 	if err != nil {
@@ -155,7 +173,8 @@ func TestSandboxBoxUpdateWithOptionalParams(t *testing.T) {
 					MatchPaths: langsmith.F([]string{"string"}),
 				}}),
 			}),
-			Vcpus: langsmith.F(int64(0)),
+			TagValueIDs: langsmith.F([]string{"string"}),
+			Vcpus:       langsmith.F(int64(0)),
 		},
 	)
 	if err != nil {

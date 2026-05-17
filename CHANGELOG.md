@@ -1,5 +1,14 @@
 # Changelog
 
+## 0.12.0 (2026-05-17)
+
+Full Changelog: [v0.11.0...v0.12.0](https://github.com/langchain-ai/langsmith-go/compare/v0.11.0...v0.12.0)
+
+### Features
+
+* **api:** api update ([47164c4](https://github.com/langchain-ai/langsmith-go/commit/47164c4ca853ed51137675839762a3c178c961aa))
+* **sandbox:** default create to server runtime ([#92](https://github.com/langchain-ai/langsmith-go/issues/92)) ([89a0fae](https://github.com/langchain-ai/langsmith-go/commit/89a0fae142cd7bd51ae4571ba90b14db0ac4f23e))
+
 ## 0.11.0 (2026-05-12)
 
 Full Changelog: [v0.10.0...v0.11.0](https://github.com/langchain-ai/langsmith-go/compare/v0.10.0...v0.11.0)
