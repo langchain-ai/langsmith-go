@@ -64,10 +64,11 @@ func TestSandboxBoxNewWithOptionalParams(t *testing.T) {
 				MatchPaths: langsmith.F([]string{"string"}),
 			}}),
 		}),
-		SnapshotID:   langsmith.F("snapshot_id"),
-		SnapshotName: langsmith.F("snapshot_name"),
-		TagValueIDs:  langsmith.F([]string{"string"}),
-		Vcpus:        langsmith.F(int64(0)),
+		RestoreMemory: langsmith.F(true),
+		SnapshotID:    langsmith.F("snapshot_id"),
+		SnapshotName:  langsmith.F("snapshot_name"),
+		TagValueIDs:   langsmith.F([]string{"string"}),
+		Vcpus:         langsmith.F(int64(0)),
 	})
 	if err != nil {
 		var apierr *langsmith.Error
