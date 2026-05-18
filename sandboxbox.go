@@ -1538,10 +1538,20 @@ type SandboxBoxNewParams struct {
 	MemBytes               param.Field[int64]                          `json:"mem_bytes"`
 	Name                   param.Field[string]                         `json:"name"`
 	ProxyConfig            param.Field[SandboxBoxNewParamsProxyConfig] `json:"proxy_config"`
-	SnapshotID             param.Field[string]                         `json:"snapshot_id"`
-	SnapshotName           param.Field[string]                         `json:"snapshot_name"`
-	TagValueIDs            param.Field[[]string]                       `json:"tag_value_ids"`
-	Vcpus                  param.Field[int64]                          `json:"vcpus"`
+	// RestoreMemory, when non-nil, overrides the server default for whether to resume
+	// the sandbox from its captured memory snapshot.
+	//
+	// true → resume from the memory snapshot if it exists; cold-boot the sandbox
+	// otherwise. false → always cold-boot, even if a memory snapshot exists. nil → use
+	// the server default.
+	//
+	// Applies to this request only; a later stop+start of the same sandbox reverts to
+	// the server default.
+	RestoreMemory param.Field[bool]     `json:"restore_memory"`
+	SnapshotID    param.Field[string]   `json:"snapshot_id"`
+	SnapshotName  param.Field[string]   `json:"snapshot_name"`
+	TagValueIDs   param.Field[[]string] `json:"tag_value_ids"`
+	Vcpus         param.Field[int64]    `json:"vcpus"`
 }
 
 func (r SandboxBoxNewParams) MarshalJSON() (data []byte, err error) {
