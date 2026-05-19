@@ -79,40 +79,45 @@ func (r *SandboxSnapshotService) Delete(ctx context.Context, snapshotID string, 
 }
 
 type SandboxSnapshotNewResponse struct {
-	ID              string                         `json:"id"`
-	CreatedAt       string                         `json:"created_at"`
-	CreatedBy       string                         `json:"created_by"`
-	DockerImage     string                         `json:"docker_image"`
-	FsCapacityBytes int64                          `json:"fs_capacity_bytes"`
-	FsUsedBytes     int64                          `json:"fs_used_bytes"`
-	ImageDigest     string                         `json:"image_digest"`
-	Name            string                         `json:"name"`
-	RegistryID      string                         `json:"registry_id"`
-	SourceSandboxID string                         `json:"source_sandbox_id"`
-	Status          string                         `json:"status"`
-	StatusMessage   string                         `json:"status_message"`
-	UpdatedAt       string                         `json:"updated_at"`
-	JSON            sandboxSnapshotNewResponseJSON `json:"-"`
+	ID              string `json:"id"`
+	CreatedAt       string `json:"created_at"`
+	CreatedBy       string `json:"created_by"`
+	DockerImage     string `json:"docker_image"`
+	FsCapacityBytes int64  `json:"fs_capacity_bytes"`
+	FsUsedBytes     int64  `json:"fs_used_bytes"`
+	ImageDigest     string `json:"image_digest"`
+	// MemorySnapshotSizeBytes is non-nil iff the snapshot was captured with VM memory
+	// state. A non-nil value is the canonical signal that this snapshot can
+	// warm-restore from memory; nil means rootfs only.
+	MemorySnapshotSizeBytes int64                          `json:"memory_snapshot_size_bytes"`
+	Name                    string                         `json:"name"`
+	RegistryID              string                         `json:"registry_id"`
+	SourceSandboxID         string                         `json:"source_sandbox_id"`
+	Status                  string                         `json:"status"`
+	StatusMessage           string                         `json:"status_message"`
+	UpdatedAt               string                         `json:"updated_at"`
+	JSON                    sandboxSnapshotNewResponseJSON `json:"-"`
 }
 
 // sandboxSnapshotNewResponseJSON contains the JSON metadata for the struct
 // [SandboxSnapshotNewResponse]
 type sandboxSnapshotNewResponseJSON struct {
-	ID              apijson.Field
-	CreatedAt       apijson.Field
-	CreatedBy       apijson.Field
-	DockerImage     apijson.Field
-	FsCapacityBytes apijson.Field
-	FsUsedBytes     apijson.Field
-	ImageDigest     apijson.Field
-	Name            apijson.Field
-	RegistryID      apijson.Field
-	SourceSandboxID apijson.Field
-	Status          apijson.Field
-	StatusMessage   apijson.Field
-	UpdatedAt       apijson.Field
-	raw             string
-	ExtraFields     map[string]apijson.Field
+	ID                      apijson.Field
+	CreatedAt               apijson.Field
+	CreatedBy               apijson.Field
+	DockerImage             apijson.Field
+	FsCapacityBytes         apijson.Field
+	FsUsedBytes             apijson.Field
+	ImageDigest             apijson.Field
+	MemorySnapshotSizeBytes apijson.Field
+	Name                    apijson.Field
+	RegistryID              apijson.Field
+	SourceSandboxID         apijson.Field
+	Status                  apijson.Field
+	StatusMessage           apijson.Field
+	UpdatedAt               apijson.Field
+	raw                     string
+	ExtraFields             map[string]apijson.Field
 }
 
 func (r *SandboxSnapshotNewResponse) UnmarshalJSON(data []byte) (err error) {
@@ -124,40 +129,45 @@ func (r sandboxSnapshotNewResponseJSON) RawJSON() string {
 }
 
 type SandboxSnapshotGetResponse struct {
-	ID              string                         `json:"id"`
-	CreatedAt       string                         `json:"created_at"`
-	CreatedBy       string                         `json:"created_by"`
-	DockerImage     string                         `json:"docker_image"`
-	FsCapacityBytes int64                          `json:"fs_capacity_bytes"`
-	FsUsedBytes     int64                          `json:"fs_used_bytes"`
-	ImageDigest     string                         `json:"image_digest"`
-	Name            string                         `json:"name"`
-	RegistryID      string                         `json:"registry_id"`
-	SourceSandboxID string                         `json:"source_sandbox_id"`
-	Status          string                         `json:"status"`
-	StatusMessage   string                         `json:"status_message"`
-	UpdatedAt       string                         `json:"updated_at"`
-	JSON            sandboxSnapshotGetResponseJSON `json:"-"`
+	ID              string `json:"id"`
+	CreatedAt       string `json:"created_at"`
+	CreatedBy       string `json:"created_by"`
+	DockerImage     string `json:"docker_image"`
+	FsCapacityBytes int64  `json:"fs_capacity_bytes"`
+	FsUsedBytes     int64  `json:"fs_used_bytes"`
+	ImageDigest     string `json:"image_digest"`
+	// MemorySnapshotSizeBytes is non-nil iff the snapshot was captured with VM memory
+	// state. A non-nil value is the canonical signal that this snapshot can
+	// warm-restore from memory; nil means rootfs only.
+	MemorySnapshotSizeBytes int64                          `json:"memory_snapshot_size_bytes"`
+	Name                    string                         `json:"name"`
+	RegistryID              string                         `json:"registry_id"`
+	SourceSandboxID         string                         `json:"source_sandbox_id"`
+	Status                  string                         `json:"status"`
+	StatusMessage           string                         `json:"status_message"`
+	UpdatedAt               string                         `json:"updated_at"`
+	JSON                    sandboxSnapshotGetResponseJSON `json:"-"`
 }
 
 // sandboxSnapshotGetResponseJSON contains the JSON metadata for the struct
 // [SandboxSnapshotGetResponse]
 type sandboxSnapshotGetResponseJSON struct {
-	ID              apijson.Field
-	CreatedAt       apijson.Field
-	CreatedBy       apijson.Field
-	DockerImage     apijson.Field
-	FsCapacityBytes apijson.Field
-	FsUsedBytes     apijson.Field
-	ImageDigest     apijson.Field
-	Name            apijson.Field
-	RegistryID      apijson.Field
-	SourceSandboxID apijson.Field
-	Status          apijson.Field
-	StatusMessage   apijson.Field
-	UpdatedAt       apijson.Field
-	raw             string
-	ExtraFields     map[string]apijson.Field
+	ID                      apijson.Field
+	CreatedAt               apijson.Field
+	CreatedBy               apijson.Field
+	DockerImage             apijson.Field
+	FsCapacityBytes         apijson.Field
+	FsUsedBytes             apijson.Field
+	ImageDigest             apijson.Field
+	MemorySnapshotSizeBytes apijson.Field
+	Name                    apijson.Field
+	RegistryID              apijson.Field
+	SourceSandboxID         apijson.Field
+	Status                  apijson.Field
+	StatusMessage           apijson.Field
+	UpdatedAt               apijson.Field
+	raw                     string
+	ExtraFields             map[string]apijson.Field
 }
 
 func (r *SandboxSnapshotGetResponse) UnmarshalJSON(data []byte) (err error) {
@@ -192,40 +202,45 @@ func (r sandboxSnapshotListResponseJSON) RawJSON() string {
 }
 
 type SandboxSnapshotListResponseSnapshot struct {
-	ID              string                                  `json:"id"`
-	CreatedAt       string                                  `json:"created_at"`
-	CreatedBy       string                                  `json:"created_by"`
-	DockerImage     string                                  `json:"docker_image"`
-	FsCapacityBytes int64                                   `json:"fs_capacity_bytes"`
-	FsUsedBytes     int64                                   `json:"fs_used_bytes"`
-	ImageDigest     string                                  `json:"image_digest"`
-	Name            string                                  `json:"name"`
-	RegistryID      string                                  `json:"registry_id"`
-	SourceSandboxID string                                  `json:"source_sandbox_id"`
-	Status          string                                  `json:"status"`
-	StatusMessage   string                                  `json:"status_message"`
-	UpdatedAt       string                                  `json:"updated_at"`
-	JSON            sandboxSnapshotListResponseSnapshotJSON `json:"-"`
+	ID              string `json:"id"`
+	CreatedAt       string `json:"created_at"`
+	CreatedBy       string `json:"created_by"`
+	DockerImage     string `json:"docker_image"`
+	FsCapacityBytes int64  `json:"fs_capacity_bytes"`
+	FsUsedBytes     int64  `json:"fs_used_bytes"`
+	ImageDigest     string `json:"image_digest"`
+	// MemorySnapshotSizeBytes is non-nil iff the snapshot was captured with VM memory
+	// state. A non-nil value is the canonical signal that this snapshot can
+	// warm-restore from memory; nil means rootfs only.
+	MemorySnapshotSizeBytes int64                                   `json:"memory_snapshot_size_bytes"`
+	Name                    string                                  `json:"name"`
+	RegistryID              string                                  `json:"registry_id"`
+	SourceSandboxID         string                                  `json:"source_sandbox_id"`
+	Status                  string                                  `json:"status"`
+	StatusMessage           string                                  `json:"status_message"`
+	UpdatedAt               string                                  `json:"updated_at"`
+	JSON                    sandboxSnapshotListResponseSnapshotJSON `json:"-"`
 }
 
 // sandboxSnapshotListResponseSnapshotJSON contains the JSON metadata for the
 // struct [SandboxSnapshotListResponseSnapshot]
 type sandboxSnapshotListResponseSnapshotJSON struct {
-	ID              apijson.Field
-	CreatedAt       apijson.Field
-	CreatedBy       apijson.Field
-	DockerImage     apijson.Field
-	FsCapacityBytes apijson.Field
-	FsUsedBytes     apijson.Field
-	ImageDigest     apijson.Field
-	Name            apijson.Field
-	RegistryID      apijson.Field
-	SourceSandboxID apijson.Field
-	Status          apijson.Field
-	StatusMessage   apijson.Field
-	UpdatedAt       apijson.Field
-	raw             string
-	ExtraFields     map[string]apijson.Field
+	ID                      apijson.Field
+	CreatedAt               apijson.Field
+	CreatedBy               apijson.Field
+	DockerImage             apijson.Field
+	FsCapacityBytes         apijson.Field
+	FsUsedBytes             apijson.Field
+	ImageDigest             apijson.Field
+	MemorySnapshotSizeBytes apijson.Field
+	Name                    apijson.Field
+	RegistryID              apijson.Field
+	SourceSandboxID         apijson.Field
+	Status                  apijson.Field
+	StatusMessage           apijson.Field
+	UpdatedAt               apijson.Field
+	raw                     string
+	ExtraFields             map[string]apijson.Field
 }
 
 func (r *SandboxSnapshotListResponseSnapshot) UnmarshalJSON(data []byte) (err error) {

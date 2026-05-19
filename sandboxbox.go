@@ -36,9 +36,8 @@ func NewSandboxBoxService(opts ...option.RequestOption) (r *SandboxBoxService) {
 	return
 }
 
-// Create a new sandbox from a snapshot. Provide at most one of `snapshot_id` or
-// `snapshot_name`; if neither is provided, the server uses the default static
-// blueprint.
+// Create a new sandbox using server defaults. Provide at most one of
+// `snapshot_id` or `snapshot_name` only when booting from a reusable snapshot.
 func (r *SandboxBoxService) New(ctx context.Context, body SandboxBoxNewParams, opts ...option.RequestOption) (res *SandboxBoxNewResponse, err error) {
 	opts = slices.Concat(r.Options, opts)
 	path := "v2/sandboxes/boxes"
@@ -1183,40 +1182,45 @@ func (r SandboxBoxListResponseSandboxesProxyConfigRulesHeadersType) IsKnown() bo
 }
 
 type SandboxBoxNewSnapshotResponse struct {
-	ID              string                            `json:"id"`
-	CreatedAt       string                            `json:"created_at"`
-	CreatedBy       string                            `json:"created_by"`
-	DockerImage     string                            `json:"docker_image"`
-	FsCapacityBytes int64                             `json:"fs_capacity_bytes"`
-	FsUsedBytes     int64                             `json:"fs_used_bytes"`
-	ImageDigest     string                            `json:"image_digest"`
-	Name            string                            `json:"name"`
-	RegistryID      string                            `json:"registry_id"`
-	SourceSandboxID string                            `json:"source_sandbox_id"`
-	Status          string                            `json:"status"`
-	StatusMessage   string                            `json:"status_message"`
-	UpdatedAt       string                            `json:"updated_at"`
-	JSON            sandboxBoxNewSnapshotResponseJSON `json:"-"`
+	ID              string `json:"id"`
+	CreatedAt       string `json:"created_at"`
+	CreatedBy       string `json:"created_by"`
+	DockerImage     string `json:"docker_image"`
+	FsCapacityBytes int64  `json:"fs_capacity_bytes"`
+	FsUsedBytes     int64  `json:"fs_used_bytes"`
+	ImageDigest     string `json:"image_digest"`
+	// MemorySnapshotSizeBytes is non-nil iff the snapshot was captured with VM memory
+	// state. A non-nil value is the canonical signal that this snapshot can
+	// warm-restore from memory; nil means rootfs only.
+	MemorySnapshotSizeBytes int64                             `json:"memory_snapshot_size_bytes"`
+	Name                    string                            `json:"name"`
+	RegistryID              string                            `json:"registry_id"`
+	SourceSandboxID         string                            `json:"source_sandbox_id"`
+	Status                  string                            `json:"status"`
+	StatusMessage           string                            `json:"status_message"`
+	UpdatedAt               string                            `json:"updated_at"`
+	JSON                    sandboxBoxNewSnapshotResponseJSON `json:"-"`
 }
 
 // sandboxBoxNewSnapshotResponseJSON contains the JSON metadata for the struct
 // [SandboxBoxNewSnapshotResponse]
 type sandboxBoxNewSnapshotResponseJSON struct {
-	ID              apijson.Field
-	CreatedAt       apijson.Field
-	CreatedBy       apijson.Field
-	DockerImage     apijson.Field
-	FsCapacityBytes apijson.Field
-	FsUsedBytes     apijson.Field
-	ImageDigest     apijson.Field
-	Name            apijson.Field
-	RegistryID      apijson.Field
-	SourceSandboxID apijson.Field
-	Status          apijson.Field
-	StatusMessage   apijson.Field
-	UpdatedAt       apijson.Field
-	raw             string
-	ExtraFields     map[string]apijson.Field
+	ID                      apijson.Field
+	CreatedAt               apijson.Field
+	CreatedBy               apijson.Field
+	DockerImage             apijson.Field
+	FsCapacityBytes         apijson.Field
+	FsUsedBytes             apijson.Field
+	ImageDigest             apijson.Field
+	MemorySnapshotSizeBytes apijson.Field
+	Name                    apijson.Field
+	RegistryID              apijson.Field
+	SourceSandboxID         apijson.Field
+	Status                  apijson.Field
+	StatusMessage           apijson.Field
+	UpdatedAt               apijson.Field
+	raw                     string
+	ExtraFields             map[string]apijson.Field
 }
 
 func (r *SandboxBoxNewSnapshotResponse) UnmarshalJSON(data []byte) (err error) {
@@ -1534,9 +1538,20 @@ type SandboxBoxNewParams struct {
 	MemBytes               param.Field[int64]                          `json:"mem_bytes"`
 	Name                   param.Field[string]                         `json:"name"`
 	ProxyConfig            param.Field[SandboxBoxNewParamsProxyConfig] `json:"proxy_config"`
-	SnapshotID             param.Field[string]                         `json:"snapshot_id"`
-	SnapshotName           param.Field[string]                         `json:"snapshot_name"`
-	Vcpus                  param.Field[int64]                          `json:"vcpus"`
+	// RestoreMemory, when non-nil, overrides the server default for whether to resume
+	// the sandbox from its captured memory snapshot.
+	//
+	// true → resume from the memory snapshot if it exists; cold-boot the sandbox
+	// otherwise. false → always cold-boot, even if a memory snapshot exists. nil → use
+	// the server default.
+	//
+	// Applies to this request only; a later stop+start of the same sandbox reverts to
+	// the server default.
+	RestoreMemory param.Field[bool]     `json:"restore_memory"`
+	SnapshotID    param.Field[string]   `json:"snapshot_id"`
+	SnapshotName  param.Field[string]   `json:"snapshot_name"`
+	TagValueIDs   param.Field[[]string] `json:"tag_value_ids"`
+	Vcpus         param.Field[int64]    `json:"vcpus"`
 }
 
 func (r SandboxBoxNewParams) MarshalJSON() (data []byte, err error) {
@@ -1648,6 +1663,7 @@ type SandboxBoxUpdateParams struct {
 	MemBytes               param.Field[int64]                             `json:"mem_bytes"`
 	Name                   param.Field[string]                            `json:"name"`
 	ProxyConfig            param.Field[SandboxBoxUpdateParamsProxyConfig] `json:"proxy_config"`
+	TagValueIDs            param.Field[[]string]                          `json:"tag_value_ids"`
 	Vcpus                  param.Field[int64]                             `json:"vcpus"`
 }
 
@@ -1780,6 +1796,11 @@ type SandboxBoxNewSnapshotParams struct {
 	Name param.Field[string] `json:"name" api:"required"`
 	// if omitted, creates a fresh checkpoint from the running VM
 	Checkpoint param.Field[string] `json:"checkpoint"`
+	// IncludeMemory, when true, captures a full VM memory snapshot alongside the
+	// filesystem clone. Only honored when the sandbox is running AND Checkpoint is
+	// omitted (i.e. a fresh in-VM checkpoint is requested). Defaults to false to keep
+	// snapshots small unless memory restore is explicitly desired.
+	IncludeMemory param.Field[bool] `json:"include_memory"`
 }
 
 func (r SandboxBoxNewSnapshotParams) MarshalJSON() (data []byte, err error) {
