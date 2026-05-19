@@ -117,7 +117,7 @@ func newRoundTripper(base http.RoundTripper, tp trace.TracerProvider, runName st
 // RoundTrip intercepts requests/responses to add OpenTelemetry tracing.
 func (rt *roundTripper) RoundTrip(req *http.Request) (*http.Response, error) {
 	// Only trace Anthropic API requests
-	if !strings.Contains(req.URL.Host, "api.anthropic.com") {
+	if !shouldTrace(req) {
 		return rt.base.RoundTrip(req)
 	}
 
@@ -256,9 +256,23 @@ func isFirstContent(chunk map[string]any) bool {
 	return t == "content_block_delta"
 }
 
+func shouldTrace(req *http.Request) bool {
+	if req == nil || req.URL == nil {
+		return false
+	}
+	if strings.Contains(req.URL.Host, "api.anthropic.com") {
+		return true
+	}
+	return isAnthropicEndpoint(req.URL.Path)
+}
+
+func isAnthropicEndpoint(path string) bool {
+	return strings.Contains(path, "/v1/messages")
+}
+
 // getSpanName returns an appropriate span name based on the API endpoint.
 func getSpanName(path string) string {
-	if strings.Contains(path, "/v1/messages") {
+	if isAnthropicEndpoint(path) {
 		return "anthropic.messages"
 	}
 	return "anthropic.request"
@@ -266,7 +280,7 @@ func getSpanName(path string) string {
 
 // getOperationName returns the operation name for Gen AI semantic conventions.
 func getOperationName(path string) string {
-	if strings.Contains(path, "/v1/messages") {
+	if isAnthropicEndpoint(path) {
 		return "chat"
 	}
 	return "request"
