@@ -28,6 +28,23 @@ func (t *fakeTransport) RoundTrip(req *http.Request) (*http.Response, error) {
 	}, nil
 }
 
+type captureTransport struct {
+	body []byte
+	reqs chan *http.Request
+}
+
+func (t *captureTransport) RoundTrip(req *http.Request) (*http.Response, error) {
+	if t.reqs != nil {
+		t.reqs <- req
+	}
+	return &http.Response{
+		StatusCode: http.StatusOK,
+		Body:       io.NopCloser(bytes.NewReader(t.body)),
+		Header:     make(http.Header),
+		Request:    req,
+	}, nil
+}
+
 // hasEvent reports whether any exported span contains an event with the given name.
 func hasEvent(spans tracetest.SpanStubs, name string) bool {
 	for _, s := range spans {
@@ -64,6 +81,87 @@ func doStreamingMessages(t *testing.T, client *http.Client) {
 		t.Fatal(err)
 	}
 	resp.Body.Close()
+}
+
+func TestRoundTrip_AnthropicCompatibleMessagesHost(t *testing.T) {
+	respBody := `{"model":"accounts/fireworks/models/test","content":[{"type":"text","text":"hi"}],"usage":{"input_tokens":3,"output_tokens":1},"stop_reason":"end_turn"}`
+	exporter := tracetest.NewInMemoryExporter()
+	tp := sdktrace.NewTracerProvider(sdktrace.WithSyncer(exporter))
+	seen := make(chan *http.Request, 1)
+	client := WrapClient(
+		&http.Client{Transport: &captureTransport{body: []byte(respBody), reqs: seen}},
+		WithTracerProvider(tp),
+	)
+
+	body := `{"model":"accounts/fireworks/models/test","messages":[{"role":"user","content":"hi"}],"max_tokens":16}`
+	req, err := http.NewRequestWithContext(
+		context.Background(),
+		http.MethodPost,
+		"https://api.fireworks.ai/inference/v1/messages",
+		strings.NewReader(body),
+	)
+	if err != nil {
+		t.Fatal(err)
+	}
+	resp, err := client.Do(req)
+	if err != nil {
+		t.Fatal(err)
+	}
+	if _, err := io.ReadAll(resp.Body); err != nil {
+		t.Fatal(err)
+	}
+	resp.Body.Close()
+
+	gotReq := <-seen
+	if gotReq.URL.Host != "api.fireworks.ai" {
+		t.Fatalf("upstream host = %q, want api.fireworks.ai", gotReq.URL.Host)
+	}
+
+	spans := exporter.GetSpans()
+	if len(spans) != 1 {
+		t.Fatalf("got %d spans, want 1", len(spans))
+	}
+	if spans[0].Name != "anthropic.messages" {
+		t.Fatalf("span name = %q, want anthropic.messages", spans[0].Name)
+	}
+	var gotURL string
+	for _, attr := range spans[0].Attributes {
+		if string(attr.Key) == "http.url" {
+			gotURL = attr.Value.AsString()
+			break
+		}
+	}
+	if gotURL != "https://api.fireworks.ai/inference/v1/messages" {
+		t.Fatalf("http.url = %q, want Fireworks URL", gotURL)
+	}
+}
+
+func TestRoundTrip_UnrelatedHostAndPathNotTraced(t *testing.T) {
+	exporter := tracetest.NewInMemoryExporter()
+	tp := sdktrace.NewTracerProvider(sdktrace.WithSyncer(exporter))
+	client := WrapClient(
+		&http.Client{Transport: &fakeTransport{body: []byte(`{"ok":true}`)}},
+		WithTracerProvider(tp),
+	)
+
+	req, err := http.NewRequestWithContext(
+		context.Background(),
+		http.MethodGet,
+		"https://example.com/v1/models",
+		nil,
+	)
+	if err != nil {
+		t.Fatal(err)
+	}
+	resp, err := client.Do(req)
+	if err != nil {
+		t.Fatal(err)
+	}
+	resp.Body.Close()
+
+	if got := len(exporter.GetSpans()); got != 0 {
+		t.Fatalf("got %d spans, want 0", got)
+	}
 }
 
 func TestRoundTrip_StreamingEmitsNewTokenOnFirstContentDelta(t *testing.T) {
