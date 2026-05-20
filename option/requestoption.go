@@ -270,6 +270,9 @@ func WithEnvironmentProduction() RequestOption {
 func WithAPIKey(value string) RequestOption {
 	return requestconfig.RequestOptionFunc(func(r *requestconfig.RequestConfig) error {
 		r.APIKey = value
+		r.OAuthAccessToken = ""
+		r.Request.Header.Del("Authorization")
+		r.Request.Header.Del("X-User-Id")
 		return r.Apply(WithHeader("X-API-Key", r.APIKey))
 	})
 }

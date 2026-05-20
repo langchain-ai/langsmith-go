@@ -2,8 +2,10 @@ package langsmith
 
 import (
 	"context"
+	"encoding/base64"
 	"encoding/json"
 	"errors"
+	"fmt"
 	"net/http"
 	"net/http/httptest"
 	"os"
@@ -17,6 +19,13 @@ import (
 	"github.com/langchain-ai/langsmith-go/internal/requestconfig"
 	"github.com/langchain-ai/langsmith-go/option"
 )
+
+func jwtWithSubject(t *testing.T, sub string) string {
+	t.Helper()
+	header := base64.RawURLEncoding.EncodeToString([]byte(`{"alg":"none"}`))
+	payload := base64.RawURLEncoding.EncodeToString([]byte(fmt.Sprintf(`{"sub":%q}`, sub)))
+	return header + "." + payload + "."
+}
 
 func TestLoadProfileOptions_NoFile(t *testing.T) {
 	t.Setenv("LANGSMITH_CONFIG_FILE", "/nonexistent/path/config.json")
@@ -216,6 +225,7 @@ func TestDefaultClientOptions_WorkspaceIDEnvAlias(t *testing.T) {
 
 func TestLoadProfileOptions_OAuthAccessToken(t *testing.T) {
 	clearAuthEnv(t)
+	accessToken := jwtWithSubject(t, "user-123")
 	dir := t.TempDir()
 	path := filepath.Join(dir, "config.json")
 	content := `{
@@ -223,7 +233,7 @@ func TestLoadProfileOptions_OAuthAccessToken(t *testing.T) {
     "default": {
       "api_url": "https://api.smith.langchain.com",
       "oauth": {
-        "access_token": "test-access-token"
+        "access_token": "` + accessToken + `"
       }
     }
   }
@@ -237,11 +247,81 @@ func TestLoadProfileOptions_OAuthAccessToken(t *testing.T) {
 
 	opts := loadProfileOptions()
 	cfg := applyOptions(t, opts)
-	if cfg.OAuthAccessToken != "test-access-token" {
+	if cfg.OAuthAccessToken != accessToken {
 		t.Fatalf("expected profile access token to become OAuth access token, got %q", cfg.OAuthAccessToken)
 	}
-	if got := cfg.Request.Header.Get("authorization"); got != "Bearer test-access-token" {
+	if got := cfg.Request.Header.Get("authorization"); got != "Bearer "+accessToken {
 		t.Fatalf("expected Authorization bearer header, got %q", got)
+	}
+	if got := cfg.Request.Header.Get("X-User-Id"); got != "user-123" {
+		t.Fatalf("expected X-User-Id from access token subject, got %q", got)
+	}
+}
+
+func TestLoadProfileOptions_APIKeyOverrideDropsOAuthUserID(t *testing.T) {
+	clearAuthEnv(t)
+	accessToken := jwtWithSubject(t, "profile-user")
+	var gotAuth string
+	var gotAPIKey string
+	var gotUserID string
+	ts := httptest.NewServer(http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
+		gotAuth = r.Header.Get("Authorization")
+		gotAPIKey = r.Header.Get("X-API-Key")
+		gotUserID = r.Header.Get("X-User-Id")
+		w.Header().Set("Content-Type", "application/json")
+		_ = json.NewEncoder(w).Encode(map[string]string{"ok": "true"})
+	}))
+	defer ts.Close()
+
+	dir := t.TempDir()
+	path := filepath.Join(dir, "config.json")
+	content := `{
+  "profiles": {
+    "default": {
+      "api_url": "` + ts.URL + `",
+      "oauth": {
+        "access_token": "` + accessToken + `"
+      }
+    }
+  }
+}
+`
+	if err := os.WriteFile(path, []byte(content), 0600); err != nil {
+		t.Fatal(err)
+	}
+	t.Setenv("LANGSMITH_CONFIG_FILE", path)
+	t.Setenv("LANGSMITH_PROFILE", "")
+
+	opts := append(loadProfileOptions(), option.WithAPIKey("override-api-key"))
+	cfg := applyOptions(t, opts)
+	if cfg.OAuthAccessToken != "" {
+		t.Fatalf("expected API key override to clear OAuth access token, got %q", cfg.OAuthAccessToken)
+	}
+	if got := cfg.Request.Header.Get("X-User-Id"); got != "" {
+		t.Fatalf("expected API key override to clear initial X-User-Id, got %q", got)
+	}
+
+	preProfileOpts := append([]option.RequestOption{option.WithAPIKey("override-api-key")}, loadProfileOptions()...)
+	cfg = applyOptions(t, preProfileOpts)
+	if cfg.OAuthAccessToken != "" {
+		t.Fatalf("expected pre-existing API key to suppress OAuth access token, got %q", cfg.OAuthAccessToken)
+	}
+	if got := cfg.Request.Header.Get("X-User-Id"); got != "" {
+		t.Fatalf("expected pre-existing API key to suppress X-User-Id, got %q", got)
+	}
+
+	var out map[string]string
+	if err := requestconfig.ExecuteNewRequest(context.Background(), http.MethodGet, "/info", nil, &out, opts...); err != nil {
+		t.Fatal(err)
+	}
+	if gotAPIKey != "override-api-key" {
+		t.Fatalf("expected API key override, got %q", gotAPIKey)
+	}
+	if gotAuth != "" {
+		t.Fatalf("expected OAuth Authorization to be removed, got %q", gotAuth)
+	}
+	if gotUserID != "" {
+		t.Fatalf("expected OAuth X-User-Id to be removed, got %q", gotUserID)
 	}
 }
 

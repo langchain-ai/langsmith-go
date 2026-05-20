@@ -14,6 +14,7 @@ import (
 	"sync"
 	"time"
 
+	authpkg "github.com/langchain-ai/langsmith-go/internal/auth"
 	"github.com/langchain-ai/langsmith-go/internal/requestconfig"
 	"github.com/langchain-ai/langsmith-go/option"
 )
@@ -172,10 +173,12 @@ func WithProfile(profileName string) option.RequestOption {
 func withProfileAuth(auth *profileAuth) option.RequestOption {
 	return requestconfig.RequestOptionFunc(func(r *requestconfig.RequestConfig) error {
 		name, value, token := auth.currentAuthHeader()
-		if token != "" {
+		useProfileAuth := name != "" && (r.APIKey == "" || auth.override)
+		if useProfileAuth && token != "" {
 			r.OAuthAccessToken = token
+			authpkg.SetUserIDHeaderFromAccessToken(r.Request.Header, token)
 		}
-		if name != "" && (r.APIKey == "" || auth.override) {
+		if useProfileAuth {
 			if auth.override && !strings.EqualFold(name, "X-API-Key") {
 				r.APIKey = ""
 				r.Request.Header.Del("X-API-Key")
@@ -185,17 +188,22 @@ func withProfileAuth(auth *profileAuth) option.RequestOption {
 		return r.Apply(option.WithMiddleware(func(req *http.Request, next option.MiddlewareNext) (*http.Response, error) {
 			if req.Header.Get("X-API-Key") != "" && !auth.override {
 				req.Header.Del("Authorization")
+				req.Header.Del("X-User-Id")
 				return next(req)
 			}
-			name, value, _ := auth.authHeader(req.Context())
+			name, value, token := auth.authHeader(req.Context())
 			if name != "" {
 				if auth.override && !strings.EqualFold(name, "X-API-Key") {
 					req.Header.Del("X-API-Key")
 				}
 				if strings.EqualFold(name, "X-API-Key") {
 					req.Header.Del("Authorization")
+					req.Header.Del("X-User-Id")
 				}
 				req.Header.Set(name, value)
+				if token != "" {
+					authpkg.SetUserIDHeaderFromAccessToken(req.Header, token)
+				}
 			}
 			return next(req)
 		}))
