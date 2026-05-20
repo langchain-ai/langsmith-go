@@ -27,7 +27,7 @@ import (
 
 func getDefaultHeaders() map[string]string {
 	return map[string]string{
-		"User-Agent": fmt.Sprintf("langsmith-go/%s", internal.PackageVersion),
+		"User-Agent": fmt.Sprintf("LangChain/Go %s", internal.PackageVersion),
 	}
 }
 
@@ -218,13 +218,12 @@ type RequestConfig struct {
 	BaseURL        *url.URL
 	// DefaultBaseURL will be used if BaseURL is not explicitly overridden using
 	// WithBaseURL.
-	DefaultBaseURL   *url.URL
-	CustomHTTPDoer   HTTPDoer
-	HTTPClient       *http.Client
-	Middlewares      []middleware
-	APIKey           string
-	TenantID         string
-	OAuthAccessToken string
+	DefaultBaseURL *url.URL
+	CustomHTTPDoer HTTPDoer
+	HTTPClient     *http.Client
+	Middlewares    []middleware
+	APIKey         string
+	TenantID       string
 	// If ResponseBodyInto not nil, then we will attempt to deserialize into
 	// ResponseBodyInto. If Destination is a []byte, then it will return the body as
 	// is.
@@ -591,16 +590,15 @@ func (cfg *RequestConfig) Clone(ctx context.Context) *RequestConfig {
 		return nil
 	}
 	new := &RequestConfig{
-		MaxRetries:       cfg.MaxRetries,
-		RequestTimeout:   cfg.RequestTimeout,
-		Context:          ctx,
-		Request:          req,
-		BaseURL:          cfg.BaseURL,
-		HTTPClient:       cfg.HTTPClient,
-		Middlewares:      cfg.Middlewares,
-		APIKey:           cfg.APIKey,
-		TenantID:         cfg.TenantID,
-		OAuthAccessToken: cfg.OAuthAccessToken,
+		MaxRetries:     cfg.MaxRetries,
+		RequestTimeout: cfg.RequestTimeout,
+		Context:        ctx,
+		Request:        req,
+		BaseURL:        cfg.BaseURL,
+		HTTPClient:     cfg.HTTPClient,
+		Middlewares:    cfg.Middlewares,
+		APIKey:         cfg.APIKey,
+		TenantID:       cfg.TenantID,
 	}
 
 	return new

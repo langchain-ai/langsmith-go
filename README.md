@@ -24,7 +24,7 @@ Or to pin the version:
 <!-- x-release-please-start-version -->
 
 ```sh
-go get -u 'github.com/langchain-ai/langsmith-go@v0.12.0'
+go get -u 'github.com/langchain-ai/langsmith-go@v0.0.1'
 ```
 
 <!-- x-release-please-end -->
@@ -32,40 +32,6 @@ go get -u 'github.com/langchain-ai/langsmith-go@v0.12.0'
 ## Requirements
 
 This library requires Go 1.22+.
-
-## Configuration
-
-The client can be configured using environment variables or by passing options directly to `langsmith.NewClient()`. Environment variables are automatically read when creating a new client.
-
-### Environment Variables
-
-| Variable | Required | Description |
-|----------|----------|-------------|
-| `LANGSMITH_API_KEY` | Optional | Your LangSmith API key for authentication |
-| `LANGSMITH_TENANT_ID` | Optional | Your LangSmith tenant ID |
-| `LANGSMITH_ENDPOINT` | Optional | Custom base URL for the LangSmith API (defaults to `https://api.smith.langchain.com`) |
-
-## Examples
-
-This repository includes several examples demonstrating common use cases:
-
-- **[List Runs](./examples/list_runs)** - Query and filter runs from your LangSmith project
-- **[Dataset Management](./examples/dataset)** - Create datasets, add examples individually or in bulk, and manage dataset lifecycle
-- **[E2E Evaluation](./examples/e2e_eval)** - Run OpenAI experiments with automatic OpenTelemetry tracing linked to dataset examples
-- **[Record Experiment](./examples/record_experiment)** - Create datasets, examples, sessions, and batch ingest runs for experiments
-- **[Prompt Management](./examples/prompt_management)** - Create and manage prompt repositories, commits, and versions
-- **[OpenTelemetry Ingestion](./examples/otel_ingestion)** - Send OpenTelemetry traces to LangSmith with hierarchical span structure
-- **[OpenTelemetry + OpenAI](./examples/otel_openai)** - Make OpenAI API calls with manual OpenTelemetry tracing to LangSmith
-- **[OpenTelemetry + OpenAI (Go Client)](./examples/otel_go_client_openai)** - Automatic OpenTelemetry tracing for OpenAI API calls using sashabaranov/go-openai client wrapper
-- **[OpenTelemetry + Anthropic](./examples/otel_anthropic)** - Automatic OpenTelemetry tracing for Anthropic API calls using HTTP client wrapper
-
-Each example includes detailed documentation in its source code. To run an example:
-
-```sh
-go run ./examples/<example-name>
-```
-
-Make sure to set the required environment variables `LANGSMITH_API_KEY` before running and `OPENAI_API_KEY` for the OpenAI examples.
 
 ## Usage
 

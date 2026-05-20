@@ -36,8 +36,9 @@ func NewSandboxBoxService(opts ...option.RequestOption) (r *SandboxBoxService) {
 	return
 }
 
-// Create a new sandbox using server defaults. Provide at most one of
-// `snapshot_id` or `snapshot_name` only when booting from a reusable snapshot.
+// Create a new sandbox from a snapshot. Provide at most one of `snapshot_id` or
+// `snapshot_name`; if neither is provided, the server uses the default static
+// blueprint.
 func (r *SandboxBoxService) New(ctx context.Context, body SandboxBoxNewParams, opts ...option.RequestOption) (res *SandboxBoxNewResponse, err error) {
 	opts = slices.Concat(r.Options, opts)
 	path := "v2/sandboxes/boxes"

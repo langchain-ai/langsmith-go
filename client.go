@@ -4,15 +4,12 @@ package langsmith
 
 import (
 	"context"
-	"fmt"
 	"net/http"
 	"os"
 	"slices"
 	"strings"
-	"sync"
 
 	"github.com/langchain-ai/langsmith-go/internal/requestconfig"
-	"github.com/langchain-ai/langsmith-go/lib/langsmithtracing"
 	"github.com/langchain-ai/langsmith-go/option"
 )
 
@@ -34,31 +31,21 @@ type Client struct {
 	Repos            *RepoService
 	Commits          *CommitService
 	Settings         *SettingService
-
-	tracingClient *langsmithtracing.TracingClient
-	tracingOnce   sync.Once
-	tracingErr    error
-	Sandboxes     *SandboxService
+	Sandboxes        *SandboxService
 }
 
 // DefaultClientOptions read from the environment (LANGSMITH_API_KEY,
-// LANGSMITH_TENANT_ID, LANGSMITH_WORKSPACE_ID, LANGSMITH_ENDPOINT). This
-// should be used to initialize new clients.
+// LANGSMITH_TENANT_ID, LANGCHAIN_BASE_URL). This should be used to initialize new
+// clients.
 func DefaultClientOptions() []option.RequestOption {
 	defaults := []option.RequestOption{option.WithHTTPClient(defaultHTTPClient()), option.WithEnvironmentProduction()}
-	// Profile options are applied after the production default but before env
-	// vars, so env vars override profile values (last option wins).
-	defaults = append(defaults, loadProfileOptions()...)
-	if o, ok := os.LookupEnv("LANGSMITH_ENDPOINT"); ok {
+	if o, ok := os.LookupEnv("LANGCHAIN_BASE_URL"); ok {
 		defaults = append(defaults, option.WithBaseURL(o))
 	}
 	if o, ok := os.LookupEnv("LANGSMITH_API_KEY"); ok {
 		defaults = append(defaults, option.WithAPIKey(o))
 	}
 	if o, ok := os.LookupEnv("LANGSMITH_TENANT_ID"); ok {
-		defaults = append(defaults, option.WithTenantID(o))
-	}
-	if o, ok := os.LookupEnv("LANGSMITH_WORKSPACE_ID"); ok {
 		defaults = append(defaults, option.WithTenantID(o))
 	}
 	if o, ok := os.LookupEnv("LANGCHAIN_CUSTOM_HEADERS"); ok {
@@ -73,10 +60,9 @@ func DefaultClientOptions() []option.RequestOption {
 }
 
 // NewClient generates a new client with the default option read from the
-// environment (LANGSMITH_API_KEY, LANGSMITH_TENANT_ID, LANGSMITH_WORKSPACE_ID,
-// LANGSMITH_ENDPOINT). The option passed in as arguments are applied after
-// these default arguments, and all option will be passed down to the services
-// and requests that this client makes.
+// environment (LANGSMITH_API_KEY, LANGSMITH_TENANT_ID, LANGCHAIN_BASE_URL). The
+// option passed in as arguments are applied after these default arguments, and all
+// option will be passed down to the services and requests that this client makes.
 func NewClient(opts ...option.RequestOption) (r *Client) {
 	opts = append(DefaultClientOptions(), opts...)
 
@@ -98,78 +84,6 @@ func NewClient(opts ...option.RequestOption) (r *Client) {
 	r.Sandboxes = NewSandboxService(opts...)
 
 	return
-}
-
-// tracing returns the lazily-initialized TracingClient. The background
-// goroutine is only started on the first call, so clients that never use
-// tracing (e.g. REST-only usage) pay no cost and leak no goroutines.
-func (r *Client) tracing() (*langsmithtracing.TracingClient, error) {
-	r.tracingOnce.Do(func() {
-		req, err := http.NewRequest("GET", "/", nil)
-		if err != nil {
-			r.tracingErr = fmt.Errorf("langsmith: init tracing: %w", err)
-			return
-		}
-		cfg := requestconfig.RequestConfig{
-			Request:    req,
-			HTTPClient: http.DefaultClient,
-		}
-		if err := cfg.Apply(slices.Clone(r.Options)...); err != nil {
-			r.tracingErr = fmt.Errorf("langsmith: resolve tracing config: %w", err)
-			return
-		}
-
-		var tracingOpts []langsmithtracing.Option
-		if cfg.APIKey != "" {
-			tracingOpts = append(tracingOpts, langsmithtracing.WithAPIKey(cfg.APIKey))
-		}
-		if cfg.OAuthAccessToken != "" {
-			tracingOpts = append(tracingOpts, langsmithtracing.WithOAuthAccessToken(cfg.OAuthAccessToken))
-		}
-		if cfg.BaseURL != nil {
-			tracingOpts = append(tracingOpts, langsmithtracing.WithAPIURL(cfg.BaseURL.String()))
-		} else if cfg.DefaultBaseURL != nil {
-			tracingOpts = append(tracingOpts, langsmithtracing.WithAPIURL(cfg.DefaultBaseURL.String()))
-		}
-		tc, err := langsmithtracing.NewTracingClient(context.Background(), tracingOpts...)
-		if err != nil {
-			r.tracingErr = fmt.Errorf("langsmith: init tracing: %w", err)
-			return
-		}
-		r.tracingClient = tc
-	})
-	return r.tracingClient, r.tracingErr
-}
-
-// CreateRun enqueues a run create (post) for multipart ingestion.
-func (r *Client) CreateRun(run *RunCreate) error {
-	tc, err := r.tracing()
-	if err != nil {
-		return err
-	}
-	return tc.CreateRun(run)
-}
-
-// UpdateRun enqueues a run update (patch) for multipart ingestion.
-func (r *Client) UpdateRun(run *RunUpdate) error {
-	tc, err := r.tracing()
-	if err != nil {
-		return err
-	}
-	return tc.UpdateRun(run)
-}
-
-// Close flushes pending tracing operations and shuts down background goroutines.
-// Always call Close before the client goes out of scope to ensure all traces are
-// delivered. It is safe to call Close multiple times; it is also safe to call
-// Close on a client that never used tracing (no-op in that case).
-func (r *Client) Close() {
-	r.tracingOnce.Do(func() {
-		r.tracingErr = fmt.Errorf("langsmith: client closed before tracing was initialized")
-	})
-	if r.tracingClient != nil {
-		r.tracingClient.Close()
-	}
 }
 
 // Execute makes a request with the given context, method, URL, request params,

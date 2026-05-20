@@ -179,7 +179,7 @@ type RunSchema struct {
 	Status                 string                            `json:"status" api:"required"`
 	TraceID                string                            `json:"trace_id" api:"required" format:"uuid"`
 	ChildRunIDs            []string                          `json:"child_run_ids" api:"nullable" format:"uuid"`
-	CompletionCost         float64                           `json:"completion_cost" api:"nullable"`
+	CompletionCost         string                            `json:"completion_cost" api:"nullable"`
 	CompletionCostDetails  map[string]string                 `json:"completion_cost_details" api:"nullable"`
 	CompletionTokenDetails map[string]int64                  `json:"completion_token_details" api:"nullable"`
 	CompletionTokens       int64                             `json:"completion_tokens"`
@@ -205,7 +205,7 @@ type RunSchema struct {
 	ParentRunID            string                            `json:"parent_run_id" api:"nullable" format:"uuid"`
 	ParentRunIDs           []string                          `json:"parent_run_ids" api:"nullable" format:"uuid"`
 	PriceModelID           string                            `json:"price_model_id" api:"nullable" format:"uuid"`
-	PromptCost             float64                           `json:"prompt_cost" api:"nullable"`
+	PromptCost             string                            `json:"prompt_cost" api:"nullable"`
 	PromptCostDetails      map[string]string                 `json:"prompt_cost_details" api:"nullable"`
 	PromptTokenDetails     map[string]int64                  `json:"prompt_token_details" api:"nullable"`
 	PromptTokens           int64                             `json:"prompt_tokens"`
@@ -217,7 +217,7 @@ type RunSchema struct {
 	StartTime              time.Time                         `json:"start_time" format:"date-time"`
 	Tags                   []string                          `json:"tags" api:"nullable"`
 	ThreadID               string                            `json:"thread_id" api:"nullable"`
-	TotalCost              float64                           `json:"total_cost" api:"nullable"`
+	TotalCost              string                            `json:"total_cost" api:"nullable"`
 	TotalTokens            int64                             `json:"total_tokens"`
 	TraceFirstReceivedAt   time.Time                         `json:"trace_first_received_at" api:"nullable" format:"date-time"`
 	TraceMaxStartTime      time.Time                         `json:"trace_max_start_time" api:"nullable" format:"date-time"`

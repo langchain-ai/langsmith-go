@@ -3,20 +3,3 @@
 codegen.log
 Brewfile.lock.json
 .idea/
-
-# Local secrets
-.env
-.env.*
-*.pem
-*.key
-*.crt
-credentials.json
-token.json
-
-# Local dependency and virtualenv directories
-node_modules/
-__pycache__/
-.venv/
-
-# OS
-.DS_Store
