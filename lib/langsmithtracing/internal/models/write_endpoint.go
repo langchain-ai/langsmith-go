@@ -1,6 +1,10 @@
 package models
 
-import "net/http"
+import (
+	"net/http"
+
+	"github.com/langchain-ai/langsmith-go/internal/auth"
+)
 
 // WriteEndpoint identifies a LangSmith API endpoint to send traces to.
 type WriteEndpoint struct {
@@ -15,6 +19,7 @@ type WriteEndpoint struct {
 func (ep WriteEndpoint) SetAuthHeader(req *http.Request) {
 	if ep.OAuthAccessToken != "" {
 		req.Header.Set("Authorization", "Bearer "+ep.OAuthAccessToken)
+		auth.SetUserIDHeaderFromAccessToken(req.Header, ep.OAuthAccessToken)
 	} else if ep.Key != "" {
 		req.Header.Set("X-API-Key", ep.Key)
 	}
