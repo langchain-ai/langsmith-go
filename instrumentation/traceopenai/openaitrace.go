@@ -184,12 +184,15 @@ func MiddlewareWithTracerProvider(req *http.Request, next MiddlewareNext, tp tra
 		}
 		// Early stream termination: use real error from read (e.g. context.Canceled) or synthetic "Cancelled".
 		// Chat Completions streams end with "data: [DONE]"; Responses API streams
-		// end with a "response.completed" event, not [DONE].
-		// See https://developers.openai.com/api/docs/guides/streaming-responses#read-the-responses
+		// end with one of three terminal events: response.completed,
+		// response.incomplete (e.g. max_output_tokens), or response.failed.
+		// See https://platform.openai.com/docs/api-reference/responses-streaming
 		var incompleteStream bool
 		if resp.StatusCode < 400 && streaming {
 			if responsesAPI {
-				incompleteStream = !strings.Contains(bodyText, `"response.completed"`)
+				incompleteStream = !strings.Contains(bodyText, `"response.completed"`) &&
+					!strings.Contains(bodyText, `"response.incomplete"`) &&
+					!strings.Contains(bodyText, `"response.failed"`)
 			} else {
 				incompleteStream = !strings.Contains(bodyText, "[DONE]")
 			}
@@ -220,18 +223,16 @@ func MiddlewareWithTracerProvider(req *http.Request, next MiddlewareNext, tp tra
 		if completion != "" {
 			span.SetAttributes(attribute.String("gen_ai.completion", completion))
 		}
-		if usage.InputTokens > 0 {
+		if usage.HasUsage {
 			inputTokens := int64(usage.InputTokens)
 			span.SetAttributes(attribute.Int64("gen_ai.usage.input_tokens", inputTokens))
-			if parentSpan.SpanContext().IsValid() && parentSpan.IsRecording() {
-				parentSpan.SetAttributes(attribute.Int64("gen_ai.usage.input_tokens", inputTokens))
-			}
-		}
-		if usage.OutputTokens > 0 {
 			outputTokens := int64(usage.OutputTokens)
 			span.SetAttributes(attribute.Int64("gen_ai.usage.output_tokens", outputTokens))
 			if parentSpan.SpanContext().IsValid() && parentSpan.IsRecording() {
-				parentSpan.SetAttributes(attribute.Int64("gen_ai.usage.output_tokens", outputTokens))
+				parentSpan.SetAttributes(
+					attribute.Int64("gen_ai.usage.input_tokens", inputTokens),
+					attribute.Int64("gen_ai.usage.output_tokens", outputTokens),
+				)
 			}
 		}
 		if resp.StatusCode < 400 && !incompleteStream {
@@ -755,6 +756,7 @@ func extractStreamingCompletion(data []byte) (string, usageInfo) {
 
 		// Extract usage (present in the last chunk when include_usage is set)
 		if usageMap, ok := chunk["usage"].(map[string]any); ok {
+			usage.HasUsage = true
 			if v, ok := usageMap["prompt_tokens"].(float64); ok {
 				usage.InputTokens = int(v)
 			}
@@ -794,9 +796,12 @@ func extractStreamingCompletion(data []byte) (string, usageInfo) {
 }
 
 // usageInfo holds token usage information.
+// HasUsage distinguishes "provider returned usage with 0 tokens" from
+// "provider omitted the usage field entirely."
 type usageInfo struct {
 	InputTokens  int
 	OutputTokens int
+	HasUsage     bool
 }
 
 // extractCompletionFromResponse extracts the assistant message and usage from
@@ -809,6 +814,7 @@ func extractCompletionFromResponse(body []byte) (string, usageInfo) {
 
 	var usage usageInfo
 	if usageMap, ok := resp["usage"].(map[string]any); ok {
+		usage.HasUsage = true
 		if v, ok := usageMap["prompt_tokens"].(float64); ok {
 			usage.InputTokens = int(v)
 		}
@@ -846,8 +852,10 @@ func extractResponsesCompletion(body []byte) (string, usageInfo) {
 }
 
 // extractStreamingResponsesCompletion extracts completion and usage from a
-// streaming Responses API response. The response.completed event contains the
-// full response object.
+// streaming Responses API response. The OpenAI spec defines three terminal
+// events that carry the full response object (including usage):
+// response.completed, response.incomplete, and response.failed.
+// See https://platform.openai.com/docs/api-reference/responses-streaming
 func extractStreamingResponsesCompletion(data []byte) (string, usageInfo) {
 	chunks, err := traceutil.ParseSSEChunks(bytes.NewReader(data))
 	if err != nil || len(chunks) == 0 {
@@ -855,7 +863,8 @@ func extractStreamingResponsesCompletion(data []byte) (string, usageInfo) {
 	}
 
 	for _, chunk := range chunks {
-		if msgType, _ := chunk["type"].(string); msgType == "response.completed" {
+		switch msgType, _ := chunk["type"].(string); msgType {
+		case "response.completed", "response.incomplete", "response.failed":
 			if response, ok := chunk["response"].(map[string]any); ok {
 				return extractResponsesOutput(response), extractResponsesUsage(response)
 			}
@@ -869,6 +878,7 @@ func extractStreamingResponsesCompletion(data []byte) (string, usageInfo) {
 func extractResponsesUsage(resp map[string]any) usageInfo {
 	var usage usageInfo
 	if usageMap, ok := resp["usage"].(map[string]any); ok {
+		usage.HasUsage = true
 		if v, ok := usageMap["input_tokens"].(float64); ok {
 			usage.InputTokens = int(v)
 		}
