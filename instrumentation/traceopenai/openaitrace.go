@@ -186,7 +186,7 @@ func MiddlewareWithTracerProvider(req *http.Request, next MiddlewareNext, tp tra
 		// Chat Completions streams end with "data: [DONE]"; Responses API streams
 		// end with one of three terminal events: response.completed,
 		// response.incomplete (e.g. max_output_tokens), or response.failed.
-		// See https://platform.openai.com/docs/api-reference/responses-streaming
+		// See https://developers.openai.com/api/docs/guides/streaming-responses.
 		var incompleteStream bool
 		if resp.StatusCode < 400 && streaming {
 			if responsesAPI {
