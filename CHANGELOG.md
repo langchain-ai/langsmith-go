@@ -1,5 +1,19 @@
 # Changelog
 
+## 0.13.0 (2026-05-22)
+
+Full Changelog: [v0.12.0...v0.13.0](https://github.com/langchain-ai/langsmith-go/compare/v0.12.0...v0.13.0)
+
+### Features
+
+* **api:** api update ([83864b4](https://github.com/langchain-ai/langsmith-go/commit/83864b4fa04c9f484347ddc0935c2178a0546ae6))
+
+
+### Bug Fixes
+
+* **auth:** add OAuth user ID header from JWT ([#98](https://github.com/langchain-ai/langsmith-go/issues/98)) ([49e4fd1](https://github.com/langchain-ai/langsmith-go/commit/49e4fd164b039c63bf5b090f74651e10c37a69be))
+* **auth:** lock OAuth profile refreshes ([#97](https://github.com/langchain-ai/langsmith-go/issues/97)) ([5e6de52](https://github.com/langchain-ai/langsmith-go/commit/5e6de52a5576ea2e42ea1823f6851ffcd72050d5))
+
 ## 0.12.0 (2026-05-19)
 
 Full Changelog: [v0.11.0...v0.12.0](https://github.com/langchain-ai/langsmith-go/compare/v0.11.0...v0.12.0)

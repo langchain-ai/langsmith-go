@@ -14,6 +14,7 @@ import (
 	"sync"
 	"time"
 
+	authpkg "github.com/langchain-ai/langsmith-go/internal/auth"
 	"github.com/langchain-ai/langsmith-go/internal/requestconfig"
 	"github.com/langchain-ai/langsmith-go/option"
 )
@@ -172,10 +173,12 @@ func WithProfile(profileName string) option.RequestOption {
 func withProfileAuth(auth *profileAuth) option.RequestOption {
 	return requestconfig.RequestOptionFunc(func(r *requestconfig.RequestConfig) error {
 		name, value, token := auth.currentAuthHeader()
-		if token != "" {
+		useProfileAuth := name != "" && (r.APIKey == "" || auth.override)
+		if useProfileAuth && token != "" {
 			r.OAuthAccessToken = token
+			authpkg.SetUserIDHeaderFromAccessToken(r.Request.Header, token)
 		}
-		if name != "" && (r.APIKey == "" || auth.override) {
+		if useProfileAuth {
 			if auth.override && !strings.EqualFold(name, "X-API-Key") {
 				r.APIKey = ""
 				r.Request.Header.Del("X-API-Key")
@@ -185,17 +188,22 @@ func withProfileAuth(auth *profileAuth) option.RequestOption {
 		return r.Apply(option.WithMiddleware(func(req *http.Request, next option.MiddlewareNext) (*http.Response, error) {
 			if req.Header.Get("X-API-Key") != "" && !auth.override {
 				req.Header.Del("Authorization")
+				req.Header.Del("X-User-Id")
 				return next(req)
 			}
-			name, value, _ := auth.authHeader(req.Context())
+			name, value, token := auth.authHeader(req.Context())
 			if name != "" {
 				if auth.override && !strings.EqualFold(name, "X-API-Key") {
 					req.Header.Del("X-API-Key")
 				}
 				if strings.EqualFold(name, "X-API-Key") {
 					req.Header.Del("Authorization")
+					req.Header.Del("X-User-Id")
 				}
 				req.Header.Set(name, value)
+				if token != "" {
+					authpkg.SetUserIDHeaderFromAccessToken(req.Header, token)
+				}
 			}
 			return next(req)
 		}))
@@ -220,15 +228,55 @@ func (a *profileAuth) authHeader(ctx context.Context) (name string, value string
 		return "", "", ""
 	}
 	if shouldRefreshProfileToken(p) {
-		refreshCtx, cancel := context.WithTimeout(ctx, tokenRefreshTimeout)
-		defer cancel()
-		if token, err := refreshOAuthToken(refreshCtx, p.APIURL, p.OAuth.RefreshToken); err == nil {
-			applyTokenResponse(&p, token, time.Now())
-			a.state.cfg.Profiles[a.state.profileName] = p
-			_ = saveConfig(a.state.path, a.state.cfg)
-		}
+		p = a.refreshProfileToken(ctx, p)
 	}
 	return authHeaderFromProfile(p)
+}
+
+func (a *profileAuth) refreshProfileToken(ctx context.Context, p configProfile) configProfile {
+	refreshCtx, cancel := context.WithTimeout(ctx, tokenRefreshTimeout)
+	defer cancel()
+
+	lock, err := acquireOAuthRefreshLock(refreshCtx, a.state.path+".oauth.lock")
+	if err != nil {
+		return p
+	}
+	defer lock.Unlock()
+
+	cfg, fresh, err := loadProfileConfigFromPath(a.state.path, a.state.profileName)
+	if err == nil {
+		a.state.cfg = cfg
+		p = fresh
+		if !shouldRefreshProfileToken(p) {
+			return p
+		}
+	}
+
+	token, err := refreshOAuthToken(refreshCtx, p.APIURL, p.OAuth.RefreshToken)
+	if err != nil {
+		return p
+	}
+	applyTokenResponse(&p, token, time.Now())
+	a.state.cfg.Profiles[a.state.profileName] = p
+	_ = saveConfig(a.state.path, a.state.cfg)
+	return p
+}
+
+func loadProfileConfigFromPath(path, profileName string) (configFile, configProfile, error) {
+	data, err := os.ReadFile(path)
+	if err != nil {
+		return configFile{}, configProfile{}, err
+	}
+
+	var cfg configFile
+	if err := json.Unmarshal(data, &cfg); err != nil {
+		return configFile{}, configProfile{}, err
+	}
+	p, ok := cfg.Profiles[profileName]
+	if !ok {
+		return configFile{}, configProfile{}, fmt.Errorf("LangSmith profile not found: %s", profileName)
+	}
+	return cfg, p, nil
 }
 
 func currentAuthHeaderFromProfile(p configProfile) (name string, value string, token string) {

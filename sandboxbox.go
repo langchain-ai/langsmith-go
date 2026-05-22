@@ -45,7 +45,7 @@ func (r *SandboxBoxService) New(ctx context.Context, body SandboxBoxNewParams, o
 	return res, err
 }
 
-// Retrieve a sandbox claim by name. Stale provisioning claims are auto-failed.
+// Retrieve a sandbox by name. Stale provisioning sandboxes are auto-failed.
 func (r *SandboxBoxService) Get(ctx context.Context, name string, opts ...option.RequestOption) (res *SandboxBoxGetResponse, err error) {
 	opts = slices.Concat(r.Options, opts)
 	if name == "" {
@@ -57,8 +57,7 @@ func (r *SandboxBoxService) Get(ctx context.Context, name string, opts ...option
 	return res, err
 }
 
-// Update a sandbox claim's display name. The name must be unique within the
-// tenant.
+// Update a sandbox's display name. The name must be unique within the tenant.
 func (r *SandboxBoxService) Update(ctx context.Context, name string, body SandboxBoxUpdateParams, opts ...option.RequestOption) (res *SandboxBoxUpdateResponse, err error) {
 	opts = slices.Concat(r.Options, opts)
 	if name == "" {
@@ -70,8 +69,8 @@ func (r *SandboxBoxService) Update(ctx context.Context, name string, body Sandbo
 	return res, err
 }
 
-// List sandbox claims for the authenticated tenant, with optional filtering,
-// sorting, and pagination.
+// List sandboxes for the authenticated tenant, with optional filtering, sorting,
+// and pagination.
 func (r *SandboxBoxService) List(ctx context.Context, query SandboxBoxListParams, opts ...option.RequestOption) (res *SandboxBoxListResponse, err error) {
 	opts = slices.Concat(r.Options, opts)
 	path := "v2/sandboxes/boxes"
@@ -79,8 +78,8 @@ func (r *SandboxBoxService) List(ctx context.Context, query SandboxBoxListParams
 	return res, err
 }
 
-// Delete a sandbox claim by name or UUID. Tears down the sandbox runtime and
-// removes the DB record.
+// Delete a sandbox by name or UUID. Tears down the sandbox runtime and removes the
+// DB record.
 func (r *SandboxBoxService) Delete(ctx context.Context, name string, opts ...option.RequestOption) (err error) {
 	opts = slices.Concat(r.Options, opts)
 	opts = append([]option.RequestOption{option.WithHeader("Accept", "*/*")}, opts...)
@@ -121,7 +120,7 @@ func (r *SandboxBoxService) GenerateServiceURL(ctx context.Context, name string,
 	return res, err
 }
 
-// Retrieve the lightweight status of a sandbox claim for polling.
+// Retrieve the lightweight status of a sandbox for polling.
 func (r *SandboxBoxService) GetStatus(ctx context.Context, name string, opts ...option.RequestOption) (res *SandboxBoxGetStatusResponse, err error) {
 	opts = slices.Concat(r.Options, opts)
 	if name == "" {

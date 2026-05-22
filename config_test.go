@@ -2,18 +2,30 @@ package langsmith
 
 import (
 	"context"
+	"encoding/base64"
 	"encoding/json"
+	"errors"
+	"fmt"
 	"net/http"
 	"net/http/httptest"
 	"os"
 	"path/filepath"
 	"strings"
+	"sync"
+	"sync/atomic"
 	"testing"
 	"time"
 
 	"github.com/langchain-ai/langsmith-go/internal/requestconfig"
 	"github.com/langchain-ai/langsmith-go/option"
 )
+
+func jwtWithSubject(t *testing.T, sub string) string {
+	t.Helper()
+	header := base64.RawURLEncoding.EncodeToString([]byte(`{"alg":"none"}`))
+	payload := base64.RawURLEncoding.EncodeToString([]byte(fmt.Sprintf(`{"sub":%q}`, sub)))
+	return header + "." + payload + "."
+}
 
 func TestLoadProfileOptions_NoFile(t *testing.T) {
 	t.Setenv("LANGSMITH_CONFIG_FILE", "/nonexistent/path/config.json")
@@ -213,6 +225,7 @@ func TestDefaultClientOptions_WorkspaceIDEnvAlias(t *testing.T) {
 
 func TestLoadProfileOptions_OAuthAccessToken(t *testing.T) {
 	clearAuthEnv(t)
+	accessToken := jwtWithSubject(t, "user-123")
 	dir := t.TempDir()
 	path := filepath.Join(dir, "config.json")
 	content := `{
@@ -220,7 +233,7 @@ func TestLoadProfileOptions_OAuthAccessToken(t *testing.T) {
     "default": {
       "api_url": "https://api.smith.langchain.com",
       "oauth": {
-        "access_token": "test-access-token"
+        "access_token": "` + accessToken + `"
       }
     }
   }
@@ -234,11 +247,81 @@ func TestLoadProfileOptions_OAuthAccessToken(t *testing.T) {
 
 	opts := loadProfileOptions()
 	cfg := applyOptions(t, opts)
-	if cfg.OAuthAccessToken != "test-access-token" {
+	if cfg.OAuthAccessToken != accessToken {
 		t.Fatalf("expected profile access token to become OAuth access token, got %q", cfg.OAuthAccessToken)
 	}
-	if got := cfg.Request.Header.Get("authorization"); got != "Bearer test-access-token" {
+	if got := cfg.Request.Header.Get("authorization"); got != "Bearer "+accessToken {
 		t.Fatalf("expected Authorization bearer header, got %q", got)
+	}
+	if got := cfg.Request.Header.Get("X-User-Id"); got != "user-123" {
+		t.Fatalf("expected X-User-Id from access token subject, got %q", got)
+	}
+}
+
+func TestLoadProfileOptions_APIKeyOverrideDropsOAuthUserID(t *testing.T) {
+	clearAuthEnv(t)
+	accessToken := jwtWithSubject(t, "profile-user")
+	var gotAuth string
+	var gotAPIKey string
+	var gotUserID string
+	ts := httptest.NewServer(http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
+		gotAuth = r.Header.Get("Authorization")
+		gotAPIKey = r.Header.Get("X-API-Key")
+		gotUserID = r.Header.Get("X-User-Id")
+		w.Header().Set("Content-Type", "application/json")
+		_ = json.NewEncoder(w).Encode(map[string]string{"ok": "true"})
+	}))
+	defer ts.Close()
+
+	dir := t.TempDir()
+	path := filepath.Join(dir, "config.json")
+	content := `{
+  "profiles": {
+    "default": {
+      "api_url": "` + ts.URL + `",
+      "oauth": {
+        "access_token": "` + accessToken + `"
+      }
+    }
+  }
+}
+`
+	if err := os.WriteFile(path, []byte(content), 0600); err != nil {
+		t.Fatal(err)
+	}
+	t.Setenv("LANGSMITH_CONFIG_FILE", path)
+	t.Setenv("LANGSMITH_PROFILE", "")
+
+	opts := append(loadProfileOptions(), option.WithAPIKey("override-api-key"))
+	cfg := applyOptions(t, opts)
+	if cfg.OAuthAccessToken != "" {
+		t.Fatalf("expected API key override to clear OAuth access token, got %q", cfg.OAuthAccessToken)
+	}
+	if got := cfg.Request.Header.Get("X-User-Id"); got != "" {
+		t.Fatalf("expected API key override to clear initial X-User-Id, got %q", got)
+	}
+
+	preProfileOpts := append([]option.RequestOption{option.WithAPIKey("override-api-key")}, loadProfileOptions()...)
+	cfg = applyOptions(t, preProfileOpts)
+	if cfg.OAuthAccessToken != "" {
+		t.Fatalf("expected pre-existing API key to suppress OAuth access token, got %q", cfg.OAuthAccessToken)
+	}
+	if got := cfg.Request.Header.Get("X-User-Id"); got != "" {
+		t.Fatalf("expected pre-existing API key to suppress X-User-Id, got %q", got)
+	}
+
+	var out map[string]string
+	if err := requestconfig.ExecuteNewRequest(context.Background(), http.MethodGet, "/info", nil, &out, opts...); err != nil {
+		t.Fatal(err)
+	}
+	if gotAPIKey != "override-api-key" {
+		t.Fatalf("expected API key override, got %q", gotAPIKey)
+	}
+	if gotAuth != "" {
+		t.Fatalf("expected OAuth Authorization to be removed, got %q", gotAuth)
+	}
+	if gotUserID != "" {
+		t.Fatalf("expected OAuth X-User-Id to be removed, got %q", gotUserID)
 	}
 }
 
@@ -337,6 +420,207 @@ func TestLoadProfileOptions_RefreshesExpiredAccessToken(t *testing.T) {
 	}
 	if strings.Contains(string(data), `token_type`) || strings.Contains(string(data), `bearer_token`) {
 		t.Fatalf("expected no token_type or bearer_token fields, got:\n%s", data)
+	}
+}
+
+func TestLoadProfileOptions_RefreshesExpiredAccessTokenOnceAcrossAuthStates(t *testing.T) {
+	clearAuthEnv(t)
+	var tokenRequests atomic.Int32
+	var apiRequests atomic.Int32
+	firstTokenStarted := make(chan struct{})
+	releaseTokenRefresh := make(chan struct{})
+
+	ts := httptest.NewServer(http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
+		switch r.URL.Path {
+		case "/oauth/token":
+			if tokenRequests.Add(1) == 1 {
+				close(firstTokenStarted)
+				<-releaseTokenRefresh
+			}
+			if err := r.ParseForm(); err != nil {
+				t.Fatal(err)
+			}
+			if got := r.FormValue("refresh_token"); got != "old-refresh-token" {
+				t.Fatalf("expected old refresh token, got %q", got)
+			}
+			_ = json.NewEncoder(w).Encode(oauthTokenResponse{
+				AccessToken:  "new-access-token",
+				ExpiresIn:    300,
+				RefreshToken: "new-refresh-token",
+			})
+		case "/info":
+			apiRequests.Add(1)
+			if got := r.Header.Get("Authorization"); got != "Bearer new-access-token" {
+				t.Errorf("expected refreshed bearer token on API request, got %q", got)
+			}
+			w.Header().Set("Content-Type", "application/json")
+			_ = json.NewEncoder(w).Encode(map[string]string{"ok": "true"})
+		default:
+			http.NotFound(w, r)
+		}
+	}))
+	defer ts.Close()
+
+	dir := t.TempDir()
+	path := filepath.Join(dir, "config.json")
+	content := `{
+  "profiles": {
+    "default": {
+      "api_url": "` + ts.URL + `",
+      "oauth": {
+        "access_token": "old-access-token",
+        "refresh_token": "old-refresh-token",
+        "expires_at": "` + time.Now().Add(-time.Minute).UTC().Format(time.RFC3339) + `"
+      }
+    }
+  }
+}
+`
+	if err := os.WriteFile(path, []byte(content), 0600); err != nil {
+		t.Fatal(err)
+	}
+	t.Setenv("LANGSMITH_CONFIG_FILE", path)
+	t.Setenv("LANGSMITH_PROFILE", "")
+
+	optsA := loadProfileOptions()
+	optsB := loadProfileOptions()
+
+	var wg sync.WaitGroup
+	wg.Add(2)
+	request := func(opts []option.RequestOption) {
+		defer wg.Done()
+		var out map[string]string
+		if err := requestconfig.ExecuteNewRequest(context.Background(), http.MethodGet, "/info", nil, &out, opts...); err != nil {
+			t.Error(err)
+		}
+	}
+	go request(optsA)
+
+	select {
+	case <-firstTokenStarted:
+	case <-time.After(time.Second):
+		t.Fatal("first token request did not start")
+	}
+
+	go request(optsB)
+	time.Sleep(25 * time.Millisecond)
+	if got := tokenRequests.Load(); got != 1 {
+		t.Fatalf("expected second auth state to wait on lock, token requests = %d", got)
+	}
+
+	close(releaseTokenRefresh)
+	wg.Wait()
+
+	if got := tokenRequests.Load(); got != 1 {
+		t.Fatalf("expected one token request, got %d", got)
+	}
+	if got := apiRequests.Load(); got != 2 {
+		t.Fatalf("expected two API requests, got %d", got)
+	}
+}
+
+func TestAcquireOAuthRefreshDirLockBreaksExpiredTimestampLock(t *testing.T) {
+	now := time.Unix(1700000000, 0).UTC()
+	lockDir := filepath.Join(t.TempDir(), "config.json.oauth.lock.lock")
+	if err := os.Mkdir(lockDir, 0700); err != nil {
+		t.Fatal(err)
+	}
+	if err := os.WriteFile(
+		filepath.Join(lockDir, oauthRefreshLockTimestampFile),
+		[]byte(now.Add(-oauthRefreshLockStaleAfter-time.Second).Format(time.RFC3339Nano)+"\n"),
+		0600,
+	); err != nil {
+		t.Fatal(err)
+	}
+
+	lock, err := acquireOAuthRefreshDirLock(context.Background(), lockDir, func() time.Time { return now })
+	if err != nil {
+		t.Fatal(err)
+	}
+	defer lock.unlock()
+
+	createdAt, ok := oauthRefreshDirLockCreatedAt(lockDir)
+	if !ok {
+		t.Fatal("expected refreshed lock timestamp")
+	}
+	if !createdAt.Equal(now) {
+		t.Fatalf("expected refreshed lock timestamp %s, got %s", now, createdAt)
+	}
+}
+
+func TestAcquireOAuthRefreshDirLockBreaksExpiredLockWithoutTimestamp(t *testing.T) {
+	now := time.Unix(1700000000, 0).UTC()
+	lockDir := filepath.Join(t.TempDir(), "config.json.oauth.lock.lock")
+	if err := os.Mkdir(lockDir, 0700); err != nil {
+		t.Fatal(err)
+	}
+	staleAt := now.Add(-oauthRefreshLockStaleAfter - time.Second)
+	if err := os.Chtimes(lockDir, staleAt, staleAt); err != nil {
+		t.Fatal(err)
+	}
+
+	lock, err := acquireOAuthRefreshDirLock(context.Background(), lockDir, func() time.Time { return now })
+	if err != nil {
+		t.Fatal(err)
+	}
+	defer lock.unlock()
+
+	if _, err := os.Stat(filepath.Join(lockDir, oauthRefreshLockTimestampFile)); err != nil {
+		t.Fatalf("expected timestamp file after taking stale lock: %v", err)
+	}
+}
+
+func TestOAuthRefreshDirLockUnlockDoesNotRemoveNewOwner(t *testing.T) {
+	now := time.Unix(1700000000, 0).UTC()
+	lockDir := filepath.Join(t.TempDir(), "config.json.oauth.lock.lock")
+	if err := os.Mkdir(lockDir, 0700); err != nil {
+		t.Fatal(err)
+	}
+	if err := writeOAuthRefreshLockMetadata(
+		lockDir,
+		now.Add(-oauthRefreshLockStaleAfter-time.Second),
+		"stale-owner",
+	); err != nil {
+		t.Fatal(err)
+	}
+
+	lock, err := acquireOAuthRefreshDirLock(context.Background(), lockDir, func() time.Time { return now })
+	if err != nil {
+		t.Fatal(err)
+	}
+	defer lock.unlock()
+
+	staleLock := &oauthRefreshDirLock{path: lockDir, owner: "stale-owner"}
+	if err := staleLock.unlock(); err != nil {
+		t.Fatal(err)
+	}
+	if _, err := os.Stat(lockDir); err != nil {
+		t.Fatalf("expected stale owner unlock to leave new lock in place: %v", err)
+	}
+}
+
+func TestAcquireOAuthRefreshDirLockWaitsForFreshLock(t *testing.T) {
+	now := time.Unix(1700000000, 0).UTC()
+	lockDir := filepath.Join(t.TempDir(), "config.json.oauth.lock.lock")
+	if err := os.Mkdir(lockDir, 0700); err != nil {
+		t.Fatal(err)
+	}
+	if err := os.WriteFile(
+		filepath.Join(lockDir, oauthRefreshLockTimestampFile),
+		[]byte(now.Add(-oauthRefreshLockStaleAfter+time.Second).Format(time.RFC3339Nano)+"\n"),
+		0600,
+	); err != nil {
+		t.Fatal(err)
+	}
+
+	ctx, cancel := context.WithTimeout(context.Background(), 20*time.Millisecond)
+	defer cancel()
+	_, err := acquireOAuthRefreshDirLock(ctx, lockDir, func() time.Time { return now })
+	if !errors.Is(err, context.DeadlineExceeded) {
+		t.Fatalf("expected deadline while fresh lock exists, got %v", err)
+	}
+	if _, err := os.Stat(lockDir); err != nil {
+		t.Fatalf("expected fresh lock directory to remain: %v", err)
 	}
 }
 
