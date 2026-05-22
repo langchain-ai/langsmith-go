@@ -1,5 +1,13 @@
 # Changelog
 
+## 0.13.1 (2026-05-22)
+
+Full Changelog: [v0.13.0...v0.13.1](https://github.com/langchain-ai/langsmith-go/compare/v0.13.0...v0.13.1)
+
+### Bug Fixes
+
+* openai: support `response.incomplete` status ([#99](https://github.com/langchain-ai/langsmith-go/issues/99)) ([cf3bf60](https://github.com/langchain-ai/langsmith-go/commit/cf3bf60dad4aa2fa4d8bf871b155e713bff07d84))
+
 ## 0.13.0 (2026-05-22)
 
 Full Changelog: [v0.12.0...v0.13.0](https://github.com/langchain-ai/langsmith-go/compare/v0.12.0...v0.13.0)
