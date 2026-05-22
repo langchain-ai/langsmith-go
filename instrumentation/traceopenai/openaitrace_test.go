@@ -595,6 +595,31 @@ func TestExtractStreamingResponsesCompletion_NoCompletedEvent(t *testing.T) {
 	}
 }
 
+func TestExtractStreamingResponsesCompletion_IncompleteEvent(t *testing.T) {
+	sse := "data: {\"type\":\"response.incomplete\",\"response\":{\"output\":[{\"type\":\"message\",\"content\":[{\"type\":\"output_text\",\"text\":\"Hi\"}]}],\"usage\":{\"input_tokens\":10,\"output_tokens\":3},\"incomplete_details\":{\"reason\":\"max_output_tokens\"}}}\n"
+	completion, usage := extractStreamingResponsesCompletion([]byte(sse))
+	if !strings.Contains(completion, "Hi") {
+		t.Errorf("completion should contain 'Hi': %s", completion)
+	}
+	if usage.InputTokens != 10 || usage.OutputTokens != 3 {
+		t.Errorf("got %+v, want {10, 3}", usage)
+	}
+	if !usage.HasUsage {
+		t.Error("HasUsage should be true")
+	}
+}
+
+func TestExtractStreamingResponsesCompletion_FailedEvent(t *testing.T) {
+	sse := "data: {\"type\":\"response.failed\",\"response\":{\"output\":[],\"usage\":{\"input_tokens\":5,\"output_tokens\":0}}}\n"
+	_, usage := extractStreamingResponsesCompletion([]byte(sse))
+	if usage.InputTokens != 5 || usage.OutputTokens != 0 {
+		t.Errorf("got %+v, want {5, 0}", usage)
+	}
+	if !usage.HasUsage {
+		t.Error("HasUsage should be true")
+	}
+}
+
 func TestExtractResponsesUsage(t *testing.T) {
 	resp := map[string]any{
 		"usage": map[string]any{
@@ -616,6 +641,23 @@ func TestExtractResponsesUsage_NoUsage(t *testing.T) {
 	if usage.InputTokens != 0 || usage.OutputTokens != 0 {
 		t.Errorf("expected zero usage, got %+v", usage)
 	}
+}
+
+func TestExtractResponsesUsage_HasUsageFlag(t *testing.T) {
+	t.Run("present-with-zero-tokens", func(t *testing.T) {
+		usage := extractResponsesUsage(map[string]any{
+			"usage": map[string]any{"input_tokens": float64(0), "output_tokens": float64(0)},
+		})
+		if !usage.HasUsage {
+			t.Error("HasUsage should be true when usage field exists with zero tokens")
+		}
+	})
+	t.Run("absent", func(t *testing.T) {
+		usage := extractResponsesUsage(map[string]any{})
+		if usage.HasUsage {
+			t.Error("HasUsage should be false when usage field is absent")
+		}
+	})
 }
 
 func TestExtractResponsesOutput_TextAndFunctionCalls(t *testing.T) {
