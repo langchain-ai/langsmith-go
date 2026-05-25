@@ -260,9 +260,11 @@ func TestSandboxBoxNewSnapshotWithOptionalParams(t *testing.T) {
 		context.TODO(),
 		"name",
 		langsmith.SandboxBoxNewSnapshotParams{
-			Name:          langsmith.F("name"),
-			Checkpoint:    langsmith.F("checkpoint"),
-			IncludeMemory: langsmith.F(true),
+			Name:            langsmith.F("name"),
+			Checkpoint:      langsmith.F("checkpoint"),
+			DockerImage:     langsmith.F("docker_image"),
+			FsCapacityBytes: langsmith.F(int64(0)),
+			IncludeMemory:   langsmith.F(true),
 		},
 	)
 	if err != nil {
