@@ -215,7 +215,8 @@ func (r WorkspaceUpdateParams) MarshalJSON() (data []byte, err error) {
 }
 
 type WorkspaceListParams struct {
-	IncludeDeleted param.Field[bool] `query:"include_deleted"`
+	DataPlaneID    param.Field[string] `query:"data_plane_id" format:"uuid"`
+	IncludeDeleted param.Field[bool]   `query:"include_deleted"`
 }
 
 // URLQuery serializes [WorkspaceListParams]'s query parameters as `url.Values`.

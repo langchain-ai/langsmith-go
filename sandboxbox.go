@@ -1795,6 +1795,10 @@ type SandboxBoxNewSnapshotParams struct {
 	Name param.Field[string] `json:"name" api:"required"`
 	// if omitted, creates a fresh checkpoint from the running VM
 	Checkpoint param.Field[string] `json:"checkpoint"`
+	// sandbox-local Docker image to export
+	DockerImage param.Field[string] `json:"docker_image"`
+	// required for Docker image export unless the sandbox has a capacity
+	FsCapacityBytes param.Field[int64] `json:"fs_capacity_bytes"`
 	// IncludeMemory, when true, captures a full VM memory snapshot alongside the
 	// filesystem clone. Only honored when the sandbox is running AND Checkpoint is
 	// omitted (i.e. a fresh in-VM checkpoint is requested). Defaults to false to keep

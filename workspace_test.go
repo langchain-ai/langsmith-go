@@ -86,6 +86,7 @@ func TestWorkspaceListWithOptionalParams(t *testing.T) {
 		option.WithTenantID("My Tenant ID"),
 	)
 	_, err := client.Workspaces.List(context.TODO(), langsmith.WorkspaceListParams{
+		DataPlaneID:    langsmith.F("182bd5e5-6e1a-4fe4-a799-aa6d9a6ab26e"),
 		IncludeDeleted: langsmith.F(true),
 	})
 	if err != nil {
