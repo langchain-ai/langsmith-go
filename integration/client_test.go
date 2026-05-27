@@ -215,10 +215,10 @@ func TestRunIngestAndQuery(t *testing.T) {
 		t.Fatalf("ingest batch: %v", err)
 	}
 
-	// Query with retries (runs may take a moment to be queryable), then assert round-trip like Python read_run
+	// Query with retries (batch ingestion has eventual consistency; allow up to 75s)
 	var run *langsmith.RunSchema
-	for i := 0; i < 10; i++ {
-		time.Sleep(2 * time.Second)
+	for i := 0; i < 25; i++ {
+		time.Sleep(3 * time.Second)
 		result, err := client.Runs.Query(ctx, langsmith.RunQueryParams{
 			ID: langsmith.F([]string{runID}),
 		})
@@ -442,10 +442,10 @@ func TestRunBatchIngestRoundTrip(t *testing.T) {
 		t.Fatalf("batch ingest: %v", err)
 	}
 
-	// Query by run IDs (shared project has many runs; we only need our three)
+	// Query by run IDs (batch ingestion has eventual consistency; allow up to 75s)
 	var runs []langsmith.RunSchema
-	for i := 0; i < 10; i++ {
-		time.Sleep(2 * time.Second)
+	for i := 0; i < 25; i++ {
+		time.Sleep(3 * time.Second)
 		result, err := client.Runs.Query(ctx, langsmith.RunQueryParams{
 			ID: langsmith.F([]string{run1ID, run2ID, run3ID}),
 		})
@@ -662,8 +662,16 @@ func TestFeedbackCRUD(t *testing.T) {
 		t.Fatalf("ingest run for feedback: %v", err)
 	}
 
-	// Wait for run to be available
-	time.Sleep(3 * time.Second)
+	// Poll for run to be visible before creating feedback (batch ingestion has eventual consistency)
+	for i := 0; i < 25; i++ {
+		time.Sleep(3 * time.Second)
+		result, err := client.Runs.Query(ctx, langsmith.RunQueryParams{
+			ID: langsmith.F([]string{runID}),
+		})
+		if err == nil && len(result.Runs) > 0 {
+			break
+		}
+	}
 
 	// Create feedback
 	fb, err := client.Feedback.New(ctx, langsmith.FeedbackNewParams{
@@ -680,10 +688,20 @@ func TestFeedbackCRUD(t *testing.T) {
 		t.Fatal("expected non-empty feedback ID")
 	}
 
-	// Get feedback and verify both key and score
-	got, err := client.Feedback.Get(ctx, fb.ID, langsmith.FeedbackGetParams{})
-	if err != nil {
-		t.Fatalf("get feedback: %v", err)
+	// Get feedback and verify both key and score - retry briefly for eventual consistency
+	var got *langsmith.FeedbackSchema
+	for i := 0; i < 5; i++ {
+		if i > 0 {
+			time.Sleep(2 * time.Second)
+		}
+		result, getFeedbackErr := client.Feedback.Get(ctx, fb.ID, langsmith.FeedbackGetParams{})
+		if getFeedbackErr == nil {
+			got = result
+			break
+		}
+	}
+	if got == nil {
+		t.Fatalf("get feedback: not found after retrying")
 	}
 	if got.Key != "correctness" {
 		t.Errorf("feedback key = %q, want 'correctness'", got.Key)

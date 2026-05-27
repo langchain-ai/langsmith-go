@@ -14,7 +14,7 @@ if [ -n "$GITHUB_ACTIONS" ]; then
   echo "==> Building library and examples"
   go build ./...
   echo "==> Running tests (unit + integration)"
-  go test -tags=integration ./... -count=1 -timeout 300s -v "$@"
+  go test -tags=integration ./... -count=1 -timeout 600s -v "$@"
   exit 0
 fi
 
