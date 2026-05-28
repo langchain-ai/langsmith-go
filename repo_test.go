@@ -131,7 +131,7 @@ func TestRepoListWithOptionalParams(t *testing.T) {
 		Limit:              langsmith.F(int64(1)),
 		Offset:             langsmith.F(int64(0)),
 		Query:              langsmith.F("query"),
-		RepoType:           langsmith.F(langsmith.RepoListParamsRepoTypePrompt),
+		SingleRepoType:     langsmith.F(langsmith.RepoListParamsRepoTypePrompt),
 		RepoTypes:          langsmith.F([]langsmith.RepoListParamsRepoType{langsmith.RepoListParamsRepoTypePrompt}),
 		SortDirection:      langsmith.F(langsmith.RepoListParamsSortDirectionAsc),
 		SortField:          langsmith.F(langsmith.RepoListParamsSortFieldNumLikes),
