@@ -9,7 +9,7 @@ permissions:
 
 jobs:
   promote:
-    runs-on: self-hosted-ubuntu-small-amd64
+    runs-on: ubuntu-latest
     env:
       PRODUCTION_REPO: langchain-ai/langsmith-go
     steps:
