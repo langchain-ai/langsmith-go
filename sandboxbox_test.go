@@ -46,10 +46,13 @@ func TestSandboxBoxNewWithOptionalParams(t *testing.T) {
 	)
 	_, err := client.Sandboxes.Boxes.New(context.TODO(), langsmith.SandboxBoxNewParams{
 		DeleteAfterStopSeconds: langsmith.F(int64(0)),
-		FsCapacityBytes:        langsmith.F(int64(0)),
-		IdleTtlSeconds:         langsmith.F(int64(0)),
-		MemBytes:               langsmith.F(int64(0)),
-		Name:                   langsmith.F("name"),
+		EnvVars: langsmith.F(map[string]string{
+			"foo": "string",
+		}),
+		FsCapacityBytes: langsmith.F(int64(0)),
+		IdleTtlSeconds:  langsmith.F(int64(0)),
+		MemBytes:        langsmith.F(int64(0)),
+		Name:            langsmith.F("name"),
 		ProxyConfig: langsmith.F(langsmith.SandboxBoxNewParamsProxyConfig{
 			AccessControl: langsmith.F(langsmith.SandboxBoxNewParamsProxyConfigAccessControl{
 				AllowList: langsmith.F([]string{"string"}),
