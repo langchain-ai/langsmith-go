@@ -55,16 +55,21 @@ func TestSandboxBoxNewWithOptionalParams(t *testing.T) {
 			}}),
 			NoProxy: langsmith.F([]string{"string"}),
 			Rules: langsmith.F([]langsmith.SandboxBoxNewParamsProxyConfigRule{{
-				MatchHosts: langsmith.F([]string{"string"}),
-				Name:       langsmith.F("name"),
-				Enabled:    langsmith.F(true),
+				Name: langsmith.F("name"),
+				Aws: langsmith.F(langsmith.SandboxBoxNewParamsProxyConfigRulesAws{
+					AccessKeyID:     langsmith.F("access_key_id"),
+					SecretAccessKey: langsmith.F("secret_access_key"),
+				}),
+				Enabled: langsmith.F(true),
 				Headers: langsmith.F([]langsmith.SandboxBoxNewParamsProxyConfigRulesHeader{{
 					Name:  langsmith.F("name"),
 					Type:  langsmith.F(langsmith.SandboxBoxNewParamsProxyConfigRulesHeadersTypePlaintext),
 					IsSet: langsmith.F(true),
 					Value: langsmith.F("value"),
 				}}),
+				MatchHosts: langsmith.F([]string{"string"}),
 				MatchPaths: langsmith.F([]string{"string"}),
+				Type:       langsmith.F("type"),
 			}}),
 		}),
 		RestoreMemory: langsmith.F(true),
@@ -148,16 +153,21 @@ func TestSandboxBoxUpdateWithOptionalParams(t *testing.T) {
 				}}),
 				NoProxy: langsmith.F([]string{"string"}),
 				Rules: langsmith.F([]langsmith.SandboxBoxUpdateParamsProxyConfigRule{{
-					MatchHosts: langsmith.F([]string{"string"}),
-					Name:       langsmith.F("name"),
-					Enabled:    langsmith.F(true),
+					Name: langsmith.F("name"),
+					Aws: langsmith.F(langsmith.SandboxBoxUpdateParamsProxyConfigRulesAws{
+						AccessKeyID:     langsmith.F("access_key_id"),
+						SecretAccessKey: langsmith.F("secret_access_key"),
+					}),
+					Enabled: langsmith.F(true),
 					Headers: langsmith.F([]langsmith.SandboxBoxUpdateParamsProxyConfigRulesHeader{{
 						Name:  langsmith.F("name"),
 						Type:  langsmith.F(langsmith.SandboxBoxUpdateParamsProxyConfigRulesHeadersTypePlaintext),
 						IsSet: langsmith.F(true),
 						Value: langsmith.F("value"),
 					}}),
+					MatchHosts: langsmith.F([]string{"string"}),
 					MatchPaths: langsmith.F([]string{"string"}),
+					Type:       langsmith.F("type"),
 				}}),
 			}),
 			TagValueIDs: langsmith.F([]string{"string"}),
@@ -188,6 +198,7 @@ func TestSandboxBoxListWithOptionalParams(t *testing.T) {
 		option.WithTenantID("My Tenant ID"),
 	)
 	_, err := client.Sandboxes.Boxes.List(context.TODO(), langsmith.SandboxBoxListParams{
+		CreatedBy:     langsmith.F("created_by"),
 		Limit:         langsmith.F(int64(0)),
 		NameContains:  langsmith.F("name_contains"),
 		Offset:        langsmith.F(int64(0)),

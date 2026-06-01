@@ -263,6 +263,8 @@ func (r SandboxSnapshotNewParams) MarshalJSON() (data []byte, err error) {
 }
 
 type SandboxSnapshotListParams struct {
+	// Filter by creator identity. Only 'me' is supported.
+	CreatedBy param.Field[string] `query:"created_by"`
 	// Maximum number of results
 	Limit param.Field[int64] `query:"limit"`
 	// Filter by name substring
