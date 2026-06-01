@@ -205,6 +205,7 @@ func TestSandboxBoxListWithOptionalParams(t *testing.T) {
 		option.WithTenantID("My Tenant ID"),
 	)
 	_, err := client.Sandboxes.Boxes.List(context.TODO(), langsmith.SandboxBoxListParams{
+		CreatedBy:     langsmith.F("created_by"),
 		Limit:         langsmith.F(int64(0)),
 		NameContains:  langsmith.F("name_contains"),
 		Offset:        langsmith.F(int64(0)),
