@@ -1532,6 +1532,7 @@ func (r SandboxBoxStartResponseProxyConfigRulesHeadersType) IsKnown() bool {
 
 type SandboxBoxNewParams struct {
 	DeleteAfterStopSeconds param.Field[int64]                          `json:"delete_after_stop_seconds"`
+	EnvVars                param.Field[map[string]string]              `json:"env_vars"`
 	FsCapacityBytes        param.Field[int64]                          `json:"fs_capacity_bytes"`
 	IdleTtlSeconds         param.Field[int64]                          `json:"idle_ttl_seconds"`
 	MemBytes               param.Field[int64]                          `json:"mem_bytes"`
