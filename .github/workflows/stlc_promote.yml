@@ -93,5 +93,8 @@ jobs:
               --title "Release SDK updates" \
               --body "$(git log --oneline production/main..origin/main)"
           else
-            echo "Release PR #${EXISTING_PR} already exists. Force-push has updated it."
+            gh pr edit "${EXISTING_PR}" \
+              --repo "${PRODUCTION_REPO}" \
+              --body "$(git log --oneline production/main..origin/main)"
+            echo "Release PR #${EXISTING_PR} already exists. Updated its description."
           fi
