@@ -1,4 +1,4 @@
-name: Promote SDKs
+name: 'stlc: promote to production'
 
 on:
   push:
