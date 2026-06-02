@@ -62,6 +62,8 @@ jobs:
 
       - name: Open or update the release PR on production
         if: steps.diff.outputs.synced == 'false'
+        env:
+          GH_TOKEN: ${{ steps.app-token.outputs.token }}
         run: |
           EXISTING_PR=$(gh pr list \
             --repo "${PRODUCTION_REPO}" \
