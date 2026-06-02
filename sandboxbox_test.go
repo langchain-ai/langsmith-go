@@ -57,8 +57,16 @@ func TestSandboxBoxNewWithOptionalParams(t *testing.T) {
 			Rules: langsmith.F([]langsmith.SandboxBoxNewParamsProxyConfigRule{{
 				Name: langsmith.F("name"),
 				Aws: langsmith.F(langsmith.SandboxBoxNewParamsProxyConfigRulesAws{
-					AccessKeyID:     langsmith.F("access_key_id"),
-					SecretAccessKey: langsmith.F("secret_access_key"),
+					AccessKeyID: langsmith.F(langsmith.SandboxBoxNewParamsProxyConfigRulesAwsAccessKeyID{
+						Type:  langsmith.F(langsmith.SandboxBoxNewParamsProxyConfigRulesAwsAccessKeyIDTypePlaintext),
+						IsSet: langsmith.F(true),
+						Value: langsmith.F("value"),
+					}),
+					SecretAccessKey: langsmith.F(langsmith.SandboxBoxNewParamsProxyConfigRulesAwsSecretAccessKey{
+						Type:  langsmith.F(langsmith.SandboxBoxNewParamsProxyConfigRulesAwsSecretAccessKeyTypePlaintext),
+						IsSet: langsmith.F(true),
+						Value: langsmith.F("value"),
+					}),
 				}),
 				Enabled: langsmith.F(true),
 				Headers: langsmith.F([]langsmith.SandboxBoxNewParamsProxyConfigRulesHeader{{
@@ -155,8 +163,16 @@ func TestSandboxBoxUpdateWithOptionalParams(t *testing.T) {
 				Rules: langsmith.F([]langsmith.SandboxBoxUpdateParamsProxyConfigRule{{
 					Name: langsmith.F("name"),
 					Aws: langsmith.F(langsmith.SandboxBoxUpdateParamsProxyConfigRulesAws{
-						AccessKeyID:     langsmith.F("access_key_id"),
-						SecretAccessKey: langsmith.F("secret_access_key"),
+						AccessKeyID: langsmith.F(langsmith.SandboxBoxUpdateParamsProxyConfigRulesAwsAccessKeyID{
+							Type:  langsmith.F(langsmith.SandboxBoxUpdateParamsProxyConfigRulesAwsAccessKeyIDTypePlaintext),
+							IsSet: langsmith.F(true),
+							Value: langsmith.F("value"),
+						}),
+						SecretAccessKey: langsmith.F(langsmith.SandboxBoxUpdateParamsProxyConfigRulesAwsSecretAccessKey{
+							Type:  langsmith.F(langsmith.SandboxBoxUpdateParamsProxyConfigRulesAwsSecretAccessKeyTypePlaintext),
+							IsSet: langsmith.F(true),
+							Value: langsmith.F("value"),
+						}),
 					}),
 					Enabled: langsmith.F(true),
 					Headers: langsmith.F([]langsmith.SandboxBoxUpdateParamsProxyConfigRulesHeader{{
