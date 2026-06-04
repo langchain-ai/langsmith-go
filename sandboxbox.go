@@ -336,22 +336,26 @@ func (r SandboxBoxNewResponseProxyConfigCallbacksRequestHeadersType) IsKnown() b
 }
 
 type SandboxBoxNewResponseProxyConfigRule struct {
-	MatchHosts []string                                      `json:"match_hosts" api:"required"`
 	Name       string                                        `json:"name" api:"required"`
+	Aws        SandboxBoxNewResponseProxyConfigRulesAws      `json:"aws"`
 	Enabled    bool                                          `json:"enabled"`
 	Headers    []SandboxBoxNewResponseProxyConfigRulesHeader `json:"headers"`
+	MatchHosts []string                                      `json:"match_hosts"`
 	MatchPaths []string                                      `json:"match_paths"`
+	Type       string                                        `json:"type"`
 	JSON       sandboxBoxNewResponseProxyConfigRuleJSON      `json:"-"`
 }
 
 // sandboxBoxNewResponseProxyConfigRuleJSON contains the JSON metadata for the
 // struct [SandboxBoxNewResponseProxyConfigRule]
 type sandboxBoxNewResponseProxyConfigRuleJSON struct {
-	MatchHosts  apijson.Field
 	Name        apijson.Field
+	Aws         apijson.Field
 	Enabled     apijson.Field
 	Headers     apijson.Field
+	MatchHosts  apijson.Field
 	MatchPaths  apijson.Field
+	Type        apijson.Field
 	raw         string
 	ExtraFields map[string]apijson.Field
 }
@@ -362,6 +366,112 @@ func (r *SandboxBoxNewResponseProxyConfigRule) UnmarshalJSON(data []byte) (err e
 
 func (r sandboxBoxNewResponseProxyConfigRuleJSON) RawJSON() string {
 	return r.raw
+}
+
+type SandboxBoxNewResponseProxyConfigRulesAws struct {
+	AccessKeyID     SandboxBoxNewResponseProxyConfigRulesAwsAccessKeyID     `json:"access_key_id" api:"required"`
+	SecretAccessKey SandboxBoxNewResponseProxyConfigRulesAwsSecretAccessKey `json:"secret_access_key" api:"required"`
+	JSON            sandboxBoxNewResponseProxyConfigRulesAwsJSON            `json:"-"`
+}
+
+// sandboxBoxNewResponseProxyConfigRulesAwsJSON contains the JSON metadata for the
+// struct [SandboxBoxNewResponseProxyConfigRulesAws]
+type sandboxBoxNewResponseProxyConfigRulesAwsJSON struct {
+	AccessKeyID     apijson.Field
+	SecretAccessKey apijson.Field
+	raw             string
+	ExtraFields     map[string]apijson.Field
+}
+
+func (r *SandboxBoxNewResponseProxyConfigRulesAws) UnmarshalJSON(data []byte) (err error) {
+	return apijson.UnmarshalRoot(data, r)
+}
+
+func (r sandboxBoxNewResponseProxyConfigRulesAwsJSON) RawJSON() string {
+	return r.raw
+}
+
+type SandboxBoxNewResponseProxyConfigRulesAwsAccessKeyID struct {
+	Type  SandboxBoxNewResponseProxyConfigRulesAwsAccessKeyIDType `json:"type" api:"required"`
+	IsSet bool                                                    `json:"is_set"`
+	Value string                                                  `json:"value"`
+	JSON  sandboxBoxNewResponseProxyConfigRulesAwsAccessKeyIDJSON `json:"-"`
+}
+
+// sandboxBoxNewResponseProxyConfigRulesAwsAccessKeyIDJSON contains the JSON
+// metadata for the struct [SandboxBoxNewResponseProxyConfigRulesAwsAccessKeyID]
+type sandboxBoxNewResponseProxyConfigRulesAwsAccessKeyIDJSON struct {
+	Type        apijson.Field
+	IsSet       apijson.Field
+	Value       apijson.Field
+	raw         string
+	ExtraFields map[string]apijson.Field
+}
+
+func (r *SandboxBoxNewResponseProxyConfigRulesAwsAccessKeyID) UnmarshalJSON(data []byte) (err error) {
+	return apijson.UnmarshalRoot(data, r)
+}
+
+func (r sandboxBoxNewResponseProxyConfigRulesAwsAccessKeyIDJSON) RawJSON() string {
+	return r.raw
+}
+
+type SandboxBoxNewResponseProxyConfigRulesAwsAccessKeyIDType string
+
+const (
+	SandboxBoxNewResponseProxyConfigRulesAwsAccessKeyIDTypePlaintext       SandboxBoxNewResponseProxyConfigRulesAwsAccessKeyIDType = "plaintext"
+	SandboxBoxNewResponseProxyConfigRulesAwsAccessKeyIDTypeOpaque          SandboxBoxNewResponseProxyConfigRulesAwsAccessKeyIDType = "opaque"
+	SandboxBoxNewResponseProxyConfigRulesAwsAccessKeyIDTypeWorkspaceSecret SandboxBoxNewResponseProxyConfigRulesAwsAccessKeyIDType = "workspace_secret"
+)
+
+func (r SandboxBoxNewResponseProxyConfigRulesAwsAccessKeyIDType) IsKnown() bool {
+	switch r {
+	case SandboxBoxNewResponseProxyConfigRulesAwsAccessKeyIDTypePlaintext, SandboxBoxNewResponseProxyConfigRulesAwsAccessKeyIDTypeOpaque, SandboxBoxNewResponseProxyConfigRulesAwsAccessKeyIDTypeWorkspaceSecret:
+		return true
+	}
+	return false
+}
+
+type SandboxBoxNewResponseProxyConfigRulesAwsSecretAccessKey struct {
+	Type  SandboxBoxNewResponseProxyConfigRulesAwsSecretAccessKeyType `json:"type" api:"required"`
+	IsSet bool                                                        `json:"is_set"`
+	Value string                                                      `json:"value"`
+	JSON  sandboxBoxNewResponseProxyConfigRulesAwsSecretAccessKeyJSON `json:"-"`
+}
+
+// sandboxBoxNewResponseProxyConfigRulesAwsSecretAccessKeyJSON contains the JSON
+// metadata for the struct
+// [SandboxBoxNewResponseProxyConfigRulesAwsSecretAccessKey]
+type sandboxBoxNewResponseProxyConfigRulesAwsSecretAccessKeyJSON struct {
+	Type        apijson.Field
+	IsSet       apijson.Field
+	Value       apijson.Field
+	raw         string
+	ExtraFields map[string]apijson.Field
+}
+
+func (r *SandboxBoxNewResponseProxyConfigRulesAwsSecretAccessKey) UnmarshalJSON(data []byte) (err error) {
+	return apijson.UnmarshalRoot(data, r)
+}
+
+func (r sandboxBoxNewResponseProxyConfigRulesAwsSecretAccessKeyJSON) RawJSON() string {
+	return r.raw
+}
+
+type SandboxBoxNewResponseProxyConfigRulesAwsSecretAccessKeyType string
+
+const (
+	SandboxBoxNewResponseProxyConfigRulesAwsSecretAccessKeyTypePlaintext       SandboxBoxNewResponseProxyConfigRulesAwsSecretAccessKeyType = "plaintext"
+	SandboxBoxNewResponseProxyConfigRulesAwsSecretAccessKeyTypeOpaque          SandboxBoxNewResponseProxyConfigRulesAwsSecretAccessKeyType = "opaque"
+	SandboxBoxNewResponseProxyConfigRulesAwsSecretAccessKeyTypeWorkspaceSecret SandboxBoxNewResponseProxyConfigRulesAwsSecretAccessKeyType = "workspace_secret"
+)
+
+func (r SandboxBoxNewResponseProxyConfigRulesAwsSecretAccessKeyType) IsKnown() bool {
+	switch r {
+	case SandboxBoxNewResponseProxyConfigRulesAwsSecretAccessKeyTypePlaintext, SandboxBoxNewResponseProxyConfigRulesAwsSecretAccessKeyTypeOpaque, SandboxBoxNewResponseProxyConfigRulesAwsSecretAccessKeyTypeWorkspaceSecret:
+		return true
+	}
+	return false
 }
 
 type SandboxBoxNewResponseProxyConfigRulesHeader struct {
@@ -585,22 +695,26 @@ func (r SandboxBoxGetResponseProxyConfigCallbacksRequestHeadersType) IsKnown() b
 }
 
 type SandboxBoxGetResponseProxyConfigRule struct {
-	MatchHosts []string                                      `json:"match_hosts" api:"required"`
 	Name       string                                        `json:"name" api:"required"`
+	Aws        SandboxBoxGetResponseProxyConfigRulesAws      `json:"aws"`
 	Enabled    bool                                          `json:"enabled"`
 	Headers    []SandboxBoxGetResponseProxyConfigRulesHeader `json:"headers"`
+	MatchHosts []string                                      `json:"match_hosts"`
 	MatchPaths []string                                      `json:"match_paths"`
+	Type       string                                        `json:"type"`
 	JSON       sandboxBoxGetResponseProxyConfigRuleJSON      `json:"-"`
 }
 
 // sandboxBoxGetResponseProxyConfigRuleJSON contains the JSON metadata for the
 // struct [SandboxBoxGetResponseProxyConfigRule]
 type sandboxBoxGetResponseProxyConfigRuleJSON struct {
-	MatchHosts  apijson.Field
 	Name        apijson.Field
+	Aws         apijson.Field
 	Enabled     apijson.Field
 	Headers     apijson.Field
+	MatchHosts  apijson.Field
 	MatchPaths  apijson.Field
+	Type        apijson.Field
 	raw         string
 	ExtraFields map[string]apijson.Field
 }
@@ -611,6 +725,112 @@ func (r *SandboxBoxGetResponseProxyConfigRule) UnmarshalJSON(data []byte) (err e
 
 func (r sandboxBoxGetResponseProxyConfigRuleJSON) RawJSON() string {
 	return r.raw
+}
+
+type SandboxBoxGetResponseProxyConfigRulesAws struct {
+	AccessKeyID     SandboxBoxGetResponseProxyConfigRulesAwsAccessKeyID     `json:"access_key_id" api:"required"`
+	SecretAccessKey SandboxBoxGetResponseProxyConfigRulesAwsSecretAccessKey `json:"secret_access_key" api:"required"`
+	JSON            sandboxBoxGetResponseProxyConfigRulesAwsJSON            `json:"-"`
+}
+
+// sandboxBoxGetResponseProxyConfigRulesAwsJSON contains the JSON metadata for the
+// struct [SandboxBoxGetResponseProxyConfigRulesAws]
+type sandboxBoxGetResponseProxyConfigRulesAwsJSON struct {
+	AccessKeyID     apijson.Field
+	SecretAccessKey apijson.Field
+	raw             string
+	ExtraFields     map[string]apijson.Field
+}
+
+func (r *SandboxBoxGetResponseProxyConfigRulesAws) UnmarshalJSON(data []byte) (err error) {
+	return apijson.UnmarshalRoot(data, r)
+}
+
+func (r sandboxBoxGetResponseProxyConfigRulesAwsJSON) RawJSON() string {
+	return r.raw
+}
+
+type SandboxBoxGetResponseProxyConfigRulesAwsAccessKeyID struct {
+	Type  SandboxBoxGetResponseProxyConfigRulesAwsAccessKeyIDType `json:"type" api:"required"`
+	IsSet bool                                                    `json:"is_set"`
+	Value string                                                  `json:"value"`
+	JSON  sandboxBoxGetResponseProxyConfigRulesAwsAccessKeyIDJSON `json:"-"`
+}
+
+// sandboxBoxGetResponseProxyConfigRulesAwsAccessKeyIDJSON contains the JSON
+// metadata for the struct [SandboxBoxGetResponseProxyConfigRulesAwsAccessKeyID]
+type sandboxBoxGetResponseProxyConfigRulesAwsAccessKeyIDJSON struct {
+	Type        apijson.Field
+	IsSet       apijson.Field
+	Value       apijson.Field
+	raw         string
+	ExtraFields map[string]apijson.Field
+}
+
+func (r *SandboxBoxGetResponseProxyConfigRulesAwsAccessKeyID) UnmarshalJSON(data []byte) (err error) {
+	return apijson.UnmarshalRoot(data, r)
+}
+
+func (r sandboxBoxGetResponseProxyConfigRulesAwsAccessKeyIDJSON) RawJSON() string {
+	return r.raw
+}
+
+type SandboxBoxGetResponseProxyConfigRulesAwsAccessKeyIDType string
+
+const (
+	SandboxBoxGetResponseProxyConfigRulesAwsAccessKeyIDTypePlaintext       SandboxBoxGetResponseProxyConfigRulesAwsAccessKeyIDType = "plaintext"
+	SandboxBoxGetResponseProxyConfigRulesAwsAccessKeyIDTypeOpaque          SandboxBoxGetResponseProxyConfigRulesAwsAccessKeyIDType = "opaque"
+	SandboxBoxGetResponseProxyConfigRulesAwsAccessKeyIDTypeWorkspaceSecret SandboxBoxGetResponseProxyConfigRulesAwsAccessKeyIDType = "workspace_secret"
+)
+
+func (r SandboxBoxGetResponseProxyConfigRulesAwsAccessKeyIDType) IsKnown() bool {
+	switch r {
+	case SandboxBoxGetResponseProxyConfigRulesAwsAccessKeyIDTypePlaintext, SandboxBoxGetResponseProxyConfigRulesAwsAccessKeyIDTypeOpaque, SandboxBoxGetResponseProxyConfigRulesAwsAccessKeyIDTypeWorkspaceSecret:
+		return true
+	}
+	return false
+}
+
+type SandboxBoxGetResponseProxyConfigRulesAwsSecretAccessKey struct {
+	Type  SandboxBoxGetResponseProxyConfigRulesAwsSecretAccessKeyType `json:"type" api:"required"`
+	IsSet bool                                                        `json:"is_set"`
+	Value string                                                      `json:"value"`
+	JSON  sandboxBoxGetResponseProxyConfigRulesAwsSecretAccessKeyJSON `json:"-"`
+}
+
+// sandboxBoxGetResponseProxyConfigRulesAwsSecretAccessKeyJSON contains the JSON
+// metadata for the struct
+// [SandboxBoxGetResponseProxyConfigRulesAwsSecretAccessKey]
+type sandboxBoxGetResponseProxyConfigRulesAwsSecretAccessKeyJSON struct {
+	Type        apijson.Field
+	IsSet       apijson.Field
+	Value       apijson.Field
+	raw         string
+	ExtraFields map[string]apijson.Field
+}
+
+func (r *SandboxBoxGetResponseProxyConfigRulesAwsSecretAccessKey) UnmarshalJSON(data []byte) (err error) {
+	return apijson.UnmarshalRoot(data, r)
+}
+
+func (r sandboxBoxGetResponseProxyConfigRulesAwsSecretAccessKeyJSON) RawJSON() string {
+	return r.raw
+}
+
+type SandboxBoxGetResponseProxyConfigRulesAwsSecretAccessKeyType string
+
+const (
+	SandboxBoxGetResponseProxyConfigRulesAwsSecretAccessKeyTypePlaintext       SandboxBoxGetResponseProxyConfigRulesAwsSecretAccessKeyType = "plaintext"
+	SandboxBoxGetResponseProxyConfigRulesAwsSecretAccessKeyTypeOpaque          SandboxBoxGetResponseProxyConfigRulesAwsSecretAccessKeyType = "opaque"
+	SandboxBoxGetResponseProxyConfigRulesAwsSecretAccessKeyTypeWorkspaceSecret SandboxBoxGetResponseProxyConfigRulesAwsSecretAccessKeyType = "workspace_secret"
+)
+
+func (r SandboxBoxGetResponseProxyConfigRulesAwsSecretAccessKeyType) IsKnown() bool {
+	switch r {
+	case SandboxBoxGetResponseProxyConfigRulesAwsSecretAccessKeyTypePlaintext, SandboxBoxGetResponseProxyConfigRulesAwsSecretAccessKeyTypeOpaque, SandboxBoxGetResponseProxyConfigRulesAwsSecretAccessKeyTypeWorkspaceSecret:
+		return true
+	}
+	return false
 }
 
 type SandboxBoxGetResponseProxyConfigRulesHeader struct {
@@ -835,22 +1055,26 @@ func (r SandboxBoxUpdateResponseProxyConfigCallbacksRequestHeadersType) IsKnown(
 }
 
 type SandboxBoxUpdateResponseProxyConfigRule struct {
-	MatchHosts []string                                         `json:"match_hosts" api:"required"`
 	Name       string                                           `json:"name" api:"required"`
+	Aws        SandboxBoxUpdateResponseProxyConfigRulesAws      `json:"aws"`
 	Enabled    bool                                             `json:"enabled"`
 	Headers    []SandboxBoxUpdateResponseProxyConfigRulesHeader `json:"headers"`
+	MatchHosts []string                                         `json:"match_hosts"`
 	MatchPaths []string                                         `json:"match_paths"`
+	Type       string                                           `json:"type"`
 	JSON       sandboxBoxUpdateResponseProxyConfigRuleJSON      `json:"-"`
 }
 
 // sandboxBoxUpdateResponseProxyConfigRuleJSON contains the JSON metadata for the
 // struct [SandboxBoxUpdateResponseProxyConfigRule]
 type sandboxBoxUpdateResponseProxyConfigRuleJSON struct {
-	MatchHosts  apijson.Field
 	Name        apijson.Field
+	Aws         apijson.Field
 	Enabled     apijson.Field
 	Headers     apijson.Field
+	MatchHosts  apijson.Field
 	MatchPaths  apijson.Field
+	Type        apijson.Field
 	raw         string
 	ExtraFields map[string]apijson.Field
 }
@@ -861,6 +1085,112 @@ func (r *SandboxBoxUpdateResponseProxyConfigRule) UnmarshalJSON(data []byte) (er
 
 func (r sandboxBoxUpdateResponseProxyConfigRuleJSON) RawJSON() string {
 	return r.raw
+}
+
+type SandboxBoxUpdateResponseProxyConfigRulesAws struct {
+	AccessKeyID     SandboxBoxUpdateResponseProxyConfigRulesAwsAccessKeyID     `json:"access_key_id" api:"required"`
+	SecretAccessKey SandboxBoxUpdateResponseProxyConfigRulesAwsSecretAccessKey `json:"secret_access_key" api:"required"`
+	JSON            sandboxBoxUpdateResponseProxyConfigRulesAwsJSON            `json:"-"`
+}
+
+// sandboxBoxUpdateResponseProxyConfigRulesAwsJSON contains the JSON metadata for
+// the struct [SandboxBoxUpdateResponseProxyConfigRulesAws]
+type sandboxBoxUpdateResponseProxyConfigRulesAwsJSON struct {
+	AccessKeyID     apijson.Field
+	SecretAccessKey apijson.Field
+	raw             string
+	ExtraFields     map[string]apijson.Field
+}
+
+func (r *SandboxBoxUpdateResponseProxyConfigRulesAws) UnmarshalJSON(data []byte) (err error) {
+	return apijson.UnmarshalRoot(data, r)
+}
+
+func (r sandboxBoxUpdateResponseProxyConfigRulesAwsJSON) RawJSON() string {
+	return r.raw
+}
+
+type SandboxBoxUpdateResponseProxyConfigRulesAwsAccessKeyID struct {
+	Type  SandboxBoxUpdateResponseProxyConfigRulesAwsAccessKeyIDType `json:"type" api:"required"`
+	IsSet bool                                                       `json:"is_set"`
+	Value string                                                     `json:"value"`
+	JSON  sandboxBoxUpdateResponseProxyConfigRulesAwsAccessKeyIDJSON `json:"-"`
+}
+
+// sandboxBoxUpdateResponseProxyConfigRulesAwsAccessKeyIDJSON contains the JSON
+// metadata for the struct [SandboxBoxUpdateResponseProxyConfigRulesAwsAccessKeyID]
+type sandboxBoxUpdateResponseProxyConfigRulesAwsAccessKeyIDJSON struct {
+	Type        apijson.Field
+	IsSet       apijson.Field
+	Value       apijson.Field
+	raw         string
+	ExtraFields map[string]apijson.Field
+}
+
+func (r *SandboxBoxUpdateResponseProxyConfigRulesAwsAccessKeyID) UnmarshalJSON(data []byte) (err error) {
+	return apijson.UnmarshalRoot(data, r)
+}
+
+func (r sandboxBoxUpdateResponseProxyConfigRulesAwsAccessKeyIDJSON) RawJSON() string {
+	return r.raw
+}
+
+type SandboxBoxUpdateResponseProxyConfigRulesAwsAccessKeyIDType string
+
+const (
+	SandboxBoxUpdateResponseProxyConfigRulesAwsAccessKeyIDTypePlaintext       SandboxBoxUpdateResponseProxyConfigRulesAwsAccessKeyIDType = "plaintext"
+	SandboxBoxUpdateResponseProxyConfigRulesAwsAccessKeyIDTypeOpaque          SandboxBoxUpdateResponseProxyConfigRulesAwsAccessKeyIDType = "opaque"
+	SandboxBoxUpdateResponseProxyConfigRulesAwsAccessKeyIDTypeWorkspaceSecret SandboxBoxUpdateResponseProxyConfigRulesAwsAccessKeyIDType = "workspace_secret"
+)
+
+func (r SandboxBoxUpdateResponseProxyConfigRulesAwsAccessKeyIDType) IsKnown() bool {
+	switch r {
+	case SandboxBoxUpdateResponseProxyConfigRulesAwsAccessKeyIDTypePlaintext, SandboxBoxUpdateResponseProxyConfigRulesAwsAccessKeyIDTypeOpaque, SandboxBoxUpdateResponseProxyConfigRulesAwsAccessKeyIDTypeWorkspaceSecret:
+		return true
+	}
+	return false
+}
+
+type SandboxBoxUpdateResponseProxyConfigRulesAwsSecretAccessKey struct {
+	Type  SandboxBoxUpdateResponseProxyConfigRulesAwsSecretAccessKeyType `json:"type" api:"required"`
+	IsSet bool                                                           `json:"is_set"`
+	Value string                                                         `json:"value"`
+	JSON  sandboxBoxUpdateResponseProxyConfigRulesAwsSecretAccessKeyJSON `json:"-"`
+}
+
+// sandboxBoxUpdateResponseProxyConfigRulesAwsSecretAccessKeyJSON contains the JSON
+// metadata for the struct
+// [SandboxBoxUpdateResponseProxyConfigRulesAwsSecretAccessKey]
+type sandboxBoxUpdateResponseProxyConfigRulesAwsSecretAccessKeyJSON struct {
+	Type        apijson.Field
+	IsSet       apijson.Field
+	Value       apijson.Field
+	raw         string
+	ExtraFields map[string]apijson.Field
+}
+
+func (r *SandboxBoxUpdateResponseProxyConfigRulesAwsSecretAccessKey) UnmarshalJSON(data []byte) (err error) {
+	return apijson.UnmarshalRoot(data, r)
+}
+
+func (r sandboxBoxUpdateResponseProxyConfigRulesAwsSecretAccessKeyJSON) RawJSON() string {
+	return r.raw
+}
+
+type SandboxBoxUpdateResponseProxyConfigRulesAwsSecretAccessKeyType string
+
+const (
+	SandboxBoxUpdateResponseProxyConfigRulesAwsSecretAccessKeyTypePlaintext       SandboxBoxUpdateResponseProxyConfigRulesAwsSecretAccessKeyType = "plaintext"
+	SandboxBoxUpdateResponseProxyConfigRulesAwsSecretAccessKeyTypeOpaque          SandboxBoxUpdateResponseProxyConfigRulesAwsSecretAccessKeyType = "opaque"
+	SandboxBoxUpdateResponseProxyConfigRulesAwsSecretAccessKeyTypeWorkspaceSecret SandboxBoxUpdateResponseProxyConfigRulesAwsSecretAccessKeyType = "workspace_secret"
+)
+
+func (r SandboxBoxUpdateResponseProxyConfigRulesAwsSecretAccessKeyType) IsKnown() bool {
+	switch r {
+	case SandboxBoxUpdateResponseProxyConfigRulesAwsSecretAccessKeyTypePlaintext, SandboxBoxUpdateResponseProxyConfigRulesAwsSecretAccessKeyTypeOpaque, SandboxBoxUpdateResponseProxyConfigRulesAwsSecretAccessKeyTypeWorkspaceSecret:
+		return true
+	}
+	return false
 }
 
 type SandboxBoxUpdateResponseProxyConfigRulesHeader struct {
@@ -1109,22 +1439,26 @@ func (r SandboxBoxListResponseSandboxesProxyConfigCallbacksRequestHeadersType) I
 }
 
 type SandboxBoxListResponseSandboxesProxyConfigRule struct {
-	MatchHosts []string                                                `json:"match_hosts" api:"required"`
 	Name       string                                                  `json:"name" api:"required"`
+	Aws        SandboxBoxListResponseSandboxesProxyConfigRulesAws      `json:"aws"`
 	Enabled    bool                                                    `json:"enabled"`
 	Headers    []SandboxBoxListResponseSandboxesProxyConfigRulesHeader `json:"headers"`
+	MatchHosts []string                                                `json:"match_hosts"`
 	MatchPaths []string                                                `json:"match_paths"`
+	Type       string                                                  `json:"type"`
 	JSON       sandboxBoxListResponseSandboxesProxyConfigRuleJSON      `json:"-"`
 }
 
 // sandboxBoxListResponseSandboxesProxyConfigRuleJSON contains the JSON metadata
 // for the struct [SandboxBoxListResponseSandboxesProxyConfigRule]
 type sandboxBoxListResponseSandboxesProxyConfigRuleJSON struct {
-	MatchHosts  apijson.Field
 	Name        apijson.Field
+	Aws         apijson.Field
 	Enabled     apijson.Field
 	Headers     apijson.Field
+	MatchHosts  apijson.Field
 	MatchPaths  apijson.Field
+	Type        apijson.Field
 	raw         string
 	ExtraFields map[string]apijson.Field
 }
@@ -1135,6 +1469,113 @@ func (r *SandboxBoxListResponseSandboxesProxyConfigRule) UnmarshalJSON(data []by
 
 func (r sandboxBoxListResponseSandboxesProxyConfigRuleJSON) RawJSON() string {
 	return r.raw
+}
+
+type SandboxBoxListResponseSandboxesProxyConfigRulesAws struct {
+	AccessKeyID     SandboxBoxListResponseSandboxesProxyConfigRulesAwsAccessKeyID     `json:"access_key_id" api:"required"`
+	SecretAccessKey SandboxBoxListResponseSandboxesProxyConfigRulesAwsSecretAccessKey `json:"secret_access_key" api:"required"`
+	JSON            sandboxBoxListResponseSandboxesProxyConfigRulesAwsJSON            `json:"-"`
+}
+
+// sandboxBoxListResponseSandboxesProxyConfigRulesAwsJSON contains the JSON
+// metadata for the struct [SandboxBoxListResponseSandboxesProxyConfigRulesAws]
+type sandboxBoxListResponseSandboxesProxyConfigRulesAwsJSON struct {
+	AccessKeyID     apijson.Field
+	SecretAccessKey apijson.Field
+	raw             string
+	ExtraFields     map[string]apijson.Field
+}
+
+func (r *SandboxBoxListResponseSandboxesProxyConfigRulesAws) UnmarshalJSON(data []byte) (err error) {
+	return apijson.UnmarshalRoot(data, r)
+}
+
+func (r sandboxBoxListResponseSandboxesProxyConfigRulesAwsJSON) RawJSON() string {
+	return r.raw
+}
+
+type SandboxBoxListResponseSandboxesProxyConfigRulesAwsAccessKeyID struct {
+	Type  SandboxBoxListResponseSandboxesProxyConfigRulesAwsAccessKeyIDType `json:"type" api:"required"`
+	IsSet bool                                                              `json:"is_set"`
+	Value string                                                            `json:"value"`
+	JSON  sandboxBoxListResponseSandboxesProxyConfigRulesAwsAccessKeyIDJSON `json:"-"`
+}
+
+// sandboxBoxListResponseSandboxesProxyConfigRulesAwsAccessKeyIDJSON contains the
+// JSON metadata for the struct
+// [SandboxBoxListResponseSandboxesProxyConfigRulesAwsAccessKeyID]
+type sandboxBoxListResponseSandboxesProxyConfigRulesAwsAccessKeyIDJSON struct {
+	Type        apijson.Field
+	IsSet       apijson.Field
+	Value       apijson.Field
+	raw         string
+	ExtraFields map[string]apijson.Field
+}
+
+func (r *SandboxBoxListResponseSandboxesProxyConfigRulesAwsAccessKeyID) UnmarshalJSON(data []byte) (err error) {
+	return apijson.UnmarshalRoot(data, r)
+}
+
+func (r sandboxBoxListResponseSandboxesProxyConfigRulesAwsAccessKeyIDJSON) RawJSON() string {
+	return r.raw
+}
+
+type SandboxBoxListResponseSandboxesProxyConfigRulesAwsAccessKeyIDType string
+
+const (
+	SandboxBoxListResponseSandboxesProxyConfigRulesAwsAccessKeyIDTypePlaintext       SandboxBoxListResponseSandboxesProxyConfigRulesAwsAccessKeyIDType = "plaintext"
+	SandboxBoxListResponseSandboxesProxyConfigRulesAwsAccessKeyIDTypeOpaque          SandboxBoxListResponseSandboxesProxyConfigRulesAwsAccessKeyIDType = "opaque"
+	SandboxBoxListResponseSandboxesProxyConfigRulesAwsAccessKeyIDTypeWorkspaceSecret SandboxBoxListResponseSandboxesProxyConfigRulesAwsAccessKeyIDType = "workspace_secret"
+)
+
+func (r SandboxBoxListResponseSandboxesProxyConfigRulesAwsAccessKeyIDType) IsKnown() bool {
+	switch r {
+	case SandboxBoxListResponseSandboxesProxyConfigRulesAwsAccessKeyIDTypePlaintext, SandboxBoxListResponseSandboxesProxyConfigRulesAwsAccessKeyIDTypeOpaque, SandboxBoxListResponseSandboxesProxyConfigRulesAwsAccessKeyIDTypeWorkspaceSecret:
+		return true
+	}
+	return false
+}
+
+type SandboxBoxListResponseSandboxesProxyConfigRulesAwsSecretAccessKey struct {
+	Type  SandboxBoxListResponseSandboxesProxyConfigRulesAwsSecretAccessKeyType `json:"type" api:"required"`
+	IsSet bool                                                                  `json:"is_set"`
+	Value string                                                                `json:"value"`
+	JSON  sandboxBoxListResponseSandboxesProxyConfigRulesAwsSecretAccessKeyJSON `json:"-"`
+}
+
+// sandboxBoxListResponseSandboxesProxyConfigRulesAwsSecretAccessKeyJSON contains
+// the JSON metadata for the struct
+// [SandboxBoxListResponseSandboxesProxyConfigRulesAwsSecretAccessKey]
+type sandboxBoxListResponseSandboxesProxyConfigRulesAwsSecretAccessKeyJSON struct {
+	Type        apijson.Field
+	IsSet       apijson.Field
+	Value       apijson.Field
+	raw         string
+	ExtraFields map[string]apijson.Field
+}
+
+func (r *SandboxBoxListResponseSandboxesProxyConfigRulesAwsSecretAccessKey) UnmarshalJSON(data []byte) (err error) {
+	return apijson.UnmarshalRoot(data, r)
+}
+
+func (r sandboxBoxListResponseSandboxesProxyConfigRulesAwsSecretAccessKeyJSON) RawJSON() string {
+	return r.raw
+}
+
+type SandboxBoxListResponseSandboxesProxyConfigRulesAwsSecretAccessKeyType string
+
+const (
+	SandboxBoxListResponseSandboxesProxyConfigRulesAwsSecretAccessKeyTypePlaintext       SandboxBoxListResponseSandboxesProxyConfigRulesAwsSecretAccessKeyType = "plaintext"
+	SandboxBoxListResponseSandboxesProxyConfigRulesAwsSecretAccessKeyTypeOpaque          SandboxBoxListResponseSandboxesProxyConfigRulesAwsSecretAccessKeyType = "opaque"
+	SandboxBoxListResponseSandboxesProxyConfigRulesAwsSecretAccessKeyTypeWorkspaceSecret SandboxBoxListResponseSandboxesProxyConfigRulesAwsSecretAccessKeyType = "workspace_secret"
+)
+
+func (r SandboxBoxListResponseSandboxesProxyConfigRulesAwsSecretAccessKeyType) IsKnown() bool {
+	switch r {
+	case SandboxBoxListResponseSandboxesProxyConfigRulesAwsSecretAccessKeyTypePlaintext, SandboxBoxListResponseSandboxesProxyConfigRulesAwsSecretAccessKeyTypeOpaque, SandboxBoxListResponseSandboxesProxyConfigRulesAwsSecretAccessKeyTypeWorkspaceSecret:
+		return true
+	}
+	return false
 }
 
 type SandboxBoxListResponseSandboxesProxyConfigRulesHeader struct {
@@ -1459,22 +1900,26 @@ func (r SandboxBoxStartResponseProxyConfigCallbacksRequestHeadersType) IsKnown()
 }
 
 type SandboxBoxStartResponseProxyConfigRule struct {
-	MatchHosts []string                                        `json:"match_hosts" api:"required"`
 	Name       string                                          `json:"name" api:"required"`
+	Aws        SandboxBoxStartResponseProxyConfigRulesAws      `json:"aws"`
 	Enabled    bool                                            `json:"enabled"`
 	Headers    []SandboxBoxStartResponseProxyConfigRulesHeader `json:"headers"`
+	MatchHosts []string                                        `json:"match_hosts"`
 	MatchPaths []string                                        `json:"match_paths"`
+	Type       string                                          `json:"type"`
 	JSON       sandboxBoxStartResponseProxyConfigRuleJSON      `json:"-"`
 }
 
 // sandboxBoxStartResponseProxyConfigRuleJSON contains the JSON metadata for the
 // struct [SandboxBoxStartResponseProxyConfigRule]
 type sandboxBoxStartResponseProxyConfigRuleJSON struct {
-	MatchHosts  apijson.Field
 	Name        apijson.Field
+	Aws         apijson.Field
 	Enabled     apijson.Field
 	Headers     apijson.Field
+	MatchHosts  apijson.Field
 	MatchPaths  apijson.Field
+	Type        apijson.Field
 	raw         string
 	ExtraFields map[string]apijson.Field
 }
@@ -1485,6 +1930,112 @@ func (r *SandboxBoxStartResponseProxyConfigRule) UnmarshalJSON(data []byte) (err
 
 func (r sandboxBoxStartResponseProxyConfigRuleJSON) RawJSON() string {
 	return r.raw
+}
+
+type SandboxBoxStartResponseProxyConfigRulesAws struct {
+	AccessKeyID     SandboxBoxStartResponseProxyConfigRulesAwsAccessKeyID     `json:"access_key_id" api:"required"`
+	SecretAccessKey SandboxBoxStartResponseProxyConfigRulesAwsSecretAccessKey `json:"secret_access_key" api:"required"`
+	JSON            sandboxBoxStartResponseProxyConfigRulesAwsJSON            `json:"-"`
+}
+
+// sandboxBoxStartResponseProxyConfigRulesAwsJSON contains the JSON metadata for
+// the struct [SandboxBoxStartResponseProxyConfigRulesAws]
+type sandboxBoxStartResponseProxyConfigRulesAwsJSON struct {
+	AccessKeyID     apijson.Field
+	SecretAccessKey apijson.Field
+	raw             string
+	ExtraFields     map[string]apijson.Field
+}
+
+func (r *SandboxBoxStartResponseProxyConfigRulesAws) UnmarshalJSON(data []byte) (err error) {
+	return apijson.UnmarshalRoot(data, r)
+}
+
+func (r sandboxBoxStartResponseProxyConfigRulesAwsJSON) RawJSON() string {
+	return r.raw
+}
+
+type SandboxBoxStartResponseProxyConfigRulesAwsAccessKeyID struct {
+	Type  SandboxBoxStartResponseProxyConfigRulesAwsAccessKeyIDType `json:"type" api:"required"`
+	IsSet bool                                                      `json:"is_set"`
+	Value string                                                    `json:"value"`
+	JSON  sandboxBoxStartResponseProxyConfigRulesAwsAccessKeyIDJSON `json:"-"`
+}
+
+// sandboxBoxStartResponseProxyConfigRulesAwsAccessKeyIDJSON contains the JSON
+// metadata for the struct [SandboxBoxStartResponseProxyConfigRulesAwsAccessKeyID]
+type sandboxBoxStartResponseProxyConfigRulesAwsAccessKeyIDJSON struct {
+	Type        apijson.Field
+	IsSet       apijson.Field
+	Value       apijson.Field
+	raw         string
+	ExtraFields map[string]apijson.Field
+}
+
+func (r *SandboxBoxStartResponseProxyConfigRulesAwsAccessKeyID) UnmarshalJSON(data []byte) (err error) {
+	return apijson.UnmarshalRoot(data, r)
+}
+
+func (r sandboxBoxStartResponseProxyConfigRulesAwsAccessKeyIDJSON) RawJSON() string {
+	return r.raw
+}
+
+type SandboxBoxStartResponseProxyConfigRulesAwsAccessKeyIDType string
+
+const (
+	SandboxBoxStartResponseProxyConfigRulesAwsAccessKeyIDTypePlaintext       SandboxBoxStartResponseProxyConfigRulesAwsAccessKeyIDType = "plaintext"
+	SandboxBoxStartResponseProxyConfigRulesAwsAccessKeyIDTypeOpaque          SandboxBoxStartResponseProxyConfigRulesAwsAccessKeyIDType = "opaque"
+	SandboxBoxStartResponseProxyConfigRulesAwsAccessKeyIDTypeWorkspaceSecret SandboxBoxStartResponseProxyConfigRulesAwsAccessKeyIDType = "workspace_secret"
+)
+
+func (r SandboxBoxStartResponseProxyConfigRulesAwsAccessKeyIDType) IsKnown() bool {
+	switch r {
+	case SandboxBoxStartResponseProxyConfigRulesAwsAccessKeyIDTypePlaintext, SandboxBoxStartResponseProxyConfigRulesAwsAccessKeyIDTypeOpaque, SandboxBoxStartResponseProxyConfigRulesAwsAccessKeyIDTypeWorkspaceSecret:
+		return true
+	}
+	return false
+}
+
+type SandboxBoxStartResponseProxyConfigRulesAwsSecretAccessKey struct {
+	Type  SandboxBoxStartResponseProxyConfigRulesAwsSecretAccessKeyType `json:"type" api:"required"`
+	IsSet bool                                                          `json:"is_set"`
+	Value string                                                        `json:"value"`
+	JSON  sandboxBoxStartResponseProxyConfigRulesAwsSecretAccessKeyJSON `json:"-"`
+}
+
+// sandboxBoxStartResponseProxyConfigRulesAwsSecretAccessKeyJSON contains the JSON
+// metadata for the struct
+// [SandboxBoxStartResponseProxyConfigRulesAwsSecretAccessKey]
+type sandboxBoxStartResponseProxyConfigRulesAwsSecretAccessKeyJSON struct {
+	Type        apijson.Field
+	IsSet       apijson.Field
+	Value       apijson.Field
+	raw         string
+	ExtraFields map[string]apijson.Field
+}
+
+func (r *SandboxBoxStartResponseProxyConfigRulesAwsSecretAccessKey) UnmarshalJSON(data []byte) (err error) {
+	return apijson.UnmarshalRoot(data, r)
+}
+
+func (r sandboxBoxStartResponseProxyConfigRulesAwsSecretAccessKeyJSON) RawJSON() string {
+	return r.raw
+}
+
+type SandboxBoxStartResponseProxyConfigRulesAwsSecretAccessKeyType string
+
+const (
+	SandboxBoxStartResponseProxyConfigRulesAwsSecretAccessKeyTypePlaintext       SandboxBoxStartResponseProxyConfigRulesAwsSecretAccessKeyType = "plaintext"
+	SandboxBoxStartResponseProxyConfigRulesAwsSecretAccessKeyTypeOpaque          SandboxBoxStartResponseProxyConfigRulesAwsSecretAccessKeyType = "opaque"
+	SandboxBoxStartResponseProxyConfigRulesAwsSecretAccessKeyTypeWorkspaceSecret SandboxBoxStartResponseProxyConfigRulesAwsSecretAccessKeyType = "workspace_secret"
+)
+
+func (r SandboxBoxStartResponseProxyConfigRulesAwsSecretAccessKeyType) IsKnown() bool {
+	switch r {
+	case SandboxBoxStartResponseProxyConfigRulesAwsSecretAccessKeyTypePlaintext, SandboxBoxStartResponseProxyConfigRulesAwsSecretAccessKeyTypeOpaque, SandboxBoxStartResponseProxyConfigRulesAwsSecretAccessKeyTypeWorkspaceSecret:
+		return true
+	}
+	return false
 }
 
 type SandboxBoxStartResponseProxyConfigRulesHeader struct {
@@ -1532,6 +2083,7 @@ func (r SandboxBoxStartResponseProxyConfigRulesHeadersType) IsKnown() bool {
 
 type SandboxBoxNewParams struct {
 	DeleteAfterStopSeconds param.Field[int64]                          `json:"delete_after_stop_seconds"`
+	EnvVars                param.Field[map[string]string]              `json:"env_vars"`
 	FsCapacityBytes        param.Field[int64]                          `json:"fs_capacity_bytes"`
 	IdleTtlSeconds         param.Field[int64]                          `json:"idle_ttl_seconds"`
 	MemBytes               param.Field[int64]                          `json:"mem_bytes"`
@@ -1617,15 +2169,78 @@ func (r SandboxBoxNewParamsProxyConfigCallbacksRequestHeadersType) IsKnown() boo
 }
 
 type SandboxBoxNewParamsProxyConfigRule struct {
-	MatchHosts param.Field[[]string]                                    `json:"match_hosts" api:"required"`
 	Name       param.Field[string]                                      `json:"name" api:"required"`
+	Aws        param.Field[SandboxBoxNewParamsProxyConfigRulesAws]      `json:"aws"`
 	Enabled    param.Field[bool]                                        `json:"enabled"`
 	Headers    param.Field[[]SandboxBoxNewParamsProxyConfigRulesHeader] `json:"headers"`
+	MatchHosts param.Field[[]string]                                    `json:"match_hosts"`
 	MatchPaths param.Field[[]string]                                    `json:"match_paths"`
+	Type       param.Field[string]                                      `json:"type"`
 }
 
 func (r SandboxBoxNewParamsProxyConfigRule) MarshalJSON() (data []byte, err error) {
 	return apijson.MarshalRoot(r)
+}
+
+type SandboxBoxNewParamsProxyConfigRulesAws struct {
+	AccessKeyID     param.Field[SandboxBoxNewParamsProxyConfigRulesAwsAccessKeyID]     `json:"access_key_id" api:"required"`
+	SecretAccessKey param.Field[SandboxBoxNewParamsProxyConfigRulesAwsSecretAccessKey] `json:"secret_access_key" api:"required"`
+}
+
+func (r SandboxBoxNewParamsProxyConfigRulesAws) MarshalJSON() (data []byte, err error) {
+	return apijson.MarshalRoot(r)
+}
+
+type SandboxBoxNewParamsProxyConfigRulesAwsAccessKeyID struct {
+	Type  param.Field[SandboxBoxNewParamsProxyConfigRulesAwsAccessKeyIDType] `json:"type" api:"required"`
+	IsSet param.Field[bool]                                                  `json:"is_set"`
+	Value param.Field[string]                                                `json:"value"`
+}
+
+func (r SandboxBoxNewParamsProxyConfigRulesAwsAccessKeyID) MarshalJSON() (data []byte, err error) {
+	return apijson.MarshalRoot(r)
+}
+
+type SandboxBoxNewParamsProxyConfigRulesAwsAccessKeyIDType string
+
+const (
+	SandboxBoxNewParamsProxyConfigRulesAwsAccessKeyIDTypePlaintext       SandboxBoxNewParamsProxyConfigRulesAwsAccessKeyIDType = "plaintext"
+	SandboxBoxNewParamsProxyConfigRulesAwsAccessKeyIDTypeOpaque          SandboxBoxNewParamsProxyConfigRulesAwsAccessKeyIDType = "opaque"
+	SandboxBoxNewParamsProxyConfigRulesAwsAccessKeyIDTypeWorkspaceSecret SandboxBoxNewParamsProxyConfigRulesAwsAccessKeyIDType = "workspace_secret"
+)
+
+func (r SandboxBoxNewParamsProxyConfigRulesAwsAccessKeyIDType) IsKnown() bool {
+	switch r {
+	case SandboxBoxNewParamsProxyConfigRulesAwsAccessKeyIDTypePlaintext, SandboxBoxNewParamsProxyConfigRulesAwsAccessKeyIDTypeOpaque, SandboxBoxNewParamsProxyConfigRulesAwsAccessKeyIDTypeWorkspaceSecret:
+		return true
+	}
+	return false
+}
+
+type SandboxBoxNewParamsProxyConfigRulesAwsSecretAccessKey struct {
+	Type  param.Field[SandboxBoxNewParamsProxyConfigRulesAwsSecretAccessKeyType] `json:"type" api:"required"`
+	IsSet param.Field[bool]                                                      `json:"is_set"`
+	Value param.Field[string]                                                    `json:"value"`
+}
+
+func (r SandboxBoxNewParamsProxyConfigRulesAwsSecretAccessKey) MarshalJSON() (data []byte, err error) {
+	return apijson.MarshalRoot(r)
+}
+
+type SandboxBoxNewParamsProxyConfigRulesAwsSecretAccessKeyType string
+
+const (
+	SandboxBoxNewParamsProxyConfigRulesAwsSecretAccessKeyTypePlaintext       SandboxBoxNewParamsProxyConfigRulesAwsSecretAccessKeyType = "plaintext"
+	SandboxBoxNewParamsProxyConfigRulesAwsSecretAccessKeyTypeOpaque          SandboxBoxNewParamsProxyConfigRulesAwsSecretAccessKeyType = "opaque"
+	SandboxBoxNewParamsProxyConfigRulesAwsSecretAccessKeyTypeWorkspaceSecret SandboxBoxNewParamsProxyConfigRulesAwsSecretAccessKeyType = "workspace_secret"
+)
+
+func (r SandboxBoxNewParamsProxyConfigRulesAwsSecretAccessKeyType) IsKnown() bool {
+	switch r {
+	case SandboxBoxNewParamsProxyConfigRulesAwsSecretAccessKeyTypePlaintext, SandboxBoxNewParamsProxyConfigRulesAwsSecretAccessKeyTypeOpaque, SandboxBoxNewParamsProxyConfigRulesAwsSecretAccessKeyTypeWorkspaceSecret:
+		return true
+	}
+	return false
 }
 
 type SandboxBoxNewParamsProxyConfigRulesHeader struct {
@@ -1730,15 +2345,78 @@ func (r SandboxBoxUpdateParamsProxyConfigCallbacksRequestHeadersType) IsKnown() 
 }
 
 type SandboxBoxUpdateParamsProxyConfigRule struct {
-	MatchHosts param.Field[[]string]                                       `json:"match_hosts" api:"required"`
 	Name       param.Field[string]                                         `json:"name" api:"required"`
+	Aws        param.Field[SandboxBoxUpdateParamsProxyConfigRulesAws]      `json:"aws"`
 	Enabled    param.Field[bool]                                           `json:"enabled"`
 	Headers    param.Field[[]SandboxBoxUpdateParamsProxyConfigRulesHeader] `json:"headers"`
+	MatchHosts param.Field[[]string]                                       `json:"match_hosts"`
 	MatchPaths param.Field[[]string]                                       `json:"match_paths"`
+	Type       param.Field[string]                                         `json:"type"`
 }
 
 func (r SandboxBoxUpdateParamsProxyConfigRule) MarshalJSON() (data []byte, err error) {
 	return apijson.MarshalRoot(r)
+}
+
+type SandboxBoxUpdateParamsProxyConfigRulesAws struct {
+	AccessKeyID     param.Field[SandboxBoxUpdateParamsProxyConfigRulesAwsAccessKeyID]     `json:"access_key_id" api:"required"`
+	SecretAccessKey param.Field[SandboxBoxUpdateParamsProxyConfigRulesAwsSecretAccessKey] `json:"secret_access_key" api:"required"`
+}
+
+func (r SandboxBoxUpdateParamsProxyConfigRulesAws) MarshalJSON() (data []byte, err error) {
+	return apijson.MarshalRoot(r)
+}
+
+type SandboxBoxUpdateParamsProxyConfigRulesAwsAccessKeyID struct {
+	Type  param.Field[SandboxBoxUpdateParamsProxyConfigRulesAwsAccessKeyIDType] `json:"type" api:"required"`
+	IsSet param.Field[bool]                                                     `json:"is_set"`
+	Value param.Field[string]                                                   `json:"value"`
+}
+
+func (r SandboxBoxUpdateParamsProxyConfigRulesAwsAccessKeyID) MarshalJSON() (data []byte, err error) {
+	return apijson.MarshalRoot(r)
+}
+
+type SandboxBoxUpdateParamsProxyConfigRulesAwsAccessKeyIDType string
+
+const (
+	SandboxBoxUpdateParamsProxyConfigRulesAwsAccessKeyIDTypePlaintext       SandboxBoxUpdateParamsProxyConfigRulesAwsAccessKeyIDType = "plaintext"
+	SandboxBoxUpdateParamsProxyConfigRulesAwsAccessKeyIDTypeOpaque          SandboxBoxUpdateParamsProxyConfigRulesAwsAccessKeyIDType = "opaque"
+	SandboxBoxUpdateParamsProxyConfigRulesAwsAccessKeyIDTypeWorkspaceSecret SandboxBoxUpdateParamsProxyConfigRulesAwsAccessKeyIDType = "workspace_secret"
+)
+
+func (r SandboxBoxUpdateParamsProxyConfigRulesAwsAccessKeyIDType) IsKnown() bool {
+	switch r {
+	case SandboxBoxUpdateParamsProxyConfigRulesAwsAccessKeyIDTypePlaintext, SandboxBoxUpdateParamsProxyConfigRulesAwsAccessKeyIDTypeOpaque, SandboxBoxUpdateParamsProxyConfigRulesAwsAccessKeyIDTypeWorkspaceSecret:
+		return true
+	}
+	return false
+}
+
+type SandboxBoxUpdateParamsProxyConfigRulesAwsSecretAccessKey struct {
+	Type  param.Field[SandboxBoxUpdateParamsProxyConfigRulesAwsSecretAccessKeyType] `json:"type" api:"required"`
+	IsSet param.Field[bool]                                                         `json:"is_set"`
+	Value param.Field[string]                                                       `json:"value"`
+}
+
+func (r SandboxBoxUpdateParamsProxyConfigRulesAwsSecretAccessKey) MarshalJSON() (data []byte, err error) {
+	return apijson.MarshalRoot(r)
+}
+
+type SandboxBoxUpdateParamsProxyConfigRulesAwsSecretAccessKeyType string
+
+const (
+	SandboxBoxUpdateParamsProxyConfigRulesAwsSecretAccessKeyTypePlaintext       SandboxBoxUpdateParamsProxyConfigRulesAwsSecretAccessKeyType = "plaintext"
+	SandboxBoxUpdateParamsProxyConfigRulesAwsSecretAccessKeyTypeOpaque          SandboxBoxUpdateParamsProxyConfigRulesAwsSecretAccessKeyType = "opaque"
+	SandboxBoxUpdateParamsProxyConfigRulesAwsSecretAccessKeyTypeWorkspaceSecret SandboxBoxUpdateParamsProxyConfigRulesAwsSecretAccessKeyType = "workspace_secret"
+)
+
+func (r SandboxBoxUpdateParamsProxyConfigRulesAwsSecretAccessKeyType) IsKnown() bool {
+	switch r {
+	case SandboxBoxUpdateParamsProxyConfigRulesAwsSecretAccessKeyTypePlaintext, SandboxBoxUpdateParamsProxyConfigRulesAwsSecretAccessKeyTypeOpaque, SandboxBoxUpdateParamsProxyConfigRulesAwsSecretAccessKeyTypeWorkspaceSecret:
+		return true
+	}
+	return false
 }
 
 type SandboxBoxUpdateParamsProxyConfigRulesHeader struct {
@@ -1769,6 +2447,8 @@ func (r SandboxBoxUpdateParamsProxyConfigRulesHeadersType) IsKnown() bool {
 }
 
 type SandboxBoxListParams struct {
+	// Filter by creator identity. Only 'me' is supported.
+	CreatedBy param.Field[string] `query:"created_by"`
 	// Maximum number of results
 	Limit param.Field[int64] `query:"limit"`
 	// Filter by name substring

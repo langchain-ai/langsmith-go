@@ -19,6 +19,20 @@ import (
 	"github.com/langchain-ai/langsmith-go/internal/traceutil"
 )
 
+// LangSmith/OTel span attribute keys emitted for OpenAI usage. Defined locally
+// for now (rather than in internal/genaiattr) until they are shared across
+// instrumentations. These are the keys the LangSmith OTLP converter reads.
+const (
+	usageInputTokensKey  = attribute.Key("gen_ai.usage.input_tokens")
+	usageOutputTokensKey = attribute.Key("gen_ai.usage.output_tokens")
+	usageTotalTokensKey  = attribute.Key("gen_ai.usage.total_tokens")
+	// usageMetadataKey is the converter's preferred, cost-driving path: a
+	// JSON-serialized LangSmith usage_metadata object.
+	usageMetadataKey = attribute.Key("langsmith.usage_metadata")
+	// serviceTierKey is a price modifier recorded as run metadata, not a token count.
+	serviceTierKey = attribute.Key("langsmith.metadata.service_tier")
+)
+
 // MiddlewareNext is a function which is called by the middleware to pass an HTTP request
 // to the next stage in the middleware chain (the actual HTTP transport).
 type MiddlewareNext func(*http.Request) (*http.Response, error)
@@ -224,15 +238,31 @@ func MiddlewareWithTracerProvider(req *http.Request, next MiddlewareNext, tp tra
 			span.SetAttributes(attribute.String("gen_ai.completion", completion))
 		}
 		if usage.HasUsage {
+			// langsmith.usage_metadata is the converter's preferred,
+			// cost-driving path (token-detail breakdown for cache/reasoning/audio).
+			if len(usage.UsageMetadata) > 0 {
+				if out, err := json.Marshal(usage.UsageMetadata); err == nil {
+					span.SetAttributes(usageMetadataKey.String(string(out)))
+				}
+			}
+			// Flat gen_ai.usage.* attributes drive Thread-list aggregation, which
+			// reads token counts from root spans; input/output propagate to the parent.
 			inputTokens := int64(usage.InputTokens)
-			span.SetAttributes(attribute.Int64("gen_ai.usage.input_tokens", inputTokens))
+			span.SetAttributes(usageInputTokensKey.Int64(inputTokens))
 			outputTokens := int64(usage.OutputTokens)
-			span.SetAttributes(attribute.Int64("gen_ai.usage.output_tokens", outputTokens))
+			span.SetAttributes(usageOutputTokensKey.Int64(outputTokens))
+			if usage.TotalTokens > 0 {
+				span.SetAttributes(usageTotalTokensKey.Int64(int64(usage.TotalTokens)))
+			}
 			if parentSpan.SpanContext().IsValid() && parentSpan.IsRecording() {
 				parentSpan.SetAttributes(
-					attribute.Int64("gen_ai.usage.input_tokens", inputTokens),
-					attribute.Int64("gen_ai.usage.output_tokens", outputTokens),
+					usageInputTokensKey.Int64(inputTokens),
+					usageOutputTokensKey.Int64(outputTokens),
 				)
+			}
+			// service_tier is a price modifier, not a token count, so it goes in metadata.
+			if usage.ServiceTier != "" {
+				span.SetAttributes(serviceTierKey.String(usage.ServiceTier))
 			}
 		}
 		if resp.StatusCode < 400 && !incompleteStream {
@@ -756,13 +786,11 @@ func extractStreamingCompletion(data []byte) (string, usageInfo) {
 
 		// Extract usage (present in the last chunk when include_usage is set)
 		if usageMap, ok := chunk["usage"].(map[string]any); ok {
-			usage.HasUsage = true
-			if v, ok := usageMap["prompt_tokens"].(float64); ok {
-				usage.InputTokens = int(v)
-			}
-			if v, ok := usageMap["completion_tokens"].(float64); ok {
-				usage.OutputTokens = int(v)
-			}
+			usage = buildOpenAIUsage(usageMap)
+		}
+		// service_tier rides at the top level of each chunk.
+		if st, ok := chunk["service_tier"].(string); ok && st != "" {
+			usage.ServiceTier = st
 		}
 	}
 
@@ -801,7 +829,123 @@ func extractStreamingCompletion(data []byte) (string, usageInfo) {
 type usageInfo struct {
 	InputTokens  int
 	OutputTokens int
+	TotalTokens  int
 	HasUsage     bool
+	// UsageMetadata is the LangSmith usage_metadata object (input/output token
+	// totals plus the per-dimension token-detail breakdown that drives cost).
+	UsageMetadata map[string]any
+	// ServiceTier is the response service tier (e.g. default/flex/priority), a
+	// price modifier recorded as run metadata rather than a token count.
+	ServiceTier string
+}
+
+// buildOpenAIUsage parses the two OpenAI usage shapes into usageInfo and the
+// LangSmith usage_metadata breakdown.
+//
+// Chat Completions (https://developers.openai.com/api/reference/resources/chat/subresources/completions/methods/create):
+//
+//	"usage": {
+//	  "prompt_tokens": 2006,
+//	  "completion_tokens": 300,
+//	  "total_tokens": 2306,
+//	  "prompt_tokens_details": {
+//	    "cached_tokens": 1920,
+//	    "audio_tokens": 0
+//	  },
+//	  "completion_tokens_details": {
+//	    "reasoning_tokens": 64,
+//	    "audio_tokens": 0,
+//	    "accepted_prediction_tokens": 0,
+//	    "rejected_prediction_tokens": 0
+//	  }
+//	}
+//
+// Responses (https://developers.openai.com/api/reference/resources/responses/methods/create):
+//
+//	"usage": {
+//	  "input_tokens": 2006,
+//	  "input_tokens_details": {"cached_tokens": 1920},
+//	  "output_tokens": 300,
+//	  "output_tokens_details": {"reasoning_tokens": 64},
+//	  "total_tokens": 2306
+//	}
+func buildOpenAIUsage(usageMap map[string]any) usageInfo {
+	getInt := func(m map[string]any, key string) int {
+		if v, ok := m[key].(float64); ok {
+			return int(v)
+		}
+		return 0
+	}
+	getNested := func(key string) map[string]any {
+		if m, ok := usageMap[key].(map[string]any); ok {
+			return m
+		}
+		return nil
+	}
+
+	// Detect the Responses-API shape; default to Chat Completions naming.
+	inputKey, outputKey := "prompt_tokens", "completion_tokens"
+	inDetailsKey, outDetailsKey := "prompt_tokens_details", "completion_tokens_details"
+	if _, ok := usageMap["input_tokens"]; ok {
+		inputKey, outputKey = "input_tokens", "output_tokens"
+		inDetailsKey, outDetailsKey = "input_tokens_details", "output_tokens_details"
+	}
+
+	input := getInt(usageMap, inputKey)
+	output := getInt(usageMap, outputKey)
+	total := getInt(usageMap, "total_tokens")
+	if total == 0 {
+		total = input + output
+	}
+
+	// Detail keys mirror langchain-openai's _create_usage_metadata so cost is
+	// identical across the Go and Python ingest stacks. accepted/rejected
+	// prediction tokens are intentionally omitted: they are already counted in
+	// completion_tokens and have no distinct price dimension, so the cost engine
+	// charges them at the default output rate via the remainder.
+	inputTokenDetails := map[string]any{}
+	if d := getNested(inDetailsKey); d != nil {
+		if v := getInt(d, "cached_tokens"); v > 0 {
+			inputTokenDetails["cache_read"] = v
+		}
+		if v := getInt(d, "audio_tokens"); v > 0 {
+			inputTokenDetails["audio"] = v
+		}
+	}
+	outputTokenDetails := map[string]any{}
+	if d := getNested(outDetailsKey); d != nil {
+		if v := getInt(d, "reasoning_tokens"); v > 0 {
+			outputTokenDetails["reasoning"] = v
+		}
+		if v := getInt(d, "audio_tokens"); v > 0 {
+			outputTokenDetails["audio"] = v
+		}
+	}
+
+	um := map[string]any{}
+	if input > 0 {
+		um["input_tokens"] = input
+	}
+	if output > 0 {
+		um["output_tokens"] = output
+	}
+	if input > 0 || output > 0 {
+		um["total_tokens"] = total
+	}
+	if len(inputTokenDetails) > 0 {
+		um["input_token_details"] = inputTokenDetails
+	}
+	if len(outputTokenDetails) > 0 {
+		um["output_token_details"] = outputTokenDetails
+	}
+
+	return usageInfo{
+		InputTokens:   input,
+		OutputTokens:  output,
+		TotalTokens:   total,
+		HasUsage:      true,
+		UsageMetadata: um,
+	}
 }
 
 // extractCompletionFromResponse extracts the assistant message and usage from
@@ -814,13 +958,10 @@ func extractCompletionFromResponse(body []byte) (string, usageInfo) {
 
 	var usage usageInfo
 	if usageMap, ok := resp["usage"].(map[string]any); ok {
-		usage.HasUsage = true
-		if v, ok := usageMap["prompt_tokens"].(float64); ok {
-			usage.InputTokens = int(v)
-		}
-		if v, ok := usageMap["completion_tokens"].(float64); ok {
-			usage.OutputTokens = int(v)
-		}
+		usage = buildOpenAIUsage(usageMap)
+	}
+	if st, ok := resp["service_tier"].(string); ok && st != "" {
+		usage.ServiceTier = st
 	}
 
 	if choices, ok := resp["choices"].([]any); ok && len(choices) > 0 {
@@ -876,15 +1017,13 @@ func extractStreamingResponsesCompletion(data []byte) (string, usageInfo) {
 // extractResponsesUsage extracts usage from a Responses API response object.
 // The Responses API uses input_tokens/output_tokens (not prompt_tokens/completion_tokens).
 func extractResponsesUsage(resp map[string]any) usageInfo {
-	var usage usageInfo
-	if usageMap, ok := resp["usage"].(map[string]any); ok {
-		usage.HasUsage = true
-		if v, ok := usageMap["input_tokens"].(float64); ok {
-			usage.InputTokens = int(v)
-		}
-		if v, ok := usageMap["output_tokens"].(float64); ok {
-			usage.OutputTokens = int(v)
-		}
+	usageMap, ok := resp["usage"].(map[string]any)
+	if !ok {
+		return usageInfo{}
+	}
+	usage := buildOpenAIUsage(usageMap)
+	if st, ok := resp["service_tier"].(string); ok && st != "" {
+		usage.ServiceTier = st
 	}
 	return usage
 }

@@ -917,36 +917,37 @@ func (r TimedeltaInputParam) MarshalJSON() (data []byte, err error) {
 
 // TracerSession schema.
 type TracerSession struct {
-	ID                   string                   `json:"id" api:"required" format:"uuid"`
-	TenantID             string                   `json:"tenant_id" api:"required" format:"uuid"`
-	CompletionCost       string                   `json:"completion_cost" api:"nullable"`
-	CompletionTokens     int64                    `json:"completion_tokens" api:"nullable"`
-	DefaultDatasetID     string                   `json:"default_dataset_id" api:"nullable" format:"uuid"`
-	Description          string                   `json:"description" api:"nullable"`
-	EndTime              time.Time                `json:"end_time" api:"nullable" format:"date-time"`
-	ErrorRate            float64                  `json:"error_rate" api:"nullable"`
-	Extra                map[string]interface{}   `json:"extra" api:"nullable"`
-	FeedbackStats        map[string]interface{}   `json:"feedback_stats" api:"nullable"`
-	FirstTokenP50        float64                  `json:"first_token_p50" api:"nullable"`
-	FirstTokenP99        float64                  `json:"first_token_p99" api:"nullable"`
-	LastRunStartTime     time.Time                `json:"last_run_start_time" api:"nullable" format:"date-time"`
-	LastRunStartTimeLive time.Time                `json:"last_run_start_time_live" api:"nullable" format:"date-time"`
-	LatencyP50           float64                  `json:"latency_p50" api:"nullable"`
-	LatencyP99           float64                  `json:"latency_p99" api:"nullable"`
-	Name                 string                   `json:"name"`
-	PromptCost           string                   `json:"prompt_cost" api:"nullable"`
-	PromptTokens         int64                    `json:"prompt_tokens" api:"nullable"`
-	ReferenceDatasetID   string                   `json:"reference_dataset_id" api:"nullable" format:"uuid"`
-	RunCount             int64                    `json:"run_count" api:"nullable"`
-	RunFacets            []map[string]interface{} `json:"run_facets" api:"nullable"`
-	SessionFeedbackStats map[string]interface{}   `json:"session_feedback_stats" api:"nullable"`
-	StartTime            time.Time                `json:"start_time" format:"date-time"`
-	StreamingRate        float64                  `json:"streaming_rate" api:"nullable"`
-	TestRunNumber        int64                    `json:"test_run_number" api:"nullable"`
-	TotalCost            string                   `json:"total_cost" api:"nullable"`
-	TotalTokens          int64                    `json:"total_tokens" api:"nullable"`
-	TraceTier            TracerSessionTraceTier   `json:"trace_tier" api:"nullable"`
-	JSON                 tracerSessionJSON        `json:"-"`
+	ID                   string                          `json:"id" api:"required" format:"uuid"`
+	TenantID             string                          `json:"tenant_id" api:"required" format:"uuid"`
+	CompletionCost       string                          `json:"completion_cost" api:"nullable"`
+	CompletionTokens     int64                           `json:"completion_tokens" api:"nullable"`
+	DefaultDatasetID     string                          `json:"default_dataset_id" api:"nullable" format:"uuid"`
+	Description          string                          `json:"description" api:"nullable"`
+	EndTime              time.Time                       `json:"end_time" api:"nullable" format:"date-time"`
+	ErrorRate            float64                         `json:"error_rate" api:"nullable"`
+	ExperimentProgress   TracerSessionExperimentProgress `json:"experiment_progress" api:"nullable"`
+	Extra                map[string]interface{}          `json:"extra" api:"nullable"`
+	FeedbackStats        map[string]interface{}          `json:"feedback_stats" api:"nullable"`
+	FirstTokenP50        float64                         `json:"first_token_p50" api:"nullable"`
+	FirstTokenP99        float64                         `json:"first_token_p99" api:"nullable"`
+	LastRunStartTime     time.Time                       `json:"last_run_start_time" api:"nullable" format:"date-time"`
+	LastRunStartTimeLive time.Time                       `json:"last_run_start_time_live" api:"nullable" format:"date-time"`
+	LatencyP50           float64                         `json:"latency_p50" api:"nullable"`
+	LatencyP99           float64                         `json:"latency_p99" api:"nullable"`
+	Name                 string                          `json:"name"`
+	PromptCost           string                          `json:"prompt_cost" api:"nullable"`
+	PromptTokens         int64                           `json:"prompt_tokens" api:"nullable"`
+	ReferenceDatasetID   string                          `json:"reference_dataset_id" api:"nullable" format:"uuid"`
+	RunCount             int64                           `json:"run_count" api:"nullable"`
+	RunFacets            []map[string]interface{}        `json:"run_facets" api:"nullable"`
+	SessionFeedbackStats map[string]interface{}          `json:"session_feedback_stats" api:"nullable"`
+	StartTime            time.Time                       `json:"start_time" format:"date-time"`
+	StreamingRate        float64                         `json:"streaming_rate" api:"nullable"`
+	TestRunNumber        int64                           `json:"test_run_number" api:"nullable"`
+	TotalCost            string                          `json:"total_cost" api:"nullable"`
+	TotalTokens          int64                           `json:"total_tokens" api:"nullable"`
+	TraceTier            TracerSessionTraceTier          `json:"trace_tier" api:"nullable"`
+	JSON                 tracerSessionJSON               `json:"-"`
 }
 
 // tracerSessionJSON contains the JSON metadata for the struct [TracerSession]
@@ -959,6 +960,7 @@ type tracerSessionJSON struct {
 	Description          apijson.Field
 	EndTime              apijson.Field
 	ErrorRate            apijson.Field
+	ExperimentProgress   apijson.Field
 	Extra                apijson.Field
 	FeedbackStats        apijson.Field
 	FirstTokenP50        apijson.Field
@@ -989,6 +991,31 @@ func (r *TracerSession) UnmarshalJSON(data []byte) (err error) {
 }
 
 func (r tracerSessionJSON) RawJSON() string {
+	return r.raw
+}
+
+type TracerSessionExperimentProgress struct {
+	EvaluatorProgress map[string]float64                  `json:"evaluator_progress" api:"required"`
+	ExpectedRunCount  int64                               `json:"expected_run_count" api:"required"`
+	RunProgress       float64                             `json:"run_progress" api:"required"`
+	JSON              tracerSessionExperimentProgressJSON `json:"-"`
+}
+
+// tracerSessionExperimentProgressJSON contains the JSON metadata for the struct
+// [TracerSessionExperimentProgress]
+type tracerSessionExperimentProgressJSON struct {
+	EvaluatorProgress apijson.Field
+	ExpectedRunCount  apijson.Field
+	RunProgress       apijson.Field
+	raw               string
+	ExtraFields       map[string]apijson.Field
+}
+
+func (r *TracerSessionExperimentProgress) UnmarshalJSON(data []byte) (err error) {
+	return apijson.UnmarshalRoot(data, r)
+}
+
+func (r tracerSessionExperimentProgressJSON) RawJSON() string {
 	return r.raw
 }
 
@@ -1072,8 +1099,12 @@ type SessionNewParams struct {
 	DefaultDatasetID   param.Field[string]                    `json:"default_dataset_id" format:"uuid"`
 	Description        param.Field[string]                    `json:"description"`
 	EndTime            param.Field[time.Time]                 `json:"end_time" format:"date-time"`
+	EvaluatorKeys      param.Field[[]string]                  `json:"evaluator_keys"`
 	Extra              param.Field[map[string]interface{}]    `json:"extra"`
+	KickedOffBy        param.Field[string]                    `json:"kicked_off_by"`
 	Name               param.Field[string]                    `json:"name"`
+	NumExamples        param.Field[int64]                     `json:"num_examples"`
+	NumRepetitions     param.Field[int64]                     `json:"num_repetitions"`
 	ReferenceDatasetID param.Field[string]                    `json:"reference_dataset_id" format:"uuid"`
 	StartTime          param.Field[time.Time]                 `json:"start_time" format:"date-time"`
 	TraceTier          param.Field[SessionNewParamsTraceTier] `json:"trace_tier"`

@@ -194,40 +194,41 @@ func init() {
 //   - filter: ClickHouse filter for fetching runs in this session/group
 //   - min/max_start_time: time range for runs in this session/group
 type DatasetGroupRunsResponseGroupsSession struct {
-	ID                   string                                          `json:"id" api:"required" format:"uuid"`
-	Filter               string                                          `json:"filter" api:"required"`
-	TenantID             string                                          `json:"tenant_id" api:"required" format:"uuid"`
-	CompletionCost       string                                          `json:"completion_cost" api:"nullable"`
-	CompletionTokens     int64                                           `json:"completion_tokens" api:"nullable"`
-	DefaultDatasetID     string                                          `json:"default_dataset_id" api:"nullable" format:"uuid"`
-	Description          string                                          `json:"description" api:"nullable"`
-	EndTime              time.Time                                       `json:"end_time" api:"nullable" format:"date-time"`
-	ErrorRate            float64                                         `json:"error_rate" api:"nullable"`
-	ExampleCount         int64                                           `json:"example_count" api:"nullable"`
-	Extra                map[string]interface{}                          `json:"extra" api:"nullable"`
-	FeedbackStats        map[string]interface{}                          `json:"feedback_stats" api:"nullable"`
-	FirstTokenP50        float64                                         `json:"first_token_p50" api:"nullable"`
-	FirstTokenP99        float64                                         `json:"first_token_p99" api:"nullable"`
-	LastRunStartTime     time.Time                                       `json:"last_run_start_time" api:"nullable" format:"date-time"`
-	LastRunStartTimeLive time.Time                                       `json:"last_run_start_time_live" api:"nullable" format:"date-time"`
-	LatencyP50           float64                                         `json:"latency_p50" api:"nullable"`
-	LatencyP99           float64                                         `json:"latency_p99" api:"nullable"`
-	MaxStartTime         time.Time                                       `json:"max_start_time" api:"nullable" format:"date-time"`
-	MinStartTime         time.Time                                       `json:"min_start_time" api:"nullable" format:"date-time"`
-	Name                 string                                          `json:"name"`
-	PromptCost           string                                          `json:"prompt_cost" api:"nullable"`
-	PromptTokens         int64                                           `json:"prompt_tokens" api:"nullable"`
-	ReferenceDatasetID   string                                          `json:"reference_dataset_id" api:"nullable" format:"uuid"`
-	RunCount             int64                                           `json:"run_count" api:"nullable"`
-	RunFacets            []map[string]interface{}                        `json:"run_facets" api:"nullable"`
-	SessionFeedbackStats map[string]interface{}                          `json:"session_feedback_stats" api:"nullable"`
-	StartTime            time.Time                                       `json:"start_time" format:"date-time"`
-	StreamingRate        float64                                         `json:"streaming_rate" api:"nullable"`
-	TestRunNumber        int64                                           `json:"test_run_number" api:"nullable"`
-	TotalCost            string                                          `json:"total_cost" api:"nullable"`
-	TotalTokens          int64                                           `json:"total_tokens" api:"nullable"`
-	TraceTier            DatasetGroupRunsResponseGroupsSessionsTraceTier `json:"trace_tier" api:"nullable"`
-	JSON                 datasetGroupRunsResponseGroupsSessionJSON       `json:"-"`
+	ID                   string                                                   `json:"id" api:"required" format:"uuid"`
+	Filter               string                                                   `json:"filter" api:"required"`
+	TenantID             string                                                   `json:"tenant_id" api:"required" format:"uuid"`
+	CompletionCost       string                                                   `json:"completion_cost" api:"nullable"`
+	CompletionTokens     int64                                                    `json:"completion_tokens" api:"nullable"`
+	DefaultDatasetID     string                                                   `json:"default_dataset_id" api:"nullable" format:"uuid"`
+	Description          string                                                   `json:"description" api:"nullable"`
+	EndTime              time.Time                                                `json:"end_time" api:"nullable" format:"date-time"`
+	ErrorRate            float64                                                  `json:"error_rate" api:"nullable"`
+	ExampleCount         int64                                                    `json:"example_count" api:"nullable"`
+	ExperimentProgress   DatasetGroupRunsResponseGroupsSessionsExperimentProgress `json:"experiment_progress" api:"nullable"`
+	Extra                map[string]interface{}                                   `json:"extra" api:"nullable"`
+	FeedbackStats        map[string]interface{}                                   `json:"feedback_stats" api:"nullable"`
+	FirstTokenP50        float64                                                  `json:"first_token_p50" api:"nullable"`
+	FirstTokenP99        float64                                                  `json:"first_token_p99" api:"nullable"`
+	LastRunStartTime     time.Time                                                `json:"last_run_start_time" api:"nullable" format:"date-time"`
+	LastRunStartTimeLive time.Time                                                `json:"last_run_start_time_live" api:"nullable" format:"date-time"`
+	LatencyP50           float64                                                  `json:"latency_p50" api:"nullable"`
+	LatencyP99           float64                                                  `json:"latency_p99" api:"nullable"`
+	MaxStartTime         time.Time                                                `json:"max_start_time" api:"nullable" format:"date-time"`
+	MinStartTime         time.Time                                                `json:"min_start_time" api:"nullable" format:"date-time"`
+	Name                 string                                                   `json:"name"`
+	PromptCost           string                                                   `json:"prompt_cost" api:"nullable"`
+	PromptTokens         int64                                                    `json:"prompt_tokens" api:"nullable"`
+	ReferenceDatasetID   string                                                   `json:"reference_dataset_id" api:"nullable" format:"uuid"`
+	RunCount             int64                                                    `json:"run_count" api:"nullable"`
+	RunFacets            []map[string]interface{}                                 `json:"run_facets" api:"nullable"`
+	SessionFeedbackStats map[string]interface{}                                   `json:"session_feedback_stats" api:"nullable"`
+	StartTime            time.Time                                                `json:"start_time" format:"date-time"`
+	StreamingRate        float64                                                  `json:"streaming_rate" api:"nullable"`
+	TestRunNumber        int64                                                    `json:"test_run_number" api:"nullable"`
+	TotalCost            string                                                   `json:"total_cost" api:"nullable"`
+	TotalTokens          int64                                                    `json:"total_tokens" api:"nullable"`
+	TraceTier            DatasetGroupRunsResponseGroupsSessionsTraceTier          `json:"trace_tier" api:"nullable"`
+	JSON                 datasetGroupRunsResponseGroupsSessionJSON                `json:"-"`
 }
 
 // datasetGroupRunsResponseGroupsSessionJSON contains the JSON metadata for the
@@ -243,6 +244,7 @@ type datasetGroupRunsResponseGroupsSessionJSON struct {
 	EndTime              apijson.Field
 	ErrorRate            apijson.Field
 	ExampleCount         apijson.Field
+	ExperimentProgress   apijson.Field
 	Extra                apijson.Field
 	FeedbackStats        apijson.Field
 	FirstTokenP50        apijson.Field
@@ -275,6 +277,32 @@ func (r *DatasetGroupRunsResponseGroupsSession) UnmarshalJSON(data []byte) (err 
 }
 
 func (r datasetGroupRunsResponseGroupsSessionJSON) RawJSON() string {
+	return r.raw
+}
+
+type DatasetGroupRunsResponseGroupsSessionsExperimentProgress struct {
+	EvaluatorProgress map[string]float64                                           `json:"evaluator_progress" api:"required"`
+	ExpectedRunCount  int64                                                        `json:"expected_run_count" api:"required"`
+	RunProgress       float64                                                      `json:"run_progress" api:"required"`
+	JSON              datasetGroupRunsResponseGroupsSessionsExperimentProgressJSON `json:"-"`
+}
+
+// datasetGroupRunsResponseGroupsSessionsExperimentProgressJSON contains the JSON
+// metadata for the struct
+// [DatasetGroupRunsResponseGroupsSessionsExperimentProgress]
+type datasetGroupRunsResponseGroupsSessionsExperimentProgressJSON struct {
+	EvaluatorProgress apijson.Field
+	ExpectedRunCount  apijson.Field
+	RunProgress       apijson.Field
+	raw               string
+	ExtraFields       map[string]apijson.Field
+}
+
+func (r *DatasetGroupRunsResponseGroupsSessionsExperimentProgress) UnmarshalJSON(data []byte) (err error) {
+	return apijson.UnmarshalRoot(data, r)
+}
+
+func (r datasetGroupRunsResponseGroupsSessionsExperimentProgressJSON) RawJSON() string {
 	return r.raw
 }
 

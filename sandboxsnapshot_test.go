@@ -81,6 +81,7 @@ func TestSandboxSnapshotListWithOptionalParams(t *testing.T) {
 		option.WithTenantID("My Tenant ID"),
 	)
 	_, err := client.Sandboxes.Snapshots.List(context.TODO(), langsmith.SandboxSnapshotListParams{
+		CreatedBy:     langsmith.F("created_by"),
 		Limit:         langsmith.F(int64(0)),
 		NameContains:  langsmith.F("name_contains"),
 		Offset:        langsmith.F(int64(0)),
