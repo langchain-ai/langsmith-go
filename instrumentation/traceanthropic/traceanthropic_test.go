@@ -6,6 +6,7 @@ import (
 	"encoding/json"
 	"io"
 	"net/http"
+	"reflect"
 	"strings"
 	"testing"
 
@@ -496,11 +497,18 @@ func TestSetUsageAttributes(t *testing.T) {
 	if v, ok := getAttr(span, "gen_ai.usage.output_tokens"); !ok || v.AsInt64() != 50 {
 		t.Errorf("output_tokens: got %v", v)
 	}
-	if v, ok := getAttr(span, "langsmith.metadata.usage_metadata.input_token_details.cache_creation"); !ok || v.AsInt64() != 10 {
-		t.Errorf("cache_creation: got %v", v)
+
+	// Cache details are carried inside the langsmith.usage_metadata JSON
+	// (input_token_details), not as flat langsmith.metadata.* attributes.
+	details, ok := parseUsageMetadata(t, span)["input_token_details"].(map[string]any)
+	if !ok {
+		t.Fatal("expected input_token_details in usage_metadata")
 	}
-	if v, ok := getAttr(span, "langsmith.metadata.usage_metadata.input_token_details.cache_read"); !ok || v.AsInt64() != 5 {
-		t.Errorf("cache_read: got %v", v)
+	if v, _ := details["cache_creation"].(float64); v != 10 {
+		t.Errorf("cache_creation: got %v, want 10", details["cache_creation"])
+	}
+	if v, _ := details["cache_read"].(float64); v != 5 {
+		t.Errorf("cache_read: got %v, want 5", details["cache_read"])
 	}
 }
 
@@ -573,5 +581,175 @@ func TestExtractResponseAttributes_FullRoundTrip(t *testing.T) {
 	}
 	if !strings.Contains(v.AsString(), "calculator") {
 		t.Errorf("completion should contain tool_use: %s", v.AsString())
+	}
+}
+
+// parseUsageMetadata reads and JSON-decodes the langsmith.usage_metadata attr.
+func parseUsageMetadata(t *testing.T, span sdktrace.ReadWriteSpan) map[string]any {
+	t.Helper()
+	v, ok := getAttr(span, "langsmith.usage_metadata")
+	if !ok {
+		t.Fatal("expected langsmith.usage_metadata attribute")
+	}
+	var um map[string]any
+	if err := json.Unmarshal([]byte(v.AsString()), &um); err != nil {
+		t.Fatalf("failed to decode usage_metadata: %v", err)
+	}
+	return um
+}
+
+func TestSetUsageAttributes_AllTokenTypes(t *testing.T) {
+	span, _ := startTestSpan(t)
+	parentSpan, _ := startTestSpan(t)
+
+	// Mirrors the full Anthropic Messages API usage object.
+	usage := map[string]interface{}{
+		"input_tokens":                float64(2095),
+		"output_tokens":               float64(503),
+		"cache_creation_input_tokens": float64(2051),
+		"cache_read_input_tokens":     float64(1800),
+		"cache_creation": map[string]any{
+			"ephemeral_5m_input_tokens": float64(1951),
+			"ephemeral_1h_input_tokens": float64(100),
+		},
+		"output_tokens_details": map[string]any{
+			"thinking_tokens": float64(64),
+		},
+		"server_tool_use": map[string]any{
+			"web_search_requests": float64(2),
+			"web_fetch_requests":  float64(1),
+		},
+		"service_tier": "standard",
+	}
+	setUsageAttributes(span, usage, parentSpan)
+
+	// usage_metadata is JSON round-tripped, so numbers decode as float64. A
+	// full comparison also asserts the cache_creation total is dropped in favor
+	// of the ephemeral breakdown and that non-token fields never leak in.
+	// Inclusive input: 2095 + 2051 + 1800 = 5946.
+	wantUM := map[string]any{
+		"input_tokens":  float64(5946),
+		"output_tokens": float64(503),
+		"total_tokens":  float64(6449),
+		"input_token_details": map[string]any{
+			"cache_read":                float64(1800),
+			"ephemeral_5m_input_tokens": float64(1951),
+			"ephemeral_1h_input_tokens": float64(100),
+		},
+		"output_token_details": map[string]any{
+			"reasoning": float64(64),
+		},
+	}
+	if um := parseUsageMetadata(t, span); !reflect.DeepEqual(um, wantUM) {
+		t.Errorf("usage_metadata mismatch:\n got: %#v\nwant: %#v", um, wantUM)
+	}
+
+	// Token totals are also emitted as flat gen_ai.usage.* attributes.
+	if v, ok := getAttr(span, "gen_ai.usage.total_tokens"); !ok || v.AsInt64() != 6449 {
+		t.Errorf("gen_ai.usage.total_tokens: got %v, ok=%v", v, ok)
+	}
+
+	// Non-token fields are recorded as separate span metadata attributes.
+	if v, ok := getAttr(span, "langsmith.metadata.server_tool_use.web_search_requests"); !ok || v.AsInt64() != 2 {
+		t.Errorf("web_search_requests: got %v, ok=%v", v, ok)
+	}
+	if v, ok := getAttr(span, "langsmith.metadata.server_tool_use.web_fetch_requests"); !ok || v.AsInt64() != 1 {
+		t.Errorf("web_fetch_requests: got %v, ok=%v", v, ok)
+	}
+	if v, ok := getAttr(span, "langsmith.metadata.service_tier"); !ok || v.AsString() != "standard" {
+		t.Errorf("service_tier: got %v, ok=%v", v, ok)
+	}
+}
+
+// TestBuildUsageMetadata exercises the pure usage -> usage_metadata mapping.
+// Comparing the whole returned map with DeepEqual also guards against stray
+// keys (e.g. a cache_creation total leaking in alongside the ephemeral split).
+func TestBuildUsageMetadata(t *testing.T) {
+	tests := []struct {
+		name       string
+		usage      map[string]interface{}
+		wantUM     map[string]any
+		wantInput  int64
+		wantOutput int64
+	}{
+		{
+			name:       "basic input/output only",
+			usage:      map[string]interface{}{"input_tokens": float64(10), "output_tokens": float64(5)},
+			wantUM:     map[string]any{"input_tokens": int64(10), "output_tokens": int64(5), "total_tokens": int64(15)},
+			wantInput:  10,
+			wantOutput: 5,
+		},
+		{
+			name: "cache total without TTL breakdown",
+			usage: map[string]interface{}{
+				"input_tokens": float64(100), "output_tokens": float64(50),
+				"cache_creation_input_tokens": float64(10), "cache_read_input_tokens": float64(5),
+			},
+			// Inclusive total: 100 + 10 + 5 = 115.
+			wantUM: map[string]any{
+				"input_tokens": int64(115), "output_tokens": int64(50), "total_tokens": int64(165),
+				"input_token_details": map[string]any{"cache_creation": int64(10), "cache_read": int64(5)},
+			},
+			wantInput:  115,
+			wantOutput: 50,
+		},
+		{
+			name: "ephemeral breakdown omits cache_creation total",
+			usage: map[string]interface{}{
+				"input_tokens": float64(2095), "output_tokens": float64(503),
+				"cache_creation_input_tokens": float64(2051), "cache_read_input_tokens": float64(1800),
+				"cache_creation": map[string]any{
+					"ephemeral_5m_input_tokens": float64(1951),
+					"ephemeral_1h_input_tokens": float64(100),
+				},
+			},
+			// Inclusive total: 2095 + 2051 + 1800 = 5946; cache_creation total
+			// omitted to avoid double-counting the ephemeral split.
+			wantUM: map[string]any{
+				"input_tokens": int64(5946), "output_tokens": int64(503), "total_tokens": int64(6449),
+				"input_token_details": map[string]any{
+					"cache_read":                int64(1800),
+					"ephemeral_5m_input_tokens": int64(1951),
+					"ephemeral_1h_input_tokens": int64(100),
+				},
+			},
+			wantInput:  5946,
+			wantOutput: 503,
+		},
+		{
+			name: "thinking maps to reasoning",
+			usage: map[string]interface{}{
+				"input_tokens": float64(10), "output_tokens": float64(64),
+				"output_tokens_details": map[string]any{"thinking_tokens": float64(40)},
+			},
+			wantUM: map[string]any{
+				"input_tokens": int64(10), "output_tokens": int64(64), "total_tokens": int64(74),
+				"output_token_details": map[string]any{"reasoning": int64(40)},
+			},
+			wantInput:  10,
+			wantOutput: 64,
+		},
+		{
+			name:       "empty usage",
+			usage:      map[string]interface{}{},
+			wantUM:     map[string]any{},
+			wantInput:  0,
+			wantOutput: 0,
+		},
+	}
+
+	for _, tt := range tests {
+		t.Run(tt.name, func(t *testing.T) {
+			um, totalInput, outputTokens := buildUsageMetadata(tt.usage)
+			if totalInput != tt.wantInput {
+				t.Errorf("totalInput: got %d, want %d", totalInput, tt.wantInput)
+			}
+			if outputTokens != tt.wantOutput {
+				t.Errorf("outputTokens: got %d, want %d", outputTokens, tt.wantOutput)
+			}
+			if !reflect.DeepEqual(um, tt.wantUM) {
+				t.Errorf("usage_metadata mismatch:\n got: %#v\nwant: %#v", um, tt.wantUM)
+			}
+		})
 	}
 }
