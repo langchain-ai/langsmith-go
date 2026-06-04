@@ -30,15 +30,14 @@ import (
 // automatically. You should not instantiate this service directly, and instead use
 // the [NewDatasetService] method instead.
 type DatasetService struct {
-	Options              []option.RequestOption
-	Versions             *DatasetVersionService
-	Runs                 *DatasetRunService
-	Group                *DatasetGroupService
-	Experiments          *DatasetExperimentService
-	Share                *DatasetShareService
-	Comparative          *DatasetComparativeService
-	Splits               *DatasetSplitService
-	PlaygroundExperiment *DatasetPlaygroundExperimentService
+	Options     []option.RequestOption
+	Versions    *DatasetVersionService
+	Runs        *DatasetRunService
+	Group       *DatasetGroupService
+	Experiments *DatasetExperimentService
+	Share       *DatasetShareService
+	Comparative *DatasetComparativeService
+	Splits      *DatasetSplitService
 }
 
 // NewDatasetService generates a new service that applies the given options to each
@@ -54,7 +53,6 @@ func NewDatasetService(opts ...option.RequestOption) (r *DatasetService) {
 	r.Share = NewDatasetShareService(opts...)
 	r.Comparative = NewDatasetComparativeService(opts...)
 	r.Splits = NewDatasetSplitService(opts...)
-	r.PlaygroundExperiment = NewDatasetPlaygroundExperimentService(opts...)
 	return
 }
 
