@@ -72,6 +72,11 @@ const (
 	// per-token price modifier kept in metadata rather than usage_metadata.
 	InferenceGeoKey = attribute.Key("langsmith.metadata.inference_geo")
 
+	// SpeedKey records the latency tier the request was served on (e.g.
+	// standard/fast). Like ServiceTierKey it is a price modifier rather than a
+	// token count, so it lives in metadata rather than usage_metadata.
+	SpeedKey = attribute.Key("langsmith.metadata.speed")
+
 	// ServerToolUseMetadataKeyPrefix is prefixed to server-side tool request
 	// counts (e.g. web_search_requests). These are billed on a separate
 	// dimension from tokens, so they are recorded in metadata.

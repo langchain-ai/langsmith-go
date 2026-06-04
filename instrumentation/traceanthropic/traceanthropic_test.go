@@ -619,7 +619,9 @@ func TestSetUsageAttributes_AllTokenTypes(t *testing.T) {
 			"web_search_requests": float64(2),
 			"web_fetch_requests":  float64(1),
 		},
-		"service_tier": "standard",
+		"service_tier":  "standard",
+		"inference_geo": "us",
+		"speed":         "fast",
 	}
 	setUsageAttributes(span, usage, parentSpan)
 
@@ -658,6 +660,12 @@ func TestSetUsageAttributes_AllTokenTypes(t *testing.T) {
 	}
 	if v, ok := getAttr(span, "langsmith.metadata.service_tier"); !ok || v.AsString() != "standard" {
 		t.Errorf("service_tier: got %v, ok=%v", v, ok)
+	}
+	if v, ok := getAttr(span, "langsmith.metadata.inference_geo"); !ok || v.AsString() != "us" {
+		t.Errorf("inference_geo: got %v, ok=%v", v, ok)
+	}
+	if v, ok := getAttr(span, "langsmith.metadata.speed"); !ok || v.AsString() != "fast" {
+		t.Errorf("speed: got %v, ok=%v", v, ok)
 	}
 }
 

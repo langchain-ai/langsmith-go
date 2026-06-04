@@ -541,7 +541,7 @@ func extractResponseAttributes(span trace.Span, body []byte, parentSpan trace.Sp
 //	}
 //
 // Only token-count fields map into usage_metadata; non-token fields
-// (server_tool_use, service_tier, inference_geo) are handled by the caller.
+// (server_tool_use, service_tier, inference_geo, speed) are handled by the caller.
 func buildUsageMetadata(usage map[string]interface{}) (usageMetadata map[string]any, totalInput, outputTokens int64) {
 	// getInt reads a token count, defaulting to 0 when the field is absent.
 	// Anthropic omits zero-valued usage fields, and both the streaming and
@@ -658,8 +658,8 @@ func setUsageAttributes(span trace.Span, usage map[string]interface{}, parentSpa
 	}
 
 	// These are request counts (server_tool_use) and price modifiers
-	// (service_tier, inference_geo), not token counts, so they go in metadata.
-	// Putting them in usage_metadata token details would corrupt cost math.
+	// (service_tier, inference_geo, speed), not token counts, so they go in
+	// metadata. Putting them in usage_metadata token details would corrupt cost math.
 	if stu, ok := usage["server_tool_use"].(map[string]interface{}); ok {
 		for k, raw := range stu {
 			if v, ok := raw.(float64); ok && v > 0 {
@@ -672,5 +672,9 @@ func setUsageAttributes(span trace.Span, usage map[string]interface{}, parentSpa
 	}
 	if geo, ok := usage["inference_geo"].(string); ok && geo != "" {
 		span.SetAttributes(genaiattr.InferenceGeoKey.String(geo))
+	}
+	// speed is the latency tier (standard/fast) on the beta usage object.
+	if speed, ok := usage["speed"].(string); ok && speed != "" {
+		span.SetAttributes(genaiattr.SpeedKey.String(speed))
 	}
 }
