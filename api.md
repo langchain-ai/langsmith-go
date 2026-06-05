@@ -220,21 +220,6 @@ Methods:
 
 ## PlaygroundExperiment
 
-Params Types:
-
-- <a href="https://pkg.go.dev/github.com/langchain-ai/langsmith-go">langsmith</a>.<a href="https://pkg.go.dev/github.com/langchain-ai/langsmith-go#RunnableConfigParam">RunnableConfigParam</a>
-- <a href="https://pkg.go.dev/github.com/langchain-ai/langsmith-go">langsmith</a>.<a href="https://pkg.go.dev/github.com/langchain-ai/langsmith-go#RunnerContextEnum">RunnerContextEnum</a>
-
-Response Types:
-
-- <a href="https://pkg.go.dev/github.com/langchain-ai/langsmith-go">langsmith</a>.<a href="https://pkg.go.dev/github.com/langchain-ai/langsmith-go#DatasetPlaygroundExperimentBatchResponse">DatasetPlaygroundExperimentBatchResponse</a>
-- <a href="https://pkg.go.dev/github.com/langchain-ai/langsmith-go">langsmith</a>.<a href="https://pkg.go.dev/github.com/langchain-ai/langsmith-go#DatasetPlaygroundExperimentStreamResponse">DatasetPlaygroundExperimentStreamResponse</a>
-
-Methods:
-
-- <code title="post /api/v1/datasets/playground_experiment/batch">client.Datasets.PlaygroundExperiment.<a href="https://pkg.go.dev/github.com/langchain-ai/langsmith-go#DatasetPlaygroundExperimentService.Batch">Batch</a>(ctx <a href="https://pkg.go.dev/context">context</a>.<a href="https://pkg.go.dev/context#Context">Context</a>, body <a href="https://pkg.go.dev/github.com/langchain-ai/langsmith-go">langsmith</a>.<a href="https://pkg.go.dev/github.com/langchain-ai/langsmith-go#DatasetPlaygroundExperimentBatchParams">DatasetPlaygroundExperimentBatchParams</a>) (\*<a href="https://pkg.go.dev/github.com/langchain-ai/langsmith-go">langsmith</a>.<a href="https://pkg.go.dev/github.com/langchain-ai/langsmith-go#DatasetPlaygroundExperimentBatchResponse">DatasetPlaygroundExperimentBatchResponse</a>, <a href="https://pkg.go.dev/builtin#error">error</a>)</code>
-- <code title="post /api/v1/datasets/playground_experiment/stream">client.Datasets.PlaygroundExperiment.<a href="https://pkg.go.dev/github.com/langchain-ai/langsmith-go#DatasetPlaygroundExperimentService.Stream">Stream</a>(ctx <a href="https://pkg.go.dev/context">context</a>.<a href="https://pkg.go.dev/context#Context">Context</a>, body <a href="https://pkg.go.dev/github.com/langchain-ai/langsmith-go">langsmith</a>.<a href="https://pkg.go.dev/github.com/langchain-ai/langsmith-go#DatasetPlaygroundExperimentStreamParams">DatasetPlaygroundExperimentStreamParams</a>) (\*<a href="https://pkg.go.dev/github.com/langchain-ai/langsmith-go">langsmith</a>.<a href="https://pkg.go.dev/github.com/langchain-ai/langsmith-go#DatasetPlaygroundExperimentStreamResponse">DatasetPlaygroundExperimentStreamResponse</a>, <a href="https://pkg.go.dev/builtin#error">error</a>)</code>
-
 # Runs
 
 Params Types:

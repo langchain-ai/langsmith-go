@@ -6,6 +6,7 @@ import (
 	"encoding/json"
 	"io"
 	"net/http"
+	"reflect"
 	"strings"
 	"testing"
 
@@ -1455,5 +1456,161 @@ func TestResponsesAPI_RoundTrip(t *testing.T) {
 		if !strings.Contains(out, c.want) {
 			t.Errorf("%s: %q not found in output", c.desc, c.want)
 		}
+	}
+}
+
+// TestBuildOpenAIUsage exercises the pure usage -> usageInfo/usage_metadata
+// mapping for both API shapes. Comparing the whole usageInfo with DeepEqual
+// also guards against stray keys or fields leaking in. buildOpenAIUsage stores
+// the metadata values as int, so the expected maps use plain int literals.
+func TestBuildOpenAIUsage(t *testing.T) {
+	tests := []struct {
+		name  string
+		usage map[string]any
+		want  usageInfo
+	}{
+		{
+			name: "chat completions with cache/reasoning/audio",
+			usage: map[string]any{
+				"prompt_tokens":     float64(1000),
+				"completion_tokens": float64(200),
+				"total_tokens":      float64(1200),
+				"prompt_tokens_details": map[string]any{
+					"cached_tokens": float64(768),
+					"audio_tokens":  float64(10),
+				},
+				"completion_tokens_details": map[string]any{
+					"reasoning_tokens": float64(64),
+					"audio_tokens":     float64(5),
+					// Intentionally ignored (priced via the output remainder).
+					"accepted_prediction_tokens": float64(7),
+					"rejected_prediction_tokens": float64(3),
+				},
+			},
+			want: usageInfo{
+				InputTokens: 1000, OutputTokens: 200, TotalTokens: 1200, HasUsage: true,
+				UsageMetadata: map[string]any{
+					"input_tokens":         1000,
+					"output_tokens":        200,
+					"total_tokens":         1200,
+					"input_token_details":  map[string]any{"cache_read": 768, "audio": 10},
+					"output_token_details": map[string]any{"reasoning": 64, "audio": 5},
+				},
+			},
+		},
+		{
+			name: "responses API shape, total derived",
+			usage: map[string]any{
+				"input_tokens":          float64(500),
+				"output_tokens":         float64(50),
+				"input_tokens_details":  map[string]any{"cached_tokens": float64(128)},
+				"output_tokens_details": map[string]any{"reasoning_tokens": float64(22)},
+			},
+			want: usageInfo{
+				InputTokens: 500, OutputTokens: 50, TotalTokens: 550, HasUsage: true,
+				UsageMetadata: map[string]any{
+					"input_tokens":         500,
+					"output_tokens":        50,
+					"total_tokens":         550,
+					"input_token_details":  map[string]any{"cache_read": 128},
+					"output_token_details": map[string]any{"reasoning": 22},
+				},
+			},
+		},
+		{
+			name: "plain usage, no details",
+			usage: map[string]any{
+				"prompt_tokens":     float64(10),
+				"completion_tokens": float64(5),
+			},
+			want: usageInfo{
+				InputTokens: 10, OutputTokens: 5, TotalTokens: 15, HasUsage: true,
+				UsageMetadata: map[string]any{
+					"input_tokens":  10,
+					"output_tokens": 5,
+					"total_tokens":  15,
+				},
+			},
+		},
+		{
+			name:  "zero tokens still flags usage",
+			usage: map[string]any{"prompt_tokens": float64(0), "completion_tokens": float64(0)},
+			want: usageInfo{
+				HasUsage:      true,
+				UsageMetadata: map[string]any{},
+			},
+		},
+	}
+
+	for _, tt := range tests {
+		t.Run(tt.name, func(t *testing.T) {
+			got := buildOpenAIUsage(tt.usage)
+			if !reflect.DeepEqual(got, tt.want) {
+				t.Errorf("usage mismatch:\n got: %#v\nwant: %#v", got, tt.want)
+			}
+		})
+	}
+}
+
+// TestServiceTier_Propagated checks the response-level service_tier is captured
+// for both Chat Completions and Responses shapes, and stays empty when absent.
+func TestServiceTier_Propagated(t *testing.T) {
+	t.Run("chat completions", func(t *testing.T) {
+		body := `{
+			"service_tier": "flex",
+			"choices": [{"message": {"role": "assistant", "content": "ok"}}],
+			"usage": {"prompt_tokens": 10, "completion_tokens": 5}
+		}`
+		_, usage := extractCompletionFromResponse([]byte(body))
+		if usage.ServiceTier != "flex" {
+			t.Errorf("ServiceTier = %q, want flex", usage.ServiceTier)
+		}
+	})
+	t.Run("responses", func(t *testing.T) {
+		usage := extractResponsesUsage(map[string]any{
+			"service_tier": "priority",
+			"usage":        map[string]any{"input_tokens": float64(10), "output_tokens": float64(5)},
+		})
+		if usage.ServiceTier != "priority" {
+			t.Errorf("ServiceTier = %q, want priority", usage.ServiceTier)
+		}
+	})
+	t.Run("absent stays empty", func(t *testing.T) {
+		body := `{
+			"choices": [{"message": {"role": "assistant", "content": "ok"}}],
+			"usage": {"prompt_tokens": 10, "completion_tokens": 5}
+		}`
+		_, usage := extractCompletionFromResponse([]byte(body))
+		if usage.ServiceTier != "" {
+			t.Errorf("ServiceTier = %q, want empty", usage.ServiceTier)
+		}
+	})
+}
+
+// TestExtractStreamingCompletion_UsageMetadataAndServiceTier verifies the
+// streaming path threads the full usage_metadata breakdown and the top-level
+// service_tier through buildOpenAIUsage (both ride the final usage chunk).
+func TestExtractStreamingCompletion_UsageMetadataAndServiceTier(t *testing.T) {
+	sse := "data: {\"service_tier\":\"flex\",\"choices\":[{\"delta\":{\"content\":\"hi\"}}]}\n" +
+		"data: {\"service_tier\":\"flex\",\"usage\":{\"prompt_tokens\":1000,\"completion_tokens\":200,\"total_tokens\":1200,\"prompt_tokens_details\":{\"cached_tokens\":768},\"completion_tokens_details\":{\"reasoning_tokens\":64}}}\n" +
+		"data: [DONE]\n"
+	_, got := extractStreamingCompletion([]byte(sse))
+
+	want := usageInfo{
+		InputTokens:  1000,
+		OutputTokens: 200,
+		TotalTokens:  1200,
+		HasUsage:     true,
+		ServiceTier:  "flex",
+		UsageMetadata: map[string]any{
+			"input_tokens":         1000,
+			"output_tokens":        200,
+			"total_tokens":         1200,
+			"input_token_details":  map[string]any{"cache_read": 768},
+			"output_token_details": map[string]any{"reasoning": 64},
+		},
+	}
+	if !reflect.DeepEqual(got, want) {
+		t.Errorf("usage mismatch:\n got: %#v\nwant: %#v", got, want)
 	}
 }
