@@ -1107,6 +1107,7 @@ type SessionNewParams struct {
 	NumRepetitions     param.Field[int64]                     `json:"num_repetitions"`
 	ReferenceDatasetID param.Field[string]                    `json:"reference_dataset_id" format:"uuid"`
 	StartTime          param.Field[time.Time]                 `json:"start_time" format:"date-time"`
+	TagValueIDs        param.Field[[]string]                  `json:"tag_value_ids" format:"uuid"`
 	TraceTier          param.Field[SessionNewParamsTraceTier] `json:"trace_tier"`
 }
 

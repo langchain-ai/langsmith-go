@@ -44,6 +44,7 @@ func TestSessionNewWithOptionalParams(t *testing.T) {
 		NumRepetitions:     langsmith.F(int64(0)),
 		ReferenceDatasetID: langsmith.F("182bd5e5-6e1a-4fe4-a799-aa6d9a6ab26e"),
 		StartTime:          langsmith.F(time.Now()),
+		TagValueIDs:        langsmith.F([]string{"182bd5e5-6e1a-4fe4-a799-aa6d9a6ab26e"}),
 		TraceTier:          langsmith.F(langsmith.SessionNewParamsTraceTierLonglived),
 	})
 	if err != nil {
