@@ -30,6 +30,7 @@ import (
 	"strings"
 
 	"go.opentelemetry.io/otel"
+	"go.opentelemetry.io/otel/attribute"
 	"go.opentelemetry.io/otel/codes"
 	"go.opentelemetry.io/otel/propagation"
 	semconv "go.opentelemetry.io/otel/semconv/v1.40.0"
@@ -625,31 +626,186 @@ func buildCompletion(resp map[string]any) (completion, finishReason string) {
 	return string(out), finishReason
 }
 
-// setUsageAttributes sets usage-related attributes on the span.
-// Gemini uses promptTokenCount/candidatesTokenCount instead of input_tokens/output_tokens.
-func setUsageAttributes(span trace.Span, usage map[string]any, parentSpan trace.Span) {
-	var inputTokens, outputTokens int64
-
-	if v, ok := usage["promptTokenCount"].(float64); ok {
-		inputTokens = int64(v)
+// modalityTokens sums tokenCount across a Gemini *TokensDetails array
+// (e.g. promptTokensDetails) for entries matching the given modality
+// (e.g. "AUDIO", "IMAGE", "TEXT").
+func modalityTokens(usage map[string]any, field, modality string) int64 {
+	arr, ok := usage[field].([]any)
+	if !ok {
+		return 0
 	}
-	if v, ok := usage["candidatesTokenCount"].(float64); ok {
-		outputTokens = int64(v)
-	}
-
-	if inputTokens > 0 {
-		span.SetAttributes(semconv.GenAIUsageInputTokens(int(inputTokens)))
-		if parentSpan.SpanContext().IsValid() && parentSpan.IsRecording() {
-			parentSpan.SetAttributes(semconv.GenAIUsageInputTokens(int(inputTokens)))
+	var sum int64
+	for _, e := range arr {
+		m, ok := e.(map[string]any)
+		if !ok {
+			continue
 		}
+		if mod, _ := m["modality"].(string); mod == modality {
+			if tc, ok := m["tokenCount"].(float64); ok {
+				sum += int64(tc)
+			}
+		}
+	}
+	return sum
+}
+
+// buildUsageMetadata maps a Gemini usageMetadata object onto the LangSmith
+// usage_metadata schema. It is pure (no span side-effects) and returns the
+// assembled usage_metadata map along with the input, output, and total token
+// totals (used for flat gen_ai.usage.* aggregation).
+//
+// The full Gemini usageMetadata schema (see the official GenerateContentResponse
+// reference at https://ai.google.dev/api/generate-content#UsageMetadata) is:
+//
+//	"usageMetadata": {
+//	  "promptTokenCount": 2095,            // [used] inclusive input total (cache is a subset)
+//	  "cachedContentTokenCount": 1800,     // [used] prompt tokens served from cache
+//	  "candidatesTokenCount": 503,         // [used] visible output, EXCLUDING thinking
+//	  "thoughtsTokenCount": 64,            // [used] thinking/reasoning tokens
+//	  "toolUsePromptTokenCount": 0,        // [ignored] tokens for tool-use prompts
+//	  "totalTokenCount": 2662,             // [used] grand total (incl. tool-use)
+//	  // The *Details arrays break each count down by modality (TEXT, IMAGE,
+//	  // AUDIO, VIDEO, DOCUMENT). We pull AUDIO out of promptTokensDetails (it
+//	  // has a separate input rate); the rest are not mapped — generated-image
+//	  // output ("image") is priced per-image rather than per-token and has no
+//	  // client convention yet, and no other modality is separately priced.
+//	  "promptTokensDetails":      [{ "modality": "TEXT",  "tokenCount": 2095 }],
+//	  "cacheTokensDetails":       [{ "modality": "TEXT",  "tokenCount": 1800 }],
+//	  "candidatesTokensDetails":  [{ "modality": "TEXT",  "tokenCount": 503  }],
+//	  "toolUsePromptTokensDetails": []
+//	}
+//
+// candidatesTokenCount excludes thinking, so thoughts are folded into
+// output_tokens and cachedContentTokenCount becomes a cache_read subset of
+// input_tokens, mirroring langchain-google-genai (_response_to_result).
+//
+// Long-context tier: above 200k prompt tokens Google bills the whole request
+// (input and output) at the higher rate, not just the overage
+// (https://ai.google.dev/gemini-api/docs/pricing). We route everything into the
+// over_200k / cache_read_over_200k buckets so every token is charged there.
+func buildUsageMetadata(usage map[string]any) (usageMetadata map[string]any, totalInput, outputTokens, totalTokens int64) {
+	getInt := func(key string) int64 {
+		if v, ok := usage[key].(float64); ok {
+			return int64(v)
+		}
+		return 0
+	}
+
+	totalInput = getInt("promptTokenCount")
+	thoughts := getInt("thoughtsTokenCount")
+	outputTokens = getInt("candidatesTokenCount") + thoughts
+	cacheRead := getInt("cachedContentTokenCount")
+
+	// Prefer the API's totalTokenCount (it also accounts for tool-use prompt
+	// tokens); fall back to input+output when absent.
+	totalTokens = getInt("totalTokenCount")
+	if totalTokens == 0 {
+		totalTokens = totalInput + outputTokens
+	}
+
+	// The long-context tier is a cliff keyed on the input prompt size; once
+	// crossed it applies to output too. Threshold and high-tier rates come from
+	// Google's rate card: https://ai.google.dev/gemini-api/docs/pricing
+	// (Vertex AI: https://cloud.google.com/vertex-ai/generative-ai/pricing).
+	const longContextThreshold = 200_000
+	tier200k := totalInput > longContextThreshold
+
+	inputTokenDetails := map[string]any{}
+	switch {
+	case tier200k:
+		// Whole prompt at the high tier: cached portion at cache_read_over_200k,
+		// the rest at over_200k. Together they sum to input_tokens (no leftover
+		// charged at the base rate).
+		if cacheRead > 0 {
+			inputTokenDetails["cache_read_over_200k"] = cacheRead
+		}
+		if nonCached := totalInput - cacheRead; nonCached > 0 {
+			inputTokenDetails["over_200k"] = nonCached
+		}
+	default:
+		// cache_read and audio are independent subsets of input_tokens; the rest
+		// (plain text) is charged at the base rate. (Audio isn't broken out in
+		// the over_200k path: there's no audio_over_200k rate.)
+		if cacheRead > 0 {
+			inputTokenDetails["cache_read"] = cacheRead
+		}
+		// Audio input bills at a separate (higher) rate than text on some models.
+		if audioInput := modalityTokens(usage, "promptTokensDetails", "AUDIO"); audioInput > 0 {
+			inputTokenDetails["audio"] = audioInput
+		}
+	}
+
+	outputTokenDetails := map[string]any{}
+	switch {
+	case tier200k:
+		// Above the threshold all output (thinking included) bills at the
+		// output over_200k rate. Gemini has no separate reasoning price, so we
+		// put the whole output_tokens into over_200k rather than splitting out
+		// reasoning, which would leave the buckets not summing to output_tokens.
+		if outputTokens > 0 {
+			outputTokenDetails["over_200k"] = outputTokens
+		}
+	case thoughts > 0:
+		outputTokenDetails["reasoning"] = thoughts
+	}
+
+	usageMetadata = map[string]any{}
+	if totalInput > 0 {
+		usageMetadata["input_tokens"] = totalInput
 	}
 	if outputTokens > 0 {
-		span.SetAttributes(semconv.GenAIUsageOutputTokens(int(outputTokens)))
-		if parentSpan.SpanContext().IsValid() && parentSpan.IsRecording() {
-			parentSpan.SetAttributes(semconv.GenAIUsageOutputTokens(int(outputTokens)))
+		usageMetadata["output_tokens"] = outputTokens
+	}
+	if totalInput > 0 || outputTokens > 0 {
+		usageMetadata["total_tokens"] = totalTokens
+	}
+	if len(inputTokenDetails) > 0 {
+		usageMetadata["input_token_details"] = inputTokenDetails
+	}
+	if len(outputTokenDetails) > 0 {
+		usageMetadata["output_token_details"] = outputTokenDetails
+	}
+	return usageMetadata, totalInput, outputTokens, totalTokens
+}
+
+// setUsageAttributes records token usage on the span: the cost-driving
+// langsmith.usage_metadata JSON, the flat gen_ai.usage.* token counts, and the
+// legacy underscore-format cache/reasoning attributes. See the inline notes for
+// which consumer each group actually serves.
+func setUsageAttributes(span trace.Span, usage map[string]any, parentSpan trace.Span) {
+	usageMetadata, totalInput, outputTokens, totalTokens := buildUsageMetadata(usage)
+
+	if len(usageMetadata) > 0 {
+		if out, err := json.Marshal(usageMetadata); err == nil {
+			span.SetAttributes(genaiattr.UsageMetadataKey.String(string(out)))
 		}
 	}
 
+	// Flat gen_ai.usage.* attributes. On this span they are redundant for
+	// LangSmith (the converter prefers the usage_metadata JSON above and ignores
+	// these), but are kept for OpenTelemetry-standard consumers. Propagating
+	// input/output to the parent IS load-bearing: the root span has no
+	// usage_metadata of its own, so the converter's fallback path turns these
+	// propagated attrs into the root run's token totals, which Thread-list stats
+	// aggregate.
+	setSelfAndParent := func(kv attribute.KeyValue) {
+		span.SetAttributes(kv)
+		if parentSpan.SpanContext().IsValid() && parentSpan.IsRecording() {
+			parentSpan.SetAttributes(kv)
+		}
+	}
+	if totalInput > 0 {
+		setSelfAndParent(genaiattr.UsageInputTokensKey.Int64(totalInput))
+	}
+	if outputTokens > 0 {
+		setSelfAndParent(genaiattr.UsageOutputTokensKey.Int64(outputTokens))
+	}
+	if totalTokens > 0 {
+		span.SetAttributes(genaiattr.UsageTotalTokensKey.Int64(totalTokens))
+	}
+
+	// Legacy flat detail attributes (subsets of the totals above) for the
+	// converter's underscore-format path.
 	if v, ok := usage["cachedContentTokenCount"].(float64); ok && v > 0 {
 		span.SetAttributes(
 			genaiattr.CacheReadInputTokensKey.Int64(int64(v)),
