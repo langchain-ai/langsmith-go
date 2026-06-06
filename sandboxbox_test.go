@@ -52,7 +52,24 @@ func TestSandboxBoxNewWithOptionalParams(t *testing.T) {
 		FsCapacityBytes: langsmith.F(int64(0)),
 		IdleTtlSeconds:  langsmith.F(int64(0)),
 		MemBytes:        langsmith.F(int64(0)),
-		Name:            langsmith.F("name"),
+		Mounts: langsmith.F([]langsmith.SandboxBoxNewParamsMount{{
+			ID:        langsmith.F("id"),
+			MountPath: langsmith.F("mount_path"),
+			S3: langsmith.F(langsmith.SandboxBoxNewParamsMountsS3{
+				Bucket:      langsmith.F("bucket"),
+				EndpointURL: langsmith.F("endpoint_url"),
+				Region:      langsmith.F("region"),
+				PathStyle:   langsmith.F(true),
+				Prefix:      langsmith.F("prefix"),
+			}),
+			Type: langsmith.F(langsmith.SandboxBoxNewParamsMountsTypeS3),
+			Cache: langsmith.F(langsmith.SandboxBoxNewParamsMountsCache{
+				MaxSizeBytes:     langsmith.F(int64(0)),
+				WritebackSeconds: langsmith.F(int64(0)),
+			}),
+			ReadOnly: langsmith.F(true),
+		}}),
+		Name: langsmith.F("name"),
 		ProxyConfig: langsmith.F(langsmith.SandboxBoxNewParamsProxyConfig{
 			AccessControl: langsmith.F(langsmith.SandboxBoxNewParamsProxyConfigAccessControl{
 				AllowList: langsmith.F([]string{"string"}),
