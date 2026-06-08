@@ -9,7 +9,6 @@ permissions:
 
 jobs:
   promote:
-    if: github.repository == 'langchain-ai/langsmith-go-staging'
     runs-on: self-hosted-ubuntu-small-amd64
     env:
       PRODUCTION_REPO: langchain-ai/langsmith-go
@@ -47,19 +46,33 @@ jobs:
       - name: Check if production is already in sync
         id: diff
         run: |
-          STAGING_SHA=$(git rev-parse origin/main)
-          PRODUCTION_SHA=$(git rev-parse production/main)
-          if [ "$STAGING_SHA" = "$PRODUCTION_SHA" ]; then
-            echo "Production is already at $STAGING_SHA. Nothing to release."
+          # Build release tree: staging content with production's .github/ preserved
+          PROD_GITHUB=$(git ls-tree production/main | grep $'\t\.github$')
+          STAGING_NO_GITHUB=$(git ls-tree origin/main | grep -v $'\t\.github$')
+          if [ -n "$PROD_GITHUB" ]; then
+            RELEASE_TREE=$(printf '%s\n%s' "$STAGING_NO_GITHUB" "$PROD_GITHUB" | git mktree)
+          else
+            RELEASE_TREE=$(printf '%s' "$STAGING_NO_GITHUB" | git mktree)
+          fi
+          PRODUCTION_TREE=$(git rev-parse production/main^{tree})
+          if [ "$RELEASE_TREE" = "$PRODUCTION_TREE" ]; then
+            echo "Production is already in sync. Nothing to release."
             echo "synced=true" >> "$GITHUB_OUTPUT"
           else
             echo "synced=false" >> "$GITHUB_OUTPUT"
+            echo "release_tree=$RELEASE_TREE" >> "$GITHUB_OUTPUT"
           fi
 
       - name: Push staging main to the release branch on production
         if: steps.diff.outputs.synced == 'false'
         run: |
-          git push production origin/main:refs/heads/stainless/release --force
+          git config --global user.name "stlc-bot"
+          git config --global user.email "stlc-bot@users.noreply.github.com"
+          # Synthesize a commit from the release tree (staging content + production's .github/)
+          NEW_COMMIT=$(git commit-tree "${{ steps.diff.outputs.release_tree }}" \
+            -p "$(git rev-parse origin/main)" \
+            -m "chore: release")
+          git push production "$NEW_COMMIT":refs/heads/stainless/release --force
 
       - name: Open or update the release PR on production
         if: steps.diff.outputs.synced == 'false'
