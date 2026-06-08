@@ -267,8 +267,10 @@ func shouldTrace(req *http.Request) bool {
 	return isAnthropicEndpoint(req.URL.Path)
 }
 
+// isAnthropicEndpoint matches direct and Vertex Anthropic calls.
 func isAnthropicEndpoint(path string) bool {
-	return strings.Contains(path, "/v1/messages")
+	return strings.Contains(path, "/v1/messages") ||
+		strings.Contains(path, "/publishers/anthropic/")
 }
 
 // getSpanName returns an appropriate span name based on the API endpoint.
