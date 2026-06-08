@@ -280,6 +280,7 @@ type RepoNewParams struct {
 	RepoType       param.Field[RepoNewParamsRepoType] `json:"repo_type"`
 	RestrictedMode param.Field[bool]                  `json:"restricted_mode"`
 	Source         param.Field[RepoNewParamsSource]   `json:"source"`
+	TagValueIDs    param.Field[[]string]              `json:"tag_value_ids" format:"uuid"`
 	Tags           param.Field[[]string]              `json:"tags"`
 }
 
