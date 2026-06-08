@@ -35,6 +35,7 @@ func TestRepoNewWithOptionalParams(t *testing.T) {
 		RepoType:       langsmith.F(langsmith.RepoNewParamsRepoTypePrompt),
 		RestrictedMode: langsmith.F(true),
 		Source:         langsmith.F(langsmith.RepoNewParamsSourceInternal),
+		TagValueIDs:    langsmith.F([]string{"182bd5e5-6e1a-4fe4-a799-aa6d9a6ab26e"}),
 		Tags:           langsmith.F([]string{"string"}),
 	})
 	if err != nil {
