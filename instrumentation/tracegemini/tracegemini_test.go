@@ -6,6 +6,7 @@ import (
 	"encoding/json"
 	"io"
 	"net/http"
+	"reflect"
 	"strings"
 	"testing"
 
@@ -785,20 +786,211 @@ func TestSetUsageAttributes(t *testing.T) {
 		"candidatesTokenCount":    float64(50),
 		"cachedContentTokenCount": float64(10),
 		"thoughtsTokenCount":      float64(5),
+		"totalTokenCount":         float64(155),
 	}
 	setUsageAttributes(span, usage, parentSpan)
 
 	if v, ok := getAttr(span, "gen_ai.usage.input_tokens"); !ok || v.AsInt64() != 100 {
 		t.Errorf("input_tokens: %v", v)
 	}
-	if v, ok := getAttr(span, "gen_ai.usage.output_tokens"); !ok || v.AsInt64() != 50 {
-		t.Errorf("output_tokens: %v", v)
+	// output_tokens folds in thinking tokens (candidates 50 + thoughts 5).
+	if v, ok := getAttr(span, "gen_ai.usage.output_tokens"); !ok || v.AsInt64() != 55 {
+		t.Errorf("output_tokens: %v, want 55", v)
+	}
+	if v, ok := getAttr(span, "gen_ai.usage.total_tokens"); !ok || v.AsInt64() != 155 {
+		t.Errorf("total_tokens: %v, want 155", v)
 	}
 	if v, ok := getAttr(span, "gen_ai.usage.cache_read_input_tokens"); !ok || v.AsInt64() != 10 {
 		t.Errorf("cache_read: %v", v)
 	}
 	if v, ok := getAttr(span, "gen_ai.usage.details.reasoning_tokens"); !ok || v.AsInt64() != 5 {
 		t.Errorf("reasoning_tokens: %v", v)
+	}
+	// The cost-driving usage_metadata JSON should carry the full breakdown.
+	v, ok := getAttr(span, "langsmith.usage_metadata")
+	if !ok {
+		t.Fatal("expected langsmith.usage_metadata attribute")
+	}
+	var um map[string]any
+	if err := json.Unmarshal([]byte(v.AsString()), &um); err != nil {
+		t.Fatalf("usage_metadata is not valid JSON: %v", err)
+	}
+	want := map[string]any{
+		"input_tokens":         float64(100),
+		"output_tokens":        float64(55),
+		"total_tokens":         float64(155),
+		"input_token_details":  map[string]any{"cache_read": float64(10)},
+		"output_token_details": map[string]any{"reasoning": float64(5)},
+	}
+	if !reflect.DeepEqual(um, want) {
+		t.Errorf("usage_metadata mismatch:\n got: %#v\nwant: %#v", um, want)
+	}
+}
+
+// TestBuildUsageMetadata exercises the pure usageMetadata -> usage_metadata
+// mapping. Comparing the whole map with DeepEqual also guards against stray
+// keys leaking in.
+func TestBuildUsageMetadata(t *testing.T) {
+	tests := []struct {
+		name       string
+		usage      map[string]any
+		wantUM     map[string]any
+		wantInput  int64
+		wantOutput int64
+		wantTotal  int64
+	}{
+		{
+			name: "cache + thinking",
+			usage: map[string]any{
+				"promptTokenCount":        float64(2095),
+				"candidatesTokenCount":    float64(503),
+				"thoughtsTokenCount":      float64(64),
+				"cachedContentTokenCount": float64(1800),
+				"totalTokenCount":         float64(2662),
+			},
+			wantUM: map[string]any{
+				"input_tokens":         int64(2095),
+				"output_tokens":        int64(567),
+				"total_tokens":         int64(2662),
+				"input_token_details":  map[string]any{"cache_read": int64(1800)},
+				"output_token_details": map[string]any{"reasoning": int64(64)},
+			},
+			wantInput: 2095, wantOutput: 567, wantTotal: 2662,
+		},
+		{
+			name: "plain, total derived",
+			usage: map[string]any{
+				"promptTokenCount":     float64(10),
+				"candidatesTokenCount": float64(5),
+			},
+			wantUM: map[string]any{
+				"input_tokens":  int64(10),
+				"output_tokens": int64(5),
+				"total_tokens":  int64(15),
+			},
+			wantInput: 10, wantOutput: 5, wantTotal: 15,
+		},
+		{
+			// Audio input is a subset of promptTokenCount, surfaced from
+			// promptTokensDetails so it can be priced at the audio rate.
+			name: "audio input modality",
+			usage: map[string]any{
+				"promptTokenCount":     float64(1000),
+				"candidatesTokenCount": float64(20),
+				"totalTokenCount":      float64(1020),
+				"promptTokensDetails": []any{
+					map[string]any{"modality": "TEXT", "tokenCount": float64(200)},
+					map[string]any{"modality": "AUDIO", "tokenCount": float64(800)},
+				},
+			},
+			wantUM: map[string]any{
+				"input_tokens":        int64(1000),
+				"output_tokens":       int64(20),
+				"total_tokens":        int64(1020),
+				"input_token_details": map[string]any{"audio": int64(800)},
+			},
+			wantInput: 1000, wantOutput: 20, wantTotal: 1020,
+		},
+		{
+			// Audio + cache both subsets of input; over_200k path is not active.
+			name: "audio + cache",
+			usage: map[string]any{
+				"promptTokenCount":        float64(5000),
+				"candidatesTokenCount":    float64(30),
+				"cachedContentTokenCount": float64(1000),
+				"totalTokenCount":         float64(5030),
+				"promptTokensDetails": []any{
+					map[string]any{"modality": "AUDIO", "tokenCount": float64(2000)},
+				},
+			},
+			wantUM: map[string]any{
+				"input_tokens":        int64(5000),
+				"output_tokens":       int64(30),
+				"total_tokens":        int64(5030),
+				"input_token_details": map[string]any{"cache_read": int64(1000), "audio": int64(2000)},
+			},
+			wantInput: 5000, wantOutput: 30, wantTotal: 5030,
+		},
+		{
+			name:       "empty usage",
+			usage:      map[string]any{},
+			wantUM:     map[string]any{},
+			wantInput:  0,
+			wantOutput: 0,
+			wantTotal:  0,
+		},
+		{
+			// >200k prompt: whole request bills at the high tier. Cached input
+			// -> cache_read_over_200k, rest -> over_200k (summing to input);
+			// all output -> over_200k.
+			name: "over 200k with cache and thinking",
+			usage: map[string]any{
+				"promptTokenCount":        float64(300000),
+				"candidatesTokenCount":    float64(100000),
+				"thoughtsTokenCount":      float64(5000),
+				"cachedContentTokenCount": float64(50000),
+				"totalTokenCount":         float64(405000),
+			},
+			wantUM: map[string]any{
+				"input_tokens":         int64(300000),
+				"output_tokens":        int64(105000),
+				"total_tokens":         int64(405000),
+				"input_token_details":  map[string]any{"cache_read_over_200k": int64(50000), "over_200k": int64(250000)},
+				"output_token_details": map[string]any{"over_200k": int64(105000)},
+			},
+			wantInput: 300000, wantOutput: 105000, wantTotal: 405000,
+		},
+		{
+			name: "over 200k no cache",
+			usage: map[string]any{
+				"promptTokenCount":     float64(250000),
+				"candidatesTokenCount": float64(10000),
+				"totalTokenCount":      float64(260000),
+			},
+			wantUM: map[string]any{
+				"input_tokens":         int64(250000),
+				"output_tokens":        int64(10000),
+				"total_tokens":         int64(260000),
+				"input_token_details":  map[string]any{"over_200k": int64(250000)},
+				"output_token_details": map[string]any{"over_200k": int64(10000)},
+			},
+			wantInput: 250000, wantOutput: 10000, wantTotal: 260000,
+		},
+		{
+			// Above the threshold, audio is NOT broken out (no audio_over_200k
+			// rate): the whole prompt still partitions into over_200k /
+			// cache_read_over_200k, with no "audio" key.
+			name: "over 200k with audio details ignored",
+			usage: map[string]any{
+				"promptTokenCount":        float64(300000),
+				"candidatesTokenCount":    float64(1000),
+				"cachedContentTokenCount": float64(50000),
+				"totalTokenCount":         float64(301000),
+				"promptTokensDetails": []any{
+					map[string]any{"modality": "AUDIO", "tokenCount": float64(100000)},
+				},
+			},
+			wantUM: map[string]any{
+				"input_tokens":         int64(300000),
+				"output_tokens":        int64(1000),
+				"total_tokens":         int64(301000),
+				"input_token_details":  map[string]any{"cache_read_over_200k": int64(50000), "over_200k": int64(250000)},
+				"output_token_details": map[string]any{"over_200k": int64(1000)},
+			},
+			wantInput: 300000, wantOutput: 1000, wantTotal: 301000,
+		},
+	}
+	for _, tt := range tests {
+		t.Run(tt.name, func(t *testing.T) {
+			um, in, out, total := buildUsageMetadata(tt.usage)
+			if !reflect.DeepEqual(um, tt.wantUM) {
+				t.Errorf("usage_metadata mismatch:\n got: %#v\nwant: %#v", um, tt.wantUM)
+			}
+			if in != tt.wantInput || out != tt.wantOutput || total != tt.wantTotal {
+				t.Errorf("totals = (%d, %d, %d), want (%d, %d, %d)",
+					in, out, total, tt.wantInput, tt.wantOutput, tt.wantTotal)
+			}
+		})
 	}
 }
 

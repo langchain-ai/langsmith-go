@@ -1,5 +1,16 @@
 # Changelog
 
+## 0.14.2 (2026-06-09)
+
+Full Changelog: [v0.14.1...v0.14.2](https://github.com/langchain-ai/langsmith-go/compare/v0.14.1...v0.14.2)
+
+### Features
+
+* **api:** api update ([7b3f152](https://github.com/langchain-ai/langsmith-go/commit/7b3f1526abeb72b6234bc83490e4b0c4e2e19aa7))
+* **api:** api update ([9272f4a](https://github.com/langchain-ai/langsmith-go/commit/9272f4a081802422af18303c4ac399ea8e6f3404))
+* **api:** api update ([80b32c4](https://github.com/langchain-ai/langsmith-go/commit/80b32c4f0b66e08a0f1896e942a1ec193f620e87))
+* **api:** api update ([a20f9ad](https://github.com/langchain-ai/langsmith-go/commit/a20f9ada80cc6d1a39daee97440033e90d583172))
+
 ## 0.14.1 (2026-06-04)
 
 Full Changelog: [v0.14.0...v0.14.1](https://github.com/langchain-ai/langsmith-go/compare/v0.14.0...v0.14.1)
