@@ -2586,15 +2586,13 @@ type SandboxBoxNewParams struct {
 	Mounts                 param.Field[[]SandboxBoxNewParamsMount]     `json:"mounts"`
 	Name                   param.Field[string]                         `json:"name"`
 	ProxyConfig            param.Field[SandboxBoxNewParamsProxyConfig] `json:"proxy_config"`
-	// RestoreMemory, when non-nil, overrides the server default for whether to resume
-	// the sandbox from its captured memory snapshot.
+	// RestoreMemory selects how the sandbox handles a snapshot's captured memory:
 	//
-	// true → resume from the memory snapshot if it exists; cold-boot the sandbox
-	// otherwise. false → always cold-boot, even if a memory snapshot exists. nil → use
-	// the server default.
+	// nil → if-present: resume from memory when the snapshot has it, else cold-boot
+	// (default). true → always: resume from memory; rejected if the snapshot has none.
+	// false → never: always cold-boot.
 	//
-	// Applies to this request only; a later stop+start of the same sandbox reverts to
-	// the server default.
+	// Applies to this request only.
 	RestoreMemory param.Field[bool]     `json:"restore_memory"`
 	SnapshotID    param.Field[string]   `json:"snapshot_id"`
 	SnapshotName  param.Field[string]   `json:"snapshot_name"`
