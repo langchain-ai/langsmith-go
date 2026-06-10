@@ -127,6 +127,7 @@ func TestRepoListWithOptionalParams(t *testing.T) {
 	)
 	_, err := client.Repos.List(context.TODO(), langsmith.RepoListParams{
 		HasCommits:         langsmith.F(true),
+		IncludeOwners:      langsmith.F(true),
 		IsArchived:         langsmith.F(langsmith.RepoListParamsIsArchivedTrue),
 		IsPublic:           langsmith.F(langsmith.RepoListParamsIsPublicTrue),
 		Limit:              langsmith.F(int64(1)),
