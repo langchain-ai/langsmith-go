@@ -129,6 +129,7 @@ type ExampleWithRunsChRun struct {
 	ExecutionOrder     int64                             `json:"execution_order"`
 	Extra              map[string]interface{}            `json:"extra" api:"nullable"`
 	FeedbackStats      map[string]map[string]interface{} `json:"feedback_stats" api:"nullable"`
+	FirstTokenTime     time.Time                         `json:"first_token_time" api:"nullable" format:"date-time"`
 	Inputs             map[string]interface{}            `json:"inputs" api:"nullable"`
 	InputsPreview      string                            `json:"inputs_preview" api:"nullable"`
 	InputsS3URLs       map[string]interface{}            `json:"inputs_s3_urls" api:"nullable"`
@@ -171,6 +172,7 @@ type exampleWithRunsChRunJSON struct {
 	ExecutionOrder     apijson.Field
 	Extra              apijson.Field
 	FeedbackStats      apijson.Field
+	FirstTokenTime     apijson.Field
 	Inputs             apijson.Field
 	InputsPreview      apijson.Field
 	InputsS3URLs       apijson.Field
