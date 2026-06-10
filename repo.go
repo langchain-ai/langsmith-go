@@ -188,6 +188,7 @@ type RepoWithLookups struct {
 	LikedByAuthUser      bool                   `json:"liked_by_auth_user" api:"nullable"`
 	OriginalRepoFullName string                 `json:"original_repo_full_name" api:"nullable"`
 	OriginalRepoID       string                 `json:"original_repo_id" api:"nullable" format:"uuid"`
+	Owners               []RepoWithLookupsOwner `json:"owners" api:"nullable"`
 	Readme               string                 `json:"readme" api:"nullable"`
 	RestrictedMode       bool                   `json:"restricted_mode"`
 	Source               RepoWithLookupsSource  `json:"source" api:"nullable"`
@@ -221,6 +222,7 @@ type repoWithLookupsJSON struct {
 	LikedByAuthUser      apijson.Field
 	OriginalRepoFullName apijson.Field
 	OriginalRepoID       apijson.Field
+	Owners               apijson.Field
 	Readme               apijson.Field
 	RestrictedMode       apijson.Field
 	Source               apijson.Field
@@ -253,6 +255,39 @@ func (r RepoWithLookupsRepoType) IsKnown() bool {
 		return true
 	}
 	return false
+}
+
+// A repo owner with user details.
+//
+// Note: identity_id and email may be None when returned to users outside the
+// repo's tenant (PII protection).
+type RepoWithLookupsOwner struct {
+	CreatedAt  time.Time                `json:"created_at" api:"required" format:"date-time"`
+	Email      string                   `json:"email" api:"required,nullable"`
+	FullName   string                   `json:"full_name" api:"required,nullable"`
+	IdentityID string                   `json:"identity_id" api:"required,nullable" format:"uuid"`
+	LsUserID   string                   `json:"ls_user_id" api:"required" format:"uuid"`
+	JSON       repoWithLookupsOwnerJSON `json:"-"`
+}
+
+// repoWithLookupsOwnerJSON contains the JSON metadata for the struct
+// [RepoWithLookupsOwner]
+type repoWithLookupsOwnerJSON struct {
+	CreatedAt   apijson.Field
+	Email       apijson.Field
+	FullName    apijson.Field
+	IdentityID  apijson.Field
+	LsUserID    apijson.Field
+	raw         string
+	ExtraFields map[string]apijson.Field
+}
+
+func (r *RepoWithLookupsOwner) UnmarshalJSON(data []byte) (err error) {
+	return apijson.UnmarshalRoot(data, r)
+}
+
+func (r repoWithLookupsOwnerJSON) RawJSON() string {
+	return r.raw
 }
 
 type RepoWithLookupsSource string
@@ -335,6 +370,7 @@ func (r RepoUpdateParams) MarshalJSON() (data []byte, err error) {
 
 type RepoListParams struct {
 	HasCommits         param.Field[bool]                        `query:"has_commits"`
+	IncludeOwners      param.Field[bool]                        `query:"include_owners"`
 	IsArchived         param.Field[RepoListParamsIsArchived]    `query:"is_archived"`
 	IsPublic           param.Field[RepoListParamsIsPublic]      `query:"is_public"`
 	Limit              param.Field[int64]                       `query:"limit"`
