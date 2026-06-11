@@ -331,8 +331,9 @@ type OnlineEvaluatorRunRule struct {
 	// SpendLimit is the effective spend-cap limit for this rule (nil when
 	// unconfigured).
 	SpendLimit OnlineSpendLimit `json:"spend_limit"`
-	// Per-rule spend for the current ISO week (omitted when feature is disabled).
-	// LLM-evaluator rules are initialized to 0; code-evaluator rules remain nil.
+	// Per-rule usage for the current ISO week (omitted when feature is disabled).
+	// LLM-evaluator rules are initialized to 0; code-evaluator rules include trace
+	// counts only.
 	SpendUsd              float64                    `json:"spend_usd"`
 	TraceCount            int64                      `json:"trace_count"`
 	UseCorrectionsDataset bool                       `json:"use_corrections_dataset"`
