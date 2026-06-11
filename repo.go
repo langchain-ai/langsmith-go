@@ -376,7 +376,7 @@ type RepoListParams struct {
 	Limit              param.Field[int64]                       `query:"limit"`
 	Offset             param.Field[int64]                       `query:"offset"`
 	Query              param.Field[string]                      `query:"query"`
-	RepoType           param.Field[RepoListParamsRepoType]      `query:"repo_type"`
+	SingleRepoType     param.Field[RepoListParamsRepoType]      `query:"repo_type"`
 	RepoTypes          param.Field[[]RepoListParamsRepoType]    `query:"repo_types"`
 	SortDirection      param.Field[RepoListParamsSortDirection] `query:"sort_direction"`
 	SortField          param.Field[RepoListParamsSortField]     `query:"sort_field"`
