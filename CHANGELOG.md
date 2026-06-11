@@ -1,5 +1,34 @@
 # Changelog
 
+## [0.15.0](https://github.com/langchain-ai/langsmith-go/compare/v0.14.2...v0.15.0) (2026-06-11)
+
+
+### Features
+
+* **abac:** add tag_value_ids to prompt creation endpoints [ENT-1176] ([313b627](https://github.com/langchain-ai/langsmith-go/commit/313b627419446c533d52ce7935e72c59c5a94d75))
+* **abac:** add tag_value_ids to tracer session creation ([313b627](https://github.com/langchain-ai/langsmith-go/commit/313b627419446c533d52ce7935e72c59c5a94d75))
+* Add config for standard pagination ([313b627](https://github.com/langchain-ai/langsmith-go/commit/313b627419446c533d52ce7935e72c59c5a94d75))
+* adding time to first token for experiment metrics ([313b627](https://github.com/langchain-ai/langsmith-go/commit/313b627419446c533d52ce7935e72c59c5a94d75))
+* **fleet:** frontend passes typed fields (closes AB-000) ([313b627](https://github.com/langchain-ai/langsmith-go/commit/313b627419446c533d52ce7935e72c59c5a94d75))
+* **hub:** add include_owners to repos list for Fleet [closes AB-2537] ([313b627](https://github.com/langchain-ai/langsmith-go/commit/313b627419446c533d52ce7935e72c59c5a94d75))
+* **sandboxes:** add sandbox env var support ([313b627](https://github.com/langchain-ai/langsmith-go/commit/313b627419446c533d52ce7935e72c59c5a94d75))
+* **sandboxes:** filter lists by creator [INF-1492] ([313b627](https://github.com/langchain-ai/langsmith-go/commit/313b627419446c533d52ce7935e72c59c5a94d75))
+* **sandboxes:** set AWS proxy compatibility env ([313b627](https://github.com/langchain-ai/langsmith-go/commit/313b627419446c533d52ce7935e72c59c5a94d75))
+* **sandboxes:** snapshot memory from stopped boxes + honor restore_memory in v2 [INF-0000] ([313b627](https://github.com/langchain-ai/langsmith-go/commit/313b627419446c533d52ce7935e72c59c5a94d75))
+
+
+### Chores
+
+* add Release Please GitHub Actions workflow ([#18](https://github.com/langchain-ai/langsmith-go/issues/18)) ([313b627](https://github.com/langchain-ai/langsmith-go/commit/313b627419446c533d52ce7935e72c59c5a94d75))
+* **fleet:** add param to list threads [closes AB-2522] ([313b627](https://github.com/langchain-ai/langsmith-go/commit/313b627419446c533d52ce7935e72c59c5a94d75))
+* revert "Build SDK" ([#24](https://github.com/langchain-ai/langsmith-go/issues/24)) ([313b627](https://github.com/langchain-ai/langsmith-go/commit/313b627419446c533d52ce7935e72c59c5a94d75))
+* SDK release (next → main) ([#4](https://github.com/langchain-ai/langsmith-go/issues/4)) ([313b627](https://github.com/langchain-ai/langsmith-go/commit/313b627419446c533d52ce7935e72c59c5a94d75))
+
+
+### Refactors
+
+* **playground:** remove legacy experiment endpoints [LSO-2230] ([313b627](https://github.com/langchain-ai/langsmith-go/commit/313b627419446c533d52ce7935e72c59c5a94d75))
+
 ## 0.14.2 (2026-06-09)
 
 Full Changelog: [v0.14.1...v0.14.2](https://github.com/langchain-ai/langsmith-go/compare/v0.14.1...v0.14.2)
