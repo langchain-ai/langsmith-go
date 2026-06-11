@@ -35,6 +35,7 @@ import (
 	"go.opentelemetry.io/otel/propagation"
 	"go.opentelemetry.io/otel/trace"
 
+	"github.com/langchain-ai/langsmith-go/internal/genaiattr"
 	"github.com/langchain-ai/langsmith-go/internal/traceutil"
 )
 
@@ -266,8 +267,10 @@ func shouldTrace(req *http.Request) bool {
 	return isAnthropicEndpoint(req.URL.Path)
 }
 
+// isAnthropicEndpoint matches direct and Vertex Anthropic calls.
 func isAnthropicEndpoint(path string) bool {
-	return strings.Contains(path, "/v1/messages")
+	return strings.Contains(path, "/v1/messages") ||
+		strings.Contains(path, "/publishers/anthropic/")
 }
 
 // getSpanName returns an appropriate span name based on the API endpoint.
@@ -338,10 +341,15 @@ func extractRequestAttributes(span trace.Span, body []byte) (streaming bool) {
 // usage tokens, and cache breakdown.
 //
 // Anthropic SSE events of interest:
-//   - message_start       — contains message.usage (input_tokens, cache tokens)
+//   - message_start       — contains message.usage (input_tokens, cache tokens,
+//     cache_creation breakdown)
 //   - content_block_start — initialises a content block (text or tool_use)
 //   - content_block_delta — text_delta or input_json_delta carries incremental data
-//   - message_delta       — contains usage.output_tokens and stop_reason
+//   - message_delta       — contains usage.output_tokens (plus output_tokens_details,
+//     server_tool_use) and stop_reason
+//
+// Usage fields from message_start and message_delta are merged into a single
+// map and handed to setUsageAttributes, which captures every token type.
 func extractStreamingResponseAttributes(span trace.Span, data []byte, parentSpan trace.Span) {
 	chunks, err := traceutil.ParseSSEChunks(bytes.NewReader(data))
 	if err != nil || len(chunks) == 0 {
@@ -512,61 +520,163 @@ func extractResponseAttributes(span trace.Span, body []byte, parentSpan trace.Sp
 	}
 }
 
-// setUsageAttributes sets usage-related attributes on the span.
-func setUsageAttributes(span trace.Span, usage map[string]interface{}, parentSpan trace.Span) {
-	var inputTokens, outputTokens, totalTokens int64
-
-	if v, ok := usage["input_tokens"].(float64); ok {
-		inputTokens = int64(v)
-	}
-	if v, ok := usage["output_tokens"].(float64); ok {
-		outputTokens = int64(v)
-	}
-	if v, ok := usage["total_tokens"].(float64); ok {
-		totalTokens = int64(v)
-	}
-
-	// Handle cache tokens if present
-	var cacheCreate, cacheRead int64
-	if v, ok := usage["cache_creation_input_tokens"].(float64); ok {
-		cacheCreate = int64(v)
-	}
-	if v, ok := usage["cache_read_input_tokens"].(float64); ok {
-		cacheRead = int64(v)
-	}
-
-	// Total prompt tokens includes cache
-	totalPrompt := inputTokens + cacheCreate + cacheRead
-
-	if totalPrompt > 0 {
-		span.SetAttributes(attribute.Int64("gen_ai.usage.input_tokens", totalPrompt))
-		// Propagate usage to parent span if it exists and is valid
-		// This ensures token counts appear in Thread list view (which aggregates from root spans)
-		if parentSpan.SpanContext().IsValid() && parentSpan.IsRecording() {
-			parentSpan.SetAttributes(attribute.Int64("gen_ai.usage.input_tokens", totalPrompt))
+// buildUsageMetadata maps an Anthropic Messages API usage object onto the
+// LangSmith usage_metadata schema. It is pure (no span side-effects) and
+// returns the assembled usage_metadata map along with the inclusive input and
+// output token totals (used for flat gen_ai.usage.* aggregation).
+//
+// The full Anthropic usage object (see the official Messages API reference at
+// https://platform.claude.com/docs/en/api/messages/create) looks like:
+//
+//	"usage": {
+//	  "input_tokens": 2095,                       // uncached input only
+//	  "output_tokens": 503,
+//	  "cache_creation_input_tokens": 2051,        // total written to cache
+//	  "cache_read_input_tokens": 1800,            // read from cache
+//	  "cache_creation": {                         // cache-write TTL breakdown
+//	    "ephemeral_5m_input_tokens": 1951,
+//	    "ephemeral_1h_input_tokens": 100
+//	  },
+//	  "output_tokens_details": {"thinking_tokens": 64},
+//	  "server_tool_use": {"web_search_requests": 1, "web_fetch_requests": 0},
+//	  "service_tier": "standard"
+//	}
+//
+// Only token-count fields map into usage_metadata; non-token fields
+// (server_tool_use, service_tier, inference_geo, speed) are handled by the caller.
+func buildUsageMetadata(usage map[string]interface{}) (usageMetadata map[string]any, totalInput, outputTokens int64) {
+	// getInt reads a token count, defaulting to 0 when the field is absent.
+	// Anthropic omits zero-valued usage fields, and both the streaming and
+	// non-streaming paths decode JSON numbers as float64, so a missing/0 field
+	// are equivalent here — every emission below is guarded by a > 0 check.
+	getInt := func(m map[string]interface{}, key string) int64 {
+		if v, ok := m[key].(float64); ok {
+			return int64(v)
 		}
+		return 0
+	}
+	getNested := func(key string) map[string]interface{} {
+		if m, ok := usage[key].(map[string]interface{}); ok {
+			return m
+		}
+		return nil
+	}
+
+	inputTokens := getInt(usage, "input_tokens")
+	outputTokens = getInt(usage, "output_tokens")
+	cacheCreate := getInt(usage, "cache_creation_input_tokens")
+	cacheRead := getInt(usage, "cache_read_input_tokens")
+
+	// LangChain/LangSmith convention: input_tokens is the inclusive total
+	// (uncached + cache-write + cache-read). The cache portions are surfaced
+	// as a subset in input_token_details so pricing doesn't double-count.
+	totalInput = inputTokens + cacheCreate + cacheRead
+
+	inputTokenDetails := map[string]any{}
+	if cacheRead > 0 {
+		inputTokenDetails["cache_read"] = cacheRead
+	}
+	// Prefer the cache-write TTL breakdown (5m at 1.25x, 1h at 2x base price)
+	// when present. Its parts sum to cache_creation_input_tokens, so emitting
+	// both the total and the breakdown double-counts cache-write tokens. This
+	// mirrors the langsmith Python client (wrappers/_anthropic._create_usage_metadata),
+	// keeping cost identical across the Go and Python ingest stacks.
+	var ephemeral5m, ephemeral1h int64
+	if cc := getNested("cache_creation"); cc != nil {
+		ephemeral5m = getInt(cc, "ephemeral_5m_input_tokens")
+		ephemeral1h = getInt(cc, "ephemeral_1h_input_tokens")
+	}
+	switch {
+	case ephemeral5m > 0 || ephemeral1h > 0:
+		if ephemeral5m > 0 {
+			inputTokenDetails["ephemeral_5m_input_tokens"] = ephemeral5m
+		}
+		if ephemeral1h > 0 {
+			inputTokenDetails["ephemeral_1h_input_tokens"] = ephemeral1h
+		}
+	case cacheCreate > 0:
+		inputTokenDetails["cache_creation"] = cacheCreate
+	}
+
+	outputTokenDetails := map[string]any{}
+	// Extended-thinking (reasoning) tokens are a subset of output_tokens.
+	if otd := getNested("output_tokens_details"); otd != nil {
+		if v := getInt(otd, "thinking_tokens"); v > 0 {
+			outputTokenDetails["reasoning"] = v
+		}
+	}
+
+	usageMetadata = map[string]any{}
+	if totalInput > 0 {
+		usageMetadata["input_tokens"] = totalInput
 	}
 	if outputTokens > 0 {
-		span.SetAttributes(attribute.Int64("gen_ai.usage.output_tokens", outputTokens))
-		// Propagate usage to parent span if it exists and is valid
-		if parentSpan.SpanContext().IsValid() && parentSpan.IsRecording() {
-			parentSpan.SetAttributes(attribute.Int64("gen_ai.usage.output_tokens", outputTokens))
+		usageMetadata["output_tokens"] = outputTokens
+	}
+	if totalInput > 0 || outputTokens > 0 {
+		usageMetadata["total_tokens"] = totalInput + outputTokens
+	}
+	if len(inputTokenDetails) > 0 {
+		usageMetadata["input_token_details"] = inputTokenDetails
+	}
+	if len(outputTokenDetails) > 0 {
+		usageMetadata["output_token_details"] = outputTokenDetails
+	}
+	return usageMetadata, totalInput, outputTokens
+}
+
+// setUsageAttributes records token usage on the span. It emits a single
+// langsmith.usage_metadata JSON attribute (the converter's preferred,
+// cost-driving path) plus the flat gen_ai.usage.* attributes that
+// Thread-list aggregation reads from root spans. Non-token usage fields are
+// recorded as run metadata.
+func setUsageAttributes(span trace.Span, usage map[string]interface{}, parentSpan trace.Span) {
+	usageMetadata, totalInput, outputTokens := buildUsageMetadata(usage)
+	totalTokens := totalInput + outputTokens
+
+	if len(usageMetadata) > 0 {
+		if out, err := json.Marshal(usageMetadata); err == nil {
+			span.SetAttributes(genaiattr.UsageMetadataKey.String(string(out)))
 		}
 	}
+
+	// Flat gen_ai.usage.* attributes drive Thread-list aggregation, which
+	// reads token counts from root spans rather than usage_metadata. Input and
+	// output are propagated to the parent so root-span totals are populated.
+	setSelfAndParent := func(kv attribute.KeyValue) {
+		span.SetAttributes(kv)
+		if parentSpan.SpanContext().IsValid() && parentSpan.IsRecording() {
+			parentSpan.SetAttributes(kv)
+		}
+	}
+	if totalInput > 0 {
+		setSelfAndParent(genaiattr.UsageInputTokensKey.Int64(totalInput))
+	}
+	if outputTokens > 0 {
+		setSelfAndParent(genaiattr.UsageOutputTokensKey.Int64(outputTokens))
+	}
 	if totalTokens > 0 {
-		span.SetAttributes(attribute.Int64("gen_ai.usage.total_tokens", totalTokens))
+		span.SetAttributes(genaiattr.UsageTotalTokensKey.Int64(totalTokens))
 	}
 
-	// Cache breakdown in metadata
-	if cacheCreate > 0 {
-		span.SetAttributes(attribute.Int64("langsmith.metadata.usage_metadata.input_token_details.cache_creation", cacheCreate))
+	// These are request counts (server_tool_use) and price modifiers
+	// (service_tier, inference_geo, speed), not token counts, so they go in
+	// metadata. Putting them in usage_metadata token details would corrupt cost math.
+	if stu, ok := usage["server_tool_use"].(map[string]interface{}); ok {
+		for k, raw := range stu {
+			if v, ok := raw.(float64); ok && v > 0 {
+				span.SetAttributes(attribute.Int64(genaiattr.ServerToolUseMetadataKeyPrefix+k, int64(v)))
+			}
+		}
 	}
-	if cacheRead > 0 {
-		span.SetAttributes(attribute.Int64("langsmith.metadata.usage_metadata.input_token_details.cache_read", cacheRead))
+	if st, ok := usage["service_tier"].(string); ok && st != "" {
+		span.SetAttributes(genaiattr.ServiceTierKey.String(st))
 	}
-
-	// Reasoning tokens if present (for Claude Sonnet 4.5+)
-	if v, ok := usage["reasoning_tokens"].(float64); ok {
-		span.SetAttributes(attribute.Int64("gen_ai.usage.details.reasoning_tokens", int64(v)))
+	if geo, ok := usage["inference_geo"].(string); ok && geo != "" {
+		span.SetAttributes(genaiattr.InferenceGeoKey.String(geo))
+	}
+	// speed is the latency tier (standard/fast) on the beta usage object.
+	if speed, ok := usage["speed"].(string); ok && speed != "" {
+		span.SetAttributes(genaiattr.SpeedKey.String(speed))
 	}
 }
