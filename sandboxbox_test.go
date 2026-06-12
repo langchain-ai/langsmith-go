@@ -103,6 +103,14 @@ func TestSandboxBoxNewWithOptionalParams(t *testing.T) {
 					}),
 				}),
 				Enabled: langsmith.F(true),
+				Gcp: langsmith.F(langsmith.SandboxBoxNewParamsProxyConfigRulesGcp{
+					Scopes: langsmith.F([]string{"string"}),
+					ServiceAccountJson: langsmith.F(langsmith.SandboxBoxNewParamsProxyConfigRulesGcpServiceAccountJson{
+						Type:  langsmith.F(langsmith.SandboxBoxNewParamsProxyConfigRulesGcpServiceAccountJsonTypePlaintext),
+						IsSet: langsmith.F(true),
+						Value: langsmith.F("value"),
+					}),
+				}),
 				Headers: langsmith.F([]langsmith.SandboxBoxNewParamsProxyConfigRulesHeader{{
 					Name:  langsmith.F("name"),
 					Type:  langsmith.F(langsmith.SandboxBoxNewParamsProxyConfigRulesHeadersTypePlaintext),
@@ -209,6 +217,14 @@ func TestSandboxBoxUpdateWithOptionalParams(t *testing.T) {
 						}),
 					}),
 					Enabled: langsmith.F(true),
+					Gcp: langsmith.F(langsmith.SandboxBoxUpdateParamsProxyConfigRulesGcp{
+						Scopes: langsmith.F([]string{"string"}),
+						ServiceAccountJson: langsmith.F(langsmith.SandboxBoxUpdateParamsProxyConfigRulesGcpServiceAccountJson{
+							Type:  langsmith.F(langsmith.SandboxBoxUpdateParamsProxyConfigRulesGcpServiceAccountJsonTypePlaintext),
+							IsSet: langsmith.F(true),
+							Value: langsmith.F("value"),
+						}),
+					}),
 					Headers: langsmith.F([]langsmith.SandboxBoxUpdateParamsProxyConfigRulesHeader{{
 						Name:  langsmith.F("name"),
 						Type:  langsmith.F(langsmith.SandboxBoxUpdateParamsProxyConfigRulesHeadersTypePlaintext),
