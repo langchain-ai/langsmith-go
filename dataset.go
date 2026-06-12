@@ -487,6 +487,7 @@ type DatasetNewParams struct {
 	Extra                   param.Field[map[string]interface{}]       `json:"extra"`
 	InputsSchemaDefinition  param.Field[map[string]interface{}]       `json:"inputs_schema_definition"`
 	OutputsSchemaDefinition param.Field[map[string]interface{}]       `json:"outputs_schema_definition"`
+	TagValueIDs             param.Field[[]string]                     `json:"tag_value_ids" format:"uuid"`
 	Transformations         param.Field[[]DatasetTransformationParam] `json:"transformations"`
 }
 
@@ -643,9 +644,10 @@ type DatasetCloneParams struct {
 	TargetDatasetID param.Field[string] `json:"target_dataset_id" api:"required" format:"uuid"`
 	// Only modifications made on or before this time are included. If None, the latest
 	// version of the dataset is used.
-	AsOf     param.Field[DatasetCloneParamsAsOfUnion]  `json:"as_of" format:"date-time"`
-	Examples param.Field[[]string]                     `json:"examples" format:"uuid"`
-	Split    param.Field[DatasetCloneParamsSplitUnion] `json:"split"`
+	AsOf        param.Field[DatasetCloneParamsAsOfUnion]  `json:"as_of" format:"date-time"`
+	Examples    param.Field[[]string]                     `json:"examples" format:"uuid"`
+	Split       param.Field[DatasetCloneParamsSplitUnion] `json:"split"`
+	TagValueIDs param.Field[[]string]                     `json:"tag_value_ids" format:"uuid"`
 }
 
 func (r DatasetCloneParams) MarshalJSON() (data []byte, err error) {
@@ -773,6 +775,7 @@ type DatasetUploadParams struct {
 	OutputKeyMappings       param.Field[string]   `json:"output_key_mappings"`
 	OutputKeys              param.Field[[]string] `json:"output_keys"`
 	OutputsSchemaDefinition param.Field[string]   `json:"outputs_schema_definition"`
+	TagValueIDs             param.Field[string]   `json:"tag_value_ids"`
 	Transformations         param.Field[string]   `json:"transformations"`
 }
 
