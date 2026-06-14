@@ -438,6 +438,7 @@ type SandboxBoxNewResponseProxyConfigRule struct {
 	Name       string                                        `json:"name" api:"required"`
 	Aws        SandboxBoxNewResponseProxyConfigRulesAws      `json:"aws"`
 	Enabled    bool                                          `json:"enabled"`
+	Gcp        SandboxBoxNewResponseProxyConfigRulesGcp      `json:"gcp"`
 	Headers    []SandboxBoxNewResponseProxyConfigRulesHeader `json:"headers"`
 	MatchHosts []string                                      `json:"match_hosts"`
 	MatchPaths []string                                      `json:"match_paths"`
@@ -451,6 +452,7 @@ type sandboxBoxNewResponseProxyConfigRuleJSON struct {
 	Name        apijson.Field
 	Aws         apijson.Field
 	Enabled     apijson.Field
+	Gcp         apijson.Field
 	Headers     apijson.Field
 	MatchHosts  apijson.Field
 	MatchPaths  apijson.Field
@@ -568,6 +570,71 @@ const (
 func (r SandboxBoxNewResponseProxyConfigRulesAwsSecretAccessKeyType) IsKnown() bool {
 	switch r {
 	case SandboxBoxNewResponseProxyConfigRulesAwsSecretAccessKeyTypePlaintext, SandboxBoxNewResponseProxyConfigRulesAwsSecretAccessKeyTypeOpaque, SandboxBoxNewResponseProxyConfigRulesAwsSecretAccessKeyTypeWorkspaceSecret:
+		return true
+	}
+	return false
+}
+
+type SandboxBoxNewResponseProxyConfigRulesGcp struct {
+	Scopes             []string                                                   `json:"scopes" api:"required"`
+	ServiceAccountJson SandboxBoxNewResponseProxyConfigRulesGcpServiceAccountJson `json:"service_account_json" api:"required"`
+	JSON               sandboxBoxNewResponseProxyConfigRulesGcpJSON               `json:"-"`
+}
+
+// sandboxBoxNewResponseProxyConfigRulesGcpJSON contains the JSON metadata for the
+// struct [SandboxBoxNewResponseProxyConfigRulesGcp]
+type sandboxBoxNewResponseProxyConfigRulesGcpJSON struct {
+	Scopes             apijson.Field
+	ServiceAccountJson apijson.Field
+	raw                string
+	ExtraFields        map[string]apijson.Field
+}
+
+func (r *SandboxBoxNewResponseProxyConfigRulesGcp) UnmarshalJSON(data []byte) (err error) {
+	return apijson.UnmarshalRoot(data, r)
+}
+
+func (r sandboxBoxNewResponseProxyConfigRulesGcpJSON) RawJSON() string {
+	return r.raw
+}
+
+type SandboxBoxNewResponseProxyConfigRulesGcpServiceAccountJson struct {
+	Type  SandboxBoxNewResponseProxyConfigRulesGcpServiceAccountJsonType `json:"type" api:"required"`
+	IsSet bool                                                           `json:"is_set"`
+	Value string                                                         `json:"value"`
+	JSON  sandboxBoxNewResponseProxyConfigRulesGcpServiceAccountJsonJSON `json:"-"`
+}
+
+// sandboxBoxNewResponseProxyConfigRulesGcpServiceAccountJsonJSON contains the JSON
+// metadata for the struct
+// [SandboxBoxNewResponseProxyConfigRulesGcpServiceAccountJson]
+type sandboxBoxNewResponseProxyConfigRulesGcpServiceAccountJsonJSON struct {
+	Type        apijson.Field
+	IsSet       apijson.Field
+	Value       apijson.Field
+	raw         string
+	ExtraFields map[string]apijson.Field
+}
+
+func (r *SandboxBoxNewResponseProxyConfigRulesGcpServiceAccountJson) UnmarshalJSON(data []byte) (err error) {
+	return apijson.UnmarshalRoot(data, r)
+}
+
+func (r sandboxBoxNewResponseProxyConfigRulesGcpServiceAccountJsonJSON) RawJSON() string {
+	return r.raw
+}
+
+type SandboxBoxNewResponseProxyConfigRulesGcpServiceAccountJsonType string
+
+const (
+	SandboxBoxNewResponseProxyConfigRulesGcpServiceAccountJsonTypePlaintext       SandboxBoxNewResponseProxyConfigRulesGcpServiceAccountJsonType = "plaintext"
+	SandboxBoxNewResponseProxyConfigRulesGcpServiceAccountJsonTypeOpaque          SandboxBoxNewResponseProxyConfigRulesGcpServiceAccountJsonType = "opaque"
+	SandboxBoxNewResponseProxyConfigRulesGcpServiceAccountJsonTypeWorkspaceSecret SandboxBoxNewResponseProxyConfigRulesGcpServiceAccountJsonType = "workspace_secret"
+)
+
+func (r SandboxBoxNewResponseProxyConfigRulesGcpServiceAccountJsonType) IsKnown() bool {
+	switch r {
+	case SandboxBoxNewResponseProxyConfigRulesGcpServiceAccountJsonTypePlaintext, SandboxBoxNewResponseProxyConfigRulesGcpServiceAccountJsonTypeOpaque, SandboxBoxNewResponseProxyConfigRulesGcpServiceAccountJsonTypeWorkspaceSecret:
 		return true
 	}
 	return false
@@ -896,6 +963,7 @@ type SandboxBoxGetResponseProxyConfigRule struct {
 	Name       string                                        `json:"name" api:"required"`
 	Aws        SandboxBoxGetResponseProxyConfigRulesAws      `json:"aws"`
 	Enabled    bool                                          `json:"enabled"`
+	Gcp        SandboxBoxGetResponseProxyConfigRulesGcp      `json:"gcp"`
 	Headers    []SandboxBoxGetResponseProxyConfigRulesHeader `json:"headers"`
 	MatchHosts []string                                      `json:"match_hosts"`
 	MatchPaths []string                                      `json:"match_paths"`
@@ -909,6 +977,7 @@ type sandboxBoxGetResponseProxyConfigRuleJSON struct {
 	Name        apijson.Field
 	Aws         apijson.Field
 	Enabled     apijson.Field
+	Gcp         apijson.Field
 	Headers     apijson.Field
 	MatchHosts  apijson.Field
 	MatchPaths  apijson.Field
@@ -1026,6 +1095,71 @@ const (
 func (r SandboxBoxGetResponseProxyConfigRulesAwsSecretAccessKeyType) IsKnown() bool {
 	switch r {
 	case SandboxBoxGetResponseProxyConfigRulesAwsSecretAccessKeyTypePlaintext, SandboxBoxGetResponseProxyConfigRulesAwsSecretAccessKeyTypeOpaque, SandboxBoxGetResponseProxyConfigRulesAwsSecretAccessKeyTypeWorkspaceSecret:
+		return true
+	}
+	return false
+}
+
+type SandboxBoxGetResponseProxyConfigRulesGcp struct {
+	Scopes             []string                                                   `json:"scopes" api:"required"`
+	ServiceAccountJson SandboxBoxGetResponseProxyConfigRulesGcpServiceAccountJson `json:"service_account_json" api:"required"`
+	JSON               sandboxBoxGetResponseProxyConfigRulesGcpJSON               `json:"-"`
+}
+
+// sandboxBoxGetResponseProxyConfigRulesGcpJSON contains the JSON metadata for the
+// struct [SandboxBoxGetResponseProxyConfigRulesGcp]
+type sandboxBoxGetResponseProxyConfigRulesGcpJSON struct {
+	Scopes             apijson.Field
+	ServiceAccountJson apijson.Field
+	raw                string
+	ExtraFields        map[string]apijson.Field
+}
+
+func (r *SandboxBoxGetResponseProxyConfigRulesGcp) UnmarshalJSON(data []byte) (err error) {
+	return apijson.UnmarshalRoot(data, r)
+}
+
+func (r sandboxBoxGetResponseProxyConfigRulesGcpJSON) RawJSON() string {
+	return r.raw
+}
+
+type SandboxBoxGetResponseProxyConfigRulesGcpServiceAccountJson struct {
+	Type  SandboxBoxGetResponseProxyConfigRulesGcpServiceAccountJsonType `json:"type" api:"required"`
+	IsSet bool                                                           `json:"is_set"`
+	Value string                                                         `json:"value"`
+	JSON  sandboxBoxGetResponseProxyConfigRulesGcpServiceAccountJsonJSON `json:"-"`
+}
+
+// sandboxBoxGetResponseProxyConfigRulesGcpServiceAccountJsonJSON contains the JSON
+// metadata for the struct
+// [SandboxBoxGetResponseProxyConfigRulesGcpServiceAccountJson]
+type sandboxBoxGetResponseProxyConfigRulesGcpServiceAccountJsonJSON struct {
+	Type        apijson.Field
+	IsSet       apijson.Field
+	Value       apijson.Field
+	raw         string
+	ExtraFields map[string]apijson.Field
+}
+
+func (r *SandboxBoxGetResponseProxyConfigRulesGcpServiceAccountJson) UnmarshalJSON(data []byte) (err error) {
+	return apijson.UnmarshalRoot(data, r)
+}
+
+func (r sandboxBoxGetResponseProxyConfigRulesGcpServiceAccountJsonJSON) RawJSON() string {
+	return r.raw
+}
+
+type SandboxBoxGetResponseProxyConfigRulesGcpServiceAccountJsonType string
+
+const (
+	SandboxBoxGetResponseProxyConfigRulesGcpServiceAccountJsonTypePlaintext       SandboxBoxGetResponseProxyConfigRulesGcpServiceAccountJsonType = "plaintext"
+	SandboxBoxGetResponseProxyConfigRulesGcpServiceAccountJsonTypeOpaque          SandboxBoxGetResponseProxyConfigRulesGcpServiceAccountJsonType = "opaque"
+	SandboxBoxGetResponseProxyConfigRulesGcpServiceAccountJsonTypeWorkspaceSecret SandboxBoxGetResponseProxyConfigRulesGcpServiceAccountJsonType = "workspace_secret"
+)
+
+func (r SandboxBoxGetResponseProxyConfigRulesGcpServiceAccountJsonType) IsKnown() bool {
+	switch r {
+	case SandboxBoxGetResponseProxyConfigRulesGcpServiceAccountJsonTypePlaintext, SandboxBoxGetResponseProxyConfigRulesGcpServiceAccountJsonTypeOpaque, SandboxBoxGetResponseProxyConfigRulesGcpServiceAccountJsonTypeWorkspaceSecret:
 		return true
 	}
 	return false
@@ -1355,6 +1489,7 @@ type SandboxBoxUpdateResponseProxyConfigRule struct {
 	Name       string                                           `json:"name" api:"required"`
 	Aws        SandboxBoxUpdateResponseProxyConfigRulesAws      `json:"aws"`
 	Enabled    bool                                             `json:"enabled"`
+	Gcp        SandboxBoxUpdateResponseProxyConfigRulesGcp      `json:"gcp"`
 	Headers    []SandboxBoxUpdateResponseProxyConfigRulesHeader `json:"headers"`
 	MatchHosts []string                                         `json:"match_hosts"`
 	MatchPaths []string                                         `json:"match_paths"`
@@ -1368,6 +1503,7 @@ type sandboxBoxUpdateResponseProxyConfigRuleJSON struct {
 	Name        apijson.Field
 	Aws         apijson.Field
 	Enabled     apijson.Field
+	Gcp         apijson.Field
 	Headers     apijson.Field
 	MatchHosts  apijson.Field
 	MatchPaths  apijson.Field
@@ -1485,6 +1621,71 @@ const (
 func (r SandboxBoxUpdateResponseProxyConfigRulesAwsSecretAccessKeyType) IsKnown() bool {
 	switch r {
 	case SandboxBoxUpdateResponseProxyConfigRulesAwsSecretAccessKeyTypePlaintext, SandboxBoxUpdateResponseProxyConfigRulesAwsSecretAccessKeyTypeOpaque, SandboxBoxUpdateResponseProxyConfigRulesAwsSecretAccessKeyTypeWorkspaceSecret:
+		return true
+	}
+	return false
+}
+
+type SandboxBoxUpdateResponseProxyConfigRulesGcp struct {
+	Scopes             []string                                                      `json:"scopes" api:"required"`
+	ServiceAccountJson SandboxBoxUpdateResponseProxyConfigRulesGcpServiceAccountJson `json:"service_account_json" api:"required"`
+	JSON               sandboxBoxUpdateResponseProxyConfigRulesGcpJSON               `json:"-"`
+}
+
+// sandboxBoxUpdateResponseProxyConfigRulesGcpJSON contains the JSON metadata for
+// the struct [SandboxBoxUpdateResponseProxyConfigRulesGcp]
+type sandboxBoxUpdateResponseProxyConfigRulesGcpJSON struct {
+	Scopes             apijson.Field
+	ServiceAccountJson apijson.Field
+	raw                string
+	ExtraFields        map[string]apijson.Field
+}
+
+func (r *SandboxBoxUpdateResponseProxyConfigRulesGcp) UnmarshalJSON(data []byte) (err error) {
+	return apijson.UnmarshalRoot(data, r)
+}
+
+func (r sandboxBoxUpdateResponseProxyConfigRulesGcpJSON) RawJSON() string {
+	return r.raw
+}
+
+type SandboxBoxUpdateResponseProxyConfigRulesGcpServiceAccountJson struct {
+	Type  SandboxBoxUpdateResponseProxyConfigRulesGcpServiceAccountJsonType `json:"type" api:"required"`
+	IsSet bool                                                              `json:"is_set"`
+	Value string                                                            `json:"value"`
+	JSON  sandboxBoxUpdateResponseProxyConfigRulesGcpServiceAccountJsonJSON `json:"-"`
+}
+
+// sandboxBoxUpdateResponseProxyConfigRulesGcpServiceAccountJsonJSON contains the
+// JSON metadata for the struct
+// [SandboxBoxUpdateResponseProxyConfigRulesGcpServiceAccountJson]
+type sandboxBoxUpdateResponseProxyConfigRulesGcpServiceAccountJsonJSON struct {
+	Type        apijson.Field
+	IsSet       apijson.Field
+	Value       apijson.Field
+	raw         string
+	ExtraFields map[string]apijson.Field
+}
+
+func (r *SandboxBoxUpdateResponseProxyConfigRulesGcpServiceAccountJson) UnmarshalJSON(data []byte) (err error) {
+	return apijson.UnmarshalRoot(data, r)
+}
+
+func (r sandboxBoxUpdateResponseProxyConfigRulesGcpServiceAccountJsonJSON) RawJSON() string {
+	return r.raw
+}
+
+type SandboxBoxUpdateResponseProxyConfigRulesGcpServiceAccountJsonType string
+
+const (
+	SandboxBoxUpdateResponseProxyConfigRulesGcpServiceAccountJsonTypePlaintext       SandboxBoxUpdateResponseProxyConfigRulesGcpServiceAccountJsonType = "plaintext"
+	SandboxBoxUpdateResponseProxyConfigRulesGcpServiceAccountJsonTypeOpaque          SandboxBoxUpdateResponseProxyConfigRulesGcpServiceAccountJsonType = "opaque"
+	SandboxBoxUpdateResponseProxyConfigRulesGcpServiceAccountJsonTypeWorkspaceSecret SandboxBoxUpdateResponseProxyConfigRulesGcpServiceAccountJsonType = "workspace_secret"
+)
+
+func (r SandboxBoxUpdateResponseProxyConfigRulesGcpServiceAccountJsonType) IsKnown() bool {
+	switch r {
+	case SandboxBoxUpdateResponseProxyConfigRulesGcpServiceAccountJsonTypePlaintext, SandboxBoxUpdateResponseProxyConfigRulesGcpServiceAccountJsonTypeOpaque, SandboxBoxUpdateResponseProxyConfigRulesGcpServiceAccountJsonTypeWorkspaceSecret:
 		return true
 	}
 	return false
@@ -1838,6 +2039,7 @@ type SandboxBoxListResponseSandboxesProxyConfigRule struct {
 	Name       string                                                  `json:"name" api:"required"`
 	Aws        SandboxBoxListResponseSandboxesProxyConfigRulesAws      `json:"aws"`
 	Enabled    bool                                                    `json:"enabled"`
+	Gcp        SandboxBoxListResponseSandboxesProxyConfigRulesGcp      `json:"gcp"`
 	Headers    []SandboxBoxListResponseSandboxesProxyConfigRulesHeader `json:"headers"`
 	MatchHosts []string                                                `json:"match_hosts"`
 	MatchPaths []string                                                `json:"match_paths"`
@@ -1851,6 +2053,7 @@ type sandboxBoxListResponseSandboxesProxyConfigRuleJSON struct {
 	Name        apijson.Field
 	Aws         apijson.Field
 	Enabled     apijson.Field
+	Gcp         apijson.Field
 	Headers     apijson.Field
 	MatchHosts  apijson.Field
 	MatchPaths  apijson.Field
@@ -1969,6 +2172,71 @@ const (
 func (r SandboxBoxListResponseSandboxesProxyConfigRulesAwsSecretAccessKeyType) IsKnown() bool {
 	switch r {
 	case SandboxBoxListResponseSandboxesProxyConfigRulesAwsSecretAccessKeyTypePlaintext, SandboxBoxListResponseSandboxesProxyConfigRulesAwsSecretAccessKeyTypeOpaque, SandboxBoxListResponseSandboxesProxyConfigRulesAwsSecretAccessKeyTypeWorkspaceSecret:
+		return true
+	}
+	return false
+}
+
+type SandboxBoxListResponseSandboxesProxyConfigRulesGcp struct {
+	Scopes             []string                                                             `json:"scopes" api:"required"`
+	ServiceAccountJson SandboxBoxListResponseSandboxesProxyConfigRulesGcpServiceAccountJson `json:"service_account_json" api:"required"`
+	JSON               sandboxBoxListResponseSandboxesProxyConfigRulesGcpJSON               `json:"-"`
+}
+
+// sandboxBoxListResponseSandboxesProxyConfigRulesGcpJSON contains the JSON
+// metadata for the struct [SandboxBoxListResponseSandboxesProxyConfigRulesGcp]
+type sandboxBoxListResponseSandboxesProxyConfigRulesGcpJSON struct {
+	Scopes             apijson.Field
+	ServiceAccountJson apijson.Field
+	raw                string
+	ExtraFields        map[string]apijson.Field
+}
+
+func (r *SandboxBoxListResponseSandboxesProxyConfigRulesGcp) UnmarshalJSON(data []byte) (err error) {
+	return apijson.UnmarshalRoot(data, r)
+}
+
+func (r sandboxBoxListResponseSandboxesProxyConfigRulesGcpJSON) RawJSON() string {
+	return r.raw
+}
+
+type SandboxBoxListResponseSandboxesProxyConfigRulesGcpServiceAccountJson struct {
+	Type  SandboxBoxListResponseSandboxesProxyConfigRulesGcpServiceAccountJsonType `json:"type" api:"required"`
+	IsSet bool                                                                     `json:"is_set"`
+	Value string                                                                   `json:"value"`
+	JSON  sandboxBoxListResponseSandboxesProxyConfigRulesGcpServiceAccountJsonJSON `json:"-"`
+}
+
+// sandboxBoxListResponseSandboxesProxyConfigRulesGcpServiceAccountJsonJSON
+// contains the JSON metadata for the struct
+// [SandboxBoxListResponseSandboxesProxyConfigRulesGcpServiceAccountJson]
+type sandboxBoxListResponseSandboxesProxyConfigRulesGcpServiceAccountJsonJSON struct {
+	Type        apijson.Field
+	IsSet       apijson.Field
+	Value       apijson.Field
+	raw         string
+	ExtraFields map[string]apijson.Field
+}
+
+func (r *SandboxBoxListResponseSandboxesProxyConfigRulesGcpServiceAccountJson) UnmarshalJSON(data []byte) (err error) {
+	return apijson.UnmarshalRoot(data, r)
+}
+
+func (r sandboxBoxListResponseSandboxesProxyConfigRulesGcpServiceAccountJsonJSON) RawJSON() string {
+	return r.raw
+}
+
+type SandboxBoxListResponseSandboxesProxyConfigRulesGcpServiceAccountJsonType string
+
+const (
+	SandboxBoxListResponseSandboxesProxyConfigRulesGcpServiceAccountJsonTypePlaintext       SandboxBoxListResponseSandboxesProxyConfigRulesGcpServiceAccountJsonType = "plaintext"
+	SandboxBoxListResponseSandboxesProxyConfigRulesGcpServiceAccountJsonTypeOpaque          SandboxBoxListResponseSandboxesProxyConfigRulesGcpServiceAccountJsonType = "opaque"
+	SandboxBoxListResponseSandboxesProxyConfigRulesGcpServiceAccountJsonTypeWorkspaceSecret SandboxBoxListResponseSandboxesProxyConfigRulesGcpServiceAccountJsonType = "workspace_secret"
+)
+
+func (r SandboxBoxListResponseSandboxesProxyConfigRulesGcpServiceAccountJsonType) IsKnown() bool {
+	switch r {
+	case SandboxBoxListResponseSandboxesProxyConfigRulesGcpServiceAccountJsonTypePlaintext, SandboxBoxListResponseSandboxesProxyConfigRulesGcpServiceAccountJsonTypeOpaque, SandboxBoxListResponseSandboxesProxyConfigRulesGcpServiceAccountJsonTypeWorkspaceSecret:
 		return true
 	}
 	return false
@@ -2398,6 +2666,7 @@ type SandboxBoxStartResponseProxyConfigRule struct {
 	Name       string                                          `json:"name" api:"required"`
 	Aws        SandboxBoxStartResponseProxyConfigRulesAws      `json:"aws"`
 	Enabled    bool                                            `json:"enabled"`
+	Gcp        SandboxBoxStartResponseProxyConfigRulesGcp      `json:"gcp"`
 	Headers    []SandboxBoxStartResponseProxyConfigRulesHeader `json:"headers"`
 	MatchHosts []string                                        `json:"match_hosts"`
 	MatchPaths []string                                        `json:"match_paths"`
@@ -2411,6 +2680,7 @@ type sandboxBoxStartResponseProxyConfigRuleJSON struct {
 	Name        apijson.Field
 	Aws         apijson.Field
 	Enabled     apijson.Field
+	Gcp         apijson.Field
 	Headers     apijson.Field
 	MatchHosts  apijson.Field
 	MatchPaths  apijson.Field
@@ -2528,6 +2798,71 @@ const (
 func (r SandboxBoxStartResponseProxyConfigRulesAwsSecretAccessKeyType) IsKnown() bool {
 	switch r {
 	case SandboxBoxStartResponseProxyConfigRulesAwsSecretAccessKeyTypePlaintext, SandboxBoxStartResponseProxyConfigRulesAwsSecretAccessKeyTypeOpaque, SandboxBoxStartResponseProxyConfigRulesAwsSecretAccessKeyTypeWorkspaceSecret:
+		return true
+	}
+	return false
+}
+
+type SandboxBoxStartResponseProxyConfigRulesGcp struct {
+	Scopes             []string                                                     `json:"scopes" api:"required"`
+	ServiceAccountJson SandboxBoxStartResponseProxyConfigRulesGcpServiceAccountJson `json:"service_account_json" api:"required"`
+	JSON               sandboxBoxStartResponseProxyConfigRulesGcpJSON               `json:"-"`
+}
+
+// sandboxBoxStartResponseProxyConfigRulesGcpJSON contains the JSON metadata for
+// the struct [SandboxBoxStartResponseProxyConfigRulesGcp]
+type sandboxBoxStartResponseProxyConfigRulesGcpJSON struct {
+	Scopes             apijson.Field
+	ServiceAccountJson apijson.Field
+	raw                string
+	ExtraFields        map[string]apijson.Field
+}
+
+func (r *SandboxBoxStartResponseProxyConfigRulesGcp) UnmarshalJSON(data []byte) (err error) {
+	return apijson.UnmarshalRoot(data, r)
+}
+
+func (r sandboxBoxStartResponseProxyConfigRulesGcpJSON) RawJSON() string {
+	return r.raw
+}
+
+type SandboxBoxStartResponseProxyConfigRulesGcpServiceAccountJson struct {
+	Type  SandboxBoxStartResponseProxyConfigRulesGcpServiceAccountJsonType `json:"type" api:"required"`
+	IsSet bool                                                             `json:"is_set"`
+	Value string                                                           `json:"value"`
+	JSON  sandboxBoxStartResponseProxyConfigRulesGcpServiceAccountJsonJSON `json:"-"`
+}
+
+// sandboxBoxStartResponseProxyConfigRulesGcpServiceAccountJsonJSON contains the
+// JSON metadata for the struct
+// [SandboxBoxStartResponseProxyConfigRulesGcpServiceAccountJson]
+type sandboxBoxStartResponseProxyConfigRulesGcpServiceAccountJsonJSON struct {
+	Type        apijson.Field
+	IsSet       apijson.Field
+	Value       apijson.Field
+	raw         string
+	ExtraFields map[string]apijson.Field
+}
+
+func (r *SandboxBoxStartResponseProxyConfigRulesGcpServiceAccountJson) UnmarshalJSON(data []byte) (err error) {
+	return apijson.UnmarshalRoot(data, r)
+}
+
+func (r sandboxBoxStartResponseProxyConfigRulesGcpServiceAccountJsonJSON) RawJSON() string {
+	return r.raw
+}
+
+type SandboxBoxStartResponseProxyConfigRulesGcpServiceAccountJsonType string
+
+const (
+	SandboxBoxStartResponseProxyConfigRulesGcpServiceAccountJsonTypePlaintext       SandboxBoxStartResponseProxyConfigRulesGcpServiceAccountJsonType = "plaintext"
+	SandboxBoxStartResponseProxyConfigRulesGcpServiceAccountJsonTypeOpaque          SandboxBoxStartResponseProxyConfigRulesGcpServiceAccountJsonType = "opaque"
+	SandboxBoxStartResponseProxyConfigRulesGcpServiceAccountJsonTypeWorkspaceSecret SandboxBoxStartResponseProxyConfigRulesGcpServiceAccountJsonType = "workspace_secret"
+)
+
+func (r SandboxBoxStartResponseProxyConfigRulesGcpServiceAccountJsonType) IsKnown() bool {
+	switch r {
+	case SandboxBoxStartResponseProxyConfigRulesGcpServiceAccountJsonTypePlaintext, SandboxBoxStartResponseProxyConfigRulesGcpServiceAccountJsonTypeOpaque, SandboxBoxStartResponseProxyConfigRulesGcpServiceAccountJsonTypeWorkspaceSecret:
 		return true
 	}
 	return false
@@ -2714,6 +3049,7 @@ type SandboxBoxNewParamsProxyConfigRule struct {
 	Name       param.Field[string]                                      `json:"name" api:"required"`
 	Aws        param.Field[SandboxBoxNewParamsProxyConfigRulesAws]      `json:"aws"`
 	Enabled    param.Field[bool]                                        `json:"enabled"`
+	Gcp        param.Field[SandboxBoxNewParamsProxyConfigRulesGcp]      `json:"gcp"`
 	Headers    param.Field[[]SandboxBoxNewParamsProxyConfigRulesHeader] `json:"headers"`
 	MatchHosts param.Field[[]string]                                    `json:"match_hosts"`
 	MatchPaths param.Field[[]string]                                    `json:"match_paths"`
@@ -2780,6 +3116,41 @@ const (
 func (r SandboxBoxNewParamsProxyConfigRulesAwsSecretAccessKeyType) IsKnown() bool {
 	switch r {
 	case SandboxBoxNewParamsProxyConfigRulesAwsSecretAccessKeyTypePlaintext, SandboxBoxNewParamsProxyConfigRulesAwsSecretAccessKeyTypeOpaque, SandboxBoxNewParamsProxyConfigRulesAwsSecretAccessKeyTypeWorkspaceSecret:
+		return true
+	}
+	return false
+}
+
+type SandboxBoxNewParamsProxyConfigRulesGcp struct {
+	Scopes             param.Field[[]string]                                                 `json:"scopes" api:"required"`
+	ServiceAccountJson param.Field[SandboxBoxNewParamsProxyConfigRulesGcpServiceAccountJson] `json:"service_account_json" api:"required"`
+}
+
+func (r SandboxBoxNewParamsProxyConfigRulesGcp) MarshalJSON() (data []byte, err error) {
+	return apijson.MarshalRoot(r)
+}
+
+type SandboxBoxNewParamsProxyConfigRulesGcpServiceAccountJson struct {
+	Type  param.Field[SandboxBoxNewParamsProxyConfigRulesGcpServiceAccountJsonType] `json:"type" api:"required"`
+	IsSet param.Field[bool]                                                         `json:"is_set"`
+	Value param.Field[string]                                                       `json:"value"`
+}
+
+func (r SandboxBoxNewParamsProxyConfigRulesGcpServiceAccountJson) MarshalJSON() (data []byte, err error) {
+	return apijson.MarshalRoot(r)
+}
+
+type SandboxBoxNewParamsProxyConfigRulesGcpServiceAccountJsonType string
+
+const (
+	SandboxBoxNewParamsProxyConfigRulesGcpServiceAccountJsonTypePlaintext       SandboxBoxNewParamsProxyConfigRulesGcpServiceAccountJsonType = "plaintext"
+	SandboxBoxNewParamsProxyConfigRulesGcpServiceAccountJsonTypeOpaque          SandboxBoxNewParamsProxyConfigRulesGcpServiceAccountJsonType = "opaque"
+	SandboxBoxNewParamsProxyConfigRulesGcpServiceAccountJsonTypeWorkspaceSecret SandboxBoxNewParamsProxyConfigRulesGcpServiceAccountJsonType = "workspace_secret"
+)
+
+func (r SandboxBoxNewParamsProxyConfigRulesGcpServiceAccountJsonType) IsKnown() bool {
+	switch r {
+	case SandboxBoxNewParamsProxyConfigRulesGcpServiceAccountJsonTypePlaintext, SandboxBoxNewParamsProxyConfigRulesGcpServiceAccountJsonTypeOpaque, SandboxBoxNewParamsProxyConfigRulesGcpServiceAccountJsonTypeWorkspaceSecret:
 		return true
 	}
 	return false
@@ -2890,6 +3261,7 @@ type SandboxBoxUpdateParamsProxyConfigRule struct {
 	Name       param.Field[string]                                         `json:"name" api:"required"`
 	Aws        param.Field[SandboxBoxUpdateParamsProxyConfigRulesAws]      `json:"aws"`
 	Enabled    param.Field[bool]                                           `json:"enabled"`
+	Gcp        param.Field[SandboxBoxUpdateParamsProxyConfigRulesGcp]      `json:"gcp"`
 	Headers    param.Field[[]SandboxBoxUpdateParamsProxyConfigRulesHeader] `json:"headers"`
 	MatchHosts param.Field[[]string]                                       `json:"match_hosts"`
 	MatchPaths param.Field[[]string]                                       `json:"match_paths"`
@@ -2956,6 +3328,41 @@ const (
 func (r SandboxBoxUpdateParamsProxyConfigRulesAwsSecretAccessKeyType) IsKnown() bool {
 	switch r {
 	case SandboxBoxUpdateParamsProxyConfigRulesAwsSecretAccessKeyTypePlaintext, SandboxBoxUpdateParamsProxyConfigRulesAwsSecretAccessKeyTypeOpaque, SandboxBoxUpdateParamsProxyConfigRulesAwsSecretAccessKeyTypeWorkspaceSecret:
+		return true
+	}
+	return false
+}
+
+type SandboxBoxUpdateParamsProxyConfigRulesGcp struct {
+	Scopes             param.Field[[]string]                                                    `json:"scopes" api:"required"`
+	ServiceAccountJson param.Field[SandboxBoxUpdateParamsProxyConfigRulesGcpServiceAccountJson] `json:"service_account_json" api:"required"`
+}
+
+func (r SandboxBoxUpdateParamsProxyConfigRulesGcp) MarshalJSON() (data []byte, err error) {
+	return apijson.MarshalRoot(r)
+}
+
+type SandboxBoxUpdateParamsProxyConfigRulesGcpServiceAccountJson struct {
+	Type  param.Field[SandboxBoxUpdateParamsProxyConfigRulesGcpServiceAccountJsonType] `json:"type" api:"required"`
+	IsSet param.Field[bool]                                                            `json:"is_set"`
+	Value param.Field[string]                                                          `json:"value"`
+}
+
+func (r SandboxBoxUpdateParamsProxyConfigRulesGcpServiceAccountJson) MarshalJSON() (data []byte, err error) {
+	return apijson.MarshalRoot(r)
+}
+
+type SandboxBoxUpdateParamsProxyConfigRulesGcpServiceAccountJsonType string
+
+const (
+	SandboxBoxUpdateParamsProxyConfigRulesGcpServiceAccountJsonTypePlaintext       SandboxBoxUpdateParamsProxyConfigRulesGcpServiceAccountJsonType = "plaintext"
+	SandboxBoxUpdateParamsProxyConfigRulesGcpServiceAccountJsonTypeOpaque          SandboxBoxUpdateParamsProxyConfigRulesGcpServiceAccountJsonType = "opaque"
+	SandboxBoxUpdateParamsProxyConfigRulesGcpServiceAccountJsonTypeWorkspaceSecret SandboxBoxUpdateParamsProxyConfigRulesGcpServiceAccountJsonType = "workspace_secret"
+)
+
+func (r SandboxBoxUpdateParamsProxyConfigRulesGcpServiceAccountJsonType) IsKnown() bool {
+	switch r {
+	case SandboxBoxUpdateParamsProxyConfigRulesGcpServiceAccountJsonTypePlaintext, SandboxBoxUpdateParamsProxyConfigRulesGcpServiceAccountJsonTypeOpaque, SandboxBoxUpdateParamsProxyConfigRulesGcpServiceAccountJsonTypeWorkspaceSecret:
 		return true
 	}
 	return false
