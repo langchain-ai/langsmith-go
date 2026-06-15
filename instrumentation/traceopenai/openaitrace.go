@@ -147,7 +147,7 @@ func MiddlewareWithTracerProvider(req *http.Request, next MiddlewareNext, tp tra
 		streaming = reqFields.streaming
 	}
 
-	responsesAPI := strings.HasSuffix(req.URL.Path, "/responses")
+	responsesAPI := strings.HasSuffix(req.URL.Path, "/responses") || strings.HasSuffix(req.URL.Path, "/responses/compact")
 
 	// Inject span context into request headers and update request context
 	otel.GetTextMapPropagator().Inject(ctx, propagation.HeaderCarrier(req.Header))
@@ -326,7 +326,8 @@ func isOpenAIEndpoint(path string) bool {
 	return strings.HasSuffix(path, "/chat/completions") ||
 		strings.HasSuffix(path, "/completions") ||
 		strings.HasSuffix(path, "/embeddings") ||
-		strings.HasSuffix(path, "/responses")
+		strings.HasSuffix(path, "/responses") ||
+		strings.HasSuffix(path, "/responses/compact")
 }
 
 // getSpanName returns an appropriate span name based on the API endpoint.
@@ -339,6 +340,9 @@ func getSpanName(path string) string {
 	}
 	if strings.HasSuffix(path, "/embeddings") {
 		return "openai.embedding"
+	}
+	if strings.HasSuffix(path, "/responses/compact") {
+		return "openai.responses.compact"
 	}
 	if strings.HasSuffix(path, "/responses") {
 		return "openai.responses"
@@ -356,6 +360,9 @@ func getOperationName(path string) string {
 	}
 	if strings.HasSuffix(path, "/embeddings") {
 		return "embedding"
+	}
+	if strings.HasSuffix(path, "/responses/compact") {
+		return "responses.compact"
 	}
 	if strings.HasSuffix(path, "/responses") {
 		return "responses"
