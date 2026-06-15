@@ -8,6 +8,7 @@ import (
 	"fmt"
 	"net/http"
 	"net/url"
+	"reflect"
 	"slices"
 
 	"github.com/langchain-ai/langsmith-go/internal/apijson"
@@ -15,6 +16,7 @@ import (
 	"github.com/langchain-ai/langsmith-go/internal/param"
 	"github.com/langchain-ai/langsmith-go/internal/requestconfig"
 	"github.com/langchain-ai/langsmith-go/option"
+	"github.com/tidwall/gjson"
 )
 
 // SandboxBoxService contains methods and other services that help with interacting
@@ -217,13 +219,24 @@ func (r sandboxBoxNewResponseJSON) RawJSON() string {
 }
 
 type SandboxBoxNewResponseMount struct {
-	ID        string                           `json:"id" api:"required"`
-	MountPath string                           `json:"mount_path" api:"required"`
-	S3        SandboxBoxNewResponseMountsS3    `json:"s3" api:"required"`
-	Type      SandboxBoxNewResponseMountsType  `json:"type" api:"required"`
-	Cache     SandboxBoxNewResponseMountsCache `json:"cache"`
-	ReadOnly  bool                             `json:"read_only"`
-	JSON      sandboxBoxNewResponseMountJSON   `json:"-"`
+	ID        string                          `json:"id" api:"required"`
+	MountPath string                          `json:"mount_path" api:"required"`
+	Type      SandboxBoxNewResponseMountsType `json:"type" api:"required"`
+	// This field can have the runtime type of
+	// [SandboxBoxNewResponseMountsSandboxapiS3BucketMountSpecCache],
+	// [SandboxBoxNewResponseMountsSandboxapiGcsBucketMountSpecCache].
+	Cache interface{} `json:"cache"`
+	// This field can have the runtime type of
+	// [SandboxBoxNewResponseMountsSandboxapiS3BucketMountSpecGcs],
+	// [SandboxBoxNewResponseMountsSandboxapiGcsBucketMountSpecGcs].
+	Gcs      interface{} `json:"gcs"`
+	ReadOnly bool        `json:"read_only"`
+	// This field can have the runtime type of
+	// [SandboxBoxNewResponseMountsSandboxapiS3BucketMountSpecS3],
+	// [SandboxBoxNewResponseMountsSandboxapiGcsBucketMountSpecS3].
+	S3    interface{}                    `json:"s3"`
+	JSON  sandboxBoxNewResponseMountJSON `json:"-"`
+	union SandboxBoxNewResponseMountsUnion
 }
 
 // sandboxBoxNewResponseMountJSON contains the JSON metadata for the struct
@@ -231,34 +244,120 @@ type SandboxBoxNewResponseMount struct {
 type sandboxBoxNewResponseMountJSON struct {
 	ID          apijson.Field
 	MountPath   apijson.Field
-	S3          apijson.Field
 	Type        apijson.Field
 	Cache       apijson.Field
+	Gcs         apijson.Field
 	ReadOnly    apijson.Field
+	S3          apijson.Field
 	raw         string
 	ExtraFields map[string]apijson.Field
-}
-
-func (r *SandboxBoxNewResponseMount) UnmarshalJSON(data []byte) (err error) {
-	return apijson.UnmarshalRoot(data, r)
 }
 
 func (r sandboxBoxNewResponseMountJSON) RawJSON() string {
 	return r.raw
 }
 
-type SandboxBoxNewResponseMountsS3 struct {
-	Bucket      string                            `json:"bucket" api:"required"`
-	EndpointURL string                            `json:"endpoint_url" api:"required"`
-	Region      string                            `json:"region" api:"required"`
-	PathStyle   bool                              `json:"path_style"`
-	Prefix      string                            `json:"prefix"`
-	JSON        sandboxBoxNewResponseMountsS3JSON `json:"-"`
+func (r *SandboxBoxNewResponseMount) UnmarshalJSON(data []byte) (err error) {
+	*r = SandboxBoxNewResponseMount{}
+	err = apijson.UnmarshalRoot(data, &r.union)
+	if err != nil {
+		return err
+	}
+	return apijson.Port(r.union, &r)
 }
 
-// sandboxBoxNewResponseMountsS3JSON contains the JSON metadata for the struct
-// [SandboxBoxNewResponseMountsS3]
-type sandboxBoxNewResponseMountsS3JSON struct {
+// AsUnion returns a [SandboxBoxNewResponseMountsUnion] interface which you can
+// cast to the specific types for more type safety.
+//
+// Possible runtime types of the union are
+// [SandboxBoxNewResponseMountsSandboxapiS3BucketMountSpec],
+// [SandboxBoxNewResponseMountsSandboxapiGcsBucketMountSpec].
+func (r SandboxBoxNewResponseMount) AsUnion() SandboxBoxNewResponseMountsUnion {
+	return r.union
+}
+
+// Union satisfied by [SandboxBoxNewResponseMountsSandboxapiS3BucketMountSpec] or
+// [SandboxBoxNewResponseMountsSandboxapiGcsBucketMountSpec].
+type SandboxBoxNewResponseMountsUnion interface {
+	implementsSandboxBoxNewResponseMount()
+}
+
+func init() {
+	apijson.RegisterUnion(
+		reflect.TypeOf((*SandboxBoxNewResponseMountsUnion)(nil)).Elem(),
+		"type",
+		apijson.UnionVariant{
+			TypeFilter:         gjson.JSON,
+			Type:               reflect.TypeOf(SandboxBoxNewResponseMountsSandboxapiS3BucketMountSpec{}),
+			DiscriminatorValue: "s3",
+		},
+		apijson.UnionVariant{
+			TypeFilter:         gjson.JSON,
+			Type:               reflect.TypeOf(SandboxBoxNewResponseMountsSandboxapiS3BucketMountSpec{}),
+			DiscriminatorValue: "gcs",
+		},
+		apijson.UnionVariant{
+			TypeFilter:         gjson.JSON,
+			Type:               reflect.TypeOf(SandboxBoxNewResponseMountsSandboxapiGcsBucketMountSpec{}),
+			DiscriminatorValue: "s3",
+		},
+		apijson.UnionVariant{
+			TypeFilter:         gjson.JSON,
+			Type:               reflect.TypeOf(SandboxBoxNewResponseMountsSandboxapiGcsBucketMountSpec{}),
+			DiscriminatorValue: "gcs",
+		},
+	)
+}
+
+type SandboxBoxNewResponseMountsSandboxapiS3BucketMountSpec struct {
+	ID        string                                                      `json:"id" api:"required"`
+	MountPath string                                                      `json:"mount_path" api:"required"`
+	S3        SandboxBoxNewResponseMountsSandboxapiS3BucketMountSpecS3    `json:"s3" api:"required"`
+	Type      SandboxBoxNewResponseMountsSandboxapiS3BucketMountSpecType  `json:"type" api:"required"`
+	Cache     SandboxBoxNewResponseMountsSandboxapiS3BucketMountSpecCache `json:"cache"`
+	Gcs       SandboxBoxNewResponseMountsSandboxapiS3BucketMountSpecGcs   `json:"gcs"`
+	ReadOnly  bool                                                        `json:"read_only"`
+	JSON      sandboxBoxNewResponseMountsSandboxapiS3BucketMountSpecJSON  `json:"-"`
+}
+
+// sandboxBoxNewResponseMountsSandboxapiS3BucketMountSpecJSON contains the JSON
+// metadata for the struct [SandboxBoxNewResponseMountsSandboxapiS3BucketMountSpec]
+type sandboxBoxNewResponseMountsSandboxapiS3BucketMountSpecJSON struct {
+	ID          apijson.Field
+	MountPath   apijson.Field
+	S3          apijson.Field
+	Type        apijson.Field
+	Cache       apijson.Field
+	Gcs         apijson.Field
+	ReadOnly    apijson.Field
+	raw         string
+	ExtraFields map[string]apijson.Field
+}
+
+func (r *SandboxBoxNewResponseMountsSandboxapiS3BucketMountSpec) UnmarshalJSON(data []byte) (err error) {
+	return apijson.UnmarshalRoot(data, r)
+}
+
+func (r sandboxBoxNewResponseMountsSandboxapiS3BucketMountSpecJSON) RawJSON() string {
+	return r.raw
+}
+
+func (r SandboxBoxNewResponseMountsSandboxapiS3BucketMountSpec) implementsSandboxBoxNewResponseMount() {
+}
+
+type SandboxBoxNewResponseMountsSandboxapiS3BucketMountSpecS3 struct {
+	Bucket      string                                                       `json:"bucket" api:"required"`
+	EndpointURL string                                                       `json:"endpoint_url" api:"required"`
+	Region      string                                                       `json:"region" api:"required"`
+	PathStyle   bool                                                         `json:"path_style"`
+	Prefix      string                                                       `json:"prefix"`
+	JSON        sandboxBoxNewResponseMountsSandboxapiS3BucketMountSpecS3JSON `json:"-"`
+}
+
+// sandboxBoxNewResponseMountsSandboxapiS3BucketMountSpecS3JSON contains the JSON
+// metadata for the struct
+// [SandboxBoxNewResponseMountsSandboxapiS3BucketMountSpecS3]
+type sandboxBoxNewResponseMountsSandboxapiS3BucketMountSpecS3JSON struct {
 	Bucket      apijson.Field
 	EndpointURL apijson.Field
 	Region      apijson.Field
@@ -268,49 +367,220 @@ type sandboxBoxNewResponseMountsS3JSON struct {
 	ExtraFields map[string]apijson.Field
 }
 
-func (r *SandboxBoxNewResponseMountsS3) UnmarshalJSON(data []byte) (err error) {
+func (r *SandboxBoxNewResponseMountsSandboxapiS3BucketMountSpecS3) UnmarshalJSON(data []byte) (err error) {
 	return apijson.UnmarshalRoot(data, r)
 }
 
-func (r sandboxBoxNewResponseMountsS3JSON) RawJSON() string {
+func (r sandboxBoxNewResponseMountsSandboxapiS3BucketMountSpecS3JSON) RawJSON() string {
 	return r.raw
 }
 
-type SandboxBoxNewResponseMountsType string
+type SandboxBoxNewResponseMountsSandboxapiS3BucketMountSpecType string
 
 const (
-	SandboxBoxNewResponseMountsTypeS3 SandboxBoxNewResponseMountsType = "s3"
+	SandboxBoxNewResponseMountsSandboxapiS3BucketMountSpecTypeS3  SandboxBoxNewResponseMountsSandboxapiS3BucketMountSpecType = "s3"
+	SandboxBoxNewResponseMountsSandboxapiS3BucketMountSpecTypeGcs SandboxBoxNewResponseMountsSandboxapiS3BucketMountSpecType = "gcs"
 )
 
-func (r SandboxBoxNewResponseMountsType) IsKnown() bool {
+func (r SandboxBoxNewResponseMountsSandboxapiS3BucketMountSpecType) IsKnown() bool {
 	switch r {
-	case SandboxBoxNewResponseMountsTypeS3:
+	case SandboxBoxNewResponseMountsSandboxapiS3BucketMountSpecTypeS3, SandboxBoxNewResponseMountsSandboxapiS3BucketMountSpecTypeGcs:
 		return true
 	}
 	return false
 }
 
-type SandboxBoxNewResponseMountsCache struct {
-	MaxSizeBytes     int64                                `json:"max_size_bytes"`
-	WritebackSeconds int64                                `json:"writeback_seconds"`
-	JSON             sandboxBoxNewResponseMountsCacheJSON `json:"-"`
+type SandboxBoxNewResponseMountsSandboxapiS3BucketMountSpecCache struct {
+	MaxSizeBytes     int64                                                           `json:"max_size_bytes"`
+	WritebackSeconds int64                                                           `json:"writeback_seconds"`
+	JSON             sandboxBoxNewResponseMountsSandboxapiS3BucketMountSpecCacheJSON `json:"-"`
 }
 
-// sandboxBoxNewResponseMountsCacheJSON contains the JSON metadata for the struct
-// [SandboxBoxNewResponseMountsCache]
-type sandboxBoxNewResponseMountsCacheJSON struct {
+// sandboxBoxNewResponseMountsSandboxapiS3BucketMountSpecCacheJSON contains the
+// JSON metadata for the struct
+// [SandboxBoxNewResponseMountsSandboxapiS3BucketMountSpecCache]
+type sandboxBoxNewResponseMountsSandboxapiS3BucketMountSpecCacheJSON struct {
 	MaxSizeBytes     apijson.Field
 	WritebackSeconds apijson.Field
 	raw              string
 	ExtraFields      map[string]apijson.Field
 }
 
-func (r *SandboxBoxNewResponseMountsCache) UnmarshalJSON(data []byte) (err error) {
+func (r *SandboxBoxNewResponseMountsSandboxapiS3BucketMountSpecCache) UnmarshalJSON(data []byte) (err error) {
 	return apijson.UnmarshalRoot(data, r)
 }
 
-func (r sandboxBoxNewResponseMountsCacheJSON) RawJSON() string {
+func (r sandboxBoxNewResponseMountsSandboxapiS3BucketMountSpecCacheJSON) RawJSON() string {
 	return r.raw
+}
+
+type SandboxBoxNewResponseMountsSandboxapiS3BucketMountSpecGcs struct {
+	Bucket string                                                        `json:"bucket" api:"required"`
+	Prefix string                                                        `json:"prefix"`
+	JSON   sandboxBoxNewResponseMountsSandboxapiS3BucketMountSpecGcsJSON `json:"-"`
+}
+
+// sandboxBoxNewResponseMountsSandboxapiS3BucketMountSpecGcsJSON contains the JSON
+// metadata for the struct
+// [SandboxBoxNewResponseMountsSandboxapiS3BucketMountSpecGcs]
+type sandboxBoxNewResponseMountsSandboxapiS3BucketMountSpecGcsJSON struct {
+	Bucket      apijson.Field
+	Prefix      apijson.Field
+	raw         string
+	ExtraFields map[string]apijson.Field
+}
+
+func (r *SandboxBoxNewResponseMountsSandboxapiS3BucketMountSpecGcs) UnmarshalJSON(data []byte) (err error) {
+	return apijson.UnmarshalRoot(data, r)
+}
+
+func (r sandboxBoxNewResponseMountsSandboxapiS3BucketMountSpecGcsJSON) RawJSON() string {
+	return r.raw
+}
+
+type SandboxBoxNewResponseMountsSandboxapiGcsBucketMountSpec struct {
+	ID        string                                                       `json:"id" api:"required"`
+	Gcs       SandboxBoxNewResponseMountsSandboxapiGcsBucketMountSpecGcs   `json:"gcs" api:"required"`
+	MountPath string                                                       `json:"mount_path" api:"required"`
+	Type      SandboxBoxNewResponseMountsSandboxapiGcsBucketMountSpecType  `json:"type" api:"required"`
+	Cache     SandboxBoxNewResponseMountsSandboxapiGcsBucketMountSpecCache `json:"cache"`
+	ReadOnly  bool                                                         `json:"read_only"`
+	S3        SandboxBoxNewResponseMountsSandboxapiGcsBucketMountSpecS3    `json:"s3"`
+	JSON      sandboxBoxNewResponseMountsSandboxapiGcsBucketMountSpecJSON  `json:"-"`
+}
+
+// sandboxBoxNewResponseMountsSandboxapiGcsBucketMountSpecJSON contains the JSON
+// metadata for the struct
+// [SandboxBoxNewResponseMountsSandboxapiGcsBucketMountSpec]
+type sandboxBoxNewResponseMountsSandboxapiGcsBucketMountSpecJSON struct {
+	ID          apijson.Field
+	Gcs         apijson.Field
+	MountPath   apijson.Field
+	Type        apijson.Field
+	Cache       apijson.Field
+	ReadOnly    apijson.Field
+	S3          apijson.Field
+	raw         string
+	ExtraFields map[string]apijson.Field
+}
+
+func (r *SandboxBoxNewResponseMountsSandboxapiGcsBucketMountSpec) UnmarshalJSON(data []byte) (err error) {
+	return apijson.UnmarshalRoot(data, r)
+}
+
+func (r sandboxBoxNewResponseMountsSandboxapiGcsBucketMountSpecJSON) RawJSON() string {
+	return r.raw
+}
+
+func (r SandboxBoxNewResponseMountsSandboxapiGcsBucketMountSpec) implementsSandboxBoxNewResponseMount() {
+}
+
+type SandboxBoxNewResponseMountsSandboxapiGcsBucketMountSpecGcs struct {
+	Bucket string                                                         `json:"bucket" api:"required"`
+	Prefix string                                                         `json:"prefix"`
+	JSON   sandboxBoxNewResponseMountsSandboxapiGcsBucketMountSpecGcsJSON `json:"-"`
+}
+
+// sandboxBoxNewResponseMountsSandboxapiGcsBucketMountSpecGcsJSON contains the JSON
+// metadata for the struct
+// [SandboxBoxNewResponseMountsSandboxapiGcsBucketMountSpecGcs]
+type sandboxBoxNewResponseMountsSandboxapiGcsBucketMountSpecGcsJSON struct {
+	Bucket      apijson.Field
+	Prefix      apijson.Field
+	raw         string
+	ExtraFields map[string]apijson.Field
+}
+
+func (r *SandboxBoxNewResponseMountsSandboxapiGcsBucketMountSpecGcs) UnmarshalJSON(data []byte) (err error) {
+	return apijson.UnmarshalRoot(data, r)
+}
+
+func (r sandboxBoxNewResponseMountsSandboxapiGcsBucketMountSpecGcsJSON) RawJSON() string {
+	return r.raw
+}
+
+type SandboxBoxNewResponseMountsSandboxapiGcsBucketMountSpecType string
+
+const (
+	SandboxBoxNewResponseMountsSandboxapiGcsBucketMountSpecTypeS3  SandboxBoxNewResponseMountsSandboxapiGcsBucketMountSpecType = "s3"
+	SandboxBoxNewResponseMountsSandboxapiGcsBucketMountSpecTypeGcs SandboxBoxNewResponseMountsSandboxapiGcsBucketMountSpecType = "gcs"
+)
+
+func (r SandboxBoxNewResponseMountsSandboxapiGcsBucketMountSpecType) IsKnown() bool {
+	switch r {
+	case SandboxBoxNewResponseMountsSandboxapiGcsBucketMountSpecTypeS3, SandboxBoxNewResponseMountsSandboxapiGcsBucketMountSpecTypeGcs:
+		return true
+	}
+	return false
+}
+
+type SandboxBoxNewResponseMountsSandboxapiGcsBucketMountSpecCache struct {
+	MaxSizeBytes     int64                                                            `json:"max_size_bytes"`
+	WritebackSeconds int64                                                            `json:"writeback_seconds"`
+	JSON             sandboxBoxNewResponseMountsSandboxapiGcsBucketMountSpecCacheJSON `json:"-"`
+}
+
+// sandboxBoxNewResponseMountsSandboxapiGcsBucketMountSpecCacheJSON contains the
+// JSON metadata for the struct
+// [SandboxBoxNewResponseMountsSandboxapiGcsBucketMountSpecCache]
+type sandboxBoxNewResponseMountsSandboxapiGcsBucketMountSpecCacheJSON struct {
+	MaxSizeBytes     apijson.Field
+	WritebackSeconds apijson.Field
+	raw              string
+	ExtraFields      map[string]apijson.Field
+}
+
+func (r *SandboxBoxNewResponseMountsSandboxapiGcsBucketMountSpecCache) UnmarshalJSON(data []byte) (err error) {
+	return apijson.UnmarshalRoot(data, r)
+}
+
+func (r sandboxBoxNewResponseMountsSandboxapiGcsBucketMountSpecCacheJSON) RawJSON() string {
+	return r.raw
+}
+
+type SandboxBoxNewResponseMountsSandboxapiGcsBucketMountSpecS3 struct {
+	Bucket      string                                                        `json:"bucket" api:"required"`
+	EndpointURL string                                                        `json:"endpoint_url" api:"required"`
+	Region      string                                                        `json:"region" api:"required"`
+	PathStyle   bool                                                          `json:"path_style"`
+	Prefix      string                                                        `json:"prefix"`
+	JSON        sandboxBoxNewResponseMountsSandboxapiGcsBucketMountSpecS3JSON `json:"-"`
+}
+
+// sandboxBoxNewResponseMountsSandboxapiGcsBucketMountSpecS3JSON contains the JSON
+// metadata for the struct
+// [SandboxBoxNewResponseMountsSandboxapiGcsBucketMountSpecS3]
+type sandboxBoxNewResponseMountsSandboxapiGcsBucketMountSpecS3JSON struct {
+	Bucket      apijson.Field
+	EndpointURL apijson.Field
+	Region      apijson.Field
+	PathStyle   apijson.Field
+	Prefix      apijson.Field
+	raw         string
+	ExtraFields map[string]apijson.Field
+}
+
+func (r *SandboxBoxNewResponseMountsSandboxapiGcsBucketMountSpecS3) UnmarshalJSON(data []byte) (err error) {
+	return apijson.UnmarshalRoot(data, r)
+}
+
+func (r sandboxBoxNewResponseMountsSandboxapiGcsBucketMountSpecS3JSON) RawJSON() string {
+	return r.raw
+}
+
+type SandboxBoxNewResponseMountsType string
+
+const (
+	SandboxBoxNewResponseMountsTypeS3  SandboxBoxNewResponseMountsType = "s3"
+	SandboxBoxNewResponseMountsTypeGcs SandboxBoxNewResponseMountsType = "gcs"
+)
+
+func (r SandboxBoxNewResponseMountsType) IsKnown() bool {
+	switch r {
+	case SandboxBoxNewResponseMountsTypeS3, SandboxBoxNewResponseMountsTypeGcs:
+		return true
+	}
+	return false
 }
 
 type SandboxBoxNewResponseProxyConfig struct {
@@ -742,13 +1012,24 @@ func (r sandboxBoxGetResponseJSON) RawJSON() string {
 }
 
 type SandboxBoxGetResponseMount struct {
-	ID        string                           `json:"id" api:"required"`
-	MountPath string                           `json:"mount_path" api:"required"`
-	S3        SandboxBoxGetResponseMountsS3    `json:"s3" api:"required"`
-	Type      SandboxBoxGetResponseMountsType  `json:"type" api:"required"`
-	Cache     SandboxBoxGetResponseMountsCache `json:"cache"`
-	ReadOnly  bool                             `json:"read_only"`
-	JSON      sandboxBoxGetResponseMountJSON   `json:"-"`
+	ID        string                          `json:"id" api:"required"`
+	MountPath string                          `json:"mount_path" api:"required"`
+	Type      SandboxBoxGetResponseMountsType `json:"type" api:"required"`
+	// This field can have the runtime type of
+	// [SandboxBoxGetResponseMountsSandboxapiS3BucketMountSpecCache],
+	// [SandboxBoxGetResponseMountsSandboxapiGcsBucketMountSpecCache].
+	Cache interface{} `json:"cache"`
+	// This field can have the runtime type of
+	// [SandboxBoxGetResponseMountsSandboxapiS3BucketMountSpecGcs],
+	// [SandboxBoxGetResponseMountsSandboxapiGcsBucketMountSpecGcs].
+	Gcs      interface{} `json:"gcs"`
+	ReadOnly bool        `json:"read_only"`
+	// This field can have the runtime type of
+	// [SandboxBoxGetResponseMountsSandboxapiS3BucketMountSpecS3],
+	// [SandboxBoxGetResponseMountsSandboxapiGcsBucketMountSpecS3].
+	S3    interface{}                    `json:"s3"`
+	JSON  sandboxBoxGetResponseMountJSON `json:"-"`
+	union SandboxBoxGetResponseMountsUnion
 }
 
 // sandboxBoxGetResponseMountJSON contains the JSON metadata for the struct
@@ -756,34 +1037,120 @@ type SandboxBoxGetResponseMount struct {
 type sandboxBoxGetResponseMountJSON struct {
 	ID          apijson.Field
 	MountPath   apijson.Field
-	S3          apijson.Field
 	Type        apijson.Field
 	Cache       apijson.Field
+	Gcs         apijson.Field
 	ReadOnly    apijson.Field
+	S3          apijson.Field
 	raw         string
 	ExtraFields map[string]apijson.Field
-}
-
-func (r *SandboxBoxGetResponseMount) UnmarshalJSON(data []byte) (err error) {
-	return apijson.UnmarshalRoot(data, r)
 }
 
 func (r sandboxBoxGetResponseMountJSON) RawJSON() string {
 	return r.raw
 }
 
-type SandboxBoxGetResponseMountsS3 struct {
-	Bucket      string                            `json:"bucket" api:"required"`
-	EndpointURL string                            `json:"endpoint_url" api:"required"`
-	Region      string                            `json:"region" api:"required"`
-	PathStyle   bool                              `json:"path_style"`
-	Prefix      string                            `json:"prefix"`
-	JSON        sandboxBoxGetResponseMountsS3JSON `json:"-"`
+func (r *SandboxBoxGetResponseMount) UnmarshalJSON(data []byte) (err error) {
+	*r = SandboxBoxGetResponseMount{}
+	err = apijson.UnmarshalRoot(data, &r.union)
+	if err != nil {
+		return err
+	}
+	return apijson.Port(r.union, &r)
 }
 
-// sandboxBoxGetResponseMountsS3JSON contains the JSON metadata for the struct
-// [SandboxBoxGetResponseMountsS3]
-type sandboxBoxGetResponseMountsS3JSON struct {
+// AsUnion returns a [SandboxBoxGetResponseMountsUnion] interface which you can
+// cast to the specific types for more type safety.
+//
+// Possible runtime types of the union are
+// [SandboxBoxGetResponseMountsSandboxapiS3BucketMountSpec],
+// [SandboxBoxGetResponseMountsSandboxapiGcsBucketMountSpec].
+func (r SandboxBoxGetResponseMount) AsUnion() SandboxBoxGetResponseMountsUnion {
+	return r.union
+}
+
+// Union satisfied by [SandboxBoxGetResponseMountsSandboxapiS3BucketMountSpec] or
+// [SandboxBoxGetResponseMountsSandboxapiGcsBucketMountSpec].
+type SandboxBoxGetResponseMountsUnion interface {
+	implementsSandboxBoxGetResponseMount()
+}
+
+func init() {
+	apijson.RegisterUnion(
+		reflect.TypeOf((*SandboxBoxGetResponseMountsUnion)(nil)).Elem(),
+		"type",
+		apijson.UnionVariant{
+			TypeFilter:         gjson.JSON,
+			Type:               reflect.TypeOf(SandboxBoxGetResponseMountsSandboxapiS3BucketMountSpec{}),
+			DiscriminatorValue: "s3",
+		},
+		apijson.UnionVariant{
+			TypeFilter:         gjson.JSON,
+			Type:               reflect.TypeOf(SandboxBoxGetResponseMountsSandboxapiS3BucketMountSpec{}),
+			DiscriminatorValue: "gcs",
+		},
+		apijson.UnionVariant{
+			TypeFilter:         gjson.JSON,
+			Type:               reflect.TypeOf(SandboxBoxGetResponseMountsSandboxapiGcsBucketMountSpec{}),
+			DiscriminatorValue: "s3",
+		},
+		apijson.UnionVariant{
+			TypeFilter:         gjson.JSON,
+			Type:               reflect.TypeOf(SandboxBoxGetResponseMountsSandboxapiGcsBucketMountSpec{}),
+			DiscriminatorValue: "gcs",
+		},
+	)
+}
+
+type SandboxBoxGetResponseMountsSandboxapiS3BucketMountSpec struct {
+	ID        string                                                      `json:"id" api:"required"`
+	MountPath string                                                      `json:"mount_path" api:"required"`
+	S3        SandboxBoxGetResponseMountsSandboxapiS3BucketMountSpecS3    `json:"s3" api:"required"`
+	Type      SandboxBoxGetResponseMountsSandboxapiS3BucketMountSpecType  `json:"type" api:"required"`
+	Cache     SandboxBoxGetResponseMountsSandboxapiS3BucketMountSpecCache `json:"cache"`
+	Gcs       SandboxBoxGetResponseMountsSandboxapiS3BucketMountSpecGcs   `json:"gcs"`
+	ReadOnly  bool                                                        `json:"read_only"`
+	JSON      sandboxBoxGetResponseMountsSandboxapiS3BucketMountSpecJSON  `json:"-"`
+}
+
+// sandboxBoxGetResponseMountsSandboxapiS3BucketMountSpecJSON contains the JSON
+// metadata for the struct [SandboxBoxGetResponseMountsSandboxapiS3BucketMountSpec]
+type sandboxBoxGetResponseMountsSandboxapiS3BucketMountSpecJSON struct {
+	ID          apijson.Field
+	MountPath   apijson.Field
+	S3          apijson.Field
+	Type        apijson.Field
+	Cache       apijson.Field
+	Gcs         apijson.Field
+	ReadOnly    apijson.Field
+	raw         string
+	ExtraFields map[string]apijson.Field
+}
+
+func (r *SandboxBoxGetResponseMountsSandboxapiS3BucketMountSpec) UnmarshalJSON(data []byte) (err error) {
+	return apijson.UnmarshalRoot(data, r)
+}
+
+func (r sandboxBoxGetResponseMountsSandboxapiS3BucketMountSpecJSON) RawJSON() string {
+	return r.raw
+}
+
+func (r SandboxBoxGetResponseMountsSandboxapiS3BucketMountSpec) implementsSandboxBoxGetResponseMount() {
+}
+
+type SandboxBoxGetResponseMountsSandboxapiS3BucketMountSpecS3 struct {
+	Bucket      string                                                       `json:"bucket" api:"required"`
+	EndpointURL string                                                       `json:"endpoint_url" api:"required"`
+	Region      string                                                       `json:"region" api:"required"`
+	PathStyle   bool                                                         `json:"path_style"`
+	Prefix      string                                                       `json:"prefix"`
+	JSON        sandboxBoxGetResponseMountsSandboxapiS3BucketMountSpecS3JSON `json:"-"`
+}
+
+// sandboxBoxGetResponseMountsSandboxapiS3BucketMountSpecS3JSON contains the JSON
+// metadata for the struct
+// [SandboxBoxGetResponseMountsSandboxapiS3BucketMountSpecS3]
+type sandboxBoxGetResponseMountsSandboxapiS3BucketMountSpecS3JSON struct {
 	Bucket      apijson.Field
 	EndpointURL apijson.Field
 	Region      apijson.Field
@@ -793,49 +1160,220 @@ type sandboxBoxGetResponseMountsS3JSON struct {
 	ExtraFields map[string]apijson.Field
 }
 
-func (r *SandboxBoxGetResponseMountsS3) UnmarshalJSON(data []byte) (err error) {
+func (r *SandboxBoxGetResponseMountsSandboxapiS3BucketMountSpecS3) UnmarshalJSON(data []byte) (err error) {
 	return apijson.UnmarshalRoot(data, r)
 }
 
-func (r sandboxBoxGetResponseMountsS3JSON) RawJSON() string {
+func (r sandboxBoxGetResponseMountsSandboxapiS3BucketMountSpecS3JSON) RawJSON() string {
 	return r.raw
 }
 
-type SandboxBoxGetResponseMountsType string
+type SandboxBoxGetResponseMountsSandboxapiS3BucketMountSpecType string
 
 const (
-	SandboxBoxGetResponseMountsTypeS3 SandboxBoxGetResponseMountsType = "s3"
+	SandboxBoxGetResponseMountsSandboxapiS3BucketMountSpecTypeS3  SandboxBoxGetResponseMountsSandboxapiS3BucketMountSpecType = "s3"
+	SandboxBoxGetResponseMountsSandboxapiS3BucketMountSpecTypeGcs SandboxBoxGetResponseMountsSandboxapiS3BucketMountSpecType = "gcs"
 )
 
-func (r SandboxBoxGetResponseMountsType) IsKnown() bool {
+func (r SandboxBoxGetResponseMountsSandboxapiS3BucketMountSpecType) IsKnown() bool {
 	switch r {
-	case SandboxBoxGetResponseMountsTypeS3:
+	case SandboxBoxGetResponseMountsSandboxapiS3BucketMountSpecTypeS3, SandboxBoxGetResponseMountsSandboxapiS3BucketMountSpecTypeGcs:
 		return true
 	}
 	return false
 }
 
-type SandboxBoxGetResponseMountsCache struct {
-	MaxSizeBytes     int64                                `json:"max_size_bytes"`
-	WritebackSeconds int64                                `json:"writeback_seconds"`
-	JSON             sandboxBoxGetResponseMountsCacheJSON `json:"-"`
+type SandboxBoxGetResponseMountsSandboxapiS3BucketMountSpecCache struct {
+	MaxSizeBytes     int64                                                           `json:"max_size_bytes"`
+	WritebackSeconds int64                                                           `json:"writeback_seconds"`
+	JSON             sandboxBoxGetResponseMountsSandboxapiS3BucketMountSpecCacheJSON `json:"-"`
 }
 
-// sandboxBoxGetResponseMountsCacheJSON contains the JSON metadata for the struct
-// [SandboxBoxGetResponseMountsCache]
-type sandboxBoxGetResponseMountsCacheJSON struct {
+// sandboxBoxGetResponseMountsSandboxapiS3BucketMountSpecCacheJSON contains the
+// JSON metadata for the struct
+// [SandboxBoxGetResponseMountsSandboxapiS3BucketMountSpecCache]
+type sandboxBoxGetResponseMountsSandboxapiS3BucketMountSpecCacheJSON struct {
 	MaxSizeBytes     apijson.Field
 	WritebackSeconds apijson.Field
 	raw              string
 	ExtraFields      map[string]apijson.Field
 }
 
-func (r *SandboxBoxGetResponseMountsCache) UnmarshalJSON(data []byte) (err error) {
+func (r *SandboxBoxGetResponseMountsSandboxapiS3BucketMountSpecCache) UnmarshalJSON(data []byte) (err error) {
 	return apijson.UnmarshalRoot(data, r)
 }
 
-func (r sandboxBoxGetResponseMountsCacheJSON) RawJSON() string {
+func (r sandboxBoxGetResponseMountsSandboxapiS3BucketMountSpecCacheJSON) RawJSON() string {
 	return r.raw
+}
+
+type SandboxBoxGetResponseMountsSandboxapiS3BucketMountSpecGcs struct {
+	Bucket string                                                        `json:"bucket" api:"required"`
+	Prefix string                                                        `json:"prefix"`
+	JSON   sandboxBoxGetResponseMountsSandboxapiS3BucketMountSpecGcsJSON `json:"-"`
+}
+
+// sandboxBoxGetResponseMountsSandboxapiS3BucketMountSpecGcsJSON contains the JSON
+// metadata for the struct
+// [SandboxBoxGetResponseMountsSandboxapiS3BucketMountSpecGcs]
+type sandboxBoxGetResponseMountsSandboxapiS3BucketMountSpecGcsJSON struct {
+	Bucket      apijson.Field
+	Prefix      apijson.Field
+	raw         string
+	ExtraFields map[string]apijson.Field
+}
+
+func (r *SandboxBoxGetResponseMountsSandboxapiS3BucketMountSpecGcs) UnmarshalJSON(data []byte) (err error) {
+	return apijson.UnmarshalRoot(data, r)
+}
+
+func (r sandboxBoxGetResponseMountsSandboxapiS3BucketMountSpecGcsJSON) RawJSON() string {
+	return r.raw
+}
+
+type SandboxBoxGetResponseMountsSandboxapiGcsBucketMountSpec struct {
+	ID        string                                                       `json:"id" api:"required"`
+	Gcs       SandboxBoxGetResponseMountsSandboxapiGcsBucketMountSpecGcs   `json:"gcs" api:"required"`
+	MountPath string                                                       `json:"mount_path" api:"required"`
+	Type      SandboxBoxGetResponseMountsSandboxapiGcsBucketMountSpecType  `json:"type" api:"required"`
+	Cache     SandboxBoxGetResponseMountsSandboxapiGcsBucketMountSpecCache `json:"cache"`
+	ReadOnly  bool                                                         `json:"read_only"`
+	S3        SandboxBoxGetResponseMountsSandboxapiGcsBucketMountSpecS3    `json:"s3"`
+	JSON      sandboxBoxGetResponseMountsSandboxapiGcsBucketMountSpecJSON  `json:"-"`
+}
+
+// sandboxBoxGetResponseMountsSandboxapiGcsBucketMountSpecJSON contains the JSON
+// metadata for the struct
+// [SandboxBoxGetResponseMountsSandboxapiGcsBucketMountSpec]
+type sandboxBoxGetResponseMountsSandboxapiGcsBucketMountSpecJSON struct {
+	ID          apijson.Field
+	Gcs         apijson.Field
+	MountPath   apijson.Field
+	Type        apijson.Field
+	Cache       apijson.Field
+	ReadOnly    apijson.Field
+	S3          apijson.Field
+	raw         string
+	ExtraFields map[string]apijson.Field
+}
+
+func (r *SandboxBoxGetResponseMountsSandboxapiGcsBucketMountSpec) UnmarshalJSON(data []byte) (err error) {
+	return apijson.UnmarshalRoot(data, r)
+}
+
+func (r sandboxBoxGetResponseMountsSandboxapiGcsBucketMountSpecJSON) RawJSON() string {
+	return r.raw
+}
+
+func (r SandboxBoxGetResponseMountsSandboxapiGcsBucketMountSpec) implementsSandboxBoxGetResponseMount() {
+}
+
+type SandboxBoxGetResponseMountsSandboxapiGcsBucketMountSpecGcs struct {
+	Bucket string                                                         `json:"bucket" api:"required"`
+	Prefix string                                                         `json:"prefix"`
+	JSON   sandboxBoxGetResponseMountsSandboxapiGcsBucketMountSpecGcsJSON `json:"-"`
+}
+
+// sandboxBoxGetResponseMountsSandboxapiGcsBucketMountSpecGcsJSON contains the JSON
+// metadata for the struct
+// [SandboxBoxGetResponseMountsSandboxapiGcsBucketMountSpecGcs]
+type sandboxBoxGetResponseMountsSandboxapiGcsBucketMountSpecGcsJSON struct {
+	Bucket      apijson.Field
+	Prefix      apijson.Field
+	raw         string
+	ExtraFields map[string]apijson.Field
+}
+
+func (r *SandboxBoxGetResponseMountsSandboxapiGcsBucketMountSpecGcs) UnmarshalJSON(data []byte) (err error) {
+	return apijson.UnmarshalRoot(data, r)
+}
+
+func (r sandboxBoxGetResponseMountsSandboxapiGcsBucketMountSpecGcsJSON) RawJSON() string {
+	return r.raw
+}
+
+type SandboxBoxGetResponseMountsSandboxapiGcsBucketMountSpecType string
+
+const (
+	SandboxBoxGetResponseMountsSandboxapiGcsBucketMountSpecTypeS3  SandboxBoxGetResponseMountsSandboxapiGcsBucketMountSpecType = "s3"
+	SandboxBoxGetResponseMountsSandboxapiGcsBucketMountSpecTypeGcs SandboxBoxGetResponseMountsSandboxapiGcsBucketMountSpecType = "gcs"
+)
+
+func (r SandboxBoxGetResponseMountsSandboxapiGcsBucketMountSpecType) IsKnown() bool {
+	switch r {
+	case SandboxBoxGetResponseMountsSandboxapiGcsBucketMountSpecTypeS3, SandboxBoxGetResponseMountsSandboxapiGcsBucketMountSpecTypeGcs:
+		return true
+	}
+	return false
+}
+
+type SandboxBoxGetResponseMountsSandboxapiGcsBucketMountSpecCache struct {
+	MaxSizeBytes     int64                                                            `json:"max_size_bytes"`
+	WritebackSeconds int64                                                            `json:"writeback_seconds"`
+	JSON             sandboxBoxGetResponseMountsSandboxapiGcsBucketMountSpecCacheJSON `json:"-"`
+}
+
+// sandboxBoxGetResponseMountsSandboxapiGcsBucketMountSpecCacheJSON contains the
+// JSON metadata for the struct
+// [SandboxBoxGetResponseMountsSandboxapiGcsBucketMountSpecCache]
+type sandboxBoxGetResponseMountsSandboxapiGcsBucketMountSpecCacheJSON struct {
+	MaxSizeBytes     apijson.Field
+	WritebackSeconds apijson.Field
+	raw              string
+	ExtraFields      map[string]apijson.Field
+}
+
+func (r *SandboxBoxGetResponseMountsSandboxapiGcsBucketMountSpecCache) UnmarshalJSON(data []byte) (err error) {
+	return apijson.UnmarshalRoot(data, r)
+}
+
+func (r sandboxBoxGetResponseMountsSandboxapiGcsBucketMountSpecCacheJSON) RawJSON() string {
+	return r.raw
+}
+
+type SandboxBoxGetResponseMountsSandboxapiGcsBucketMountSpecS3 struct {
+	Bucket      string                                                        `json:"bucket" api:"required"`
+	EndpointURL string                                                        `json:"endpoint_url" api:"required"`
+	Region      string                                                        `json:"region" api:"required"`
+	PathStyle   bool                                                          `json:"path_style"`
+	Prefix      string                                                        `json:"prefix"`
+	JSON        sandboxBoxGetResponseMountsSandboxapiGcsBucketMountSpecS3JSON `json:"-"`
+}
+
+// sandboxBoxGetResponseMountsSandboxapiGcsBucketMountSpecS3JSON contains the JSON
+// metadata for the struct
+// [SandboxBoxGetResponseMountsSandboxapiGcsBucketMountSpecS3]
+type sandboxBoxGetResponseMountsSandboxapiGcsBucketMountSpecS3JSON struct {
+	Bucket      apijson.Field
+	EndpointURL apijson.Field
+	Region      apijson.Field
+	PathStyle   apijson.Field
+	Prefix      apijson.Field
+	raw         string
+	ExtraFields map[string]apijson.Field
+}
+
+func (r *SandboxBoxGetResponseMountsSandboxapiGcsBucketMountSpecS3) UnmarshalJSON(data []byte) (err error) {
+	return apijson.UnmarshalRoot(data, r)
+}
+
+func (r sandboxBoxGetResponseMountsSandboxapiGcsBucketMountSpecS3JSON) RawJSON() string {
+	return r.raw
+}
+
+type SandboxBoxGetResponseMountsType string
+
+const (
+	SandboxBoxGetResponseMountsTypeS3  SandboxBoxGetResponseMountsType = "s3"
+	SandboxBoxGetResponseMountsTypeGcs SandboxBoxGetResponseMountsType = "gcs"
+)
+
+func (r SandboxBoxGetResponseMountsType) IsKnown() bool {
+	switch r {
+	case SandboxBoxGetResponseMountsTypeS3, SandboxBoxGetResponseMountsTypeGcs:
+		return true
+	}
+	return false
 }
 
 type SandboxBoxGetResponseProxyConfig struct {
@@ -1267,13 +1805,24 @@ func (r sandboxBoxUpdateResponseJSON) RawJSON() string {
 }
 
 type SandboxBoxUpdateResponseMount struct {
-	ID        string                              `json:"id" api:"required"`
-	MountPath string                              `json:"mount_path" api:"required"`
-	S3        SandboxBoxUpdateResponseMountsS3    `json:"s3" api:"required"`
-	Type      SandboxBoxUpdateResponseMountsType  `json:"type" api:"required"`
-	Cache     SandboxBoxUpdateResponseMountsCache `json:"cache"`
-	ReadOnly  bool                                `json:"read_only"`
-	JSON      sandboxBoxUpdateResponseMountJSON   `json:"-"`
+	ID        string                             `json:"id" api:"required"`
+	MountPath string                             `json:"mount_path" api:"required"`
+	Type      SandboxBoxUpdateResponseMountsType `json:"type" api:"required"`
+	// This field can have the runtime type of
+	// [SandboxBoxUpdateResponseMountsSandboxapiS3BucketMountSpecCache],
+	// [SandboxBoxUpdateResponseMountsSandboxapiGcsBucketMountSpecCache].
+	Cache interface{} `json:"cache"`
+	// This field can have the runtime type of
+	// [SandboxBoxUpdateResponseMountsSandboxapiS3BucketMountSpecGcs],
+	// [SandboxBoxUpdateResponseMountsSandboxapiGcsBucketMountSpecGcs].
+	Gcs      interface{} `json:"gcs"`
+	ReadOnly bool        `json:"read_only"`
+	// This field can have the runtime type of
+	// [SandboxBoxUpdateResponseMountsSandboxapiS3BucketMountSpecS3],
+	// [SandboxBoxUpdateResponseMountsSandboxapiGcsBucketMountSpecS3].
+	S3    interface{}                       `json:"s3"`
+	JSON  sandboxBoxUpdateResponseMountJSON `json:"-"`
+	union SandboxBoxUpdateResponseMountsUnion
 }
 
 // sandboxBoxUpdateResponseMountJSON contains the JSON metadata for the struct
@@ -1281,34 +1830,121 @@ type SandboxBoxUpdateResponseMount struct {
 type sandboxBoxUpdateResponseMountJSON struct {
 	ID          apijson.Field
 	MountPath   apijson.Field
-	S3          apijson.Field
 	Type        apijson.Field
 	Cache       apijson.Field
+	Gcs         apijson.Field
 	ReadOnly    apijson.Field
+	S3          apijson.Field
 	raw         string
 	ExtraFields map[string]apijson.Field
-}
-
-func (r *SandboxBoxUpdateResponseMount) UnmarshalJSON(data []byte) (err error) {
-	return apijson.UnmarshalRoot(data, r)
 }
 
 func (r sandboxBoxUpdateResponseMountJSON) RawJSON() string {
 	return r.raw
 }
 
-type SandboxBoxUpdateResponseMountsS3 struct {
-	Bucket      string                               `json:"bucket" api:"required"`
-	EndpointURL string                               `json:"endpoint_url" api:"required"`
-	Region      string                               `json:"region" api:"required"`
-	PathStyle   bool                                 `json:"path_style"`
-	Prefix      string                               `json:"prefix"`
-	JSON        sandboxBoxUpdateResponseMountsS3JSON `json:"-"`
+func (r *SandboxBoxUpdateResponseMount) UnmarshalJSON(data []byte) (err error) {
+	*r = SandboxBoxUpdateResponseMount{}
+	err = apijson.UnmarshalRoot(data, &r.union)
+	if err != nil {
+		return err
+	}
+	return apijson.Port(r.union, &r)
 }
 
-// sandboxBoxUpdateResponseMountsS3JSON contains the JSON metadata for the struct
-// [SandboxBoxUpdateResponseMountsS3]
-type sandboxBoxUpdateResponseMountsS3JSON struct {
+// AsUnion returns a [SandboxBoxUpdateResponseMountsUnion] interface which you can
+// cast to the specific types for more type safety.
+//
+// Possible runtime types of the union are
+// [SandboxBoxUpdateResponseMountsSandboxapiS3BucketMountSpec],
+// [SandboxBoxUpdateResponseMountsSandboxapiGcsBucketMountSpec].
+func (r SandboxBoxUpdateResponseMount) AsUnion() SandboxBoxUpdateResponseMountsUnion {
+	return r.union
+}
+
+// Union satisfied by [SandboxBoxUpdateResponseMountsSandboxapiS3BucketMountSpec]
+// or [SandboxBoxUpdateResponseMountsSandboxapiGcsBucketMountSpec].
+type SandboxBoxUpdateResponseMountsUnion interface {
+	implementsSandboxBoxUpdateResponseMount()
+}
+
+func init() {
+	apijson.RegisterUnion(
+		reflect.TypeOf((*SandboxBoxUpdateResponseMountsUnion)(nil)).Elem(),
+		"type",
+		apijson.UnionVariant{
+			TypeFilter:         gjson.JSON,
+			Type:               reflect.TypeOf(SandboxBoxUpdateResponseMountsSandboxapiS3BucketMountSpec{}),
+			DiscriminatorValue: "s3",
+		},
+		apijson.UnionVariant{
+			TypeFilter:         gjson.JSON,
+			Type:               reflect.TypeOf(SandboxBoxUpdateResponseMountsSandboxapiS3BucketMountSpec{}),
+			DiscriminatorValue: "gcs",
+		},
+		apijson.UnionVariant{
+			TypeFilter:         gjson.JSON,
+			Type:               reflect.TypeOf(SandboxBoxUpdateResponseMountsSandboxapiGcsBucketMountSpec{}),
+			DiscriminatorValue: "s3",
+		},
+		apijson.UnionVariant{
+			TypeFilter:         gjson.JSON,
+			Type:               reflect.TypeOf(SandboxBoxUpdateResponseMountsSandboxapiGcsBucketMountSpec{}),
+			DiscriminatorValue: "gcs",
+		},
+	)
+}
+
+type SandboxBoxUpdateResponseMountsSandboxapiS3BucketMountSpec struct {
+	ID        string                                                         `json:"id" api:"required"`
+	MountPath string                                                         `json:"mount_path" api:"required"`
+	S3        SandboxBoxUpdateResponseMountsSandboxapiS3BucketMountSpecS3    `json:"s3" api:"required"`
+	Type      SandboxBoxUpdateResponseMountsSandboxapiS3BucketMountSpecType  `json:"type" api:"required"`
+	Cache     SandboxBoxUpdateResponseMountsSandboxapiS3BucketMountSpecCache `json:"cache"`
+	Gcs       SandboxBoxUpdateResponseMountsSandboxapiS3BucketMountSpecGcs   `json:"gcs"`
+	ReadOnly  bool                                                           `json:"read_only"`
+	JSON      sandboxBoxUpdateResponseMountsSandboxapiS3BucketMountSpecJSON  `json:"-"`
+}
+
+// sandboxBoxUpdateResponseMountsSandboxapiS3BucketMountSpecJSON contains the JSON
+// metadata for the struct
+// [SandboxBoxUpdateResponseMountsSandboxapiS3BucketMountSpec]
+type sandboxBoxUpdateResponseMountsSandboxapiS3BucketMountSpecJSON struct {
+	ID          apijson.Field
+	MountPath   apijson.Field
+	S3          apijson.Field
+	Type        apijson.Field
+	Cache       apijson.Field
+	Gcs         apijson.Field
+	ReadOnly    apijson.Field
+	raw         string
+	ExtraFields map[string]apijson.Field
+}
+
+func (r *SandboxBoxUpdateResponseMountsSandboxapiS3BucketMountSpec) UnmarshalJSON(data []byte) (err error) {
+	return apijson.UnmarshalRoot(data, r)
+}
+
+func (r sandboxBoxUpdateResponseMountsSandboxapiS3BucketMountSpecJSON) RawJSON() string {
+	return r.raw
+}
+
+func (r SandboxBoxUpdateResponseMountsSandboxapiS3BucketMountSpec) implementsSandboxBoxUpdateResponseMount() {
+}
+
+type SandboxBoxUpdateResponseMountsSandboxapiS3BucketMountSpecS3 struct {
+	Bucket      string                                                          `json:"bucket" api:"required"`
+	EndpointURL string                                                          `json:"endpoint_url" api:"required"`
+	Region      string                                                          `json:"region" api:"required"`
+	PathStyle   bool                                                            `json:"path_style"`
+	Prefix      string                                                          `json:"prefix"`
+	JSON        sandboxBoxUpdateResponseMountsSandboxapiS3BucketMountSpecS3JSON `json:"-"`
+}
+
+// sandboxBoxUpdateResponseMountsSandboxapiS3BucketMountSpecS3JSON contains the
+// JSON metadata for the struct
+// [SandboxBoxUpdateResponseMountsSandboxapiS3BucketMountSpecS3]
+type sandboxBoxUpdateResponseMountsSandboxapiS3BucketMountSpecS3JSON struct {
 	Bucket      apijson.Field
 	EndpointURL apijson.Field
 	Region      apijson.Field
@@ -1318,49 +1954,220 @@ type sandboxBoxUpdateResponseMountsS3JSON struct {
 	ExtraFields map[string]apijson.Field
 }
 
-func (r *SandboxBoxUpdateResponseMountsS3) UnmarshalJSON(data []byte) (err error) {
+func (r *SandboxBoxUpdateResponseMountsSandboxapiS3BucketMountSpecS3) UnmarshalJSON(data []byte) (err error) {
 	return apijson.UnmarshalRoot(data, r)
 }
 
-func (r sandboxBoxUpdateResponseMountsS3JSON) RawJSON() string {
+func (r sandboxBoxUpdateResponseMountsSandboxapiS3BucketMountSpecS3JSON) RawJSON() string {
 	return r.raw
 }
 
-type SandboxBoxUpdateResponseMountsType string
+type SandboxBoxUpdateResponseMountsSandboxapiS3BucketMountSpecType string
 
 const (
-	SandboxBoxUpdateResponseMountsTypeS3 SandboxBoxUpdateResponseMountsType = "s3"
+	SandboxBoxUpdateResponseMountsSandboxapiS3BucketMountSpecTypeS3  SandboxBoxUpdateResponseMountsSandboxapiS3BucketMountSpecType = "s3"
+	SandboxBoxUpdateResponseMountsSandboxapiS3BucketMountSpecTypeGcs SandboxBoxUpdateResponseMountsSandboxapiS3BucketMountSpecType = "gcs"
 )
 
-func (r SandboxBoxUpdateResponseMountsType) IsKnown() bool {
+func (r SandboxBoxUpdateResponseMountsSandboxapiS3BucketMountSpecType) IsKnown() bool {
 	switch r {
-	case SandboxBoxUpdateResponseMountsTypeS3:
+	case SandboxBoxUpdateResponseMountsSandboxapiS3BucketMountSpecTypeS3, SandboxBoxUpdateResponseMountsSandboxapiS3BucketMountSpecTypeGcs:
 		return true
 	}
 	return false
 }
 
-type SandboxBoxUpdateResponseMountsCache struct {
-	MaxSizeBytes     int64                                   `json:"max_size_bytes"`
-	WritebackSeconds int64                                   `json:"writeback_seconds"`
-	JSON             sandboxBoxUpdateResponseMountsCacheJSON `json:"-"`
+type SandboxBoxUpdateResponseMountsSandboxapiS3BucketMountSpecCache struct {
+	MaxSizeBytes     int64                                                              `json:"max_size_bytes"`
+	WritebackSeconds int64                                                              `json:"writeback_seconds"`
+	JSON             sandboxBoxUpdateResponseMountsSandboxapiS3BucketMountSpecCacheJSON `json:"-"`
 }
 
-// sandboxBoxUpdateResponseMountsCacheJSON contains the JSON metadata for the
-// struct [SandboxBoxUpdateResponseMountsCache]
-type sandboxBoxUpdateResponseMountsCacheJSON struct {
+// sandboxBoxUpdateResponseMountsSandboxapiS3BucketMountSpecCacheJSON contains the
+// JSON metadata for the struct
+// [SandboxBoxUpdateResponseMountsSandboxapiS3BucketMountSpecCache]
+type sandboxBoxUpdateResponseMountsSandboxapiS3BucketMountSpecCacheJSON struct {
 	MaxSizeBytes     apijson.Field
 	WritebackSeconds apijson.Field
 	raw              string
 	ExtraFields      map[string]apijson.Field
 }
 
-func (r *SandboxBoxUpdateResponseMountsCache) UnmarshalJSON(data []byte) (err error) {
+func (r *SandboxBoxUpdateResponseMountsSandboxapiS3BucketMountSpecCache) UnmarshalJSON(data []byte) (err error) {
 	return apijson.UnmarshalRoot(data, r)
 }
 
-func (r sandboxBoxUpdateResponseMountsCacheJSON) RawJSON() string {
+func (r sandboxBoxUpdateResponseMountsSandboxapiS3BucketMountSpecCacheJSON) RawJSON() string {
 	return r.raw
+}
+
+type SandboxBoxUpdateResponseMountsSandboxapiS3BucketMountSpecGcs struct {
+	Bucket string                                                           `json:"bucket" api:"required"`
+	Prefix string                                                           `json:"prefix"`
+	JSON   sandboxBoxUpdateResponseMountsSandboxapiS3BucketMountSpecGcsJSON `json:"-"`
+}
+
+// sandboxBoxUpdateResponseMountsSandboxapiS3BucketMountSpecGcsJSON contains the
+// JSON metadata for the struct
+// [SandboxBoxUpdateResponseMountsSandboxapiS3BucketMountSpecGcs]
+type sandboxBoxUpdateResponseMountsSandboxapiS3BucketMountSpecGcsJSON struct {
+	Bucket      apijson.Field
+	Prefix      apijson.Field
+	raw         string
+	ExtraFields map[string]apijson.Field
+}
+
+func (r *SandboxBoxUpdateResponseMountsSandboxapiS3BucketMountSpecGcs) UnmarshalJSON(data []byte) (err error) {
+	return apijson.UnmarshalRoot(data, r)
+}
+
+func (r sandboxBoxUpdateResponseMountsSandboxapiS3BucketMountSpecGcsJSON) RawJSON() string {
+	return r.raw
+}
+
+type SandboxBoxUpdateResponseMountsSandboxapiGcsBucketMountSpec struct {
+	ID        string                                                          `json:"id" api:"required"`
+	Gcs       SandboxBoxUpdateResponseMountsSandboxapiGcsBucketMountSpecGcs   `json:"gcs" api:"required"`
+	MountPath string                                                          `json:"mount_path" api:"required"`
+	Type      SandboxBoxUpdateResponseMountsSandboxapiGcsBucketMountSpecType  `json:"type" api:"required"`
+	Cache     SandboxBoxUpdateResponseMountsSandboxapiGcsBucketMountSpecCache `json:"cache"`
+	ReadOnly  bool                                                            `json:"read_only"`
+	S3        SandboxBoxUpdateResponseMountsSandboxapiGcsBucketMountSpecS3    `json:"s3"`
+	JSON      sandboxBoxUpdateResponseMountsSandboxapiGcsBucketMountSpecJSON  `json:"-"`
+}
+
+// sandboxBoxUpdateResponseMountsSandboxapiGcsBucketMountSpecJSON contains the JSON
+// metadata for the struct
+// [SandboxBoxUpdateResponseMountsSandboxapiGcsBucketMountSpec]
+type sandboxBoxUpdateResponseMountsSandboxapiGcsBucketMountSpecJSON struct {
+	ID          apijson.Field
+	Gcs         apijson.Field
+	MountPath   apijson.Field
+	Type        apijson.Field
+	Cache       apijson.Field
+	ReadOnly    apijson.Field
+	S3          apijson.Field
+	raw         string
+	ExtraFields map[string]apijson.Field
+}
+
+func (r *SandboxBoxUpdateResponseMountsSandboxapiGcsBucketMountSpec) UnmarshalJSON(data []byte) (err error) {
+	return apijson.UnmarshalRoot(data, r)
+}
+
+func (r sandboxBoxUpdateResponseMountsSandboxapiGcsBucketMountSpecJSON) RawJSON() string {
+	return r.raw
+}
+
+func (r SandboxBoxUpdateResponseMountsSandboxapiGcsBucketMountSpec) implementsSandboxBoxUpdateResponseMount() {
+}
+
+type SandboxBoxUpdateResponseMountsSandboxapiGcsBucketMountSpecGcs struct {
+	Bucket string                                                            `json:"bucket" api:"required"`
+	Prefix string                                                            `json:"prefix"`
+	JSON   sandboxBoxUpdateResponseMountsSandboxapiGcsBucketMountSpecGcsJSON `json:"-"`
+}
+
+// sandboxBoxUpdateResponseMountsSandboxapiGcsBucketMountSpecGcsJSON contains the
+// JSON metadata for the struct
+// [SandboxBoxUpdateResponseMountsSandboxapiGcsBucketMountSpecGcs]
+type sandboxBoxUpdateResponseMountsSandboxapiGcsBucketMountSpecGcsJSON struct {
+	Bucket      apijson.Field
+	Prefix      apijson.Field
+	raw         string
+	ExtraFields map[string]apijson.Field
+}
+
+func (r *SandboxBoxUpdateResponseMountsSandboxapiGcsBucketMountSpecGcs) UnmarshalJSON(data []byte) (err error) {
+	return apijson.UnmarshalRoot(data, r)
+}
+
+func (r sandboxBoxUpdateResponseMountsSandboxapiGcsBucketMountSpecGcsJSON) RawJSON() string {
+	return r.raw
+}
+
+type SandboxBoxUpdateResponseMountsSandboxapiGcsBucketMountSpecType string
+
+const (
+	SandboxBoxUpdateResponseMountsSandboxapiGcsBucketMountSpecTypeS3  SandboxBoxUpdateResponseMountsSandboxapiGcsBucketMountSpecType = "s3"
+	SandboxBoxUpdateResponseMountsSandboxapiGcsBucketMountSpecTypeGcs SandboxBoxUpdateResponseMountsSandboxapiGcsBucketMountSpecType = "gcs"
+)
+
+func (r SandboxBoxUpdateResponseMountsSandboxapiGcsBucketMountSpecType) IsKnown() bool {
+	switch r {
+	case SandboxBoxUpdateResponseMountsSandboxapiGcsBucketMountSpecTypeS3, SandboxBoxUpdateResponseMountsSandboxapiGcsBucketMountSpecTypeGcs:
+		return true
+	}
+	return false
+}
+
+type SandboxBoxUpdateResponseMountsSandboxapiGcsBucketMountSpecCache struct {
+	MaxSizeBytes     int64                                                               `json:"max_size_bytes"`
+	WritebackSeconds int64                                                               `json:"writeback_seconds"`
+	JSON             sandboxBoxUpdateResponseMountsSandboxapiGcsBucketMountSpecCacheJSON `json:"-"`
+}
+
+// sandboxBoxUpdateResponseMountsSandboxapiGcsBucketMountSpecCacheJSON contains the
+// JSON metadata for the struct
+// [SandboxBoxUpdateResponseMountsSandboxapiGcsBucketMountSpecCache]
+type sandboxBoxUpdateResponseMountsSandboxapiGcsBucketMountSpecCacheJSON struct {
+	MaxSizeBytes     apijson.Field
+	WritebackSeconds apijson.Field
+	raw              string
+	ExtraFields      map[string]apijson.Field
+}
+
+func (r *SandboxBoxUpdateResponseMountsSandboxapiGcsBucketMountSpecCache) UnmarshalJSON(data []byte) (err error) {
+	return apijson.UnmarshalRoot(data, r)
+}
+
+func (r sandboxBoxUpdateResponseMountsSandboxapiGcsBucketMountSpecCacheJSON) RawJSON() string {
+	return r.raw
+}
+
+type SandboxBoxUpdateResponseMountsSandboxapiGcsBucketMountSpecS3 struct {
+	Bucket      string                                                           `json:"bucket" api:"required"`
+	EndpointURL string                                                           `json:"endpoint_url" api:"required"`
+	Region      string                                                           `json:"region" api:"required"`
+	PathStyle   bool                                                             `json:"path_style"`
+	Prefix      string                                                           `json:"prefix"`
+	JSON        sandboxBoxUpdateResponseMountsSandboxapiGcsBucketMountSpecS3JSON `json:"-"`
+}
+
+// sandboxBoxUpdateResponseMountsSandboxapiGcsBucketMountSpecS3JSON contains the
+// JSON metadata for the struct
+// [SandboxBoxUpdateResponseMountsSandboxapiGcsBucketMountSpecS3]
+type sandboxBoxUpdateResponseMountsSandboxapiGcsBucketMountSpecS3JSON struct {
+	Bucket      apijson.Field
+	EndpointURL apijson.Field
+	Region      apijson.Field
+	PathStyle   apijson.Field
+	Prefix      apijson.Field
+	raw         string
+	ExtraFields map[string]apijson.Field
+}
+
+func (r *SandboxBoxUpdateResponseMountsSandboxapiGcsBucketMountSpecS3) UnmarshalJSON(data []byte) (err error) {
+	return apijson.UnmarshalRoot(data, r)
+}
+
+func (r sandboxBoxUpdateResponseMountsSandboxapiGcsBucketMountSpecS3JSON) RawJSON() string {
+	return r.raw
+}
+
+type SandboxBoxUpdateResponseMountsType string
+
+const (
+	SandboxBoxUpdateResponseMountsTypeS3  SandboxBoxUpdateResponseMountsType = "s3"
+	SandboxBoxUpdateResponseMountsTypeGcs SandboxBoxUpdateResponseMountsType = "gcs"
+)
+
+func (r SandboxBoxUpdateResponseMountsType) IsKnown() bool {
+	switch r {
+	case SandboxBoxUpdateResponseMountsTypeS3, SandboxBoxUpdateResponseMountsTypeGcs:
+		return true
+	}
+	return false
 }
 
 type SandboxBoxUpdateResponseProxyConfig struct {
@@ -1816,13 +2623,24 @@ func (r sandboxBoxListResponseSandboxJSON) RawJSON() string {
 }
 
 type SandboxBoxListResponseSandboxesMount struct {
-	ID        string                                     `json:"id" api:"required"`
-	MountPath string                                     `json:"mount_path" api:"required"`
-	S3        SandboxBoxListResponseSandboxesMountsS3    `json:"s3" api:"required"`
-	Type      SandboxBoxListResponseSandboxesMountsType  `json:"type" api:"required"`
-	Cache     SandboxBoxListResponseSandboxesMountsCache `json:"cache"`
-	ReadOnly  bool                                       `json:"read_only"`
-	JSON      sandboxBoxListResponseSandboxesMountJSON   `json:"-"`
+	ID        string                                    `json:"id" api:"required"`
+	MountPath string                                    `json:"mount_path" api:"required"`
+	Type      SandboxBoxListResponseSandboxesMountsType `json:"type" api:"required"`
+	// This field can have the runtime type of
+	// [SandboxBoxListResponseSandboxesMountsSandboxapiS3BucketMountSpecCache],
+	// [SandboxBoxListResponseSandboxesMountsSandboxapiGcsBucketMountSpecCache].
+	Cache interface{} `json:"cache"`
+	// This field can have the runtime type of
+	// [SandboxBoxListResponseSandboxesMountsSandboxapiS3BucketMountSpecGcs],
+	// [SandboxBoxListResponseSandboxesMountsSandboxapiGcsBucketMountSpecGcs].
+	Gcs      interface{} `json:"gcs"`
+	ReadOnly bool        `json:"read_only"`
+	// This field can have the runtime type of
+	// [SandboxBoxListResponseSandboxesMountsSandboxapiS3BucketMountSpecS3],
+	// [SandboxBoxListResponseSandboxesMountsSandboxapiGcsBucketMountSpecS3].
+	S3    interface{}                              `json:"s3"`
+	JSON  sandboxBoxListResponseSandboxesMountJSON `json:"-"`
+	union SandboxBoxListResponseSandboxesMountsUnion
 }
 
 // sandboxBoxListResponseSandboxesMountJSON contains the JSON metadata for the
@@ -1830,34 +2648,122 @@ type SandboxBoxListResponseSandboxesMount struct {
 type sandboxBoxListResponseSandboxesMountJSON struct {
 	ID          apijson.Field
 	MountPath   apijson.Field
-	S3          apijson.Field
 	Type        apijson.Field
 	Cache       apijson.Field
+	Gcs         apijson.Field
 	ReadOnly    apijson.Field
+	S3          apijson.Field
 	raw         string
 	ExtraFields map[string]apijson.Field
-}
-
-func (r *SandboxBoxListResponseSandboxesMount) UnmarshalJSON(data []byte) (err error) {
-	return apijson.UnmarshalRoot(data, r)
 }
 
 func (r sandboxBoxListResponseSandboxesMountJSON) RawJSON() string {
 	return r.raw
 }
 
-type SandboxBoxListResponseSandboxesMountsS3 struct {
-	Bucket      string                                      `json:"bucket" api:"required"`
-	EndpointURL string                                      `json:"endpoint_url" api:"required"`
-	Region      string                                      `json:"region" api:"required"`
-	PathStyle   bool                                        `json:"path_style"`
-	Prefix      string                                      `json:"prefix"`
-	JSON        sandboxBoxListResponseSandboxesMountsS3JSON `json:"-"`
+func (r *SandboxBoxListResponseSandboxesMount) UnmarshalJSON(data []byte) (err error) {
+	*r = SandboxBoxListResponseSandboxesMount{}
+	err = apijson.UnmarshalRoot(data, &r.union)
+	if err != nil {
+		return err
+	}
+	return apijson.Port(r.union, &r)
 }
 
-// sandboxBoxListResponseSandboxesMountsS3JSON contains the JSON metadata for the
-// struct [SandboxBoxListResponseSandboxesMountsS3]
-type sandboxBoxListResponseSandboxesMountsS3JSON struct {
+// AsUnion returns a [SandboxBoxListResponseSandboxesMountsUnion] interface which
+// you can cast to the specific types for more type safety.
+//
+// Possible runtime types of the union are
+// [SandboxBoxListResponseSandboxesMountsSandboxapiS3BucketMountSpec],
+// [SandboxBoxListResponseSandboxesMountsSandboxapiGcsBucketMountSpec].
+func (r SandboxBoxListResponseSandboxesMount) AsUnion() SandboxBoxListResponseSandboxesMountsUnion {
+	return r.union
+}
+
+// Union satisfied by
+// [SandboxBoxListResponseSandboxesMountsSandboxapiS3BucketMountSpec] or
+// [SandboxBoxListResponseSandboxesMountsSandboxapiGcsBucketMountSpec].
+type SandboxBoxListResponseSandboxesMountsUnion interface {
+	implementsSandboxBoxListResponseSandboxesMount()
+}
+
+func init() {
+	apijson.RegisterUnion(
+		reflect.TypeOf((*SandboxBoxListResponseSandboxesMountsUnion)(nil)).Elem(),
+		"type",
+		apijson.UnionVariant{
+			TypeFilter:         gjson.JSON,
+			Type:               reflect.TypeOf(SandboxBoxListResponseSandboxesMountsSandboxapiS3BucketMountSpec{}),
+			DiscriminatorValue: "s3",
+		},
+		apijson.UnionVariant{
+			TypeFilter:         gjson.JSON,
+			Type:               reflect.TypeOf(SandboxBoxListResponseSandboxesMountsSandboxapiS3BucketMountSpec{}),
+			DiscriminatorValue: "gcs",
+		},
+		apijson.UnionVariant{
+			TypeFilter:         gjson.JSON,
+			Type:               reflect.TypeOf(SandboxBoxListResponseSandboxesMountsSandboxapiGcsBucketMountSpec{}),
+			DiscriminatorValue: "s3",
+		},
+		apijson.UnionVariant{
+			TypeFilter:         gjson.JSON,
+			Type:               reflect.TypeOf(SandboxBoxListResponseSandboxesMountsSandboxapiGcsBucketMountSpec{}),
+			DiscriminatorValue: "gcs",
+		},
+	)
+}
+
+type SandboxBoxListResponseSandboxesMountsSandboxapiS3BucketMountSpec struct {
+	ID        string                                                                `json:"id" api:"required"`
+	MountPath string                                                                `json:"mount_path" api:"required"`
+	S3        SandboxBoxListResponseSandboxesMountsSandboxapiS3BucketMountSpecS3    `json:"s3" api:"required"`
+	Type      SandboxBoxListResponseSandboxesMountsSandboxapiS3BucketMountSpecType  `json:"type" api:"required"`
+	Cache     SandboxBoxListResponseSandboxesMountsSandboxapiS3BucketMountSpecCache `json:"cache"`
+	Gcs       SandboxBoxListResponseSandboxesMountsSandboxapiS3BucketMountSpecGcs   `json:"gcs"`
+	ReadOnly  bool                                                                  `json:"read_only"`
+	JSON      sandboxBoxListResponseSandboxesMountsSandboxapiS3BucketMountSpecJSON  `json:"-"`
+}
+
+// sandboxBoxListResponseSandboxesMountsSandboxapiS3BucketMountSpecJSON contains
+// the JSON metadata for the struct
+// [SandboxBoxListResponseSandboxesMountsSandboxapiS3BucketMountSpec]
+type sandboxBoxListResponseSandboxesMountsSandboxapiS3BucketMountSpecJSON struct {
+	ID          apijson.Field
+	MountPath   apijson.Field
+	S3          apijson.Field
+	Type        apijson.Field
+	Cache       apijson.Field
+	Gcs         apijson.Field
+	ReadOnly    apijson.Field
+	raw         string
+	ExtraFields map[string]apijson.Field
+}
+
+func (r *SandboxBoxListResponseSandboxesMountsSandboxapiS3BucketMountSpec) UnmarshalJSON(data []byte) (err error) {
+	return apijson.UnmarshalRoot(data, r)
+}
+
+func (r sandboxBoxListResponseSandboxesMountsSandboxapiS3BucketMountSpecJSON) RawJSON() string {
+	return r.raw
+}
+
+func (r SandboxBoxListResponseSandboxesMountsSandboxapiS3BucketMountSpec) implementsSandboxBoxListResponseSandboxesMount() {
+}
+
+type SandboxBoxListResponseSandboxesMountsSandboxapiS3BucketMountSpecS3 struct {
+	Bucket      string                                                                 `json:"bucket" api:"required"`
+	EndpointURL string                                                                 `json:"endpoint_url" api:"required"`
+	Region      string                                                                 `json:"region" api:"required"`
+	PathStyle   bool                                                                   `json:"path_style"`
+	Prefix      string                                                                 `json:"prefix"`
+	JSON        sandboxBoxListResponseSandboxesMountsSandboxapiS3BucketMountSpecS3JSON `json:"-"`
+}
+
+// sandboxBoxListResponseSandboxesMountsSandboxapiS3BucketMountSpecS3JSON contains
+// the JSON metadata for the struct
+// [SandboxBoxListResponseSandboxesMountsSandboxapiS3BucketMountSpecS3]
+type sandboxBoxListResponseSandboxesMountsSandboxapiS3BucketMountSpecS3JSON struct {
 	Bucket      apijson.Field
 	EndpointURL apijson.Field
 	Region      apijson.Field
@@ -1867,49 +2773,220 @@ type sandboxBoxListResponseSandboxesMountsS3JSON struct {
 	ExtraFields map[string]apijson.Field
 }
 
-func (r *SandboxBoxListResponseSandboxesMountsS3) UnmarshalJSON(data []byte) (err error) {
+func (r *SandboxBoxListResponseSandboxesMountsSandboxapiS3BucketMountSpecS3) UnmarshalJSON(data []byte) (err error) {
 	return apijson.UnmarshalRoot(data, r)
 }
 
-func (r sandboxBoxListResponseSandboxesMountsS3JSON) RawJSON() string {
+func (r sandboxBoxListResponseSandboxesMountsSandboxapiS3BucketMountSpecS3JSON) RawJSON() string {
 	return r.raw
 }
 
-type SandboxBoxListResponseSandboxesMountsType string
+type SandboxBoxListResponseSandboxesMountsSandboxapiS3BucketMountSpecType string
 
 const (
-	SandboxBoxListResponseSandboxesMountsTypeS3 SandboxBoxListResponseSandboxesMountsType = "s3"
+	SandboxBoxListResponseSandboxesMountsSandboxapiS3BucketMountSpecTypeS3  SandboxBoxListResponseSandboxesMountsSandboxapiS3BucketMountSpecType = "s3"
+	SandboxBoxListResponseSandboxesMountsSandboxapiS3BucketMountSpecTypeGcs SandboxBoxListResponseSandboxesMountsSandboxapiS3BucketMountSpecType = "gcs"
 )
 
-func (r SandboxBoxListResponseSandboxesMountsType) IsKnown() bool {
+func (r SandboxBoxListResponseSandboxesMountsSandboxapiS3BucketMountSpecType) IsKnown() bool {
 	switch r {
-	case SandboxBoxListResponseSandboxesMountsTypeS3:
+	case SandboxBoxListResponseSandboxesMountsSandboxapiS3BucketMountSpecTypeS3, SandboxBoxListResponseSandboxesMountsSandboxapiS3BucketMountSpecTypeGcs:
 		return true
 	}
 	return false
 }
 
-type SandboxBoxListResponseSandboxesMountsCache struct {
-	MaxSizeBytes     int64                                          `json:"max_size_bytes"`
-	WritebackSeconds int64                                          `json:"writeback_seconds"`
-	JSON             sandboxBoxListResponseSandboxesMountsCacheJSON `json:"-"`
+type SandboxBoxListResponseSandboxesMountsSandboxapiS3BucketMountSpecCache struct {
+	MaxSizeBytes     int64                                                                     `json:"max_size_bytes"`
+	WritebackSeconds int64                                                                     `json:"writeback_seconds"`
+	JSON             sandboxBoxListResponseSandboxesMountsSandboxapiS3BucketMountSpecCacheJSON `json:"-"`
 }
 
-// sandboxBoxListResponseSandboxesMountsCacheJSON contains the JSON metadata for
-// the struct [SandboxBoxListResponseSandboxesMountsCache]
-type sandboxBoxListResponseSandboxesMountsCacheJSON struct {
+// sandboxBoxListResponseSandboxesMountsSandboxapiS3BucketMountSpecCacheJSON
+// contains the JSON metadata for the struct
+// [SandboxBoxListResponseSandboxesMountsSandboxapiS3BucketMountSpecCache]
+type sandboxBoxListResponseSandboxesMountsSandboxapiS3BucketMountSpecCacheJSON struct {
 	MaxSizeBytes     apijson.Field
 	WritebackSeconds apijson.Field
 	raw              string
 	ExtraFields      map[string]apijson.Field
 }
 
-func (r *SandboxBoxListResponseSandboxesMountsCache) UnmarshalJSON(data []byte) (err error) {
+func (r *SandboxBoxListResponseSandboxesMountsSandboxapiS3BucketMountSpecCache) UnmarshalJSON(data []byte) (err error) {
 	return apijson.UnmarshalRoot(data, r)
 }
 
-func (r sandboxBoxListResponseSandboxesMountsCacheJSON) RawJSON() string {
+func (r sandboxBoxListResponseSandboxesMountsSandboxapiS3BucketMountSpecCacheJSON) RawJSON() string {
 	return r.raw
+}
+
+type SandboxBoxListResponseSandboxesMountsSandboxapiS3BucketMountSpecGcs struct {
+	Bucket string                                                                  `json:"bucket" api:"required"`
+	Prefix string                                                                  `json:"prefix"`
+	JSON   sandboxBoxListResponseSandboxesMountsSandboxapiS3BucketMountSpecGcsJSON `json:"-"`
+}
+
+// sandboxBoxListResponseSandboxesMountsSandboxapiS3BucketMountSpecGcsJSON contains
+// the JSON metadata for the struct
+// [SandboxBoxListResponseSandboxesMountsSandboxapiS3BucketMountSpecGcs]
+type sandboxBoxListResponseSandboxesMountsSandboxapiS3BucketMountSpecGcsJSON struct {
+	Bucket      apijson.Field
+	Prefix      apijson.Field
+	raw         string
+	ExtraFields map[string]apijson.Field
+}
+
+func (r *SandboxBoxListResponseSandboxesMountsSandboxapiS3BucketMountSpecGcs) UnmarshalJSON(data []byte) (err error) {
+	return apijson.UnmarshalRoot(data, r)
+}
+
+func (r sandboxBoxListResponseSandboxesMountsSandboxapiS3BucketMountSpecGcsJSON) RawJSON() string {
+	return r.raw
+}
+
+type SandboxBoxListResponseSandboxesMountsSandboxapiGcsBucketMountSpec struct {
+	ID        string                                                                 `json:"id" api:"required"`
+	Gcs       SandboxBoxListResponseSandboxesMountsSandboxapiGcsBucketMountSpecGcs   `json:"gcs" api:"required"`
+	MountPath string                                                                 `json:"mount_path" api:"required"`
+	Type      SandboxBoxListResponseSandboxesMountsSandboxapiGcsBucketMountSpecType  `json:"type" api:"required"`
+	Cache     SandboxBoxListResponseSandboxesMountsSandboxapiGcsBucketMountSpecCache `json:"cache"`
+	ReadOnly  bool                                                                   `json:"read_only"`
+	S3        SandboxBoxListResponseSandboxesMountsSandboxapiGcsBucketMountSpecS3    `json:"s3"`
+	JSON      sandboxBoxListResponseSandboxesMountsSandboxapiGcsBucketMountSpecJSON  `json:"-"`
+}
+
+// sandboxBoxListResponseSandboxesMountsSandboxapiGcsBucketMountSpecJSON contains
+// the JSON metadata for the struct
+// [SandboxBoxListResponseSandboxesMountsSandboxapiGcsBucketMountSpec]
+type sandboxBoxListResponseSandboxesMountsSandboxapiGcsBucketMountSpecJSON struct {
+	ID          apijson.Field
+	Gcs         apijson.Field
+	MountPath   apijson.Field
+	Type        apijson.Field
+	Cache       apijson.Field
+	ReadOnly    apijson.Field
+	S3          apijson.Field
+	raw         string
+	ExtraFields map[string]apijson.Field
+}
+
+func (r *SandboxBoxListResponseSandboxesMountsSandboxapiGcsBucketMountSpec) UnmarshalJSON(data []byte) (err error) {
+	return apijson.UnmarshalRoot(data, r)
+}
+
+func (r sandboxBoxListResponseSandboxesMountsSandboxapiGcsBucketMountSpecJSON) RawJSON() string {
+	return r.raw
+}
+
+func (r SandboxBoxListResponseSandboxesMountsSandboxapiGcsBucketMountSpec) implementsSandboxBoxListResponseSandboxesMount() {
+}
+
+type SandboxBoxListResponseSandboxesMountsSandboxapiGcsBucketMountSpecGcs struct {
+	Bucket string                                                                   `json:"bucket" api:"required"`
+	Prefix string                                                                   `json:"prefix"`
+	JSON   sandboxBoxListResponseSandboxesMountsSandboxapiGcsBucketMountSpecGcsJSON `json:"-"`
+}
+
+// sandboxBoxListResponseSandboxesMountsSandboxapiGcsBucketMountSpecGcsJSON
+// contains the JSON metadata for the struct
+// [SandboxBoxListResponseSandboxesMountsSandboxapiGcsBucketMountSpecGcs]
+type sandboxBoxListResponseSandboxesMountsSandboxapiGcsBucketMountSpecGcsJSON struct {
+	Bucket      apijson.Field
+	Prefix      apijson.Field
+	raw         string
+	ExtraFields map[string]apijson.Field
+}
+
+func (r *SandboxBoxListResponseSandboxesMountsSandboxapiGcsBucketMountSpecGcs) UnmarshalJSON(data []byte) (err error) {
+	return apijson.UnmarshalRoot(data, r)
+}
+
+func (r sandboxBoxListResponseSandboxesMountsSandboxapiGcsBucketMountSpecGcsJSON) RawJSON() string {
+	return r.raw
+}
+
+type SandboxBoxListResponseSandboxesMountsSandboxapiGcsBucketMountSpecType string
+
+const (
+	SandboxBoxListResponseSandboxesMountsSandboxapiGcsBucketMountSpecTypeS3  SandboxBoxListResponseSandboxesMountsSandboxapiGcsBucketMountSpecType = "s3"
+	SandboxBoxListResponseSandboxesMountsSandboxapiGcsBucketMountSpecTypeGcs SandboxBoxListResponseSandboxesMountsSandboxapiGcsBucketMountSpecType = "gcs"
+)
+
+func (r SandboxBoxListResponseSandboxesMountsSandboxapiGcsBucketMountSpecType) IsKnown() bool {
+	switch r {
+	case SandboxBoxListResponseSandboxesMountsSandboxapiGcsBucketMountSpecTypeS3, SandboxBoxListResponseSandboxesMountsSandboxapiGcsBucketMountSpecTypeGcs:
+		return true
+	}
+	return false
+}
+
+type SandboxBoxListResponseSandboxesMountsSandboxapiGcsBucketMountSpecCache struct {
+	MaxSizeBytes     int64                                                                      `json:"max_size_bytes"`
+	WritebackSeconds int64                                                                      `json:"writeback_seconds"`
+	JSON             sandboxBoxListResponseSandboxesMountsSandboxapiGcsBucketMountSpecCacheJSON `json:"-"`
+}
+
+// sandboxBoxListResponseSandboxesMountsSandboxapiGcsBucketMountSpecCacheJSON
+// contains the JSON metadata for the struct
+// [SandboxBoxListResponseSandboxesMountsSandboxapiGcsBucketMountSpecCache]
+type sandboxBoxListResponseSandboxesMountsSandboxapiGcsBucketMountSpecCacheJSON struct {
+	MaxSizeBytes     apijson.Field
+	WritebackSeconds apijson.Field
+	raw              string
+	ExtraFields      map[string]apijson.Field
+}
+
+func (r *SandboxBoxListResponseSandboxesMountsSandboxapiGcsBucketMountSpecCache) UnmarshalJSON(data []byte) (err error) {
+	return apijson.UnmarshalRoot(data, r)
+}
+
+func (r sandboxBoxListResponseSandboxesMountsSandboxapiGcsBucketMountSpecCacheJSON) RawJSON() string {
+	return r.raw
+}
+
+type SandboxBoxListResponseSandboxesMountsSandboxapiGcsBucketMountSpecS3 struct {
+	Bucket      string                                                                  `json:"bucket" api:"required"`
+	EndpointURL string                                                                  `json:"endpoint_url" api:"required"`
+	Region      string                                                                  `json:"region" api:"required"`
+	PathStyle   bool                                                                    `json:"path_style"`
+	Prefix      string                                                                  `json:"prefix"`
+	JSON        sandboxBoxListResponseSandboxesMountsSandboxapiGcsBucketMountSpecS3JSON `json:"-"`
+}
+
+// sandboxBoxListResponseSandboxesMountsSandboxapiGcsBucketMountSpecS3JSON contains
+// the JSON metadata for the struct
+// [SandboxBoxListResponseSandboxesMountsSandboxapiGcsBucketMountSpecS3]
+type sandboxBoxListResponseSandboxesMountsSandboxapiGcsBucketMountSpecS3JSON struct {
+	Bucket      apijson.Field
+	EndpointURL apijson.Field
+	Region      apijson.Field
+	PathStyle   apijson.Field
+	Prefix      apijson.Field
+	raw         string
+	ExtraFields map[string]apijson.Field
+}
+
+func (r *SandboxBoxListResponseSandboxesMountsSandboxapiGcsBucketMountSpecS3) UnmarshalJSON(data []byte) (err error) {
+	return apijson.UnmarshalRoot(data, r)
+}
+
+func (r sandboxBoxListResponseSandboxesMountsSandboxapiGcsBucketMountSpecS3JSON) RawJSON() string {
+	return r.raw
+}
+
+type SandboxBoxListResponseSandboxesMountsType string
+
+const (
+	SandboxBoxListResponseSandboxesMountsTypeS3  SandboxBoxListResponseSandboxesMountsType = "s3"
+	SandboxBoxListResponseSandboxesMountsTypeGcs SandboxBoxListResponseSandboxesMountsType = "gcs"
+)
+
+func (r SandboxBoxListResponseSandboxesMountsType) IsKnown() bool {
+	switch r {
+	case SandboxBoxListResponseSandboxesMountsTypeS3, SandboxBoxListResponseSandboxesMountsTypeGcs:
+		return true
+	}
+	return false
 }
 
 type SandboxBoxListResponseSandboxesProxyConfig struct {
@@ -2444,13 +3521,24 @@ func (r sandboxBoxStartResponseJSON) RawJSON() string {
 }
 
 type SandboxBoxStartResponseMount struct {
-	ID        string                             `json:"id" api:"required"`
-	MountPath string                             `json:"mount_path" api:"required"`
-	S3        SandboxBoxStartResponseMountsS3    `json:"s3" api:"required"`
-	Type      SandboxBoxStartResponseMountsType  `json:"type" api:"required"`
-	Cache     SandboxBoxStartResponseMountsCache `json:"cache"`
-	ReadOnly  bool                               `json:"read_only"`
-	JSON      sandboxBoxStartResponseMountJSON   `json:"-"`
+	ID        string                            `json:"id" api:"required"`
+	MountPath string                            `json:"mount_path" api:"required"`
+	Type      SandboxBoxStartResponseMountsType `json:"type" api:"required"`
+	// This field can have the runtime type of
+	// [SandboxBoxStartResponseMountsSandboxapiS3BucketMountSpecCache],
+	// [SandboxBoxStartResponseMountsSandboxapiGcsBucketMountSpecCache].
+	Cache interface{} `json:"cache"`
+	// This field can have the runtime type of
+	// [SandboxBoxStartResponseMountsSandboxapiS3BucketMountSpecGcs],
+	// [SandboxBoxStartResponseMountsSandboxapiGcsBucketMountSpecGcs].
+	Gcs      interface{} `json:"gcs"`
+	ReadOnly bool        `json:"read_only"`
+	// This field can have the runtime type of
+	// [SandboxBoxStartResponseMountsSandboxapiS3BucketMountSpecS3],
+	// [SandboxBoxStartResponseMountsSandboxapiGcsBucketMountSpecS3].
+	S3    interface{}                      `json:"s3"`
+	JSON  sandboxBoxStartResponseMountJSON `json:"-"`
+	union SandboxBoxStartResponseMountsUnion
 }
 
 // sandboxBoxStartResponseMountJSON contains the JSON metadata for the struct
@@ -2458,34 +3546,121 @@ type SandboxBoxStartResponseMount struct {
 type sandboxBoxStartResponseMountJSON struct {
 	ID          apijson.Field
 	MountPath   apijson.Field
-	S3          apijson.Field
 	Type        apijson.Field
 	Cache       apijson.Field
+	Gcs         apijson.Field
 	ReadOnly    apijson.Field
+	S3          apijson.Field
 	raw         string
 	ExtraFields map[string]apijson.Field
-}
-
-func (r *SandboxBoxStartResponseMount) UnmarshalJSON(data []byte) (err error) {
-	return apijson.UnmarshalRoot(data, r)
 }
 
 func (r sandboxBoxStartResponseMountJSON) RawJSON() string {
 	return r.raw
 }
 
-type SandboxBoxStartResponseMountsS3 struct {
-	Bucket      string                              `json:"bucket" api:"required"`
-	EndpointURL string                              `json:"endpoint_url" api:"required"`
-	Region      string                              `json:"region" api:"required"`
-	PathStyle   bool                                `json:"path_style"`
-	Prefix      string                              `json:"prefix"`
-	JSON        sandboxBoxStartResponseMountsS3JSON `json:"-"`
+func (r *SandboxBoxStartResponseMount) UnmarshalJSON(data []byte) (err error) {
+	*r = SandboxBoxStartResponseMount{}
+	err = apijson.UnmarshalRoot(data, &r.union)
+	if err != nil {
+		return err
+	}
+	return apijson.Port(r.union, &r)
 }
 
-// sandboxBoxStartResponseMountsS3JSON contains the JSON metadata for the struct
-// [SandboxBoxStartResponseMountsS3]
-type sandboxBoxStartResponseMountsS3JSON struct {
+// AsUnion returns a [SandboxBoxStartResponseMountsUnion] interface which you can
+// cast to the specific types for more type safety.
+//
+// Possible runtime types of the union are
+// [SandboxBoxStartResponseMountsSandboxapiS3BucketMountSpec],
+// [SandboxBoxStartResponseMountsSandboxapiGcsBucketMountSpec].
+func (r SandboxBoxStartResponseMount) AsUnion() SandboxBoxStartResponseMountsUnion {
+	return r.union
+}
+
+// Union satisfied by [SandboxBoxStartResponseMountsSandboxapiS3BucketMountSpec] or
+// [SandboxBoxStartResponseMountsSandboxapiGcsBucketMountSpec].
+type SandboxBoxStartResponseMountsUnion interface {
+	implementsSandboxBoxStartResponseMount()
+}
+
+func init() {
+	apijson.RegisterUnion(
+		reflect.TypeOf((*SandboxBoxStartResponseMountsUnion)(nil)).Elem(),
+		"type",
+		apijson.UnionVariant{
+			TypeFilter:         gjson.JSON,
+			Type:               reflect.TypeOf(SandboxBoxStartResponseMountsSandboxapiS3BucketMountSpec{}),
+			DiscriminatorValue: "s3",
+		},
+		apijson.UnionVariant{
+			TypeFilter:         gjson.JSON,
+			Type:               reflect.TypeOf(SandboxBoxStartResponseMountsSandboxapiS3BucketMountSpec{}),
+			DiscriminatorValue: "gcs",
+		},
+		apijson.UnionVariant{
+			TypeFilter:         gjson.JSON,
+			Type:               reflect.TypeOf(SandboxBoxStartResponseMountsSandboxapiGcsBucketMountSpec{}),
+			DiscriminatorValue: "s3",
+		},
+		apijson.UnionVariant{
+			TypeFilter:         gjson.JSON,
+			Type:               reflect.TypeOf(SandboxBoxStartResponseMountsSandboxapiGcsBucketMountSpec{}),
+			DiscriminatorValue: "gcs",
+		},
+	)
+}
+
+type SandboxBoxStartResponseMountsSandboxapiS3BucketMountSpec struct {
+	ID        string                                                        `json:"id" api:"required"`
+	MountPath string                                                        `json:"mount_path" api:"required"`
+	S3        SandboxBoxStartResponseMountsSandboxapiS3BucketMountSpecS3    `json:"s3" api:"required"`
+	Type      SandboxBoxStartResponseMountsSandboxapiS3BucketMountSpecType  `json:"type" api:"required"`
+	Cache     SandboxBoxStartResponseMountsSandboxapiS3BucketMountSpecCache `json:"cache"`
+	Gcs       SandboxBoxStartResponseMountsSandboxapiS3BucketMountSpecGcs   `json:"gcs"`
+	ReadOnly  bool                                                          `json:"read_only"`
+	JSON      sandboxBoxStartResponseMountsSandboxapiS3BucketMountSpecJSON  `json:"-"`
+}
+
+// sandboxBoxStartResponseMountsSandboxapiS3BucketMountSpecJSON contains the JSON
+// metadata for the struct
+// [SandboxBoxStartResponseMountsSandboxapiS3BucketMountSpec]
+type sandboxBoxStartResponseMountsSandboxapiS3BucketMountSpecJSON struct {
+	ID          apijson.Field
+	MountPath   apijson.Field
+	S3          apijson.Field
+	Type        apijson.Field
+	Cache       apijson.Field
+	Gcs         apijson.Field
+	ReadOnly    apijson.Field
+	raw         string
+	ExtraFields map[string]apijson.Field
+}
+
+func (r *SandboxBoxStartResponseMountsSandboxapiS3BucketMountSpec) UnmarshalJSON(data []byte) (err error) {
+	return apijson.UnmarshalRoot(data, r)
+}
+
+func (r sandboxBoxStartResponseMountsSandboxapiS3BucketMountSpecJSON) RawJSON() string {
+	return r.raw
+}
+
+func (r SandboxBoxStartResponseMountsSandboxapiS3BucketMountSpec) implementsSandboxBoxStartResponseMount() {
+}
+
+type SandboxBoxStartResponseMountsSandboxapiS3BucketMountSpecS3 struct {
+	Bucket      string                                                         `json:"bucket" api:"required"`
+	EndpointURL string                                                         `json:"endpoint_url" api:"required"`
+	Region      string                                                         `json:"region" api:"required"`
+	PathStyle   bool                                                           `json:"path_style"`
+	Prefix      string                                                         `json:"prefix"`
+	JSON        sandboxBoxStartResponseMountsSandboxapiS3BucketMountSpecS3JSON `json:"-"`
+}
+
+// sandboxBoxStartResponseMountsSandboxapiS3BucketMountSpecS3JSON contains the JSON
+// metadata for the struct
+// [SandboxBoxStartResponseMountsSandboxapiS3BucketMountSpecS3]
+type sandboxBoxStartResponseMountsSandboxapiS3BucketMountSpecS3JSON struct {
 	Bucket      apijson.Field
 	EndpointURL apijson.Field
 	Region      apijson.Field
@@ -2495,49 +3670,220 @@ type sandboxBoxStartResponseMountsS3JSON struct {
 	ExtraFields map[string]apijson.Field
 }
 
-func (r *SandboxBoxStartResponseMountsS3) UnmarshalJSON(data []byte) (err error) {
+func (r *SandboxBoxStartResponseMountsSandboxapiS3BucketMountSpecS3) UnmarshalJSON(data []byte) (err error) {
 	return apijson.UnmarshalRoot(data, r)
 }
 
-func (r sandboxBoxStartResponseMountsS3JSON) RawJSON() string {
+func (r sandboxBoxStartResponseMountsSandboxapiS3BucketMountSpecS3JSON) RawJSON() string {
 	return r.raw
 }
 
-type SandboxBoxStartResponseMountsType string
+type SandboxBoxStartResponseMountsSandboxapiS3BucketMountSpecType string
 
 const (
-	SandboxBoxStartResponseMountsTypeS3 SandboxBoxStartResponseMountsType = "s3"
+	SandboxBoxStartResponseMountsSandboxapiS3BucketMountSpecTypeS3  SandboxBoxStartResponseMountsSandboxapiS3BucketMountSpecType = "s3"
+	SandboxBoxStartResponseMountsSandboxapiS3BucketMountSpecTypeGcs SandboxBoxStartResponseMountsSandboxapiS3BucketMountSpecType = "gcs"
 )
 
-func (r SandboxBoxStartResponseMountsType) IsKnown() bool {
+func (r SandboxBoxStartResponseMountsSandboxapiS3BucketMountSpecType) IsKnown() bool {
 	switch r {
-	case SandboxBoxStartResponseMountsTypeS3:
+	case SandboxBoxStartResponseMountsSandboxapiS3BucketMountSpecTypeS3, SandboxBoxStartResponseMountsSandboxapiS3BucketMountSpecTypeGcs:
 		return true
 	}
 	return false
 }
 
-type SandboxBoxStartResponseMountsCache struct {
-	MaxSizeBytes     int64                                  `json:"max_size_bytes"`
-	WritebackSeconds int64                                  `json:"writeback_seconds"`
-	JSON             sandboxBoxStartResponseMountsCacheJSON `json:"-"`
+type SandboxBoxStartResponseMountsSandboxapiS3BucketMountSpecCache struct {
+	MaxSizeBytes     int64                                                             `json:"max_size_bytes"`
+	WritebackSeconds int64                                                             `json:"writeback_seconds"`
+	JSON             sandboxBoxStartResponseMountsSandboxapiS3BucketMountSpecCacheJSON `json:"-"`
 }
 
-// sandboxBoxStartResponseMountsCacheJSON contains the JSON metadata for the struct
-// [SandboxBoxStartResponseMountsCache]
-type sandboxBoxStartResponseMountsCacheJSON struct {
+// sandboxBoxStartResponseMountsSandboxapiS3BucketMountSpecCacheJSON contains the
+// JSON metadata for the struct
+// [SandboxBoxStartResponseMountsSandboxapiS3BucketMountSpecCache]
+type sandboxBoxStartResponseMountsSandboxapiS3BucketMountSpecCacheJSON struct {
 	MaxSizeBytes     apijson.Field
 	WritebackSeconds apijson.Field
 	raw              string
 	ExtraFields      map[string]apijson.Field
 }
 
-func (r *SandboxBoxStartResponseMountsCache) UnmarshalJSON(data []byte) (err error) {
+func (r *SandboxBoxStartResponseMountsSandboxapiS3BucketMountSpecCache) UnmarshalJSON(data []byte) (err error) {
 	return apijson.UnmarshalRoot(data, r)
 }
 
-func (r sandboxBoxStartResponseMountsCacheJSON) RawJSON() string {
+func (r sandboxBoxStartResponseMountsSandboxapiS3BucketMountSpecCacheJSON) RawJSON() string {
 	return r.raw
+}
+
+type SandboxBoxStartResponseMountsSandboxapiS3BucketMountSpecGcs struct {
+	Bucket string                                                          `json:"bucket" api:"required"`
+	Prefix string                                                          `json:"prefix"`
+	JSON   sandboxBoxStartResponseMountsSandboxapiS3BucketMountSpecGcsJSON `json:"-"`
+}
+
+// sandboxBoxStartResponseMountsSandboxapiS3BucketMountSpecGcsJSON contains the
+// JSON metadata for the struct
+// [SandboxBoxStartResponseMountsSandboxapiS3BucketMountSpecGcs]
+type sandboxBoxStartResponseMountsSandboxapiS3BucketMountSpecGcsJSON struct {
+	Bucket      apijson.Field
+	Prefix      apijson.Field
+	raw         string
+	ExtraFields map[string]apijson.Field
+}
+
+func (r *SandboxBoxStartResponseMountsSandboxapiS3BucketMountSpecGcs) UnmarshalJSON(data []byte) (err error) {
+	return apijson.UnmarshalRoot(data, r)
+}
+
+func (r sandboxBoxStartResponseMountsSandboxapiS3BucketMountSpecGcsJSON) RawJSON() string {
+	return r.raw
+}
+
+type SandboxBoxStartResponseMountsSandboxapiGcsBucketMountSpec struct {
+	ID        string                                                         `json:"id" api:"required"`
+	Gcs       SandboxBoxStartResponseMountsSandboxapiGcsBucketMountSpecGcs   `json:"gcs" api:"required"`
+	MountPath string                                                         `json:"mount_path" api:"required"`
+	Type      SandboxBoxStartResponseMountsSandboxapiGcsBucketMountSpecType  `json:"type" api:"required"`
+	Cache     SandboxBoxStartResponseMountsSandboxapiGcsBucketMountSpecCache `json:"cache"`
+	ReadOnly  bool                                                           `json:"read_only"`
+	S3        SandboxBoxStartResponseMountsSandboxapiGcsBucketMountSpecS3    `json:"s3"`
+	JSON      sandboxBoxStartResponseMountsSandboxapiGcsBucketMountSpecJSON  `json:"-"`
+}
+
+// sandboxBoxStartResponseMountsSandboxapiGcsBucketMountSpecJSON contains the JSON
+// metadata for the struct
+// [SandboxBoxStartResponseMountsSandboxapiGcsBucketMountSpec]
+type sandboxBoxStartResponseMountsSandboxapiGcsBucketMountSpecJSON struct {
+	ID          apijson.Field
+	Gcs         apijson.Field
+	MountPath   apijson.Field
+	Type        apijson.Field
+	Cache       apijson.Field
+	ReadOnly    apijson.Field
+	S3          apijson.Field
+	raw         string
+	ExtraFields map[string]apijson.Field
+}
+
+func (r *SandboxBoxStartResponseMountsSandboxapiGcsBucketMountSpec) UnmarshalJSON(data []byte) (err error) {
+	return apijson.UnmarshalRoot(data, r)
+}
+
+func (r sandboxBoxStartResponseMountsSandboxapiGcsBucketMountSpecJSON) RawJSON() string {
+	return r.raw
+}
+
+func (r SandboxBoxStartResponseMountsSandboxapiGcsBucketMountSpec) implementsSandboxBoxStartResponseMount() {
+}
+
+type SandboxBoxStartResponseMountsSandboxapiGcsBucketMountSpecGcs struct {
+	Bucket string                                                           `json:"bucket" api:"required"`
+	Prefix string                                                           `json:"prefix"`
+	JSON   sandboxBoxStartResponseMountsSandboxapiGcsBucketMountSpecGcsJSON `json:"-"`
+}
+
+// sandboxBoxStartResponseMountsSandboxapiGcsBucketMountSpecGcsJSON contains the
+// JSON metadata for the struct
+// [SandboxBoxStartResponseMountsSandboxapiGcsBucketMountSpecGcs]
+type sandboxBoxStartResponseMountsSandboxapiGcsBucketMountSpecGcsJSON struct {
+	Bucket      apijson.Field
+	Prefix      apijson.Field
+	raw         string
+	ExtraFields map[string]apijson.Field
+}
+
+func (r *SandboxBoxStartResponseMountsSandboxapiGcsBucketMountSpecGcs) UnmarshalJSON(data []byte) (err error) {
+	return apijson.UnmarshalRoot(data, r)
+}
+
+func (r sandboxBoxStartResponseMountsSandboxapiGcsBucketMountSpecGcsJSON) RawJSON() string {
+	return r.raw
+}
+
+type SandboxBoxStartResponseMountsSandboxapiGcsBucketMountSpecType string
+
+const (
+	SandboxBoxStartResponseMountsSandboxapiGcsBucketMountSpecTypeS3  SandboxBoxStartResponseMountsSandboxapiGcsBucketMountSpecType = "s3"
+	SandboxBoxStartResponseMountsSandboxapiGcsBucketMountSpecTypeGcs SandboxBoxStartResponseMountsSandboxapiGcsBucketMountSpecType = "gcs"
+)
+
+func (r SandboxBoxStartResponseMountsSandboxapiGcsBucketMountSpecType) IsKnown() bool {
+	switch r {
+	case SandboxBoxStartResponseMountsSandboxapiGcsBucketMountSpecTypeS3, SandboxBoxStartResponseMountsSandboxapiGcsBucketMountSpecTypeGcs:
+		return true
+	}
+	return false
+}
+
+type SandboxBoxStartResponseMountsSandboxapiGcsBucketMountSpecCache struct {
+	MaxSizeBytes     int64                                                              `json:"max_size_bytes"`
+	WritebackSeconds int64                                                              `json:"writeback_seconds"`
+	JSON             sandboxBoxStartResponseMountsSandboxapiGcsBucketMountSpecCacheJSON `json:"-"`
+}
+
+// sandboxBoxStartResponseMountsSandboxapiGcsBucketMountSpecCacheJSON contains the
+// JSON metadata for the struct
+// [SandboxBoxStartResponseMountsSandboxapiGcsBucketMountSpecCache]
+type sandboxBoxStartResponseMountsSandboxapiGcsBucketMountSpecCacheJSON struct {
+	MaxSizeBytes     apijson.Field
+	WritebackSeconds apijson.Field
+	raw              string
+	ExtraFields      map[string]apijson.Field
+}
+
+func (r *SandboxBoxStartResponseMountsSandboxapiGcsBucketMountSpecCache) UnmarshalJSON(data []byte) (err error) {
+	return apijson.UnmarshalRoot(data, r)
+}
+
+func (r sandboxBoxStartResponseMountsSandboxapiGcsBucketMountSpecCacheJSON) RawJSON() string {
+	return r.raw
+}
+
+type SandboxBoxStartResponseMountsSandboxapiGcsBucketMountSpecS3 struct {
+	Bucket      string                                                          `json:"bucket" api:"required"`
+	EndpointURL string                                                          `json:"endpoint_url" api:"required"`
+	Region      string                                                          `json:"region" api:"required"`
+	PathStyle   bool                                                            `json:"path_style"`
+	Prefix      string                                                          `json:"prefix"`
+	JSON        sandboxBoxStartResponseMountsSandboxapiGcsBucketMountSpecS3JSON `json:"-"`
+}
+
+// sandboxBoxStartResponseMountsSandboxapiGcsBucketMountSpecS3JSON contains the
+// JSON metadata for the struct
+// [SandboxBoxStartResponseMountsSandboxapiGcsBucketMountSpecS3]
+type sandboxBoxStartResponseMountsSandboxapiGcsBucketMountSpecS3JSON struct {
+	Bucket      apijson.Field
+	EndpointURL apijson.Field
+	Region      apijson.Field
+	PathStyle   apijson.Field
+	Prefix      apijson.Field
+	raw         string
+	ExtraFields map[string]apijson.Field
+}
+
+func (r *SandboxBoxStartResponseMountsSandboxapiGcsBucketMountSpecS3) UnmarshalJSON(data []byte) (err error) {
+	return apijson.UnmarshalRoot(data, r)
+}
+
+func (r sandboxBoxStartResponseMountsSandboxapiGcsBucketMountSpecS3JSON) RawJSON() string {
+	return r.raw
+}
+
+type SandboxBoxStartResponseMountsType string
+
+const (
+	SandboxBoxStartResponseMountsTypeS3  SandboxBoxStartResponseMountsType = "s3"
+	SandboxBoxStartResponseMountsTypeGcs SandboxBoxStartResponseMountsType = "gcs"
+)
+
+func (r SandboxBoxStartResponseMountsType) IsKnown() bool {
+	switch r {
+	case SandboxBoxStartResponseMountsTypeS3, SandboxBoxStartResponseMountsTypeGcs:
+		return true
+	}
+	return false
 }
 
 type SandboxBoxStartResponseProxyConfig struct {
@@ -2913,14 +4259,14 @@ func (r SandboxBoxStartResponseProxyConfigRulesHeadersType) IsKnown() bool {
 }
 
 type SandboxBoxNewParams struct {
-	DeleteAfterStopSeconds param.Field[int64]                          `json:"delete_after_stop_seconds"`
-	EnvVars                param.Field[map[string]string]              `json:"env_vars"`
-	FsCapacityBytes        param.Field[int64]                          `json:"fs_capacity_bytes"`
-	IdleTtlSeconds         param.Field[int64]                          `json:"idle_ttl_seconds"`
-	MemBytes               param.Field[int64]                          `json:"mem_bytes"`
-	Mounts                 param.Field[[]SandboxBoxNewParamsMount]     `json:"mounts"`
-	Name                   param.Field[string]                         `json:"name"`
-	ProxyConfig            param.Field[SandboxBoxNewParamsProxyConfig] `json:"proxy_config"`
+	DeleteAfterStopSeconds param.Field[int64]                           `json:"delete_after_stop_seconds"`
+	EnvVars                param.Field[map[string]string]               `json:"env_vars"`
+	FsCapacityBytes        param.Field[int64]                           `json:"fs_capacity_bytes"`
+	IdleTtlSeconds         param.Field[int64]                           `json:"idle_ttl_seconds"`
+	MemBytes               param.Field[int64]                           `json:"mem_bytes"`
+	Mounts                 param.Field[[]SandboxBoxNewParamsMountUnion] `json:"mounts"`
+	Name                   param.Field[string]                          `json:"name"`
+	ProxyConfig            param.Field[SandboxBoxNewParamsProxyConfig]  `json:"proxy_config"`
 	// RestoreMemory selects how the sandbox handles a snapshot's captured memory:
 	//
 	// nil → if-present: resume from memory when the snapshot has it, else cold-boot
@@ -2940,19 +4286,46 @@ func (r SandboxBoxNewParams) MarshalJSON() (data []byte, err error) {
 }
 
 type SandboxBoxNewParamsMount struct {
-	ID        param.Field[string]                         `json:"id" api:"required"`
-	MountPath param.Field[string]                         `json:"mount_path" api:"required"`
-	S3        param.Field[SandboxBoxNewParamsMountsS3]    `json:"s3" api:"required"`
-	Type      param.Field[SandboxBoxNewParamsMountsType]  `json:"type" api:"required"`
-	Cache     param.Field[SandboxBoxNewParamsMountsCache] `json:"cache"`
-	ReadOnly  param.Field[bool]                           `json:"read_only"`
+	ID        param.Field[string]                        `json:"id" api:"required"`
+	MountPath param.Field[string]                        `json:"mount_path" api:"required"`
+	Type      param.Field[SandboxBoxNewParamsMountsType] `json:"type" api:"required"`
+	Cache     param.Field[interface{}]                   `json:"cache"`
+	Gcs       param.Field[interface{}]                   `json:"gcs"`
+	ReadOnly  param.Field[bool]                          `json:"read_only"`
+	S3        param.Field[interface{}]                   `json:"s3"`
 }
 
 func (r SandboxBoxNewParamsMount) MarshalJSON() (data []byte, err error) {
 	return apijson.MarshalRoot(r)
 }
 
-type SandboxBoxNewParamsMountsS3 struct {
+func (r SandboxBoxNewParamsMount) implementsSandboxBoxNewParamsMountUnion() {}
+
+// Satisfied by [SandboxBoxNewParamsMountsSandboxapiS3BucketMountSpec],
+// [SandboxBoxNewParamsMountsSandboxapiGcsBucketMountSpec],
+// [SandboxBoxNewParamsMount].
+type SandboxBoxNewParamsMountUnion interface {
+	implementsSandboxBoxNewParamsMountUnion()
+}
+
+type SandboxBoxNewParamsMountsSandboxapiS3BucketMountSpec struct {
+	ID        param.Field[string]                                                    `json:"id" api:"required"`
+	MountPath param.Field[string]                                                    `json:"mount_path" api:"required"`
+	S3        param.Field[SandboxBoxNewParamsMountsSandboxapiS3BucketMountSpecS3]    `json:"s3" api:"required"`
+	Type      param.Field[SandboxBoxNewParamsMountsSandboxapiS3BucketMountSpecType]  `json:"type" api:"required"`
+	Cache     param.Field[SandboxBoxNewParamsMountsSandboxapiS3BucketMountSpecCache] `json:"cache"`
+	Gcs       param.Field[SandboxBoxNewParamsMountsSandboxapiS3BucketMountSpecGcs]   `json:"gcs"`
+	ReadOnly  param.Field[bool]                                                      `json:"read_only"`
+}
+
+func (r SandboxBoxNewParamsMountsSandboxapiS3BucketMountSpec) MarshalJSON() (data []byte, err error) {
+	return apijson.MarshalRoot(r)
+}
+
+func (r SandboxBoxNewParamsMountsSandboxapiS3BucketMountSpec) implementsSandboxBoxNewParamsMountUnion() {
+}
+
+type SandboxBoxNewParamsMountsSandboxapiS3BucketMountSpecS3 struct {
 	Bucket      param.Field[string] `json:"bucket" api:"required"`
 	EndpointURL param.Field[string] `json:"endpoint_url" api:"required"`
 	Region      param.Field[string] `json:"region" api:"required"`
@@ -2960,31 +4333,118 @@ type SandboxBoxNewParamsMountsS3 struct {
 	Prefix      param.Field[string] `json:"prefix"`
 }
 
-func (r SandboxBoxNewParamsMountsS3) MarshalJSON() (data []byte, err error) {
+func (r SandboxBoxNewParamsMountsSandboxapiS3BucketMountSpecS3) MarshalJSON() (data []byte, err error) {
+	return apijson.MarshalRoot(r)
+}
+
+type SandboxBoxNewParamsMountsSandboxapiS3BucketMountSpecType string
+
+const (
+	SandboxBoxNewParamsMountsSandboxapiS3BucketMountSpecTypeS3  SandboxBoxNewParamsMountsSandboxapiS3BucketMountSpecType = "s3"
+	SandboxBoxNewParamsMountsSandboxapiS3BucketMountSpecTypeGcs SandboxBoxNewParamsMountsSandboxapiS3BucketMountSpecType = "gcs"
+)
+
+func (r SandboxBoxNewParamsMountsSandboxapiS3BucketMountSpecType) IsKnown() bool {
+	switch r {
+	case SandboxBoxNewParamsMountsSandboxapiS3BucketMountSpecTypeS3, SandboxBoxNewParamsMountsSandboxapiS3BucketMountSpecTypeGcs:
+		return true
+	}
+	return false
+}
+
+type SandboxBoxNewParamsMountsSandboxapiS3BucketMountSpecCache struct {
+	MaxSizeBytes     param.Field[int64] `json:"max_size_bytes"`
+	WritebackSeconds param.Field[int64] `json:"writeback_seconds"`
+}
+
+func (r SandboxBoxNewParamsMountsSandboxapiS3BucketMountSpecCache) MarshalJSON() (data []byte, err error) {
+	return apijson.MarshalRoot(r)
+}
+
+type SandboxBoxNewParamsMountsSandboxapiS3BucketMountSpecGcs struct {
+	Bucket param.Field[string] `json:"bucket" api:"required"`
+	Prefix param.Field[string] `json:"prefix"`
+}
+
+func (r SandboxBoxNewParamsMountsSandboxapiS3BucketMountSpecGcs) MarshalJSON() (data []byte, err error) {
+	return apijson.MarshalRoot(r)
+}
+
+type SandboxBoxNewParamsMountsSandboxapiGcsBucketMountSpec struct {
+	ID        param.Field[string]                                                     `json:"id" api:"required"`
+	Gcs       param.Field[SandboxBoxNewParamsMountsSandboxapiGcsBucketMountSpecGcs]   `json:"gcs" api:"required"`
+	MountPath param.Field[string]                                                     `json:"mount_path" api:"required"`
+	Type      param.Field[SandboxBoxNewParamsMountsSandboxapiGcsBucketMountSpecType]  `json:"type" api:"required"`
+	Cache     param.Field[SandboxBoxNewParamsMountsSandboxapiGcsBucketMountSpecCache] `json:"cache"`
+	ReadOnly  param.Field[bool]                                                       `json:"read_only"`
+	S3        param.Field[SandboxBoxNewParamsMountsSandboxapiGcsBucketMountSpecS3]    `json:"s3"`
+}
+
+func (r SandboxBoxNewParamsMountsSandboxapiGcsBucketMountSpec) MarshalJSON() (data []byte, err error) {
+	return apijson.MarshalRoot(r)
+}
+
+func (r SandboxBoxNewParamsMountsSandboxapiGcsBucketMountSpec) implementsSandboxBoxNewParamsMountUnion() {
+}
+
+type SandboxBoxNewParamsMountsSandboxapiGcsBucketMountSpecGcs struct {
+	Bucket param.Field[string] `json:"bucket" api:"required"`
+	Prefix param.Field[string] `json:"prefix"`
+}
+
+func (r SandboxBoxNewParamsMountsSandboxapiGcsBucketMountSpecGcs) MarshalJSON() (data []byte, err error) {
+	return apijson.MarshalRoot(r)
+}
+
+type SandboxBoxNewParamsMountsSandboxapiGcsBucketMountSpecType string
+
+const (
+	SandboxBoxNewParamsMountsSandboxapiGcsBucketMountSpecTypeS3  SandboxBoxNewParamsMountsSandboxapiGcsBucketMountSpecType = "s3"
+	SandboxBoxNewParamsMountsSandboxapiGcsBucketMountSpecTypeGcs SandboxBoxNewParamsMountsSandboxapiGcsBucketMountSpecType = "gcs"
+)
+
+func (r SandboxBoxNewParamsMountsSandboxapiGcsBucketMountSpecType) IsKnown() bool {
+	switch r {
+	case SandboxBoxNewParamsMountsSandboxapiGcsBucketMountSpecTypeS3, SandboxBoxNewParamsMountsSandboxapiGcsBucketMountSpecTypeGcs:
+		return true
+	}
+	return false
+}
+
+type SandboxBoxNewParamsMountsSandboxapiGcsBucketMountSpecCache struct {
+	MaxSizeBytes     param.Field[int64] `json:"max_size_bytes"`
+	WritebackSeconds param.Field[int64] `json:"writeback_seconds"`
+}
+
+func (r SandboxBoxNewParamsMountsSandboxapiGcsBucketMountSpecCache) MarshalJSON() (data []byte, err error) {
+	return apijson.MarshalRoot(r)
+}
+
+type SandboxBoxNewParamsMountsSandboxapiGcsBucketMountSpecS3 struct {
+	Bucket      param.Field[string] `json:"bucket" api:"required"`
+	EndpointURL param.Field[string] `json:"endpoint_url" api:"required"`
+	Region      param.Field[string] `json:"region" api:"required"`
+	PathStyle   param.Field[bool]   `json:"path_style"`
+	Prefix      param.Field[string] `json:"prefix"`
+}
+
+func (r SandboxBoxNewParamsMountsSandboxapiGcsBucketMountSpecS3) MarshalJSON() (data []byte, err error) {
 	return apijson.MarshalRoot(r)
 }
 
 type SandboxBoxNewParamsMountsType string
 
 const (
-	SandboxBoxNewParamsMountsTypeS3 SandboxBoxNewParamsMountsType = "s3"
+	SandboxBoxNewParamsMountsTypeS3  SandboxBoxNewParamsMountsType = "s3"
+	SandboxBoxNewParamsMountsTypeGcs SandboxBoxNewParamsMountsType = "gcs"
 )
 
 func (r SandboxBoxNewParamsMountsType) IsKnown() bool {
 	switch r {
-	case SandboxBoxNewParamsMountsTypeS3:
+	case SandboxBoxNewParamsMountsTypeS3, SandboxBoxNewParamsMountsTypeGcs:
 		return true
 	}
 	return false
-}
-
-type SandboxBoxNewParamsMountsCache struct {
-	MaxSizeBytes     param.Field[int64] `json:"max_size_bytes"`
-	WritebackSeconds param.Field[int64] `json:"writeback_seconds"`
-}
-
-func (r SandboxBoxNewParamsMountsCache) MarshalJSON() (data []byte, err error) {
-	return apijson.MarshalRoot(r)
 }
 
 type SandboxBoxNewParamsProxyConfig struct {

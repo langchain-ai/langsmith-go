@@ -35,20 +35,24 @@ func TestSandboxBoxNewWithOptionalParams(t *testing.T) {
 		FsCapacityBytes: langsmith.F(int64(0)),
 		IdleTtlSeconds:  langsmith.F(int64(0)),
 		MemBytes:        langsmith.F(int64(0)),
-		Mounts: langsmith.F([]langsmith.SandboxBoxNewParamsMount{{
+		Mounts: langsmith.F([]langsmith.SandboxBoxNewParamsMountUnion{langsmith.SandboxBoxNewParamsMountsSandboxapiS3BucketMountSpec{
 			ID:        langsmith.F("id"),
 			MountPath: langsmith.F("mount_path"),
-			S3: langsmith.F(langsmith.SandboxBoxNewParamsMountsS3{
+			S3: langsmith.F(langsmith.SandboxBoxNewParamsMountsSandboxapiS3BucketMountSpecS3{
 				Bucket:      langsmith.F("bucket"),
 				EndpointURL: langsmith.F("endpoint_url"),
 				Region:      langsmith.F("region"),
 				PathStyle:   langsmith.F(true),
 				Prefix:      langsmith.F("prefix"),
 			}),
-			Type: langsmith.F(langsmith.SandboxBoxNewParamsMountsTypeS3),
-			Cache: langsmith.F(langsmith.SandboxBoxNewParamsMountsCache{
+			Type: langsmith.F(langsmith.SandboxBoxNewParamsMountsSandboxapiS3BucketMountSpecTypeS3),
+			Cache: langsmith.F(langsmith.SandboxBoxNewParamsMountsSandboxapiS3BucketMountSpecCache{
 				MaxSizeBytes:     langsmith.F(int64(0)),
 				WritebackSeconds: langsmith.F(int64(0)),
+			}),
+			Gcs: langsmith.F(langsmith.SandboxBoxNewParamsMountsSandboxapiS3BucketMountSpecGcs{
+				Bucket: langsmith.F("bucket"),
+				Prefix: langsmith.F("prefix"),
 			}),
 			ReadOnly: langsmith.F(true),
 		}}),
