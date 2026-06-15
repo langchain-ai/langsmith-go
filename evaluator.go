@@ -323,26 +323,28 @@ func (r evaluatorTopLevelJSON) RawJSON() string {
 
 // Evaluator structured output schema.
 type EvaluatorTopLevelStructured struct {
-	HubRef          string                          `json:"hub_ref" api:"nullable"`
-	Model           map[string]interface{}          `json:"model" api:"nullable"`
-	Prompt          [][]interface{}                 `json:"prompt" api:"nullable"`
-	Schema          map[string]interface{}          `json:"schema" api:"nullable"`
-	TemplateFormat  string                          `json:"template_format" api:"nullable"`
-	VariableMapping map[string]string               `json:"variable_mapping" api:"nullable"`
-	JSON            evaluatorTopLevelStructuredJSON `json:"-"`
+	HubRef               string                          `json:"hub_ref" api:"nullable"`
+	Model                map[string]interface{}          `json:"model" api:"nullable"`
+	PlaygroundSettingsID string                          `json:"playground_settings_id" api:"nullable"`
+	Prompt               [][]interface{}                 `json:"prompt" api:"nullable"`
+	Schema               map[string]interface{}          `json:"schema" api:"nullable"`
+	TemplateFormat       string                          `json:"template_format" api:"nullable"`
+	VariableMapping      map[string]string               `json:"variable_mapping" api:"nullable"`
+	JSON                 evaluatorTopLevelStructuredJSON `json:"-"`
 }
 
 // evaluatorTopLevelStructuredJSON contains the JSON metadata for the struct
 // [EvaluatorTopLevelStructured]
 type evaluatorTopLevelStructuredJSON struct {
-	HubRef          apijson.Field
-	Model           apijson.Field
-	Prompt          apijson.Field
-	Schema          apijson.Field
-	TemplateFormat  apijson.Field
-	VariableMapping apijson.Field
-	raw             string
-	ExtraFields     map[string]apijson.Field
+	HubRef               apijson.Field
+	Model                apijson.Field
+	PlaygroundSettingsID apijson.Field
+	Prompt               apijson.Field
+	Schema               apijson.Field
+	TemplateFormat       apijson.Field
+	VariableMapping      apijson.Field
+	raw                  string
+	ExtraFields          map[string]apijson.Field
 }
 
 func (r *EvaluatorTopLevelStructured) UnmarshalJSON(data []byte) (err error) {
