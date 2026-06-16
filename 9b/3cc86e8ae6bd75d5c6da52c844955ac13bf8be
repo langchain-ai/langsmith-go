@@ -1,0 +1,21 @@
+.github/workflows/stlc_seal_custom_code.yml
+  s_f26b1f4a7f84ad::t_d28a9d5e44c217 1-47
+.github/workflows/stlc_promote.yml
+  s_f26b1f4a7f84ad::t_d28a9d5e44c217 1-87
+---
+{
+  "schema_version": "authorship/3.0.0",
+  "git_ai_version": "1.5.7",
+  "base_commit_sha": "9b3cc86e8ae6bd75d5c6da52c844955ac13bf8be",
+  "prompts": {},
+  "sessions": {
+    "s_f26b1f4a7f84ad": {
+      "agent_id": {
+        "tool": "claude",
+        "id": "b5b56eb0-93df-4fd9-8fe5-38e5fce0af7b",
+        "model": "claude-sonnet-4-6"
+      },
+      "human_author": "Kiewan Villatel <kiewan@langchain.dev>"
+    }
+  }
+}
