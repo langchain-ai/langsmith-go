@@ -996,6 +996,9 @@ func extractResponsesCompletion(body []byte) (string, usageInfo) {
 	if err := json.Unmarshal(body, &resp); err != nil {
 		return "", usageInfo{}
 	}
+	if object, _ := resp["object"].(string); object == "response.compaction" {
+		return extractResponsesCompactOutput(resp), extractResponsesUsage(resp)
+	}
 	return extractResponsesOutput(resp), extractResponsesUsage(resp)
 }
 
@@ -1101,6 +1104,46 @@ func extractResponsesOutput(resp map[string]any) string {
 		return ""
 	}
 	return marshalMessages([]any{msg})
+}
+
+func extractResponsesCompactOutput(resp map[string]any) string {
+	output, ok := resp["output"].([]any)
+	if !ok || len(output) == 0 {
+		return ""
+	}
+
+	var messages []any
+	for _, item := range output {
+		itemMap, ok := item.(map[string]any)
+		if !ok {
+			continue
+		}
+		itemType, _ := itemMap["type"].(string)
+		role, ok := itemMap["role"].(string)
+		if itemType != "message" || !ok {
+			continue
+		}
+
+		msg := map[string]any{"role": role}
+		switch content := itemMap["content"].(type) {
+		case string:
+			msg["content"] = content
+		case []any:
+			if text := flattenContentParts(content); text != "" {
+				msg["content"] = text
+			} else {
+				b, _ := json.Marshal(content)
+				msg["content"] = string(b)
+			}
+		}
+		if len(msg) > 1 {
+			messages = append(messages, msg)
+		}
+	}
+	if len(messages) == 0 {
+		return ""
+	}
+	return marshalMessages(messages)
 }
 
 // chatToolCall builds a tool_call in the chat-completions format.

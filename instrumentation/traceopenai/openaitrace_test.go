@@ -244,8 +244,15 @@ func TestRoundTrip_ResponsesAPIStreamingCompleteIsNotError(t *testing.T) {
 func TestRoundTrip_ResponsesCompactAPINonStreamingCompaction(t *testing.T) {
 	responseBody := `{
 		"object": "response.compaction",
-		"output": [{"type": "compaction", "encrypted_content": "gAAAAABencrypted"}],
-		"usage": {"input_tokens": 136, "output_tokens": 617, "total_tokens": 753}
+		"output": [
+			{
+				"type": "message",
+				"role": "user",
+				"content": [{"type": "input_text", "text": "Create a simple landing page for a dog petting cafe."}]
+			},
+			{"type": "compaction", "encrypted_content": "gAAAAABencrypted"}
+		],
+		"usage": {"input_tokens": 139, "output_tokens": 438, "total_tokens": 577}
 	}`
 	client, exporter := newTracedClient(t, []byte(responseBody))
 
@@ -274,6 +281,17 @@ func TestRoundTrip_ResponsesCompactAPINonStreamingCompaction(t *testing.T) {
 	}
 	if span.Status.Code == codes.Error {
 		t.Errorf("span %q should not be errored, got status %v", span.Name, span.Status)
+	}
+
+	var completion string
+	for _, attr := range span.Attributes {
+		if string(attr.Key) == "gen_ai.completion" {
+			completion = attr.Value.AsString()
+		}
+	}
+	wantCompletion := `{"messages":[{"content":"Create a simple landing page for a dog petting cafe.","role":"user"}]}`
+	if completion != wantCompletion {
+		t.Errorf("gen_ai.completion mismatch:\n got: %s\nwant: %s", completion, wantCompletion)
 	}
 }
 
@@ -613,29 +631,33 @@ func TestExtractResponsesCompletion_Compaction(t *testing.T) {
 	body := `{
 		"object": "response.compaction",
 		"output": [
-			{"type": "message", "role": "user", "content": [{"type": "input_text", "text": "Create a page"}]},
+			{
+				"type": "message",
+				"role": "user",
+				"content": [{"type": "input_text", "text": "Create a simple landing page for a dog petting cafe."}]
+			},
 			{"type": "compaction", "encrypted_content": "gAAAAABencrypted"}
 		],
 		"usage": {
-			"input_tokens": 136,
-			"input_tokens_details": {"cached_tokens": 0},
-			"output_tokens": 617,
-			"output_tokens_details": {"reasoning_tokens": 384},
-			"total_tokens": 753
+			"input_tokens": 139,
+			"output_tokens": 438,
+			"output_tokens_details": {"reasoning_tokens": 64},
+			"total_tokens": 577
 		}
 	}`
 	completion, usage := extractResponsesCompletion([]byte(body))
 
-	if completion != "" {
-		t.Errorf("completion should not include compact encrypted content, got %q", completion)
+	wantCompletion := `{"messages":[{"content":"Create a simple landing page for a dog petting cafe.","role":"user"}]}`
+	if completion != wantCompletion {
+		t.Errorf("completion mismatch:\n got: %s\nwant: %s", completion, wantCompletion)
 	}
 	want := usageInfo{
-		InputTokens: 136, OutputTokens: 617, TotalTokens: 753, HasUsage: true,
+		InputTokens: 139, OutputTokens: 438, TotalTokens: 577, HasUsage: true,
 		UsageMetadata: map[string]any{
-			"input_tokens":         136,
-			"output_tokens":        617,
-			"total_tokens":         753,
-			"output_token_details": map[string]any{"reasoning": 384},
+			"input_tokens":         139,
+			"output_tokens":        438,
+			"total_tokens":         577,
+			"output_token_details": map[string]any{"reasoning": 64},
 		},
 	}
 	if !reflect.DeepEqual(usage, want) {
@@ -757,6 +779,22 @@ func TestExtractResponsesOutput_TextAndFunctionCalls(t *testing.T) {
 	}
 	if !strings.Contains(output, "search") {
 		t.Errorf("output should contain function call: %s", output)
+	}
+}
+
+func TestExtractResponsesOutput_UserMessageIgnored(t *testing.T) {
+	resp := map[string]any{
+		"output": []any{
+			map[string]any{
+				"type": "message", "role": "user",
+				"content": []any{map[string]any{"type": "input_text", "text": "Follow-up question"}},
+			},
+		},
+	}
+
+	output := extractResponsesOutput(resp)
+	if output != "" {
+		t.Errorf("normal Responses output should ignore user messages, got %q", output)
 	}
 }
 
