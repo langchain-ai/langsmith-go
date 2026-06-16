@@ -222,10 +222,11 @@ type FeedbackTokenNewParamsBodyArray []FeedbackIngestTokenCreateSchemaParam
 func (r FeedbackTokenNewParamsBodyArray) implementsFeedbackTokenNewParamsBodyUnion() {}
 
 type FeedbackTokenGetParams struct {
-	Comment    param.Field[string]                           `query:"comment"`
-	Correction param.Field[string]                           `query:"correction"`
-	Score      param.Field[FeedbackTokenGetParamsScoreUnion] `query:"score"`
-	Value      param.Field[FeedbackTokenGetParamsValueUnion] `query:"value"`
+	Comment                   param.Field[string]                           `query:"comment"`
+	Correction                param.Field[string]                           `query:"correction"`
+	DoNotExtendTraceRetention param.Field[bool]                             `query:"do_not_extend_trace_retention"`
+	Score                     param.Field[FeedbackTokenGetParamsScoreUnion] `query:"score"`
+	Value                     param.Field[FeedbackTokenGetParamsValueUnion] `query:"value"`
 }
 
 // URLQuery serializes [FeedbackTokenGetParams]'s query parameters as `url.Values`.
@@ -247,11 +248,12 @@ type FeedbackTokenGetParamsValueUnion interface {
 }
 
 type FeedbackTokenUpdateParams struct {
-	Comment    param.Field[string]                                   `json:"comment"`
-	Correction param.Field[FeedbackTokenUpdateParamsCorrectionUnion] `json:"correction"`
-	Metadata   param.Field[map[string]interface{}]                   `json:"metadata"`
-	Score      param.Field[FeedbackTokenUpdateParamsScoreUnion]      `json:"score"`
-	Value      param.Field[FeedbackTokenUpdateParamsValueUnion]      `json:"value"`
+	Comment                   param.Field[string]                                   `json:"comment"`
+	Correction                param.Field[FeedbackTokenUpdateParamsCorrectionUnion] `json:"correction"`
+	DoNotExtendTraceRetention param.Field[bool]                                     `json:"do_not_extend_trace_retention"`
+	Metadata                  param.Field[map[string]interface{}]                   `json:"metadata"`
+	Score                     param.Field[FeedbackTokenUpdateParamsScoreUnion]      `json:"score"`
+	Value                     param.Field[FeedbackTokenUpdateParamsValueUnion]      `json:"value"`
 }
 
 func (r FeedbackTokenUpdateParams) MarshalJSON() (data []byte, err error) {

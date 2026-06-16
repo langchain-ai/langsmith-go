@@ -38,8 +38,9 @@ func TestFeedbackNewWithOptionalParams(t *testing.T) {
 			Correction: langsmith.F[langsmith.FeedbackCreateSchemaCorrectionUnionParam](langsmith.FeedbackCreateSchemaCorrectionMapParam(map[string]interface{}{
 				"foo": "bar",
 			})),
-			CreatedAt: langsmith.F(time.Now()),
-			Error:     langsmith.F(true),
+			CreatedAt:                 langsmith.F(time.Now()),
+			DoNotExtendTraceRetention: langsmith.F(true),
+			Error:                     langsmith.F(true),
 			FeedbackConfig: langsmith.F(langsmith.FeedbackCreateSchemaFeedbackConfigParam{
 				Type: langsmith.F(langsmith.FeedbackCreateSchemaFeedbackConfigTypeContinuous),
 				Categories: langsmith.F([]langsmith.FeedbackCreateSchemaFeedbackConfigCategoryParam{{
