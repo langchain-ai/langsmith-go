@@ -348,6 +348,119 @@ func (r *OffsetPaginationCommitsAutoPager[T]) Index() int {
 	return r.run
 }
 
+type OffsetPaginationOnlineEvaluators[T any] struct {
+	Evaluators []T                                  `json:"evaluators"`
+	Total      int64                                `json:"total"`
+	JSON       offsetPaginationOnlineEvaluatorsJSON `json:"-"`
+	cfg        *requestconfig.RequestConfig
+	res        *http.Response
+}
+
+// offsetPaginationOnlineEvaluatorsJSON contains the JSON metadata for the struct
+// [OffsetPaginationOnlineEvaluators[T]]
+type offsetPaginationOnlineEvaluatorsJSON struct {
+	Evaluators  apijson.Field
+	Total       apijson.Field
+	raw         string
+	ExtraFields map[string]apijson.Field
+}
+
+func (r *OffsetPaginationOnlineEvaluators[T]) UnmarshalJSON(data []byte) (err error) {
+	return apijson.UnmarshalRoot(data, r)
+}
+
+func (r offsetPaginationOnlineEvaluatorsJSON) RawJSON() string {
+	return r.raw
+}
+
+// GetNextPage returns the next page as defined by this pagination style. When
+// there is no next page, this function will return a 'nil' for the page value, but
+// will not return an error
+func (r *OffsetPaginationOnlineEvaluators[T]) GetNextPage() (res *OffsetPaginationOnlineEvaluators[T], err error) {
+	if len(r.Evaluators) == 0 {
+		return nil, nil
+	}
+	cfg := r.cfg.Clone(r.cfg.Context)
+
+	q := cfg.Request.URL.Query()
+	offset, err := strconv.ParseInt(q.Get("offset"), 10, 64)
+	if err != nil {
+		offset = 0
+	}
+	length := int64(len(r.Evaluators))
+	next := offset + length
+
+	if length > 0 && next != 0 {
+		err = cfg.Apply(option.WithQuery("offset", strconv.FormatInt(next, 10)))
+		if err != nil {
+			return nil, err
+		}
+	} else {
+		return nil, nil
+	}
+	var raw *http.Response
+	cfg.ResponseInto = &raw
+	cfg.ResponseBodyInto = &res
+	err = cfg.Execute()
+	if err != nil {
+		return nil, err
+	}
+	res.SetPageConfig(cfg, raw)
+	return res, nil
+}
+
+func (r *OffsetPaginationOnlineEvaluators[T]) SetPageConfig(cfg *requestconfig.RequestConfig, res *http.Response) {
+	if r == nil {
+		r = &OffsetPaginationOnlineEvaluators[T]{}
+	}
+	r.cfg = cfg
+	r.res = res
+}
+
+type OffsetPaginationOnlineEvaluatorsAutoPager[T any] struct {
+	page *OffsetPaginationOnlineEvaluators[T]
+	cur  T
+	idx  int
+	run  int
+	err  error
+}
+
+func NewOffsetPaginationOnlineEvaluatorsAutoPager[T any](page *OffsetPaginationOnlineEvaluators[T], err error) *OffsetPaginationOnlineEvaluatorsAutoPager[T] {
+	return &OffsetPaginationOnlineEvaluatorsAutoPager[T]{
+		page: page,
+		err:  err,
+	}
+}
+
+func (r *OffsetPaginationOnlineEvaluatorsAutoPager[T]) Next() bool {
+	if r.page == nil || len(r.page.Evaluators) == 0 {
+		return false
+	}
+	if r.idx >= len(r.page.Evaluators) {
+		r.idx = 0
+		r.page, r.err = r.page.GetNextPage()
+		if r.err != nil || r.page == nil || len(r.page.Evaluators) == 0 {
+			return false
+		}
+	}
+	r.cur = r.page.Evaluators[r.idx]
+	r.run += 1
+	r.idx += 1
+	return true
+}
+
+func (r *OffsetPaginationOnlineEvaluatorsAutoPager[T]) Current() T {
+	return r.cur
+}
+
+func (r *OffsetPaginationOnlineEvaluatorsAutoPager[T]) Err() error {
+	return r.err
+}
+
+func (r *OffsetPaginationOnlineEvaluatorsAutoPager[T]) Index() int {
+	return r.run
+}
+
 type OffsetPaginationInsightsClusteringJobs[T any] struct {
 	ClusteringJobs []T                                        `json:"clustering_jobs"`
 	JSON           offsetPaginationInsightsClusteringJobsJSON `json:"-"`

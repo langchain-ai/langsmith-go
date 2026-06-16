@@ -1,4 +1,4 @@
-name: Sync from production
+name: "stlc: sync from production"
 
 on:
   schedule:

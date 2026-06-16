@@ -52,20 +52,32 @@ func TestSandboxBoxNewWithOptionalParams(t *testing.T) {
 		FsCapacityBytes: langsmith.F(int64(0)),
 		IdleTtlSeconds:  langsmith.F(int64(0)),
 		MemBytes:        langsmith.F(int64(0)),
-		Mounts: langsmith.F([]langsmith.SandboxBoxNewParamsMount{{
+		Mounts: langsmith.F([]langsmith.SandboxBoxNewParamsMountUnion{langsmith.SandboxBoxNewParamsMountsSandboxapiS3BucketMountSpec{
 			ID:        langsmith.F("id"),
 			MountPath: langsmith.F("mount_path"),
-			S3: langsmith.F(langsmith.SandboxBoxNewParamsMountsS3{
+			S3: langsmith.F(langsmith.SandboxBoxNewParamsMountsSandboxapiS3BucketMountSpecS3{
 				Bucket:      langsmith.F("bucket"),
 				EndpointURL: langsmith.F("endpoint_url"),
 				Region:      langsmith.F("region"),
 				PathStyle:   langsmith.F(true),
 				Prefix:      langsmith.F("prefix"),
 			}),
-			Type: langsmith.F(langsmith.SandboxBoxNewParamsMountsTypeS3),
-			Cache: langsmith.F(langsmith.SandboxBoxNewParamsMountsCache{
+			Type: langsmith.F(langsmith.SandboxBoxNewParamsMountsSandboxapiS3BucketMountSpecTypeS3),
+			Cache: langsmith.F(langsmith.SandboxBoxNewParamsMountsSandboxapiS3BucketMountSpecCache{
 				MaxSizeBytes:     langsmith.F(int64(0)),
 				WritebackSeconds: langsmith.F(int64(0)),
+			}),
+			Gcs: langsmith.F(langsmith.SandboxBoxNewParamsMountsSandboxapiS3BucketMountSpecGcs{
+				Bucket: langsmith.F("bucket"),
+				Prefix: langsmith.F("prefix"),
+			}),
+			Git: langsmith.F(langsmith.SandboxBoxNewParamsMountsSandboxapiS3BucketMountSpecGit{
+				RemoteURL: langsmith.F("remote_url"),
+				Ref: langsmith.F(langsmith.SandboxBoxNewParamsMountsSandboxapiS3BucketMountSpecGitRef{
+					Name: langsmith.F("name"),
+					Type: langsmith.F(langsmith.SandboxBoxNewParamsMountsSandboxapiS3BucketMountSpecGitRefTypeBranch),
+				}),
+				RefreshIntervalSeconds: langsmith.F(int64(1)),
 			}),
 			ReadOnly: langsmith.F(true),
 		}}),
@@ -103,6 +115,14 @@ func TestSandboxBoxNewWithOptionalParams(t *testing.T) {
 					}),
 				}),
 				Enabled: langsmith.F(true),
+				Gcp: langsmith.F(langsmith.SandboxBoxNewParamsProxyConfigRulesGcp{
+					Scopes: langsmith.F([]string{"string"}),
+					ServiceAccountJson: langsmith.F(langsmith.SandboxBoxNewParamsProxyConfigRulesGcpServiceAccountJson{
+						Type:  langsmith.F(langsmith.SandboxBoxNewParamsProxyConfigRulesGcpServiceAccountJsonTypePlaintext),
+						IsSet: langsmith.F(true),
+						Value: langsmith.F("value"),
+					}),
+				}),
 				Headers: langsmith.F([]langsmith.SandboxBoxNewParamsProxyConfigRulesHeader{{
 					Name:  langsmith.F("name"),
 					Type:  langsmith.F(langsmith.SandboxBoxNewParamsProxyConfigRulesHeadersTypePlaintext),
@@ -209,6 +229,14 @@ func TestSandboxBoxUpdateWithOptionalParams(t *testing.T) {
 						}),
 					}),
 					Enabled: langsmith.F(true),
+					Gcp: langsmith.F(langsmith.SandboxBoxUpdateParamsProxyConfigRulesGcp{
+						Scopes: langsmith.F([]string{"string"}),
+						ServiceAccountJson: langsmith.F(langsmith.SandboxBoxUpdateParamsProxyConfigRulesGcpServiceAccountJson{
+							Type:  langsmith.F(langsmith.SandboxBoxUpdateParamsProxyConfigRulesGcpServiceAccountJsonTypePlaintext),
+							IsSet: langsmith.F(true),
+							Value: langsmith.F("value"),
+						}),
+					}),
 					Headers: langsmith.F([]langsmith.SandboxBoxUpdateParamsProxyConfigRulesHeader{{
 						Name:  langsmith.F("name"),
 						Type:  langsmith.F(langsmith.SandboxBoxUpdateParamsProxyConfigRulesHeadersTypePlaintext),

@@ -83,97 +83,105 @@ func (r CodeEvaluatorTopLevelLanguage) IsKnown() bool {
 
 // Run rules schema.
 type Evaluator struct {
-	ID                           string                    `json:"id" api:"required" format:"uuid"`
-	CreatedAt                    time.Time                 `json:"created_at" api:"required" format:"date-time"`
-	DisplayName                  string                    `json:"display_name" api:"required"`
-	EvaluatorVersion             int64                     `json:"evaluator_version" api:"required"`
-	SamplingRate                 float64                   `json:"sampling_rate" api:"required"`
-	TenantID                     string                    `json:"tenant_id" api:"required" format:"uuid"`
-	UpdatedAt                    time.Time                 `json:"updated_at" api:"required" format:"date-time"`
-	Webhooks                     []EvaluatorWebhook        `json:"webhooks" api:"required,nullable"`
-	AddToAnnotationQueueID       string                    `json:"add_to_annotation_queue_id" api:"nullable" format:"uuid"`
-	AddToAnnotationQueueName     string                    `json:"add_to_annotation_queue_name" api:"nullable"`
-	AddToDatasetID               string                    `json:"add_to_dataset_id" api:"nullable" format:"uuid"`
-	AddToDatasetName             string                    `json:"add_to_dataset_name" api:"nullable"`
-	AddToDatasetPreferCorrection bool                      `json:"add_to_dataset_prefer_correction"`
-	Alerts                       []EvaluatorPagerdutyAlert `json:"alerts" api:"nullable"`
-	AlignmentAnnotationQueueID   string                    `json:"alignment_annotation_queue_id" api:"nullable" format:"uuid"`
-	BackfillCompletedAt          time.Time                 `json:"backfill_completed_at" api:"nullable" format:"date-time"`
-	BackfillError                string                    `json:"backfill_error" api:"nullable"`
-	BackfillFrom                 time.Time                 `json:"backfill_from" api:"nullable" format:"date-time"`
-	BackfillID                   string                    `json:"backfill_id" api:"nullable" format:"uuid"`
-	BackfillProgress             float64                   `json:"backfill_progress" api:"nullable"`
-	BackfillStatus               string                    `json:"backfill_status" api:"nullable"`
-	CodeEvaluators               []CodeEvaluatorTopLevel   `json:"code_evaluators" api:"nullable"`
-	CorrectionsDatasetID         string                    `json:"corrections_dataset_id" api:"nullable" format:"uuid"`
-	DatasetID                    string                    `json:"dataset_id" api:"nullable" format:"uuid"`
-	DatasetName                  string                    `json:"dataset_name" api:"nullable"`
-	EvaluatorID                  string                    `json:"evaluator_id" api:"nullable" format:"uuid"`
-	Evaluators                   []EvaluatorTopLevel       `json:"evaluators" api:"nullable"`
-	ExtendOnly                   bool                      `json:"extend_only"`
-	Filter                       string                    `json:"filter" api:"nullable"`
-	GroupBy                      EvaluatorGroupBy          `json:"group_by" api:"nullable"`
-	IncludeExtendedStats         bool                      `json:"include_extended_stats"`
-	IsEnabled                    bool                      `json:"is_enabled"`
-	NumFewShotExamples           int64                     `json:"num_few_shot_examples" api:"nullable"`
-	SessionID                    string                    `json:"session_id" api:"nullable" format:"uuid"`
-	SessionName                  string                    `json:"session_name" api:"nullable"`
-	SpendLimit                   EvaluatorSpendLimit       `json:"spend_limit" api:"nullable"`
-	SpendUsd                     float64                   `json:"spend_usd" api:"nullable"`
-	TraceCount                   int64                     `json:"trace_count" api:"nullable"`
-	TraceFilter                  string                    `json:"trace_filter" api:"nullable"`
-	Transient                    bool                      `json:"transient"`
-	TreeFilter                   string                    `json:"tree_filter" api:"nullable"`
-	UseCorrectionsDataset        bool                      `json:"use_corrections_dataset"`
-	JSON                         evaluatorJSON             `json:"-"`
+	ID                                  string                    `json:"id" api:"required" format:"uuid"`
+	CreatedAt                           time.Time                 `json:"created_at" api:"required" format:"date-time"`
+	DisplayName                         string                    `json:"display_name" api:"required"`
+	EvaluatorVersion                    int64                     `json:"evaluator_version" api:"required"`
+	SamplingRate                        float64                   `json:"sampling_rate" api:"required"`
+	TenantID                            string                    `json:"tenant_id" api:"required" format:"uuid"`
+	UpdatedAt                           time.Time                 `json:"updated_at" api:"required" format:"date-time"`
+	Webhooks                            []EvaluatorWebhook        `json:"webhooks" api:"required,nullable"`
+	AddToAnnotationQueueID              string                    `json:"add_to_annotation_queue_id" api:"nullable" format:"uuid"`
+	AddToAnnotationQueueName            string                    `json:"add_to_annotation_queue_name" api:"nullable"`
+	AddToDatasetID                      string                    `json:"add_to_dataset_id" api:"nullable" format:"uuid"`
+	AddToDatasetName                    string                    `json:"add_to_dataset_name" api:"nullable"`
+	AddToDatasetPreferCorrection        bool                      `json:"add_to_dataset_prefer_correction"`
+	Alerts                              []EvaluatorPagerdutyAlert `json:"alerts" api:"nullable"`
+	AlignmentAnnotationQueueID          string                    `json:"alignment_annotation_queue_id" api:"nullable" format:"uuid"`
+	BackfillCompletedAt                 time.Time                 `json:"backfill_completed_at" api:"nullable" format:"date-time"`
+	BackfillError                       string                    `json:"backfill_error" api:"nullable"`
+	BackfillFrom                        time.Time                 `json:"backfill_from" api:"nullable" format:"date-time"`
+	BackfillID                          string                    `json:"backfill_id" api:"nullable" format:"uuid"`
+	BackfillProgress                    float64                   `json:"backfill_progress" api:"nullable"`
+	BackfillStatus                      string                    `json:"backfill_status" api:"nullable"`
+	CodeEvaluators                      []CodeEvaluatorTopLevel   `json:"code_evaluators" api:"nullable"`
+	CorrectionsDatasetID                string                    `json:"corrections_dataset_id" api:"nullable" format:"uuid"`
+	DatasetID                           string                    `json:"dataset_id" api:"nullable" format:"uuid"`
+	DatasetName                         string                    `json:"dataset_name" api:"nullable"`
+	EvaluatorID                         string                    `json:"evaluator_id" api:"nullable" format:"uuid"`
+	Evaluators                          []EvaluatorTopLevel       `json:"evaluators" api:"nullable"`
+	ExtendAnnotationQueueTraceRetention bool                      `json:"extend_annotation_queue_trace_retention" api:"nullable"`
+	ExtendDatasetTraceRetention         bool                      `json:"extend_dataset_trace_retention" api:"nullable"`
+	ExtendEvaluatorTraceRetention       bool                      `json:"extend_evaluator_trace_retention" api:"nullable"`
+	ExtendOnly                          bool                      `json:"extend_only"`
+	ExtendWebhookTraceRetention         bool                      `json:"extend_webhook_trace_retention" api:"nullable"`
+	Filter                              string                    `json:"filter" api:"nullable"`
+	GroupBy                             EvaluatorGroupBy          `json:"group_by" api:"nullable"`
+	IncludeExtendedStats                bool                      `json:"include_extended_stats"`
+	IsEnabled                           bool                      `json:"is_enabled"`
+	NumFewShotExamples                  int64                     `json:"num_few_shot_examples" api:"nullable"`
+	SessionID                           string                    `json:"session_id" api:"nullable" format:"uuid"`
+	SessionName                         string                    `json:"session_name" api:"nullable"`
+	SpendLimit                          EvaluatorSpendLimit       `json:"spend_limit" api:"nullable"`
+	SpendUsd                            float64                   `json:"spend_usd" api:"nullable"`
+	TraceCount                          int64                     `json:"trace_count" api:"nullable"`
+	TraceFilter                         string                    `json:"trace_filter" api:"nullable"`
+	Transient                           bool                      `json:"transient"`
+	TreeFilter                          string                    `json:"tree_filter" api:"nullable"`
+	UseCorrectionsDataset               bool                      `json:"use_corrections_dataset"`
+	JSON                                evaluatorJSON             `json:"-"`
 }
 
 // evaluatorJSON contains the JSON metadata for the struct [Evaluator]
 type evaluatorJSON struct {
-	ID                           apijson.Field
-	CreatedAt                    apijson.Field
-	DisplayName                  apijson.Field
-	EvaluatorVersion             apijson.Field
-	SamplingRate                 apijson.Field
-	TenantID                     apijson.Field
-	UpdatedAt                    apijson.Field
-	Webhooks                     apijson.Field
-	AddToAnnotationQueueID       apijson.Field
-	AddToAnnotationQueueName     apijson.Field
-	AddToDatasetID               apijson.Field
-	AddToDatasetName             apijson.Field
-	AddToDatasetPreferCorrection apijson.Field
-	Alerts                       apijson.Field
-	AlignmentAnnotationQueueID   apijson.Field
-	BackfillCompletedAt          apijson.Field
-	BackfillError                apijson.Field
-	BackfillFrom                 apijson.Field
-	BackfillID                   apijson.Field
-	BackfillProgress             apijson.Field
-	BackfillStatus               apijson.Field
-	CodeEvaluators               apijson.Field
-	CorrectionsDatasetID         apijson.Field
-	DatasetID                    apijson.Field
-	DatasetName                  apijson.Field
-	EvaluatorID                  apijson.Field
-	Evaluators                   apijson.Field
-	ExtendOnly                   apijson.Field
-	Filter                       apijson.Field
-	GroupBy                      apijson.Field
-	IncludeExtendedStats         apijson.Field
-	IsEnabled                    apijson.Field
-	NumFewShotExamples           apijson.Field
-	SessionID                    apijson.Field
-	SessionName                  apijson.Field
-	SpendLimit                   apijson.Field
-	SpendUsd                     apijson.Field
-	TraceCount                   apijson.Field
-	TraceFilter                  apijson.Field
-	Transient                    apijson.Field
-	TreeFilter                   apijson.Field
-	UseCorrectionsDataset        apijson.Field
-	raw                          string
-	ExtraFields                  map[string]apijson.Field
+	ID                                  apijson.Field
+	CreatedAt                           apijson.Field
+	DisplayName                         apijson.Field
+	EvaluatorVersion                    apijson.Field
+	SamplingRate                        apijson.Field
+	TenantID                            apijson.Field
+	UpdatedAt                           apijson.Field
+	Webhooks                            apijson.Field
+	AddToAnnotationQueueID              apijson.Field
+	AddToAnnotationQueueName            apijson.Field
+	AddToDatasetID                      apijson.Field
+	AddToDatasetName                    apijson.Field
+	AddToDatasetPreferCorrection        apijson.Field
+	Alerts                              apijson.Field
+	AlignmentAnnotationQueueID          apijson.Field
+	BackfillCompletedAt                 apijson.Field
+	BackfillError                       apijson.Field
+	BackfillFrom                        apijson.Field
+	BackfillID                          apijson.Field
+	BackfillProgress                    apijson.Field
+	BackfillStatus                      apijson.Field
+	CodeEvaluators                      apijson.Field
+	CorrectionsDatasetID                apijson.Field
+	DatasetID                           apijson.Field
+	DatasetName                         apijson.Field
+	EvaluatorID                         apijson.Field
+	Evaluators                          apijson.Field
+	ExtendAnnotationQueueTraceRetention apijson.Field
+	ExtendDatasetTraceRetention         apijson.Field
+	ExtendEvaluatorTraceRetention       apijson.Field
+	ExtendOnly                          apijson.Field
+	ExtendWebhookTraceRetention         apijson.Field
+	Filter                              apijson.Field
+	GroupBy                             apijson.Field
+	IncludeExtendedStats                apijson.Field
+	IsEnabled                           apijson.Field
+	NumFewShotExamples                  apijson.Field
+	SessionID                           apijson.Field
+	SessionName                         apijson.Field
+	SpendLimit                          apijson.Field
+	SpendUsd                            apijson.Field
+	TraceCount                          apijson.Field
+	TraceFilter                         apijson.Field
+	Transient                           apijson.Field
+	TreeFilter                          apijson.Field
+	UseCorrectionsDataset               apijson.Field
+	raw                                 string
+	ExtraFields                         map[string]apijson.Field
 }
 
 func (r *Evaluator) UnmarshalJSON(data []byte) (err error) {
@@ -321,26 +329,28 @@ func (r evaluatorTopLevelJSON) RawJSON() string {
 
 // Evaluator structured output schema.
 type EvaluatorTopLevelStructured struct {
-	HubRef          string                          `json:"hub_ref" api:"nullable"`
-	Model           map[string]interface{}          `json:"model" api:"nullable"`
-	Prompt          [][]interface{}                 `json:"prompt" api:"nullable"`
-	Schema          map[string]interface{}          `json:"schema" api:"nullable"`
-	TemplateFormat  string                          `json:"template_format" api:"nullable"`
-	VariableMapping map[string]string               `json:"variable_mapping" api:"nullable"`
-	JSON            evaluatorTopLevelStructuredJSON `json:"-"`
+	HubRef               string                          `json:"hub_ref" api:"nullable"`
+	Model                map[string]interface{}          `json:"model" api:"nullable"`
+	PlaygroundSettingsID string                          `json:"playground_settings_id" api:"nullable"`
+	Prompt               [][]interface{}                 `json:"prompt" api:"nullable"`
+	Schema               map[string]interface{}          `json:"schema" api:"nullable"`
+	TemplateFormat       string                          `json:"template_format" api:"nullable"`
+	VariableMapping      map[string]string               `json:"variable_mapping" api:"nullable"`
+	JSON                 evaluatorTopLevelStructuredJSON `json:"-"`
 }
 
 // evaluatorTopLevelStructuredJSON contains the JSON metadata for the struct
 // [EvaluatorTopLevelStructured]
 type evaluatorTopLevelStructuredJSON struct {
-	HubRef          apijson.Field
-	Model           apijson.Field
-	Prompt          apijson.Field
-	Schema          apijson.Field
-	TemplateFormat  apijson.Field
-	VariableMapping apijson.Field
-	raw             string
-	ExtraFields     map[string]apijson.Field
+	HubRef               apijson.Field
+	Model                apijson.Field
+	PlaygroundSettingsID apijson.Field
+	Prompt               apijson.Field
+	Schema               apijson.Field
+	TemplateFormat       apijson.Field
+	VariableMapping      apijson.Field
+	raw                  string
+	ExtraFields          map[string]apijson.Field
 }
 
 func (r *EvaluatorTopLevelStructured) UnmarshalJSON(data []byte) (err error) {

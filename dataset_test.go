@@ -47,6 +47,7 @@ func TestDatasetNewWithOptionalParams(t *testing.T) {
 		OutputsSchemaDefinition: langsmith.F(map[string]interface{}{
 			"foo": "bar",
 		}),
+		TagValueIDs: langsmith.F([]string{"182bd5e5-6e1a-4fe4-a799-aa6d9a6ab26e"}),
 		Transformations: langsmith.F([]langsmith.DatasetTransformationParam{{
 			Path:               langsmith.F([]string{"string"}),
 			TransformationType: langsmith.F(langsmith.DatasetTransformationTransformationTypeConvertToOpenAIMessage),
@@ -233,6 +234,7 @@ func TestDatasetCloneWithOptionalParams(t *testing.T) {
 		AsOf:            langsmith.F[langsmith.DatasetCloneParamsAsOfUnion](shared.UnionTime(time.Now())),
 		Examples:        langsmith.F([]string{"182bd5e5-6e1a-4fe4-a799-aa6d9a6ab26e"}),
 		Split:           langsmith.F[langsmith.DatasetCloneParamsSplitUnion](shared.UnionString("string")),
+		TagValueIDs:     langsmith.F([]string{"182bd5e5-6e1a-4fe4-a799-aa6d9a6ab26e"}),
 	})
 	if err != nil {
 		var apierr *langsmith.Error
@@ -452,6 +454,7 @@ func TestDatasetUploadWithOptionalParams(t *testing.T) {
 		OutputKeyMappings:       langsmith.F("output_key_mappings"),
 		OutputKeys:              langsmith.F([]string{"string"}),
 		OutputsSchemaDefinition: langsmith.F("outputs_schema_definition"),
+		TagValueIDs:             langsmith.F("tag_value_ids"),
 		Transformations:         langsmith.F("transformations"),
 	})
 	if err != nil {
