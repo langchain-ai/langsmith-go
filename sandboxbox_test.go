@@ -71,6 +71,14 @@ func TestSandboxBoxNewWithOptionalParams(t *testing.T) {
 				Bucket: langsmith.F("bucket"),
 				Prefix: langsmith.F("prefix"),
 			}),
+			Git: langsmith.F(langsmith.SandboxBoxNewParamsMountsSandboxapiS3BucketMountSpecGit{
+				RemoteURL: langsmith.F("remote_url"),
+				Ref: langsmith.F(langsmith.SandboxBoxNewParamsMountsSandboxapiS3BucketMountSpecGitRef{
+					Name: langsmith.F("name"),
+					Type: langsmith.F(langsmith.SandboxBoxNewParamsMountsSandboxapiS3BucketMountSpecGitRefTypeBranch),
+				}),
+				RefreshIntervalSeconds: langsmith.F(int64(1)),
+			}),
 			ReadOnly: langsmith.F(true),
 		}}),
 		Name: langsmith.F("name"),
