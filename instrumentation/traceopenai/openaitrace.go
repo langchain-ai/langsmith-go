@@ -147,7 +147,7 @@ func MiddlewareWithTracerProvider(req *http.Request, next MiddlewareNext, tp tra
 		streaming = reqFields.streaming
 	}
 
-	responsesAPI := strings.HasSuffix(req.URL.Path, "/responses")
+	responsesAPI := strings.HasSuffix(req.URL.Path, "/responses") || strings.HasSuffix(req.URL.Path, "/responses/compact")
 
 	// Inject span context into request headers and update request context
 	otel.GetTextMapPropagator().Inject(ctx, propagation.HeaderCarrier(req.Header))
@@ -326,7 +326,8 @@ func isOpenAIEndpoint(path string) bool {
 	return strings.HasSuffix(path, "/chat/completions") ||
 		strings.HasSuffix(path, "/completions") ||
 		strings.HasSuffix(path, "/embeddings") ||
-		strings.HasSuffix(path, "/responses")
+		strings.HasSuffix(path, "/responses") ||
+		strings.HasSuffix(path, "/responses/compact")
 }
 
 // getSpanName returns an appropriate span name based on the API endpoint.
@@ -339,6 +340,9 @@ func getSpanName(path string) string {
 	}
 	if strings.HasSuffix(path, "/embeddings") {
 		return "openai.embedding"
+	}
+	if strings.HasSuffix(path, "/responses/compact") {
+		return "openai.responses.compact"
 	}
 	if strings.HasSuffix(path, "/responses") {
 		return "openai.responses"
@@ -356,6 +360,9 @@ func getOperationName(path string) string {
 	}
 	if strings.HasSuffix(path, "/embeddings") {
 		return "embedding"
+	}
+	if strings.HasSuffix(path, "/responses/compact") {
+		return "responses.compact"
 	}
 	if strings.HasSuffix(path, "/responses") {
 		return "responses"
@@ -989,6 +996,9 @@ func extractResponsesCompletion(body []byte) (string, usageInfo) {
 	if err := json.Unmarshal(body, &resp); err != nil {
 		return "", usageInfo{}
 	}
+	if object, _ := resp["object"].(string); object == "response.compaction" {
+		return extractResponsesCompactOutput(resp), extractResponsesUsage(resp)
+	}
 	return extractResponsesOutput(resp), extractResponsesUsage(resp)
 }
 
@@ -1094,6 +1104,46 @@ func extractResponsesOutput(resp map[string]any) string {
 		return ""
 	}
 	return marshalMessages([]any{msg})
+}
+
+func extractResponsesCompactOutput(resp map[string]any) string {
+	output, ok := resp["output"].([]any)
+	if !ok || len(output) == 0 {
+		return ""
+	}
+
+	var messages []any
+	for _, item := range output {
+		itemMap, ok := item.(map[string]any)
+		if !ok {
+			continue
+		}
+		itemType, _ := itemMap["type"].(string)
+		role, ok := itemMap["role"].(string)
+		if itemType != "message" || !ok {
+			continue
+		}
+
+		msg := map[string]any{"role": role}
+		switch content := itemMap["content"].(type) {
+		case string:
+			msg["content"] = content
+		case []any:
+			if text := flattenContentParts(content); text != "" {
+				msg["content"] = text
+			} else {
+				b, _ := json.Marshal(content)
+				msg["content"] = string(b)
+			}
+		}
+		if len(msg) > 1 {
+			messages = append(messages, msg)
+		}
+	}
+	if len(messages) == 0 {
+		return ""
+	}
+	return marshalMessages(messages)
 }
 
 // chatToolCall builds a tool_call in the chat-completions format.
