@@ -629,17 +629,20 @@ func TestSetUsageAttributes_AllTokenTypes(t *testing.T) {
 	// full comparison also asserts the cache_creation total is dropped in favor
 	// of the ephemeral breakdown and that non-token fields never leak in.
 	// Inclusive input: 2095 + 2051 + 1800 = 5946.
+	// inference_geo=us + speed=fast → us_fast_* tier keys for costing.
 	wantUM := map[string]any{
 		"input_tokens":  float64(5946),
 		"output_tokens": float64(503),
 		"total_tokens":  float64(6449),
 		"input_token_details": map[string]any{
-			"cache_read":                float64(1800),
-			"ephemeral_5m_input_tokens": float64(1951),
-			"ephemeral_1h_input_tokens": float64(100),
+			"us_fast_cache_read":                float64(1800),
+			"us_fast_ephemeral_5m_input_tokens": float64(1951),
+			"us_fast_ephemeral_1h_input_tokens": float64(100),
+			"us_fast":                           float64(2095),
 		},
 		"output_token_details": map[string]any{
-			"reasoning": float64(64),
+			"us_fast_reasoning": float64(64),
+			"us_fast":           float64(439),
 		},
 	}
 	if um := parseUsageMetadata(t, span); !reflect.DeepEqual(um, wantUM) {
@@ -757,6 +760,175 @@ func TestBuildUsageMetadata(t *testing.T) {
 			}
 			if !reflect.DeepEqual(um, tt.wantUM) {
 				t.Errorf("usage_metadata mismatch:\n got: %#v\nwant: %#v", um, tt.wantUM)
+			}
+		})
+	}
+}
+
+func TestAnthropicTierKey(t *testing.T) {
+	tests := []struct {
+		name  string
+		geo   string
+		tier  string
+		speed string
+		want  string
+	}{
+		{
+			name:  "empty when all modifiers neutral",
+			geo:   "global",
+			tier:  "standard",
+			speed: "standard",
+			want:  "",
+		},
+		{
+			name: "us from inference_geo",
+			geo:  "us",
+			want: "us",
+		},
+		{
+			name: "batch from service_tier",
+			tier: "batch",
+			want: "batch",
+		},
+		{
+			name:  "fast from speed",
+			speed: "fast",
+			want:  "fast",
+		},
+		{
+			name: "stacks us and batch",
+			geo:  "us",
+			tier: "batch",
+			want: "us_batch",
+		},
+		{
+			name:  "stacks us and fast",
+			geo:   "us",
+			speed: "fast",
+			want:  "us_fast",
+		},
+		{
+			name:  "fast preempts batch",
+			geo:   "us",
+			tier:  "batch",
+			speed: "fast",
+			want:  "us_fast",
+		},
+		{
+			name: "empty for priority service_tier",
+			tier: "priority",
+			want: "",
+		},
+	}
+	for _, tt := range tests {
+		t.Run(tt.name, func(t *testing.T) {
+			if got := anthropicTierKey(tt.geo, tt.tier, tt.speed); got != tt.want {
+				t.Errorf("anthropicTierKey(%q, %q, %q) = %q, want %q", tt.geo, tt.tier, tt.speed, got, tt.want)
+			}
+		})
+	}
+}
+
+func TestApplyAnthropicTierPrefixes(t *testing.T) {
+	tests := []struct {
+		name       string
+		geo        string
+		tier       string
+		speed      string
+		metadata   map[string]any
+		wantInput  map[string]any
+		wantOutput map[string]any
+	}{
+		{
+			name: "unchanged when usage modifiers are neutral",
+			metadata: map[string]any{
+				"input_tokens": int64(10),
+				"input_token_details": map[string]any{
+					"cache_read": int64(3),
+				},
+			},
+			wantInput: map[string]any{
+				"cache_read": int64(3),
+			},
+		},
+		{
+			name: "prefixes breakdown and remainder for us geo",
+			geo:  "us",
+			metadata: map[string]any{
+				"input_tokens":  int64(115),
+				"output_tokens": int64(50),
+				"input_token_details": map[string]any{
+					"cache_read":     int64(5),
+					"cache_creation": int64(10),
+				},
+				"output_token_details": map[string]any{
+					"reasoning": int64(10),
+				},
+			},
+			wantInput: map[string]any{
+				"us_cache_read":     int64(5),
+				"us_cache_creation": int64(10),
+				"us":                int64(100),
+			},
+			wantOutput: map[string]any{
+				"us_reasoning": int64(10),
+				"us":           int64(40),
+			},
+		},
+		{
+			name: "prefixes breakdown and remainder for batch",
+			tier: "batch",
+			metadata: map[string]any{
+				"input_tokens": int64(20),
+				"input_token_details": map[string]any{
+					"cache_read": int64(8),
+				},
+			},
+			wantInput: map[string]any{
+				"batch_cache_read": int64(8),
+				"batch":            int64(12),
+			},
+		},
+		{
+			name: "assigns tier key when no token breakdown",
+			geo:  "us",
+			metadata: map[string]any{
+				"output_tokens": int64(25),
+			},
+			wantOutput: map[string]any{
+				"us": int64(25),
+			},
+		},
+	}
+	for _, tt := range tests {
+		t.Run(tt.name, func(t *testing.T) {
+			usage := map[string]interface{}{}
+			if tt.geo != "" {
+				usage["inference_geo"] = tt.geo
+			}
+			if tt.tier != "" {
+				usage["service_tier"] = tt.tier
+			}
+			if tt.speed != "" {
+				usage["speed"] = tt.speed
+			}
+
+			um := tt.metadata
+			applyAnthropicTierPrefixes(um, usage)
+
+			gotIn, _ := um["input_token_details"].(map[string]any)
+			if tt.wantInput != nil {
+				if !reflect.DeepEqual(gotIn, tt.wantInput) {
+					t.Errorf("input_token_details:\n got %#v\nwant %#v", gotIn, tt.wantInput)
+				}
+			} else if gotIn != nil {
+				t.Errorf("input_token_details: got %#v, want nil", gotIn)
+			}
+			if tt.wantOutput != nil {
+				gotOut, _ := um["output_token_details"].(map[string]any)
+				if !reflect.DeepEqual(gotOut, tt.wantOutput) {
+					t.Errorf("output_token_details:\n got %#v\nwant %#v", gotOut, tt.wantOutput)
+				}
 			}
 		})
 	}
