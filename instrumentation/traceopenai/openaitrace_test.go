@@ -241,6 +241,60 @@ func TestRoundTrip_ResponsesAPIStreamingCompleteIsNotError(t *testing.T) {
 	}
 }
 
+func TestRoundTrip_ResponsesCompactAPINonStreamingCompaction(t *testing.T) {
+	responseBody := `{
+		"object": "response.compaction",
+		"output": [
+			{
+				"type": "message",
+				"role": "user",
+				"content": [{"type": "input_text", "text": "Create a simple landing page for a dog petting cafe."}]
+			},
+			{"type": "compaction", "encrypted_content": "gAAAAABencrypted"}
+		],
+		"usage": {"input_tokens": 139, "output_tokens": 438, "total_tokens": 577}
+	}`
+	client, exporter := newTracedClient(t, []byte(responseBody))
+
+	body := `{"model":"gpt-5.1-codex-max","input":[{"role":"user","content":"Create a page"}]}`
+	req, err := http.NewRequestWithContext(context.Background(), http.MethodPost,
+		"https://api.openai.com/v1/responses/compact", strings.NewReader(body))
+	if err != nil {
+		t.Fatal(err)
+	}
+	resp, err := client.Do(req)
+	if err != nil {
+		t.Fatal(err)
+	}
+	if _, err := io.ReadAll(resp.Body); err != nil {
+		t.Fatal(err)
+	}
+	resp.Body.Close()
+
+	spans := exporter.GetSpans()
+	if len(spans) == 0 {
+		t.Fatal("expected at least one span")
+	}
+	span := spans[0]
+	if span.Name != "openai.responses.compact" {
+		t.Errorf("span name = %q, want openai.responses.compact", span.Name)
+	}
+	if span.Status.Code == codes.Error {
+		t.Errorf("span %q should not be errored, got status %v", span.Name, span.Status)
+	}
+
+	var completion string
+	for _, attr := range span.Attributes {
+		if string(attr.Key) == "gen_ai.completion" {
+			completion = attr.Value.AsString()
+		}
+	}
+	wantCompletion := `{"messages":[{"content":"Create a simple landing page for a dog petting cafe.","role":"user"}]}`
+	if completion != wantCompletion {
+		t.Errorf("gen_ai.completion mismatch:\n got: %s\nwant: %s", completion, wantCompletion)
+	}
+}
+
 func TestRoundTrip_ResponsesAPIStreamingIncompleteIsError(t *testing.T) {
 	// A Responses API stream that ends WITHOUT response.completed should be
 	// flagged as incomplete (e.g. cancelled or network failure).
@@ -327,6 +381,7 @@ func TestIsOpenAIEndpoint(t *testing.T) {
 		{"/v1/completions", true},
 		{"/v1/embeddings", true},
 		{"/v1/responses", true},
+		{"/v1/responses/compact", true},
 		{"/openai/deployments/gpt-4/chat/completions", true},
 		{"/v1/models", false},
 		{"/v1/files", false},
@@ -348,6 +403,7 @@ func TestGetSpanName(t *testing.T) {
 		{"/v1/completions", "openai.completion"},
 		{"/v1/embeddings", "openai.embedding"},
 		{"/v1/responses", "openai.responses"},
+		{"/v1/responses/compact", "openai.responses.compact"},
 		{"/v1/models", "openai.request"},
 	}
 	for _, tt := range tests {
@@ -366,6 +422,7 @@ func TestGetOperationName(t *testing.T) {
 		{"/v1/completions", "completion"},
 		{"/v1/embeddings", "embedding"},
 		{"/v1/responses", "responses"},
+		{"/v1/responses/compact", "responses.compact"},
 		{"/v1/models", "request"},
 	}
 	for _, tt := range tests {
@@ -570,6 +627,44 @@ func TestExtractResponsesCompletion_FunctionCall(t *testing.T) {
 	}
 }
 
+func TestExtractResponsesCompletion_Compaction(t *testing.T) {
+	body := `{
+		"object": "response.compaction",
+		"output": [
+			{
+				"type": "message",
+				"role": "user",
+				"content": [{"type": "input_text", "text": "Create a simple landing page for a dog petting cafe."}]
+			},
+			{"type": "compaction", "encrypted_content": "gAAAAABencrypted"}
+		],
+		"usage": {
+			"input_tokens": 139,
+			"output_tokens": 438,
+			"output_tokens_details": {"reasoning_tokens": 64},
+			"total_tokens": 577
+		}
+	}`
+	completion, usage := extractResponsesCompletion([]byte(body))
+
+	wantCompletion := `{"messages":[{"content":"Create a simple landing page for a dog petting cafe.","role":"user"}]}`
+	if completion != wantCompletion {
+		t.Errorf("completion mismatch:\n got: %s\nwant: %s", completion, wantCompletion)
+	}
+	want := usageInfo{
+		InputTokens: 139, OutputTokens: 438, TotalTokens: 577, HasUsage: true,
+		UsageMetadata: map[string]any{
+			"input_tokens":         139,
+			"output_tokens":        438,
+			"total_tokens":         577,
+			"output_token_details": map[string]any{"reasoning": 64},
+		},
+	}
+	if !reflect.DeepEqual(usage, want) {
+		t.Errorf("usage mismatch:\n got: %#v\nwant: %#v", usage, want)
+	}
+}
+
 func TestExtractStreamingResponsesCompletion(t *testing.T) {
 	// Responses API streams do not send [DONE]; the stream ends after the
 	// response.completed event and the connection closes.
@@ -684,6 +779,22 @@ func TestExtractResponsesOutput_TextAndFunctionCalls(t *testing.T) {
 	}
 	if !strings.Contains(output, "search") {
 		t.Errorf("output should contain function call: %s", output)
+	}
+}
+
+func TestExtractResponsesOutput_UserMessageIgnored(t *testing.T) {
+	resp := map[string]any{
+		"output": []any{
+			map[string]any{
+				"type": "message", "role": "user",
+				"content": []any{map[string]any{"type": "input_text", "text": "Follow-up question"}},
+			},
+		},
+	}
+
+	output := extractResponsesOutput(resp)
+	if output != "" {
+		t.Errorf("normal Responses output should ignore user messages, got %q", output)
 	}
 }
 
