@@ -1075,15 +1075,17 @@ func (r SandboxBoxNewResponseProxyConfigCallbacksRequestHeadersType) IsKnown() b
 }
 
 type SandboxBoxNewResponseProxyConfigRule struct {
-	Name       string                                        `json:"name" api:"required"`
-	Aws        SandboxBoxNewResponseProxyConfigRulesAws      `json:"aws"`
-	Enabled    bool                                          `json:"enabled"`
-	Gcp        SandboxBoxNewResponseProxyConfigRulesGcp      `json:"gcp"`
-	Headers    []SandboxBoxNewResponseProxyConfigRulesHeader `json:"headers"`
-	MatchHosts []string                                      `json:"match_hosts"`
-	MatchPaths []string                                      `json:"match_paths"`
-	Type       string                                        `json:"type"`
-	JSON       sandboxBoxNewResponseProxyConfigRuleJSON      `json:"-"`
+	Name    string                                        `json:"name" api:"required"`
+	Aws     SandboxBoxNewResponseProxyConfigRulesAws      `json:"aws"`
+	Enabled bool                                          `json:"enabled"`
+	Gcp     SandboxBoxNewResponseProxyConfigRulesGcp      `json:"gcp"`
+	Headers []SandboxBoxNewResponseProxyConfigRulesHeader `json:"headers"`
+	// MatchHosts is only accepted for header injection rules. Provider auth rules use
+	// built-in host matching.
+	MatchHosts []string                                 `json:"match_hosts"`
+	MatchPaths []string                                 `json:"match_paths"`
+	Type       string                                   `json:"type"`
+	JSON       sandboxBoxNewResponseProxyConfigRuleJSON `json:"-"`
 }
 
 // sandboxBoxNewResponseProxyConfigRuleJSON contains the JSON metadata for the
@@ -2238,15 +2240,17 @@ func (r SandboxBoxGetResponseProxyConfigCallbacksRequestHeadersType) IsKnown() b
 }
 
 type SandboxBoxGetResponseProxyConfigRule struct {
-	Name       string                                        `json:"name" api:"required"`
-	Aws        SandboxBoxGetResponseProxyConfigRulesAws      `json:"aws"`
-	Enabled    bool                                          `json:"enabled"`
-	Gcp        SandboxBoxGetResponseProxyConfigRulesGcp      `json:"gcp"`
-	Headers    []SandboxBoxGetResponseProxyConfigRulesHeader `json:"headers"`
-	MatchHosts []string                                      `json:"match_hosts"`
-	MatchPaths []string                                      `json:"match_paths"`
-	Type       string                                        `json:"type"`
-	JSON       sandboxBoxGetResponseProxyConfigRuleJSON      `json:"-"`
+	Name    string                                        `json:"name" api:"required"`
+	Aws     SandboxBoxGetResponseProxyConfigRulesAws      `json:"aws"`
+	Enabled bool                                          `json:"enabled"`
+	Gcp     SandboxBoxGetResponseProxyConfigRulesGcp      `json:"gcp"`
+	Headers []SandboxBoxGetResponseProxyConfigRulesHeader `json:"headers"`
+	// MatchHosts is only accepted for header injection rules. Provider auth rules use
+	// built-in host matching.
+	MatchHosts []string                                 `json:"match_hosts"`
+	MatchPaths []string                                 `json:"match_paths"`
+	Type       string                                   `json:"type"`
+	JSON       sandboxBoxGetResponseProxyConfigRuleJSON `json:"-"`
 }
 
 // sandboxBoxGetResponseProxyConfigRuleJSON contains the JSON metadata for the
@@ -3404,15 +3408,17 @@ func (r SandboxBoxUpdateResponseProxyConfigCallbacksRequestHeadersType) IsKnown(
 }
 
 type SandboxBoxUpdateResponseProxyConfigRule struct {
-	Name       string                                           `json:"name" api:"required"`
-	Aws        SandboxBoxUpdateResponseProxyConfigRulesAws      `json:"aws"`
-	Enabled    bool                                             `json:"enabled"`
-	Gcp        SandboxBoxUpdateResponseProxyConfigRulesGcp      `json:"gcp"`
-	Headers    []SandboxBoxUpdateResponseProxyConfigRulesHeader `json:"headers"`
-	MatchHosts []string                                         `json:"match_hosts"`
-	MatchPaths []string                                         `json:"match_paths"`
-	Type       string                                           `json:"type"`
-	JSON       sandboxBoxUpdateResponseProxyConfigRuleJSON      `json:"-"`
+	Name    string                                           `json:"name" api:"required"`
+	Aws     SandboxBoxUpdateResponseProxyConfigRulesAws      `json:"aws"`
+	Enabled bool                                             `json:"enabled"`
+	Gcp     SandboxBoxUpdateResponseProxyConfigRulesGcp      `json:"gcp"`
+	Headers []SandboxBoxUpdateResponseProxyConfigRulesHeader `json:"headers"`
+	// MatchHosts is only accepted for header injection rules. Provider auth rules use
+	// built-in host matching.
+	MatchHosts []string                                    `json:"match_hosts"`
+	MatchPaths []string                                    `json:"match_paths"`
+	Type       string                                      `json:"type"`
+	JSON       sandboxBoxUpdateResponseProxyConfigRuleJSON `json:"-"`
 }
 
 // sandboxBoxUpdateResponseProxyConfigRuleJSON contains the JSON metadata for the
@@ -4595,15 +4601,17 @@ func (r SandboxBoxListResponseSandboxesProxyConfigCallbacksRequestHeadersType) I
 }
 
 type SandboxBoxListResponseSandboxesProxyConfigRule struct {
-	Name       string                                                  `json:"name" api:"required"`
-	Aws        SandboxBoxListResponseSandboxesProxyConfigRulesAws      `json:"aws"`
-	Enabled    bool                                                    `json:"enabled"`
-	Gcp        SandboxBoxListResponseSandboxesProxyConfigRulesGcp      `json:"gcp"`
-	Headers    []SandboxBoxListResponseSandboxesProxyConfigRulesHeader `json:"headers"`
-	MatchHosts []string                                                `json:"match_hosts"`
-	MatchPaths []string                                                `json:"match_paths"`
-	Type       string                                                  `json:"type"`
-	JSON       sandboxBoxListResponseSandboxesProxyConfigRuleJSON      `json:"-"`
+	Name    string                                                  `json:"name" api:"required"`
+	Aws     SandboxBoxListResponseSandboxesProxyConfigRulesAws      `json:"aws"`
+	Enabled bool                                                    `json:"enabled"`
+	Gcp     SandboxBoxListResponseSandboxesProxyConfigRulesGcp      `json:"gcp"`
+	Headers []SandboxBoxListResponseSandboxesProxyConfigRulesHeader `json:"headers"`
+	// MatchHosts is only accepted for header injection rules. Provider auth rules use
+	// built-in host matching.
+	MatchHosts []string                                           `json:"match_hosts"`
+	MatchPaths []string                                           `json:"match_paths"`
+	Type       string                                             `json:"type"`
+	JSON       sandboxBoxListResponseSandboxesProxyConfigRuleJSON `json:"-"`
 }
 
 // sandboxBoxListResponseSandboxesProxyConfigRuleJSON contains the JSON metadata
@@ -5862,15 +5870,17 @@ func (r SandboxBoxStartResponseProxyConfigCallbacksRequestHeadersType) IsKnown()
 }
 
 type SandboxBoxStartResponseProxyConfigRule struct {
-	Name       string                                          `json:"name" api:"required"`
-	Aws        SandboxBoxStartResponseProxyConfigRulesAws      `json:"aws"`
-	Enabled    bool                                            `json:"enabled"`
-	Gcp        SandboxBoxStartResponseProxyConfigRulesGcp      `json:"gcp"`
-	Headers    []SandboxBoxStartResponseProxyConfigRulesHeader `json:"headers"`
-	MatchHosts []string                                        `json:"match_hosts"`
-	MatchPaths []string                                        `json:"match_paths"`
-	Type       string                                          `json:"type"`
-	JSON       sandboxBoxStartResponseProxyConfigRuleJSON      `json:"-"`
+	Name    string                                          `json:"name" api:"required"`
+	Aws     SandboxBoxStartResponseProxyConfigRulesAws      `json:"aws"`
+	Enabled bool                                            `json:"enabled"`
+	Gcp     SandboxBoxStartResponseProxyConfigRulesGcp      `json:"gcp"`
+	Headers []SandboxBoxStartResponseProxyConfigRulesHeader `json:"headers"`
+	// MatchHosts is only accepted for header injection rules. Provider auth rules use
+	// built-in host matching.
+	MatchHosts []string                                   `json:"match_hosts"`
+	MatchPaths []string                                   `json:"match_paths"`
+	Type       string                                     `json:"type"`
+	JSON       sandboxBoxStartResponseProxyConfigRuleJSON `json:"-"`
 }
 
 // sandboxBoxStartResponseProxyConfigRuleJSON contains the JSON metadata for the
@@ -6532,14 +6542,16 @@ func (r SandboxBoxNewParamsProxyConfigCallbacksRequestHeadersType) IsKnown() boo
 }
 
 type SandboxBoxNewParamsProxyConfigRule struct {
-	Name       param.Field[string]                                      `json:"name" api:"required"`
-	Aws        param.Field[SandboxBoxNewParamsProxyConfigRulesAws]      `json:"aws"`
-	Enabled    param.Field[bool]                                        `json:"enabled"`
-	Gcp        param.Field[SandboxBoxNewParamsProxyConfigRulesGcp]      `json:"gcp"`
-	Headers    param.Field[[]SandboxBoxNewParamsProxyConfigRulesHeader] `json:"headers"`
-	MatchHosts param.Field[[]string]                                    `json:"match_hosts"`
-	MatchPaths param.Field[[]string]                                    `json:"match_paths"`
-	Type       param.Field[string]                                      `json:"type"`
+	Name    param.Field[string]                                      `json:"name" api:"required"`
+	Aws     param.Field[SandboxBoxNewParamsProxyConfigRulesAws]      `json:"aws"`
+	Enabled param.Field[bool]                                        `json:"enabled"`
+	Gcp     param.Field[SandboxBoxNewParamsProxyConfigRulesGcp]      `json:"gcp"`
+	Headers param.Field[[]SandboxBoxNewParamsProxyConfigRulesHeader] `json:"headers"`
+	// MatchHosts is only accepted for header injection rules. Provider auth rules use
+	// built-in host matching.
+	MatchHosts param.Field[[]string] `json:"match_hosts"`
+	MatchPaths param.Field[[]string] `json:"match_paths"`
+	Type       param.Field[string]   `json:"type"`
 }
 
 func (r SandboxBoxNewParamsProxyConfigRule) MarshalJSON() (data []byte, err error) {
@@ -6744,14 +6756,16 @@ func (r SandboxBoxUpdateParamsProxyConfigCallbacksRequestHeadersType) IsKnown() 
 }
 
 type SandboxBoxUpdateParamsProxyConfigRule struct {
-	Name       param.Field[string]                                         `json:"name" api:"required"`
-	Aws        param.Field[SandboxBoxUpdateParamsProxyConfigRulesAws]      `json:"aws"`
-	Enabled    param.Field[bool]                                           `json:"enabled"`
-	Gcp        param.Field[SandboxBoxUpdateParamsProxyConfigRulesGcp]      `json:"gcp"`
-	Headers    param.Field[[]SandboxBoxUpdateParamsProxyConfigRulesHeader] `json:"headers"`
-	MatchHosts param.Field[[]string]                                       `json:"match_hosts"`
-	MatchPaths param.Field[[]string]                                       `json:"match_paths"`
-	Type       param.Field[string]                                         `json:"type"`
+	Name    param.Field[string]                                         `json:"name" api:"required"`
+	Aws     param.Field[SandboxBoxUpdateParamsProxyConfigRulesAws]      `json:"aws"`
+	Enabled param.Field[bool]                                           `json:"enabled"`
+	Gcp     param.Field[SandboxBoxUpdateParamsProxyConfigRulesGcp]      `json:"gcp"`
+	Headers param.Field[[]SandboxBoxUpdateParamsProxyConfigRulesHeader] `json:"headers"`
+	// MatchHosts is only accepted for header injection rules. Provider auth rules use
+	// built-in host matching.
+	MatchHosts param.Field[[]string] `json:"match_hosts"`
+	MatchPaths param.Field[[]string] `json:"match_paths"`
+	Type       param.Field[string]   `json:"type"`
 }
 
 func (r SandboxBoxUpdateParamsProxyConfigRule) MarshalJSON() (data []byte, err error) {
