@@ -625,6 +625,80 @@ func buildUsageMetadata(usage map[string]interface{}) (usageMetadata map[string]
 	return usageMetadata, totalInput, outputTokens
 }
 
+// anthropicTierKey returns the price-map breakdown key from usage tier fields.
+// Key order: <geo>_<speed|service_tier>. Empty string → base rates.
+func anthropicTierKey(inferenceGeo, serviceTier, speed string) string {
+	var parts []string
+	switch inferenceGeo {
+	case "", "global", "not_available": // neutral, base geo pricing
+	default:
+		parts = append(parts, inferenceGeo) // e.g. "us"
+	}
+	switch speed {
+	case "", "standard": // neutral, base speed pricing
+	default:
+		parts = append(parts, speed) // e.g. "fast"; wins over service_tier
+		return strings.Join(parts, "_")
+	}
+	switch serviceTier {
+	case "", "standard", "priority": // neutral, no priority_* in price map
+	default:
+		parts = append(parts, serviceTier) // e.g. "batch"
+	}
+	return strings.Join(parts, "_")
+}
+
+// applyAnthropicTierPrefixes rewrites usage_metadata token-detail keys so they
+// match the tier-prefixed entries in model_price_map (e.g. us_cache_read,
+// batch, us_fast). Mirrors langsmith/wrappers/_openai.py service_tier prefixing.
+func applyAnthropicTierPrefixes(usageMetadata map[string]any, usage map[string]interface{}) {
+	var geo, tier, speed string
+	if v, ok := usage["inference_geo"].(string); ok {
+		geo = v
+	}
+	if v, ok := usage["service_tier"].(string); ok {
+		tier = v
+	}
+	if v, ok := usage["speed"].(string); ok {
+		speed = v
+	}
+	tierKey := anthropicTierKey(geo, tier, speed)
+	if tierKey == "" || len(usageMetadata) == 0 {
+		return
+	}
+	prefix := tierKey + "_"
+	prefixUsageDetails(usageMetadata, prefix, tierKey, "input_token_details", "input_tokens")
+	prefixUsageDetails(usageMetadata, prefix, tierKey, "output_token_details", "output_tokens")
+}
+
+func prefixUsageDetails(usageMetadata map[string]any, prefix, tierKey, detailsKey, totalKey string) {
+	totalTokens, ok := usageMetadata[totalKey].(int64)
+	if !ok || totalTokens == 0 {
+		return
+	}
+
+	breakdown, ok := usageMetadata[detailsKey].(map[string]any)
+	tierDetails := make(map[string]any)
+
+	var breakdownTokens int64
+	if ok {
+		for key, value := range breakdown {
+			count, ok := value.(int64)
+			if !ok || count <= 0 {
+				continue
+			}
+			tierDetails[prefix+key] = count
+			breakdownTokens += count
+		}
+	}
+
+	// Tokens not in the breakdown use the tier base rate (e.g. us, batch).
+	if baseTokens := totalTokens - breakdownTokens; baseTokens > 0 {
+		tierDetails[tierKey] = baseTokens
+	}
+	usageMetadata[detailsKey] = tierDetails
+}
+
 // setUsageAttributes records token usage on the span. It emits a single
 // langsmith.usage_metadata JSON attribute (the converter's preferred,
 // cost-driving path) plus the flat gen_ai.usage.* attributes that
@@ -632,6 +706,7 @@ func buildUsageMetadata(usage map[string]interface{}) (usageMetadata map[string]
 // recorded as run metadata.
 func setUsageAttributes(span trace.Span, usage map[string]interface{}, parentSpan trace.Span) {
 	usageMetadata, totalInput, outputTokens := buildUsageMetadata(usage)
+	applyAnthropicTierPrefixes(usageMetadata, usage)
 	totalTokens := totalInput + outputTokens
 
 	if len(usageMetadata) > 0 {
