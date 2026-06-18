@@ -1,5 +1,95 @@
 # Changelog
 
+## [0.15.0](https://github.com/langchain-ai/langsmith-go/compare/v0.14.2...v0.15.0) (2026-06-18)
+
+
+### ⚠ BREAKING CHANGES
+
+* **sandboxes:** add gcs bucket mounts
+* **sandboxes:** add ArtifactFS git mounts
+* **sandboxes:** add ArtifactFS git mounts
+* **sandboxes:** add gcs bucket mounts
+
+### Features
+
+* **abac:** add tag_value_ids to dataset creation endpoints ([93584f8](https://github.com/langchain-ai/langsmith-go/commit/93584f846fc3e5fe8e7a84f86ca10b5f9b9283b4))
+* **abac:** add tag_value_ids to dataset creation endpoints ([8266323](https://github.com/langchain-ai/langsmith-go/commit/82663235ad1f136a2a7b64bc66ecb28440898c88))
+* **abac:** add tag_value_ids to prompt creation endpoints [ENT-1176] ([93584f8](https://github.com/langchain-ai/langsmith-go/commit/93584f846fc3e5fe8e7a84f86ca10b5f9b9283b4))
+* **abac:** add tag_value_ids to prompt creation endpoints [ENT-1176] ([313b627](https://github.com/langchain-ai/langsmith-go/commit/313b627419446c533d52ce7935e72c59c5a94d75))
+* **abac:** add tag_value_ids to tracer session creation ([93584f8](https://github.com/langchain-ai/langsmith-go/commit/93584f846fc3e5fe8e7a84f86ca10b5f9b9283b4))
+* **abac:** add tag_value_ids to tracer session creation ([313b627](https://github.com/langchain-ai/langsmith-go/commit/313b627419446c533d52ce7935e72c59c5a94d75))
+* Add config for standard pagination ([93584f8](https://github.com/langchain-ai/langsmith-go/commit/93584f846fc3e5fe8e7a84f86ca10b5f9b9283b4))
+* Add config for standard pagination ([313b627](https://github.com/langchain-ai/langsmith-go/commit/313b627419446c533d52ce7935e72c59c5a94d75))
+* Add config for standard pagination ([6cb0b0b](https://github.com/langchain-ai/langsmith-go/commit/6cb0b0b48740328b4f5ab76bfe949a8afe485c03))
+* add responses/compact tracing to openai responses ([#40](https://github.com/langchain-ai/langsmith-go/issues/40)) ([fecdc69](https://github.com/langchain-ai/langsmith-go/commit/fecdc69ad53b8ae594b589b3273b0a28e90abc57))
+* add responses/compact tracing to openai responses ([#40](https://github.com/langchain-ai/langsmith-go/issues/40)) ([8f412d0](https://github.com/langchain-ai/langsmith-go/commit/8f412d0930787eccff7482c656ad28ec1aabc071))
+* adding time to first token for experiment metrics ([93584f8](https://github.com/langchain-ai/langsmith-go/commit/93584f846fc3e5fe8e7a84f86ca10b5f9b9283b4))
+* adding time to first token for experiment metrics ([313b627](https://github.com/langchain-ai/langsmith-go/commit/313b627419446c533d52ce7935e72c59c5a94d75))
+* adding time to first token for experiment metrics ([9478cd5](https://github.com/langchain-ai/langsmith-go/commit/9478cd5dd6686a22fa564c6756f6d0b95dba66c2))
+* allow feedback creation to skip trace retention upgrade ([fecdc69](https://github.com/langchain-ai/langsmith-go/commit/fecdc69ad53b8ae594b589b3273b0a28e90abc57))
+* allow feedback creation to skip trace retention upgrade ([38966c2](https://github.com/langchain-ai/langsmith-go/commit/38966c2c0b2356a316863e51bdff99ba42c36c8e))
+* **backend:** allow retrieving and storing V2 charts in database [LSO-2799] ([93584f8](https://github.com/langchain-ai/langsmith-go/commit/93584f846fc3e5fe8e7a84f86ca10b5f9b9283b4))
+* **backend:** allow retrieving and storing V2 charts in database [LSO-2799] ([5366978](https://github.com/langchain-ai/langsmith-go/commit/5366978e1c292a79c852d342cc21d33b2c5a9d8b))
+* end-to-end OAuth bearer for Playground [part of ENT-760] ([93584f8](https://github.com/langchain-ai/langsmith-go/commit/93584f846fc3e5fe8e7a84f86ca10b5f9b9283b4))
+* end-to-end OAuth bearer for Playground [part of ENT-760] ([69c7404](https://github.com/langchain-ai/langsmith-go/commit/69c74042fc3d99e6572001b410cea846e5fe2ff1))
+* **fleet:** frontend passes typed fields (closes AB-000) ([93584f8](https://github.com/langchain-ai/langsmith-go/commit/93584f846fc3e5fe8e7a84f86ca10b5f9b9283b4))
+* **fleet:** frontend passes typed fields (closes AB-000) ([313b627](https://github.com/langchain-ai/langsmith-go/commit/313b627419446c533d52ce7935e72c59c5a94d75))
+* **group-stats:** back thread stats with SmithDB ([fecdc69](https://github.com/langchain-ai/langsmith-go/commit/fecdc69ad53b8ae594b589b3273b0a28e90abc57))
+* **group-stats:** back thread stats with SmithDB ([b12e7f0](https://github.com/langchain-ai/langsmith-go/commit/b12e7f0edb82173a7f4b84b2c12f3e4869b1e261))
+* **hub:** add include_owners to repos list for Fleet [closes AB-2537] ([93584f8](https://github.com/langchain-ai/langsmith-go/commit/93584f846fc3e5fe8e7a84f86ca10b5f9b9283b4))
+* **hub:** add include_owners to repos list for Fleet [closes AB-2537] ([313b627](https://github.com/langchain-ai/langsmith-go/commit/313b627419446c533d52ce7935e72c59c5a94d75))
+* **hub:** add include_owners to repos list for Fleet [closes AB-2537] ([4e58829](https://github.com/langchain-ai/langsmith-go/commit/4e588294406947373fce4f04bf85b846a938d923))
+* make online evaluator retention opt-in (backend) ([93584f8](https://github.com/langchain-ai/langsmith-go/commit/93584f846fc3e5fe8e7a84f86ca10b5f9b9283b4))
+* make online evaluator retention opt-in (backend) ([6c91ed7](https://github.com/langchain-ai/langsmith-go/commit/6c91ed7f777decc039eb0bd47f14d357e13f5d66))
+* **run-rules:** per-action trace-retention control for automations ([fecdc69](https://github.com/langchain-ai/langsmith-go/commit/fecdc69ad53b8ae594b589b3273b0a28e90abc57))
+* **run-rules:** per-action trace-retention control for automations [LSO-2749] ([93584f8](https://github.com/langchain-ai/langsmith-go/commit/93584f846fc3e5fe8e7a84f86ca10b5f9b9283b4))
+* **run-rules:** per-action trace-retention control for automations [LSO-2749] ([647609d](https://github.com/langchain-ai/langsmith-go/commit/647609d86b2b7386bb430856339cd689d1f43210))
+* **sandboxes:** add ArtifactFS git mounts ([93584f8](https://github.com/langchain-ai/langsmith-go/commit/93584f846fc3e5fe8e7a84f86ca10b5f9b9283b4))
+* **sandboxes:** add ArtifactFS git mounts ([2da0446](https://github.com/langchain-ai/langsmith-go/commit/2da04463cc600fc4b8d5da7be3e0ca0294f61770))
+* **sandboxes:** add GCP proxy auth flow ([93584f8](https://github.com/langchain-ai/langsmith-go/commit/93584f846fc3e5fe8e7a84f86ca10b5f9b9283b4))
+* **sandboxes:** add GCP proxy auth flow ([33efd4b](https://github.com/langchain-ai/langsmith-go/commit/33efd4b7008aaef2e60135321534ee33e4abf39b))
+* **sandboxes:** add gcs bucket mounts ([93584f8](https://github.com/langchain-ai/langsmith-go/commit/93584f846fc3e5fe8e7a84f86ca10b5f9b9283b4))
+* **sandboxes:** add gcs bucket mounts ([375d6bc](https://github.com/langchain-ai/langsmith-go/commit/375d6bc7ff0e91da3f903a7fc45c10539a6dea9b))
+* **sandboxes:** add sandbox env var support ([93584f8](https://github.com/langchain-ai/langsmith-go/commit/93584f846fc3e5fe8e7a84f86ca10b5f9b9283b4))
+* **sandboxes:** add sandbox env var support ([313b627](https://github.com/langchain-ai/langsmith-go/commit/313b627419446c533d52ce7935e72c59c5a94d75))
+* **sandboxes:** filter lists by creator [INF-1492] ([93584f8](https://github.com/langchain-ai/langsmith-go/commit/93584f846fc3e5fe8e7a84f86ca10b5f9b9283b4))
+* **sandboxes:** filter lists by creator [INF-1492] ([313b627](https://github.com/langchain-ai/langsmith-go/commit/313b627419446c533d52ce7935e72c59c5a94d75))
+* **sandboxes:** set AWS proxy compatibility env ([93584f8](https://github.com/langchain-ai/langsmith-go/commit/93584f846fc3e5fe8e7a84f86ca10b5f9b9283b4))
+* **sandboxes:** set AWS proxy compatibility env ([313b627](https://github.com/langchain-ai/langsmith-go/commit/313b627419446c533d52ce7935e72c59c5a94d75))
+* **sandboxes:** snapshot memory from stopped boxes + honor restore_memory in v2 [INF-0000] ([93584f8](https://github.com/langchain-ai/langsmith-go/commit/93584f846fc3e5fe8e7a84f86ca10b5f9b9283b4))
+* **sandboxes:** snapshot memory from stopped boxes + honor restore_memory in v2 [INF-0000] ([313b627](https://github.com/langchain-ai/langsmith-go/commit/313b627419446c533d52ce7935e72c59c5a94d75))
+* **sandboxes:** snapshot memory from stopped boxes + honor restore_memory in v2 [INF-0000] ([d8a32fc](https://github.com/langchain-ai/langsmith-go/commit/d8a32fcaf5f3406237c42f956d7eab15e8e9b07f))
+
+
+### Bug Fixes
+
+* **evaluators:** show code evaluator trace counts [LSE-2359] ([93584f8](https://github.com/langchain-ai/langsmith-go/commit/93584f846fc3e5fe8e7a84f86ca10b5f9b9283b4))
+* **evaluators:** show code evaluator trace counts [LSE-2359] ([b54b94c](https://github.com/langchain-ai/langsmith-go/commit/b54b94cc100374df31ffc56f7796567f98bdc36c))
+* **sandboxes:** use built-in gcp proxy host matching ([15bfbfa](https://github.com/langchain-ai/langsmith-go/commit/15bfbfae965a1814da0262fdcafb6cab5c252cb8))
+* **sandboxes:** use built-in gcp proxy host matching ([7f1026d](https://github.com/langchain-ai/langsmith-go/commit/7f1026d665dd0223407c46f6ff8ac0a429f76f56))
+
+
+### Chores
+
+* add Release Please GitHub Actions workflow ([#18](https://github.com/langchain-ai/langsmith-go/issues/18)) ([93584f8](https://github.com/langchain-ai/langsmith-go/commit/93584f846fc3e5fe8e7a84f86ca10b5f9b9283b4))
+* add Release Please GitHub Actions workflow ([#18](https://github.com/langchain-ai/langsmith-go/issues/18)) ([313b627](https://github.com/langchain-ai/langsmith-go/commit/313b627419446c533d52ce7935e72c59c5a94d75))
+* add Release Please GitHub Actions workflow ([#18](https://github.com/langchain-ai/langsmith-go/issues/18)) ([b5d5135](https://github.com/langchain-ai/langsmith-go/commit/b5d513516e727592fe9a6fd948b9c3a3e6250809))
+* **fleet:** add param to list threads [closes AB-2522] ([93584f8](https://github.com/langchain-ai/langsmith-go/commit/93584f846fc3e5fe8e7a84f86ca10b5f9b9283b4))
+* **fleet:** add param to list threads [closes AB-2522] ([313b627](https://github.com/langchain-ai/langsmith-go/commit/313b627419446c533d52ce7935e72c59c5a94d75))
+* revert "Build SDK" ([#24](https://github.com/langchain-ai/langsmith-go/issues/24)) ([93584f8](https://github.com/langchain-ai/langsmith-go/commit/93584f846fc3e5fe8e7a84f86ca10b5f9b9283b4))
+* revert "Build SDK" ([#24](https://github.com/langchain-ai/langsmith-go/issues/24)) ([313b627](https://github.com/langchain-ai/langsmith-go/commit/313b627419446c533d52ce7935e72c59c5a94d75))
+* revert "Build SDK" ([#24](https://github.com/langchain-ai/langsmith-go/issues/24)) ([6027dd5](https://github.com/langchain-ai/langsmith-go/commit/6027dd5dd60c5d16cdbb92b2a4fde39f0e2d7c29))
+* SDK release (next → main) ([#4](https://github.com/langchain-ai/langsmith-go/issues/4)) ([93584f8](https://github.com/langchain-ai/langsmith-go/commit/93584f846fc3e5fe8e7a84f86ca10b5f9b9283b4))
+* SDK release (next → main) ([#4](https://github.com/langchain-ai/langsmith-go/issues/4)) ([313b627](https://github.com/langchain-ai/langsmith-go/commit/313b627419446c533d52ce7935e72c59c5a94d75))
+* standardize stlc workflow filenames and names ([#37](https://github.com/langchain-ai/langsmith-go/issues/37)) ([93584f8](https://github.com/langchain-ai/langsmith-go/commit/93584f846fc3e5fe8e7a84f86ca10b5f9b9283b4))
+* standardize stlc workflow filenames and names ([#37](https://github.com/langchain-ai/langsmith-go/issues/37)) ([23d09e6](https://github.com/langchain-ai/langsmith-go/commit/23d09e6b2f442e4e6fdeac7bddb47b655cf564b3))
+
+
+### Refactors
+
+* **playground:** remove legacy experiment endpoints [LSO-2230] ([93584f8](https://github.com/langchain-ai/langsmith-go/commit/93584f846fc3e5fe8e7a84f86ca10b5f9b9283b4))
+* **playground:** remove legacy experiment endpoints [LSO-2230] ([313b627](https://github.com/langchain-ai/langsmith-go/commit/313b627419446c533d52ce7935e72c59c5a94d75))
+
 ## 0.14.2 (2026-06-09)
 
 Full Changelog: [v0.14.1...v0.14.2](https://github.com/langchain-ai/langsmith-go/compare/v0.14.1...v0.14.2)
