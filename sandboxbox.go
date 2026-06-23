@@ -600,8 +600,8 @@ func (r SandboxBoxNewResponseMountConfigMountsSandboxapiS3BucketMountSpec) imple
 
 type SandboxBoxNewResponseMountConfigMountsSandboxapiS3BucketMountSpecS3 struct {
 	Bucket      string                                                                  `json:"bucket" api:"required"`
-	EndpointURL string                                                                  `json:"endpoint_url" api:"required"`
 	Region      string                                                                  `json:"region" api:"required"`
+	EndpointURL string                                                                  `json:"endpoint_url"`
 	PathStyle   bool                                                                    `json:"path_style"`
 	Prefix      string                                                                  `json:"prefix"`
 	JSON        sandboxBoxNewResponseMountConfigMountsSandboxapiS3BucketMountSpecS3JSON `json:"-"`
@@ -612,8 +612,8 @@ type SandboxBoxNewResponseMountConfigMountsSandboxapiS3BucketMountSpecS3 struct 
 // [SandboxBoxNewResponseMountConfigMountsSandboxapiS3BucketMountSpecS3]
 type sandboxBoxNewResponseMountConfigMountsSandboxapiS3BucketMountSpecS3JSON struct {
 	Bucket      apijson.Field
-	EndpointURL apijson.Field
 	Region      apijson.Field
+	EndpointURL apijson.Field
 	PathStyle   apijson.Field
 	Prefix      apijson.Field
 	raw         string
@@ -927,8 +927,8 @@ func (r SandboxBoxNewResponseMountConfigMountsSandboxapiGcsBucketMountSpecGitRef
 
 type SandboxBoxNewResponseMountConfigMountsSandboxapiGcsBucketMountSpecS3 struct {
 	Bucket      string                                                                   `json:"bucket" api:"required"`
-	EndpointURL string                                                                   `json:"endpoint_url" api:"required"`
 	Region      string                                                                   `json:"region" api:"required"`
+	EndpointURL string                                                                   `json:"endpoint_url"`
 	PathStyle   bool                                                                     `json:"path_style"`
 	Prefix      string                                                                   `json:"prefix"`
 	JSON        sandboxBoxNewResponseMountConfigMountsSandboxapiGcsBucketMountSpecS3JSON `json:"-"`
@@ -939,8 +939,8 @@ type SandboxBoxNewResponseMountConfigMountsSandboxapiGcsBucketMountSpecS3 struct
 // [SandboxBoxNewResponseMountConfigMountsSandboxapiGcsBucketMountSpecS3]
 type sandboxBoxNewResponseMountConfigMountsSandboxapiGcsBucketMountSpecS3JSON struct {
 	Bucket      apijson.Field
-	EndpointURL apijson.Field
 	Region      apijson.Field
+	EndpointURL apijson.Field
 	PathStyle   apijson.Field
 	Prefix      apijson.Field
 	raw         string
@@ -1125,8 +1125,8 @@ func (r sandboxBoxNewResponseMountConfigMountsSandboxapiGitRepoMountSpecGcsJSON)
 
 type SandboxBoxNewResponseMountConfigMountsSandboxapiGitRepoMountSpecS3 struct {
 	Bucket      string                                                                 `json:"bucket" api:"required"`
-	EndpointURL string                                                                 `json:"endpoint_url" api:"required"`
 	Region      string                                                                 `json:"region" api:"required"`
+	EndpointURL string                                                                 `json:"endpoint_url"`
 	PathStyle   bool                                                                   `json:"path_style"`
 	Prefix      string                                                                 `json:"prefix"`
 	JSON        sandboxBoxNewResponseMountConfigMountsSandboxapiGitRepoMountSpecS3JSON `json:"-"`
@@ -1137,8 +1137,8 @@ type SandboxBoxNewResponseMountConfigMountsSandboxapiGitRepoMountSpecS3 struct {
 // [SandboxBoxNewResponseMountConfigMountsSandboxapiGitRepoMountSpecS3]
 type sandboxBoxNewResponseMountConfigMountsSandboxapiGitRepoMountSpecS3JSON struct {
 	Bucket      apijson.Field
-	EndpointURL apijson.Field
 	Region      apijson.Field
+	EndpointURL apijson.Field
 	PathStyle   apijson.Field
 	Prefix      apijson.Field
 	raw         string
@@ -1982,8 +1982,8 @@ func (r SandboxBoxGetResponseMountConfigMountsSandboxapiS3BucketMountSpec) imple
 
 type SandboxBoxGetResponseMountConfigMountsSandboxapiS3BucketMountSpecS3 struct {
 	Bucket      string                                                                  `json:"bucket" api:"required"`
-	EndpointURL string                                                                  `json:"endpoint_url" api:"required"`
 	Region      string                                                                  `json:"region" api:"required"`
+	EndpointURL string                                                                  `json:"endpoint_url"`
 	PathStyle   bool                                                                    `json:"path_style"`
 	Prefix      string                                                                  `json:"prefix"`
 	JSON        sandboxBoxGetResponseMountConfigMountsSandboxapiS3BucketMountSpecS3JSON `json:"-"`
@@ -1994,8 +1994,8 @@ type SandboxBoxGetResponseMountConfigMountsSandboxapiS3BucketMountSpecS3 struct 
 // [SandboxBoxGetResponseMountConfigMountsSandboxapiS3BucketMountSpecS3]
 type sandboxBoxGetResponseMountConfigMountsSandboxapiS3BucketMountSpecS3JSON struct {
 	Bucket      apijson.Field
-	EndpointURL apijson.Field
 	Region      apijson.Field
+	EndpointURL apijson.Field
 	PathStyle   apijson.Field
 	Prefix      apijson.Field
 	raw         string
@@ -2309,8 +2309,8 @@ func (r SandboxBoxGetResponseMountConfigMountsSandboxapiGcsBucketMountSpecGitRef
 
 type SandboxBoxGetResponseMountConfigMountsSandboxapiGcsBucketMountSpecS3 struct {
 	Bucket      string                                                                   `json:"bucket" api:"required"`
-	EndpointURL string                                                                   `json:"endpoint_url" api:"required"`
 	Region      string                                                                   `json:"region" api:"required"`
+	EndpointURL string                                                                   `json:"endpoint_url"`
 	PathStyle   bool                                                                     `json:"path_style"`
 	Prefix      string                                                                   `json:"prefix"`
 	JSON        sandboxBoxGetResponseMountConfigMountsSandboxapiGcsBucketMountSpecS3JSON `json:"-"`
@@ -2321,8 +2321,8 @@ type SandboxBoxGetResponseMountConfigMountsSandboxapiGcsBucketMountSpecS3 struct
 // [SandboxBoxGetResponseMountConfigMountsSandboxapiGcsBucketMountSpecS3]
 type sandboxBoxGetResponseMountConfigMountsSandboxapiGcsBucketMountSpecS3JSON struct {
 	Bucket      apijson.Field
-	EndpointURL apijson.Field
 	Region      apijson.Field
+	EndpointURL apijson.Field
 	PathStyle   apijson.Field
 	Prefix      apijson.Field
 	raw         string
@@ -2507,8 +2507,8 @@ func (r sandboxBoxGetResponseMountConfigMountsSandboxapiGitRepoMountSpecGcsJSON)
 
 type SandboxBoxGetResponseMountConfigMountsSandboxapiGitRepoMountSpecS3 struct {
 	Bucket      string                                                                 `json:"bucket" api:"required"`
-	EndpointURL string                                                                 `json:"endpoint_url" api:"required"`
 	Region      string                                                                 `json:"region" api:"required"`
+	EndpointURL string                                                                 `json:"endpoint_url"`
 	PathStyle   bool                                                                   `json:"path_style"`
 	Prefix      string                                                                 `json:"prefix"`
 	JSON        sandboxBoxGetResponseMountConfigMountsSandboxapiGitRepoMountSpecS3JSON `json:"-"`
@@ -2519,8 +2519,8 @@ type SandboxBoxGetResponseMountConfigMountsSandboxapiGitRepoMountSpecS3 struct {
 // [SandboxBoxGetResponseMountConfigMountsSandboxapiGitRepoMountSpecS3]
 type sandboxBoxGetResponseMountConfigMountsSandboxapiGitRepoMountSpecS3JSON struct {
 	Bucket      apijson.Field
-	EndpointURL apijson.Field
 	Region      apijson.Field
+	EndpointURL apijson.Field
 	PathStyle   apijson.Field
 	Prefix      apijson.Field
 	raw         string
@@ -3365,8 +3365,8 @@ func (r SandboxBoxUpdateResponseMountConfigMountsSandboxapiS3BucketMountSpec) im
 
 type SandboxBoxUpdateResponseMountConfigMountsSandboxapiS3BucketMountSpecS3 struct {
 	Bucket      string                                                                     `json:"bucket" api:"required"`
-	EndpointURL string                                                                     `json:"endpoint_url" api:"required"`
 	Region      string                                                                     `json:"region" api:"required"`
+	EndpointURL string                                                                     `json:"endpoint_url"`
 	PathStyle   bool                                                                       `json:"path_style"`
 	Prefix      string                                                                     `json:"prefix"`
 	JSON        sandboxBoxUpdateResponseMountConfigMountsSandboxapiS3BucketMountSpecS3JSON `json:"-"`
@@ -3377,8 +3377,8 @@ type SandboxBoxUpdateResponseMountConfigMountsSandboxapiS3BucketMountSpecS3 stru
 // [SandboxBoxUpdateResponseMountConfigMountsSandboxapiS3BucketMountSpecS3]
 type sandboxBoxUpdateResponseMountConfigMountsSandboxapiS3BucketMountSpecS3JSON struct {
 	Bucket      apijson.Field
-	EndpointURL apijson.Field
 	Region      apijson.Field
+	EndpointURL apijson.Field
 	PathStyle   apijson.Field
 	Prefix      apijson.Field
 	raw         string
@@ -3692,8 +3692,8 @@ func (r SandboxBoxUpdateResponseMountConfigMountsSandboxapiGcsBucketMountSpecGit
 
 type SandboxBoxUpdateResponseMountConfigMountsSandboxapiGcsBucketMountSpecS3 struct {
 	Bucket      string                                                                      `json:"bucket" api:"required"`
-	EndpointURL string                                                                      `json:"endpoint_url" api:"required"`
 	Region      string                                                                      `json:"region" api:"required"`
+	EndpointURL string                                                                      `json:"endpoint_url"`
 	PathStyle   bool                                                                        `json:"path_style"`
 	Prefix      string                                                                      `json:"prefix"`
 	JSON        sandboxBoxUpdateResponseMountConfigMountsSandboxapiGcsBucketMountSpecS3JSON `json:"-"`
@@ -3704,8 +3704,8 @@ type SandboxBoxUpdateResponseMountConfigMountsSandboxapiGcsBucketMountSpecS3 str
 // [SandboxBoxUpdateResponseMountConfigMountsSandboxapiGcsBucketMountSpecS3]
 type sandboxBoxUpdateResponseMountConfigMountsSandboxapiGcsBucketMountSpecS3JSON struct {
 	Bucket      apijson.Field
-	EndpointURL apijson.Field
 	Region      apijson.Field
+	EndpointURL apijson.Field
 	PathStyle   apijson.Field
 	Prefix      apijson.Field
 	raw         string
@@ -3890,8 +3890,8 @@ func (r sandboxBoxUpdateResponseMountConfigMountsSandboxapiGitRepoMountSpecGcsJS
 
 type SandboxBoxUpdateResponseMountConfigMountsSandboxapiGitRepoMountSpecS3 struct {
 	Bucket      string                                                                    `json:"bucket" api:"required"`
-	EndpointURL string                                                                    `json:"endpoint_url" api:"required"`
 	Region      string                                                                    `json:"region" api:"required"`
+	EndpointURL string                                                                    `json:"endpoint_url"`
 	PathStyle   bool                                                                      `json:"path_style"`
 	Prefix      string                                                                    `json:"prefix"`
 	JSON        sandboxBoxUpdateResponseMountConfigMountsSandboxapiGitRepoMountSpecS3JSON `json:"-"`
@@ -3902,8 +3902,8 @@ type SandboxBoxUpdateResponseMountConfigMountsSandboxapiGitRepoMountSpecS3 struc
 // [SandboxBoxUpdateResponseMountConfigMountsSandboxapiGitRepoMountSpecS3]
 type sandboxBoxUpdateResponseMountConfigMountsSandboxapiGitRepoMountSpecS3JSON struct {
 	Bucket      apijson.Field
-	EndpointURL apijson.Field
 	Region      apijson.Field
+	EndpointURL apijson.Field
 	PathStyle   apijson.Field
 	Prefix      apijson.Field
 	raw         string
@@ -4773,8 +4773,8 @@ func (r SandboxBoxListResponseSandboxesMountConfigMountsSandboxapiS3BucketMountS
 
 type SandboxBoxListResponseSandboxesMountConfigMountsSandboxapiS3BucketMountSpecS3 struct {
 	Bucket      string                                                                            `json:"bucket" api:"required"`
-	EndpointURL string                                                                            `json:"endpoint_url" api:"required"`
 	Region      string                                                                            `json:"region" api:"required"`
+	EndpointURL string                                                                            `json:"endpoint_url"`
 	PathStyle   bool                                                                              `json:"path_style"`
 	Prefix      string                                                                            `json:"prefix"`
 	JSON        sandboxBoxListResponseSandboxesMountConfigMountsSandboxapiS3BucketMountSpecS3JSON `json:"-"`
@@ -4785,8 +4785,8 @@ type SandboxBoxListResponseSandboxesMountConfigMountsSandboxapiS3BucketMountSpec
 // [SandboxBoxListResponseSandboxesMountConfigMountsSandboxapiS3BucketMountSpecS3]
 type sandboxBoxListResponseSandboxesMountConfigMountsSandboxapiS3BucketMountSpecS3JSON struct {
 	Bucket      apijson.Field
-	EndpointURL apijson.Field
 	Region      apijson.Field
+	EndpointURL apijson.Field
 	PathStyle   apijson.Field
 	Prefix      apijson.Field
 	raw         string
@@ -5100,8 +5100,8 @@ func (r SandboxBoxListResponseSandboxesMountConfigMountsSandboxapiGcsBucketMount
 
 type SandboxBoxListResponseSandboxesMountConfigMountsSandboxapiGcsBucketMountSpecS3 struct {
 	Bucket      string                                                                             `json:"bucket" api:"required"`
-	EndpointURL string                                                                             `json:"endpoint_url" api:"required"`
 	Region      string                                                                             `json:"region" api:"required"`
+	EndpointURL string                                                                             `json:"endpoint_url"`
 	PathStyle   bool                                                                               `json:"path_style"`
 	Prefix      string                                                                             `json:"prefix"`
 	JSON        sandboxBoxListResponseSandboxesMountConfigMountsSandboxapiGcsBucketMountSpecS3JSON `json:"-"`
@@ -5112,8 +5112,8 @@ type SandboxBoxListResponseSandboxesMountConfigMountsSandboxapiGcsBucketMountSpe
 // [SandboxBoxListResponseSandboxesMountConfigMountsSandboxapiGcsBucketMountSpecS3]
 type sandboxBoxListResponseSandboxesMountConfigMountsSandboxapiGcsBucketMountSpecS3JSON struct {
 	Bucket      apijson.Field
-	EndpointURL apijson.Field
 	Region      apijson.Field
+	EndpointURL apijson.Field
 	PathStyle   apijson.Field
 	Prefix      apijson.Field
 	raw         string
@@ -5298,8 +5298,8 @@ func (r sandboxBoxListResponseSandboxesMountConfigMountsSandboxapiGitRepoMountSp
 
 type SandboxBoxListResponseSandboxesMountConfigMountsSandboxapiGitRepoMountSpecS3 struct {
 	Bucket      string                                                                           `json:"bucket" api:"required"`
-	EndpointURL string                                                                           `json:"endpoint_url" api:"required"`
 	Region      string                                                                           `json:"region" api:"required"`
+	EndpointURL string                                                                           `json:"endpoint_url"`
 	PathStyle   bool                                                                             `json:"path_style"`
 	Prefix      string                                                                           `json:"prefix"`
 	JSON        sandboxBoxListResponseSandboxesMountConfigMountsSandboxapiGitRepoMountSpecS3JSON `json:"-"`
@@ -5310,8 +5310,8 @@ type SandboxBoxListResponseSandboxesMountConfigMountsSandboxapiGitRepoMountSpecS
 // [SandboxBoxListResponseSandboxesMountConfigMountsSandboxapiGitRepoMountSpecS3]
 type sandboxBoxListResponseSandboxesMountConfigMountsSandboxapiGitRepoMountSpecS3JSON struct {
 	Bucket      apijson.Field
-	EndpointURL apijson.Field
 	Region      apijson.Field
+	EndpointURL apijson.Field
 	PathStyle   apijson.Field
 	Prefix      apijson.Field
 	raw         string
@@ -6259,8 +6259,8 @@ func (r SandboxBoxStartResponseMountConfigMountsSandboxapiS3BucketMountSpec) imp
 
 type SandboxBoxStartResponseMountConfigMountsSandboxapiS3BucketMountSpecS3 struct {
 	Bucket      string                                                                    `json:"bucket" api:"required"`
-	EndpointURL string                                                                    `json:"endpoint_url" api:"required"`
 	Region      string                                                                    `json:"region" api:"required"`
+	EndpointURL string                                                                    `json:"endpoint_url"`
 	PathStyle   bool                                                                      `json:"path_style"`
 	Prefix      string                                                                    `json:"prefix"`
 	JSON        sandboxBoxStartResponseMountConfigMountsSandboxapiS3BucketMountSpecS3JSON `json:"-"`
@@ -6271,8 +6271,8 @@ type SandboxBoxStartResponseMountConfigMountsSandboxapiS3BucketMountSpecS3 struc
 // [SandboxBoxStartResponseMountConfigMountsSandboxapiS3BucketMountSpecS3]
 type sandboxBoxStartResponseMountConfigMountsSandboxapiS3BucketMountSpecS3JSON struct {
 	Bucket      apijson.Field
-	EndpointURL apijson.Field
 	Region      apijson.Field
+	EndpointURL apijson.Field
 	PathStyle   apijson.Field
 	Prefix      apijson.Field
 	raw         string
@@ -6586,8 +6586,8 @@ func (r SandboxBoxStartResponseMountConfigMountsSandboxapiGcsBucketMountSpecGitR
 
 type SandboxBoxStartResponseMountConfigMountsSandboxapiGcsBucketMountSpecS3 struct {
 	Bucket      string                                                                     `json:"bucket" api:"required"`
-	EndpointURL string                                                                     `json:"endpoint_url" api:"required"`
 	Region      string                                                                     `json:"region" api:"required"`
+	EndpointURL string                                                                     `json:"endpoint_url"`
 	PathStyle   bool                                                                       `json:"path_style"`
 	Prefix      string                                                                     `json:"prefix"`
 	JSON        sandboxBoxStartResponseMountConfigMountsSandboxapiGcsBucketMountSpecS3JSON `json:"-"`
@@ -6598,8 +6598,8 @@ type SandboxBoxStartResponseMountConfigMountsSandboxapiGcsBucketMountSpecS3 stru
 // [SandboxBoxStartResponseMountConfigMountsSandboxapiGcsBucketMountSpecS3]
 type sandboxBoxStartResponseMountConfigMountsSandboxapiGcsBucketMountSpecS3JSON struct {
 	Bucket      apijson.Field
-	EndpointURL apijson.Field
 	Region      apijson.Field
+	EndpointURL apijson.Field
 	PathStyle   apijson.Field
 	Prefix      apijson.Field
 	raw         string
@@ -6784,8 +6784,8 @@ func (r sandboxBoxStartResponseMountConfigMountsSandboxapiGitRepoMountSpecGcsJSO
 
 type SandboxBoxStartResponseMountConfigMountsSandboxapiGitRepoMountSpecS3 struct {
 	Bucket      string                                                                   `json:"bucket" api:"required"`
-	EndpointURL string                                                                   `json:"endpoint_url" api:"required"`
 	Region      string                                                                   `json:"region" api:"required"`
+	EndpointURL string                                                                   `json:"endpoint_url"`
 	PathStyle   bool                                                                     `json:"path_style"`
 	Prefix      string                                                                   `json:"prefix"`
 	JSON        sandboxBoxStartResponseMountConfigMountsSandboxapiGitRepoMountSpecS3JSON `json:"-"`
@@ -6796,8 +6796,8 @@ type SandboxBoxStartResponseMountConfigMountsSandboxapiGitRepoMountSpecS3 struct
 // [SandboxBoxStartResponseMountConfigMountsSandboxapiGitRepoMountSpecS3]
 type sandboxBoxStartResponseMountConfigMountsSandboxapiGitRepoMountSpecS3JSON struct {
 	Bucket      apijson.Field
-	EndpointURL apijson.Field
 	Region      apijson.Field
+	EndpointURL apijson.Field
 	PathStyle   apijson.Field
 	Prefix      apijson.Field
 	raw         string
@@ -7387,8 +7387,8 @@ func (r SandboxBoxNewParamsMountConfigMountsSandboxapiS3BucketMountSpec) impleme
 
 type SandboxBoxNewParamsMountConfigMountsSandboxapiS3BucketMountSpecS3 struct {
 	Bucket      param.Field[string] `json:"bucket" api:"required"`
-	EndpointURL param.Field[string] `json:"endpoint_url" api:"required"`
 	Region      param.Field[string] `json:"region" api:"required"`
+	EndpointURL param.Field[string] `json:"endpoint_url"`
 	PathStyle   param.Field[bool]   `json:"path_style"`
 	Prefix      param.Field[string] `json:"prefix"`
 }
@@ -7553,8 +7553,8 @@ func (r SandboxBoxNewParamsMountConfigMountsSandboxapiGcsBucketMountSpecGitRefTy
 
 type SandboxBoxNewParamsMountConfigMountsSandboxapiGcsBucketMountSpecS3 struct {
 	Bucket      param.Field[string] `json:"bucket" api:"required"`
-	EndpointURL param.Field[string] `json:"endpoint_url" api:"required"`
 	Region      param.Field[string] `json:"region" api:"required"`
+	EndpointURL param.Field[string] `json:"endpoint_url"`
 	PathStyle   param.Field[bool]   `json:"path_style"`
 	Prefix      param.Field[string] `json:"prefix"`
 }
@@ -7651,8 +7651,8 @@ func (r SandboxBoxNewParamsMountConfigMountsSandboxapiGitRepoMountSpecGcs) Marsh
 
 type SandboxBoxNewParamsMountConfigMountsSandboxapiGitRepoMountSpecS3 struct {
 	Bucket      param.Field[string] `json:"bucket" api:"required"`
-	EndpointURL param.Field[string] `json:"endpoint_url" api:"required"`
 	Region      param.Field[string] `json:"region" api:"required"`
+	EndpointURL param.Field[string] `json:"endpoint_url"`
 	PathStyle   param.Field[bool]   `json:"path_style"`
 	Prefix      param.Field[string] `json:"prefix"`
 }

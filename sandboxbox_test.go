@@ -79,8 +79,8 @@ func TestSandboxBoxNewWithOptionalParams(t *testing.T) {
 				MountPath: langsmith.F("mount_path"),
 				S3: langsmith.F(langsmith.SandboxBoxNewParamsMountConfigMountsSandboxapiS3BucketMountSpecS3{
 					Bucket:      langsmith.F("bucket"),
-					EndpointURL: langsmith.F("endpoint_url"),
 					Region:      langsmith.F("region"),
+					EndpointURL: langsmith.F("endpoint_url"),
 					PathStyle:   langsmith.F(true),
 					Prefix:      langsmith.F("prefix"),
 				}),
