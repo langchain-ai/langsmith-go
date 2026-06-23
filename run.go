@@ -324,6 +324,7 @@ type RunStatsQueryParams struct {
 	// Group by param for run stats.
 	GroupBy          param.Field[RunStatsGroupByParam] `json:"group_by"`
 	Groups           param.Field[[]string]             `json:"groups"`
+	IncludeDetails   param.Field[bool]                 `json:"include_details"`
 	IsRoot           param.Field[bool]                 `json:"is_root"`
 	ParentRun        param.Field[string]               `json:"parent_run" format:"uuid"`
 	Query            param.Field[string]               `json:"query"`

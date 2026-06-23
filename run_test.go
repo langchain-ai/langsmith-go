@@ -352,6 +352,7 @@ func TestRunStatsWithOptionalParams(t *testing.T) {
 				Path:      langsmith.F("path"),
 			}),
 			Groups:                langsmith.F([]string{"string"}),
+			IncludeDetails:        langsmith.F(true),
 			IsRoot:                langsmith.F(true),
 			ParentRun:             langsmith.F("182bd5e5-6e1a-4fe4-a799-aa6d9a6ab26e"),
 			Query:                 langsmith.F("query"),
