@@ -1,5 +1,32 @@
 # Changelog
 
+## [0.16.0](https://github.com/langchain-ai/langsmith-go/compare/v0.15.0...v0.16.0) (2026-06-24)
+
+
+### ⚠ BREAKING CHANGES
+
+* **sandboxes:** default S3 mount endpoint
+
+### Features
+
+* **runs/v2:** expose runs v2 endpoints publicly with stainless config ([116cff9](https://github.com/langchain-ai/langsmith-go/commit/116cff975d008ad78c5f1fcfda49d89a72f5ee9e))
+* **stats:** add include_details param to /runs/stats for backwards compat ([76eecdc](https://github.com/langchain-ai/langsmith-go/commit/76eecdc070b482ce2bd244b90dcb2162cf4d3a5d))
+
+
+### Bug Fixes
+
+* **sandboxes:** default S3 mount endpoint ([f7b0fed](https://github.com/langchain-ai/langsmith-go/commit/f7b0fedd799b8f0a876f1674b8b9660f531dffa5))
+
+
+### Chores
+
+* **smith-sdks:** update Java SDK stainless custom-code tracking file ([6312b44](https://github.com/langchain-ai/langsmith-go/commit/6312b44ffda8579b2d79774f21a1eddcabce7acb))
+
+
+### Refactors
+
+* rename field to match prev trace retention fields ([d536413](https://github.com/langchain-ai/langsmith-go/commit/d53641363ee9aff2884518e51cccf831e5b01f9d))
+
 ## [0.15.0](https://github.com/langchain-ai/langsmith-go/compare/v0.14.2...v0.15.0) (2026-06-18)
 
 
