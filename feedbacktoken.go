@@ -232,7 +232,7 @@ type FeedbackTokenGetParams struct {
 // URLQuery serializes [FeedbackTokenGetParams]'s query parameters as `url.Values`.
 func (r FeedbackTokenGetParams) URLQuery() (v url.Values) {
 	return apiquery.MarshalWithSettings(r, apiquery.QuerySettings{
-		ArrayFormat:  apiquery.ArrayQueryFormatComma,
+		ArrayFormat:  apiquery.ArrayQueryFormatRepeat,
 		NestedFormat: apiquery.NestedQueryFormatBrackets,
 	})
 }
@@ -288,7 +288,7 @@ type FeedbackTokenListParams struct {
 // `url.Values`.
 func (r FeedbackTokenListParams) URLQuery() (v url.Values) {
 	return apiquery.MarshalWithSettings(r, apiquery.QuerySettings{
-		ArrayFormat:  apiquery.ArrayQueryFormatComma,
+		ArrayFormat:  apiquery.ArrayQueryFormatRepeat,
 		NestedFormat: apiquery.NestedQueryFormatBrackets,
 	})
 }

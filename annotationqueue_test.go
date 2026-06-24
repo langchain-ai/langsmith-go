@@ -274,7 +274,7 @@ func TestAnnotationQueueGetAnnotationQueuesWithOptionalParams(t *testing.T) {
 	_, err := client.AnnotationQueues.GetAnnotationQueues(context.TODO(), langsmith.AnnotationQueueGetAnnotationQueuesParams{
 		AssignedToMe: langsmith.F(true),
 		DatasetID:    langsmith.F("182bd5e5-6e1a-4fe4-a799-aa6d9a6ab26e"),
-		IDs:          langsmith.F([]string{"182bd5e5-6e1a-4fe4-a799-aa6d9a6ab26e"}),
+		IDs:          langsmith.F([]string{"182bd5e5-6e1a-4fe4-a799-aa6d9a6ab26e", "182bd5e5-6e1a-4fe4-a799-aa6d9a6ab26e"}),
 		Limit:        langsmith.F(int64(1)),
 		Name:         langsmith.F("name"),
 		NameContains: langsmith.F("name_contains"),
@@ -282,7 +282,7 @@ func TestAnnotationQueueGetAnnotationQueuesWithOptionalParams(t *testing.T) {
 		QueueType:    langsmith.F(langsmith.AnnotationQueueGetAnnotationQueuesParamsQueueTypeSingle),
 		SortBy:       langsmith.F("sort_by"),
 		SortByDesc:   langsmith.F(true),
-		TagValueID:   langsmith.F([]string{"182bd5e5-6e1a-4fe4-a799-aa6d9a6ab26e"}),
+		TagValueID:   langsmith.F([]string{"182bd5e5-6e1a-4fe4-a799-aa6d9a6ab26e", "182bd5e5-6e1a-4fe4-a799-aa6d9a6ab26e"}),
 	})
 	if err != nil {
 		var apierr *langsmith.Error

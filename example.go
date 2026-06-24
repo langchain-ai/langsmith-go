@@ -264,7 +264,7 @@ type ExampleGetParams struct {
 // URLQuery serializes [ExampleGetParams]'s query parameters as `url.Values`.
 func (r ExampleGetParams) URLQuery() (v url.Values) {
 	return apiquery.MarshalWithSettings(r, apiquery.QuerySettings{
-		ArrayFormat:  apiquery.ArrayQueryFormatComma,
+		ArrayFormat:  apiquery.ArrayQueryFormatRepeat,
 		NestedFormat: apiquery.NestedQueryFormatBrackets,
 	})
 }
@@ -321,7 +321,7 @@ type ExampleListParams struct {
 // URLQuery serializes [ExampleListParams]'s query parameters as `url.Values`.
 func (r ExampleListParams) URLQuery() (v url.Values) {
 	return apiquery.MarshalWithSettings(r, apiquery.QuerySettings{
-		ArrayFormat:  apiquery.ArrayQueryFormatComma,
+		ArrayFormat:  apiquery.ArrayQueryFormatRepeat,
 		NestedFormat: apiquery.NestedQueryFormatBrackets,
 	})
 }
@@ -358,7 +358,7 @@ type ExampleDeleteAllParams struct {
 // URLQuery serializes [ExampleDeleteAllParams]'s query parameters as `url.Values`.
 func (r ExampleDeleteAllParams) URLQuery() (v url.Values) {
 	return apiquery.MarshalWithSettings(r, apiquery.QuerySettings{
-		ArrayFormat:  apiquery.ArrayQueryFormatComma,
+		ArrayFormat:  apiquery.ArrayQueryFormatRepeat,
 		NestedFormat: apiquery.NestedQueryFormatBrackets,
 	})
 }
@@ -378,7 +378,7 @@ type ExampleGetCountParams struct {
 // URLQuery serializes [ExampleGetCountParams]'s query parameters as `url.Values`.
 func (r ExampleGetCountParams) URLQuery() (v url.Values) {
 	return apiquery.MarshalWithSettings(r, apiquery.QuerySettings{
-		ArrayFormat:  apiquery.ArrayQueryFormatComma,
+		ArrayFormat:  apiquery.ArrayQueryFormatRepeat,
 		NestedFormat: apiquery.NestedQueryFormatBrackets,
 	})
 }

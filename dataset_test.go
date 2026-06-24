@@ -168,9 +168,9 @@ func TestDatasetListWithOptionalParams(t *testing.T) {
 		option.WithTenantID("My Tenant ID"),
 	)
 	_, err := client.Datasets.List(context.TODO(), langsmith.DatasetListParams{
-		ID:                         langsmith.F([]string{"182bd5e5-6e1a-4fe4-a799-aa6d9a6ab26e"}),
+		ID:                         langsmith.F([]string{"182bd5e5-6e1a-4fe4-a799-aa6d9a6ab26e", "182bd5e5-6e1a-4fe4-a799-aa6d9a6ab26e"}),
 		Datatype:                   langsmith.F[langsmith.DatasetListParamsDataTypeUnion](langsmith.DataType(langsmith.DataTypeKv)),
-		Exclude:                    langsmith.F([]langsmith.DatasetListParamsExclude{langsmith.DatasetListParamsExcludeExampleCount}),
+		Exclude:                    langsmith.F([]langsmith.DatasetListParamsExclude{langsmith.DatasetListParamsExcludeExampleCount, langsmith.DatasetListParamsExcludeExampleCount}),
 		ExcludeCorrectionsDatasets: langsmith.F(true),
 		Limit:                      langsmith.F(int64(1)),
 		Metadata:                   langsmith.F("metadata"),
@@ -179,7 +179,7 @@ func TestDatasetListWithOptionalParams(t *testing.T) {
 		Offset:                     langsmith.F(int64(0)),
 		SortBy:                     langsmith.F(langsmith.SortByDatasetColumnName),
 		SortByDesc:                 langsmith.F(true),
-		TagValueID:                 langsmith.F([]string{"182bd5e5-6e1a-4fe4-a799-aa6d9a6ab26e"}),
+		TagValueID:                 langsmith.F([]string{"182bd5e5-6e1a-4fe4-a799-aa6d9a6ab26e", "182bd5e5-6e1a-4fe4-a799-aa6d9a6ab26e"}),
 	})
 	if err != nil {
 		var apierr *langsmith.Error

@@ -569,7 +569,7 @@ type FeedbackGetParams struct {
 // URLQuery serializes [FeedbackGetParams]'s query parameters as `url.Values`.
 func (r FeedbackGetParams) URLQuery() (v url.Values) {
 	return apiquery.MarshalWithSettings(r, apiquery.QuerySettings{
-		ArrayFormat:  apiquery.ArrayQueryFormatComma,
+		ArrayFormat:  apiquery.ArrayQueryFormatRepeat,
 		NestedFormat: apiquery.NestedQueryFormatBrackets,
 	})
 }
@@ -670,7 +670,7 @@ type FeedbackListParams struct {
 // URLQuery serializes [FeedbackListParams]'s query parameters as `url.Values`.
 func (r FeedbackListParams) URLQuery() (v url.Values) {
 	return apiquery.MarshalWithSettings(r, apiquery.QuerySettings{
-		ArrayFormat:  apiquery.ArrayQueryFormatComma,
+		ArrayFormat:  apiquery.ArrayQueryFormatRepeat,
 		NestedFormat: apiquery.NestedQueryFormatBrackets,
 	})
 }

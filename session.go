@@ -3809,7 +3809,7 @@ func (r SessionNewParams) MarshalJSON() (data []byte, err error) {
 // URLQuery serializes [SessionNewParams]'s query parameters as `url.Values`.
 func (r SessionNewParams) URLQuery() (v url.Values) {
 	return apiquery.MarshalWithSettings(r, apiquery.QuerySettings{
-		ArrayFormat:  apiquery.ArrayQueryFormatComma,
+		ArrayFormat:  apiquery.ArrayQueryFormatRepeat,
 		NestedFormat: apiquery.NestedQueryFormatBrackets,
 	})
 }
@@ -3838,7 +3838,7 @@ type SessionGetParams struct {
 // URLQuery serializes [SessionGetParams]'s query parameters as `url.Values`.
 func (r SessionGetParams) URLQuery() (v url.Values) {
 	return apiquery.MarshalWithSettings(r, apiquery.QuerySettings{
-		ArrayFormat:  apiquery.ArrayQueryFormatComma,
+		ArrayFormat:  apiquery.ArrayQueryFormatRepeat,
 		NestedFormat: apiquery.NestedQueryFormatBrackets,
 	})
 }
@@ -3899,7 +3899,7 @@ type SessionListParams struct {
 // URLQuery serializes [SessionListParams]'s query parameters as `url.Values`.
 func (r SessionListParams) URLQuery() (v url.Values) {
 	return apiquery.MarshalWithSettings(r, apiquery.QuerySettings{
-		ArrayFormat:  apiquery.ArrayQueryFormatComma,
+		ArrayFormat:  apiquery.ArrayQueryFormatRepeat,
 		NestedFormat: apiquery.NestedQueryFormatBrackets,
 	})
 }

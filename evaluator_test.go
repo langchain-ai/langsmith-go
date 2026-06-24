@@ -28,13 +28,13 @@ func TestEvaluatorListWithOptionalParams(t *testing.T) {
 		option.WithTenantID("My Tenant ID"),
 	)
 	_, err := client.Evaluators.List(context.TODO(), langsmith.EvaluatorListParams{
-		ID:                      langsmith.F([]string{"182bd5e5-6e1a-4fe4-a799-aa6d9a6ab26e"}),
+		ID:                      langsmith.F([]string{"182bd5e5-6e1a-4fe4-a799-aa6d9a6ab26e", "182bd5e5-6e1a-4fe4-a799-aa6d9a6ab26e"}),
 		DatasetID:               langsmith.F("182bd5e5-6e1a-4fe4-a799-aa6d9a6ab26e"),
 		EvaluatorID:             langsmith.F("182bd5e5-6e1a-4fe4-a799-aa6d9a6ab26e"),
 		IncludeBackfillProgress: langsmith.F(true),
 		NameContains:            langsmith.F("name_contains"),
 		SessionID:               langsmith.F("182bd5e5-6e1a-4fe4-a799-aa6d9a6ab26e"),
-		TagValueID:              langsmith.F([]string{"182bd5e5-6e1a-4fe4-a799-aa6d9a6ab26e"}),
+		TagValueID:              langsmith.F([]string{"182bd5e5-6e1a-4fe4-a799-aa6d9a6ab26e", "182bd5e5-6e1a-4fe4-a799-aa6d9a6ab26e"}),
 		Type:                    langsmith.F(langsmith.EvaluatorListParamsTypeSession),
 	})
 	if err != nil {

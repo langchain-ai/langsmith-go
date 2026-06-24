@@ -346,7 +346,7 @@ type CommitGetParams struct {
 // URLQuery serializes [CommitGetParams]'s query parameters as `url.Values`.
 func (r CommitGetParams) URLQuery() (v url.Values) {
 	return apiquery.MarshalWithSettings(r, apiquery.QuerySettings{
-		ArrayFormat:  apiquery.ArrayQueryFormatComma,
+		ArrayFormat:  apiquery.ArrayQueryFormatRepeat,
 		NestedFormat: apiquery.NestedQueryFormatBrackets,
 	})
 }
@@ -366,7 +366,7 @@ type CommitListParams struct {
 // URLQuery serializes [CommitListParams]'s query parameters as `url.Values`.
 func (r CommitListParams) URLQuery() (v url.Values) {
 	return apiquery.MarshalWithSettings(r, apiquery.QuerySettings{
-		ArrayFormat:  apiquery.ArrayQueryFormatComma,
+		ArrayFormat:  apiquery.ArrayQueryFormatRepeat,
 		NestedFormat: apiquery.NestedQueryFormatBrackets,
 	})
 }
