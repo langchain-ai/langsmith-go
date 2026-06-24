@@ -192,16 +192,16 @@ func (r AutoEvalFeedbackSourceType) IsKnown() bool {
 
 // Schema used for creating feedback.
 type FeedbackCreateSchemaParam struct {
-	Key                       param.Field[string]                                   `json:"key" api:"required"`
-	ID                        param.Field[string]                                   `json:"id" format:"uuid"`
-	Comment                   param.Field[string]                                   `json:"comment"`
-	ComparativeExperimentID   param.Field[string]                                   `json:"comparative_experiment_id" format:"uuid"`
-	Correction                param.Field[FeedbackCreateSchemaCorrectionUnionParam] `json:"correction"`
-	CreatedAt                 param.Field[time.Time]                                `json:"created_at" format:"date-time"`
-	DoNotExtendTraceRetention param.Field[bool]                                     `json:"do_not_extend_trace_retention"`
-	Error                     param.Field[bool]                                     `json:"error"`
-	FeedbackConfig            param.Field[FeedbackCreateSchemaFeedbackConfigParam]  `json:"feedback_config"`
-	FeedbackGroupID           param.Field[string]                                   `json:"feedback_group_id" format:"uuid"`
+	Key                     param.Field[string]                                   `json:"key" api:"required"`
+	ID                      param.Field[string]                                   `json:"id" format:"uuid"`
+	Comment                 param.Field[string]                                   `json:"comment"`
+	ComparativeExperimentID param.Field[string]                                   `json:"comparative_experiment_id" format:"uuid"`
+	Correction              param.Field[FeedbackCreateSchemaCorrectionUnionParam] `json:"correction"`
+	CreatedAt               param.Field[time.Time]                                `json:"created_at" format:"date-time"`
+	Error                   param.Field[bool]                                     `json:"error"`
+	ExtendTraceRetention    param.Field[bool]                                     `json:"extend_trace_retention"`
+	FeedbackConfig          param.Field[FeedbackCreateSchemaFeedbackConfigParam]  `json:"feedback_config"`
+	FeedbackGroupID         param.Field[string]                                   `json:"feedback_group_id" format:"uuid"`
 	// Feedback from the LangChainPlus App.
 	FeedbackSource param.Field[FeedbackCreateSchemaFeedbackSourceUnionParam] `json:"feedback_source"`
 	ModifiedAt     param.Field[time.Time]                                    `json:"modified_at" format:"date-time"`
@@ -569,7 +569,7 @@ type FeedbackGetParams struct {
 // URLQuery serializes [FeedbackGetParams]'s query parameters as `url.Values`.
 func (r FeedbackGetParams) URLQuery() (v url.Values) {
 	return apiquery.MarshalWithSettings(r, apiquery.QuerySettings{
-		ArrayFormat:  apiquery.ArrayQueryFormatComma,
+		ArrayFormat:  apiquery.ArrayQueryFormatRepeat,
 		NestedFormat: apiquery.NestedQueryFormatBrackets,
 	})
 }
@@ -670,7 +670,7 @@ type FeedbackListParams struct {
 // URLQuery serializes [FeedbackListParams]'s query parameters as `url.Values`.
 func (r FeedbackListParams) URLQuery() (v url.Values) {
 	return apiquery.MarshalWithSettings(r, apiquery.QuerySettings{
-		ArrayFormat:  apiquery.ArrayQueryFormatComma,
+		ArrayFormat:  apiquery.ArrayQueryFormatRepeat,
 		NestedFormat: apiquery.NestedQueryFormatBrackets,
 	})
 }

@@ -140,7 +140,7 @@ func TestSessionListWithOptionalParams(t *testing.T) {
 		option.WithTenantID("My Tenant ID"),
 	)
 	_, err := client.Sessions.List(context.TODO(), langsmith.SessionListParams{
-		ID:                   langsmith.F([]string{"182bd5e5-6e1a-4fe4-a799-aa6d9a6ab26e"}),
+		ID:                   langsmith.F([]string{"182bd5e5-6e1a-4fe4-a799-aa6d9a6ab26e", "182bd5e5-6e1a-4fe4-a799-aa6d9a6ab26e"}),
 		DatasetVersion:       langsmith.F("dataset_version"),
 		Facets:               langsmith.F(true),
 		Filter:               langsmith.F("filter"),
@@ -150,16 +150,16 @@ func TestSessionListWithOptionalParams(t *testing.T) {
 		Name:                 langsmith.F("name"),
 		NameContains:         langsmith.F("name_contains"),
 		Offset:               langsmith.F(int64(0)),
-		ReferenceDataset:     langsmith.F([]string{"182bd5e5-6e1a-4fe4-a799-aa6d9a6ab26e"}),
+		ReferenceDataset:     langsmith.F([]string{"182bd5e5-6e1a-4fe4-a799-aa6d9a6ab26e", "182bd5e5-6e1a-4fe4-a799-aa6d9a6ab26e"}),
 		ReferenceFree:        langsmith.F(true),
 		SortBy:               langsmith.F(langsmith.SessionSortableColumnsName),
 		SortByDesc:           langsmith.F(true),
 		SortByFeedbackKey:    langsmith.F("sort_by_feedback_key"),
 		SortByFeedbackSource: langsmith.F(langsmith.SessionListParamsSortByFeedbackSourceSession),
 		StatsFilter:          langsmith.F("stats_filter"),
-		StatsSelect:          langsmith.F([]string{"string"}),
+		StatsSelect:          langsmith.F([]string{"string", "string"}),
 		StatsStartTime:       langsmith.F(time.Now()),
-		TagValueID:           langsmith.F([]string{"182bd5e5-6e1a-4fe4-a799-aa6d9a6ab26e"}),
+		TagValueID:           langsmith.F([]string{"182bd5e5-6e1a-4fe4-a799-aa6d9a6ab26e", "182bd5e5-6e1a-4fe4-a799-aa6d9a6ab26e"}),
 		UseApproxStats:       langsmith.F(true),
 		Accept:               langsmith.F("accept"),
 	})

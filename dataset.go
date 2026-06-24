@@ -609,7 +609,7 @@ type DatasetListParams struct {
 // URLQuery serializes [DatasetListParams]'s query parameters as `url.Values`.
 func (r DatasetListParams) URLQuery() (v url.Values) {
 	return apiquery.MarshalWithSettings(r, apiquery.QuerySettings{
-		ArrayFormat:  apiquery.ArrayQueryFormatComma,
+		ArrayFormat:  apiquery.ArrayQueryFormatRepeat,
 		NestedFormat: apiquery.NestedQueryFormatBrackets,
 	})
 }
@@ -680,7 +680,7 @@ type DatasetGetCsvParams struct {
 // URLQuery serializes [DatasetGetCsvParams]'s query parameters as `url.Values`.
 func (r DatasetGetCsvParams) URLQuery() (v url.Values) {
 	return apiquery.MarshalWithSettings(r, apiquery.QuerySettings{
-		ArrayFormat:  apiquery.ArrayQueryFormatComma,
+		ArrayFormat:  apiquery.ArrayQueryFormatRepeat,
 		NestedFormat: apiquery.NestedQueryFormatBrackets,
 	})
 }
@@ -694,7 +694,7 @@ type DatasetGetJSONLParams struct {
 // URLQuery serializes [DatasetGetJSONLParams]'s query parameters as `url.Values`.
 func (r DatasetGetJSONLParams) URLQuery() (v url.Values) {
 	return apiquery.MarshalWithSettings(r, apiquery.QuerySettings{
-		ArrayFormat:  apiquery.ArrayQueryFormatComma,
+		ArrayFormat:  apiquery.ArrayQueryFormatRepeat,
 		NestedFormat: apiquery.NestedQueryFormatBrackets,
 	})
 }
@@ -708,7 +708,7 @@ type DatasetGetOpenAIParams struct {
 // URLQuery serializes [DatasetGetOpenAIParams]'s query parameters as `url.Values`.
 func (r DatasetGetOpenAIParams) URLQuery() (v url.Values) {
 	return apiquery.MarshalWithSettings(r, apiquery.QuerySettings{
-		ArrayFormat:  apiquery.ArrayQueryFormatComma,
+		ArrayFormat:  apiquery.ArrayQueryFormatRepeat,
 		NestedFormat: apiquery.NestedQueryFormatBrackets,
 	})
 }
@@ -723,7 +723,7 @@ type DatasetGetOpenAIFtParams struct {
 // `url.Values`.
 func (r DatasetGetOpenAIFtParams) URLQuery() (v url.Values) {
 	return apiquery.MarshalWithSettings(r, apiquery.QuerySettings{
-		ArrayFormat:  apiquery.ArrayQueryFormatComma,
+		ArrayFormat:  apiquery.ArrayQueryFormatRepeat,
 		NestedFormat: apiquery.NestedQueryFormatBrackets,
 	})
 }
@@ -737,7 +737,7 @@ type DatasetGetVersionParams struct {
 // `url.Values`.
 func (r DatasetGetVersionParams) URLQuery() (v url.Values) {
 	return apiquery.MarshalWithSettings(r, apiquery.QuerySettings{
-		ArrayFormat:  apiquery.ArrayQueryFormatComma,
+		ArrayFormat:  apiquery.ArrayQueryFormatRepeat,
 		NestedFormat: apiquery.NestedQueryFormatBrackets,
 	})
 }

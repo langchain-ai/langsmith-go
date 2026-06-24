@@ -38,9 +38,9 @@ func TestFeedbackNewWithOptionalParams(t *testing.T) {
 			Correction: langsmith.F[langsmith.FeedbackCreateSchemaCorrectionUnionParam](langsmith.FeedbackCreateSchemaCorrectionMapParam(map[string]interface{}{
 				"foo": "bar",
 			})),
-			CreatedAt:                 langsmith.F(time.Now()),
-			DoNotExtendTraceRetention: langsmith.F(true),
-			Error:                     langsmith.F(true),
+			CreatedAt:            langsmith.F(time.Now()),
+			Error:                langsmith.F(true),
+			ExtendTraceRetention: langsmith.F(true),
 			FeedbackConfig: langsmith.F(langsmith.FeedbackCreateSchemaFeedbackConfigParam{
 				Type: langsmith.F(langsmith.FeedbackCreateSchemaFeedbackConfigTypeContinuous),
 				Categories: langsmith.F([]langsmith.FeedbackCreateSchemaFeedbackConfigCategoryParam{{
@@ -168,7 +168,7 @@ func TestFeedbackListWithOptionalParams(t *testing.T) {
 		HasComment:              langsmith.F(true),
 		HasScore:                langsmith.F(true),
 		IncludeUserNames:        langsmith.F(true),
-		Key:                     langsmith.F([]string{"string"}),
+		Key:                     langsmith.F([]string{"string", "string"}),
 		Level:                   langsmith.F(langsmith.FeedbackLevelRun),
 		Limit:                   langsmith.F(int64(1)),
 		MaxCreatedAt:            langsmith.F(time.Now()),
@@ -176,8 +176,8 @@ func TestFeedbackListWithOptionalParams(t *testing.T) {
 		Offset:                  langsmith.F(int64(0)),
 		Run:                     langsmith.F[langsmith.FeedbackListParamsRunUnion](langsmith.FeedbackListParamsRunArray([]string{"182bd5e5-6e1a-4fe4-a799-aa6d9a6ab26e"})),
 		Session:                 langsmith.F[langsmith.FeedbackListParamsSessionUnion](langsmith.FeedbackListParamsSessionArray([]string{"182bd5e5-6e1a-4fe4-a799-aa6d9a6ab26e"})),
-		Source:                  langsmith.F([]langsmith.SourceType{langsmith.SourceTypeAPI}),
-		User:                    langsmith.F([]string{"182bd5e5-6e1a-4fe4-a799-aa6d9a6ab26e"}),
+		Source:                  langsmith.F([]langsmith.SourceType{langsmith.SourceTypeAPI, langsmith.SourceTypeModel}),
+		User:                    langsmith.F([]string{"182bd5e5-6e1a-4fe4-a799-aa6d9a6ab26e", "182bd5e5-6e1a-4fe4-a799-aa6d9a6ab26e"}),
 	})
 	if err != nil {
 		var apierr *langsmith.Error

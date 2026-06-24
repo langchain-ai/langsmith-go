@@ -152,19 +152,19 @@ func TestExampleListWithOptionalParams(t *testing.T) {
 		option.WithTenantID("My Tenant ID"),
 	)
 	_, err := client.Examples.List(context.TODO(), langsmith.ExampleListParams{
-		ID:               langsmith.F([]string{"182bd5e5-6e1a-4fe4-a799-aa6d9a6ab26e"}),
+		ID:               langsmith.F([]string{"182bd5e5-6e1a-4fe4-a799-aa6d9a6ab26e", "182bd5e5-6e1a-4fe4-a799-aa6d9a6ab26e"}),
 		AsOf:             langsmith.F[langsmith.ExampleListParamsAsOfUnion](shared.UnionTime(time.Now())),
 		Dataset:          langsmith.F("182bd5e5-6e1a-4fe4-a799-aa6d9a6ab26e"),
 		Descending:       langsmith.F(true),
 		Filter:           langsmith.F("filter"),
-		FullTextContains: langsmith.F([]string{"string"}),
+		FullTextContains: langsmith.F([]string{"string", "string"}),
 		Limit:            langsmith.F(int64(1)),
 		Metadata:         langsmith.F("metadata"),
 		Offset:           langsmith.F(int64(0)),
 		Order:            langsmith.F(langsmith.ExampleListParamsOrderRecent),
 		RandomSeed:       langsmith.F(0.000000),
 		Select:           langsmith.F([]langsmith.ExampleSelect{langsmith.ExampleSelectID}),
-		Splits:           langsmith.F([]string{"string"}),
+		Splits:           langsmith.F([]string{"string", "string"}),
 	})
 	if err != nil {
 		var apierr *langsmith.Error
@@ -240,13 +240,13 @@ func TestExampleGetCountWithOptionalParams(t *testing.T) {
 		option.WithTenantID("My Tenant ID"),
 	)
 	_, err := client.Examples.GetCount(context.TODO(), langsmith.ExampleGetCountParams{
-		ID:               langsmith.F([]string{"182bd5e5-6e1a-4fe4-a799-aa6d9a6ab26e"}),
+		ID:               langsmith.F([]string{"182bd5e5-6e1a-4fe4-a799-aa6d9a6ab26e", "182bd5e5-6e1a-4fe4-a799-aa6d9a6ab26e"}),
 		AsOf:             langsmith.F[langsmith.ExampleGetCountParamsAsOfUnion](shared.UnionTime(time.Now())),
 		Dataset:          langsmith.F("182bd5e5-6e1a-4fe4-a799-aa6d9a6ab26e"),
 		Filter:           langsmith.F("filter"),
-		FullTextContains: langsmith.F([]string{"string"}),
+		FullTextContains: langsmith.F([]string{"string", "string"}),
 		Metadata:         langsmith.F("metadata"),
-		Splits:           langsmith.F([]string{"string"}),
+		Splits:           langsmith.F([]string{"string", "string"}),
 	})
 	if err != nil {
 		var apierr *langsmith.Error

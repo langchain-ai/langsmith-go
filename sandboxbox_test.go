@@ -52,35 +52,58 @@ func TestSandboxBoxNewWithOptionalParams(t *testing.T) {
 		FsCapacityBytes: langsmith.F(int64(0)),
 		IdleTtlSeconds:  langsmith.F(int64(0)),
 		MemBytes:        langsmith.F(int64(0)),
-		Mounts: langsmith.F([]langsmith.SandboxBoxNewParamsMountUnion{langsmith.SandboxBoxNewParamsMountsSandboxapiS3BucketMountSpec{
-			ID:        langsmith.F("id"),
-			MountPath: langsmith.F("mount_path"),
-			S3: langsmith.F(langsmith.SandboxBoxNewParamsMountsSandboxapiS3BucketMountSpecS3{
-				Bucket:      langsmith.F("bucket"),
-				EndpointURL: langsmith.F("endpoint_url"),
-				Region:      langsmith.F("region"),
-				PathStyle:   langsmith.F(true),
-				Prefix:      langsmith.F("prefix"),
-			}),
-			Type: langsmith.F(langsmith.SandboxBoxNewParamsMountsSandboxapiS3BucketMountSpecTypeS3),
-			Cache: langsmith.F(langsmith.SandboxBoxNewParamsMountsSandboxapiS3BucketMountSpecCache{
-				MaxSizeBytes:     langsmith.F(int64(0)),
-				WritebackSeconds: langsmith.F(int64(0)),
-			}),
-			Gcs: langsmith.F(langsmith.SandboxBoxNewParamsMountsSandboxapiS3BucketMountSpecGcs{
-				Bucket: langsmith.F("bucket"),
-				Prefix: langsmith.F("prefix"),
-			}),
-			Git: langsmith.F(langsmith.SandboxBoxNewParamsMountsSandboxapiS3BucketMountSpecGit{
-				RemoteURL: langsmith.F("remote_url"),
-				Ref: langsmith.F(langsmith.SandboxBoxNewParamsMountsSandboxapiS3BucketMountSpecGitRef{
-					Name: langsmith.F("name"),
-					Type: langsmith.F(langsmith.SandboxBoxNewParamsMountsSandboxapiS3BucketMountSpecGitRefTypeBranch),
+		MountConfig: langsmith.F(langsmith.SandboxBoxNewParamsMountConfig{
+			Auth: langsmith.F(langsmith.SandboxBoxNewParamsMountConfigAuth{
+				Aws: langsmith.F(langsmith.SandboxBoxNewParamsMountConfigAuthAws{
+					AccessKeyID: langsmith.F(langsmith.SandboxBoxNewParamsMountConfigAuthAwsAccessKeyID{
+						Type:  langsmith.F(langsmith.SandboxBoxNewParamsMountConfigAuthAwsAccessKeyIDTypePlaintext),
+						IsSet: langsmith.F(true),
+						Value: langsmith.F("value"),
+					}),
+					SecretAccessKey: langsmith.F(langsmith.SandboxBoxNewParamsMountConfigAuthAwsSecretAccessKey{
+						Type:  langsmith.F(langsmith.SandboxBoxNewParamsMountConfigAuthAwsSecretAccessKeyTypePlaintext),
+						IsSet: langsmith.F(true),
+						Value: langsmith.F("value"),
+					}),
 				}),
-				RefreshIntervalSeconds: langsmith.F(int64(1)),
+				Gcp: langsmith.F(langsmith.SandboxBoxNewParamsMountConfigAuthGcp{
+					ServiceAccountJson: langsmith.F(langsmith.SandboxBoxNewParamsMountConfigAuthGcpServiceAccountJson{
+						Type:  langsmith.F(langsmith.SandboxBoxNewParamsMountConfigAuthGcpServiceAccountJsonTypePlaintext),
+						IsSet: langsmith.F(true),
+						Value: langsmith.F("value"),
+					}),
+				}),
 			}),
-			ReadOnly: langsmith.F(true),
-		}}),
+			Mounts: langsmith.F([]langsmith.SandboxBoxNewParamsMountConfigMountUnion{langsmith.SandboxBoxNewParamsMountConfigMountsSandboxapiS3BucketMountSpec{
+				ID:        langsmith.F("id"),
+				MountPath: langsmith.F("mount_path"),
+				S3: langsmith.F(langsmith.SandboxBoxNewParamsMountConfigMountsSandboxapiS3BucketMountSpecS3{
+					Bucket:      langsmith.F("bucket"),
+					Region:      langsmith.F("region"),
+					EndpointURL: langsmith.F("endpoint_url"),
+					PathStyle:   langsmith.F(true),
+					Prefix:      langsmith.F("prefix"),
+				}),
+				Type: langsmith.F(langsmith.SandboxBoxNewParamsMountConfigMountsSandboxapiS3BucketMountSpecTypeS3),
+				Cache: langsmith.F(langsmith.SandboxBoxNewParamsMountConfigMountsSandboxapiS3BucketMountSpecCache{
+					MaxSizeBytes:     langsmith.F(int64(0)),
+					WritebackSeconds: langsmith.F(int64(0)),
+				}),
+				Gcs: langsmith.F(langsmith.SandboxBoxNewParamsMountConfigMountsSandboxapiS3BucketMountSpecGcs{
+					Bucket: langsmith.F("bucket"),
+					Prefix: langsmith.F("prefix"),
+				}),
+				Git: langsmith.F(langsmith.SandboxBoxNewParamsMountConfigMountsSandboxapiS3BucketMountSpecGit{
+					RemoteURL: langsmith.F("remote_url"),
+					Ref: langsmith.F(langsmith.SandboxBoxNewParamsMountConfigMountsSandboxapiS3BucketMountSpecGitRef{
+						Name: langsmith.F("name"),
+						Type: langsmith.F(langsmith.SandboxBoxNewParamsMountConfigMountsSandboxapiS3BucketMountSpecGitRefTypeBranch),
+					}),
+					RefreshIntervalSeconds: langsmith.F(int64(1)),
+				}),
+				ReadOnly: langsmith.F(true),
+			}}),
+		}),
 		Name: langsmith.F("name"),
 		ProxyConfig: langsmith.F(langsmith.SandboxBoxNewParamsProxyConfig{
 			AccessControl: langsmith.F(langsmith.SandboxBoxNewParamsProxyConfigAccessControl{
