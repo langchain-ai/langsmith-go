@@ -756,6 +756,144 @@ func TestExtractResponsesUsage_HasUsageFlag(t *testing.T) {
 	})
 }
 
+func TestExtractRealtimeUsage_ResponseDone(t *testing.T) {
+	event := `{
+		"type":"response.done",
+		"response":{
+			"service_tier":"priority",
+			"usage":{
+				"total_tokens":253,
+				"input_tokens":132,
+				"output_tokens":121,
+				"input_token_details":{
+					"text_tokens":119,
+					"audio_tokens":13,
+					"image_tokens":4,
+					"cached_tokens":64
+				},
+				"output_token_details":{
+					"text_tokens":30,
+					"audio_tokens":91
+				}
+			}
+		}
+	}`
+
+	got := ExtractRealtimeUsage([]byte(event))
+	want := UsageInfo{
+		InputTokens: 132, OutputTokens: 121, TotalTokens: 253, HasUsage: true, ServiceTier: "priority",
+		UsageMetadata: map[string]any{
+			"input_tokens":  132,
+			"output_tokens": 121,
+			"total_tokens":  253,
+			"input_token_details": map[string]any{
+				"cache_read": 64, "audio": 13, "image": 4,
+			},
+			"output_token_details": map[string]any{"audio": 91},
+		},
+	}
+	if !reflect.DeepEqual(got, want) {
+		t.Errorf("usage mismatch:\n got: %#v\nwant: %#v", got, want)
+	}
+}
+
+func TestExtractRealtimeUsage_TranscriptionCompleted(t *testing.T) {
+	event := `{
+		"type":"conversation.item.input_audio_transcription.completed",
+		"usage":{
+			"type":"tokens",
+			"total_tokens":26,
+			"input_tokens":17,
+			"input_token_details":{"text_tokens":0,"audio_tokens":17},
+			"output_tokens":9
+		}
+	}`
+
+	got := ExtractRealtimeUsage([]byte(event))
+	want := UsageInfo{
+		InputTokens: 17, OutputTokens: 9, TotalTokens: 26, HasUsage: true,
+		UsageMetadata: map[string]any{
+			"input_tokens":        17,
+			"output_tokens":       9,
+			"total_tokens":        26,
+			"input_token_details": map[string]any{"audio": 17},
+		},
+	}
+	if !reflect.DeepEqual(got, want) {
+		t.Errorf("usage mismatch:\n got: %#v\nwant: %#v", got, want)
+	}
+}
+
+func TestExtractRealtimeUsage_NoUsage(t *testing.T) {
+	for _, event := range [][]byte{
+		[]byte(`{"type":"session.created"}`),
+		[]byte(`not-json`),
+	} {
+		if got := ExtractRealtimeUsage(event); got.HasUsage {
+			t.Errorf("expected no usage, got %#v", got)
+		}
+	}
+}
+
+func TestSetUsageAttributes(t *testing.T) {
+	exporter := tracetest.NewInMemoryExporter()
+	tp := sdktrace.NewTracerProvider(sdktrace.WithSyncer(exporter))
+	tracer := tp.Tracer("test")
+
+	ctx, parent := tracer.Start(context.Background(), "parent")
+	_, child := tracer.Start(ctx, "child")
+	SetUsageAttributes(child, parent, UsageInfo{
+		InputTokens: 10, OutputTokens: 5, TotalTokens: 15, HasUsage: true, ServiceTier: "flex",
+		UsageMetadata: map[string]any{"input_tokens": 10, "output_tokens": 5, "total_tokens": 15},
+	})
+	child.End()
+	parent.End()
+
+	spans := exporter.GetSpans()
+	var childSpan, parentSpan tracetest.SpanStub
+	for _, span := range spans {
+		switch span.Name {
+		case "child":
+			childSpan = span
+		case "parent":
+			parentSpan = span
+		}
+	}
+	if got, ok := spanAttrInt64(childSpan, "gen_ai.usage.total_tokens"); !ok || got != 15 {
+		t.Errorf("child total tokens = %d, ok=%v", got, ok)
+	}
+	if got, ok := spanAttrString(childSpan, "langsmith.metadata.service_tier"); !ok || got != "flex" {
+		t.Errorf("child service tier = %q, ok=%v", got, ok)
+	}
+	if got, ok := spanAttrString(childSpan, "langsmith.usage_metadata"); !ok || got == "" {
+		t.Errorf("child usage metadata missing, got %q, ok=%v", got, ok)
+	}
+	if got, ok := spanAttrInt64(parentSpan, "gen_ai.usage.input_tokens"); !ok || got != 10 {
+		t.Errorf("parent input tokens = %d, ok=%v", got, ok)
+	}
+	if got, ok := spanAttrInt64(parentSpan, "gen_ai.usage.output_tokens"); !ok || got != 5 {
+		t.Errorf("parent output tokens = %d, ok=%v", got, ok)
+	}
+}
+
+func spanAttrString(span tracetest.SpanStub, key string) (string, bool) {
+	for _, attr := range span.Attributes {
+		if string(attr.Key) == key {
+			return attr.Value.AsString(), true
+		}
+	}
+	return "", false
+}
+
+func spanAttrInt64(span tracetest.SpanStub, key string) (int64, bool) {
+	for _, attr := range span.Attributes {
+		if string(attr.Key) == key {
+			return attr.Value.AsInt64(), true
+		}
+	}
+	return 0, false
+}
+
 func TestExtractResponsesOutput_TextAndFunctionCalls(t *testing.T) {
 	resp := map[string]any{
 		"output": []any{
@@ -1589,10 +1727,14 @@ func TestBuildOpenAIUsage(t *testing.T) {
 				"prompt_tokens_details": map[string]any{
 					"cached_tokens": float64(768),
 					"audio_tokens":  float64(10),
+					"image_tokens":  float64(3),
+					"video_tokens":  float64(2),
 				},
 				"completion_tokens_details": map[string]any{
 					"reasoning_tokens": float64(64),
 					"audio_tokens":     float64(5),
+					"image_tokens":     float64(4),
+					"video_tokens":     float64(1),
 					// Intentionally ignored (priced via the output remainder).
 					"accepted_prediction_tokens": float64(7),
 					"rejected_prediction_tokens": float64(3),
@@ -1601,11 +1743,15 @@ func TestBuildOpenAIUsage(t *testing.T) {
 			want: usageInfo{
 				InputTokens: 1000, OutputTokens: 200, TotalTokens: 1200, HasUsage: true,
 				UsageMetadata: map[string]any{
-					"input_tokens":         1000,
-					"output_tokens":        200,
-					"total_tokens":         1200,
-					"input_token_details":  map[string]any{"cache_read": 768, "audio": 10},
-					"output_token_details": map[string]any{"reasoning": 64, "audio": 5},
+					"input_tokens":  1000,
+					"output_tokens": 200,
+					"total_tokens":  1200,
+					"input_token_details": map[string]any{
+						"cache_read": 768, "audio": 10, "image": 3, "video": 2,
+					},
+					"output_token_details": map[string]any{
+						"reasoning": 64, "audio": 5, "image": 4, "video": 1,
+					},
 				},
 			},
 		},
