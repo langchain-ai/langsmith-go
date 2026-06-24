@@ -1344,8 +1344,6 @@ func (r RunQueryV1ParamsSelect) IsKnown() bool {
 }
 
 type RunQueryV2Params struct {
-	// `ai_query` is a natural-language query to filter runs using AI.
-	AIQuery param.Field[string] `json:"ai_query"`
 	// `cursor` is the opaque string from a previous response's `next_cursor`. Treat it
 	// as opaque and pass it back unmodified.
 	Cursor param.Field[string] `json:"cursor"`
@@ -1389,9 +1387,6 @@ type RunQueryV2Params struct {
 	// `selects` lists which properties to include on each returned run. If omitted,
 	// only `id` is returned. Properties not listed are omitted from each run object.
 	Selects param.Field[[]RunQueryV2ParamsSelect] `json:"selects"`
-	// `sort_order` is the sort direction for `start_time` (`ASC` or `DESC`). Defaults
-	// to `DESC` when omitted. Maps to the SmithDB proto `Order` field.
-	SortOrder param.Field[RunQueryV2ParamsSortOrder] `json:"sort_order"`
 	// `trace_filter` narrows results to runs whose root trace matches this LangSmith
 	// filter expression. Use this to filter by properties of the trace's root run —
 	// for example eq(status, "success") to include only traces that completed without
@@ -1490,23 +1485,6 @@ const (
 func (r RunQueryV2ParamsSelect) IsKnown() bool {
 	switch r {
 	case RunQueryV2ParamsSelectID, RunQueryV2ParamsSelectName, RunQueryV2ParamsSelectRunType, RunQueryV2ParamsSelectStatus, RunQueryV2ParamsSelectStartTime, RunQueryV2ParamsSelectEndTime, RunQueryV2ParamsSelectLatencySeconds, RunQueryV2ParamsSelectFirstTokenTime, RunQueryV2ParamsSelectError, RunQueryV2ParamsSelectErrorPreview, RunQueryV2ParamsSelectExtra, RunQueryV2ParamsSelectMetadata, RunQueryV2ParamsSelectEvents, RunQueryV2ParamsSelectInputs, RunQueryV2ParamsSelectInputsPreview, RunQueryV2ParamsSelectOutputs, RunQueryV2ParamsSelectOutputsPreview, RunQueryV2ParamsSelectManifest, RunQueryV2ParamsSelectParentRunIDs, RunQueryV2ParamsSelectProjectID, RunQueryV2ParamsSelectTraceID, RunQueryV2ParamsSelectThreadID, RunQueryV2ParamsSelectDottedOrder, RunQueryV2ParamsSelectIsRoot, RunQueryV2ParamsSelectReferenceExampleID, RunQueryV2ParamsSelectReferenceDatasetID, RunQueryV2ParamsSelectTotalTokens, RunQueryV2ParamsSelectPromptTokens, RunQueryV2ParamsSelectCompletionTokens, RunQueryV2ParamsSelectTotalCost, RunQueryV2ParamsSelectPromptCost, RunQueryV2ParamsSelectCompletionCost, RunQueryV2ParamsSelectPromptTokenDetails, RunQueryV2ParamsSelectCompletionTokenDetails, RunQueryV2ParamsSelectPromptCostDetails, RunQueryV2ParamsSelectCompletionCostDetails, RunQueryV2ParamsSelectPriceModelID, RunQueryV2ParamsSelectTags, RunQueryV2ParamsSelectAppPath, RunQueryV2ParamsSelectAttachments, RunQueryV2ParamsSelectThreadEvaluationTime, RunQueryV2ParamsSelectIsInDataset, RunQueryV2ParamsSelectShareURL, RunQueryV2ParamsSelectFeedbackStats:
-		return true
-	}
-	return false
-}
-
-// `sort_order` is the sort direction for `start_time` (`ASC` or `DESC`). Defaults
-// to `DESC` when omitted. Maps to the SmithDB proto `Order` field.
-type RunQueryV2ParamsSortOrder string
-
-const (
-	RunQueryV2ParamsSortOrderAsc  RunQueryV2ParamsSortOrder = "ASC"
-	RunQueryV2ParamsSortOrderDesc RunQueryV2ParamsSortOrder = "DESC"
-)
-
-func (r RunQueryV2ParamsSortOrder) IsKnown() bool {
-	switch r {
-	case RunQueryV2ParamsSortOrderAsc, RunQueryV2ParamsSortOrderDesc:
 		return true
 	}
 	return false

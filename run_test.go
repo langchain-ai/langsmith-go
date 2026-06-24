@@ -305,7 +305,6 @@ func TestRunQueryV2WithOptionalParams(t *testing.T) {
 		option.WithTenantID("My Tenant ID"),
 	)
 	_, err := client.Runs.QueryV2(context.TODO(), langsmith.RunQueryV2Params{
-		AIQuery:            langsmith.F("runs that used tool calls"),
 		Cursor:             langsmith.F("eyJ2IjoxLCJhIjoicnVucy5xdWVyeSIsImsiOiJwYXNzIiwiYiI6InNkYiIsInQiOiJsdChjdXJzb3IsICcyMDI1LTEyLTEyIDE5OjAzOjI4LjQ4MTI1NTAxOWIxM2YyJykifQ"),
 		Filter:             langsmith.F(`and(eq(run_type, "llm"), gt(latency, 5))`),
 		HasError:           langsmith.F(false),
@@ -319,7 +318,6 @@ func TestRunQueryV2WithOptionalParams(t *testing.T) {
 		ReferenceExamples:  langsmith.F([]string{"b2c3d4e5-f6a7-4b5c-9d0e-1f2a3b4c5d6e", "c3d4e5f6-a7b8-4c5d-0e1f-2a3b4c5d6e7f"}),
 		RunType:            langsmith.F(langsmith.RunQueryV2ParamsRunTypeLlm),
 		Selects:            langsmith.F([]langsmith.RunQueryV2ParamsSelect{langsmith.RunQueryV2ParamsSelectID, langsmith.RunQueryV2ParamsSelectName, langsmith.RunQueryV2ParamsSelectProjectID, langsmith.RunQueryV2ParamsSelectStartTime, langsmith.RunQueryV2ParamsSelectRunType, langsmith.RunQueryV2ParamsSelectStatus}),
-		SortOrder:          langsmith.F(langsmith.RunQueryV2ParamsSortOrderDesc),
 		TraceFilter:        langsmith.F(`eq(status, "success")`),
 		TraceID:            langsmith.F("f47ac10b-58cc-4372-a567-0e02b2c3d479"),
 		TreeFilter:         langsmith.F(`has(tags, "production")`),
