@@ -237,34 +237,7 @@ func MiddlewareWithTracerProvider(req *http.Request, next MiddlewareNext, tp tra
 		if completion != "" {
 			span.SetAttributes(attribute.String("gen_ai.completion", completion))
 		}
-		if usage.HasUsage {
-			// langsmith.usage_metadata is the converter's preferred,
-			// cost-driving path (token-detail breakdown for cache/reasoning/audio).
-			if len(usage.UsageMetadata) > 0 {
-				if out, err := json.Marshal(usage.UsageMetadata); err == nil {
-					span.SetAttributes(usageMetadataKey.String(string(out)))
-				}
-			}
-			// Flat gen_ai.usage.* attributes drive Thread-list aggregation, which
-			// reads token counts from root spans; input/output propagate to the parent.
-			inputTokens := int64(usage.InputTokens)
-			span.SetAttributes(usageInputTokensKey.Int64(inputTokens))
-			outputTokens := int64(usage.OutputTokens)
-			span.SetAttributes(usageOutputTokensKey.Int64(outputTokens))
-			if usage.TotalTokens > 0 {
-				span.SetAttributes(usageTotalTokensKey.Int64(int64(usage.TotalTokens)))
-			}
-			if parentSpan.SpanContext().IsValid() && parentSpan.IsRecording() {
-				parentSpan.SetAttributes(
-					usageInputTokensKey.Int64(inputTokens),
-					usageOutputTokensKey.Int64(outputTokens),
-				)
-			}
-			// service_tier is a price modifier, not a token count, so it goes in metadata.
-			if usage.ServiceTier != "" {
-				span.SetAttributes(serviceTierKey.String(usage.ServiceTier))
-			}
-		}
+		SetUsageAttributes(span, parentSpan, usage)
 		if resp.StatusCode < 400 && !incompleteStream {
 			span.SetStatus(codes.Ok, "")
 		}
@@ -830,10 +803,10 @@ func extractStreamingCompletion(data []byte) (string, usageInfo) {
 	return marshalMessages([]any{msg}), usage
 }
 
-// usageInfo holds token usage information.
+// UsageInfo holds token usage information.
 // HasUsage distinguishes "provider returned usage with 0 tokens" from
 // "provider omitted the usage field entirely."
-type usageInfo struct {
+type UsageInfo struct {
 	InputTokens  int
 	OutputTokens int
 	TotalTokens  int
@@ -844,6 +817,57 @@ type usageInfo struct {
 	// ServiceTier is the response service tier (e.g. default/flex/priority), a
 	// price modifier recorded as run metadata rather than a token count.
 	ServiceTier string
+}
+
+type usageInfo = UsageInfo
+
+// SetUsageAttributes records OpenAI token usage on span and propagates flat token totals to parentSpan.
+func SetUsageAttributes(span trace.Span, parentSpan trace.Span, usage UsageInfo) {
+	if span == nil || !usage.HasUsage {
+		return
+	}
+	if len(usage.UsageMetadata) > 0 {
+		if out, err := json.Marshal(usage.UsageMetadata); err == nil {
+			span.SetAttributes(usageMetadataKey.String(string(out)))
+		}
+	}
+	inputTokens := int64(usage.InputTokens)
+	span.SetAttributes(usageInputTokensKey.Int64(inputTokens))
+	outputTokens := int64(usage.OutputTokens)
+	span.SetAttributes(usageOutputTokensKey.Int64(outputTokens))
+	if usage.TotalTokens > 0 {
+		span.SetAttributes(usageTotalTokensKey.Int64(int64(usage.TotalTokens)))
+	}
+	if parentSpan != nil && parentSpan.SpanContext().IsValid() && parentSpan.IsRecording() {
+		parentSpan.SetAttributes(
+			usageInputTokensKey.Int64(inputTokens),
+			usageOutputTokensKey.Int64(outputTokens),
+		)
+	}
+	if usage.ServiceTier != "" {
+		span.SetAttributes(serviceTierKey.String(usage.ServiceTier))
+	}
+}
+
+// ExtractRealtimeUsage extracts token usage from a single OpenAI Realtime server event.
+func ExtractRealtimeUsage(event []byte) UsageInfo {
+	var msg map[string]any
+	if err := json.Unmarshal(event, &msg); err != nil {
+		return UsageInfo{}
+	}
+	if response, ok := msg["response"].(map[string]any); ok {
+		if usage := extractResponsesUsage(response); usage.HasUsage {
+			return usage
+		}
+	}
+	if usageMap, ok := msg["usage"].(map[string]any); ok {
+		usage := buildOpenAIUsage(usageMap)
+		if st, ok := msg["service_tier"].(string); ok && st != "" {
+			usage.ServiceTier = st
+		}
+		return usage
+	}
+	return UsageInfo{}
 }
 
 // buildOpenAIUsage parses the two OpenAI usage shapes into usageInfo and the
@@ -887,6 +911,12 @@ func buildOpenAIUsage(usageMap map[string]any) usageInfo {
 		if m, ok := usageMap[key].(map[string]any); ok {
 			return m
 		}
+		if strings.HasSuffix(key, "tokens_details") {
+			alt := strings.Replace(key, "tokens_details", "token_details", 1)
+			if m, ok := usageMap[alt].(map[string]any); ok {
+				return m
+			}
+		}
 		return nil
 	}
 
@@ -915,8 +945,10 @@ func buildOpenAIUsage(usageMap map[string]any) usageInfo {
 		if v := getInt(d, "cached_tokens"); v > 0 {
 			inputTokenDetails["cache_read"] = v
 		}
-		if v := getInt(d, "audio_tokens"); v > 0 {
-			inputTokenDetails["audio"] = v
+		for _, detail := range []string{"audio", "image", "video"} {
+			if v := getInt(d, detail+"_tokens"); v > 0 {
+				inputTokenDetails[detail] = v
+			}
 		}
 	}
 	outputTokenDetails := map[string]any{}
@@ -924,8 +956,10 @@ func buildOpenAIUsage(usageMap map[string]any) usageInfo {
 		if v := getInt(d, "reasoning_tokens"); v > 0 {
 			outputTokenDetails["reasoning"] = v
 		}
-		if v := getInt(d, "audio_tokens"); v > 0 {
-			outputTokenDetails["audio"] = v
+		for _, detail := range []string{"audio", "image", "video"} {
+			if v := getInt(d, detail+"_tokens"); v > 0 {
+				outputTokenDetails[detail] = v
+			}
 		}
 	}
 
