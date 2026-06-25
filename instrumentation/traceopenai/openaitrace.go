@@ -31,6 +31,11 @@ const (
 	usageMetadataKey = attribute.Key("langsmith.usage_metadata")
 	// serviceTierKey is a price modifier recorded as run metadata, not a token count.
 	serviceTierKey = attribute.Key("langsmith.metadata.service_tier")
+
+	// openAILongContextInputThreshold is the input-token cliff above which OpenAI
+	// bills the long-context rate for the full session.
+	// https://developers.openai.com/api/docs/pricing
+	openAILongContextInputThreshold = 272_000
 )
 
 // MiddlewareNext is a function which is called by the middleware to pass an HTTP request
@@ -791,13 +796,13 @@ func extractStreamingCompletion(data []byte) (string, usageInfo) {
 			}
 		}
 
-		// Extract usage (present in the last chunk when include_usage is set)
-		if usageMap, ok := chunk["usage"].(map[string]any); ok {
-			usage = buildOpenAIUsage(usageMap)
-		}
 		// service_tier rides at the top level of each chunk.
 		if st, ok := chunk["service_tier"].(string); ok && st != "" {
 			usage.ServiceTier = st
+		}
+		// Extract usage (present in the last chunk when include_usage is set)
+		if usageMap, ok := chunk["usage"].(map[string]any); ok {
+			usage = buildOpenAIUsage(usageMap, usage.ServiceTier)
 		}
 	}
 
@@ -846,6 +851,39 @@ type usageInfo struct {
 	ServiceTier string
 }
 
+// openAIUsagePricingBucket is the model_price_map bucket for tiered or long-context
+// billing. Empty when default rates apply. Metadata-only tiers like "default" are excluded.
+func openAIUsagePricingBucket(serviceTier string, inputTokens int) string {
+	tier := serviceTier
+	if tier == "" || tier == "default" {
+		tier = ""
+	}
+	if inputTokens > openAILongContextInputThreshold {
+		return openAIUsageDetailKey(tier, "long_context")
+	}
+	return tier
+}
+
+// openAIUsageDetailKey builds a usage_metadata token-detail key, prefixing suffix
+// when a pricing bucket applies (e.g. "flex" + "cache_read" -> "flex_cache_read").
+func openAIUsageDetailKey(bucket, suffix string) string {
+	if bucket == "" {
+		return suffix
+	}
+	return bucket + "_" + suffix
+}
+
+// setOpenAIUsageRemainder records tokens billed at the pricing-bucket rate after
+// specialized buckets (cache_read, reasoning) are accounted for.
+func setOpenAIUsageRemainder(details map[string]any, bucket string, total, accounted int) {
+	if bucket == "" {
+		return
+	}
+	if remainder := total - accounted; remainder > 0 {
+		details[bucket] = remainder
+	}
+}
+
 // buildOpenAIUsage parses the two OpenAI usage shapes into usageInfo and the
 // LangSmith usage_metadata breakdown.
 //
@@ -876,7 +914,7 @@ type usageInfo struct {
 //	  "output_tokens_details": {"reasoning_tokens": 64},
 //	  "total_tokens": 2306
 //	}
-func buildOpenAIUsage(usageMap map[string]any) usageInfo {
+func buildOpenAIUsage(usageMap map[string]any, serviceTier string) usageInfo {
 	getInt := func(m map[string]any, key string) int {
 		if v, ok := m[key].(float64); ok {
 			return int(v)
@@ -905,15 +943,21 @@ func buildOpenAIUsage(usageMap map[string]any) usageInfo {
 		total = input + output
 	}
 
+	bucket := openAIUsagePricingBucket(serviceTier, input)
+	cacheReadKey := openAIUsageDetailKey(bucket, "cache_read")
+	reasoningKey := openAIUsageDetailKey(bucket, "reasoning")
+
 	// Detail keys mirror langchain-openai's _create_usage_metadata so cost is
 	// identical across the Go and Python ingest stacks. accepted/rejected
 	// prediction tokens are intentionally omitted: they are already counted in
 	// completion_tokens and have no distinct price dimension, so the cost engine
 	// charges them at the default output rate via the remainder.
 	inputTokenDetails := map[string]any{}
+	var cacheRead, reasoning int
 	if d := getNested(inDetailsKey); d != nil {
 		if v := getInt(d, "cached_tokens"); v > 0 {
-			inputTokenDetails["cache_read"] = v
+			cacheRead = v
+			inputTokenDetails[cacheReadKey] = v
 		}
 		if v := getInt(d, "audio_tokens"); v > 0 {
 			inputTokenDetails["audio"] = v
@@ -922,12 +966,15 @@ func buildOpenAIUsage(usageMap map[string]any) usageInfo {
 	outputTokenDetails := map[string]any{}
 	if d := getNested(outDetailsKey); d != nil {
 		if v := getInt(d, "reasoning_tokens"); v > 0 {
-			outputTokenDetails["reasoning"] = v
+			reasoning = v
+			outputTokenDetails[reasoningKey] = v
 		}
 		if v := getInt(d, "audio_tokens"); v > 0 {
 			outputTokenDetails["audio"] = v
 		}
 	}
+	setOpenAIUsageRemainder(inputTokenDetails, bucket, input, cacheRead)
+	setOpenAIUsageRemainder(outputTokenDetails, bucket, output, reasoning)
 
 	um := map[string]any{}
 	if input > 0 {
@@ -952,6 +999,7 @@ func buildOpenAIUsage(usageMap map[string]any) usageInfo {
 		TotalTokens:   total,
 		HasUsage:      true,
 		UsageMetadata: um,
+		ServiceTier:   serviceTier,
 	}
 }
 
@@ -963,13 +1011,7 @@ func extractCompletionFromResponse(body []byte) (string, usageInfo) {
 		return "", usageInfo{}
 	}
 
-	var usage usageInfo
-	if usageMap, ok := resp["usage"].(map[string]any); ok {
-		usage = buildOpenAIUsage(usageMap)
-	}
-	if st, ok := resp["service_tier"].(string); ok && st != "" {
-		usage.ServiceTier = st
-	}
+	usage := extractResponsesUsage(resp)
 
 	if choices, ok := resp["choices"].([]any); ok && len(choices) > 0 {
 		if choice, ok := choices[0].(map[string]any); ok {
@@ -1027,15 +1069,18 @@ func extractStreamingResponsesCompletion(data []byte) (string, usageInfo) {
 // extractResponsesUsage extracts usage from a Responses API response object.
 // The Responses API uses input_tokens/output_tokens (not prompt_tokens/completion_tokens).
 func extractResponsesUsage(resp map[string]any) usageInfo {
+	var serviceTier string
+	if st, ok := resp["service_tier"].(string); ok && st != "" {
+		serviceTier = st
+	}
 	usageMap, ok := resp["usage"].(map[string]any)
 	if !ok {
-		return usageInfo{}
+		if serviceTier == "" {
+			return usageInfo{}
+		}
+		return usageInfo{ServiceTier: serviceTier}
 	}
-	usage := buildOpenAIUsage(usageMap)
-	if st, ok := resp["service_tier"].(string); ok && st != "" {
-		usage.ServiceTier = st
-	}
-	return usage
+	return buildOpenAIUsage(usageMap, serviceTier)
 }
 
 // extractResponsesOutput builds a chat-completions output from a Responses API response.
