@@ -34,10 +34,7 @@ func sandboxFieldValue[T any](field param.Field[T], fallback T) T {
 	return fallback
 }
 
-func requireSandboxDataplaneURL(name string, status string, dataplaneURL string) (string, error) {
-	if status != "" && status != "ready" {
-		return "", &SandboxNotReadyError{SandboxName: name, Status: status}
-	}
+func requireSandboxDataplaneURL(name string, dataplaneURL string) (string, error) {
 	if dataplaneURL == "" {
 		return "", &SandboxDataplaneNotConfiguredError{SandboxName: name}
 	}
