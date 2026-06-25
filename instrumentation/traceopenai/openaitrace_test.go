@@ -1575,10 +1575,34 @@ func TestResponsesAPI_RoundTrip(t *testing.T) {
 // also guards against stray keys or fields leaking in. buildOpenAIUsage stores
 // the metadata values as int, so the expected maps use plain int literals.
 func TestBuildOpenAIUsage(t *testing.T) {
+	tieredUsage := map[string]any{
+		"prompt_tokens":     float64(1000),
+		"completion_tokens": float64(200),
+		"total_tokens":      float64(1200),
+		"prompt_tokens_details": map[string]any{
+			"cached_tokens": float64(768),
+		},
+		"completion_tokens_details": map[string]any{
+			"reasoning_tokens": float64(64),
+		},
+	}
+	longContextUsage := map[string]any{
+		"prompt_tokens":     float64(300_000),
+		"completion_tokens": float64(1_000),
+		"total_tokens":      float64(301_000),
+		"prompt_tokens_details": map[string]any{
+			"cached_tokens": float64(50_000),
+		},
+		"completion_tokens_details": map[string]any{
+			"reasoning_tokens": float64(200),
+		},
+	}
+
 	tests := []struct {
-		name  string
-		usage map[string]any
-		want  usageInfo
+		name        string
+		usage       map[string]any
+		serviceTier string
+		want        usageInfo
 	}{
 		{
 			name: "chat completions with cache/reasoning/audio",
@@ -1651,11 +1675,131 @@ func TestBuildOpenAIUsage(t *testing.T) {
 				UsageMetadata: map[string]any{},
 			},
 		},
+		{
+			name:  "long context",
+			usage: longContextUsage,
+			want: usageInfo{
+				InputTokens: 300_000, OutputTokens: 1_000, TotalTokens: 301_000, HasUsage: true,
+				UsageMetadata: map[string]any{
+					"input_tokens":         300_000,
+					"output_tokens":        1_000,
+					"total_tokens":         301_000,
+					"input_token_details":  map[string]any{"long_context_cache_read": 50_000, "long_context": 250_000},
+					"output_token_details": map[string]any{"long_context_reasoning": 200, "long_context": 800},
+				},
+			},
+		},
+		{
+			name:        "flex long context",
+			usage:       longContextUsage,
+			serviceTier: "flex",
+			want: usageInfo{
+				InputTokens: 300_000, OutputTokens: 1_000, TotalTokens: 301_000, HasUsage: true, ServiceTier: "flex",
+				UsageMetadata: map[string]any{
+					"input_tokens":         300_000,
+					"output_tokens":        1_000,
+					"total_tokens":         301_000,
+					"input_token_details":  map[string]any{"flex_long_context_cache_read": 50_000, "flex_long_context": 250_000},
+					"output_token_details": map[string]any{"flex_long_context_reasoning": 200, "flex_long_context": 800},
+				},
+			},
+		},
+		{
+			name:        "arbitrary service tier",
+			usage:       tieredUsage,
+			serviceTier: "batch",
+			want: usageInfo{
+				InputTokens: 1000, OutputTokens: 200, TotalTokens: 1200, HasUsage: true, ServiceTier: "batch",
+				UsageMetadata: map[string]any{
+					"input_tokens":         1000,
+					"output_tokens":        200,
+					"total_tokens":         1200,
+					"input_token_details":  map[string]any{"batch_cache_read": 768, "batch": 232},
+					"output_token_details": map[string]any{"batch_reasoning": 64, "batch": 136},
+				},
+			},
+		},
+		{
+			name:        "default service tier ignored",
+			usage:       tieredUsage,
+			serviceTier: "default",
+			want: usageInfo{
+				InputTokens: 1000, OutputTokens: 200, TotalTokens: 1200, HasUsage: true, ServiceTier: "default",
+				UsageMetadata: map[string]any{
+					"input_tokens":         1000,
+					"output_tokens":        200,
+					"total_tokens":         1200,
+					"input_token_details":  map[string]any{"cache_read": 768},
+					"output_token_details": map[string]any{"reasoning": 64},
+				},
+			},
+		},
+		{
+			name: "long context threshold not exceeded",
+			usage: map[string]any{
+				"prompt_tokens":     float64(272_000),
+				"completion_tokens": float64(100),
+				"prompt_tokens_details": map[string]any{
+					"cached_tokens": float64(1_000),
+				},
+				"completion_tokens_details": map[string]any{
+					"reasoning_tokens": float64(50),
+				},
+			},
+			want: usageInfo{
+				InputTokens: 272_000, OutputTokens: 100, TotalTokens: 272_100, HasUsage: true,
+				UsageMetadata: map[string]any{
+					"input_tokens":         272_000,
+					"output_tokens":        100,
+					"total_tokens":         272_100,
+					"input_token_details":  map[string]any{"cache_read": 1_000},
+					"output_token_details": map[string]any{"reasoning": 50},
+				},
+			},
+		},
+		{
+			name: "long context threshold exceeded",
+			usage: map[string]any{
+				"prompt_tokens":     float64(272_001),
+				"completion_tokens": float64(100),
+				"prompt_tokens_details": map[string]any{
+					"cached_tokens": float64(1_000),
+				},
+				"completion_tokens_details": map[string]any{
+					"reasoning_tokens": float64(50),
+				},
+			},
+			want: usageInfo{
+				InputTokens: 272_001, OutputTokens: 100, TotalTokens: 272_101, HasUsage: true,
+				UsageMetadata: map[string]any{
+					"input_tokens":         272_001,
+					"output_tokens":        100,
+					"total_tokens":         272_101,
+					"input_token_details":  map[string]any{"long_context_cache_read": 1_000, "long_context": 271_001},
+					"output_token_details": map[string]any{"long_context_reasoning": 50, "long_context": 50},
+				},
+			},
+		},
+		{
+			name:        "priority long context",
+			usage:       longContextUsage,
+			serviceTier: "priority",
+			want: usageInfo{
+				InputTokens: 300_000, OutputTokens: 1_000, TotalTokens: 301_000, HasUsage: true, ServiceTier: "priority",
+				UsageMetadata: map[string]any{
+					"input_tokens":         300_000,
+					"output_tokens":        1_000,
+					"total_tokens":         301_000,
+					"input_token_details":  map[string]any{"priority_long_context_cache_read": 50_000, "priority_long_context": 250_000},
+					"output_token_details": map[string]any{"priority_long_context_reasoning": 200, "priority_long_context": 800},
+				},
+			},
+		},
 	}
 
 	for _, tt := range tests {
 		t.Run(tt.name, func(t *testing.T) {
-			got := buildOpenAIUsage(tt.usage)
+			got := buildOpenAIUsage(tt.usage, tt.serviceTier)
 			if !reflect.DeepEqual(got, tt.want) {
 				t.Errorf("usage mismatch:\n got: %#v\nwant: %#v", got, tt.want)
 			}
@@ -1666,15 +1810,36 @@ func TestBuildOpenAIUsage(t *testing.T) {
 // TestServiceTier_Propagated checks the response-level service_tier is captured
 // for both Chat Completions and Responses shapes, and stays empty when absent.
 func TestServiceTier_Propagated(t *testing.T) {
-	t.Run("chat completions", func(t *testing.T) {
+	t.Run("chat completions flex usage metadata", func(t *testing.T) {
 		body := `{
 			"service_tier": "flex",
 			"choices": [{"message": {"role": "assistant", "content": "ok"}}],
-			"usage": {"prompt_tokens": 10, "completion_tokens": 5}
+			"usage": {
+				"prompt_tokens": 1000,
+				"completion_tokens": 200,
+				"total_tokens": 1200,
+				"prompt_tokens_details": {"cached_tokens": 768},
+				"completion_tokens_details": {"reasoning_tokens": 64}
+			}
 		}`
-		_, usage := extractCompletionFromResponse([]byte(body))
-		if usage.ServiceTier != "flex" {
-			t.Errorf("ServiceTier = %q, want flex", usage.ServiceTier)
+		_, got := extractCompletionFromResponse([]byte(body))
+
+		want := usageInfo{
+			InputTokens:  1000,
+			OutputTokens: 200,
+			TotalTokens:  1200,
+			HasUsage:     true,
+			ServiceTier:  "flex",
+			UsageMetadata: map[string]any{
+				"input_tokens":         1000,
+				"output_tokens":        200,
+				"total_tokens":         1200,
+				"input_token_details":  map[string]any{"flex_cache_read": 768, "flex": 232},
+				"output_token_details": map[string]any{"flex_reasoning": 64, "flex": 136},
+			},
+		}
+		if !reflect.DeepEqual(got, want) {
+			t.Errorf("usage mismatch:\n got: %#v\nwant: %#v", got, want)
 		}
 	})
 	t.Run("responses", func(t *testing.T) {
@@ -1699,11 +1864,11 @@ func TestServiceTier_Propagated(t *testing.T) {
 }
 
 // TestExtractStreamingCompletion_UsageMetadataAndServiceTier verifies the
-// streaming path threads the full usage_metadata breakdown and the top-level
-// service_tier through buildOpenAIUsage (both ride the final usage chunk).
+// streaming path threads service_tier from an earlier chunk into buildOpenAIUsage
+// when usage arrives on a later chunk.
 func TestExtractStreamingCompletion_UsageMetadataAndServiceTier(t *testing.T) {
 	sse := "data: {\"service_tier\":\"flex\",\"choices\":[{\"delta\":{\"content\":\"hi\"}}]}\n" +
-		"data: {\"service_tier\":\"flex\",\"usage\":{\"prompt_tokens\":1000,\"completion_tokens\":200,\"total_tokens\":1200,\"prompt_tokens_details\":{\"cached_tokens\":768},\"completion_tokens_details\":{\"reasoning_tokens\":64}}}\n" +
+		"data: {\"usage\":{\"prompt_tokens\":1000,\"completion_tokens\":200,\"total_tokens\":1200,\"prompt_tokens_details\":{\"cached_tokens\":768},\"completion_tokens_details\":{\"reasoning_tokens\":64}}}\n" +
 		"data: [DONE]\n"
 	_, got := extractStreamingCompletion([]byte(sse))
 
@@ -1717,8 +1882,8 @@ func TestExtractStreamingCompletion_UsageMetadataAndServiceTier(t *testing.T) {
 			"input_tokens":         1000,
 			"output_tokens":        200,
 			"total_tokens":         1200,
-			"input_token_details":  map[string]any{"cache_read": 768},
-			"output_token_details": map[string]any{"reasoning": 64},
+			"input_token_details":  map[string]any{"flex_cache_read": 768, "flex": 232},
+			"output_token_details": map[string]any{"flex_reasoning": 64, "flex": 136},
 		},
 	}
 	if !reflect.DeepEqual(got, want) {
