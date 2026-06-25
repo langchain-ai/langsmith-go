@@ -13,9 +13,10 @@ import (
 // automatically. You should not instantiate this service directly, and instead use
 // the [NewSandboxService] method instead.
 type SandboxService struct {
-	Options   []option.RequestOption
-	Boxes     *SandboxBoxService
-	Snapshots *SandboxSnapshotService
+	Options    []option.RequestOption
+	Boxes      *SandboxBoxService
+	Registries *SandboxRegistryService
+	Snapshots  *SandboxSnapshotService
 }
 
 // NewSandboxService generates a new service that applies the given options to each
@@ -25,6 +26,7 @@ func NewSandboxService(opts ...option.RequestOption) (r *SandboxService) {
 	r = &SandboxService{}
 	r.Options = opts
 	r.Boxes = NewSandboxBoxService(opts...)
+	r.Registries = NewSandboxRegistryService(opts...)
 	r.Snapshots = NewSandboxSnapshotService(opts...)
 	return
 }
