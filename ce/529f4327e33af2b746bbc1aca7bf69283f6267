@@ -1,0 +1,31 @@
+sandbox_files.go
+  s_18c9d85e255750::t_e5587d2a2360cd 21,54,97,106
+sandbox_tunnel.go
+  s_18c9d85e255750::t_e5587d2a2360cd 106,120,172,181
+sandbox_command_methods.go
+  s_18c9d85e255750::t_e5587d2a2360cd 11,20,30,39
+sandbox_internal_test.go
+  s_18c9d85e255750::t_07aa73408d3179 64-67,76
+sandbox_command_methods_test.go
+  s_18c9d85e255750::t_5f8332c5dee3ec 57-60,69-78
+sandbox_internal.go
+  s_18c9d85e255750::t_9f039a8fdfac01 37
+sandbox_commands.go
+  s_18c9d85e255750::t_e5587d2a2360cd 105,138,178,240
+---
+{
+  "schema_version": "authorship/3.0.0",
+  "git_ai_version": "1.6.1",
+  "base_commit_sha": "ce529f4327e33af2b746bbc1aca7bf69283f6267",
+  "prompts": {},
+  "sessions": {
+    "s_18c9d85e255750": {
+      "agent_id": {
+        "tool": "claude",
+        "id": "29d3c7cc-3daf-4361-b1f9-f964c6f3b2ae",
+        "model": "claude-opus-4-8"
+      },
+      "human_author": "Ramon Nogueira <ramon.nogueira@langchain.dev>"
+    }
+  }
+}
