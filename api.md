@@ -148,38 +148,25 @@ Methods:
 
 Params Types:
 
-- <a href="https://pkg.go.dev/github.com/langchain-ai/langsmith-go">langsmith</a>.<a href="https://pkg.go.dev/github.com/langchain-ai/langsmith-go#QueryFeedbackDeltaParam">QueryFeedbackDeltaParam</a>
 - <a href="https://pkg.go.dev/github.com/langchain-ai/langsmith-go">langsmith</a>.<a href="https://pkg.go.dev/github.com/langchain-ai/langsmith-go#SortParamsForRunsComparisonView">SortParamsForRunsComparisonView</a>
 
 Response Types:
 
 - <a href="https://pkg.go.dev/github.com/langchain-ai/langsmith-go">langsmith</a>.<a href="https://pkg.go.dev/github.com/langchain-ai/langsmith-go#ExampleWithRunsCh">ExampleWithRunsCh</a>
-- <a href="https://pkg.go.dev/github.com/langchain-ai/langsmith-go">langsmith</a>.<a href="https://pkg.go.dev/github.com/langchain-ai/langsmith-go#SessionFeedbackDelta">SessionFeedbackDelta</a>
 
 Methods:
 
 - <code title="post /api/v1/datasets/{dataset_id}/runs">client.Datasets.Runs.<a href="https://pkg.go.dev/github.com/langchain-ai/langsmith-go#DatasetRunService.New">New</a>(ctx <a href="https://pkg.go.dev/context">context</a>.<a href="https://pkg.go.dev/context#Context">Context</a>, datasetID <a href="https://pkg.go.dev/builtin#string">string</a>, params <a href="https://pkg.go.dev/github.com/langchain-ai/langsmith-go">langsmith</a>.<a href="https://pkg.go.dev/github.com/langchain-ai/langsmith-go#DatasetRunNewParams">DatasetRunNewParams</a>) (\*[]<a href="https://pkg.go.dev/github.com/langchain-ai/langsmith-go">langsmith</a>.<a href="https://pkg.go.dev/github.com/langchain-ai/langsmith-go#ExampleWithRunsCh">ExampleWithRunsCh</a>, <a href="https://pkg.go.dev/builtin#error">error</a>)</code>
-- <code title="post /api/v1/datasets/{dataset_id}/runs/delta">client.Datasets.Runs.<a href="https://pkg.go.dev/github.com/langchain-ai/langsmith-go#DatasetRunService.Delta">Delta</a>(ctx <a href="https://pkg.go.dev/context">context</a>.<a href="https://pkg.go.dev/context#Context">Context</a>, datasetID <a href="https://pkg.go.dev/builtin#string">string</a>, body <a href="https://pkg.go.dev/github.com/langchain-ai/langsmith-go">langsmith</a>.<a href="https://pkg.go.dev/github.com/langchain-ai/langsmith-go#DatasetRunDeltaParams">DatasetRunDeltaParams</a>) (\*<a href="https://pkg.go.dev/github.com/langchain-ai/langsmith-go">langsmith</a>.<a href="https://pkg.go.dev/github.com/langchain-ai/langsmith-go#SessionFeedbackDelta">SessionFeedbackDelta</a>, <a href="https://pkg.go.dev/builtin#error">error</a>)</code>
 
-## Group
-
-Response Types:
-
-- <a href="https://pkg.go.dev/github.com/langchain-ai/langsmith-go">langsmith</a>.<a href="https://pkg.go.dev/github.com/langchain-ai/langsmith-go#DatasetGroupRunsResponse">DatasetGroupRunsResponse</a>
-
-Methods:
-
-- <code title="post /api/v1/datasets/{dataset_id}/group/runs">client.Datasets.Group.<a href="https://pkg.go.dev/github.com/langchain-ai/langsmith-go#DatasetGroupService.Runs">Runs</a>(ctx <a href="https://pkg.go.dev/context">context</a>.<a href="https://pkg.go.dev/context#Context">Context</a>, datasetID <a href="https://pkg.go.dev/builtin#string">string</a>, body <a href="https://pkg.go.dev/github.com/langchain-ai/langsmith-go">langsmith</a>.<a href="https://pkg.go.dev/github.com/langchain-ai/langsmith-go#DatasetGroupRunsParams">DatasetGroupRunsParams</a>) (\*<a href="https://pkg.go.dev/github.com/langchain-ai/langsmith-go">langsmith</a>.<a href="https://pkg.go.dev/github.com/langchain-ai/langsmith-go#DatasetGroupRunsResponse">DatasetGroupRunsResponse</a>, <a href="https://pkg.go.dev/builtin#error">error</a>)</code>
-
-## Experiments
+## ExperimentRuns
 
 Response Types:
 
-- <a href="https://pkg.go.dev/github.com/langchain-ai/langsmith-go">langsmith</a>.<a href="https://pkg.go.dev/github.com/langchain-ai/langsmith-go#DatasetExperimentGroupedResponse">DatasetExperimentGroupedResponse</a>
+- <a href="https://pkg.go.dev/github.com/langchain-ai/langsmith-go">langsmith</a>.<a href="https://pkg.go.dev/github.com/langchain-ai/langsmith-go#DatasetExperimentRunNewResponse">DatasetExperimentRunNewResponse</a>
 
 Methods:
 
-- <code title="post /api/v1/datasets/{dataset_id}/experiments/grouped">client.Datasets.Experiments.<a href="https://pkg.go.dev/github.com/langchain-ai/langsmith-go#DatasetExperimentService.Grouped">Grouped</a>(ctx <a href="https://pkg.go.dev/context">context</a>.<a href="https://pkg.go.dev/context#Context">Context</a>, datasetID <a href="https://pkg.go.dev/builtin#string">string</a>, body <a href="https://pkg.go.dev/github.com/langchain-ai/langsmith-go">langsmith</a>.<a href="https://pkg.go.dev/github.com/langchain-ai/langsmith-go#DatasetExperimentGroupedParams">DatasetExperimentGroupedParams</a>) (\*<a href="https://pkg.go.dev/github.com/langchain-ai/langsmith-go">langsmith</a>.<a href="https://pkg.go.dev/github.com/langchain-ai/langsmith-go#DatasetExperimentGroupedResponse">DatasetExperimentGroupedResponse</a>, <a href="https://pkg.go.dev/builtin#error">error</a>)</code>
+- <code title="post /v2/datasets/{dataset_id}/experiment-runs">client.Datasets.ExperimentRuns.<a href="https://pkg.go.dev/github.com/langchain-ai/langsmith-go#DatasetExperimentRunService.New">New</a>(ctx <a href="https://pkg.go.dev/context">context</a>.<a href="https://pkg.go.dev/context#Context">Context</a>, datasetID <a href="https://pkg.go.dev/builtin#string">string</a>, body <a href="https://pkg.go.dev/github.com/langchain-ai/langsmith-go">langsmith</a>.<a href="https://pkg.go.dev/github.com/langchain-ai/langsmith-go#DatasetExperimentRunNewParams">DatasetExperimentRunNewParams</a>) (\*<a href="https://pkg.go.dev/github.com/langchain-ai/langsmith-go/packages/pagination">pagination</a>.<a href="https://pkg.go.dev/github.com/langchain-ai/langsmith-go/packages/pagination#ItemsCursorPostPagination">ItemsCursorPostPagination</a>[<a href="https://pkg.go.dev/github.com/langchain-ai/langsmith-go">langsmith</a>.<a href="https://pkg.go.dev/github.com/langchain-ai/langsmith-go#DatasetExperimentRunNewResponse">DatasetExperimentRunNewResponse</a>], <a href="https://pkg.go.dev/builtin#error">error</a>)</code>
 
 ## Share
 
