@@ -1034,7 +1034,7 @@ func (r CustomChartsSectionChartsSeriesMetricDefinitionCustomChartMetricPercenti
 }
 
 type CustomChartsSectionChartsSeriesMetricDefinitionCustomChartMetricPercentileParams struct {
-	P    int64                                                                                `json:"p" api:"required"`
+	P    float64                                                                              `json:"p" api:"required"`
 	JSON customChartsSectionChartsSeriesMetricDefinitionCustomChartMetricPercentileParamsJSON `json:"-"`
 }
 
@@ -1335,7 +1335,7 @@ func (r CustomChartsSectionChartsSeriesMetricDefinitionCustomChartMetricRatioOut
 }
 
 type CustomChartsSectionChartsSeriesMetricDefinitionCustomChartMetricRatioOutputDenominatorCustomChartMetricPercentileParams struct {
-	P    int64                                                                                                                       `json:"p" api:"required"`
+	P    float64                                                                                                                     `json:"p" api:"required"`
 	JSON customChartsSectionChartsSeriesMetricDefinitionCustomChartMetricRatioOutputDenominatorCustomChartMetricPercentileParamsJSON `json:"-"`
 }
 
@@ -1647,7 +1647,7 @@ func (r CustomChartsSectionChartsSeriesMetricDefinitionCustomChartMetricRatioOut
 }
 
 type CustomChartsSectionChartsSeriesMetricDefinitionCustomChartMetricRatioOutputNumeratorCustomChartMetricPercentileParams struct {
-	P    int64                                                                                                                     `json:"p" api:"required"`
+	P    float64                                                                                                                   `json:"p" api:"required"`
 	JSON customChartsSectionChartsSeriesMetricDefinitionCustomChartMetricRatioOutputNumeratorCustomChartMetricPercentileParamsJSON `json:"-"`
 }
 
@@ -2737,7 +2737,7 @@ func (r CustomChartsSectionSubSectionsChartsSeriesMetricDefinitionCustomChartMet
 }
 
 type CustomChartsSectionSubSectionsChartsSeriesMetricDefinitionCustomChartMetricPercentileParams struct {
-	P    int64                                                                                           `json:"p" api:"required"`
+	P    float64                                                                                         `json:"p" api:"required"`
 	JSON customChartsSectionSubSectionsChartsSeriesMetricDefinitionCustomChartMetricPercentileParamsJSON `json:"-"`
 }
 
@@ -3038,7 +3038,7 @@ func (r CustomChartsSectionSubSectionsChartsSeriesMetricDefinitionCustomChartMet
 }
 
 type CustomChartsSectionSubSectionsChartsSeriesMetricDefinitionCustomChartMetricRatioOutputDenominatorCustomChartMetricPercentileParams struct {
-	P    int64                                                                                                                                  `json:"p" api:"required"`
+	P    float64                                                                                                                                `json:"p" api:"required"`
 	JSON customChartsSectionSubSectionsChartsSeriesMetricDefinitionCustomChartMetricRatioOutputDenominatorCustomChartMetricPercentileParamsJSON `json:"-"`
 }
 
@@ -3350,7 +3350,7 @@ func (r CustomChartsSectionSubSectionsChartsSeriesMetricDefinitionCustomChartMet
 }
 
 type CustomChartsSectionSubSectionsChartsSeriesMetricDefinitionCustomChartMetricRatioOutputNumeratorCustomChartMetricPercentileParams struct {
-	P    int64                                                                                                                                `json:"p" api:"required"`
+	P    float64                                                                                                                              `json:"p" api:"required"`
 	JSON customChartsSectionSubSectionsChartsSeriesMetricDefinitionCustomChartMetricRatioOutputNumeratorCustomChartMetricPercentileParamsJSON `json:"-"`
 }
 
