@@ -60,6 +60,7 @@ func (r sandboxListResponseJSON) RawJSON() string {
 
 type SandboxResponse struct {
 	ID                     string                     `json:"id"`
+	CPUMillicores          int64                      `json:"cpu_millicores"`
 	CreatedAt              string                     `json:"created_at"`
 	CreatedBy              string                     `json:"created_by"`
 	DataplaneURL           string                     `json:"dataplane_url"`
@@ -84,6 +85,7 @@ type SandboxResponse struct {
 // sandboxResponseJSON contains the JSON metadata for the struct [SandboxResponse]
 type sandboxResponseJSON struct {
 	ID                     apijson.Field
+	CPUMillicores          apijson.Field
 	CreatedAt              apijson.Field
 	CreatedBy              apijson.Field
 	DataplaneURL           apijson.Field

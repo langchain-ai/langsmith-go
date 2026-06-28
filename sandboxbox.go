@@ -160,6 +160,10 @@ func (r *SandboxBoxService) Stop(ctx context.Context, name string, opts ...optio
 }
 
 type SandboxBoxNewParams struct {
+	// CPUMillicores optionally requests CPU at millicore granularity (e.g. 500 = 0.5
+	// vCPU); takes precedence over VCPUs. Fractional (sub-vCPU) values are not
+	// available for every sandbox.
+	CPUMillicores          param.Field[int64]                          `json:"cpu_millicores"`
 	DeleteAfterStopSeconds param.Field[int64]                          `json:"delete_after_stop_seconds"`
 	EnvVars                param.Field[map[string]string]              `json:"env_vars"`
 	FsCapacityBytes        param.Field[int64]                          `json:"fs_capacity_bytes"`
@@ -834,6 +838,7 @@ func (r SandboxBoxNewParamsProxyConfigRulesHeadersType) IsKnown() bool {
 }
 
 type SandboxBoxUpdateParams struct {
+	CPUMillicores          param.Field[int64]                             `json:"cpu_millicores"`
 	DeleteAfterStopSeconds param.Field[int64]                             `json:"delete_after_stop_seconds"`
 	FsCapacityBytes        param.Field[int64]                             `json:"fs_capacity_bytes"`
 	IdleTtlSeconds         param.Field[int64]                             `json:"idle_ttl_seconds"`
