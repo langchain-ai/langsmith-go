@@ -1,5 +1,12 @@
 # Changelog
 
+## [0.16.1](https://github.com/langchain-ai/langsmith-go/compare/v0.16.0...v0.16.1) (2026-06-29)
+
+
+### Bug Fixes
+
+* trigger release for [#137](https://github.com/langchain-ai/langsmith-go/issues/137) (openai tier fanout) ([#140](https://github.com/langchain-ai/langsmith-go/issues/140)) ([fd0878a](https://github.com/langchain-ai/langsmith-go/commit/fd0878ab741b3aef02fcc3f145afcd05198c2e30))
+
 ## [0.16.0](https://github.com/langchain-ai/langsmith-go/compare/v0.15.0...v0.16.0) (2026-06-24)
 
 
