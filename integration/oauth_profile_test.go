@@ -6,6 +6,7 @@ import (
 	"context"
 	"encoding/json"
 	"errors"
+	"fmt"
 	"os"
 	"path/filepath"
 	"testing"
@@ -19,7 +20,7 @@ func oauthProfileName() string {
 	if p := os.Getenv("LANGSMITH_OAUTH_PROFILE"); p != "" {
 		return p
 	}
-	return "dev"
+	return "default"
 }
 
 // TestOAuthProfile_AuthenticatedRequest exercises the OAuth-bearer auth path
@@ -71,7 +72,7 @@ func requireOAuthProfile(t *testing.T, profile string) {
 	}
 	data, err := os.ReadFile(path)
 	if err != nil {
-		t.Skipf("no langsmith config at %s; run `langsmith auth login --profile %s`", path, profile)
+		t.Skipf("no langsmith config at %s; %s", path, loginHint(profile))
 	}
 	var cfg struct {
 		Profiles map[string]struct {
@@ -85,9 +86,14 @@ func requireOAuthProfile(t *testing.T, profile string) {
 	}
 	p, ok := cfg.Profiles[profile]
 	if !ok {
-		t.Skipf("profile %q not found in %s", profile, path)
+		t.Skipf("profile %q not found in %s; %s", profile, path, loginHint(profile))
 	}
 	if p.OAuth.AccessToken == "" {
-		t.Skipf("profile %q has no OAuth access token (API-key profiles don't exercise this path); run `langsmith auth login --profile %s`", profile, profile)
+		t.Skipf("profile %q has no OAuth access token (API-key profiles don't exercise this path); %s", profile, loginHint(profile))
 	}
+}
+
+// loginHint is the command to create the OAuth profile this test needs.
+func loginHint(profile string) string {
+	return fmt.Sprintf("run `langsmith auth login --profile %s`", profile)
 }
