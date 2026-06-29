@@ -1,0 +1,24 @@
+integration/oauth_profile_test.go
+  s_9ffac29a9cbd50::t_ad84db5f17930a 75
+  s_9ffac29a9cbd50::t_b1aaca8cae828f 98
+  s_9ffac29a9cbd50::t_2d5d984e490d93 9
+  s_9ffac29a9cbd50::t_2e7db5e8545698 23
+  s_9ffac29a9cbd50::t_1459f26c0240c3 89,92,95-97
+  s_9ffac29a9cbd50::t_aef0e9d11b9a59 99
+---
+{
+  "schema_version": "authorship/3.0.0",
+  "git_ai_version": "1.6.3",
+  "base_commit_sha": "5d8bf62a2641e46a4cb241fb66c9e45e72db1e6e",
+  "prompts": {},
+  "sessions": {
+    "s_9ffac29a9cbd50": {
+      "agent_id": {
+        "tool": "claude",
+        "id": "1b0d0bf1-f486-4919-9d7b-e5ccde61dd48",
+        "model": "claude-opus-4-8"
+      },
+      "human_author": "Ramon Nogueira <ramon.nogueira@langchain.dev>"
+    }
+  }
+}
