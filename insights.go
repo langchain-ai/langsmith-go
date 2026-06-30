@@ -296,17 +296,17 @@ func (r *Client) ingestInsightsRuns(ctx context.Context, chatHistories [][]map[s
 	startTime := now.Add(-time.Second)
 	timePrefix := fmt.Sprintf("%s%06dZ", now.Format("20060102T150405"), now.Nanosecond()/1000)
 
-	runs := make([]RunParam, 0, len(chatHistories))
+	runs := make([]RunIngestParam, 0, len(chatHistories))
 	for _, history := range chatHistories {
 		runID := uuid.New().String()
 		inputs := map[string]interface{}{}
 		if len(history) > 0 {
 			inputs["messages"] = history[:1]
 		}
-		run := RunParam{
+		run := RunIngestParam{
 			ID:          F(runID),
 			Name:        F("trace"),
-			RunType:     F(RunRunTypeChain),
+			RunType:     F(RunIngestRunTypeChain),
 			Inputs:      F(inputs),
 			Outputs:     F(map[string]interface{}{"messages": history}),
 			SessionID:   F(project.ID),
