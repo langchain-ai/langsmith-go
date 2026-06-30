@@ -85,7 +85,7 @@ type DatasetExperimentRunNewResponse struct {
 	// `outputs` is the example reference-output payload (arbitrary JSON object).
 	Outputs interface{} `json:"outputs"`
 	// `runs` is the list of experiment runs produced for this example.
-	Runs []QueryRunResponse `json:"runs"`
+	Runs []Run `json:"runs"`
 	// `source_run_id` is the run UUID the example was created from, if any.
 	SourceRunID string                              `json:"source_run_id" format:"uuid"`
 	JSON        datasetExperimentRunNewResponseJSON `json:"-"`

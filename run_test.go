@@ -29,7 +29,7 @@ func TestRunNewWithOptionalParams(t *testing.T) {
 		option.WithTenantID("My Tenant ID"),
 	)
 	_, err := client.Runs.New(context.TODO(), langsmith.RunNewParams{
-		Run: langsmith.RunParam{
+		RunIngest: langsmith.RunIngestParam{
 			ID:          langsmith.F("id"),
 			DottedOrder: langsmith.F("dotted_order"),
 			EndTime:     langsmith.F("end_time"),
@@ -55,7 +55,7 @@ func TestRunNewWithOptionalParams(t *testing.T) {
 			}),
 			ParentRunID:        langsmith.F("parent_run_id"),
 			ReferenceExampleID: langsmith.F("reference_example_id"),
-			RunType:            langsmith.F(langsmith.RunRunTypeTool),
+			RunType:            langsmith.F(langsmith.RunIngestRunTypeTool),
 			Serialized: langsmith.F(map[string]interface{}{
 				"foo": "bar",
 			}),
@@ -94,7 +94,7 @@ func TestRunUpdateWithOptionalParams(t *testing.T) {
 		context.TODO(),
 		"182bd5e5-6e1a-4fe4-a799-aa6d9a6ab26e",
 		langsmith.RunUpdateParams{
-			Run: langsmith.RunParam{
+			RunIngest: langsmith.RunIngestParam{
 				ID:          langsmith.F("id"),
 				DottedOrder: langsmith.F("dotted_order"),
 				EndTime:     langsmith.F("end_time"),
@@ -120,7 +120,7 @@ func TestRunUpdateWithOptionalParams(t *testing.T) {
 				}),
 				ParentRunID:        langsmith.F("parent_run_id"),
 				ReferenceExampleID: langsmith.F("reference_example_id"),
-				RunType:            langsmith.F(langsmith.RunRunTypeTool),
+				RunType:            langsmith.F(langsmith.RunIngestRunTypeTool),
 				Serialized: langsmith.F(map[string]interface{}{
 					"foo": "bar",
 				}),
@@ -157,7 +157,7 @@ func TestRunIngestBatchWithOptionalParams(t *testing.T) {
 		option.WithTenantID("My Tenant ID"),
 	)
 	_, err := client.Runs.IngestBatch(context.TODO(), langsmith.RunIngestBatchParams{
-		Patch: langsmith.F([]langsmith.RunParam{{
+		Patch: langsmith.F([]langsmith.RunIngestParam{{
 			ID:          langsmith.F("id"),
 			DottedOrder: langsmith.F("dotted_order"),
 			EndTime:     langsmith.F("end_time"),
@@ -183,7 +183,7 @@ func TestRunIngestBatchWithOptionalParams(t *testing.T) {
 			}),
 			ParentRunID:        langsmith.F("parent_run_id"),
 			ReferenceExampleID: langsmith.F("reference_example_id"),
-			RunType:            langsmith.F(langsmith.RunRunTypeTool),
+			RunType:            langsmith.F(langsmith.RunIngestRunTypeTool),
 			Serialized: langsmith.F(map[string]interface{}{
 				"foo": "bar",
 			}),
@@ -194,7 +194,7 @@ func TestRunIngestBatchWithOptionalParams(t *testing.T) {
 			Tags:        langsmith.F([]string{"string"}),
 			TraceID:     langsmith.F("trace_id"),
 		}}),
-		Post: langsmith.F([]langsmith.RunParam{{
+		Post: langsmith.F([]langsmith.RunIngestParam{{
 			ID:          langsmith.F("id"),
 			DottedOrder: langsmith.F("dotted_order"),
 			EndTime:     langsmith.F("end_time"),
@@ -220,7 +220,7 @@ func TestRunIngestBatchWithOptionalParams(t *testing.T) {
 			}),
 			ParentRunID:        langsmith.F("parent_run_id"),
 			ReferenceExampleID: langsmith.F("reference_example_id"),
-			RunType:            langsmith.F(langsmith.RunRunTypeTool),
+			RunType:            langsmith.F(langsmith.RunIngestRunTypeTool),
 			Serialized: langsmith.F(map[string]interface{}{
 				"foo": "bar",
 			}),
