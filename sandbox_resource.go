@@ -103,7 +103,7 @@ func (s *Sandbox) Delete(ctx context.Context, opts ...option.RequestOption) erro
 	return s.boxes.Delete(ctx, s.Name, opts...)
 }
 
-func sandboxFromNewResponse(res *SandboxBoxNewResponse, boxes *SandboxBoxService) *Sandbox {
+func sandboxFromNewResponse(res *SandboxResponse, boxes *SandboxBoxService) *Sandbox {
 	if res == nil {
 		return nil
 	}
@@ -126,7 +126,7 @@ func sandboxFromNewResponse(res *SandboxBoxNewResponse, boxes *SandboxBoxService
 	}
 }
 
-func sandboxFromGetResponse(res *SandboxBoxGetResponse, boxes *SandboxBoxService) *Sandbox {
+func sandboxFromGetResponse(res *SandboxResponse, boxes *SandboxBoxService) *Sandbox {
 	if res == nil {
 		return nil
 	}
@@ -135,7 +135,7 @@ func sandboxFromGetResponse(res *SandboxBoxGetResponse, boxes *SandboxBoxService
 	return sb
 }
 
-func sandboxFromListResponse(res *SandboxBoxListResponseSandbox, boxes *SandboxBoxService) *Sandbox {
+func sandboxFromListResponse(res *SandboxResponse, boxes *SandboxBoxService) *Sandbox {
 	if res == nil {
 		return nil
 	}
@@ -158,7 +158,7 @@ func sandboxFromListResponse(res *SandboxBoxListResponseSandbox, boxes *SandboxB
 	}
 }
 
-func (s *Sandbox) applyGetResponse(res *SandboxBoxGetResponse) {
+func (s *Sandbox) applyGetResponse(res *SandboxResponse) {
 	s.ID = res.ID
 	s.Name = res.Name
 	s.DataplaneURL = res.DataplaneURL
@@ -175,7 +175,7 @@ func (s *Sandbox) applyGetResponse(res *SandboxBoxGetResponse) {
 	s.FsCapacityBytes = res.FsCapacityBytes
 }
 
-func (s *Sandbox) applyUpdateResponse(res *SandboxBoxUpdateResponse) {
+func (s *Sandbox) applyUpdateResponse(res *SandboxResponse) {
 	s.ID = res.ID
 	s.Name = res.Name
 	s.DataplaneURL = res.DataplaneURL

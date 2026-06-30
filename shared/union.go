@@ -36,7 +36,6 @@ func (UnionString) ImplementsDatasetCloneParamsSplitUnion()                 {}
 func (UnionString) ImplementsDatasetUpdateTagsParamsAsOfUnion()             {}
 func (UnionString) ImplementsDatasetVersionGetDiffParamsFromVersionUnion()  {}
 func (UnionString) ImplementsDatasetVersionGetDiffParamsToVersionUnion()    {}
-func (UnionString) ImplementsDatasetGroupRunsResponseGroupsGroupKeyUnion()  {}
 func (UnionString) ImplementsDatasetSplitGetParamsAsOfUnion()               {}
 func (UnionString) ImplementsFeedbackCreateSchemaCorrectionUnionParam()     {}
 func (UnionString) ImplementsFeedbackCreateSchemaValueUnionParam()          {}
@@ -71,7 +70,6 @@ type UnionFloat float64
 
 func (UnionFloat) ImplementsCustomChartsSectionChartsDataValueUnion()            {}
 func (UnionFloat) ImplementsCustomChartsSectionSubSectionsChartsDataValueUnion() {}
-func (UnionFloat) ImplementsDatasetGroupRunsResponseGroupsGroupKeyUnion()        {}
 func (UnionFloat) ImplementsFeedbackCreateSchemaScoreUnionParam()                {}
 func (UnionFloat) ImplementsFeedbackCreateSchemaValueUnionParam()                {}
 func (UnionFloat) ImplementsFeedbackSchemaScoreUnion()                           {}

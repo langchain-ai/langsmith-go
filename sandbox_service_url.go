@@ -43,7 +43,7 @@ type SandboxServiceURL struct {
 	refresher func(context.Context) (*SandboxServiceURL, error)
 }
 
-func newSandboxServiceURL(res *SandboxBoxGenerateServiceURLResponse, refresher func(context.Context) (*SandboxServiceURL, error)) *SandboxServiceURL {
+func newSandboxServiceURL(res *ServiceURLResponse, refresher func(context.Context) (*SandboxServiceURL, error)) *SandboxServiceURL {
 	return &SandboxServiceURL{
 		browser:   res.BrowserURL,
 		service:   res.ServiceURL,

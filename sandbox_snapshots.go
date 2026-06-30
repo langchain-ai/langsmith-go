@@ -14,7 +14,7 @@ type SnapshotWaitParams struct {
 }
 
 // Wait polls until a snapshot reaches ready or failed status.
-func (r *SandboxSnapshotService) Wait(ctx context.Context, snapshotID string, params SnapshotWaitParams, opts ...option.RequestOption) (*SandboxSnapshotGetResponse, error) {
+func (r *SandboxSnapshotService) Wait(ctx context.Context, snapshotID string, params SnapshotWaitParams, opts ...option.RequestOption) (*SnapshotResponse, error) {
 	timeout := params.Timeout
 	if timeout == 0 {
 		timeout = 300 * time.Second
@@ -62,7 +62,7 @@ func (r *SandboxSnapshotService) Wait(ctx context.Context, snapshotID string, pa
 }
 
 // NewAndWait creates a snapshot and waits until it is ready or failed.
-func (r *SandboxSnapshotService) NewAndWait(ctx context.Context, body SandboxSnapshotNewParams, params SnapshotWaitParams, opts ...option.RequestOption) (*SandboxSnapshotGetResponse, error) {
+func (r *SandboxSnapshotService) NewAndWait(ctx context.Context, body SandboxSnapshotNewParams, params SnapshotWaitParams, opts ...option.RequestOption) (*SnapshotResponse, error) {
 	snapshot, err := r.New(ctx, body, opts...)
 	if err != nil {
 		return nil, err
@@ -72,7 +72,7 @@ func (r *SandboxSnapshotService) NewAndWait(ctx context.Context, body SandboxSna
 
 // CaptureSnapshotAndWait captures a snapshot from a sandbox and waits until it
 // is ready or failed.
-func (r *SandboxBoxService) CaptureSnapshotAndWait(ctx context.Context, name string, body SandboxBoxNewSnapshotParams, params SnapshotWaitParams, opts ...option.RequestOption) (*SandboxSnapshotGetResponse, error) {
+func (r *SandboxBoxService) CaptureSnapshotAndWait(ctx context.Context, name string, body SandboxBoxNewSnapshotParams, params SnapshotWaitParams, opts ...option.RequestOption) (*SnapshotResponse, error) {
 	snapshot, err := r.NewSnapshot(ctx, name, body, opts...)
 	if err != nil {
 		return nil, err
@@ -81,11 +81,11 @@ func (r *SandboxBoxService) CaptureSnapshotAndWait(ctx context.Context, name str
 }
 
 // CaptureSnapshot captures a snapshot from this sandbox.
-func (s *Sandbox) CaptureSnapshot(ctx context.Context, body SandboxBoxNewSnapshotParams, opts ...option.RequestOption) (*SandboxBoxNewSnapshotResponse, error) {
+func (s *Sandbox) CaptureSnapshot(ctx context.Context, body SandboxBoxNewSnapshotParams, opts ...option.RequestOption) (*SnapshotResponse, error) {
 	return s.boxes.NewSnapshot(ctx, s.Name, body, opts...)
 }
 
 // CaptureSnapshotAndWait captures a snapshot and waits until it is ready.
-func (s *Sandbox) CaptureSnapshotAndWait(ctx context.Context, body SandboxBoxNewSnapshotParams, params SnapshotWaitParams, opts ...option.RequestOption) (*SandboxSnapshotGetResponse, error) {
+func (s *Sandbox) CaptureSnapshotAndWait(ctx context.Context, body SandboxBoxNewSnapshotParams, params SnapshotWaitParams, opts ...option.RequestOption) (*SnapshotResponse, error) {
 	return s.boxes.CaptureSnapshotAndWait(ctx, s.Name, body, params, opts...)
 }

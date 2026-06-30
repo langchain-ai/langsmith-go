@@ -32,7 +32,7 @@ func TestNormalizeSandboxServiceURLParams(t *testing.T) {
 }
 
 func TestSandboxServiceURLAccessorsWithoutRefresh(t *testing.T) {
-	service := newSandboxServiceURL(&SandboxBoxGenerateServiceURLResponse{
+	service := newSandboxServiceURL(&ServiceURLResponse{
 		BrowserURL: "https://browser.example",
 		ServiceURL: "https://service.example",
 		Token:      "token-a",
