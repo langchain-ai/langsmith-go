@@ -196,13 +196,13 @@ func TestRunIngestAndQuery(t *testing.T) {
 	nowStr := now.Format(time.RFC3339Nano)
 
 	_, err := client.Runs.IngestBatch(ctx, langsmith.RunIngestBatchParams{
-		Post: langsmith.F([]langsmith.RunParam{
+		Post: langsmith.F([]langsmith.RunIngestParam{
 			{
 				ID:          langsmith.F(runID),
 				TraceID:     langsmith.F(runID),
 				DottedOrder: langsmith.F(dottedOrder(now, runID)),
 				Name:        langsmith.F("test-run"),
-				RunType:     langsmith.F(langsmith.RunRunTypeChain),
+				RunType:     langsmith.F(langsmith.RunIngestRunTypeChain),
 				SessionName: langsmith.F(sessionName),
 				StartTime:   langsmith.F(nowStr),
 				EndTime:     langsmith.F(nowStr),
@@ -271,13 +271,13 @@ func TestRunCreateAndUpdate(t *testing.T) {
 
 	// Create run
 	_, err := client.Runs.IngestBatch(ctx, langsmith.RunIngestBatchParams{
-		Post: langsmith.F([]langsmith.RunParam{
+		Post: langsmith.F([]langsmith.RunIngestParam{
 			{
 				ID:          langsmith.F(runID),
 				TraceID:     langsmith.F(runID),
 				DottedOrder: langsmith.F(dottedOrder(now, runID)),
 				Name:        langsmith.F("create-update-run"),
-				RunType:     langsmith.F(langsmith.RunRunTypeChain),
+				RunType:     langsmith.F(langsmith.RunIngestRunTypeChain),
 				SessionName: langsmith.F(sessionName),
 				StartTime:   langsmith.F(nowStr),
 				EndTime:     langsmith.F(nowStr),
@@ -293,7 +293,7 @@ func TestRunCreateAndUpdate(t *testing.T) {
 	// Update run (patch) with new outputs (trace_id, dotted_order, end_time required by batch patch API)
 	dotted := dottedOrder(now, runID)
 	_, err = client.Runs.IngestBatch(ctx, langsmith.RunIngestBatchParams{
-		Patch: langsmith.F([]langsmith.RunParam{
+		Patch: langsmith.F([]langsmith.RunIngestParam{
 			{
 				ID:          langsmith.F(runID),
 				TraceID:     langsmith.F(runID),
@@ -398,13 +398,13 @@ func TestRunBatchIngestRoundTrip(t *testing.T) {
 	do3 := childDottedOrder(do1, now.Add(2*time.Millisecond), run3ID)
 
 	_, err := client.Runs.IngestBatch(ctx, langsmith.RunIngestBatchParams{
-		Post: langsmith.F([]langsmith.RunParam{
+		Post: langsmith.F([]langsmith.RunIngestParam{
 			{
 				ID:          langsmith.F(run1ID),
 				TraceID:     langsmith.F(run1ID),
 				DottedOrder: langsmith.F(do1),
 				Name:        langsmith.F("run1"),
-				RunType:     langsmith.F(langsmith.RunRunTypeChain),
+				RunType:     langsmith.F(langsmith.RunIngestRunTypeChain),
 				SessionName: langsmith.F(sessionName),
 				StartTime:   langsmith.F(nowStr),
 				EndTime:     langsmith.F(nowStr),
@@ -416,7 +416,7 @@ func TestRunBatchIngestRoundTrip(t *testing.T) {
 				TraceID:     langsmith.F(run2ID),
 				DottedOrder: langsmith.F(do2),
 				Name:        langsmith.F("run2"),
-				RunType:     langsmith.F(langsmith.RunRunTypeChain),
+				RunType:     langsmith.F(langsmith.RunIngestRunTypeChain),
 				SessionName: langsmith.F(sessionName),
 				StartTime:   langsmith.F(nowStr),
 				EndTime:     langsmith.F(nowStr),
@@ -429,7 +429,7 @@ func TestRunBatchIngestRoundTrip(t *testing.T) {
 				DottedOrder: langsmith.F(do3),
 				ParentRunID: langsmith.F(run1ID),
 				Name:        langsmith.F("run3"),
-				RunType:     langsmith.F(langsmith.RunRunTypeLlm),
+				RunType:     langsmith.F(langsmith.RunIngestRunTypeLlm),
 				SessionName: langsmith.F(sessionName),
 				StartTime:   langsmith.F(nowStr),
 				EndTime:     langsmith.F(nowStr),
@@ -530,13 +530,13 @@ func TestRunIngestWithChildRuns(t *testing.T) {
 	childDO := childDottedOrder(parentDO, now.Add(time.Millisecond), childID)
 
 	_, err := client.Runs.IngestBatch(ctx, langsmith.RunIngestBatchParams{
-		Post: langsmith.F([]langsmith.RunParam{
+		Post: langsmith.F([]langsmith.RunIngestParam{
 			{
 				ID:          langsmith.F(parentID),
 				TraceID:     langsmith.F(parentID),
 				DottedOrder: langsmith.F(parentDO),
 				Name:        langsmith.F("parent-chain"),
-				RunType:     langsmith.F(langsmith.RunRunTypeChain),
+				RunType:     langsmith.F(langsmith.RunIngestRunTypeChain),
 				SessionName: langsmith.F(sessionName),
 				StartTime:   langsmith.F(nowStr),
 				EndTime:     langsmith.F(nowStr),
@@ -550,7 +550,7 @@ func TestRunIngestWithChildRuns(t *testing.T) {
 				DottedOrder: langsmith.F(childDO),
 				ParentRunID: langsmith.F(parentID),
 				Name:        langsmith.F("child-llm"),
-				RunType:     langsmith.F(langsmith.RunRunTypeLlm),
+				RunType:     langsmith.F(langsmith.RunIngestRunTypeLlm),
 				SessionName: langsmith.F(sessionName),
 				StartTime:   langsmith.F(nowStr),
 				EndTime:     langsmith.F(nowStr),
@@ -643,13 +643,13 @@ func TestFeedbackCRUD(t *testing.T) {
 	nowStr := now.Format(time.RFC3339Nano)
 
 	_, err := client.Runs.IngestBatch(ctx, langsmith.RunIngestBatchParams{
-		Post: langsmith.F([]langsmith.RunParam{
+		Post: langsmith.F([]langsmith.RunIngestParam{
 			{
 				ID:          langsmith.F(runID),
 				TraceID:     langsmith.F(runID),
 				DottedOrder: langsmith.F(dottedOrder(now, runID)),
 				Name:        langsmith.F("feedback-test-run"),
-				RunType:     langsmith.F(langsmith.RunRunTypeChain),
+				RunType:     langsmith.F(langsmith.RunIngestRunTypeChain),
 				SessionName: langsmith.F(sessionName),
 				StartTime:   langsmith.F(nowStr),
 				EndTime:     langsmith.F(nowStr),

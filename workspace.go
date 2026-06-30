@@ -45,6 +45,18 @@ func (r *WorkspaceService) New(ctx context.Context, body WorkspaceNewParams, opt
 	return res, err
 }
 
+// Get a single workspace by ID, scoped to the current org and identity.
+func (r *WorkspaceService) Get(ctx context.Context, workspaceID string, query WorkspaceGetParams, opts ...option.RequestOption) (res *WorkspaceGetResponse, err error) {
+	opts = slices.Concat(r.Options, opts)
+	if workspaceID == "" {
+		err = errors.New("missing required workspace_id parameter")
+		return nil, err
+	}
+	path := fmt.Sprintf("api/v1/workspaces/%s", workspaceID)
+	err = requestconfig.ExecuteNewRequest(ctx, http.MethodGet, path, query, &res, opts...)
+	return res, err
+}
+
 // Update a workspace.
 func (r *WorkspaceService) Update(ctx context.Context, workspaceID string, body WorkspaceUpdateParams, opts ...option.RequestOption) (res *WorkspaceUpdateResponse, err error) {
 	opts = slices.Concat(r.Options, opts)
@@ -111,6 +123,50 @@ func (r *WorkspaceNewResponse) UnmarshalJSON(data []byte) (err error) {
 }
 
 func (r workspaceNewResponseJSON) RawJSON() string {
+	return r.raw
+}
+
+type WorkspaceGetResponse struct {
+	ID             string    `json:"id" api:"required" format:"uuid"`
+	CreatedAt      time.Time `json:"created_at" api:"required" format:"date-time"`
+	DisplayName    string    `json:"display_name" api:"required"`
+	IsDeleted      bool      `json:"is_deleted" api:"required"`
+	IsPersonal     bool      `json:"is_personal" api:"required"`
+	DataPlaneURL   string    `json:"data_plane_url" api:"nullable"`
+	OrganizationID string    `json:"organization_id" api:"nullable" format:"uuid"`
+	Permissions    []string  `json:"permissions" api:"nullable"`
+	// Deprecated: deprecated
+	ReadOnly     bool                     `json:"read_only"`
+	RoleID       string                   `json:"role_id" api:"nullable" format:"uuid"`
+	RoleName     string                   `json:"role_name" api:"nullable"`
+	TenantHandle string                   `json:"tenant_handle" api:"nullable"`
+	JSON         workspaceGetResponseJSON `json:"-"`
+}
+
+// workspaceGetResponseJSON contains the JSON metadata for the struct
+// [WorkspaceGetResponse]
+type workspaceGetResponseJSON struct {
+	ID             apijson.Field
+	CreatedAt      apijson.Field
+	DisplayName    apijson.Field
+	IsDeleted      apijson.Field
+	IsPersonal     apijson.Field
+	DataPlaneURL   apijson.Field
+	OrganizationID apijson.Field
+	Permissions    apijson.Field
+	ReadOnly       apijson.Field
+	RoleID         apijson.Field
+	RoleName       apijson.Field
+	TenantHandle   apijson.Field
+	raw            string
+	ExtraFields    map[string]apijson.Field
+}
+
+func (r *WorkspaceGetResponse) UnmarshalJSON(data []byte) (err error) {
+	return apijson.UnmarshalRoot(data, r)
+}
+
+func (r workspaceGetResponseJSON) RawJSON() string {
 	return r.raw
 }
 
@@ -204,6 +260,19 @@ type WorkspaceNewParams struct {
 
 func (r WorkspaceNewParams) MarshalJSON() (data []byte, err error) {
 	return apijson.MarshalRoot(r)
+}
+
+type WorkspaceGetParams struct {
+	DataPlaneID    param.Field[string] `query:"data_plane_id" format:"uuid"`
+	IncludeDeleted param.Field[bool]   `query:"include_deleted"`
+}
+
+// URLQuery serializes [WorkspaceGetParams]'s query parameters as `url.Values`.
+func (r WorkspaceGetParams) URLQuery() (v url.Values) {
+	return apiquery.MarshalWithSettings(r, apiquery.QuerySettings{
+		ArrayFormat:  apiquery.ArrayQueryFormatRepeat,
+		NestedFormat: apiquery.NestedQueryFormatBrackets,
+	})
 }
 
 type WorkspaceUpdateParams struct {

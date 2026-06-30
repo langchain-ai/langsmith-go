@@ -43,7 +43,7 @@ func NewSessionService(opts ...option.RequestOption) (r *SessionService) {
 	return
 }
 
-// Create a new session.
+// Create a new project.
 func (r *SessionService) New(ctx context.Context, params SessionNewParams, opts ...option.RequestOption) (res *TracerSessionWithoutVirtualFields, err error) {
 	opts = slices.Concat(r.Options, opts)
 	path := "api/v1/sessions"
@@ -51,7 +51,7 @@ func (r *SessionService) New(ctx context.Context, params SessionNewParams, opts 
 	return res, err
 }
 
-// Get a specific session.
+// Get a specific project.
 func (r *SessionService) Get(ctx context.Context, sessionID string, params SessionGetParams, opts ...option.RequestOption) (res *TracerSession, err error) {
 	if params.Accept.Present {
 		opts = append(opts, option.WithHeader("accept", fmt.Sprintf("%v", params.Accept)))
@@ -66,7 +66,7 @@ func (r *SessionService) Get(ctx context.Context, sessionID string, params Sessi
 	return res, err
 }
 
-// Update a session.
+// Update a project.
 func (r *SessionService) Update(ctx context.Context, sessionID string, body SessionUpdateParams, opts ...option.RequestOption) (res *TracerSessionWithoutVirtualFields, err error) {
 	opts = slices.Concat(r.Options, opts)
 	if sessionID == "" {
@@ -78,7 +78,7 @@ func (r *SessionService) Update(ctx context.Context, sessionID string, body Sess
 	return res, err
 }
 
-// Get all sessions.
+// List all projects.
 func (r *SessionService) List(ctx context.Context, params SessionListParams, opts ...option.RequestOption) (res *pagination.OffsetPaginationTopLevelArray[TracerSession], err error) {
 	var raw *http.Response
 	if params.Accept.Present {
@@ -99,12 +99,12 @@ func (r *SessionService) List(ctx context.Context, params SessionListParams, opt
 	return res, nil
 }
 
-// Get all sessions.
+// List all projects.
 func (r *SessionService) ListAutoPaging(ctx context.Context, params SessionListParams, opts ...option.RequestOption) *pagination.OffsetPaginationTopLevelArrayAutoPager[TracerSession] {
 	return pagination.NewOffsetPaginationTopLevelArrayAutoPager(r.List(ctx, params, opts...))
 }
 
-// Delete a specific session.
+// Delete a specific project.
 func (r *SessionService) Delete(ctx context.Context, sessionID string, opts ...option.RequestOption) (res *SessionDeleteResponse, err error) {
 	opts = slices.Concat(r.Options, opts)
 	if sessionID == "" {

@@ -321,7 +321,7 @@ func createAndIngestRuns(ctx context.Context, client *langsmith.Client, results 
 		return fmt.Errorf("mismatched results and examples: %d results, %d examples", len(results), len(examples))
 	}
 
-	runs := make([]langsmith.RunParam, 0, len(results))
+	runs := make([]langsmith.RunIngestParam, 0, len(results))
 	for i, result := range results {
 		runID, err := generateUUID()
 		if err != nil {
@@ -330,10 +330,10 @@ func createAndIngestRuns(ctx context.Context, client *langsmith.Client, results 
 
 		dottedOrder := formatDottedOrder(result.StartTime, runID)
 
-		run := langsmith.RunParam{
+		run := langsmith.RunIngestParam{
 			ID:                 langsmith.F(runID),
 			Name:               langsmith.F(fmt.Sprintf("Experiment Run - Question %d", i+1)),
-			RunType:            langsmith.F(langsmith.RunRunTypeLlm),
+			RunType:            langsmith.F(langsmith.RunIngestRunTypeLlm),
 			Inputs:             langsmith.F(result.Input),
 			Outputs:            langsmith.F(result.ActualOutput),
 			ReferenceExampleID: langsmith.F(examples[i].ID),
