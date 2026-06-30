@@ -45,6 +45,7 @@ func TestSandboxBoxNewWithOptionalParams(t *testing.T) {
 		option.WithTenantID("My Tenant ID"),
 	)
 	_, err := client.Sandboxes.Boxes.New(context.TODO(), langsmith.SandboxBoxNewParams{
+		CPUMillicores:          langsmith.F(int64(0)),
 		DeleteAfterStopSeconds: langsmith.F(int64(0)),
 		EnvVars: langsmith.F(map[string]string{
 			"foo": "string",
@@ -214,6 +215,7 @@ func TestSandboxBoxUpdateWithOptionalParams(t *testing.T) {
 		context.TODO(),
 		"name",
 		langsmith.SandboxBoxUpdateParams{
+			CPUMillicores:          langsmith.F(int64(0)),
 			DeleteAfterStopSeconds: langsmith.F(int64(0)),
 			FsCapacityBytes:        langsmith.F(int64(0)),
 			IdleTtlSeconds:         langsmith.F(int64(0)),

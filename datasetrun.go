@@ -50,19 +50,6 @@ func (r *DatasetRunService) New(ctx context.Context, datasetID string, params Da
 	return res, err
 }
 
-// Fetch the number of regressions/improvements for each example in a dataset,
-// between sessions[0] and sessions[1].
-func (r *DatasetRunService) Delta(ctx context.Context, datasetID string, body DatasetRunDeltaParams, opts ...option.RequestOption) (res *SessionFeedbackDelta, err error) {
-	opts = slices.Concat(r.Options, opts)
-	if datasetID == "" {
-		err = errors.New("missing required dataset_id parameter")
-		return nil, err
-	}
-	path := fmt.Sprintf("api/v1/datasets/%s/runs/delta", datasetID)
-	err = requestconfig.ExecuteNewRequest(ctx, http.MethodPost, path, body, &res, opts...)
-	return res, err
-}
-
 // Example schema with list of runs from ClickHouse.
 //
 // For non-grouped endpoint (/datasets/{dataset_id}/runs): runs from single
@@ -205,66 +192,6 @@ func (r exampleWithRunsChRunJSON) RawJSON() string {
 	return r.raw
 }
 
-type QueryFeedbackDeltaParam struct {
-	BaselineSessionID       param.Field[string]              `json:"baseline_session_id" api:"required" format:"uuid"`
-	ComparisonSessionIDs    param.Field[[]string]            `json:"comparison_session_ids" api:"required" format:"uuid"`
-	FeedbackKey             param.Field[string]              `json:"feedback_key" api:"required"`
-	ComparativeExperimentID param.Field[string]              `json:"comparative_experiment_id" format:"uuid"`
-	Filters                 param.Field[map[string][]string] `json:"filters"`
-	Limit                   param.Field[int64]               `json:"limit"`
-	Offset                  param.Field[int64]               `json:"offset"`
-}
-
-func (r QueryFeedbackDeltaParam) MarshalJSON() (data []byte, err error) {
-	return apijson.MarshalRoot(r)
-}
-
-// List of feedback keys with number of improvements and regressions for each.
-type SessionFeedbackDelta struct {
-	FeedbackDeltas map[string]SessionFeedbackDeltaFeedbackDelta `json:"feedback_deltas" api:"required"`
-	JSON           sessionFeedbackDeltaJSON                     `json:"-"`
-}
-
-// sessionFeedbackDeltaJSON contains the JSON metadata for the struct
-// [SessionFeedbackDelta]
-type sessionFeedbackDeltaJSON struct {
-	FeedbackDeltas apijson.Field
-	raw            string
-	ExtraFields    map[string]apijson.Field
-}
-
-func (r *SessionFeedbackDelta) UnmarshalJSON(data []byte) (err error) {
-	return apijson.UnmarshalRoot(data, r)
-}
-
-func (r sessionFeedbackDeltaJSON) RawJSON() string {
-	return r.raw
-}
-
-// Feedback key with number of improvements and regressions.
-type SessionFeedbackDeltaFeedbackDelta struct {
-	ImprovedExamples  []string                              `json:"improved_examples" api:"required" format:"uuid"`
-	RegressedExamples []string                              `json:"regressed_examples" api:"required" format:"uuid"`
-	JSON              sessionFeedbackDeltaFeedbackDeltaJSON `json:"-"`
-}
-
-// sessionFeedbackDeltaFeedbackDeltaJSON contains the JSON metadata for the struct
-// [SessionFeedbackDeltaFeedbackDelta]
-type sessionFeedbackDeltaFeedbackDeltaJSON struct {
-	ImprovedExamples  apijson.Field
-	RegressedExamples apijson.Field
-	raw               string
-	ExtraFields       map[string]apijson.Field
-}
-
-func (r *SessionFeedbackDeltaFeedbackDelta) UnmarshalJSON(data []byte) (err error) {
-	return apijson.UnmarshalRoot(data, r)
-}
-
-func (r sessionFeedbackDeltaFeedbackDeltaJSON) RawJSON() string {
-	return r.raw
-}
-
 type SortParamsForRunsComparisonView struct {
 	SortBy    param.Field[string]                                   `json:"sort_by" api:"required"`
 	SortOrder param.Field[SortParamsForRunsComparisonViewSortOrder] `json:"sort_order"`
@@ -328,12 +255,4 @@ func (r DatasetRunNewParamsFormat) IsKnown() bool {
 		return true
 	}
 	return false
-}
-
-type DatasetRunDeltaParams struct {
-	QueryFeedbackDelta QueryFeedbackDeltaParam `json:"query_feedback_delta" api:"required"`
-}
-
-func (r DatasetRunDeltaParams) MarshalJSON() (data []byte, err error) {
-	return apijson.MarshalRoot(r.QueryFeedbackDelta)
 }

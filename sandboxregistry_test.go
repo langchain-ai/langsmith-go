@@ -13,7 +13,7 @@ import (
 	"github.com/langchain-ai/langsmith-go/option"
 )
 
-func TestWorkspaceNewWithOptionalParams(t *testing.T) {
+func TestSandboxRegistryNew(t *testing.T) {
 	t.Skip("Mock server tests are disabled")
 	baseURL := "http://localhost:4010"
 	if envURL, ok := os.LookupEnv("TEST_API_BASE_URL"); ok {
@@ -27,10 +27,11 @@ func TestWorkspaceNewWithOptionalParams(t *testing.T) {
 		option.WithAPIKey("My API Key"),
 		option.WithTenantID("My Tenant ID"),
 	)
-	_, err := client.Workspaces.New(context.TODO(), langsmith.WorkspaceNewParams{
-		DisplayName:  langsmith.F("display_name"),
-		ID:           langsmith.F("182bd5e5-6e1a-4fe4-a799-aa6d9a6ab26e"),
-		TenantHandle: langsmith.F("tenant_handle"),
+	_, err := client.Sandboxes.Registries.New(context.TODO(), langsmith.SandboxRegistryNewParams{
+		Name:     langsmith.F("name"),
+		Password: langsmith.F("password"),
+		URL:      langsmith.F("url"),
+		Username: langsmith.F("username"),
 	})
 	if err != nil {
 		var apierr *langsmith.Error
@@ -41,7 +42,7 @@ func TestWorkspaceNewWithOptionalParams(t *testing.T) {
 	}
 }
 
-func TestWorkspaceGetWithOptionalParams(t *testing.T) {
+func TestSandboxRegistryGet(t *testing.T) {
 	t.Skip("Mock server tests are disabled")
 	baseURL := "http://localhost:4010"
 	if envURL, ok := os.LookupEnv("TEST_API_BASE_URL"); ok {
@@ -55,12 +56,38 @@ func TestWorkspaceGetWithOptionalParams(t *testing.T) {
 		option.WithAPIKey("My API Key"),
 		option.WithTenantID("My Tenant ID"),
 	)
-	_, err := client.Workspaces.Get(
+	_, err := client.Sandboxes.Registries.Get(context.TODO(), "name")
+	if err != nil {
+		var apierr *langsmith.Error
+		if errors.As(err, &apierr) {
+			t.Log(string(apierr.DumpRequest(true)))
+		}
+		t.Fatalf("err should be nil: %s", err.Error())
+	}
+}
+
+func TestSandboxRegistryUpdateWithOptionalParams(t *testing.T) {
+	t.Skip("Mock server tests are disabled")
+	baseURL := "http://localhost:4010"
+	if envURL, ok := os.LookupEnv("TEST_API_BASE_URL"); ok {
+		baseURL = envURL
+	}
+	if !testutil.CheckTestServer(t, baseURL) {
+		return
+	}
+	client := langsmith.NewClient(
+		option.WithBaseURL(baseURL),
+		option.WithAPIKey("My API Key"),
+		option.WithTenantID("My Tenant ID"),
+	)
+	_, err := client.Sandboxes.Registries.Update(
 		context.TODO(),
-		"182bd5e5-6e1a-4fe4-a799-aa6d9a6ab26e",
-		langsmith.WorkspaceGetParams{
-			DataPlaneID:    langsmith.F("182bd5e5-6e1a-4fe4-a799-aa6d9a6ab26e"),
-			IncludeDeleted: langsmith.F(true),
+		"name",
+		langsmith.SandboxRegistryUpdateParams{
+			Name:     langsmith.F("name"),
+			Password: langsmith.F("password"),
+			URL:      langsmith.F("url"),
+			Username: langsmith.F("username"),
 		},
 	)
 	if err != nil {
@@ -72,7 +99,7 @@ func TestWorkspaceGetWithOptionalParams(t *testing.T) {
 	}
 }
 
-func TestWorkspaceUpdate(t *testing.T) {
+func TestSandboxRegistryListWithOptionalParams(t *testing.T) {
 	t.Skip("Mock server tests are disabled")
 	baseURL := "http://localhost:4010"
 	if envURL, ok := os.LookupEnv("TEST_API_BASE_URL"); ok {
@@ -86,39 +113,10 @@ func TestWorkspaceUpdate(t *testing.T) {
 		option.WithAPIKey("My API Key"),
 		option.WithTenantID("My Tenant ID"),
 	)
-	_, err := client.Workspaces.Update(
-		context.TODO(),
-		"182bd5e5-6e1a-4fe4-a799-aa6d9a6ab26e",
-		langsmith.WorkspaceUpdateParams{
-			DisplayName: langsmith.F("display_name"),
-		},
-	)
-	if err != nil {
-		var apierr *langsmith.Error
-		if errors.As(err, &apierr) {
-			t.Log(string(apierr.DumpRequest(true)))
-		}
-		t.Fatalf("err should be nil: %s", err.Error())
-	}
-}
-
-func TestWorkspaceListWithOptionalParams(t *testing.T) {
-	t.Skip("Mock server tests are disabled")
-	baseURL := "http://localhost:4010"
-	if envURL, ok := os.LookupEnv("TEST_API_BASE_URL"); ok {
-		baseURL = envURL
-	}
-	if !testutil.CheckTestServer(t, baseURL) {
-		return
-	}
-	client := langsmith.NewClient(
-		option.WithBaseURL(baseURL),
-		option.WithAPIKey("My API Key"),
-		option.WithTenantID("My Tenant ID"),
-	)
-	_, err := client.Workspaces.List(context.TODO(), langsmith.WorkspaceListParams{
-		DataPlaneID:    langsmith.F("182bd5e5-6e1a-4fe4-a799-aa6d9a6ab26e"),
-		IncludeDeleted: langsmith.F(true),
+	_, err := client.Sandboxes.Registries.List(context.TODO(), langsmith.SandboxRegistryListParams{
+		Limit:        langsmith.F(int64(0)),
+		NameContains: langsmith.F("name_contains"),
+		Offset:       langsmith.F(int64(0)),
 	})
 	if err != nil {
 		var apierr *langsmith.Error
@@ -129,7 +127,7 @@ func TestWorkspaceListWithOptionalParams(t *testing.T) {
 	}
 }
 
-func TestWorkspaceDelete(t *testing.T) {
+func TestSandboxRegistryDelete(t *testing.T) {
 	t.Skip("Mock server tests are disabled")
 	baseURL := "http://localhost:4010"
 	if envURL, ok := os.LookupEnv("TEST_API_BASE_URL"); ok {
@@ -143,7 +141,7 @@ func TestWorkspaceDelete(t *testing.T) {
 		option.WithAPIKey("My API Key"),
 		option.WithTenantID("My Tenant ID"),
 	)
-	_, err := client.Workspaces.Delete(context.TODO(), "182bd5e5-6e1a-4fe4-a799-aa6d9a6ab26e")
+	err := client.Sandboxes.Registries.Delete(context.TODO(), "name")
 	if err != nil {
 		var apierr *langsmith.Error
 		if errors.As(err, &apierr) {

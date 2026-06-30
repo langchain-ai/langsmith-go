@@ -14,7 +14,7 @@ type SandboxWaitParams struct {
 }
 
 // Wait polls the generated status endpoint until the sandbox is ready or failed.
-func (r *SandboxBoxService) Wait(ctx context.Context, name string, params SandboxWaitParams, opts ...option.RequestOption) (*SandboxBoxGetResponse, error) {
+func (r *SandboxBoxService) Wait(ctx context.Context, name string, params SandboxWaitParams, opts ...option.RequestOption) (*SandboxResponse, error) {
 	timeout := params.Timeout
 	if timeout == 0 {
 		timeout = 120 * time.Second
@@ -71,7 +71,7 @@ func (r *SandboxBoxService) WaitSandbox(ctx context.Context, name string, params
 }
 
 // StartAndWait starts a stopped sandbox and waits until it is ready.
-func (r *SandboxBoxService) StartAndWait(ctx context.Context, name string, params SandboxWaitParams, opts ...option.RequestOption) (*SandboxBoxGetResponse, error) {
+func (r *SandboxBoxService) StartAndWait(ctx context.Context, name string, params SandboxWaitParams, opts ...option.RequestOption) (*SandboxResponse, error) {
 	if _, err := r.Start(ctx, name, opts...); err != nil {
 		return nil, err
 	}
