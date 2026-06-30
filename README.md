@@ -86,17 +86,13 @@ func main() {
 	client := langsmith.NewClient(
 		option.WithAPIKey("My API Key"), // defaults to os.LookupEnv("LANGSMITH_API_KEY")
 	)
-	customChartsSection, err := client.Sessions.Dashboard(
-		context.TODO(),
-		"1ffaeba7-541e-469f-bae7-df3208ea3d45",
-		langsmith.SessionDashboardParams{
-			CustomChartsSectionRequest: langsmith.CustomChartsSectionRequestParam{},
-		},
-	)
+	tracerSessionWithoutVirtualFields, err := client.Sessions.New(context.TODO(), langsmith.SessionNewParams{
+		Name: langsmith.F("my-project"),
+	})
 	if err != nil {
 		panic(err.Error())
 	}
-	fmt.Printf("%+v\n", customChartsSection.ID)
+	fmt.Printf("%+v\n", tracerSessionWithoutVirtualFields.ID)
 }
 
 ```
@@ -185,7 +181,7 @@ client := langsmith.NewClient(
 	option.WithHeader("X-Some-Header", "custom_header_info"),
 )
 
-client.Sessions.Dashboard(context.TODO(), ...,
+client.Sessions.New(context.TODO(), ...,
 	// Override the header
 	option.WithHeader("X-Some-Header", "some_other_custom_header_info"),
 	// Add an undocumented field to the request body, using sjson syntax
@@ -243,20 +239,16 @@ When the API returns a non-success status code, we return an error with type
 To handle errors, we recommend that you use the `errors.As` pattern:
 
 ```go
-_, err := client.Sessions.Dashboard(
-	context.TODO(),
-	"1ffaeba7-541e-469f-bae7-df3208ea3d45",
-	langsmith.SessionDashboardParams{
-		CustomChartsSectionRequest: langsmith.CustomChartsSectionRequestParam{},
-	},
-)
+_, err := client.Sessions.New(context.TODO(), langsmith.SessionNewParams{
+	Name: langsmith.F("my-project"),
+})
 if err != nil {
 	var apierr *langsmith.Error
 	if errors.As(err, &apierr) {
 		println(string(apierr.DumpRequest(true)))  // Prints the serialized HTTP request
 		println(string(apierr.DumpResponse(true))) // Prints the serialized HTTP response
 	}
-	panic(err.Error()) // GET "/api/v1/sessions/{session_id}/dashboard": 400 Bad Request { ... }
+	panic(err.Error()) // GET "/api/v1/sessions": 400 Bad Request { ... }
 }
 ```
 
@@ -274,11 +266,10 @@ To set a per-retry timeout, use `option.WithRequestTimeout()`.
 // This sets the timeout for the request, including all the retries.
 ctx, cancel := context.WithTimeout(context.Background(), 5*time.Minute)
 defer cancel()
-client.Sessions.Dashboard(
+client.Sessions.New(
 	ctx,
-	"1ffaeba7-541e-469f-bae7-df3208ea3d45",
-	langsmith.SessionDashboardParams{
-		CustomChartsSectionRequest: langsmith.CustomChartsSectionRequestParam{},
+	langsmith.SessionNewParams{
+		Name: langsmith.F("my-project"),
 	},
 	// This sets the per-retry timeout
 	option.WithRequestTimeout(20*time.Second),
@@ -334,11 +325,10 @@ client := langsmith.NewClient(
 )
 
 // Override per-request:
-client.Sessions.Dashboard(
+client.Sessions.New(
 	context.TODO(),
-	"1ffaeba7-541e-469f-bae7-df3208ea3d45",
-	langsmith.SessionDashboardParams{
-		CustomChartsSectionRequest: langsmith.CustomChartsSectionRequestParam{},
+	langsmith.SessionNewParams{
+		Name: langsmith.F("my-project"),
 	},
 	option.WithMaxRetries(5),
 )
@@ -352,18 +342,17 @@ you need to examine response headers, status codes, or other details.
 ```go
 // Create a variable to store the HTTP response
 var response *http.Response
-customChartsSection, err := client.Sessions.Dashboard(
+tracerSessionWithoutVirtualFields, err := client.Sessions.New(
 	context.TODO(),
-	"1ffaeba7-541e-469f-bae7-df3208ea3d45",
-	langsmith.SessionDashboardParams{
-		CustomChartsSectionRequest: langsmith.CustomChartsSectionRequestParam{},
+	langsmith.SessionNewParams{
+		Name: langsmith.F("my-project"),
 	},
 	option.WithResponseInto(&response),
 )
 if err != nil {
 	// handle error
 }
-fmt.Printf("%+v\n", customChartsSection)
+fmt.Printf("%+v\n", tracerSessionWithoutVirtualFields)
 
 fmt.Printf("Status Code: %d\n", response.StatusCode)
 fmt.Printf("Headers: %+#v\n", response.Header)

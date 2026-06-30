@@ -26,16 +26,12 @@ func TestUsage(t *testing.T) {
 		option.WithAPIKey("My API Key"),
 		option.WithTenantID("My Tenant ID"),
 	)
-	customChartsSection, err := client.Sessions.Dashboard(
-		context.TODO(),
-		"1ffaeba7-541e-469f-bae7-df3208ea3d45",
-		langsmith.SessionDashboardParams{
-			CustomChartsSectionRequest: langsmith.CustomChartsSectionRequestParam{},
-		},
-	)
+	tracerSessionWithoutVirtualFields, err := client.Sessions.New(context.TODO(), langsmith.SessionNewParams{
+		Name: langsmith.F("my-project"),
+	})
 	if err != nil {
 		t.Error(err)
 		return
 	}
-	t.Logf("%+v\n", customChartsSection.ID)
+	t.Logf("%+v\n", tracerSessionWithoutVirtualFields.ID)
 }
