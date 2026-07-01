@@ -122,6 +122,117 @@ func (r *OffsetPaginationTopLevelArrayAutoPager[T]) Index() int {
 	return r.run
 }
 
+type OffsetPaginationIssues[T any] struct {
+	Items []T                        `json:"-,inline"`
+	JSON  offsetPaginationIssuesJSON `json:"-"`
+	cfg   *requestconfig.RequestConfig
+	res   *http.Response
+}
+
+// offsetPaginationIssuesJSON contains the JSON metadata for the struct
+// [OffsetPaginationIssues[T]]
+type offsetPaginationIssuesJSON struct {
+	Items       apijson.Field
+	raw         string
+	ExtraFields map[string]apijson.Field
+}
+
+func (r *OffsetPaginationIssues[T]) UnmarshalJSON(data []byte) (err error) {
+	return apijson.UnmarshalRoot(data, r)
+}
+
+func (r offsetPaginationIssuesJSON) RawJSON() string {
+	return r.raw
+}
+
+// GetNextPage returns the next page as defined by this pagination style. When
+// there is no next page, this function will return a 'nil' for the page value, but
+// will not return an error
+func (r *OffsetPaginationIssues[T]) GetNextPage() (res *OffsetPaginationIssues[T], err error) {
+	if len(r.Items) == 0 {
+		return nil, nil
+	}
+	cfg := r.cfg.Clone(r.cfg.Context)
+
+	q := cfg.Request.URL.Query()
+	offset, err := strconv.ParseInt(q.Get("offset"), 10, 64)
+	if err != nil {
+		offset = 0
+	}
+	length := int64(len(r.Items))
+	next := offset + length
+
+	if length > 0 && next != 0 {
+		err = cfg.Apply(option.WithQuery("offset", strconv.FormatInt(next, 10)))
+		if err != nil {
+			return nil, err
+		}
+	} else {
+		return nil, nil
+	}
+	var raw *http.Response
+	cfg.ResponseInto = &raw
+	cfg.ResponseBodyInto = &res
+	err = cfg.Execute()
+	if err != nil {
+		return nil, err
+	}
+	res.SetPageConfig(cfg, raw)
+	return res, nil
+}
+
+func (r *OffsetPaginationIssues[T]) SetPageConfig(cfg *requestconfig.RequestConfig, res *http.Response) {
+	if r == nil {
+		r = &OffsetPaginationIssues[T]{}
+	}
+	r.cfg = cfg
+	r.res = res
+}
+
+type OffsetPaginationIssuesAutoPager[T any] struct {
+	page *OffsetPaginationIssues[T]
+	cur  T
+	idx  int
+	run  int
+	err  error
+}
+
+func NewOffsetPaginationIssuesAutoPager[T any](page *OffsetPaginationIssues[T], err error) *OffsetPaginationIssuesAutoPager[T] {
+	return &OffsetPaginationIssuesAutoPager[T]{
+		page: page,
+		err:  err,
+	}
+}
+
+func (r *OffsetPaginationIssuesAutoPager[T]) Next() bool {
+	if r.page == nil || len(r.page.Items) == 0 {
+		return false
+	}
+	if r.idx >= len(r.page.Items) {
+		r.idx = 0
+		r.page, r.err = r.page.GetNextPage()
+		if r.err != nil || r.page == nil || len(r.page.Items) == 0 {
+			return false
+		}
+	}
+	r.cur = r.page.Items[r.idx]
+	r.run += 1
+	r.idx += 1
+	return true
+}
+
+func (r *OffsetPaginationIssuesAutoPager[T]) Current() T {
+	return r.cur
+}
+
+func (r *OffsetPaginationIssuesAutoPager[T]) Err() error {
+	return r.err
+}
+
+func (r *OffsetPaginationIssuesAutoPager[T]) Index() int {
+	return r.run
+}
+
 type OffsetPaginationRepos[T any] struct {
 	Repos []T                       `json:"repos"`
 	Total int64                     `json:"total"`
