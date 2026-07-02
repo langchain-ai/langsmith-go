@@ -499,6 +499,17 @@ Methods:
 
 - <code title="get /api/v1/settings">client.Settings.<a href="https://pkg.go.dev/github.com/langchain-ai/langsmith-go#SettingService.List">List</a>(ctx <a href="https://pkg.go.dev/context">context</a>.<a href="https://pkg.go.dev/context#Context">Context</a>) (\*<a href="https://pkg.go.dev/github.com/langchain-ai/langsmith-go">langsmith</a>.<a href="https://pkg.go.dev/github.com/langchain-ai/langsmith-go#AppHubCrudTenantsTenant">AppHubCrudTenantsTenant</a>, <a href="https://pkg.go.dev/builtin#error">error</a>)</code>
 
+# Issues
+
+Response Types:
+
+- <a href="https://pkg.go.dev/github.com/langchain-ai/langsmith-go">langsmith</a>.<a href="https://pkg.go.dev/github.com/langchain-ai/langsmith-go#Issue">Issue</a>
+
+Methods:
+
+- <code title="get /v1/platform/issues/{id}">client.Issues.<a href="https://pkg.go.dev/github.com/langchain-ai/langsmith-go#IssueService.Get">Get</a>(ctx <a href="https://pkg.go.dev/context">context</a>.<a href="https://pkg.go.dev/context#Context">Context</a>, id <a href="https://pkg.go.dev/builtin#string">string</a>) (\*<a href="https://pkg.go.dev/github.com/langchain-ai/langsmith-go">langsmith</a>.<a href="https://pkg.go.dev/github.com/langchain-ai/langsmith-go#Issue">Issue</a>, <a href="https://pkg.go.dev/builtin#error">error</a>)</code>
+- <code title="get /v1/platform/issues">client.Issues.<a href="https://pkg.go.dev/github.com/langchain-ai/langsmith-go#IssueService.List">List</a>(ctx <a href="https://pkg.go.dev/context">context</a>.<a href="https://pkg.go.dev/context#Context">Context</a>, query <a href="https://pkg.go.dev/github.com/langchain-ai/langsmith-go">langsmith</a>.<a href="https://pkg.go.dev/github.com/langchain-ai/langsmith-go#IssueListParams">IssueListParams</a>) (\*<a href="https://pkg.go.dev/github.com/langchain-ai/langsmith-go/packages/pagination">pagination</a>.<a href="https://pkg.go.dev/github.com/langchain-ai/langsmith-go/packages/pagination#OffsetPaginationIssues">OffsetPaginationIssues</a>[<a href="https://pkg.go.dev/github.com/langchain-ai/langsmith-go">langsmith</a>.<a href="https://pkg.go.dev/github.com/langchain-ai/langsmith-go#Issue">Issue</a>], <a href="https://pkg.go.dev/builtin#error">error</a>)</code>
+
 # Sandboxes
 
 Response Types:

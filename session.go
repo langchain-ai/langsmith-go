@@ -3584,12 +3584,11 @@ const (
 	SessionSortableColumnsLatencyP99       SessionSortableColumns = "latency_p99"
 	SessionSortableColumnsErrorRate        SessionSortableColumns = "error_rate"
 	SessionSortableColumnsFeedback         SessionSortableColumns = "feedback"
-	SessionSortableColumnsRunsCount        SessionSortableColumns = "runs_count"
 )
 
 func (r SessionSortableColumns) IsKnown() bool {
 	switch r {
-	case SessionSortableColumnsName, SessionSortableColumnsStartTime, SessionSortableColumnsLastRunStartTime, SessionSortableColumnsLatencyP50, SessionSortableColumnsLatencyP99, SessionSortableColumnsErrorRate, SessionSortableColumnsFeedback, SessionSortableColumnsRunsCount:
+	case SessionSortableColumnsName, SessionSortableColumnsStartTime, SessionSortableColumnsLastRunStartTime, SessionSortableColumnsLatencyP50, SessionSortableColumnsLatencyP99, SessionSortableColumnsErrorRate, SessionSortableColumnsFeedback:
 		return true
 	}
 	return false

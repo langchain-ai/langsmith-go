@@ -160,33 +160,39 @@ func (r AttachmentsOperationsParam) MarshalJSON() (data []byte, err error) {
 
 // Example schema.
 type Example struct {
-	ID             string                 `json:"id" api:"required" format:"uuid"`
-	DatasetID      string                 `json:"dataset_id" api:"required" format:"uuid"`
-	Inputs         map[string]interface{} `json:"inputs" api:"required"`
-	Name           string                 `json:"name" api:"required"`
-	AttachmentURLs map[string]interface{} `json:"attachment_urls" api:"nullable"`
-	CreatedAt      time.Time              `json:"created_at" format:"date-time"`
-	Metadata       map[string]interface{} `json:"metadata" api:"nullable"`
-	ModifiedAt     time.Time              `json:"modified_at" api:"nullable" format:"date-time"`
-	Outputs        map[string]interface{} `json:"outputs" api:"nullable"`
-	SourceRunID    string                 `json:"source_run_id" api:"nullable" format:"uuid"`
-	JSON           exampleJSON            `json:"-"`
+	ID                 string                 `json:"id" api:"required" format:"uuid"`
+	DatasetID          string                 `json:"dataset_id" api:"required" format:"uuid"`
+	Inputs             map[string]interface{} `json:"inputs" api:"required"`
+	Name               string                 `json:"name" api:"required"`
+	AttachmentURLs     map[string]interface{} `json:"attachment_urls" api:"nullable"`
+	CreatedAt          time.Time              `json:"created_at" format:"date-time"`
+	Metadata           map[string]interface{} `json:"metadata" api:"nullable"`
+	ModifiedAt         time.Time              `json:"modified_at" api:"nullable" format:"date-time"`
+	Outputs            map[string]interface{} `json:"outputs" api:"nullable"`
+	SourceRunID        string                 `json:"source_run_id" api:"nullable" format:"uuid"`
+	SourceRunStartTime time.Time              `json:"source_run_start_time" api:"nullable" format:"date-time"`
+	SourceSessionID    string                 `json:"source_session_id" api:"nullable" format:"uuid"`
+	SourceTraceID      string                 `json:"source_trace_id" api:"nullable" format:"uuid"`
+	JSON               exampleJSON            `json:"-"`
 }
 
 // exampleJSON contains the JSON metadata for the struct [Example]
 type exampleJSON struct {
-	ID             apijson.Field
-	DatasetID      apijson.Field
-	Inputs         apijson.Field
-	Name           apijson.Field
-	AttachmentURLs apijson.Field
-	CreatedAt      apijson.Field
-	Metadata       apijson.Field
-	ModifiedAt     apijson.Field
-	Outputs        apijson.Field
-	SourceRunID    apijson.Field
-	raw            string
-	ExtraFields    map[string]apijson.Field
+	ID                 apijson.Field
+	DatasetID          apijson.Field
+	Inputs             apijson.Field
+	Name               apijson.Field
+	AttachmentURLs     apijson.Field
+	CreatedAt          apijson.Field
+	Metadata           apijson.Field
+	ModifiedAt         apijson.Field
+	Outputs            apijson.Field
+	SourceRunID        apijson.Field
+	SourceRunStartTime apijson.Field
+	SourceSessionID    apijson.Field
+	SourceTraceID      apijson.Field
+	raw                string
+	ExtraFields        map[string]apijson.Field
 }
 
 func (r *Example) UnmarshalJSON(data []byte) (err error) {
@@ -200,21 +206,24 @@ func (r exampleJSON) RawJSON() string {
 type ExampleSelect string
 
 const (
-	ExampleSelectID             ExampleSelect = "id"
-	ExampleSelectCreatedAt      ExampleSelect = "created_at"
-	ExampleSelectModifiedAt     ExampleSelect = "modified_at"
-	ExampleSelectName           ExampleSelect = "name"
-	ExampleSelectDatasetID      ExampleSelect = "dataset_id"
-	ExampleSelectSourceRunID    ExampleSelect = "source_run_id"
-	ExampleSelectMetadata       ExampleSelect = "metadata"
-	ExampleSelectInputs         ExampleSelect = "inputs"
-	ExampleSelectOutputs        ExampleSelect = "outputs"
-	ExampleSelectAttachmentURLs ExampleSelect = "attachment_urls"
+	ExampleSelectID                 ExampleSelect = "id"
+	ExampleSelectCreatedAt          ExampleSelect = "created_at"
+	ExampleSelectModifiedAt         ExampleSelect = "modified_at"
+	ExampleSelectName               ExampleSelect = "name"
+	ExampleSelectDatasetID          ExampleSelect = "dataset_id"
+	ExampleSelectSourceRunID        ExampleSelect = "source_run_id"
+	ExampleSelectSourceSessionID    ExampleSelect = "source_session_id"
+	ExampleSelectSourceRunStartTime ExampleSelect = "source_run_start_time"
+	ExampleSelectSourceTraceID      ExampleSelect = "source_trace_id"
+	ExampleSelectMetadata           ExampleSelect = "metadata"
+	ExampleSelectInputs             ExampleSelect = "inputs"
+	ExampleSelectOutputs            ExampleSelect = "outputs"
+	ExampleSelectAttachmentURLs     ExampleSelect = "attachment_urls"
 )
 
 func (r ExampleSelect) IsKnown() bool {
 	switch r {
-	case ExampleSelectID, ExampleSelectCreatedAt, ExampleSelectModifiedAt, ExampleSelectName, ExampleSelectDatasetID, ExampleSelectSourceRunID, ExampleSelectMetadata, ExampleSelectInputs, ExampleSelectOutputs, ExampleSelectAttachmentURLs:
+	case ExampleSelectID, ExampleSelectCreatedAt, ExampleSelectModifiedAt, ExampleSelectName, ExampleSelectDatasetID, ExampleSelectSourceRunID, ExampleSelectSourceSessionID, ExampleSelectSourceRunStartTime, ExampleSelectSourceTraceID, ExampleSelectMetadata, ExampleSelectInputs, ExampleSelectOutputs, ExampleSelectAttachmentURLs:
 		return true
 	}
 	return false
@@ -227,14 +236,17 @@ type ExampleDeleteResponse = interface{}
 type ExampleDeleteAllResponse = interface{}
 
 type ExampleNewParams struct {
-	DatasetID   param.Field[string]                     `json:"dataset_id" api:"required" format:"uuid"`
-	ID          param.Field[string]                     `json:"id" format:"uuid"`
-	CreatedAt   param.Field[string]                     `json:"created_at"`
-	Inputs      param.Field[map[string]interface{}]     `json:"inputs"`
-	Metadata    param.Field[map[string]interface{}]     `json:"metadata"`
-	Outputs     param.Field[map[string]interface{}]     `json:"outputs"`
-	SourceRunID param.Field[string]                     `json:"source_run_id" format:"uuid"`
-	Split       param.Field[ExampleNewParamsSplitUnion] `json:"split"`
+	DatasetID          param.Field[string]                     `json:"dataset_id" api:"required" format:"uuid"`
+	ID                 param.Field[string]                     `json:"id" format:"uuid"`
+	CreatedAt          param.Field[string]                     `json:"created_at"`
+	Inputs             param.Field[map[string]interface{}]     `json:"inputs"`
+	Metadata           param.Field[map[string]interface{}]     `json:"metadata"`
+	Outputs            param.Field[map[string]interface{}]     `json:"outputs"`
+	SourceRunID        param.Field[string]                     `json:"source_run_id" format:"uuid"`
+	SourceRunStartTime param.Field[time.Time]                  `json:"source_run_start_time" format:"date-time"`
+	SourceSessionID    param.Field[string]                     `json:"source_session_id" format:"uuid"`
+	SourceTraceID      param.Field[string]                     `json:"source_trace_id" format:"uuid"`
+	Split              param.Field[ExampleNewParamsSplitUnion] `json:"split"`
 	// Use Legacy Message Format for LLM runs
 	UseLegacyMessageFormat  param.Field[bool]     `json:"use_legacy_message_format"`
 	UseSourceRunAttachments param.Field[[]string] `json:"use_source_run_attachments"`

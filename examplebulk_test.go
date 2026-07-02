@@ -7,6 +7,7 @@ import (
 	"errors"
 	"os"
 	"testing"
+	"time"
 
 	"github.com/langchain-ai/langsmith-go"
 	"github.com/langchain-ai/langsmith-go/internal/testutil"
@@ -42,6 +43,9 @@ func TestExampleBulkNew(t *testing.T) {
 				"foo": "bar",
 			}),
 			SourceRunID:             langsmith.F("182bd5e5-6e1a-4fe4-a799-aa6d9a6ab26e"),
+			SourceRunStartTime:      langsmith.F(time.Now()),
+			SourceSessionID:         langsmith.F("182bd5e5-6e1a-4fe4-a799-aa6d9a6ab26e"),
+			SourceTraceID:           langsmith.F("182bd5e5-6e1a-4fe4-a799-aa6d9a6ab26e"),
 			Split:                   langsmith.F[langsmith.ExampleBulkNewParamsBodySplitUnion](langsmith.ExampleBulkNewParamsBodySplitArray([]string{"string"})),
 			UseLegacyMessageFormat:  langsmith.F(true),
 			UseSourceRunAttachments: langsmith.F([]string{"string"}),

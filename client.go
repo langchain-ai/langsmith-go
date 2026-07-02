@@ -35,11 +35,12 @@ type Client struct {
 	Repos            *RepoService
 	Commits          *CommitService
 	Settings         *SettingService
+	Issues           *IssueService
+	Sandboxes        *SandboxService
 
 	tracingClient *langsmithtracing.TracingClient
 	tracingOnce   sync.Once
 	tracingErr    error
-	Sandboxes     *SandboxService
 }
 
 // DefaultClientOptions read from the environment (LANGSMITH_API_KEY,
@@ -97,6 +98,7 @@ func NewClient(opts ...option.RequestOption) (r *Client) {
 	r.Repos = NewRepoService(opts...)
 	r.Commits = NewCommitService(opts...)
 	r.Settings = NewSettingService(opts...)
+	r.Issues = NewIssueService(opts...)
 	r.Sandboxes = NewSandboxService(opts...)
 
 	return

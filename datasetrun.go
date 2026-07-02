@@ -57,36 +57,42 @@ func (r *DatasetRunService) New(ctx context.Context, datasetID string, params Da
 // runs from all sessions, where each run has a session_id field for frontend to
 // determine column placement.
 type ExampleWithRunsCh struct {
-	ID             string                 `json:"id" api:"required" format:"uuid"`
-	DatasetID      string                 `json:"dataset_id" api:"required" format:"uuid"`
-	Inputs         map[string]interface{} `json:"inputs" api:"required"`
-	Name           string                 `json:"name" api:"required"`
-	Runs           []ExampleWithRunsChRun `json:"runs" api:"required"`
-	AttachmentURLs map[string]interface{} `json:"attachment_urls" api:"nullable"`
-	CreatedAt      time.Time              `json:"created_at" format:"date-time"`
-	Metadata       map[string]interface{} `json:"metadata" api:"nullable"`
-	ModifiedAt     time.Time              `json:"modified_at" api:"nullable" format:"date-time"`
-	Outputs        map[string]interface{} `json:"outputs" api:"nullable"`
-	SourceRunID    string                 `json:"source_run_id" api:"nullable" format:"uuid"`
-	JSON           exampleWithRunsChJSON  `json:"-"`
+	ID                 string                 `json:"id" api:"required" format:"uuid"`
+	DatasetID          string                 `json:"dataset_id" api:"required" format:"uuid"`
+	Inputs             map[string]interface{} `json:"inputs" api:"required"`
+	Name               string                 `json:"name" api:"required"`
+	Runs               []ExampleWithRunsChRun `json:"runs" api:"required"`
+	AttachmentURLs     map[string]interface{} `json:"attachment_urls" api:"nullable"`
+	CreatedAt          time.Time              `json:"created_at" format:"date-time"`
+	Metadata           map[string]interface{} `json:"metadata" api:"nullable"`
+	ModifiedAt         time.Time              `json:"modified_at" api:"nullable" format:"date-time"`
+	Outputs            map[string]interface{} `json:"outputs" api:"nullable"`
+	SourceRunID        string                 `json:"source_run_id" api:"nullable" format:"uuid"`
+	SourceRunStartTime time.Time              `json:"source_run_start_time" api:"nullable" format:"date-time"`
+	SourceSessionID    string                 `json:"source_session_id" api:"nullable" format:"uuid"`
+	SourceTraceID      string                 `json:"source_trace_id" api:"nullable" format:"uuid"`
+	JSON               exampleWithRunsChJSON  `json:"-"`
 }
 
 // exampleWithRunsChJSON contains the JSON metadata for the struct
 // [ExampleWithRunsCh]
 type exampleWithRunsChJSON struct {
-	ID             apijson.Field
-	DatasetID      apijson.Field
-	Inputs         apijson.Field
-	Name           apijson.Field
-	Runs           apijson.Field
-	AttachmentURLs apijson.Field
-	CreatedAt      apijson.Field
-	Metadata       apijson.Field
-	ModifiedAt     apijson.Field
-	Outputs        apijson.Field
-	SourceRunID    apijson.Field
-	raw            string
-	ExtraFields    map[string]apijson.Field
+	ID                 apijson.Field
+	DatasetID          apijson.Field
+	Inputs             apijson.Field
+	Name               apijson.Field
+	Runs               apijson.Field
+	AttachmentURLs     apijson.Field
+	CreatedAt          apijson.Field
+	Metadata           apijson.Field
+	ModifiedAt         apijson.Field
+	Outputs            apijson.Field
+	SourceRunID        apijson.Field
+	SourceRunStartTime apijson.Field
+	SourceSessionID    apijson.Field
+	SourceTraceID      apijson.Field
+	raw                string
+	ExtraFields        map[string]apijson.Field
 }
 
 func (r *ExampleWithRunsCh) UnmarshalJSON(data []byte) (err error) {
