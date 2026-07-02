@@ -54,17 +54,27 @@ func TestSandboxCommandWrapperRunUsesCurrentDataplaneURL(t *testing.T) {
 	}
 }
 
-func TestSandboxCommandWrapperRejectsNotReadySandbox(t *testing.T) {
+func TestSandboxCommandWrapperDoesNotGateOnStatus(t *testing.T) {
+	// A non-ready box is NOT rejected client-side: the platform resumes a
+	// stopped box when the dataplane request arrives. (The call still errors
+	// here only because the test client has no configured base URL.)
 	sandbox := &Sandbox{
 		Name:         "box-a",
 		Status:       "starting",
 		DataplaneURL: "https://sandbox.example",
 		boxes:        NewSandboxBoxService(),
 	}
-
 	_, err := sandbox.Run(context.Background(), SandboxBoxRunParams{Command: String("echo ok")})
 	var notReady *SandboxNotReadyError
-	if !errors.As(err, &notReady) {
-		t.Fatalf("expected SandboxNotReadyError, got %T: %v", err, err)
+	if errors.As(err, &notReady) {
+		t.Fatalf("client must not gate on status, but got SandboxNotReadyError: %v", err)
+	}
+
+	// A missing dataplane URL is still rejected client-side, regardless of status.
+	noURL := &Sandbox{Name: "box-a", Status: "starting", boxes: NewSandboxBoxService()}
+	_, err = noURL.Run(context.Background(), SandboxBoxRunParams{Command: String("echo ok")})
+	var notConfigured *SandboxDataplaneNotConfiguredError
+	if !errors.As(err, &notConfigured) {
+		t.Fatalf("expected SandboxDataplaneNotConfiguredError, got %T: %v", err, err)
 	}
 }
