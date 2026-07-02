@@ -1,5 +1,39 @@
 # Changelog
 
+## [0.17.0](https://github.com/langchain-ai/langsmith-go/compare/v0.16.1...v0.17.0) (2026-07-02)
+
+
+### ⚠ BREAKING CHANGES
+
+* disallow run_count session sort
+
+### Features
+
+* add GET endpoint to retrieve single workspace by id [closes ENT-508] ([0ca6712](https://github.com/langchain-ai/langsmith-go/commit/0ca6712d9583954517864e2f873f2825369d8746))
+
+
+### Bug Fixes
+
+* **integration:** update test types after run model rename ([#58](https://github.com/langchain-ai/langsmith-go/issues/58)) ([fe4118d](https://github.com/langchain-ai/langsmith-go/commit/fe4118d52c270b79767e2ed9f0a72d43dec518a4))
+
+
+### Chores
+
+* **examples:** dual-write source run lookup coordinates in Python ([faf14a6](https://github.com/langchain-ai/langsmith-go/commit/faf14a64b9e116950f808657495714f1f2f8af04))
+* fix linter ([ed32aec](https://github.com/langchain-ai/langsmith-go/commit/ed32aec2bc870f421637ca1a87da8543c5bf8169))
+* **stainless:** rename run models in runs resource ([9762121](https://github.com/langchain-ai/langsmith-go/commit/97621217812747a5c147bee8789c550dc737f9f7))
+
+
+### Refactors
+
+* disallow run_count session sort ([fb89237](https://github.com/langchain-ai/langsmith-go/commit/fb89237602d409599a2459cf7df4d89aca8f2ece))
+
+
+### Build System
+
+* **deps:** bump the major group with 4 updates ([#61](https://github.com/langchain-ai/langsmith-go/issues/61)) ([828c3b6](https://github.com/langchain-ai/langsmith-go/commit/828c3b6684a652f518f16024b2db59c5de10d9d2))
+* **deps:** bump the minor-and-patch group with 8 updates ([#62](https://github.com/langchain-ai/langsmith-go/issues/62)) ([23b20a6](https://github.com/langchain-ai/langsmith-go/commit/23b20a641877c48abd4fec09a3b89826be239ba3))
+
 ## [0.16.1](https://github.com/langchain-ai/langsmith-go/compare/v0.16.0...v0.16.1) (2026-06-29)
 
 
