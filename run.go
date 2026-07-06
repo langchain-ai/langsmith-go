@@ -29,7 +29,6 @@ import (
 // the [NewRunService] method instead.
 type RunService struct {
 	Options []option.RequestOption
-	Rules   *RunRuleService
 }
 
 // NewRunService generates a new service that applies the given options to each
@@ -38,7 +37,6 @@ type RunService struct {
 func NewRunService(opts ...option.RequestOption) (r *RunService) {
 	r = &RunService{}
 	r.Options = opts
-	r.Rules = NewRunRuleService(opts...)
 	return
 }
 
