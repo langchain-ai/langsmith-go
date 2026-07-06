@@ -119,6 +119,7 @@ type Evaluator struct {
 	GroupBy                             EvaluatorGroupBy          `json:"group_by" api:"nullable"`
 	IncludeExtendedStats                bool                      `json:"include_extended_stats"`
 	IsEnabled                           bool                      `json:"is_enabled"`
+	IsManagedEvaluator                  bool                      `json:"is_managed_evaluator"`
 	NumFewShotExamples                  int64                     `json:"num_few_shot_examples" api:"nullable"`
 	SessionID                           string                    `json:"session_id" api:"nullable" format:"uuid"`
 	SessionName                         string                    `json:"session_name" api:"nullable"`
@@ -170,6 +171,7 @@ type evaluatorJSON struct {
 	GroupBy                             apijson.Field
 	IncludeExtendedStats                apijson.Field
 	IsEnabled                           apijson.Field
+	IsManagedEvaluator                  apijson.Field
 	NumFewShotExamples                  apijson.Field
 	SessionID                           apijson.Field
 	SessionName                         apijson.Field
