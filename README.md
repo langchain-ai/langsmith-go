@@ -84,15 +84,16 @@ import (
 
 func main() {
 	client := langsmith.NewClient(
-		option.WithAPIKey("My API Key"), // defaults to os.LookupEnv("LANGSMITH_API_KEY")
+		option.WithAPIKey("My API Key"),     // defaults to os.LookupEnv("LANGSMITH_API_KEY")
+		option.WithTenantID("My Tenant ID"), // defaults to os.LookupEnv("LANGSMITH_TENANT_ID")
 	)
-	tracerSessionWithoutVirtualFields, err := client.Sessions.New(context.TODO(), langsmith.SessionNewParams{
-		Name: langsmith.F("my-project"),
+	page, err := client.Runs.QueryV2(context.TODO(), langsmith.RunQueryV2Params{
+		ProjectIDs: langsmith.F([]string{"00000000-0000-0000-0000-000000000000"}),
 	})
 	if err != nil {
 		panic(err.Error())
 	}
-	fmt.Printf("%+v\n", tracerSessionWithoutVirtualFields.ID)
+	fmt.Printf("%+v\n", page)
 }
 
 ```
@@ -181,7 +182,7 @@ client := langsmith.NewClient(
 	option.WithHeader("X-Some-Header", "custom_header_info"),
 )
 
-client.Sessions.New(context.TODO(), ...,
+client.Runs.QueryV2(context.TODO(), ...,
 	// Override the header
 	option.WithHeader("X-Some-Header", "some_other_custom_header_info"),
 	// Add an undocumented field to the request body, using sjson syntax
@@ -198,13 +199,13 @@ This library provides some conveniences for working with paginated list endpoint
 You can use `.ListAutoPaging()` methods to iterate through items across all pages:
 
 ```go
-iter := client.Datasets.ListAutoPaging(context.TODO(), langsmith.DatasetListParams{
-	Limit: langsmith.F(int64(100)),
+iter := client.Runs.QueryV2AutoPaging(context.TODO(), langsmith.RunQueryV2Params{
+	ProjectIDs: langsmith.F([]string{"00000000-0000-0000-0000-000000000000"}),
 })
 // Automatically fetches more pages as needed.
 for iter.Next() {
-	dataset := iter.Current()
-	fmt.Printf("%+v\n", dataset)
+	run := iter.Current()
+	fmt.Printf("%+v\n", run)
 }
 if err := iter.Err(); err != nil {
 	panic(err.Error())
@@ -215,12 +216,12 @@ Or you can use simple `.List()` methods to fetch a single page and receive a sta
 with additional helper methods like `.GetNextPage()`, e.g.:
 
 ```go
-page, err := client.Datasets.List(context.TODO(), langsmith.DatasetListParams{
-	Limit: langsmith.F(int64(100)),
+page, err := client.Runs.QueryV2(context.TODO(), langsmith.RunQueryV2Params{
+	ProjectIDs: langsmith.F([]string{"00000000-0000-0000-0000-000000000000"}),
 })
 for page != nil {
-	for _, dataset := range page.Items {
-		fmt.Printf("%+v\n", dataset)
+	for _, run := range page.Items {
+		fmt.Printf("%+v\n", run)
 	}
 	page, err = page.GetNextPage()
 }
@@ -239,8 +240,8 @@ When the API returns a non-success status code, we return an error with type
 To handle errors, we recommend that you use the `errors.As` pattern:
 
 ```go
-_, err := client.Sessions.New(context.TODO(), langsmith.SessionNewParams{
-	Name: langsmith.F("my-project"),
+_, err := client.Runs.QueryV2(context.TODO(), langsmith.RunQueryV2Params{
+	ProjectIDs: langsmith.F([]string{"00000000-0000-0000-0000-000000000000"}),
 })
 if err != nil {
 	var apierr *langsmith.Error
@@ -248,7 +249,7 @@ if err != nil {
 		println(string(apierr.DumpRequest(true)))  // Prints the serialized HTTP request
 		println(string(apierr.DumpResponse(true))) // Prints the serialized HTTP response
 	}
-	panic(err.Error()) // GET "/api/v1/sessions": 400 Bad Request { ... }
+	panic(err.Error()) // GET "/v2/runs/query": 400 Bad Request { ... }
 }
 ```
 
@@ -266,10 +267,10 @@ To set a per-retry timeout, use `option.WithRequestTimeout()`.
 // This sets the timeout for the request, including all the retries.
 ctx, cancel := context.WithTimeout(context.Background(), 5*time.Minute)
 defer cancel()
-client.Sessions.New(
+client.Runs.QueryV2(
 	ctx,
-	langsmith.SessionNewParams{
-		Name: langsmith.F("my-project"),
+	langsmith.RunQueryV2Params{
+		ProjectIDs: langsmith.F([]string{"00000000-0000-0000-0000-000000000000"}),
 	},
 	// This sets the per-retry timeout
 	option.WithRequestTimeout(20*time.Second),
@@ -325,10 +326,10 @@ client := langsmith.NewClient(
 )
 
 // Override per-request:
-client.Sessions.New(
+client.Runs.QueryV2(
 	context.TODO(),
-	langsmith.SessionNewParams{
-		Name: langsmith.F("my-project"),
+	langsmith.RunQueryV2Params{
+		ProjectIDs: langsmith.F([]string{"00000000-0000-0000-0000-000000000000"}),
 	},
 	option.WithMaxRetries(5),
 )
@@ -342,17 +343,17 @@ you need to examine response headers, status codes, or other details.
 ```go
 // Create a variable to store the HTTP response
 var response *http.Response
-tracerSessionWithoutVirtualFields, err := client.Sessions.New(
+page, err := client.Runs.QueryV2(
 	context.TODO(),
-	langsmith.SessionNewParams{
-		Name: langsmith.F("my-project"),
+	langsmith.RunQueryV2Params{
+		ProjectIDs: langsmith.F([]string{"00000000-0000-0000-0000-000000000000"}),
 	},
 	option.WithResponseInto(&response),
 )
 if err != nil {
 	// handle error
 }
-fmt.Printf("%+v\n", tracerSessionWithoutVirtualFields)
+fmt.Printf("%+v\n", page)
 
 fmt.Printf("Status Code: %d\n", response.StatusCode)
 fmt.Printf("Headers: %+#v\n", response.Header)

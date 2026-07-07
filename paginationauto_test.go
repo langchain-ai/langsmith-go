@@ -28,13 +28,13 @@ func TestAutoPagination(t *testing.T) {
 		option.WithAPIKey("My API Key"),
 		option.WithTenantID("My Tenant ID"),
 	)
-	iter := client.Datasets.ListAutoPaging(context.TODO(), langsmith.DatasetListParams{
-		Limit: langsmith.F(int64(100)),
+	iter := client.Runs.QueryV2AutoPaging(context.TODO(), langsmith.RunQueryV2Params{
+		ProjectIDs: langsmith.F([]string{"00000000-0000-0000-0000-000000000000"}),
 	})
 	// The mock server isn't going to give us real pagination
 	for i := 0; i < 3 && iter.Next(); i++ {
-		dataset := iter.Current()
-		t.Logf("%+v\n", dataset.ID)
+		run := iter.Current()
+		t.Logf("%+v\n", run.ID)
 	}
 	if err := iter.Err(); err != nil {
 		t.Fatalf("err should be nil: %s", err.Error())
