@@ -38,7 +38,7 @@ func NewDatasetExperimentRunService(opts ...option.RequestOption) (r *DatasetExp
 
 // Returns a paginated page of dataset examples with runs from the requested
 // experiments. Response uses the canonical `{items, next_cursor}` envelope.
-func (r *DatasetExperimentRunService) New(ctx context.Context, datasetID string, body DatasetExperimentRunNewParams, opts ...option.RequestOption) (res *pagination.ItemsCursorPostPagination[DatasetExperimentRunNewResponse], err error) {
+func (r *DatasetExperimentRunService) Query(ctx context.Context, datasetID string, body DatasetExperimentRunQueryParams, opts ...option.RequestOption) (res *pagination.ItemsCursorPostPagination[DatasetExperimentRunQueryResponse], err error) {
 	var raw *http.Response
 	opts = slices.Concat(r.Options, opts)
 	opts = append([]option.RequestOption{option.WithResponseInto(&raw)}, opts...)
@@ -61,11 +61,11 @@ func (r *DatasetExperimentRunService) New(ctx context.Context, datasetID string,
 
 // Returns a paginated page of dataset examples with runs from the requested
 // experiments. Response uses the canonical `{items, next_cursor}` envelope.
-func (r *DatasetExperimentRunService) NewAutoPaging(ctx context.Context, datasetID string, body DatasetExperimentRunNewParams, opts ...option.RequestOption) *pagination.ItemsCursorPostPaginationAutoPager[DatasetExperimentRunNewResponse] {
-	return pagination.NewItemsCursorPostPaginationAutoPager(r.New(ctx, datasetID, body, opts...))
+func (r *DatasetExperimentRunService) QueryAutoPaging(ctx context.Context, datasetID string, body DatasetExperimentRunQueryParams, opts ...option.RequestOption) *pagination.ItemsCursorPostPaginationAutoPager[DatasetExperimentRunQueryResponse] {
+	return pagination.NewItemsCursorPostPaginationAutoPager(r.Query(ctx, datasetID, body, opts...))
 }
 
-type DatasetExperimentRunNewResponse struct {
+type DatasetExperimentRunQueryResponse struct {
 	// `id` is the dataset example UUID.
 	ID string `json:"id" format:"uuid"`
 	// `attachment_urls` maps each attachment name to a pre-signed download URL.
@@ -87,13 +87,13 @@ type DatasetExperimentRunNewResponse struct {
 	// `runs` is the list of experiment runs produced for this example.
 	Runs []Run `json:"runs"`
 	// `source_run_id` is the run UUID the example was created from, if any.
-	SourceRunID string                              `json:"source_run_id" format:"uuid"`
-	JSON        datasetExperimentRunNewResponseJSON `json:"-"`
+	SourceRunID string                                `json:"source_run_id" format:"uuid"`
+	JSON        datasetExperimentRunQueryResponseJSON `json:"-"`
 }
 
-// datasetExperimentRunNewResponseJSON contains the JSON metadata for the struct
-// [DatasetExperimentRunNewResponse]
-type datasetExperimentRunNewResponseJSON struct {
+// datasetExperimentRunQueryResponseJSON contains the JSON metadata for the struct
+// [DatasetExperimentRunQueryResponse]
+type datasetExperimentRunQueryResponseJSON struct {
 	ID             apijson.Field
 	AttachmentURLs apijson.Field
 	CreatedAt      apijson.Field
@@ -109,15 +109,15 @@ type datasetExperimentRunNewResponseJSON struct {
 	ExtraFields    map[string]apijson.Field
 }
 
-func (r *DatasetExperimentRunNewResponse) UnmarshalJSON(data []byte) (err error) {
+func (r *DatasetExperimentRunQueryResponse) UnmarshalJSON(data []byte) (err error) {
 	return apijson.UnmarshalRoot(data, r)
 }
 
-func (r datasetExperimentRunNewResponseJSON) RawJSON() string {
+func (r datasetExperimentRunQueryResponseJSON) RawJSON() string {
 	return r.raw
 }
 
-type DatasetExperimentRunNewParams struct {
+type DatasetExperimentRunQueryParams struct {
 	// `comparative_experiment_id` scopes pairwise-annotation feedback (optional).
 	ComparativeExperimentID param.Field[string] `json:"comparative_experiment_id"`
 	// `cursor` is the opaque string from a previous response's `next_cursor`. Absent
@@ -137,74 +137,74 @@ type DatasetExperimentRunNewParams struct {
 	PageSize param.Field[int64] `json:"page_size"`
 	// `selects` lists which run properties to include. Omitted => only `id`. Tokens
 	// mirror /v2/runs/query.
-	Selects param.Field[[]DatasetExperimentRunNewParamsSelect] `json:"selects"`
+	Selects param.Field[[]DatasetExperimentRunQueryParamsSelect] `json:"selects"`
 	// `sort` controls feedback-score sorting (single project only).
-	Sort param.Field[DatasetExperimentRunNewParamsSort] `json:"sort"`
+	Sort param.Field[DatasetExperimentRunQueryParamsSort] `json:"sort"`
 }
 
-func (r DatasetExperimentRunNewParams) MarshalJSON() (data []byte, err error) {
+func (r DatasetExperimentRunQueryParams) MarshalJSON() (data []byte, err error) {
 	return apijson.MarshalRoot(r)
 }
 
-type DatasetExperimentRunNewParamsSelect string
+type DatasetExperimentRunQueryParamsSelect string
 
 const (
-	DatasetExperimentRunNewParamsSelectID                     DatasetExperimentRunNewParamsSelect = "ID"
-	DatasetExperimentRunNewParamsSelectName                   DatasetExperimentRunNewParamsSelect = "NAME"
-	DatasetExperimentRunNewParamsSelectRunType                DatasetExperimentRunNewParamsSelect = "RUN_TYPE"
-	DatasetExperimentRunNewParamsSelectStatus                 DatasetExperimentRunNewParamsSelect = "STATUS"
-	DatasetExperimentRunNewParamsSelectStartTime              DatasetExperimentRunNewParamsSelect = "START_TIME"
-	DatasetExperimentRunNewParamsSelectEndTime                DatasetExperimentRunNewParamsSelect = "END_TIME"
-	DatasetExperimentRunNewParamsSelectLatencySeconds         DatasetExperimentRunNewParamsSelect = "LATENCY_SECONDS"
-	DatasetExperimentRunNewParamsSelectFirstTokenTime         DatasetExperimentRunNewParamsSelect = "FIRST_TOKEN_TIME"
-	DatasetExperimentRunNewParamsSelectError                  DatasetExperimentRunNewParamsSelect = "ERROR"
-	DatasetExperimentRunNewParamsSelectErrorPreview           DatasetExperimentRunNewParamsSelect = "ERROR_PREVIEW"
-	DatasetExperimentRunNewParamsSelectExtra                  DatasetExperimentRunNewParamsSelect = "EXTRA"
-	DatasetExperimentRunNewParamsSelectMetadata               DatasetExperimentRunNewParamsSelect = "METADATA"
-	DatasetExperimentRunNewParamsSelectEvents                 DatasetExperimentRunNewParamsSelect = "EVENTS"
-	DatasetExperimentRunNewParamsSelectInputs                 DatasetExperimentRunNewParamsSelect = "INPUTS"
-	DatasetExperimentRunNewParamsSelectInputsPreview          DatasetExperimentRunNewParamsSelect = "INPUTS_PREVIEW"
-	DatasetExperimentRunNewParamsSelectOutputs                DatasetExperimentRunNewParamsSelect = "OUTPUTS"
-	DatasetExperimentRunNewParamsSelectOutputsPreview         DatasetExperimentRunNewParamsSelect = "OUTPUTS_PREVIEW"
-	DatasetExperimentRunNewParamsSelectManifest               DatasetExperimentRunNewParamsSelect = "MANIFEST"
-	DatasetExperimentRunNewParamsSelectParentRunIDs           DatasetExperimentRunNewParamsSelect = "PARENT_RUN_IDS"
-	DatasetExperimentRunNewParamsSelectProjectID              DatasetExperimentRunNewParamsSelect = "PROJECT_ID"
-	DatasetExperimentRunNewParamsSelectTraceID                DatasetExperimentRunNewParamsSelect = "TRACE_ID"
-	DatasetExperimentRunNewParamsSelectThreadID               DatasetExperimentRunNewParamsSelect = "THREAD_ID"
-	DatasetExperimentRunNewParamsSelectDottedOrder            DatasetExperimentRunNewParamsSelect = "DOTTED_ORDER"
-	DatasetExperimentRunNewParamsSelectIsRoot                 DatasetExperimentRunNewParamsSelect = "IS_ROOT"
-	DatasetExperimentRunNewParamsSelectReferenceExampleID     DatasetExperimentRunNewParamsSelect = "REFERENCE_EXAMPLE_ID"
-	DatasetExperimentRunNewParamsSelectReferenceDatasetID     DatasetExperimentRunNewParamsSelect = "REFERENCE_DATASET_ID"
-	DatasetExperimentRunNewParamsSelectTotalTokens            DatasetExperimentRunNewParamsSelect = "TOTAL_TOKENS"
-	DatasetExperimentRunNewParamsSelectPromptTokens           DatasetExperimentRunNewParamsSelect = "PROMPT_TOKENS"
-	DatasetExperimentRunNewParamsSelectCompletionTokens       DatasetExperimentRunNewParamsSelect = "COMPLETION_TOKENS"
-	DatasetExperimentRunNewParamsSelectTotalCost              DatasetExperimentRunNewParamsSelect = "TOTAL_COST"
-	DatasetExperimentRunNewParamsSelectPromptCost             DatasetExperimentRunNewParamsSelect = "PROMPT_COST"
-	DatasetExperimentRunNewParamsSelectCompletionCost         DatasetExperimentRunNewParamsSelect = "COMPLETION_COST"
-	DatasetExperimentRunNewParamsSelectPromptTokenDetails     DatasetExperimentRunNewParamsSelect = "PROMPT_TOKEN_DETAILS"
-	DatasetExperimentRunNewParamsSelectCompletionTokenDetails DatasetExperimentRunNewParamsSelect = "COMPLETION_TOKEN_DETAILS"
-	DatasetExperimentRunNewParamsSelectPromptCostDetails      DatasetExperimentRunNewParamsSelect = "PROMPT_COST_DETAILS"
-	DatasetExperimentRunNewParamsSelectCompletionCostDetails  DatasetExperimentRunNewParamsSelect = "COMPLETION_COST_DETAILS"
-	DatasetExperimentRunNewParamsSelectPriceModelID           DatasetExperimentRunNewParamsSelect = "PRICE_MODEL_ID"
-	DatasetExperimentRunNewParamsSelectTags                   DatasetExperimentRunNewParamsSelect = "TAGS"
-	DatasetExperimentRunNewParamsSelectAppPath                DatasetExperimentRunNewParamsSelect = "APP_PATH"
-	DatasetExperimentRunNewParamsSelectAttachments            DatasetExperimentRunNewParamsSelect = "ATTACHMENTS"
-	DatasetExperimentRunNewParamsSelectThreadEvaluationTime   DatasetExperimentRunNewParamsSelect = "THREAD_EVALUATION_TIME"
-	DatasetExperimentRunNewParamsSelectIsInDataset            DatasetExperimentRunNewParamsSelect = "IS_IN_DATASET"
-	DatasetExperimentRunNewParamsSelectShareURL               DatasetExperimentRunNewParamsSelect = "SHARE_URL"
-	DatasetExperimentRunNewParamsSelectFeedbackStats          DatasetExperimentRunNewParamsSelect = "FEEDBACK_STATS"
+	DatasetExperimentRunQueryParamsSelectID                     DatasetExperimentRunQueryParamsSelect = "ID"
+	DatasetExperimentRunQueryParamsSelectName                   DatasetExperimentRunQueryParamsSelect = "NAME"
+	DatasetExperimentRunQueryParamsSelectRunType                DatasetExperimentRunQueryParamsSelect = "RUN_TYPE"
+	DatasetExperimentRunQueryParamsSelectStatus                 DatasetExperimentRunQueryParamsSelect = "STATUS"
+	DatasetExperimentRunQueryParamsSelectStartTime              DatasetExperimentRunQueryParamsSelect = "START_TIME"
+	DatasetExperimentRunQueryParamsSelectEndTime                DatasetExperimentRunQueryParamsSelect = "END_TIME"
+	DatasetExperimentRunQueryParamsSelectLatencySeconds         DatasetExperimentRunQueryParamsSelect = "LATENCY_SECONDS"
+	DatasetExperimentRunQueryParamsSelectFirstTokenTime         DatasetExperimentRunQueryParamsSelect = "FIRST_TOKEN_TIME"
+	DatasetExperimentRunQueryParamsSelectError                  DatasetExperimentRunQueryParamsSelect = "ERROR"
+	DatasetExperimentRunQueryParamsSelectErrorPreview           DatasetExperimentRunQueryParamsSelect = "ERROR_PREVIEW"
+	DatasetExperimentRunQueryParamsSelectExtra                  DatasetExperimentRunQueryParamsSelect = "EXTRA"
+	DatasetExperimentRunQueryParamsSelectMetadata               DatasetExperimentRunQueryParamsSelect = "METADATA"
+	DatasetExperimentRunQueryParamsSelectEvents                 DatasetExperimentRunQueryParamsSelect = "EVENTS"
+	DatasetExperimentRunQueryParamsSelectInputs                 DatasetExperimentRunQueryParamsSelect = "INPUTS"
+	DatasetExperimentRunQueryParamsSelectInputsPreview          DatasetExperimentRunQueryParamsSelect = "INPUTS_PREVIEW"
+	DatasetExperimentRunQueryParamsSelectOutputs                DatasetExperimentRunQueryParamsSelect = "OUTPUTS"
+	DatasetExperimentRunQueryParamsSelectOutputsPreview         DatasetExperimentRunQueryParamsSelect = "OUTPUTS_PREVIEW"
+	DatasetExperimentRunQueryParamsSelectManifest               DatasetExperimentRunQueryParamsSelect = "MANIFEST"
+	DatasetExperimentRunQueryParamsSelectParentRunIDs           DatasetExperimentRunQueryParamsSelect = "PARENT_RUN_IDS"
+	DatasetExperimentRunQueryParamsSelectProjectID              DatasetExperimentRunQueryParamsSelect = "PROJECT_ID"
+	DatasetExperimentRunQueryParamsSelectTraceID                DatasetExperimentRunQueryParamsSelect = "TRACE_ID"
+	DatasetExperimentRunQueryParamsSelectThreadID               DatasetExperimentRunQueryParamsSelect = "THREAD_ID"
+	DatasetExperimentRunQueryParamsSelectDottedOrder            DatasetExperimentRunQueryParamsSelect = "DOTTED_ORDER"
+	DatasetExperimentRunQueryParamsSelectIsRoot                 DatasetExperimentRunQueryParamsSelect = "IS_ROOT"
+	DatasetExperimentRunQueryParamsSelectReferenceExampleID     DatasetExperimentRunQueryParamsSelect = "REFERENCE_EXAMPLE_ID"
+	DatasetExperimentRunQueryParamsSelectReferenceDatasetID     DatasetExperimentRunQueryParamsSelect = "REFERENCE_DATASET_ID"
+	DatasetExperimentRunQueryParamsSelectTotalTokens            DatasetExperimentRunQueryParamsSelect = "TOTAL_TOKENS"
+	DatasetExperimentRunQueryParamsSelectPromptTokens           DatasetExperimentRunQueryParamsSelect = "PROMPT_TOKENS"
+	DatasetExperimentRunQueryParamsSelectCompletionTokens       DatasetExperimentRunQueryParamsSelect = "COMPLETION_TOKENS"
+	DatasetExperimentRunQueryParamsSelectTotalCost              DatasetExperimentRunQueryParamsSelect = "TOTAL_COST"
+	DatasetExperimentRunQueryParamsSelectPromptCost             DatasetExperimentRunQueryParamsSelect = "PROMPT_COST"
+	DatasetExperimentRunQueryParamsSelectCompletionCost         DatasetExperimentRunQueryParamsSelect = "COMPLETION_COST"
+	DatasetExperimentRunQueryParamsSelectPromptTokenDetails     DatasetExperimentRunQueryParamsSelect = "PROMPT_TOKEN_DETAILS"
+	DatasetExperimentRunQueryParamsSelectCompletionTokenDetails DatasetExperimentRunQueryParamsSelect = "COMPLETION_TOKEN_DETAILS"
+	DatasetExperimentRunQueryParamsSelectPromptCostDetails      DatasetExperimentRunQueryParamsSelect = "PROMPT_COST_DETAILS"
+	DatasetExperimentRunQueryParamsSelectCompletionCostDetails  DatasetExperimentRunQueryParamsSelect = "COMPLETION_COST_DETAILS"
+	DatasetExperimentRunQueryParamsSelectPriceModelID           DatasetExperimentRunQueryParamsSelect = "PRICE_MODEL_ID"
+	DatasetExperimentRunQueryParamsSelectTags                   DatasetExperimentRunQueryParamsSelect = "TAGS"
+	DatasetExperimentRunQueryParamsSelectAppPath                DatasetExperimentRunQueryParamsSelect = "APP_PATH"
+	DatasetExperimentRunQueryParamsSelectAttachments            DatasetExperimentRunQueryParamsSelect = "ATTACHMENTS"
+	DatasetExperimentRunQueryParamsSelectThreadEvaluationTime   DatasetExperimentRunQueryParamsSelect = "THREAD_EVALUATION_TIME"
+	DatasetExperimentRunQueryParamsSelectIsInDataset            DatasetExperimentRunQueryParamsSelect = "IS_IN_DATASET"
+	DatasetExperimentRunQueryParamsSelectShareURL               DatasetExperimentRunQueryParamsSelect = "SHARE_URL"
+	DatasetExperimentRunQueryParamsSelectFeedbackStats          DatasetExperimentRunQueryParamsSelect = "FEEDBACK_STATS"
 )
 
-func (r DatasetExperimentRunNewParamsSelect) IsKnown() bool {
+func (r DatasetExperimentRunQueryParamsSelect) IsKnown() bool {
 	switch r {
-	case DatasetExperimentRunNewParamsSelectID, DatasetExperimentRunNewParamsSelectName, DatasetExperimentRunNewParamsSelectRunType, DatasetExperimentRunNewParamsSelectStatus, DatasetExperimentRunNewParamsSelectStartTime, DatasetExperimentRunNewParamsSelectEndTime, DatasetExperimentRunNewParamsSelectLatencySeconds, DatasetExperimentRunNewParamsSelectFirstTokenTime, DatasetExperimentRunNewParamsSelectError, DatasetExperimentRunNewParamsSelectErrorPreview, DatasetExperimentRunNewParamsSelectExtra, DatasetExperimentRunNewParamsSelectMetadata, DatasetExperimentRunNewParamsSelectEvents, DatasetExperimentRunNewParamsSelectInputs, DatasetExperimentRunNewParamsSelectInputsPreview, DatasetExperimentRunNewParamsSelectOutputs, DatasetExperimentRunNewParamsSelectOutputsPreview, DatasetExperimentRunNewParamsSelectManifest, DatasetExperimentRunNewParamsSelectParentRunIDs, DatasetExperimentRunNewParamsSelectProjectID, DatasetExperimentRunNewParamsSelectTraceID, DatasetExperimentRunNewParamsSelectThreadID, DatasetExperimentRunNewParamsSelectDottedOrder, DatasetExperimentRunNewParamsSelectIsRoot, DatasetExperimentRunNewParamsSelectReferenceExampleID, DatasetExperimentRunNewParamsSelectReferenceDatasetID, DatasetExperimentRunNewParamsSelectTotalTokens, DatasetExperimentRunNewParamsSelectPromptTokens, DatasetExperimentRunNewParamsSelectCompletionTokens, DatasetExperimentRunNewParamsSelectTotalCost, DatasetExperimentRunNewParamsSelectPromptCost, DatasetExperimentRunNewParamsSelectCompletionCost, DatasetExperimentRunNewParamsSelectPromptTokenDetails, DatasetExperimentRunNewParamsSelectCompletionTokenDetails, DatasetExperimentRunNewParamsSelectPromptCostDetails, DatasetExperimentRunNewParamsSelectCompletionCostDetails, DatasetExperimentRunNewParamsSelectPriceModelID, DatasetExperimentRunNewParamsSelectTags, DatasetExperimentRunNewParamsSelectAppPath, DatasetExperimentRunNewParamsSelectAttachments, DatasetExperimentRunNewParamsSelectThreadEvaluationTime, DatasetExperimentRunNewParamsSelectIsInDataset, DatasetExperimentRunNewParamsSelectShareURL, DatasetExperimentRunNewParamsSelectFeedbackStats:
+	case DatasetExperimentRunQueryParamsSelectID, DatasetExperimentRunQueryParamsSelectName, DatasetExperimentRunQueryParamsSelectRunType, DatasetExperimentRunQueryParamsSelectStatus, DatasetExperimentRunQueryParamsSelectStartTime, DatasetExperimentRunQueryParamsSelectEndTime, DatasetExperimentRunQueryParamsSelectLatencySeconds, DatasetExperimentRunQueryParamsSelectFirstTokenTime, DatasetExperimentRunQueryParamsSelectError, DatasetExperimentRunQueryParamsSelectErrorPreview, DatasetExperimentRunQueryParamsSelectExtra, DatasetExperimentRunQueryParamsSelectMetadata, DatasetExperimentRunQueryParamsSelectEvents, DatasetExperimentRunQueryParamsSelectInputs, DatasetExperimentRunQueryParamsSelectInputsPreview, DatasetExperimentRunQueryParamsSelectOutputs, DatasetExperimentRunQueryParamsSelectOutputsPreview, DatasetExperimentRunQueryParamsSelectManifest, DatasetExperimentRunQueryParamsSelectParentRunIDs, DatasetExperimentRunQueryParamsSelectProjectID, DatasetExperimentRunQueryParamsSelectTraceID, DatasetExperimentRunQueryParamsSelectThreadID, DatasetExperimentRunQueryParamsSelectDottedOrder, DatasetExperimentRunQueryParamsSelectIsRoot, DatasetExperimentRunQueryParamsSelectReferenceExampleID, DatasetExperimentRunQueryParamsSelectReferenceDatasetID, DatasetExperimentRunQueryParamsSelectTotalTokens, DatasetExperimentRunQueryParamsSelectPromptTokens, DatasetExperimentRunQueryParamsSelectCompletionTokens, DatasetExperimentRunQueryParamsSelectTotalCost, DatasetExperimentRunQueryParamsSelectPromptCost, DatasetExperimentRunQueryParamsSelectCompletionCost, DatasetExperimentRunQueryParamsSelectPromptTokenDetails, DatasetExperimentRunQueryParamsSelectCompletionTokenDetails, DatasetExperimentRunQueryParamsSelectPromptCostDetails, DatasetExperimentRunQueryParamsSelectCompletionCostDetails, DatasetExperimentRunQueryParamsSelectPriceModelID, DatasetExperimentRunQueryParamsSelectTags, DatasetExperimentRunQueryParamsSelectAppPath, DatasetExperimentRunQueryParamsSelectAttachments, DatasetExperimentRunQueryParamsSelectThreadEvaluationTime, DatasetExperimentRunQueryParamsSelectIsInDataset, DatasetExperimentRunQueryParamsSelectShareURL, DatasetExperimentRunQueryParamsSelectFeedbackStats:
 		return true
 	}
 	return false
 }
 
 // `sort` controls feedback-score sorting (single project only).
-type DatasetExperimentRunNewParamsSort struct {
+type DatasetExperimentRunQueryParamsSort struct {
 	// `by` is the feedback selector, e.g. `feedback.correctness` (the `feedback.`
 	// prefix is optional).
 	By param.Field[string] `json:"by"`
@@ -212,6 +212,6 @@ type DatasetExperimentRunNewParamsSort struct {
 	Order param.Field[string] `json:"order"`
 }
 
-func (r DatasetExperimentRunNewParamsSort) MarshalJSON() (data []byte, err error) {
+func (r DatasetExperimentRunQueryParamsSort) MarshalJSON() (data []byte, err error) {
 	return apijson.MarshalRoot(r)
 }

@@ -39,7 +39,7 @@ func NewDatasetRunService(opts ...option.RequestOption) (r *DatasetRunService) {
 
 // Fetch examples for a dataset, and fetch the runs for each example if they are
 // associated with the given session_ids.
-func (r *DatasetRunService) New(ctx context.Context, datasetID string, params DatasetRunNewParams, opts ...option.RequestOption) (res *[]ExampleWithRunsCh, err error) {
+func (r *DatasetRunService) Query(ctx context.Context, datasetID string, params DatasetRunQueryParams, opts ...option.RequestOption) (res *[]ExampleWithRunsCh, err error) {
 	opts = slices.Concat(r.Options, opts)
 	if datasetID == "" {
 		err = errors.New("missing required dataset_id parameter")
@@ -222,10 +222,10 @@ func (r SortParamsForRunsComparisonViewSortOrder) IsKnown() bool {
 	return false
 }
 
-type DatasetRunNewParams struct {
+type DatasetRunQueryParams struct {
 	SessionIDs param.Field[[]string] `json:"session_ids" api:"required" format:"uuid"`
 	// Response format, e.g., 'csv'
-	Format                  param.Field[DatasetRunNewParamsFormat]       `query:"format"`
+	Format                  param.Field[DatasetRunQueryParamsFormat]     `query:"format"`
 	ComparativeExperimentID param.Field[string]                          `json:"comparative_experiment_id" format:"uuid"`
 	ExampleIDs              param.Field[[]string]                        `json:"example_ids" format:"uuid"`
 	Filters                 param.Field[map[string][]string]             `json:"filters"`
@@ -236,12 +236,12 @@ type DatasetRunNewParams struct {
 	SortParams              param.Field[SortParamsForRunsComparisonView] `json:"sort_params"`
 }
 
-func (r DatasetRunNewParams) MarshalJSON() (data []byte, err error) {
+func (r DatasetRunQueryParams) MarshalJSON() (data []byte, err error) {
 	return apijson.MarshalRoot(r)
 }
 
-// URLQuery serializes [DatasetRunNewParams]'s query parameters as `url.Values`.
-func (r DatasetRunNewParams) URLQuery() (v url.Values) {
+// URLQuery serializes [DatasetRunQueryParams]'s query parameters as `url.Values`.
+func (r DatasetRunQueryParams) URLQuery() (v url.Values) {
 	return apiquery.MarshalWithSettings(r, apiquery.QuerySettings{
 		ArrayFormat:  apiquery.ArrayQueryFormatRepeat,
 		NestedFormat: apiquery.NestedQueryFormatBrackets,
@@ -249,15 +249,15 @@ func (r DatasetRunNewParams) URLQuery() (v url.Values) {
 }
 
 // Response format, e.g., 'csv'
-type DatasetRunNewParamsFormat string
+type DatasetRunQueryParamsFormat string
 
 const (
-	DatasetRunNewParamsFormatCsv DatasetRunNewParamsFormat = "csv"
+	DatasetRunQueryParamsFormatCsv DatasetRunQueryParamsFormat = "csv"
 )
 
-func (r DatasetRunNewParamsFormat) IsKnown() bool {
+func (r DatasetRunQueryParamsFormat) IsKnown() bool {
 	switch r {
-	case DatasetRunNewParamsFormatCsv:
+	case DatasetRunQueryParamsFormatCsv:
 		return true
 	}
 	return false

@@ -29,7 +29,6 @@ import (
 // the [NewRunService] method instead.
 type RunService struct {
 	Options []option.RequestOption
-	Rules   *RunRuleService
 }
 
 // NewRunService generates a new service that applies the given options to each
@@ -38,7 +37,6 @@ type RunService struct {
 func NewRunService(opts ...option.RequestOption) (r *RunService) {
 	r = &RunService{}
 	r.Options = opts
-	r.Rules = NewRunRuleService(opts...)
 	return
 }
 
@@ -249,14 +247,14 @@ type Run struct {
 	// `events` is the ordered list of run events (for example streaming tokens).
 	Events []RunEvent `json:"events"`
 	// `extra` is additional runtime JSON attached to the run.
-	Extra interface{} `json:"extra"`
+	Extra map[string]interface{} `json:"extra"`
 	// `feedback_stats` aggregates feedback scores keyed by feedback key.
 	FeedbackStats map[string]RunFeedbackStat `json:"feedback_stats"`
 	// `first_token_time` is when the first output token was produced (RFC3339
 	// date-time), when recorded for streamed runs.
 	FirstTokenTime time.Time `json:"first_token_time" format:"date-time"`
 	// `inputs` is the run input payload (arbitrary JSON object).
-	Inputs interface{} `json:"inputs"`
+	Inputs map[string]interface{} `json:"inputs"`
 	// `inputs_preview` is a truncated plain-text preview of inputs.
 	InputsPreview string `json:"inputs_preview"`
 	// `is_in_dataset` is true when this run is linked to a dataset example.
@@ -267,14 +265,14 @@ type Run struct {
 	LatencySeconds float64 `json:"latency_seconds"`
 	// `manifest` is the serialized configuration of the traced component (for example
 	// the model parameters, prompt template, or pipeline definition), when recorded.
-	Manifest interface{} `json:"manifest"`
+	Manifest map[string]interface{} `json:"manifest"`
 	// `metadata` is arbitrary user-defined JSON metadata.
-	Metadata interface{} `json:"metadata"`
+	Metadata map[string]interface{} `json:"metadata"`
 	// `name` is a human-readable label for the run (for example the model name,
 	// function name, or step name chosen when the run was traced).
 	Name string `json:"name"`
 	// `outputs` is the run output payload (arbitrary JSON object).
-	Outputs interface{} `json:"outputs"`
+	Outputs map[string]interface{} `json:"outputs"`
 	// `outputs_preview` is a truncated plain-text preview of outputs.
 	OutputsPreview string `json:"outputs_preview"`
 	// `parent_run_ids` lists ancestor run UUIDs from the trace root down to the direct

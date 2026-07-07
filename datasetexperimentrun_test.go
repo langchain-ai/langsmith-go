@@ -13,7 +13,7 @@ import (
 	"github.com/langchain-ai/langsmith-go/option"
 )
 
-func TestDatasetExperimentRunNewWithOptionalParams(t *testing.T) {
+func TestDatasetExperimentRunQueryWithOptionalParams(t *testing.T) {
 	t.Skip("Mock server tests are disabled")
 	baseURL := "http://localhost:4010"
 	if envURL, ok := os.LookupEnv("TEST_API_BASE_URL"); ok {
@@ -27,10 +27,10 @@ func TestDatasetExperimentRunNewWithOptionalParams(t *testing.T) {
 		option.WithAPIKey("My API Key"),
 		option.WithTenantID("My Tenant ID"),
 	)
-	_, err := client.Datasets.ExperimentRuns.New(
+	_, err := client.Datasets.ExperimentRuns.Query(
 		context.TODO(),
 		"dataset_id",
-		langsmith.DatasetExperimentRunNewParams{
+		langsmith.DatasetExperimentRunQueryParams{
 			ComparativeExperimentID: langsmith.F("comparative_experiment_id"),
 			Cursor:                  langsmith.F("cursor"),
 			ExampleIDs:              langsmith.F([]string{"string"}),
@@ -39,8 +39,8 @@ func TestDatasetExperimentRunNewWithOptionalParams(t *testing.T) {
 				"foo": {"string"},
 			}),
 			PageSize: langsmith.F(int64(0)),
-			Selects:  langsmith.F([]langsmith.DatasetExperimentRunNewParamsSelect{langsmith.DatasetExperimentRunNewParamsSelectID}),
-			Sort: langsmith.F(langsmith.DatasetExperimentRunNewParamsSort{
+			Selects:  langsmith.F([]langsmith.DatasetExperimentRunQueryParamsSelect{langsmith.DatasetExperimentRunQueryParamsSelectID}),
+			Sort: langsmith.F(langsmith.DatasetExperimentRunQueryParamsSort{
 				By:    langsmith.F("by"),
 				Order: langsmith.F("order"),
 			}),
