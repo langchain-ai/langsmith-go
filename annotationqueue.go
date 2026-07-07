@@ -809,8 +809,9 @@ func (r AnnotationQueueExportParams) MarshalJSON() (data []byte, err error) {
 }
 
 type AnnotationQueuePopulateParams struct {
-	QueueID    param.Field[string]   `json:"queue_id" api:"required" format:"uuid"`
-	SessionIDs param.Field[[]string] `json:"session_ids" api:"required" format:"uuid"`
+	QueueID              param.Field[string]   `json:"queue_id" api:"required" format:"uuid"`
+	SessionIDs           param.Field[[]string] `json:"session_ids" api:"required" format:"uuid"`
+	ExtendTraceRetention param.Field[bool]     `json:"extend_trace_retention"`
 }
 
 func (r AnnotationQueuePopulateParams) MarshalJSON() (data []byte, err error) {

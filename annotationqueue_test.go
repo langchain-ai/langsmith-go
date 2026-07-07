@@ -230,7 +230,7 @@ func TestAnnotationQueueExportWithOptionalParams(t *testing.T) {
 	}
 }
 
-func TestAnnotationQueuePopulate(t *testing.T) {
+func TestAnnotationQueuePopulateWithOptionalParams(t *testing.T) {
 	t.Skip("Mock server tests are disabled")
 	baseURL := "http://localhost:4010"
 	if envURL, ok := os.LookupEnv("TEST_API_BASE_URL"); ok {
@@ -245,8 +245,9 @@ func TestAnnotationQueuePopulate(t *testing.T) {
 		option.WithTenantID("My Tenant ID"),
 	)
 	_, err := client.AnnotationQueues.Populate(context.TODO(), langsmith.AnnotationQueuePopulateParams{
-		QueueID:    langsmith.F("182bd5e5-6e1a-4fe4-a799-aa6d9a6ab26e"),
-		SessionIDs: langsmith.F([]string{"182bd5e5-6e1a-4fe4-a799-aa6d9a6ab26e"}),
+		QueueID:              langsmith.F("182bd5e5-6e1a-4fe4-a799-aa6d9a6ab26e"),
+		SessionIDs:           langsmith.F([]string{"182bd5e5-6e1a-4fe4-a799-aa6d9a6ab26e"}),
+		ExtendTraceRetention: langsmith.F(true),
 	})
 	if err != nil {
 		var apierr *langsmith.Error
