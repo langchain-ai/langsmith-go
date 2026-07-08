@@ -844,16 +844,18 @@ type RunStatsQueryParams struct {
 	Query            param.Field[string]               `json:"query"`
 	ReferenceExample param.Field[[]string]             `json:"reference_example" format:"uuid"`
 	// Enum for run types.
-	RunType               param.Field[RunTypeEnum]                 `json:"run_type"`
-	SearchFilter          param.Field[string]                      `json:"search_filter"`
-	Select                param.Field[[]RunStatsQueryParamsSelect] `json:"select"`
-	Session               param.Field[[]string]                    `json:"session" format:"uuid"`
-	SkipPagination        param.Field[bool]                        `json:"skip_pagination"`
-	StartTime             param.Field[time.Time]                   `json:"start_time" format:"date-time"`
-	Trace                 param.Field[string]                      `json:"trace" format:"uuid"`
-	TraceFilter           param.Field[string]                      `json:"trace_filter"`
-	TreeFilter            param.Field[string]                      `json:"tree_filter"`
-	UseExperimentalSearch param.Field[bool]                        `json:"use_experimental_search"`
+	RunType        param.Field[RunTypeEnum]                 `json:"run_type"`
+	SearchFilter   param.Field[string]                      `json:"search_filter"`
+	Select         param.Field[[]RunStatsQueryParamsSelect] `json:"select"`
+	Session        param.Field[[]string]                    `json:"session" format:"uuid"`
+	SkipPagination param.Field[bool]                        `json:"skip_pagination"`
+	StartTime      param.Field[time.Time]                   `json:"start_time" format:"date-time"`
+	// Filter runs by trace ID. When set, limit and cursor-based pagination are not
+	// applied — all runs in the trace are returned in a single response.
+	Trace                 param.Field[string] `json:"trace" format:"uuid"`
+	TraceFilter           param.Field[string] `json:"trace_filter"`
+	TreeFilter            param.Field[string] `json:"tree_filter"`
+	UseExperimentalSearch param.Field[bool]   `json:"use_experimental_search"`
 }
 
 func (r RunStatsQueryParams) MarshalJSON() (data []byte, err error) {
@@ -1224,24 +1226,28 @@ type RunQueryV1Params struct {
 	ExecutionOrder param.Field[int64]                        `json:"execution_order"`
 	Filter         param.Field[string]                       `json:"filter"`
 	IsRoot         param.Field[bool]                         `json:"is_root"`
-	Limit          param.Field[int64]                        `json:"limit"`
+	// Maximum number of runs to return. Not applied when trace is set — all runs in
+	// the trace are returned in a single response.
+	Limit param.Field[int64] `json:"limit"`
 	// Enum for run start date order.
 	Order            param.Field[RunQueryV1ParamsOrder] `json:"order"`
 	ParentRun        param.Field[string]                `json:"parent_run" format:"uuid"`
 	Query            param.Field[string]                `json:"query"`
 	ReferenceExample param.Field[[]string]              `json:"reference_example" format:"uuid"`
 	// Enum for run types.
-	RunType               param.Field[RunTypeEnum]              `json:"run_type"`
-	SearchFilter          param.Field[string]                   `json:"search_filter"`
-	Select                param.Field[[]RunQueryV1ParamsSelect] `json:"select"`
-	Session               param.Field[[]string]                 `json:"session" format:"uuid"`
-	SkipPagination        param.Field[bool]                     `json:"skip_pagination"`
-	SkipPrevCursor        param.Field[bool]                     `json:"skip_prev_cursor"`
-	StartTime             param.Field[time.Time]                `json:"start_time" format:"date-time"`
-	Trace                 param.Field[string]                   `json:"trace" format:"uuid"`
-	TraceFilter           param.Field[string]                   `json:"trace_filter"`
-	TreeFilter            param.Field[string]                   `json:"tree_filter"`
-	UseExperimentalSearch param.Field[bool]                     `json:"use_experimental_search"`
+	RunType        param.Field[RunTypeEnum]              `json:"run_type"`
+	SearchFilter   param.Field[string]                   `json:"search_filter"`
+	Select         param.Field[[]RunQueryV1ParamsSelect] `json:"select"`
+	Session        param.Field[[]string]                 `json:"session" format:"uuid"`
+	SkipPagination param.Field[bool]                     `json:"skip_pagination"`
+	SkipPrevCursor param.Field[bool]                     `json:"skip_prev_cursor"`
+	StartTime      param.Field[time.Time]                `json:"start_time" format:"date-time"`
+	// Filter runs by trace ID. When set, limit and cursor-based pagination are not
+	// applied — all runs in the trace are returned in a single response.
+	Trace                 param.Field[string] `json:"trace" format:"uuid"`
+	TraceFilter           param.Field[string] `json:"trace_filter"`
+	TreeFilter            param.Field[string] `json:"tree_filter"`
+	UseExperimentalSearch param.Field[bool]   `json:"use_experimental_search"`
 }
 
 func (r RunQueryV1Params) MarshalJSON() (data []byte, err error) {
@@ -1614,24 +1620,28 @@ type RunQueryParams struct {
 	ExecutionOrder param.Field[int64]                        `json:"execution_order"`
 	Filter         param.Field[string]                       `json:"filter"`
 	IsRoot         param.Field[bool]                         `json:"is_root"`
-	Limit          param.Field[int64]                        `json:"limit"`
+	// Maximum number of runs to return. Not applied when trace is set — all runs in
+	// the trace are returned in a single response.
+	Limit param.Field[int64] `json:"limit"`
 	// Enum for run start date order.
 	Order            param.Field[RunQueryParamsOrder] `json:"order"`
 	ParentRun        param.Field[string]              `json:"parent_run" format:"uuid"`
 	Query            param.Field[string]              `json:"query"`
 	ReferenceExample param.Field[[]string]            `json:"reference_example" format:"uuid"`
 	// Enum for run types.
-	RunType               param.Field[RunTypeEnum]            `json:"run_type"`
-	SearchFilter          param.Field[string]                 `json:"search_filter"`
-	Select                param.Field[[]RunQueryParamsSelect] `json:"select"`
-	Session               param.Field[[]string]               `json:"session" format:"uuid"`
-	SkipPagination        param.Field[bool]                   `json:"skip_pagination"`
-	SkipPrevCursor        param.Field[bool]                   `json:"skip_prev_cursor"`
-	StartTime             param.Field[time.Time]              `json:"start_time" format:"date-time"`
-	Trace                 param.Field[string]                 `json:"trace" format:"uuid"`
-	TraceFilter           param.Field[string]                 `json:"trace_filter"`
-	TreeFilter            param.Field[string]                 `json:"tree_filter"`
-	UseExperimentalSearch param.Field[bool]                   `json:"use_experimental_search"`
+	RunType        param.Field[RunTypeEnum]            `json:"run_type"`
+	SearchFilter   param.Field[string]                 `json:"search_filter"`
+	Select         param.Field[[]RunQueryParamsSelect] `json:"select"`
+	Session        param.Field[[]string]               `json:"session" format:"uuid"`
+	SkipPagination param.Field[bool]                   `json:"skip_pagination"`
+	SkipPrevCursor param.Field[bool]                   `json:"skip_prev_cursor"`
+	StartTime      param.Field[time.Time]              `json:"start_time" format:"date-time"`
+	// Filter runs by trace ID. When set, limit and cursor-based pagination are not
+	// applied — all runs in the trace are returned in a single response.
+	Trace                 param.Field[string] `json:"trace" format:"uuid"`
+	TraceFilter           param.Field[string] `json:"trace_filter"`
+	TreeFilter            param.Field[string] `json:"tree_filter"`
+	UseExperimentalSearch param.Field[bool]   `json:"use_experimental_search"`
 }
 
 func (r RunQueryParams) MarshalJSON() (data []byte, err error) {
