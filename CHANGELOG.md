@@ -1,5 +1,25 @@
 # Changelog
 
+## [0.18.0](https://github.com/langchain-ai/langsmith-go/compare/v0.17.0...v0.18.0) (2026-07-08)
+
+
+### ⚠ BREAKING CHANGES
+
+* **stainless:** skip sessions resource for python and typescript
+
+### Features
+
+* **managed-eval:** expose is_managed_evaluator on run-rule read/write paths ([74c4176](https://github.com/langchain-ai/langsmith-go/commit/74c41769bf0a10073edf9e9c732d92811ca6e67b))
+* **smith-sdks:** expose threads and traces v2 endpoints in public SDK ([138b727](https://github.com/langchain-ai/langsmith-go/commit/138b727751f263b8e1d2d45b6b23ce077db4d18d))
+* **stainless:** skip sessions resource for python and typescript ([e44bc58](https://github.com/langchain-ai/langsmith-go/commit/e44bc583f1997bf1d911e76b0956c0e756e3e1ed))
+
+
+### Bug Fixes
+
+* restore title/additionalProperties on v2 RunResponse JSON fields for Stainless ([13ecdcf](https://github.com/langchain-ai/langsmith-go/commit/13ecdcfdc152f7c58ae5349894b7383f8f5db8df))
+* **smith-sdks:** remove dead retrieve_thread_preview SDK mapping ([0cf8801](https://github.com/langchain-ai/langsmith-go/commit/0cf88019bd2b978e03e3d28eb18465a3c85a77a2))
+* **smith-sdks:** rename dataset runs POST methods from create to query ([2fabf94](https://github.com/langchain-ai/langsmith-go/commit/2fabf9471e847bb9549c9cf5b103432c441d773d))
+
 ## [0.17.0](https://github.com/langchain-ai/langsmith-go/compare/v0.16.1...v0.17.0) (2026-07-02)
 
 
