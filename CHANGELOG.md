@@ -1,5 +1,12 @@
 # Changelog
 
+## [0.18.1](https://github.com/langchain-ai/langsmith-go/compare/v0.18.0...v0.18.1) (2026-07-08)
+
+
+### Documentation
+
+* **runs:** document that limit does not apply when querying by trace ID ([1b466fe](https://github.com/langchain-ai/langsmith-go/commit/1b466fe2b31d7576b01528dcc63a413237f0880b))
+
 ## [0.18.0](https://github.com/langchain-ai/langsmith-go/compare/v0.17.0...v0.18.0) (2026-07-08)
 
 
