@@ -38,14 +38,14 @@ func NewAnnotationQueueRunService(opts ...option.RequestOption) (r *AnnotationQu
 }
 
 // Add Runs To Annotation Queue
-func (r *AnnotationQueueRunService) New(ctx context.Context, queueID string, body AnnotationQueueRunNewParams, opts ...option.RequestOption) (res *[]AnnotationQueueRunNewResponse, err error) {
+func (r *AnnotationQueueRunService) New(ctx context.Context, queueID string, params AnnotationQueueRunNewParams, opts ...option.RequestOption) (res *[]AnnotationQueueRunNewResponse, err error) {
 	opts = slices.Concat(r.Options, opts)
 	if queueID == "" {
 		err = errors.New("missing required queue_id parameter")
 		return nil, err
 	}
 	path := fmt.Sprintf("api/v1/annotation-queues/%s/runs", queueID)
-	err = requestconfig.ExecuteNewRequest(ctx, http.MethodPost, path, body, &res, opts...)
+	err = requestconfig.ExecuteNewRequest(ctx, http.MethodPost, path, params, &res, opts...)
 	return res, err
 }
 
@@ -143,11 +143,21 @@ type AnnotationQueueRunDeleteAllResponse = interface{}
 type AnnotationQueueRunDeleteQueueResponse = interface{}
 
 type AnnotationQueueRunNewParams struct {
-	Body AnnotationQueueRunNewParamsBodyUnion `json:"body" api:"required" format:"uuid"`
+	Body                 AnnotationQueueRunNewParamsBodyUnion `json:"body" api:"required" format:"uuid"`
+	ExtendTraceRetention param.Field[bool]                    `query:"extend_trace_retention"`
 }
 
 func (r AnnotationQueueRunNewParams) MarshalJSON() (data []byte, err error) {
 	return apijson.MarshalRoot(r.Body)
+}
+
+// URLQuery serializes [AnnotationQueueRunNewParams]'s query parameters as
+// `url.Values`.
+func (r AnnotationQueueRunNewParams) URLQuery() (v url.Values) {
+	return apiquery.MarshalWithSettings(r, apiquery.QuerySettings{
+		ArrayFormat:  apiquery.ArrayQueryFormatRepeat,
+		NestedFormat: apiquery.NestedQueryFormatBrackets,
+	})
 }
 
 // Satisfied by [AnnotationQueueRunNewParamsBodyRunsUuidArray],
