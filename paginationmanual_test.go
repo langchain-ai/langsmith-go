@@ -28,14 +28,14 @@ func TestManualPagination(t *testing.T) {
 		option.WithAPIKey("My API Key"),
 		option.WithTenantID("My Tenant ID"),
 	)
-	page, err := client.Datasets.List(context.TODO(), langsmith.DatasetListParams{
-		Limit: langsmith.F(int64(100)),
+	page, err := client.Runs.QueryV2(context.TODO(), langsmith.RunQueryV2Params{
+		ProjectIDs: langsmith.F([]string{"00000000-0000-0000-0000-000000000000"}),
 	})
 	if err != nil {
 		t.Fatalf("err should be nil: %s", err.Error())
 	}
-	for _, dataset := range page.Items {
-		t.Logf("%+v\n", dataset.ID)
+	for _, run := range page.Items {
+		t.Logf("%+v\n", run.ID)
 	}
 	// The mock server isn't going to give us real pagination
 	page, err = page.GetNextPage()
@@ -43,8 +43,8 @@ func TestManualPagination(t *testing.T) {
 		t.Fatalf("err should be nil: %s", err.Error())
 	}
 	if page != nil {
-		for _, dataset := range page.Items {
-			t.Logf("%+v\n", dataset.ID)
+		for _, run := range page.Items {
+			t.Logf("%+v\n", run.ID)
 		}
 	}
 }

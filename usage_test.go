@@ -26,12 +26,12 @@ func TestUsage(t *testing.T) {
 		option.WithAPIKey("My API Key"),
 		option.WithTenantID("My Tenant ID"),
 	)
-	tracerSessionWithoutVirtualFields, err := client.Sessions.New(context.TODO(), langsmith.SessionNewParams{
-		Name: langsmith.F("my-project"),
+	page, err := client.Runs.QueryV2(context.TODO(), langsmith.RunQueryV2Params{
+		ProjectIDs: langsmith.F([]string{"00000000-0000-0000-0000-000000000000"}),
 	})
 	if err != nil {
 		t.Error(err)
 		return
 	}
-	t.Logf("%+v\n", tracerSessionWithoutVirtualFields.ID)
+	t.Logf("%+v\n", page)
 }
