@@ -835,6 +835,12 @@ type ThreadStatsParams struct {
 	Selects param.Field[[]ThreadStatsParamsSelect] `query:"selects" api:"required"`
 	// `session_id` is the tracing project (session) UUID (required).
 	SessionID param.Field[string] `query:"session_id" api:"required" format:"uuid"`
+	// `filter` narrows which of the thread's traces are aggregated, using a LangSmith
+	// filter expression. For example: lt(start_time, "2025-01-01T00:00:00Z") or
+	// eq(trace_id, "0190a1b2-c3d4-7ef0-a5b6-6ea3a82e9328"). See
+	// https://docs.langchain.com/langsmith/trace-query-syntax#filter-query-language
+	// for syntax.
+	Filter param.Field[string] `query:"filter"`
 }
 
 // URLQuery serializes [ThreadStatsParams]'s query parameters as `url.Values`.
