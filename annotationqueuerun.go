@@ -77,6 +77,18 @@ func (r *AnnotationQueueRunService) List(ctx context.Context, queueID string, qu
 	return res, err
 }
 
+// Add Runs To Annotation Queue By Key
+func (r *AnnotationQueueRunService) NewByKey(ctx context.Context, queueID string, params AnnotationQueueRunNewByKeyParams, opts ...option.RequestOption) (res *[]AnnotationQueueRunNewByKeyResponse, err error) {
+	opts = slices.Concat(r.Options, opts)
+	if queueID == "" {
+		err = errors.New("missing required queue_id parameter")
+		return nil, err
+	}
+	path := fmt.Sprintf("api/v1/annotation-queues/%s/runs/by-key", queueID)
+	err = requestconfig.ExecuteNewRequest(ctx, http.MethodPost, path, params, &res, opts...)
+	return res, err
+}
+
 // Delete Runs From Annotation Queue
 func (r *AnnotationQueueRunService) DeleteAll(ctx context.Context, queueID string, body AnnotationQueueRunDeleteAllParams, opts ...option.RequestOption) (res *AnnotationQueueRunDeleteAllResponse, err error) {
 	opts = slices.Concat(r.Options, opts)
@@ -137,6 +149,37 @@ func (r annotationQueueRunNewResponseJSON) RawJSON() string {
 }
 
 type AnnotationQueueRunUpdateResponse = interface{}
+
+type AnnotationQueueRunNewByKeyResponse struct {
+	ID                      string                                 `json:"id" api:"required" format:"uuid"`
+	QueueID                 string                                 `json:"queue_id" api:"required" format:"uuid"`
+	RunID                   string                                 `json:"run_id" api:"required" format:"uuid"`
+	AddedAt                 time.Time                              `json:"added_at" format:"date-time"`
+	LastReviewedTime        time.Time                              `json:"last_reviewed_time" api:"nullable" format:"date-time"`
+	SourceProposedExampleID string                                 `json:"source_proposed_example_id" api:"nullable" format:"uuid"`
+	JSON                    annotationQueueRunNewByKeyResponseJSON `json:"-"`
+}
+
+// annotationQueueRunNewByKeyResponseJSON contains the JSON metadata for the struct
+// [AnnotationQueueRunNewByKeyResponse]
+type annotationQueueRunNewByKeyResponseJSON struct {
+	ID                      apijson.Field
+	QueueID                 apijson.Field
+	RunID                   apijson.Field
+	AddedAt                 apijson.Field
+	LastReviewedTime        apijson.Field
+	SourceProposedExampleID apijson.Field
+	raw                     string
+	ExtraFields             map[string]apijson.Field
+}
+
+func (r *AnnotationQueueRunNewByKeyResponse) UnmarshalJSON(data []byte) (err error) {
+	return apijson.UnmarshalRoot(data, r)
+}
+
+func (r annotationQueueRunNewByKeyResponseJSON) RawJSON() string {
+	return r.raw
+}
 
 type AnnotationQueueRunDeleteAllResponse = interface{}
 
@@ -269,6 +312,36 @@ func (r AnnotationQueueRunListParamsStatus) IsKnown() bool {
 		return true
 	}
 	return false
+}
+
+type AnnotationQueueRunNewByKeyParams struct {
+	Body                 []AnnotationQueueRunNewByKeyParamsBody `json:"body" api:"required"`
+	ExtendTraceRetention param.Field[bool]                      `query:"extend_trace_retention"`
+}
+
+func (r AnnotationQueueRunNewByKeyParams) MarshalJSON() (data []byte, err error) {
+	return apijson.MarshalRoot(r.Body)
+}
+
+// URLQuery serializes [AnnotationQueueRunNewByKeyParams]'s query parameters as
+// `url.Values`.
+func (r AnnotationQueueRunNewByKeyParams) URLQuery() (v url.Values) {
+	return apiquery.MarshalWithSettings(r, apiquery.QuerySettings{
+		ArrayFormat:  apiquery.ArrayQueryFormatRepeat,
+		NestedFormat: apiquery.NestedQueryFormatBrackets,
+	})
+}
+
+// Add run to AQ by SmithDB key. is_root derived server-side (LSAQ-141).
+type AnnotationQueueRunNewByKeyParamsBody struct {
+	RunID                   param.Field[string]    `json:"run_id" api:"required" format:"uuid"`
+	SessionID               param.Field[string]    `json:"session_id" api:"required" format:"uuid"`
+	StartTime               param.Field[time.Time] `json:"start_time" api:"required" format:"date-time"`
+	SourceProposedExampleID param.Field[string]    `json:"source_proposed_example_id" format:"uuid"`
+}
+
+func (r AnnotationQueueRunNewByKeyParamsBody) MarshalJSON() (data []byte, err error) {
+	return apijson.MarshalRoot(r)
 }
 
 type AnnotationQueueRunDeleteAllParams struct {
