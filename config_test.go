@@ -894,6 +894,307 @@ func TestWithProfileOverridesDefaultProfile(t *testing.T) {
 	}
 }
 
+// unsetTenantEnv removes the tenant/workspace env vars (absent, not empty:
+// DefaultClientOptions treats a present-but-empty value as an explicit clear).
+func unsetTenantEnv(t *testing.T) {
+	t.Helper()
+	for _, k := range []string{"LANGSMITH_TENANT_ID", "LANGSMITH_WORKSPACE_ID"} {
+		if orig, ok := os.LookupEnv(k); ok {
+			k, orig := k, orig
+			t.Cleanup(func() { _ = os.Setenv(k, orig) })
+		}
+		_ = os.Unsetenv(k)
+	}
+}
+
+func TestWithProfileClearsInheritedTenantWhenWorkspaceless(t *testing.T) {
+	clearAuthEnv(t)
+	unsetTenantEnv(t)
+
+	dir := t.TempDir()
+	path := filepath.Join(dir, "config.json")
+	content := `{
+  "current_profile": "prod",
+  "profiles": {
+    "prod": {
+      "api_key": "prod-api-key",
+      "workspace_id": "prod-workspace-id"
+    },
+    "aws": {
+      "api_key": "aws-api-key"
+    }
+  }
+}
+`
+	if err := os.WriteFile(path, []byte(content), 0600); err != nil {
+		t.Fatal(err)
+	}
+	t.Setenv("LANGSMITH_CONFIG_FILE", path)
+	t.Setenv("LANGSMITH_PROFILE", "")
+
+	cfg := applyOptions(t, append(DefaultClientOptions(), WithProfile("aws")))
+	if cfg.TenantID != "" {
+		t.Fatalf("expected tenant cleared for workspace-less profile, got %q", cfg.TenantID)
+	}
+	if got := cfg.Request.Header.Get("X-Tenant-Id"); got != "" {
+		t.Fatalf("expected no X-Tenant-Id header, got %q: current_profile tenant leaked", got)
+	}
+}
+
+func TestWithProfileAppliesProfileWorkspace(t *testing.T) {
+	clearAuthEnv(t)
+	unsetTenantEnv(t)
+
+	dir := t.TempDir()
+	path := filepath.Join(dir, "config.json")
+	content := `{
+  "current_profile": "prod",
+  "profiles": {
+    "prod": {
+      "api_key": "prod-api-key",
+      "workspace_id": "prod-workspace-id"
+    },
+    "staging": {
+      "api_key": "staging-api-key",
+      "workspace_id": "staging-workspace-id"
+    }
+  }
+}
+`
+	if err := os.WriteFile(path, []byte(content), 0600); err != nil {
+		t.Fatal(err)
+	}
+	t.Setenv("LANGSMITH_CONFIG_FILE", path)
+	t.Setenv("LANGSMITH_PROFILE", "")
+
+	cfg := applyOptions(t, append(DefaultClientOptions(), WithProfile("staging")))
+	if cfg.TenantID != "staging-workspace-id" {
+		t.Fatalf("expected selected profile workspace tenant, got %q", cfg.TenantID)
+	}
+	if got := cfg.Request.Header.Get("X-Tenant-Id"); got != "staging-workspace-id" {
+		t.Fatalf("expected X-Tenant-Id=staging-workspace-id, got %q", got)
+	}
+}
+
+func TestWithProfileKeepsEnvTenantForWorkspacelessProfile(t *testing.T) {
+	clearAuthEnv(t)
+	unsetTenantEnv(t)
+	t.Setenv("LANGSMITH_TENANT_ID", "env-tenant")
+
+	dir := t.TempDir()
+	path := filepath.Join(dir, "config.json")
+	content := `{
+  "current_profile": "prod",
+  "profiles": {
+    "prod": {
+      "api_key": "prod-api-key",
+      "workspace_id": "prod-workspace-id"
+    },
+    "aws": {
+      "api_key": "aws-api-key"
+    }
+  }
+}
+`
+	if err := os.WriteFile(path, []byte(content), 0600); err != nil {
+		t.Fatal(err)
+	}
+	t.Setenv("LANGSMITH_CONFIG_FILE", path)
+	t.Setenv("LANGSMITH_PROFILE", "")
+
+	// A tenant env var must win over the workspace-less profile's clear.
+	cfg := applyOptions(t, append(DefaultClientOptions(), WithProfile("aws")))
+	if cfg.TenantID != "env-tenant" {
+		t.Fatalf("expected env tenant to survive WithProfile, got %q", cfg.TenantID)
+	}
+	if got := cfg.Request.Header.Get("X-Tenant-Id"); got != "env-tenant" {
+		t.Fatalf("expected X-Tenant-Id=env-tenant, got %q", got)
+	}
+}
+
+func TestWithProfileClearsInheritedBaseURLWhenURLless(t *testing.T) {
+	clearAuthEnv(t)
+	unsetTenantEnv(t)
+	// Endpoint must be absent for the reset to apply (a present-but-empty value
+	// makes DefaultClientOptions apply WithBaseURL("")). clearAuthEnv's cleanup
+	// restores the original value after the test.
+	_ = os.Unsetenv("LANGSMITH_ENDPOINT")
+
+	dir := t.TempDir()
+	path := filepath.Join(dir, "config.json")
+	content := `{
+  "current_profile": "prod",
+  "profiles": {
+    "prod": {
+      "api_key": "prod-api-key",
+      "api_url": "https://prod-host.example.com",
+      "workspace_id": "prod-workspace-id"
+    },
+    "aws": {
+      "api_key": "aws-api-key"
+    }
+  }
+}
+`
+	if err := os.WriteFile(path, []byte(content), 0600); err != nil {
+		t.Fatal(err)
+	}
+	t.Setenv("LANGSMITH_CONFIG_FILE", path)
+	t.Setenv("LANGSMITH_PROFILE", "")
+
+	// A url-less explicit profile must not inherit current_profile's api_url;
+	// BaseURL resets to nil so the SDK falls back to the default endpoint.
+	cfg := applyOptions(t, append(DefaultClientOptions(), WithProfile("aws")))
+	if cfg.BaseURL != nil {
+		t.Fatalf("expected base URL cleared (nil => default) for url-less profile, got %q: current_profile URL leaked", cfg.BaseURL)
+	}
+}
+
+func TestWithProfileKeepsEnvEndpointForURLlessProfile(t *testing.T) {
+	clearAuthEnv(t)
+	unsetTenantEnv(t)
+	t.Setenv("LANGSMITH_ENDPOINT", "https://env-host.example.com")
+
+	dir := t.TempDir()
+	path := filepath.Join(dir, "config.json")
+	content := `{
+  "current_profile": "prod",
+  "profiles": {
+    "prod": {
+      "api_key": "prod-api-key",
+      "api_url": "https://prod-host.example.com",
+      "workspace_id": "prod-workspace-id"
+    },
+    "aws": {
+      "api_key": "aws-api-key"
+    }
+  }
+}
+`
+	if err := os.WriteFile(path, []byte(content), 0600); err != nil {
+		t.Fatal(err)
+	}
+	t.Setenv("LANGSMITH_CONFIG_FILE", path)
+	t.Setenv("LANGSMITH_PROFILE", "")
+
+	// LANGSMITH_ENDPOINT must win over the url-less profile's base-URL reset.
+	cfg := applyOptions(t, append(DefaultClientOptions(), WithProfile("aws")))
+	if cfg.BaseURL == nil || cfg.BaseURL.String() != "https://env-host.example.com" {
+		t.Fatalf("expected env endpoint to survive WithProfile, got %v", cfg.BaseURL)
+	}
+}
+
+func TestWithProfileEnvTenantBeatsProfileWorkspace(t *testing.T) {
+	clearAuthEnv(t)
+	unsetTenantEnv(t)
+	t.Setenv("LANGSMITH_WORKSPACE_ID", "env-workspace-id")
+
+	dir := t.TempDir()
+	path := filepath.Join(dir, "config.json")
+	content := `{
+  "current_profile": "prod",
+  "profiles": {
+    "prod": {
+      "api_key": "prod-api-key",
+      "workspace_id": "prod-workspace-id"
+    },
+    "staging": {
+      "api_key": "staging-api-key",
+      "workspace_id": "staging-workspace-id"
+    }
+  }
+}
+`
+	if err := os.WriteFile(path, []byte(content), 0600); err != nil {
+		t.Fatal(err)
+	}
+	t.Setenv("LANGSMITH_CONFIG_FILE", path)
+	t.Setenv("LANGSMITH_PROFILE", "")
+
+	// A tenant env var must win over the selected profile's own workspace_id,
+	// matching env-overrides-profile precedence.
+	cfg := applyOptions(t, append(DefaultClientOptions(), WithProfile("staging")))
+	if cfg.TenantID != "env-workspace-id" {
+		t.Fatalf("expected env workspace to win over profile workspace, got %q", cfg.TenantID)
+	}
+	if got := cfg.Request.Header.Get("X-Tenant-Id"); got != "env-workspace-id" {
+		t.Fatalf("expected X-Tenant-Id=env-workspace-id, got %q", got)
+	}
+}
+
+func TestWithProfileEnvEndpointBeatsProfileURL(t *testing.T) {
+	clearAuthEnv(t)
+	unsetTenantEnv(t)
+	t.Setenv("LANGSMITH_ENDPOINT", "https://env-host.example.com")
+
+	dir := t.TempDir()
+	path := filepath.Join(dir, "config.json")
+	content := `{
+  "current_profile": "prod",
+  "profiles": {
+    "prod": {
+      "api_key": "prod-api-key",
+      "api_url": "https://prod-host.example.com"
+    },
+    "staging": {
+      "api_key": "staging-api-key",
+      "api_url": "https://staging-host.example.com"
+    }
+  }
+}
+`
+	if err := os.WriteFile(path, []byte(content), 0600); err != nil {
+		t.Fatal(err)
+	}
+	t.Setenv("LANGSMITH_CONFIG_FILE", path)
+	t.Setenv("LANGSMITH_PROFILE", "")
+
+	// LANGSMITH_ENDPOINT must win over the selected profile's own api_url.
+	cfg := applyOptions(t, append(DefaultClientOptions(), WithProfile("staging")))
+	if cfg.BaseURL == nil || cfg.BaseURL.String() != "https://env-host.example.com" {
+		t.Fatalf("expected env endpoint to win over profile api_url, got %v", cfg.BaseURL)
+	}
+}
+
+func TestWithProfileClearsInheritedAPIKeyForCredentiallessProfile(t *testing.T) {
+	clearAuthEnv(t)
+	unsetTenantEnv(t)
+	// API key env must be absent (not empty): a present-but-empty value makes
+	// DefaultClientOptions apply WithAPIKey(""), which would clear the ambient key
+	// before WithProfile runs and mask the leak. clearAuthEnv's cleanup restores it.
+	_ = os.Unsetenv("LANGSMITH_API_KEY")
+
+	dir := t.TempDir()
+	path := filepath.Join(dir, "config.json")
+	content := `{
+  "current_profile": "prod",
+  "profiles": {
+    "prod": {
+      "api_key": "prod-api-key"
+    },
+    "bare": {
+      "workspace_id": "bare-workspace-id"
+    }
+  }
+}
+`
+	if err := os.WriteFile(path, []byte(content), 0600); err != nil {
+		t.Fatal(err)
+	}
+	t.Setenv("LANGSMITH_CONFIG_FILE", path)
+	t.Setenv("LANGSMITH_PROFILE", "")
+
+	// An explicitly selected profile with no credentials must not inherit
+	// current_profile's API key.
+	cfg := applyOptions(t, append(DefaultClientOptions(), WithProfile("bare")))
+	if cfg.APIKey != "" {
+		t.Fatalf("expected inherited API key cleared for credential-less profile, got %q", cfg.APIKey)
+	}
+	if got := cfg.Request.Header.Get("X-API-Key"); got != "" {
+		t.Fatalf("expected no X-API-Key header, got %q: current_profile key leaked", got)
+	}
+}
+
 func TestWithProfileMissingProfileReturnsError(t *testing.T) {
 	clearAuthEnv(t)
 	dir := t.TempDir()
