@@ -1,5 +1,12 @@
 # Changelog
 
+## [0.18.2](https://github.com/langchain-ai/langsmith-go/compare/v0.18.1...v0.18.2) (2026-07-10)
+
+
+### Bug Fixes
+
+* explicit profile replaces current_profile (tenant, base URL, auth) ([#72](https://github.com/langchain-ai/langsmith-go/issues/72)) ([73b42f1](https://github.com/langchain-ai/langsmith-go/commit/73b42f17d22ab3a2ebfbd51493851dc6d1bc60e0))
+
 ## [0.18.1](https://github.com/langchain-ai/langsmith-go/compare/v0.18.0...v0.18.1) (2026-07-08)
 
 
