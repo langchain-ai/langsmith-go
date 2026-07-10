@@ -796,6 +796,7 @@ type CustomChartsSectionChartsSeriesMetricDefinition struct {
 	// [CustomChartsSectionChartsSeriesMetricDefinitionCustomChartMetricRatioOutputNumerator].
 	Numerator interface{} `json:"numerator"`
 	// This field can have the runtime type of
+	// [CustomChartsSectionChartsSeriesMetricDefinitionCustomChartFeedbackScoreMetricScalarParams],
 	// [CustomChartsSectionChartsSeriesMetricDefinitionCustomChartMetricPercentileParams].
 	Params interface{}                                         `json:"params"`
 	Type   CustomChartsSectionChartsSeriesMetricDefinitionType `json:"type"`
@@ -834,6 +835,7 @@ func (r *CustomChartsSectionChartsSeriesMetricDefinition) UnmarshalJSON(data []b
 //
 // Possible runtime types of the union are
 // [CustomChartsSectionChartsSeriesMetricDefinitionCustomChartMetricCount],
+// [CustomChartsSectionChartsSeriesMetricDefinitionCustomChartFeedbackScoreMetricScalar],
 // [CustomChartsSectionChartsSeriesMetricDefinitionCustomChartMetricScalar],
 // [CustomChartsSectionChartsSeriesMetricDefinitionCustomChartMetricPercentile],
 // [CustomChartsSectionChartsSeriesMetricDefinitionCustomChartMetricRatioOutput].
@@ -843,6 +845,7 @@ func (r CustomChartsSectionChartsSeriesMetricDefinition) AsUnion() CustomChartsS
 
 // Union satisfied by
 // [CustomChartsSectionChartsSeriesMetricDefinitionCustomChartMetricCount],
+// [CustomChartsSectionChartsSeriesMetricDefinitionCustomChartFeedbackScoreMetricScalar],
 // [CustomChartsSectionChartsSeriesMetricDefinitionCustomChartMetricScalar],
 // [CustomChartsSectionChartsSeriesMetricDefinitionCustomChartMetricPercentile] or
 // [CustomChartsSectionChartsSeriesMetricDefinitionCustomChartMetricRatioOutput].
@@ -857,6 +860,10 @@ func init() {
 		apijson.UnionVariant{
 			TypeFilter: gjson.JSON,
 			Type:       reflect.TypeOf(CustomChartsSectionChartsSeriesMetricDefinitionCustomChartMetricCount{}),
+		},
+		apijson.UnionVariant{
+			TypeFilter: gjson.JSON,
+			Type:       reflect.TypeOf(CustomChartsSectionChartsSeriesMetricDefinitionCustomChartFeedbackScoreMetricScalar{}),
 		},
 		apijson.UnionVariant{
 			TypeFilter: gjson.JSON,
@@ -914,6 +921,89 @@ func (r CustomChartsSectionChartsSeriesMetricDefinitionCustomChartMetricCountTyp
 	return false
 }
 
+type CustomChartsSectionChartsSeriesMetricDefinitionCustomChartFeedbackScoreMetricScalar struct {
+	Field  CustomChartsSectionChartsSeriesMetricDefinitionCustomChartFeedbackScoreMetricScalarField  `json:"field" api:"required"`
+	Params CustomChartsSectionChartsSeriesMetricDefinitionCustomChartFeedbackScoreMetricScalarParams `json:"params" api:"required"`
+	Type   CustomChartsSectionChartsSeriesMetricDefinitionCustomChartFeedbackScoreMetricScalarType   `json:"type" api:"required"`
+	Filter string                                                                                    `json:"filter" api:"nullable"`
+	JSON   customChartsSectionChartsSeriesMetricDefinitionCustomChartFeedbackScoreMetricScalarJSON   `json:"-"`
+}
+
+// customChartsSectionChartsSeriesMetricDefinitionCustomChartFeedbackScoreMetricScalarJSON
+// contains the JSON metadata for the struct
+// [CustomChartsSectionChartsSeriesMetricDefinitionCustomChartFeedbackScoreMetricScalar]
+type customChartsSectionChartsSeriesMetricDefinitionCustomChartFeedbackScoreMetricScalarJSON struct {
+	Field       apijson.Field
+	Params      apijson.Field
+	Type        apijson.Field
+	Filter      apijson.Field
+	raw         string
+	ExtraFields map[string]apijson.Field
+}
+
+func (r *CustomChartsSectionChartsSeriesMetricDefinitionCustomChartFeedbackScoreMetricScalar) UnmarshalJSON(data []byte) (err error) {
+	return apijson.UnmarshalRoot(data, r)
+}
+
+func (r customChartsSectionChartsSeriesMetricDefinitionCustomChartFeedbackScoreMetricScalarJSON) RawJSON() string {
+	return r.raw
+}
+
+func (r CustomChartsSectionChartsSeriesMetricDefinitionCustomChartFeedbackScoreMetricScalar) implementsCustomChartsSectionChartsSeriesMetricDefinition() {
+}
+
+type CustomChartsSectionChartsSeriesMetricDefinitionCustomChartFeedbackScoreMetricScalarField string
+
+const (
+	CustomChartsSectionChartsSeriesMetricDefinitionCustomChartFeedbackScoreMetricScalarFieldFeedbackScore CustomChartsSectionChartsSeriesMetricDefinitionCustomChartFeedbackScoreMetricScalarField = "feedback_score"
+)
+
+func (r CustomChartsSectionChartsSeriesMetricDefinitionCustomChartFeedbackScoreMetricScalarField) IsKnown() bool {
+	switch r {
+	case CustomChartsSectionChartsSeriesMetricDefinitionCustomChartFeedbackScoreMetricScalarFieldFeedbackScore:
+		return true
+	}
+	return false
+}
+
+type CustomChartsSectionChartsSeriesMetricDefinitionCustomChartFeedbackScoreMetricScalarParams struct {
+	FeedbackKey string                                                                                        `json:"feedback_key" api:"required"`
+	JSON        customChartsSectionChartsSeriesMetricDefinitionCustomChartFeedbackScoreMetricScalarParamsJSON `json:"-"`
+}
+
+// customChartsSectionChartsSeriesMetricDefinitionCustomChartFeedbackScoreMetricScalarParamsJSON
+// contains the JSON metadata for the struct
+// [CustomChartsSectionChartsSeriesMetricDefinitionCustomChartFeedbackScoreMetricScalarParams]
+type customChartsSectionChartsSeriesMetricDefinitionCustomChartFeedbackScoreMetricScalarParamsJSON struct {
+	FeedbackKey apijson.Field
+	raw         string
+	ExtraFields map[string]apijson.Field
+}
+
+func (r *CustomChartsSectionChartsSeriesMetricDefinitionCustomChartFeedbackScoreMetricScalarParams) UnmarshalJSON(data []byte) (err error) {
+	return apijson.UnmarshalRoot(data, r)
+}
+
+func (r customChartsSectionChartsSeriesMetricDefinitionCustomChartFeedbackScoreMetricScalarParamsJSON) RawJSON() string {
+	return r.raw
+}
+
+type CustomChartsSectionChartsSeriesMetricDefinitionCustomChartFeedbackScoreMetricScalarType string
+
+const (
+	CustomChartsSectionChartsSeriesMetricDefinitionCustomChartFeedbackScoreMetricScalarTypeMax CustomChartsSectionChartsSeriesMetricDefinitionCustomChartFeedbackScoreMetricScalarType = "max"
+	CustomChartsSectionChartsSeriesMetricDefinitionCustomChartFeedbackScoreMetricScalarTypeMin CustomChartsSectionChartsSeriesMetricDefinitionCustomChartFeedbackScoreMetricScalarType = "min"
+	CustomChartsSectionChartsSeriesMetricDefinitionCustomChartFeedbackScoreMetricScalarTypeAvg CustomChartsSectionChartsSeriesMetricDefinitionCustomChartFeedbackScoreMetricScalarType = "avg"
+)
+
+func (r CustomChartsSectionChartsSeriesMetricDefinitionCustomChartFeedbackScoreMetricScalarType) IsKnown() bool {
+	switch r {
+	case CustomChartsSectionChartsSeriesMetricDefinitionCustomChartFeedbackScoreMetricScalarTypeMax, CustomChartsSectionChartsSeriesMetricDefinitionCustomChartFeedbackScoreMetricScalarTypeMin, CustomChartsSectionChartsSeriesMetricDefinitionCustomChartFeedbackScoreMetricScalarTypeAvg:
+		return true
+	}
+	return false
+}
+
 type CustomChartsSectionChartsSeriesMetricDefinitionCustomChartMetricScalar struct {
 	Field  CustomChartsSectionChartsSeriesMetricDefinitionCustomChartMetricScalarField `json:"field" api:"required"`
 	Type   CustomChartsSectionChartsSeriesMetricDefinitionCustomChartMetricScalarType  `json:"type" api:"required"`
@@ -954,11 +1044,12 @@ const (
 	CustomChartsSectionChartsSeriesMetricDefinitionCustomChartMetricScalarFieldTotalCost         CustomChartsSectionChartsSeriesMetricDefinitionCustomChartMetricScalarField = "total_cost"
 	CustomChartsSectionChartsSeriesMetricDefinitionCustomChartMetricScalarFieldPromptCost        CustomChartsSectionChartsSeriesMetricDefinitionCustomChartMetricScalarField = "prompt_cost"
 	CustomChartsSectionChartsSeriesMetricDefinitionCustomChartMetricScalarFieldCompletionCost    CustomChartsSectionChartsSeriesMetricDefinitionCustomChartMetricScalarField = "completion_cost"
+	CustomChartsSectionChartsSeriesMetricDefinitionCustomChartMetricScalarFieldFeedbackScore     CustomChartsSectionChartsSeriesMetricDefinitionCustomChartMetricScalarField = "feedback_score"
 )
 
 func (r CustomChartsSectionChartsSeriesMetricDefinitionCustomChartMetricScalarField) IsKnown() bool {
 	switch r {
-	case CustomChartsSectionChartsSeriesMetricDefinitionCustomChartMetricScalarFieldLatencySeconds, CustomChartsSectionChartsSeriesMetricDefinitionCustomChartMetricScalarFieldFirstTokenSeconds, CustomChartsSectionChartsSeriesMetricDefinitionCustomChartMetricScalarFieldTotalTokens, CustomChartsSectionChartsSeriesMetricDefinitionCustomChartMetricScalarFieldPromptTokens, CustomChartsSectionChartsSeriesMetricDefinitionCustomChartMetricScalarFieldCompletionTokens, CustomChartsSectionChartsSeriesMetricDefinitionCustomChartMetricScalarFieldTotalCost, CustomChartsSectionChartsSeriesMetricDefinitionCustomChartMetricScalarFieldPromptCost, CustomChartsSectionChartsSeriesMetricDefinitionCustomChartMetricScalarFieldCompletionCost:
+	case CustomChartsSectionChartsSeriesMetricDefinitionCustomChartMetricScalarFieldLatencySeconds, CustomChartsSectionChartsSeriesMetricDefinitionCustomChartMetricScalarFieldFirstTokenSeconds, CustomChartsSectionChartsSeriesMetricDefinitionCustomChartMetricScalarFieldTotalTokens, CustomChartsSectionChartsSeriesMetricDefinitionCustomChartMetricScalarFieldPromptTokens, CustomChartsSectionChartsSeriesMetricDefinitionCustomChartMetricScalarFieldCompletionTokens, CustomChartsSectionChartsSeriesMetricDefinitionCustomChartMetricScalarFieldTotalCost, CustomChartsSectionChartsSeriesMetricDefinitionCustomChartMetricScalarFieldPromptCost, CustomChartsSectionChartsSeriesMetricDefinitionCustomChartMetricScalarFieldCompletionCost, CustomChartsSectionChartsSeriesMetricDefinitionCustomChartMetricScalarFieldFeedbackScore:
 		return true
 	}
 	return false
@@ -1023,11 +1114,12 @@ const (
 	CustomChartsSectionChartsSeriesMetricDefinitionCustomChartMetricPercentileFieldTotalCost         CustomChartsSectionChartsSeriesMetricDefinitionCustomChartMetricPercentileField = "total_cost"
 	CustomChartsSectionChartsSeriesMetricDefinitionCustomChartMetricPercentileFieldPromptCost        CustomChartsSectionChartsSeriesMetricDefinitionCustomChartMetricPercentileField = "prompt_cost"
 	CustomChartsSectionChartsSeriesMetricDefinitionCustomChartMetricPercentileFieldCompletionCost    CustomChartsSectionChartsSeriesMetricDefinitionCustomChartMetricPercentileField = "completion_cost"
+	CustomChartsSectionChartsSeriesMetricDefinitionCustomChartMetricPercentileFieldFeedbackScore     CustomChartsSectionChartsSeriesMetricDefinitionCustomChartMetricPercentileField = "feedback_score"
 )
 
 func (r CustomChartsSectionChartsSeriesMetricDefinitionCustomChartMetricPercentileField) IsKnown() bool {
 	switch r {
-	case CustomChartsSectionChartsSeriesMetricDefinitionCustomChartMetricPercentileFieldLatencySeconds, CustomChartsSectionChartsSeriesMetricDefinitionCustomChartMetricPercentileFieldFirstTokenSeconds, CustomChartsSectionChartsSeriesMetricDefinitionCustomChartMetricPercentileFieldTotalTokens, CustomChartsSectionChartsSeriesMetricDefinitionCustomChartMetricPercentileFieldPromptTokens, CustomChartsSectionChartsSeriesMetricDefinitionCustomChartMetricPercentileFieldCompletionTokens, CustomChartsSectionChartsSeriesMetricDefinitionCustomChartMetricPercentileFieldTotalCost, CustomChartsSectionChartsSeriesMetricDefinitionCustomChartMetricPercentileFieldPromptCost, CustomChartsSectionChartsSeriesMetricDefinitionCustomChartMetricPercentileFieldCompletionCost:
+	case CustomChartsSectionChartsSeriesMetricDefinitionCustomChartMetricPercentileFieldLatencySeconds, CustomChartsSectionChartsSeriesMetricDefinitionCustomChartMetricPercentileFieldFirstTokenSeconds, CustomChartsSectionChartsSeriesMetricDefinitionCustomChartMetricPercentileFieldTotalTokens, CustomChartsSectionChartsSeriesMetricDefinitionCustomChartMetricPercentileFieldPromptTokens, CustomChartsSectionChartsSeriesMetricDefinitionCustomChartMetricPercentileFieldCompletionTokens, CustomChartsSectionChartsSeriesMetricDefinitionCustomChartMetricPercentileFieldTotalCost, CustomChartsSectionChartsSeriesMetricDefinitionCustomChartMetricPercentileFieldPromptCost, CustomChartsSectionChartsSeriesMetricDefinitionCustomChartMetricPercentileFieldCompletionCost, CustomChartsSectionChartsSeriesMetricDefinitionCustomChartMetricPercentileFieldFeedbackScore:
 		return true
 	}
 	return false
@@ -1102,6 +1194,7 @@ type CustomChartsSectionChartsSeriesMetricDefinitionCustomChartMetricRatioOutput
 	Field  CustomChartsSectionChartsSeriesMetricDefinitionCustomChartMetricRatioOutputDenominatorField `json:"field"`
 	Filter string                                                                                      `json:"filter" api:"nullable"`
 	// This field can have the runtime type of
+	// [CustomChartsSectionChartsSeriesMetricDefinitionCustomChartMetricRatioOutputDenominatorCustomChartFeedbackScoreMetricScalarParams],
 	// [CustomChartsSectionChartsSeriesMetricDefinitionCustomChartMetricRatioOutputDenominatorCustomChartMetricPercentileParams].
 	Params interface{}                                                                                `json:"params"`
 	Type   CustomChartsSectionChartsSeriesMetricDefinitionCustomChartMetricRatioOutputDenominatorType `json:"type"`
@@ -1140,6 +1233,7 @@ func (r *CustomChartsSectionChartsSeriesMetricDefinitionCustomChartMetricRatioOu
 //
 // Possible runtime types of the union are
 // [CustomChartsSectionChartsSeriesMetricDefinitionCustomChartMetricRatioOutputDenominatorCustomChartMetricCount],
+// [CustomChartsSectionChartsSeriesMetricDefinitionCustomChartMetricRatioOutputDenominatorCustomChartFeedbackScoreMetricScalar],
 // [CustomChartsSectionChartsSeriesMetricDefinitionCustomChartMetricRatioOutputDenominatorCustomChartMetricScalar],
 // [CustomChartsSectionChartsSeriesMetricDefinitionCustomChartMetricRatioOutputDenominatorCustomChartMetricPercentile].
 func (r CustomChartsSectionChartsSeriesMetricDefinitionCustomChartMetricRatioOutputDenominator) AsUnion() CustomChartsSectionChartsSeriesMetricDefinitionCustomChartMetricRatioOutputDenominatorUnion {
@@ -1148,6 +1242,7 @@ func (r CustomChartsSectionChartsSeriesMetricDefinitionCustomChartMetricRatioOut
 
 // Union satisfied by
 // [CustomChartsSectionChartsSeriesMetricDefinitionCustomChartMetricRatioOutputDenominatorCustomChartMetricCount],
+// [CustomChartsSectionChartsSeriesMetricDefinitionCustomChartMetricRatioOutputDenominatorCustomChartFeedbackScoreMetricScalar],
 // [CustomChartsSectionChartsSeriesMetricDefinitionCustomChartMetricRatioOutputDenominatorCustomChartMetricScalar]
 // or
 // [CustomChartsSectionChartsSeriesMetricDefinitionCustomChartMetricRatioOutputDenominatorCustomChartMetricPercentile].
@@ -1162,6 +1257,10 @@ func init() {
 		apijson.UnionVariant{
 			TypeFilter: gjson.JSON,
 			Type:       reflect.TypeOf(CustomChartsSectionChartsSeriesMetricDefinitionCustomChartMetricRatioOutputDenominatorCustomChartMetricCount{}),
+		},
+		apijson.UnionVariant{
+			TypeFilter: gjson.JSON,
+			Type:       reflect.TypeOf(CustomChartsSectionChartsSeriesMetricDefinitionCustomChartMetricRatioOutputDenominatorCustomChartFeedbackScoreMetricScalar{}),
 		},
 		apijson.UnionVariant{
 			TypeFilter: gjson.JSON,
@@ -1215,6 +1314,89 @@ func (r CustomChartsSectionChartsSeriesMetricDefinitionCustomChartMetricRatioOut
 	return false
 }
 
+type CustomChartsSectionChartsSeriesMetricDefinitionCustomChartMetricRatioOutputDenominatorCustomChartFeedbackScoreMetricScalar struct {
+	Field  CustomChartsSectionChartsSeriesMetricDefinitionCustomChartMetricRatioOutputDenominatorCustomChartFeedbackScoreMetricScalarField  `json:"field" api:"required"`
+	Params CustomChartsSectionChartsSeriesMetricDefinitionCustomChartMetricRatioOutputDenominatorCustomChartFeedbackScoreMetricScalarParams `json:"params" api:"required"`
+	Type   CustomChartsSectionChartsSeriesMetricDefinitionCustomChartMetricRatioOutputDenominatorCustomChartFeedbackScoreMetricScalarType   `json:"type" api:"required"`
+	Filter string                                                                                                                           `json:"filter" api:"nullable"`
+	JSON   customChartsSectionChartsSeriesMetricDefinitionCustomChartMetricRatioOutputDenominatorCustomChartFeedbackScoreMetricScalarJSON   `json:"-"`
+}
+
+// customChartsSectionChartsSeriesMetricDefinitionCustomChartMetricRatioOutputDenominatorCustomChartFeedbackScoreMetricScalarJSON
+// contains the JSON metadata for the struct
+// [CustomChartsSectionChartsSeriesMetricDefinitionCustomChartMetricRatioOutputDenominatorCustomChartFeedbackScoreMetricScalar]
+type customChartsSectionChartsSeriesMetricDefinitionCustomChartMetricRatioOutputDenominatorCustomChartFeedbackScoreMetricScalarJSON struct {
+	Field       apijson.Field
+	Params      apijson.Field
+	Type        apijson.Field
+	Filter      apijson.Field
+	raw         string
+	ExtraFields map[string]apijson.Field
+}
+
+func (r *CustomChartsSectionChartsSeriesMetricDefinitionCustomChartMetricRatioOutputDenominatorCustomChartFeedbackScoreMetricScalar) UnmarshalJSON(data []byte) (err error) {
+	return apijson.UnmarshalRoot(data, r)
+}
+
+func (r customChartsSectionChartsSeriesMetricDefinitionCustomChartMetricRatioOutputDenominatorCustomChartFeedbackScoreMetricScalarJSON) RawJSON() string {
+	return r.raw
+}
+
+func (r CustomChartsSectionChartsSeriesMetricDefinitionCustomChartMetricRatioOutputDenominatorCustomChartFeedbackScoreMetricScalar) implementsCustomChartsSectionChartsSeriesMetricDefinitionCustomChartMetricRatioOutputDenominator() {
+}
+
+type CustomChartsSectionChartsSeriesMetricDefinitionCustomChartMetricRatioOutputDenominatorCustomChartFeedbackScoreMetricScalarField string
+
+const (
+	CustomChartsSectionChartsSeriesMetricDefinitionCustomChartMetricRatioOutputDenominatorCustomChartFeedbackScoreMetricScalarFieldFeedbackScore CustomChartsSectionChartsSeriesMetricDefinitionCustomChartMetricRatioOutputDenominatorCustomChartFeedbackScoreMetricScalarField = "feedback_score"
+)
+
+func (r CustomChartsSectionChartsSeriesMetricDefinitionCustomChartMetricRatioOutputDenominatorCustomChartFeedbackScoreMetricScalarField) IsKnown() bool {
+	switch r {
+	case CustomChartsSectionChartsSeriesMetricDefinitionCustomChartMetricRatioOutputDenominatorCustomChartFeedbackScoreMetricScalarFieldFeedbackScore:
+		return true
+	}
+	return false
+}
+
+type CustomChartsSectionChartsSeriesMetricDefinitionCustomChartMetricRatioOutputDenominatorCustomChartFeedbackScoreMetricScalarParams struct {
+	FeedbackKey string                                                                                                                               `json:"feedback_key" api:"required"`
+	JSON        customChartsSectionChartsSeriesMetricDefinitionCustomChartMetricRatioOutputDenominatorCustomChartFeedbackScoreMetricScalarParamsJSON `json:"-"`
+}
+
+// customChartsSectionChartsSeriesMetricDefinitionCustomChartMetricRatioOutputDenominatorCustomChartFeedbackScoreMetricScalarParamsJSON
+// contains the JSON metadata for the struct
+// [CustomChartsSectionChartsSeriesMetricDefinitionCustomChartMetricRatioOutputDenominatorCustomChartFeedbackScoreMetricScalarParams]
+type customChartsSectionChartsSeriesMetricDefinitionCustomChartMetricRatioOutputDenominatorCustomChartFeedbackScoreMetricScalarParamsJSON struct {
+	FeedbackKey apijson.Field
+	raw         string
+	ExtraFields map[string]apijson.Field
+}
+
+func (r *CustomChartsSectionChartsSeriesMetricDefinitionCustomChartMetricRatioOutputDenominatorCustomChartFeedbackScoreMetricScalarParams) UnmarshalJSON(data []byte) (err error) {
+	return apijson.UnmarshalRoot(data, r)
+}
+
+func (r customChartsSectionChartsSeriesMetricDefinitionCustomChartMetricRatioOutputDenominatorCustomChartFeedbackScoreMetricScalarParamsJSON) RawJSON() string {
+	return r.raw
+}
+
+type CustomChartsSectionChartsSeriesMetricDefinitionCustomChartMetricRatioOutputDenominatorCustomChartFeedbackScoreMetricScalarType string
+
+const (
+	CustomChartsSectionChartsSeriesMetricDefinitionCustomChartMetricRatioOutputDenominatorCustomChartFeedbackScoreMetricScalarTypeMax CustomChartsSectionChartsSeriesMetricDefinitionCustomChartMetricRatioOutputDenominatorCustomChartFeedbackScoreMetricScalarType = "max"
+	CustomChartsSectionChartsSeriesMetricDefinitionCustomChartMetricRatioOutputDenominatorCustomChartFeedbackScoreMetricScalarTypeMin CustomChartsSectionChartsSeriesMetricDefinitionCustomChartMetricRatioOutputDenominatorCustomChartFeedbackScoreMetricScalarType = "min"
+	CustomChartsSectionChartsSeriesMetricDefinitionCustomChartMetricRatioOutputDenominatorCustomChartFeedbackScoreMetricScalarTypeAvg CustomChartsSectionChartsSeriesMetricDefinitionCustomChartMetricRatioOutputDenominatorCustomChartFeedbackScoreMetricScalarType = "avg"
+)
+
+func (r CustomChartsSectionChartsSeriesMetricDefinitionCustomChartMetricRatioOutputDenominatorCustomChartFeedbackScoreMetricScalarType) IsKnown() bool {
+	switch r {
+	case CustomChartsSectionChartsSeriesMetricDefinitionCustomChartMetricRatioOutputDenominatorCustomChartFeedbackScoreMetricScalarTypeMax, CustomChartsSectionChartsSeriesMetricDefinitionCustomChartMetricRatioOutputDenominatorCustomChartFeedbackScoreMetricScalarTypeMin, CustomChartsSectionChartsSeriesMetricDefinitionCustomChartMetricRatioOutputDenominatorCustomChartFeedbackScoreMetricScalarTypeAvg:
+		return true
+	}
+	return false
+}
+
 type CustomChartsSectionChartsSeriesMetricDefinitionCustomChartMetricRatioOutputDenominatorCustomChartMetricScalar struct {
 	Field  CustomChartsSectionChartsSeriesMetricDefinitionCustomChartMetricRatioOutputDenominatorCustomChartMetricScalarField `json:"field" api:"required"`
 	Type   CustomChartsSectionChartsSeriesMetricDefinitionCustomChartMetricRatioOutputDenominatorCustomChartMetricScalarType  `json:"type" api:"required"`
@@ -1255,11 +1437,12 @@ const (
 	CustomChartsSectionChartsSeriesMetricDefinitionCustomChartMetricRatioOutputDenominatorCustomChartMetricScalarFieldTotalCost         CustomChartsSectionChartsSeriesMetricDefinitionCustomChartMetricRatioOutputDenominatorCustomChartMetricScalarField = "total_cost"
 	CustomChartsSectionChartsSeriesMetricDefinitionCustomChartMetricRatioOutputDenominatorCustomChartMetricScalarFieldPromptCost        CustomChartsSectionChartsSeriesMetricDefinitionCustomChartMetricRatioOutputDenominatorCustomChartMetricScalarField = "prompt_cost"
 	CustomChartsSectionChartsSeriesMetricDefinitionCustomChartMetricRatioOutputDenominatorCustomChartMetricScalarFieldCompletionCost    CustomChartsSectionChartsSeriesMetricDefinitionCustomChartMetricRatioOutputDenominatorCustomChartMetricScalarField = "completion_cost"
+	CustomChartsSectionChartsSeriesMetricDefinitionCustomChartMetricRatioOutputDenominatorCustomChartMetricScalarFieldFeedbackScore     CustomChartsSectionChartsSeriesMetricDefinitionCustomChartMetricRatioOutputDenominatorCustomChartMetricScalarField = "feedback_score"
 )
 
 func (r CustomChartsSectionChartsSeriesMetricDefinitionCustomChartMetricRatioOutputDenominatorCustomChartMetricScalarField) IsKnown() bool {
 	switch r {
-	case CustomChartsSectionChartsSeriesMetricDefinitionCustomChartMetricRatioOutputDenominatorCustomChartMetricScalarFieldLatencySeconds, CustomChartsSectionChartsSeriesMetricDefinitionCustomChartMetricRatioOutputDenominatorCustomChartMetricScalarFieldFirstTokenSeconds, CustomChartsSectionChartsSeriesMetricDefinitionCustomChartMetricRatioOutputDenominatorCustomChartMetricScalarFieldTotalTokens, CustomChartsSectionChartsSeriesMetricDefinitionCustomChartMetricRatioOutputDenominatorCustomChartMetricScalarFieldPromptTokens, CustomChartsSectionChartsSeriesMetricDefinitionCustomChartMetricRatioOutputDenominatorCustomChartMetricScalarFieldCompletionTokens, CustomChartsSectionChartsSeriesMetricDefinitionCustomChartMetricRatioOutputDenominatorCustomChartMetricScalarFieldTotalCost, CustomChartsSectionChartsSeriesMetricDefinitionCustomChartMetricRatioOutputDenominatorCustomChartMetricScalarFieldPromptCost, CustomChartsSectionChartsSeriesMetricDefinitionCustomChartMetricRatioOutputDenominatorCustomChartMetricScalarFieldCompletionCost:
+	case CustomChartsSectionChartsSeriesMetricDefinitionCustomChartMetricRatioOutputDenominatorCustomChartMetricScalarFieldLatencySeconds, CustomChartsSectionChartsSeriesMetricDefinitionCustomChartMetricRatioOutputDenominatorCustomChartMetricScalarFieldFirstTokenSeconds, CustomChartsSectionChartsSeriesMetricDefinitionCustomChartMetricRatioOutputDenominatorCustomChartMetricScalarFieldTotalTokens, CustomChartsSectionChartsSeriesMetricDefinitionCustomChartMetricRatioOutputDenominatorCustomChartMetricScalarFieldPromptTokens, CustomChartsSectionChartsSeriesMetricDefinitionCustomChartMetricRatioOutputDenominatorCustomChartMetricScalarFieldCompletionTokens, CustomChartsSectionChartsSeriesMetricDefinitionCustomChartMetricRatioOutputDenominatorCustomChartMetricScalarFieldTotalCost, CustomChartsSectionChartsSeriesMetricDefinitionCustomChartMetricRatioOutputDenominatorCustomChartMetricScalarFieldPromptCost, CustomChartsSectionChartsSeriesMetricDefinitionCustomChartMetricRatioOutputDenominatorCustomChartMetricScalarFieldCompletionCost, CustomChartsSectionChartsSeriesMetricDefinitionCustomChartMetricRatioOutputDenominatorCustomChartMetricScalarFieldFeedbackScore:
 		return true
 	}
 	return false
@@ -1324,11 +1507,12 @@ const (
 	CustomChartsSectionChartsSeriesMetricDefinitionCustomChartMetricRatioOutputDenominatorCustomChartMetricPercentileFieldTotalCost         CustomChartsSectionChartsSeriesMetricDefinitionCustomChartMetricRatioOutputDenominatorCustomChartMetricPercentileField = "total_cost"
 	CustomChartsSectionChartsSeriesMetricDefinitionCustomChartMetricRatioOutputDenominatorCustomChartMetricPercentileFieldPromptCost        CustomChartsSectionChartsSeriesMetricDefinitionCustomChartMetricRatioOutputDenominatorCustomChartMetricPercentileField = "prompt_cost"
 	CustomChartsSectionChartsSeriesMetricDefinitionCustomChartMetricRatioOutputDenominatorCustomChartMetricPercentileFieldCompletionCost    CustomChartsSectionChartsSeriesMetricDefinitionCustomChartMetricRatioOutputDenominatorCustomChartMetricPercentileField = "completion_cost"
+	CustomChartsSectionChartsSeriesMetricDefinitionCustomChartMetricRatioOutputDenominatorCustomChartMetricPercentileFieldFeedbackScore     CustomChartsSectionChartsSeriesMetricDefinitionCustomChartMetricRatioOutputDenominatorCustomChartMetricPercentileField = "feedback_score"
 )
 
 func (r CustomChartsSectionChartsSeriesMetricDefinitionCustomChartMetricRatioOutputDenominatorCustomChartMetricPercentileField) IsKnown() bool {
 	switch r {
-	case CustomChartsSectionChartsSeriesMetricDefinitionCustomChartMetricRatioOutputDenominatorCustomChartMetricPercentileFieldLatencySeconds, CustomChartsSectionChartsSeriesMetricDefinitionCustomChartMetricRatioOutputDenominatorCustomChartMetricPercentileFieldFirstTokenSeconds, CustomChartsSectionChartsSeriesMetricDefinitionCustomChartMetricRatioOutputDenominatorCustomChartMetricPercentileFieldTotalTokens, CustomChartsSectionChartsSeriesMetricDefinitionCustomChartMetricRatioOutputDenominatorCustomChartMetricPercentileFieldPromptTokens, CustomChartsSectionChartsSeriesMetricDefinitionCustomChartMetricRatioOutputDenominatorCustomChartMetricPercentileFieldCompletionTokens, CustomChartsSectionChartsSeriesMetricDefinitionCustomChartMetricRatioOutputDenominatorCustomChartMetricPercentileFieldTotalCost, CustomChartsSectionChartsSeriesMetricDefinitionCustomChartMetricRatioOutputDenominatorCustomChartMetricPercentileFieldPromptCost, CustomChartsSectionChartsSeriesMetricDefinitionCustomChartMetricRatioOutputDenominatorCustomChartMetricPercentileFieldCompletionCost:
+	case CustomChartsSectionChartsSeriesMetricDefinitionCustomChartMetricRatioOutputDenominatorCustomChartMetricPercentileFieldLatencySeconds, CustomChartsSectionChartsSeriesMetricDefinitionCustomChartMetricRatioOutputDenominatorCustomChartMetricPercentileFieldFirstTokenSeconds, CustomChartsSectionChartsSeriesMetricDefinitionCustomChartMetricRatioOutputDenominatorCustomChartMetricPercentileFieldTotalTokens, CustomChartsSectionChartsSeriesMetricDefinitionCustomChartMetricRatioOutputDenominatorCustomChartMetricPercentileFieldPromptTokens, CustomChartsSectionChartsSeriesMetricDefinitionCustomChartMetricRatioOutputDenominatorCustomChartMetricPercentileFieldCompletionTokens, CustomChartsSectionChartsSeriesMetricDefinitionCustomChartMetricRatioOutputDenominatorCustomChartMetricPercentileFieldTotalCost, CustomChartsSectionChartsSeriesMetricDefinitionCustomChartMetricRatioOutputDenominatorCustomChartMetricPercentileFieldPromptCost, CustomChartsSectionChartsSeriesMetricDefinitionCustomChartMetricRatioOutputDenominatorCustomChartMetricPercentileFieldCompletionCost, CustomChartsSectionChartsSeriesMetricDefinitionCustomChartMetricRatioOutputDenominatorCustomChartMetricPercentileFieldFeedbackScore:
 		return true
 	}
 	return false
@@ -1373,6 +1557,7 @@ func (r CustomChartsSectionChartsSeriesMetricDefinitionCustomChartMetricRatioOut
 type CustomChartsSectionChartsSeriesMetricDefinitionCustomChartMetricRatioOutputDenominatorField string
 
 const (
+	CustomChartsSectionChartsSeriesMetricDefinitionCustomChartMetricRatioOutputDenominatorFieldFeedbackScore     CustomChartsSectionChartsSeriesMetricDefinitionCustomChartMetricRatioOutputDenominatorField = "feedback_score"
 	CustomChartsSectionChartsSeriesMetricDefinitionCustomChartMetricRatioOutputDenominatorFieldLatencySeconds    CustomChartsSectionChartsSeriesMetricDefinitionCustomChartMetricRatioOutputDenominatorField = "latency_seconds"
 	CustomChartsSectionChartsSeriesMetricDefinitionCustomChartMetricRatioOutputDenominatorFieldFirstTokenSeconds CustomChartsSectionChartsSeriesMetricDefinitionCustomChartMetricRatioOutputDenominatorField = "first_token_seconds"
 	CustomChartsSectionChartsSeriesMetricDefinitionCustomChartMetricRatioOutputDenominatorFieldTotalTokens       CustomChartsSectionChartsSeriesMetricDefinitionCustomChartMetricRatioOutputDenominatorField = "total_tokens"
@@ -1385,7 +1570,7 @@ const (
 
 func (r CustomChartsSectionChartsSeriesMetricDefinitionCustomChartMetricRatioOutputDenominatorField) IsKnown() bool {
 	switch r {
-	case CustomChartsSectionChartsSeriesMetricDefinitionCustomChartMetricRatioOutputDenominatorFieldLatencySeconds, CustomChartsSectionChartsSeriesMetricDefinitionCustomChartMetricRatioOutputDenominatorFieldFirstTokenSeconds, CustomChartsSectionChartsSeriesMetricDefinitionCustomChartMetricRatioOutputDenominatorFieldTotalTokens, CustomChartsSectionChartsSeriesMetricDefinitionCustomChartMetricRatioOutputDenominatorFieldPromptTokens, CustomChartsSectionChartsSeriesMetricDefinitionCustomChartMetricRatioOutputDenominatorFieldCompletionTokens, CustomChartsSectionChartsSeriesMetricDefinitionCustomChartMetricRatioOutputDenominatorFieldTotalCost, CustomChartsSectionChartsSeriesMetricDefinitionCustomChartMetricRatioOutputDenominatorFieldPromptCost, CustomChartsSectionChartsSeriesMetricDefinitionCustomChartMetricRatioOutputDenominatorFieldCompletionCost:
+	case CustomChartsSectionChartsSeriesMetricDefinitionCustomChartMetricRatioOutputDenominatorFieldFeedbackScore, CustomChartsSectionChartsSeriesMetricDefinitionCustomChartMetricRatioOutputDenominatorFieldLatencySeconds, CustomChartsSectionChartsSeriesMetricDefinitionCustomChartMetricRatioOutputDenominatorFieldFirstTokenSeconds, CustomChartsSectionChartsSeriesMetricDefinitionCustomChartMetricRatioOutputDenominatorFieldTotalTokens, CustomChartsSectionChartsSeriesMetricDefinitionCustomChartMetricRatioOutputDenominatorFieldPromptTokens, CustomChartsSectionChartsSeriesMetricDefinitionCustomChartMetricRatioOutputDenominatorFieldCompletionTokens, CustomChartsSectionChartsSeriesMetricDefinitionCustomChartMetricRatioOutputDenominatorFieldTotalCost, CustomChartsSectionChartsSeriesMetricDefinitionCustomChartMetricRatioOutputDenominatorFieldPromptCost, CustomChartsSectionChartsSeriesMetricDefinitionCustomChartMetricRatioOutputDenominatorFieldCompletionCost:
 		return true
 	}
 	return false
@@ -1395,16 +1580,16 @@ type CustomChartsSectionChartsSeriesMetricDefinitionCustomChartMetricRatioOutput
 
 const (
 	CustomChartsSectionChartsSeriesMetricDefinitionCustomChartMetricRatioOutputDenominatorTypeCount      CustomChartsSectionChartsSeriesMetricDefinitionCustomChartMetricRatioOutputDenominatorType = "count"
-	CustomChartsSectionChartsSeriesMetricDefinitionCustomChartMetricRatioOutputDenominatorTypeSum        CustomChartsSectionChartsSeriesMetricDefinitionCustomChartMetricRatioOutputDenominatorType = "sum"
 	CustomChartsSectionChartsSeriesMetricDefinitionCustomChartMetricRatioOutputDenominatorTypeMax        CustomChartsSectionChartsSeriesMetricDefinitionCustomChartMetricRatioOutputDenominatorType = "max"
 	CustomChartsSectionChartsSeriesMetricDefinitionCustomChartMetricRatioOutputDenominatorTypeMin        CustomChartsSectionChartsSeriesMetricDefinitionCustomChartMetricRatioOutputDenominatorType = "min"
 	CustomChartsSectionChartsSeriesMetricDefinitionCustomChartMetricRatioOutputDenominatorTypeAvg        CustomChartsSectionChartsSeriesMetricDefinitionCustomChartMetricRatioOutputDenominatorType = "avg"
+	CustomChartsSectionChartsSeriesMetricDefinitionCustomChartMetricRatioOutputDenominatorTypeSum        CustomChartsSectionChartsSeriesMetricDefinitionCustomChartMetricRatioOutputDenominatorType = "sum"
 	CustomChartsSectionChartsSeriesMetricDefinitionCustomChartMetricRatioOutputDenominatorTypePercentile CustomChartsSectionChartsSeriesMetricDefinitionCustomChartMetricRatioOutputDenominatorType = "percentile"
 )
 
 func (r CustomChartsSectionChartsSeriesMetricDefinitionCustomChartMetricRatioOutputDenominatorType) IsKnown() bool {
 	switch r {
-	case CustomChartsSectionChartsSeriesMetricDefinitionCustomChartMetricRatioOutputDenominatorTypeCount, CustomChartsSectionChartsSeriesMetricDefinitionCustomChartMetricRatioOutputDenominatorTypeSum, CustomChartsSectionChartsSeriesMetricDefinitionCustomChartMetricRatioOutputDenominatorTypeMax, CustomChartsSectionChartsSeriesMetricDefinitionCustomChartMetricRatioOutputDenominatorTypeMin, CustomChartsSectionChartsSeriesMetricDefinitionCustomChartMetricRatioOutputDenominatorTypeAvg, CustomChartsSectionChartsSeriesMetricDefinitionCustomChartMetricRatioOutputDenominatorTypePercentile:
+	case CustomChartsSectionChartsSeriesMetricDefinitionCustomChartMetricRatioOutputDenominatorTypeCount, CustomChartsSectionChartsSeriesMetricDefinitionCustomChartMetricRatioOutputDenominatorTypeMax, CustomChartsSectionChartsSeriesMetricDefinitionCustomChartMetricRatioOutputDenominatorTypeMin, CustomChartsSectionChartsSeriesMetricDefinitionCustomChartMetricRatioOutputDenominatorTypeAvg, CustomChartsSectionChartsSeriesMetricDefinitionCustomChartMetricRatioOutputDenominatorTypeSum, CustomChartsSectionChartsSeriesMetricDefinitionCustomChartMetricRatioOutputDenominatorTypePercentile:
 		return true
 	}
 	return false
@@ -1414,6 +1599,7 @@ type CustomChartsSectionChartsSeriesMetricDefinitionCustomChartMetricRatioOutput
 	Field  CustomChartsSectionChartsSeriesMetricDefinitionCustomChartMetricRatioOutputNumeratorField `json:"field"`
 	Filter string                                                                                    `json:"filter" api:"nullable"`
 	// This field can have the runtime type of
+	// [CustomChartsSectionChartsSeriesMetricDefinitionCustomChartMetricRatioOutputNumeratorCustomChartFeedbackScoreMetricScalarParams],
 	// [CustomChartsSectionChartsSeriesMetricDefinitionCustomChartMetricRatioOutputNumeratorCustomChartMetricPercentileParams].
 	Params interface{}                                                                              `json:"params"`
 	Type   CustomChartsSectionChartsSeriesMetricDefinitionCustomChartMetricRatioOutputNumeratorType `json:"type"`
@@ -1452,6 +1638,7 @@ func (r *CustomChartsSectionChartsSeriesMetricDefinitionCustomChartMetricRatioOu
 //
 // Possible runtime types of the union are
 // [CustomChartsSectionChartsSeriesMetricDefinitionCustomChartMetricRatioOutputNumeratorCustomChartMetricCount],
+// [CustomChartsSectionChartsSeriesMetricDefinitionCustomChartMetricRatioOutputNumeratorCustomChartFeedbackScoreMetricScalar],
 // [CustomChartsSectionChartsSeriesMetricDefinitionCustomChartMetricRatioOutputNumeratorCustomChartMetricScalar],
 // [CustomChartsSectionChartsSeriesMetricDefinitionCustomChartMetricRatioOutputNumeratorCustomChartMetricPercentile].
 func (r CustomChartsSectionChartsSeriesMetricDefinitionCustomChartMetricRatioOutputNumerator) AsUnion() CustomChartsSectionChartsSeriesMetricDefinitionCustomChartMetricRatioOutputNumeratorUnion {
@@ -1460,6 +1647,7 @@ func (r CustomChartsSectionChartsSeriesMetricDefinitionCustomChartMetricRatioOut
 
 // Union satisfied by
 // [CustomChartsSectionChartsSeriesMetricDefinitionCustomChartMetricRatioOutputNumeratorCustomChartMetricCount],
+// [CustomChartsSectionChartsSeriesMetricDefinitionCustomChartMetricRatioOutputNumeratorCustomChartFeedbackScoreMetricScalar],
 // [CustomChartsSectionChartsSeriesMetricDefinitionCustomChartMetricRatioOutputNumeratorCustomChartMetricScalar]
 // or
 // [CustomChartsSectionChartsSeriesMetricDefinitionCustomChartMetricRatioOutputNumeratorCustomChartMetricPercentile].
@@ -1474,6 +1662,10 @@ func init() {
 		apijson.UnionVariant{
 			TypeFilter: gjson.JSON,
 			Type:       reflect.TypeOf(CustomChartsSectionChartsSeriesMetricDefinitionCustomChartMetricRatioOutputNumeratorCustomChartMetricCount{}),
+		},
+		apijson.UnionVariant{
+			TypeFilter: gjson.JSON,
+			Type:       reflect.TypeOf(CustomChartsSectionChartsSeriesMetricDefinitionCustomChartMetricRatioOutputNumeratorCustomChartFeedbackScoreMetricScalar{}),
 		},
 		apijson.UnionVariant{
 			TypeFilter: gjson.JSON,
@@ -1527,6 +1719,89 @@ func (r CustomChartsSectionChartsSeriesMetricDefinitionCustomChartMetricRatioOut
 	return false
 }
 
+type CustomChartsSectionChartsSeriesMetricDefinitionCustomChartMetricRatioOutputNumeratorCustomChartFeedbackScoreMetricScalar struct {
+	Field  CustomChartsSectionChartsSeriesMetricDefinitionCustomChartMetricRatioOutputNumeratorCustomChartFeedbackScoreMetricScalarField  `json:"field" api:"required"`
+	Params CustomChartsSectionChartsSeriesMetricDefinitionCustomChartMetricRatioOutputNumeratorCustomChartFeedbackScoreMetricScalarParams `json:"params" api:"required"`
+	Type   CustomChartsSectionChartsSeriesMetricDefinitionCustomChartMetricRatioOutputNumeratorCustomChartFeedbackScoreMetricScalarType   `json:"type" api:"required"`
+	Filter string                                                                                                                         `json:"filter" api:"nullable"`
+	JSON   customChartsSectionChartsSeriesMetricDefinitionCustomChartMetricRatioOutputNumeratorCustomChartFeedbackScoreMetricScalarJSON   `json:"-"`
+}
+
+// customChartsSectionChartsSeriesMetricDefinitionCustomChartMetricRatioOutputNumeratorCustomChartFeedbackScoreMetricScalarJSON
+// contains the JSON metadata for the struct
+// [CustomChartsSectionChartsSeriesMetricDefinitionCustomChartMetricRatioOutputNumeratorCustomChartFeedbackScoreMetricScalar]
+type customChartsSectionChartsSeriesMetricDefinitionCustomChartMetricRatioOutputNumeratorCustomChartFeedbackScoreMetricScalarJSON struct {
+	Field       apijson.Field
+	Params      apijson.Field
+	Type        apijson.Field
+	Filter      apijson.Field
+	raw         string
+	ExtraFields map[string]apijson.Field
+}
+
+func (r *CustomChartsSectionChartsSeriesMetricDefinitionCustomChartMetricRatioOutputNumeratorCustomChartFeedbackScoreMetricScalar) UnmarshalJSON(data []byte) (err error) {
+	return apijson.UnmarshalRoot(data, r)
+}
+
+func (r customChartsSectionChartsSeriesMetricDefinitionCustomChartMetricRatioOutputNumeratorCustomChartFeedbackScoreMetricScalarJSON) RawJSON() string {
+	return r.raw
+}
+
+func (r CustomChartsSectionChartsSeriesMetricDefinitionCustomChartMetricRatioOutputNumeratorCustomChartFeedbackScoreMetricScalar) implementsCustomChartsSectionChartsSeriesMetricDefinitionCustomChartMetricRatioOutputNumerator() {
+}
+
+type CustomChartsSectionChartsSeriesMetricDefinitionCustomChartMetricRatioOutputNumeratorCustomChartFeedbackScoreMetricScalarField string
+
+const (
+	CustomChartsSectionChartsSeriesMetricDefinitionCustomChartMetricRatioOutputNumeratorCustomChartFeedbackScoreMetricScalarFieldFeedbackScore CustomChartsSectionChartsSeriesMetricDefinitionCustomChartMetricRatioOutputNumeratorCustomChartFeedbackScoreMetricScalarField = "feedback_score"
+)
+
+func (r CustomChartsSectionChartsSeriesMetricDefinitionCustomChartMetricRatioOutputNumeratorCustomChartFeedbackScoreMetricScalarField) IsKnown() bool {
+	switch r {
+	case CustomChartsSectionChartsSeriesMetricDefinitionCustomChartMetricRatioOutputNumeratorCustomChartFeedbackScoreMetricScalarFieldFeedbackScore:
+		return true
+	}
+	return false
+}
+
+type CustomChartsSectionChartsSeriesMetricDefinitionCustomChartMetricRatioOutputNumeratorCustomChartFeedbackScoreMetricScalarParams struct {
+	FeedbackKey string                                                                                                                             `json:"feedback_key" api:"required"`
+	JSON        customChartsSectionChartsSeriesMetricDefinitionCustomChartMetricRatioOutputNumeratorCustomChartFeedbackScoreMetricScalarParamsJSON `json:"-"`
+}
+
+// customChartsSectionChartsSeriesMetricDefinitionCustomChartMetricRatioOutputNumeratorCustomChartFeedbackScoreMetricScalarParamsJSON
+// contains the JSON metadata for the struct
+// [CustomChartsSectionChartsSeriesMetricDefinitionCustomChartMetricRatioOutputNumeratorCustomChartFeedbackScoreMetricScalarParams]
+type customChartsSectionChartsSeriesMetricDefinitionCustomChartMetricRatioOutputNumeratorCustomChartFeedbackScoreMetricScalarParamsJSON struct {
+	FeedbackKey apijson.Field
+	raw         string
+	ExtraFields map[string]apijson.Field
+}
+
+func (r *CustomChartsSectionChartsSeriesMetricDefinitionCustomChartMetricRatioOutputNumeratorCustomChartFeedbackScoreMetricScalarParams) UnmarshalJSON(data []byte) (err error) {
+	return apijson.UnmarshalRoot(data, r)
+}
+
+func (r customChartsSectionChartsSeriesMetricDefinitionCustomChartMetricRatioOutputNumeratorCustomChartFeedbackScoreMetricScalarParamsJSON) RawJSON() string {
+	return r.raw
+}
+
+type CustomChartsSectionChartsSeriesMetricDefinitionCustomChartMetricRatioOutputNumeratorCustomChartFeedbackScoreMetricScalarType string
+
+const (
+	CustomChartsSectionChartsSeriesMetricDefinitionCustomChartMetricRatioOutputNumeratorCustomChartFeedbackScoreMetricScalarTypeMax CustomChartsSectionChartsSeriesMetricDefinitionCustomChartMetricRatioOutputNumeratorCustomChartFeedbackScoreMetricScalarType = "max"
+	CustomChartsSectionChartsSeriesMetricDefinitionCustomChartMetricRatioOutputNumeratorCustomChartFeedbackScoreMetricScalarTypeMin CustomChartsSectionChartsSeriesMetricDefinitionCustomChartMetricRatioOutputNumeratorCustomChartFeedbackScoreMetricScalarType = "min"
+	CustomChartsSectionChartsSeriesMetricDefinitionCustomChartMetricRatioOutputNumeratorCustomChartFeedbackScoreMetricScalarTypeAvg CustomChartsSectionChartsSeriesMetricDefinitionCustomChartMetricRatioOutputNumeratorCustomChartFeedbackScoreMetricScalarType = "avg"
+)
+
+func (r CustomChartsSectionChartsSeriesMetricDefinitionCustomChartMetricRatioOutputNumeratorCustomChartFeedbackScoreMetricScalarType) IsKnown() bool {
+	switch r {
+	case CustomChartsSectionChartsSeriesMetricDefinitionCustomChartMetricRatioOutputNumeratorCustomChartFeedbackScoreMetricScalarTypeMax, CustomChartsSectionChartsSeriesMetricDefinitionCustomChartMetricRatioOutputNumeratorCustomChartFeedbackScoreMetricScalarTypeMin, CustomChartsSectionChartsSeriesMetricDefinitionCustomChartMetricRatioOutputNumeratorCustomChartFeedbackScoreMetricScalarTypeAvg:
+		return true
+	}
+	return false
+}
+
 type CustomChartsSectionChartsSeriesMetricDefinitionCustomChartMetricRatioOutputNumeratorCustomChartMetricScalar struct {
 	Field  CustomChartsSectionChartsSeriesMetricDefinitionCustomChartMetricRatioOutputNumeratorCustomChartMetricScalarField `json:"field" api:"required"`
 	Type   CustomChartsSectionChartsSeriesMetricDefinitionCustomChartMetricRatioOutputNumeratorCustomChartMetricScalarType  `json:"type" api:"required"`
@@ -1567,11 +1842,12 @@ const (
 	CustomChartsSectionChartsSeriesMetricDefinitionCustomChartMetricRatioOutputNumeratorCustomChartMetricScalarFieldTotalCost         CustomChartsSectionChartsSeriesMetricDefinitionCustomChartMetricRatioOutputNumeratorCustomChartMetricScalarField = "total_cost"
 	CustomChartsSectionChartsSeriesMetricDefinitionCustomChartMetricRatioOutputNumeratorCustomChartMetricScalarFieldPromptCost        CustomChartsSectionChartsSeriesMetricDefinitionCustomChartMetricRatioOutputNumeratorCustomChartMetricScalarField = "prompt_cost"
 	CustomChartsSectionChartsSeriesMetricDefinitionCustomChartMetricRatioOutputNumeratorCustomChartMetricScalarFieldCompletionCost    CustomChartsSectionChartsSeriesMetricDefinitionCustomChartMetricRatioOutputNumeratorCustomChartMetricScalarField = "completion_cost"
+	CustomChartsSectionChartsSeriesMetricDefinitionCustomChartMetricRatioOutputNumeratorCustomChartMetricScalarFieldFeedbackScore     CustomChartsSectionChartsSeriesMetricDefinitionCustomChartMetricRatioOutputNumeratorCustomChartMetricScalarField = "feedback_score"
 )
 
 func (r CustomChartsSectionChartsSeriesMetricDefinitionCustomChartMetricRatioOutputNumeratorCustomChartMetricScalarField) IsKnown() bool {
 	switch r {
-	case CustomChartsSectionChartsSeriesMetricDefinitionCustomChartMetricRatioOutputNumeratorCustomChartMetricScalarFieldLatencySeconds, CustomChartsSectionChartsSeriesMetricDefinitionCustomChartMetricRatioOutputNumeratorCustomChartMetricScalarFieldFirstTokenSeconds, CustomChartsSectionChartsSeriesMetricDefinitionCustomChartMetricRatioOutputNumeratorCustomChartMetricScalarFieldTotalTokens, CustomChartsSectionChartsSeriesMetricDefinitionCustomChartMetricRatioOutputNumeratorCustomChartMetricScalarFieldPromptTokens, CustomChartsSectionChartsSeriesMetricDefinitionCustomChartMetricRatioOutputNumeratorCustomChartMetricScalarFieldCompletionTokens, CustomChartsSectionChartsSeriesMetricDefinitionCustomChartMetricRatioOutputNumeratorCustomChartMetricScalarFieldTotalCost, CustomChartsSectionChartsSeriesMetricDefinitionCustomChartMetricRatioOutputNumeratorCustomChartMetricScalarFieldPromptCost, CustomChartsSectionChartsSeriesMetricDefinitionCustomChartMetricRatioOutputNumeratorCustomChartMetricScalarFieldCompletionCost:
+	case CustomChartsSectionChartsSeriesMetricDefinitionCustomChartMetricRatioOutputNumeratorCustomChartMetricScalarFieldLatencySeconds, CustomChartsSectionChartsSeriesMetricDefinitionCustomChartMetricRatioOutputNumeratorCustomChartMetricScalarFieldFirstTokenSeconds, CustomChartsSectionChartsSeriesMetricDefinitionCustomChartMetricRatioOutputNumeratorCustomChartMetricScalarFieldTotalTokens, CustomChartsSectionChartsSeriesMetricDefinitionCustomChartMetricRatioOutputNumeratorCustomChartMetricScalarFieldPromptTokens, CustomChartsSectionChartsSeriesMetricDefinitionCustomChartMetricRatioOutputNumeratorCustomChartMetricScalarFieldCompletionTokens, CustomChartsSectionChartsSeriesMetricDefinitionCustomChartMetricRatioOutputNumeratorCustomChartMetricScalarFieldTotalCost, CustomChartsSectionChartsSeriesMetricDefinitionCustomChartMetricRatioOutputNumeratorCustomChartMetricScalarFieldPromptCost, CustomChartsSectionChartsSeriesMetricDefinitionCustomChartMetricRatioOutputNumeratorCustomChartMetricScalarFieldCompletionCost, CustomChartsSectionChartsSeriesMetricDefinitionCustomChartMetricRatioOutputNumeratorCustomChartMetricScalarFieldFeedbackScore:
 		return true
 	}
 	return false
@@ -1636,11 +1912,12 @@ const (
 	CustomChartsSectionChartsSeriesMetricDefinitionCustomChartMetricRatioOutputNumeratorCustomChartMetricPercentileFieldTotalCost         CustomChartsSectionChartsSeriesMetricDefinitionCustomChartMetricRatioOutputNumeratorCustomChartMetricPercentileField = "total_cost"
 	CustomChartsSectionChartsSeriesMetricDefinitionCustomChartMetricRatioOutputNumeratorCustomChartMetricPercentileFieldPromptCost        CustomChartsSectionChartsSeriesMetricDefinitionCustomChartMetricRatioOutputNumeratorCustomChartMetricPercentileField = "prompt_cost"
 	CustomChartsSectionChartsSeriesMetricDefinitionCustomChartMetricRatioOutputNumeratorCustomChartMetricPercentileFieldCompletionCost    CustomChartsSectionChartsSeriesMetricDefinitionCustomChartMetricRatioOutputNumeratorCustomChartMetricPercentileField = "completion_cost"
+	CustomChartsSectionChartsSeriesMetricDefinitionCustomChartMetricRatioOutputNumeratorCustomChartMetricPercentileFieldFeedbackScore     CustomChartsSectionChartsSeriesMetricDefinitionCustomChartMetricRatioOutputNumeratorCustomChartMetricPercentileField = "feedback_score"
 )
 
 func (r CustomChartsSectionChartsSeriesMetricDefinitionCustomChartMetricRatioOutputNumeratorCustomChartMetricPercentileField) IsKnown() bool {
 	switch r {
-	case CustomChartsSectionChartsSeriesMetricDefinitionCustomChartMetricRatioOutputNumeratorCustomChartMetricPercentileFieldLatencySeconds, CustomChartsSectionChartsSeriesMetricDefinitionCustomChartMetricRatioOutputNumeratorCustomChartMetricPercentileFieldFirstTokenSeconds, CustomChartsSectionChartsSeriesMetricDefinitionCustomChartMetricRatioOutputNumeratorCustomChartMetricPercentileFieldTotalTokens, CustomChartsSectionChartsSeriesMetricDefinitionCustomChartMetricRatioOutputNumeratorCustomChartMetricPercentileFieldPromptTokens, CustomChartsSectionChartsSeriesMetricDefinitionCustomChartMetricRatioOutputNumeratorCustomChartMetricPercentileFieldCompletionTokens, CustomChartsSectionChartsSeriesMetricDefinitionCustomChartMetricRatioOutputNumeratorCustomChartMetricPercentileFieldTotalCost, CustomChartsSectionChartsSeriesMetricDefinitionCustomChartMetricRatioOutputNumeratorCustomChartMetricPercentileFieldPromptCost, CustomChartsSectionChartsSeriesMetricDefinitionCustomChartMetricRatioOutputNumeratorCustomChartMetricPercentileFieldCompletionCost:
+	case CustomChartsSectionChartsSeriesMetricDefinitionCustomChartMetricRatioOutputNumeratorCustomChartMetricPercentileFieldLatencySeconds, CustomChartsSectionChartsSeriesMetricDefinitionCustomChartMetricRatioOutputNumeratorCustomChartMetricPercentileFieldFirstTokenSeconds, CustomChartsSectionChartsSeriesMetricDefinitionCustomChartMetricRatioOutputNumeratorCustomChartMetricPercentileFieldTotalTokens, CustomChartsSectionChartsSeriesMetricDefinitionCustomChartMetricRatioOutputNumeratorCustomChartMetricPercentileFieldPromptTokens, CustomChartsSectionChartsSeriesMetricDefinitionCustomChartMetricRatioOutputNumeratorCustomChartMetricPercentileFieldCompletionTokens, CustomChartsSectionChartsSeriesMetricDefinitionCustomChartMetricRatioOutputNumeratorCustomChartMetricPercentileFieldTotalCost, CustomChartsSectionChartsSeriesMetricDefinitionCustomChartMetricRatioOutputNumeratorCustomChartMetricPercentileFieldPromptCost, CustomChartsSectionChartsSeriesMetricDefinitionCustomChartMetricRatioOutputNumeratorCustomChartMetricPercentileFieldCompletionCost, CustomChartsSectionChartsSeriesMetricDefinitionCustomChartMetricRatioOutputNumeratorCustomChartMetricPercentileFieldFeedbackScore:
 		return true
 	}
 	return false
@@ -1685,6 +1962,7 @@ func (r CustomChartsSectionChartsSeriesMetricDefinitionCustomChartMetricRatioOut
 type CustomChartsSectionChartsSeriesMetricDefinitionCustomChartMetricRatioOutputNumeratorField string
 
 const (
+	CustomChartsSectionChartsSeriesMetricDefinitionCustomChartMetricRatioOutputNumeratorFieldFeedbackScore     CustomChartsSectionChartsSeriesMetricDefinitionCustomChartMetricRatioOutputNumeratorField = "feedback_score"
 	CustomChartsSectionChartsSeriesMetricDefinitionCustomChartMetricRatioOutputNumeratorFieldLatencySeconds    CustomChartsSectionChartsSeriesMetricDefinitionCustomChartMetricRatioOutputNumeratorField = "latency_seconds"
 	CustomChartsSectionChartsSeriesMetricDefinitionCustomChartMetricRatioOutputNumeratorFieldFirstTokenSeconds CustomChartsSectionChartsSeriesMetricDefinitionCustomChartMetricRatioOutputNumeratorField = "first_token_seconds"
 	CustomChartsSectionChartsSeriesMetricDefinitionCustomChartMetricRatioOutputNumeratorFieldTotalTokens       CustomChartsSectionChartsSeriesMetricDefinitionCustomChartMetricRatioOutputNumeratorField = "total_tokens"
@@ -1697,7 +1975,7 @@ const (
 
 func (r CustomChartsSectionChartsSeriesMetricDefinitionCustomChartMetricRatioOutputNumeratorField) IsKnown() bool {
 	switch r {
-	case CustomChartsSectionChartsSeriesMetricDefinitionCustomChartMetricRatioOutputNumeratorFieldLatencySeconds, CustomChartsSectionChartsSeriesMetricDefinitionCustomChartMetricRatioOutputNumeratorFieldFirstTokenSeconds, CustomChartsSectionChartsSeriesMetricDefinitionCustomChartMetricRatioOutputNumeratorFieldTotalTokens, CustomChartsSectionChartsSeriesMetricDefinitionCustomChartMetricRatioOutputNumeratorFieldPromptTokens, CustomChartsSectionChartsSeriesMetricDefinitionCustomChartMetricRatioOutputNumeratorFieldCompletionTokens, CustomChartsSectionChartsSeriesMetricDefinitionCustomChartMetricRatioOutputNumeratorFieldTotalCost, CustomChartsSectionChartsSeriesMetricDefinitionCustomChartMetricRatioOutputNumeratorFieldPromptCost, CustomChartsSectionChartsSeriesMetricDefinitionCustomChartMetricRatioOutputNumeratorFieldCompletionCost:
+	case CustomChartsSectionChartsSeriesMetricDefinitionCustomChartMetricRatioOutputNumeratorFieldFeedbackScore, CustomChartsSectionChartsSeriesMetricDefinitionCustomChartMetricRatioOutputNumeratorFieldLatencySeconds, CustomChartsSectionChartsSeriesMetricDefinitionCustomChartMetricRatioOutputNumeratorFieldFirstTokenSeconds, CustomChartsSectionChartsSeriesMetricDefinitionCustomChartMetricRatioOutputNumeratorFieldTotalTokens, CustomChartsSectionChartsSeriesMetricDefinitionCustomChartMetricRatioOutputNumeratorFieldPromptTokens, CustomChartsSectionChartsSeriesMetricDefinitionCustomChartMetricRatioOutputNumeratorFieldCompletionTokens, CustomChartsSectionChartsSeriesMetricDefinitionCustomChartMetricRatioOutputNumeratorFieldTotalCost, CustomChartsSectionChartsSeriesMetricDefinitionCustomChartMetricRatioOutputNumeratorFieldPromptCost, CustomChartsSectionChartsSeriesMetricDefinitionCustomChartMetricRatioOutputNumeratorFieldCompletionCost:
 		return true
 	}
 	return false
@@ -1707,16 +1985,16 @@ type CustomChartsSectionChartsSeriesMetricDefinitionCustomChartMetricRatioOutput
 
 const (
 	CustomChartsSectionChartsSeriesMetricDefinitionCustomChartMetricRatioOutputNumeratorTypeCount      CustomChartsSectionChartsSeriesMetricDefinitionCustomChartMetricRatioOutputNumeratorType = "count"
-	CustomChartsSectionChartsSeriesMetricDefinitionCustomChartMetricRatioOutputNumeratorTypeSum        CustomChartsSectionChartsSeriesMetricDefinitionCustomChartMetricRatioOutputNumeratorType = "sum"
 	CustomChartsSectionChartsSeriesMetricDefinitionCustomChartMetricRatioOutputNumeratorTypeMax        CustomChartsSectionChartsSeriesMetricDefinitionCustomChartMetricRatioOutputNumeratorType = "max"
 	CustomChartsSectionChartsSeriesMetricDefinitionCustomChartMetricRatioOutputNumeratorTypeMin        CustomChartsSectionChartsSeriesMetricDefinitionCustomChartMetricRatioOutputNumeratorType = "min"
 	CustomChartsSectionChartsSeriesMetricDefinitionCustomChartMetricRatioOutputNumeratorTypeAvg        CustomChartsSectionChartsSeriesMetricDefinitionCustomChartMetricRatioOutputNumeratorType = "avg"
+	CustomChartsSectionChartsSeriesMetricDefinitionCustomChartMetricRatioOutputNumeratorTypeSum        CustomChartsSectionChartsSeriesMetricDefinitionCustomChartMetricRatioOutputNumeratorType = "sum"
 	CustomChartsSectionChartsSeriesMetricDefinitionCustomChartMetricRatioOutputNumeratorTypePercentile CustomChartsSectionChartsSeriesMetricDefinitionCustomChartMetricRatioOutputNumeratorType = "percentile"
 )
 
 func (r CustomChartsSectionChartsSeriesMetricDefinitionCustomChartMetricRatioOutputNumeratorType) IsKnown() bool {
 	switch r {
-	case CustomChartsSectionChartsSeriesMetricDefinitionCustomChartMetricRatioOutputNumeratorTypeCount, CustomChartsSectionChartsSeriesMetricDefinitionCustomChartMetricRatioOutputNumeratorTypeSum, CustomChartsSectionChartsSeriesMetricDefinitionCustomChartMetricRatioOutputNumeratorTypeMax, CustomChartsSectionChartsSeriesMetricDefinitionCustomChartMetricRatioOutputNumeratorTypeMin, CustomChartsSectionChartsSeriesMetricDefinitionCustomChartMetricRatioOutputNumeratorTypeAvg, CustomChartsSectionChartsSeriesMetricDefinitionCustomChartMetricRatioOutputNumeratorTypePercentile:
+	case CustomChartsSectionChartsSeriesMetricDefinitionCustomChartMetricRatioOutputNumeratorTypeCount, CustomChartsSectionChartsSeriesMetricDefinitionCustomChartMetricRatioOutputNumeratorTypeMax, CustomChartsSectionChartsSeriesMetricDefinitionCustomChartMetricRatioOutputNumeratorTypeMin, CustomChartsSectionChartsSeriesMetricDefinitionCustomChartMetricRatioOutputNumeratorTypeAvg, CustomChartsSectionChartsSeriesMetricDefinitionCustomChartMetricRatioOutputNumeratorTypeSum, CustomChartsSectionChartsSeriesMetricDefinitionCustomChartMetricRatioOutputNumeratorTypePercentile:
 		return true
 	}
 	return false
@@ -1739,6 +2017,7 @@ func (r CustomChartsSectionChartsSeriesMetricDefinitionCustomChartMetricRatioOut
 type CustomChartsSectionChartsSeriesMetricDefinitionField string
 
 const (
+	CustomChartsSectionChartsSeriesMetricDefinitionFieldFeedbackScore     CustomChartsSectionChartsSeriesMetricDefinitionField = "feedback_score"
 	CustomChartsSectionChartsSeriesMetricDefinitionFieldLatencySeconds    CustomChartsSectionChartsSeriesMetricDefinitionField = "latency_seconds"
 	CustomChartsSectionChartsSeriesMetricDefinitionFieldFirstTokenSeconds CustomChartsSectionChartsSeriesMetricDefinitionField = "first_token_seconds"
 	CustomChartsSectionChartsSeriesMetricDefinitionFieldTotalTokens       CustomChartsSectionChartsSeriesMetricDefinitionField = "total_tokens"
@@ -1751,7 +2030,7 @@ const (
 
 func (r CustomChartsSectionChartsSeriesMetricDefinitionField) IsKnown() bool {
 	switch r {
-	case CustomChartsSectionChartsSeriesMetricDefinitionFieldLatencySeconds, CustomChartsSectionChartsSeriesMetricDefinitionFieldFirstTokenSeconds, CustomChartsSectionChartsSeriesMetricDefinitionFieldTotalTokens, CustomChartsSectionChartsSeriesMetricDefinitionFieldPromptTokens, CustomChartsSectionChartsSeriesMetricDefinitionFieldCompletionTokens, CustomChartsSectionChartsSeriesMetricDefinitionFieldTotalCost, CustomChartsSectionChartsSeriesMetricDefinitionFieldPromptCost, CustomChartsSectionChartsSeriesMetricDefinitionFieldCompletionCost:
+	case CustomChartsSectionChartsSeriesMetricDefinitionFieldFeedbackScore, CustomChartsSectionChartsSeriesMetricDefinitionFieldLatencySeconds, CustomChartsSectionChartsSeriesMetricDefinitionFieldFirstTokenSeconds, CustomChartsSectionChartsSeriesMetricDefinitionFieldTotalTokens, CustomChartsSectionChartsSeriesMetricDefinitionFieldPromptTokens, CustomChartsSectionChartsSeriesMetricDefinitionFieldCompletionTokens, CustomChartsSectionChartsSeriesMetricDefinitionFieldTotalCost, CustomChartsSectionChartsSeriesMetricDefinitionFieldPromptCost, CustomChartsSectionChartsSeriesMetricDefinitionFieldCompletionCost:
 		return true
 	}
 	return false
@@ -1761,17 +2040,17 @@ type CustomChartsSectionChartsSeriesMetricDefinitionType string
 
 const (
 	CustomChartsSectionChartsSeriesMetricDefinitionTypeCount      CustomChartsSectionChartsSeriesMetricDefinitionType = "count"
-	CustomChartsSectionChartsSeriesMetricDefinitionTypeSum        CustomChartsSectionChartsSeriesMetricDefinitionType = "sum"
 	CustomChartsSectionChartsSeriesMetricDefinitionTypeMax        CustomChartsSectionChartsSeriesMetricDefinitionType = "max"
 	CustomChartsSectionChartsSeriesMetricDefinitionTypeMin        CustomChartsSectionChartsSeriesMetricDefinitionType = "min"
 	CustomChartsSectionChartsSeriesMetricDefinitionTypeAvg        CustomChartsSectionChartsSeriesMetricDefinitionType = "avg"
+	CustomChartsSectionChartsSeriesMetricDefinitionTypeSum        CustomChartsSectionChartsSeriesMetricDefinitionType = "sum"
 	CustomChartsSectionChartsSeriesMetricDefinitionTypePercentile CustomChartsSectionChartsSeriesMetricDefinitionType = "percentile"
 	CustomChartsSectionChartsSeriesMetricDefinitionTypeRatio      CustomChartsSectionChartsSeriesMetricDefinitionType = "ratio"
 )
 
 func (r CustomChartsSectionChartsSeriesMetricDefinitionType) IsKnown() bool {
 	switch r {
-	case CustomChartsSectionChartsSeriesMetricDefinitionTypeCount, CustomChartsSectionChartsSeriesMetricDefinitionTypeSum, CustomChartsSectionChartsSeriesMetricDefinitionTypeMax, CustomChartsSectionChartsSeriesMetricDefinitionTypeMin, CustomChartsSectionChartsSeriesMetricDefinitionTypeAvg, CustomChartsSectionChartsSeriesMetricDefinitionTypePercentile, CustomChartsSectionChartsSeriesMetricDefinitionTypeRatio:
+	case CustomChartsSectionChartsSeriesMetricDefinitionTypeCount, CustomChartsSectionChartsSeriesMetricDefinitionTypeMax, CustomChartsSectionChartsSeriesMetricDefinitionTypeMin, CustomChartsSectionChartsSeriesMetricDefinitionTypeAvg, CustomChartsSectionChartsSeriesMetricDefinitionTypeSum, CustomChartsSectionChartsSeriesMetricDefinitionTypePercentile, CustomChartsSectionChartsSeriesMetricDefinitionTypeRatio:
 		return true
 	}
 	return false
@@ -2496,6 +2775,7 @@ type CustomChartsSectionSubSectionsChartsSeriesMetricDefinition struct {
 	// [CustomChartsSectionSubSectionsChartsSeriesMetricDefinitionCustomChartMetricRatioOutputNumerator].
 	Numerator interface{} `json:"numerator"`
 	// This field can have the runtime type of
+	// [CustomChartsSectionSubSectionsChartsSeriesMetricDefinitionCustomChartFeedbackScoreMetricScalarParams],
 	// [CustomChartsSectionSubSectionsChartsSeriesMetricDefinitionCustomChartMetricPercentileParams].
 	Params interface{}                                                    `json:"params"`
 	Type   CustomChartsSectionSubSectionsChartsSeriesMetricDefinitionType `json:"type"`
@@ -2536,6 +2816,7 @@ func (r *CustomChartsSectionSubSectionsChartsSeriesMetricDefinition) UnmarshalJS
 //
 // Possible runtime types of the union are
 // [CustomChartsSectionSubSectionsChartsSeriesMetricDefinitionCustomChartMetricCount],
+// [CustomChartsSectionSubSectionsChartsSeriesMetricDefinitionCustomChartFeedbackScoreMetricScalar],
 // [CustomChartsSectionSubSectionsChartsSeriesMetricDefinitionCustomChartMetricScalar],
 // [CustomChartsSectionSubSectionsChartsSeriesMetricDefinitionCustomChartMetricPercentile],
 // [CustomChartsSectionSubSectionsChartsSeriesMetricDefinitionCustomChartMetricRatioOutput].
@@ -2545,6 +2826,7 @@ func (r CustomChartsSectionSubSectionsChartsSeriesMetricDefinition) AsUnion() Cu
 
 // Union satisfied by
 // [CustomChartsSectionSubSectionsChartsSeriesMetricDefinitionCustomChartMetricCount],
+// [CustomChartsSectionSubSectionsChartsSeriesMetricDefinitionCustomChartFeedbackScoreMetricScalar],
 // [CustomChartsSectionSubSectionsChartsSeriesMetricDefinitionCustomChartMetricScalar],
 // [CustomChartsSectionSubSectionsChartsSeriesMetricDefinitionCustomChartMetricPercentile]
 // or
@@ -2560,6 +2842,10 @@ func init() {
 		apijson.UnionVariant{
 			TypeFilter: gjson.JSON,
 			Type:       reflect.TypeOf(CustomChartsSectionSubSectionsChartsSeriesMetricDefinitionCustomChartMetricCount{}),
+		},
+		apijson.UnionVariant{
+			TypeFilter: gjson.JSON,
+			Type:       reflect.TypeOf(CustomChartsSectionSubSectionsChartsSeriesMetricDefinitionCustomChartFeedbackScoreMetricScalar{}),
 		},
 		apijson.UnionVariant{
 			TypeFilter: gjson.JSON,
@@ -2617,6 +2903,89 @@ func (r CustomChartsSectionSubSectionsChartsSeriesMetricDefinitionCustomChartMet
 	return false
 }
 
+type CustomChartsSectionSubSectionsChartsSeriesMetricDefinitionCustomChartFeedbackScoreMetricScalar struct {
+	Field  CustomChartsSectionSubSectionsChartsSeriesMetricDefinitionCustomChartFeedbackScoreMetricScalarField  `json:"field" api:"required"`
+	Params CustomChartsSectionSubSectionsChartsSeriesMetricDefinitionCustomChartFeedbackScoreMetricScalarParams `json:"params" api:"required"`
+	Type   CustomChartsSectionSubSectionsChartsSeriesMetricDefinitionCustomChartFeedbackScoreMetricScalarType   `json:"type" api:"required"`
+	Filter string                                                                                               `json:"filter" api:"nullable"`
+	JSON   customChartsSectionSubSectionsChartsSeriesMetricDefinitionCustomChartFeedbackScoreMetricScalarJSON   `json:"-"`
+}
+
+// customChartsSectionSubSectionsChartsSeriesMetricDefinitionCustomChartFeedbackScoreMetricScalarJSON
+// contains the JSON metadata for the struct
+// [CustomChartsSectionSubSectionsChartsSeriesMetricDefinitionCustomChartFeedbackScoreMetricScalar]
+type customChartsSectionSubSectionsChartsSeriesMetricDefinitionCustomChartFeedbackScoreMetricScalarJSON struct {
+	Field       apijson.Field
+	Params      apijson.Field
+	Type        apijson.Field
+	Filter      apijson.Field
+	raw         string
+	ExtraFields map[string]apijson.Field
+}
+
+func (r *CustomChartsSectionSubSectionsChartsSeriesMetricDefinitionCustomChartFeedbackScoreMetricScalar) UnmarshalJSON(data []byte) (err error) {
+	return apijson.UnmarshalRoot(data, r)
+}
+
+func (r customChartsSectionSubSectionsChartsSeriesMetricDefinitionCustomChartFeedbackScoreMetricScalarJSON) RawJSON() string {
+	return r.raw
+}
+
+func (r CustomChartsSectionSubSectionsChartsSeriesMetricDefinitionCustomChartFeedbackScoreMetricScalar) implementsCustomChartsSectionSubSectionsChartsSeriesMetricDefinition() {
+}
+
+type CustomChartsSectionSubSectionsChartsSeriesMetricDefinitionCustomChartFeedbackScoreMetricScalarField string
+
+const (
+	CustomChartsSectionSubSectionsChartsSeriesMetricDefinitionCustomChartFeedbackScoreMetricScalarFieldFeedbackScore CustomChartsSectionSubSectionsChartsSeriesMetricDefinitionCustomChartFeedbackScoreMetricScalarField = "feedback_score"
+)
+
+func (r CustomChartsSectionSubSectionsChartsSeriesMetricDefinitionCustomChartFeedbackScoreMetricScalarField) IsKnown() bool {
+	switch r {
+	case CustomChartsSectionSubSectionsChartsSeriesMetricDefinitionCustomChartFeedbackScoreMetricScalarFieldFeedbackScore:
+		return true
+	}
+	return false
+}
+
+type CustomChartsSectionSubSectionsChartsSeriesMetricDefinitionCustomChartFeedbackScoreMetricScalarParams struct {
+	FeedbackKey string                                                                                                   `json:"feedback_key" api:"required"`
+	JSON        customChartsSectionSubSectionsChartsSeriesMetricDefinitionCustomChartFeedbackScoreMetricScalarParamsJSON `json:"-"`
+}
+
+// customChartsSectionSubSectionsChartsSeriesMetricDefinitionCustomChartFeedbackScoreMetricScalarParamsJSON
+// contains the JSON metadata for the struct
+// [CustomChartsSectionSubSectionsChartsSeriesMetricDefinitionCustomChartFeedbackScoreMetricScalarParams]
+type customChartsSectionSubSectionsChartsSeriesMetricDefinitionCustomChartFeedbackScoreMetricScalarParamsJSON struct {
+	FeedbackKey apijson.Field
+	raw         string
+	ExtraFields map[string]apijson.Field
+}
+
+func (r *CustomChartsSectionSubSectionsChartsSeriesMetricDefinitionCustomChartFeedbackScoreMetricScalarParams) UnmarshalJSON(data []byte) (err error) {
+	return apijson.UnmarshalRoot(data, r)
+}
+
+func (r customChartsSectionSubSectionsChartsSeriesMetricDefinitionCustomChartFeedbackScoreMetricScalarParamsJSON) RawJSON() string {
+	return r.raw
+}
+
+type CustomChartsSectionSubSectionsChartsSeriesMetricDefinitionCustomChartFeedbackScoreMetricScalarType string
+
+const (
+	CustomChartsSectionSubSectionsChartsSeriesMetricDefinitionCustomChartFeedbackScoreMetricScalarTypeMax CustomChartsSectionSubSectionsChartsSeriesMetricDefinitionCustomChartFeedbackScoreMetricScalarType = "max"
+	CustomChartsSectionSubSectionsChartsSeriesMetricDefinitionCustomChartFeedbackScoreMetricScalarTypeMin CustomChartsSectionSubSectionsChartsSeriesMetricDefinitionCustomChartFeedbackScoreMetricScalarType = "min"
+	CustomChartsSectionSubSectionsChartsSeriesMetricDefinitionCustomChartFeedbackScoreMetricScalarTypeAvg CustomChartsSectionSubSectionsChartsSeriesMetricDefinitionCustomChartFeedbackScoreMetricScalarType = "avg"
+)
+
+func (r CustomChartsSectionSubSectionsChartsSeriesMetricDefinitionCustomChartFeedbackScoreMetricScalarType) IsKnown() bool {
+	switch r {
+	case CustomChartsSectionSubSectionsChartsSeriesMetricDefinitionCustomChartFeedbackScoreMetricScalarTypeMax, CustomChartsSectionSubSectionsChartsSeriesMetricDefinitionCustomChartFeedbackScoreMetricScalarTypeMin, CustomChartsSectionSubSectionsChartsSeriesMetricDefinitionCustomChartFeedbackScoreMetricScalarTypeAvg:
+		return true
+	}
+	return false
+}
+
 type CustomChartsSectionSubSectionsChartsSeriesMetricDefinitionCustomChartMetricScalar struct {
 	Field  CustomChartsSectionSubSectionsChartsSeriesMetricDefinitionCustomChartMetricScalarField `json:"field" api:"required"`
 	Type   CustomChartsSectionSubSectionsChartsSeriesMetricDefinitionCustomChartMetricScalarType  `json:"type" api:"required"`
@@ -2657,11 +3026,12 @@ const (
 	CustomChartsSectionSubSectionsChartsSeriesMetricDefinitionCustomChartMetricScalarFieldTotalCost         CustomChartsSectionSubSectionsChartsSeriesMetricDefinitionCustomChartMetricScalarField = "total_cost"
 	CustomChartsSectionSubSectionsChartsSeriesMetricDefinitionCustomChartMetricScalarFieldPromptCost        CustomChartsSectionSubSectionsChartsSeriesMetricDefinitionCustomChartMetricScalarField = "prompt_cost"
 	CustomChartsSectionSubSectionsChartsSeriesMetricDefinitionCustomChartMetricScalarFieldCompletionCost    CustomChartsSectionSubSectionsChartsSeriesMetricDefinitionCustomChartMetricScalarField = "completion_cost"
+	CustomChartsSectionSubSectionsChartsSeriesMetricDefinitionCustomChartMetricScalarFieldFeedbackScore     CustomChartsSectionSubSectionsChartsSeriesMetricDefinitionCustomChartMetricScalarField = "feedback_score"
 )
 
 func (r CustomChartsSectionSubSectionsChartsSeriesMetricDefinitionCustomChartMetricScalarField) IsKnown() bool {
 	switch r {
-	case CustomChartsSectionSubSectionsChartsSeriesMetricDefinitionCustomChartMetricScalarFieldLatencySeconds, CustomChartsSectionSubSectionsChartsSeriesMetricDefinitionCustomChartMetricScalarFieldFirstTokenSeconds, CustomChartsSectionSubSectionsChartsSeriesMetricDefinitionCustomChartMetricScalarFieldTotalTokens, CustomChartsSectionSubSectionsChartsSeriesMetricDefinitionCustomChartMetricScalarFieldPromptTokens, CustomChartsSectionSubSectionsChartsSeriesMetricDefinitionCustomChartMetricScalarFieldCompletionTokens, CustomChartsSectionSubSectionsChartsSeriesMetricDefinitionCustomChartMetricScalarFieldTotalCost, CustomChartsSectionSubSectionsChartsSeriesMetricDefinitionCustomChartMetricScalarFieldPromptCost, CustomChartsSectionSubSectionsChartsSeriesMetricDefinitionCustomChartMetricScalarFieldCompletionCost:
+	case CustomChartsSectionSubSectionsChartsSeriesMetricDefinitionCustomChartMetricScalarFieldLatencySeconds, CustomChartsSectionSubSectionsChartsSeriesMetricDefinitionCustomChartMetricScalarFieldFirstTokenSeconds, CustomChartsSectionSubSectionsChartsSeriesMetricDefinitionCustomChartMetricScalarFieldTotalTokens, CustomChartsSectionSubSectionsChartsSeriesMetricDefinitionCustomChartMetricScalarFieldPromptTokens, CustomChartsSectionSubSectionsChartsSeriesMetricDefinitionCustomChartMetricScalarFieldCompletionTokens, CustomChartsSectionSubSectionsChartsSeriesMetricDefinitionCustomChartMetricScalarFieldTotalCost, CustomChartsSectionSubSectionsChartsSeriesMetricDefinitionCustomChartMetricScalarFieldPromptCost, CustomChartsSectionSubSectionsChartsSeriesMetricDefinitionCustomChartMetricScalarFieldCompletionCost, CustomChartsSectionSubSectionsChartsSeriesMetricDefinitionCustomChartMetricScalarFieldFeedbackScore:
 		return true
 	}
 	return false
@@ -2726,11 +3096,12 @@ const (
 	CustomChartsSectionSubSectionsChartsSeriesMetricDefinitionCustomChartMetricPercentileFieldTotalCost         CustomChartsSectionSubSectionsChartsSeriesMetricDefinitionCustomChartMetricPercentileField = "total_cost"
 	CustomChartsSectionSubSectionsChartsSeriesMetricDefinitionCustomChartMetricPercentileFieldPromptCost        CustomChartsSectionSubSectionsChartsSeriesMetricDefinitionCustomChartMetricPercentileField = "prompt_cost"
 	CustomChartsSectionSubSectionsChartsSeriesMetricDefinitionCustomChartMetricPercentileFieldCompletionCost    CustomChartsSectionSubSectionsChartsSeriesMetricDefinitionCustomChartMetricPercentileField = "completion_cost"
+	CustomChartsSectionSubSectionsChartsSeriesMetricDefinitionCustomChartMetricPercentileFieldFeedbackScore     CustomChartsSectionSubSectionsChartsSeriesMetricDefinitionCustomChartMetricPercentileField = "feedback_score"
 )
 
 func (r CustomChartsSectionSubSectionsChartsSeriesMetricDefinitionCustomChartMetricPercentileField) IsKnown() bool {
 	switch r {
-	case CustomChartsSectionSubSectionsChartsSeriesMetricDefinitionCustomChartMetricPercentileFieldLatencySeconds, CustomChartsSectionSubSectionsChartsSeriesMetricDefinitionCustomChartMetricPercentileFieldFirstTokenSeconds, CustomChartsSectionSubSectionsChartsSeriesMetricDefinitionCustomChartMetricPercentileFieldTotalTokens, CustomChartsSectionSubSectionsChartsSeriesMetricDefinitionCustomChartMetricPercentileFieldPromptTokens, CustomChartsSectionSubSectionsChartsSeriesMetricDefinitionCustomChartMetricPercentileFieldCompletionTokens, CustomChartsSectionSubSectionsChartsSeriesMetricDefinitionCustomChartMetricPercentileFieldTotalCost, CustomChartsSectionSubSectionsChartsSeriesMetricDefinitionCustomChartMetricPercentileFieldPromptCost, CustomChartsSectionSubSectionsChartsSeriesMetricDefinitionCustomChartMetricPercentileFieldCompletionCost:
+	case CustomChartsSectionSubSectionsChartsSeriesMetricDefinitionCustomChartMetricPercentileFieldLatencySeconds, CustomChartsSectionSubSectionsChartsSeriesMetricDefinitionCustomChartMetricPercentileFieldFirstTokenSeconds, CustomChartsSectionSubSectionsChartsSeriesMetricDefinitionCustomChartMetricPercentileFieldTotalTokens, CustomChartsSectionSubSectionsChartsSeriesMetricDefinitionCustomChartMetricPercentileFieldPromptTokens, CustomChartsSectionSubSectionsChartsSeriesMetricDefinitionCustomChartMetricPercentileFieldCompletionTokens, CustomChartsSectionSubSectionsChartsSeriesMetricDefinitionCustomChartMetricPercentileFieldTotalCost, CustomChartsSectionSubSectionsChartsSeriesMetricDefinitionCustomChartMetricPercentileFieldPromptCost, CustomChartsSectionSubSectionsChartsSeriesMetricDefinitionCustomChartMetricPercentileFieldCompletionCost, CustomChartsSectionSubSectionsChartsSeriesMetricDefinitionCustomChartMetricPercentileFieldFeedbackScore:
 		return true
 	}
 	return false
@@ -2805,6 +3176,7 @@ type CustomChartsSectionSubSectionsChartsSeriesMetricDefinitionCustomChartMetric
 	Field  CustomChartsSectionSubSectionsChartsSeriesMetricDefinitionCustomChartMetricRatioOutputDenominatorField `json:"field"`
 	Filter string                                                                                                 `json:"filter" api:"nullable"`
 	// This field can have the runtime type of
+	// [CustomChartsSectionSubSectionsChartsSeriesMetricDefinitionCustomChartMetricRatioOutputDenominatorCustomChartFeedbackScoreMetricScalarParams],
 	// [CustomChartsSectionSubSectionsChartsSeriesMetricDefinitionCustomChartMetricRatioOutputDenominatorCustomChartMetricPercentileParams].
 	Params interface{}                                                                                           `json:"params"`
 	Type   CustomChartsSectionSubSectionsChartsSeriesMetricDefinitionCustomChartMetricRatioOutputDenominatorType `json:"type"`
@@ -2843,6 +3215,7 @@ func (r *CustomChartsSectionSubSectionsChartsSeriesMetricDefinitionCustomChartMe
 //
 // Possible runtime types of the union are
 // [CustomChartsSectionSubSectionsChartsSeriesMetricDefinitionCustomChartMetricRatioOutputDenominatorCustomChartMetricCount],
+// [CustomChartsSectionSubSectionsChartsSeriesMetricDefinitionCustomChartMetricRatioOutputDenominatorCustomChartFeedbackScoreMetricScalar],
 // [CustomChartsSectionSubSectionsChartsSeriesMetricDefinitionCustomChartMetricRatioOutputDenominatorCustomChartMetricScalar],
 // [CustomChartsSectionSubSectionsChartsSeriesMetricDefinitionCustomChartMetricRatioOutputDenominatorCustomChartMetricPercentile].
 func (r CustomChartsSectionSubSectionsChartsSeriesMetricDefinitionCustomChartMetricRatioOutputDenominator) AsUnion() CustomChartsSectionSubSectionsChartsSeriesMetricDefinitionCustomChartMetricRatioOutputDenominatorUnion {
@@ -2851,6 +3224,7 @@ func (r CustomChartsSectionSubSectionsChartsSeriesMetricDefinitionCustomChartMet
 
 // Union satisfied by
 // [CustomChartsSectionSubSectionsChartsSeriesMetricDefinitionCustomChartMetricRatioOutputDenominatorCustomChartMetricCount],
+// [CustomChartsSectionSubSectionsChartsSeriesMetricDefinitionCustomChartMetricRatioOutputDenominatorCustomChartFeedbackScoreMetricScalar],
 // [CustomChartsSectionSubSectionsChartsSeriesMetricDefinitionCustomChartMetricRatioOutputDenominatorCustomChartMetricScalar]
 // or
 // [CustomChartsSectionSubSectionsChartsSeriesMetricDefinitionCustomChartMetricRatioOutputDenominatorCustomChartMetricPercentile].
@@ -2865,6 +3239,10 @@ func init() {
 		apijson.UnionVariant{
 			TypeFilter: gjson.JSON,
 			Type:       reflect.TypeOf(CustomChartsSectionSubSectionsChartsSeriesMetricDefinitionCustomChartMetricRatioOutputDenominatorCustomChartMetricCount{}),
+		},
+		apijson.UnionVariant{
+			TypeFilter: gjson.JSON,
+			Type:       reflect.TypeOf(CustomChartsSectionSubSectionsChartsSeriesMetricDefinitionCustomChartMetricRatioOutputDenominatorCustomChartFeedbackScoreMetricScalar{}),
 		},
 		apijson.UnionVariant{
 			TypeFilter: gjson.JSON,
@@ -2918,6 +3296,89 @@ func (r CustomChartsSectionSubSectionsChartsSeriesMetricDefinitionCustomChartMet
 	return false
 }
 
+type CustomChartsSectionSubSectionsChartsSeriesMetricDefinitionCustomChartMetricRatioOutputDenominatorCustomChartFeedbackScoreMetricScalar struct {
+	Field  CustomChartsSectionSubSectionsChartsSeriesMetricDefinitionCustomChartMetricRatioOutputDenominatorCustomChartFeedbackScoreMetricScalarField  `json:"field" api:"required"`
+	Params CustomChartsSectionSubSectionsChartsSeriesMetricDefinitionCustomChartMetricRatioOutputDenominatorCustomChartFeedbackScoreMetricScalarParams `json:"params" api:"required"`
+	Type   CustomChartsSectionSubSectionsChartsSeriesMetricDefinitionCustomChartMetricRatioOutputDenominatorCustomChartFeedbackScoreMetricScalarType   `json:"type" api:"required"`
+	Filter string                                                                                                                                      `json:"filter" api:"nullable"`
+	JSON   customChartsSectionSubSectionsChartsSeriesMetricDefinitionCustomChartMetricRatioOutputDenominatorCustomChartFeedbackScoreMetricScalarJSON   `json:"-"`
+}
+
+// customChartsSectionSubSectionsChartsSeriesMetricDefinitionCustomChartMetricRatioOutputDenominatorCustomChartFeedbackScoreMetricScalarJSON
+// contains the JSON metadata for the struct
+// [CustomChartsSectionSubSectionsChartsSeriesMetricDefinitionCustomChartMetricRatioOutputDenominatorCustomChartFeedbackScoreMetricScalar]
+type customChartsSectionSubSectionsChartsSeriesMetricDefinitionCustomChartMetricRatioOutputDenominatorCustomChartFeedbackScoreMetricScalarJSON struct {
+	Field       apijson.Field
+	Params      apijson.Field
+	Type        apijson.Field
+	Filter      apijson.Field
+	raw         string
+	ExtraFields map[string]apijson.Field
+}
+
+func (r *CustomChartsSectionSubSectionsChartsSeriesMetricDefinitionCustomChartMetricRatioOutputDenominatorCustomChartFeedbackScoreMetricScalar) UnmarshalJSON(data []byte) (err error) {
+	return apijson.UnmarshalRoot(data, r)
+}
+
+func (r customChartsSectionSubSectionsChartsSeriesMetricDefinitionCustomChartMetricRatioOutputDenominatorCustomChartFeedbackScoreMetricScalarJSON) RawJSON() string {
+	return r.raw
+}
+
+func (r CustomChartsSectionSubSectionsChartsSeriesMetricDefinitionCustomChartMetricRatioOutputDenominatorCustomChartFeedbackScoreMetricScalar) implementsCustomChartsSectionSubSectionsChartsSeriesMetricDefinitionCustomChartMetricRatioOutputDenominator() {
+}
+
+type CustomChartsSectionSubSectionsChartsSeriesMetricDefinitionCustomChartMetricRatioOutputDenominatorCustomChartFeedbackScoreMetricScalarField string
+
+const (
+	CustomChartsSectionSubSectionsChartsSeriesMetricDefinitionCustomChartMetricRatioOutputDenominatorCustomChartFeedbackScoreMetricScalarFieldFeedbackScore CustomChartsSectionSubSectionsChartsSeriesMetricDefinitionCustomChartMetricRatioOutputDenominatorCustomChartFeedbackScoreMetricScalarField = "feedback_score"
+)
+
+func (r CustomChartsSectionSubSectionsChartsSeriesMetricDefinitionCustomChartMetricRatioOutputDenominatorCustomChartFeedbackScoreMetricScalarField) IsKnown() bool {
+	switch r {
+	case CustomChartsSectionSubSectionsChartsSeriesMetricDefinitionCustomChartMetricRatioOutputDenominatorCustomChartFeedbackScoreMetricScalarFieldFeedbackScore:
+		return true
+	}
+	return false
+}
+
+type CustomChartsSectionSubSectionsChartsSeriesMetricDefinitionCustomChartMetricRatioOutputDenominatorCustomChartFeedbackScoreMetricScalarParams struct {
+	FeedbackKey string                                                                                                                                          `json:"feedback_key" api:"required"`
+	JSON        customChartsSectionSubSectionsChartsSeriesMetricDefinitionCustomChartMetricRatioOutputDenominatorCustomChartFeedbackScoreMetricScalarParamsJSON `json:"-"`
+}
+
+// customChartsSectionSubSectionsChartsSeriesMetricDefinitionCustomChartMetricRatioOutputDenominatorCustomChartFeedbackScoreMetricScalarParamsJSON
+// contains the JSON metadata for the struct
+// [CustomChartsSectionSubSectionsChartsSeriesMetricDefinitionCustomChartMetricRatioOutputDenominatorCustomChartFeedbackScoreMetricScalarParams]
+type customChartsSectionSubSectionsChartsSeriesMetricDefinitionCustomChartMetricRatioOutputDenominatorCustomChartFeedbackScoreMetricScalarParamsJSON struct {
+	FeedbackKey apijson.Field
+	raw         string
+	ExtraFields map[string]apijson.Field
+}
+
+func (r *CustomChartsSectionSubSectionsChartsSeriesMetricDefinitionCustomChartMetricRatioOutputDenominatorCustomChartFeedbackScoreMetricScalarParams) UnmarshalJSON(data []byte) (err error) {
+	return apijson.UnmarshalRoot(data, r)
+}
+
+func (r customChartsSectionSubSectionsChartsSeriesMetricDefinitionCustomChartMetricRatioOutputDenominatorCustomChartFeedbackScoreMetricScalarParamsJSON) RawJSON() string {
+	return r.raw
+}
+
+type CustomChartsSectionSubSectionsChartsSeriesMetricDefinitionCustomChartMetricRatioOutputDenominatorCustomChartFeedbackScoreMetricScalarType string
+
+const (
+	CustomChartsSectionSubSectionsChartsSeriesMetricDefinitionCustomChartMetricRatioOutputDenominatorCustomChartFeedbackScoreMetricScalarTypeMax CustomChartsSectionSubSectionsChartsSeriesMetricDefinitionCustomChartMetricRatioOutputDenominatorCustomChartFeedbackScoreMetricScalarType = "max"
+	CustomChartsSectionSubSectionsChartsSeriesMetricDefinitionCustomChartMetricRatioOutputDenominatorCustomChartFeedbackScoreMetricScalarTypeMin CustomChartsSectionSubSectionsChartsSeriesMetricDefinitionCustomChartMetricRatioOutputDenominatorCustomChartFeedbackScoreMetricScalarType = "min"
+	CustomChartsSectionSubSectionsChartsSeriesMetricDefinitionCustomChartMetricRatioOutputDenominatorCustomChartFeedbackScoreMetricScalarTypeAvg CustomChartsSectionSubSectionsChartsSeriesMetricDefinitionCustomChartMetricRatioOutputDenominatorCustomChartFeedbackScoreMetricScalarType = "avg"
+)
+
+func (r CustomChartsSectionSubSectionsChartsSeriesMetricDefinitionCustomChartMetricRatioOutputDenominatorCustomChartFeedbackScoreMetricScalarType) IsKnown() bool {
+	switch r {
+	case CustomChartsSectionSubSectionsChartsSeriesMetricDefinitionCustomChartMetricRatioOutputDenominatorCustomChartFeedbackScoreMetricScalarTypeMax, CustomChartsSectionSubSectionsChartsSeriesMetricDefinitionCustomChartMetricRatioOutputDenominatorCustomChartFeedbackScoreMetricScalarTypeMin, CustomChartsSectionSubSectionsChartsSeriesMetricDefinitionCustomChartMetricRatioOutputDenominatorCustomChartFeedbackScoreMetricScalarTypeAvg:
+		return true
+	}
+	return false
+}
+
 type CustomChartsSectionSubSectionsChartsSeriesMetricDefinitionCustomChartMetricRatioOutputDenominatorCustomChartMetricScalar struct {
 	Field  CustomChartsSectionSubSectionsChartsSeriesMetricDefinitionCustomChartMetricRatioOutputDenominatorCustomChartMetricScalarField `json:"field" api:"required"`
 	Type   CustomChartsSectionSubSectionsChartsSeriesMetricDefinitionCustomChartMetricRatioOutputDenominatorCustomChartMetricScalarType  `json:"type" api:"required"`
@@ -2958,11 +3419,12 @@ const (
 	CustomChartsSectionSubSectionsChartsSeriesMetricDefinitionCustomChartMetricRatioOutputDenominatorCustomChartMetricScalarFieldTotalCost         CustomChartsSectionSubSectionsChartsSeriesMetricDefinitionCustomChartMetricRatioOutputDenominatorCustomChartMetricScalarField = "total_cost"
 	CustomChartsSectionSubSectionsChartsSeriesMetricDefinitionCustomChartMetricRatioOutputDenominatorCustomChartMetricScalarFieldPromptCost        CustomChartsSectionSubSectionsChartsSeriesMetricDefinitionCustomChartMetricRatioOutputDenominatorCustomChartMetricScalarField = "prompt_cost"
 	CustomChartsSectionSubSectionsChartsSeriesMetricDefinitionCustomChartMetricRatioOutputDenominatorCustomChartMetricScalarFieldCompletionCost    CustomChartsSectionSubSectionsChartsSeriesMetricDefinitionCustomChartMetricRatioOutputDenominatorCustomChartMetricScalarField = "completion_cost"
+	CustomChartsSectionSubSectionsChartsSeriesMetricDefinitionCustomChartMetricRatioOutputDenominatorCustomChartMetricScalarFieldFeedbackScore     CustomChartsSectionSubSectionsChartsSeriesMetricDefinitionCustomChartMetricRatioOutputDenominatorCustomChartMetricScalarField = "feedback_score"
 )
 
 func (r CustomChartsSectionSubSectionsChartsSeriesMetricDefinitionCustomChartMetricRatioOutputDenominatorCustomChartMetricScalarField) IsKnown() bool {
 	switch r {
-	case CustomChartsSectionSubSectionsChartsSeriesMetricDefinitionCustomChartMetricRatioOutputDenominatorCustomChartMetricScalarFieldLatencySeconds, CustomChartsSectionSubSectionsChartsSeriesMetricDefinitionCustomChartMetricRatioOutputDenominatorCustomChartMetricScalarFieldFirstTokenSeconds, CustomChartsSectionSubSectionsChartsSeriesMetricDefinitionCustomChartMetricRatioOutputDenominatorCustomChartMetricScalarFieldTotalTokens, CustomChartsSectionSubSectionsChartsSeriesMetricDefinitionCustomChartMetricRatioOutputDenominatorCustomChartMetricScalarFieldPromptTokens, CustomChartsSectionSubSectionsChartsSeriesMetricDefinitionCustomChartMetricRatioOutputDenominatorCustomChartMetricScalarFieldCompletionTokens, CustomChartsSectionSubSectionsChartsSeriesMetricDefinitionCustomChartMetricRatioOutputDenominatorCustomChartMetricScalarFieldTotalCost, CustomChartsSectionSubSectionsChartsSeriesMetricDefinitionCustomChartMetricRatioOutputDenominatorCustomChartMetricScalarFieldPromptCost, CustomChartsSectionSubSectionsChartsSeriesMetricDefinitionCustomChartMetricRatioOutputDenominatorCustomChartMetricScalarFieldCompletionCost:
+	case CustomChartsSectionSubSectionsChartsSeriesMetricDefinitionCustomChartMetricRatioOutputDenominatorCustomChartMetricScalarFieldLatencySeconds, CustomChartsSectionSubSectionsChartsSeriesMetricDefinitionCustomChartMetricRatioOutputDenominatorCustomChartMetricScalarFieldFirstTokenSeconds, CustomChartsSectionSubSectionsChartsSeriesMetricDefinitionCustomChartMetricRatioOutputDenominatorCustomChartMetricScalarFieldTotalTokens, CustomChartsSectionSubSectionsChartsSeriesMetricDefinitionCustomChartMetricRatioOutputDenominatorCustomChartMetricScalarFieldPromptTokens, CustomChartsSectionSubSectionsChartsSeriesMetricDefinitionCustomChartMetricRatioOutputDenominatorCustomChartMetricScalarFieldCompletionTokens, CustomChartsSectionSubSectionsChartsSeriesMetricDefinitionCustomChartMetricRatioOutputDenominatorCustomChartMetricScalarFieldTotalCost, CustomChartsSectionSubSectionsChartsSeriesMetricDefinitionCustomChartMetricRatioOutputDenominatorCustomChartMetricScalarFieldPromptCost, CustomChartsSectionSubSectionsChartsSeriesMetricDefinitionCustomChartMetricRatioOutputDenominatorCustomChartMetricScalarFieldCompletionCost, CustomChartsSectionSubSectionsChartsSeriesMetricDefinitionCustomChartMetricRatioOutputDenominatorCustomChartMetricScalarFieldFeedbackScore:
 		return true
 	}
 	return false
@@ -3027,11 +3489,12 @@ const (
 	CustomChartsSectionSubSectionsChartsSeriesMetricDefinitionCustomChartMetricRatioOutputDenominatorCustomChartMetricPercentileFieldTotalCost         CustomChartsSectionSubSectionsChartsSeriesMetricDefinitionCustomChartMetricRatioOutputDenominatorCustomChartMetricPercentileField = "total_cost"
 	CustomChartsSectionSubSectionsChartsSeriesMetricDefinitionCustomChartMetricRatioOutputDenominatorCustomChartMetricPercentileFieldPromptCost        CustomChartsSectionSubSectionsChartsSeriesMetricDefinitionCustomChartMetricRatioOutputDenominatorCustomChartMetricPercentileField = "prompt_cost"
 	CustomChartsSectionSubSectionsChartsSeriesMetricDefinitionCustomChartMetricRatioOutputDenominatorCustomChartMetricPercentileFieldCompletionCost    CustomChartsSectionSubSectionsChartsSeriesMetricDefinitionCustomChartMetricRatioOutputDenominatorCustomChartMetricPercentileField = "completion_cost"
+	CustomChartsSectionSubSectionsChartsSeriesMetricDefinitionCustomChartMetricRatioOutputDenominatorCustomChartMetricPercentileFieldFeedbackScore     CustomChartsSectionSubSectionsChartsSeriesMetricDefinitionCustomChartMetricRatioOutputDenominatorCustomChartMetricPercentileField = "feedback_score"
 )
 
 func (r CustomChartsSectionSubSectionsChartsSeriesMetricDefinitionCustomChartMetricRatioOutputDenominatorCustomChartMetricPercentileField) IsKnown() bool {
 	switch r {
-	case CustomChartsSectionSubSectionsChartsSeriesMetricDefinitionCustomChartMetricRatioOutputDenominatorCustomChartMetricPercentileFieldLatencySeconds, CustomChartsSectionSubSectionsChartsSeriesMetricDefinitionCustomChartMetricRatioOutputDenominatorCustomChartMetricPercentileFieldFirstTokenSeconds, CustomChartsSectionSubSectionsChartsSeriesMetricDefinitionCustomChartMetricRatioOutputDenominatorCustomChartMetricPercentileFieldTotalTokens, CustomChartsSectionSubSectionsChartsSeriesMetricDefinitionCustomChartMetricRatioOutputDenominatorCustomChartMetricPercentileFieldPromptTokens, CustomChartsSectionSubSectionsChartsSeriesMetricDefinitionCustomChartMetricRatioOutputDenominatorCustomChartMetricPercentileFieldCompletionTokens, CustomChartsSectionSubSectionsChartsSeriesMetricDefinitionCustomChartMetricRatioOutputDenominatorCustomChartMetricPercentileFieldTotalCost, CustomChartsSectionSubSectionsChartsSeriesMetricDefinitionCustomChartMetricRatioOutputDenominatorCustomChartMetricPercentileFieldPromptCost, CustomChartsSectionSubSectionsChartsSeriesMetricDefinitionCustomChartMetricRatioOutputDenominatorCustomChartMetricPercentileFieldCompletionCost:
+	case CustomChartsSectionSubSectionsChartsSeriesMetricDefinitionCustomChartMetricRatioOutputDenominatorCustomChartMetricPercentileFieldLatencySeconds, CustomChartsSectionSubSectionsChartsSeriesMetricDefinitionCustomChartMetricRatioOutputDenominatorCustomChartMetricPercentileFieldFirstTokenSeconds, CustomChartsSectionSubSectionsChartsSeriesMetricDefinitionCustomChartMetricRatioOutputDenominatorCustomChartMetricPercentileFieldTotalTokens, CustomChartsSectionSubSectionsChartsSeriesMetricDefinitionCustomChartMetricRatioOutputDenominatorCustomChartMetricPercentileFieldPromptTokens, CustomChartsSectionSubSectionsChartsSeriesMetricDefinitionCustomChartMetricRatioOutputDenominatorCustomChartMetricPercentileFieldCompletionTokens, CustomChartsSectionSubSectionsChartsSeriesMetricDefinitionCustomChartMetricRatioOutputDenominatorCustomChartMetricPercentileFieldTotalCost, CustomChartsSectionSubSectionsChartsSeriesMetricDefinitionCustomChartMetricRatioOutputDenominatorCustomChartMetricPercentileFieldPromptCost, CustomChartsSectionSubSectionsChartsSeriesMetricDefinitionCustomChartMetricRatioOutputDenominatorCustomChartMetricPercentileFieldCompletionCost, CustomChartsSectionSubSectionsChartsSeriesMetricDefinitionCustomChartMetricRatioOutputDenominatorCustomChartMetricPercentileFieldFeedbackScore:
 		return true
 	}
 	return false
@@ -3076,6 +3539,7 @@ func (r CustomChartsSectionSubSectionsChartsSeriesMetricDefinitionCustomChartMet
 type CustomChartsSectionSubSectionsChartsSeriesMetricDefinitionCustomChartMetricRatioOutputDenominatorField string
 
 const (
+	CustomChartsSectionSubSectionsChartsSeriesMetricDefinitionCustomChartMetricRatioOutputDenominatorFieldFeedbackScore     CustomChartsSectionSubSectionsChartsSeriesMetricDefinitionCustomChartMetricRatioOutputDenominatorField = "feedback_score"
 	CustomChartsSectionSubSectionsChartsSeriesMetricDefinitionCustomChartMetricRatioOutputDenominatorFieldLatencySeconds    CustomChartsSectionSubSectionsChartsSeriesMetricDefinitionCustomChartMetricRatioOutputDenominatorField = "latency_seconds"
 	CustomChartsSectionSubSectionsChartsSeriesMetricDefinitionCustomChartMetricRatioOutputDenominatorFieldFirstTokenSeconds CustomChartsSectionSubSectionsChartsSeriesMetricDefinitionCustomChartMetricRatioOutputDenominatorField = "first_token_seconds"
 	CustomChartsSectionSubSectionsChartsSeriesMetricDefinitionCustomChartMetricRatioOutputDenominatorFieldTotalTokens       CustomChartsSectionSubSectionsChartsSeriesMetricDefinitionCustomChartMetricRatioOutputDenominatorField = "total_tokens"
@@ -3088,7 +3552,7 @@ const (
 
 func (r CustomChartsSectionSubSectionsChartsSeriesMetricDefinitionCustomChartMetricRatioOutputDenominatorField) IsKnown() bool {
 	switch r {
-	case CustomChartsSectionSubSectionsChartsSeriesMetricDefinitionCustomChartMetricRatioOutputDenominatorFieldLatencySeconds, CustomChartsSectionSubSectionsChartsSeriesMetricDefinitionCustomChartMetricRatioOutputDenominatorFieldFirstTokenSeconds, CustomChartsSectionSubSectionsChartsSeriesMetricDefinitionCustomChartMetricRatioOutputDenominatorFieldTotalTokens, CustomChartsSectionSubSectionsChartsSeriesMetricDefinitionCustomChartMetricRatioOutputDenominatorFieldPromptTokens, CustomChartsSectionSubSectionsChartsSeriesMetricDefinitionCustomChartMetricRatioOutputDenominatorFieldCompletionTokens, CustomChartsSectionSubSectionsChartsSeriesMetricDefinitionCustomChartMetricRatioOutputDenominatorFieldTotalCost, CustomChartsSectionSubSectionsChartsSeriesMetricDefinitionCustomChartMetricRatioOutputDenominatorFieldPromptCost, CustomChartsSectionSubSectionsChartsSeriesMetricDefinitionCustomChartMetricRatioOutputDenominatorFieldCompletionCost:
+	case CustomChartsSectionSubSectionsChartsSeriesMetricDefinitionCustomChartMetricRatioOutputDenominatorFieldFeedbackScore, CustomChartsSectionSubSectionsChartsSeriesMetricDefinitionCustomChartMetricRatioOutputDenominatorFieldLatencySeconds, CustomChartsSectionSubSectionsChartsSeriesMetricDefinitionCustomChartMetricRatioOutputDenominatorFieldFirstTokenSeconds, CustomChartsSectionSubSectionsChartsSeriesMetricDefinitionCustomChartMetricRatioOutputDenominatorFieldTotalTokens, CustomChartsSectionSubSectionsChartsSeriesMetricDefinitionCustomChartMetricRatioOutputDenominatorFieldPromptTokens, CustomChartsSectionSubSectionsChartsSeriesMetricDefinitionCustomChartMetricRatioOutputDenominatorFieldCompletionTokens, CustomChartsSectionSubSectionsChartsSeriesMetricDefinitionCustomChartMetricRatioOutputDenominatorFieldTotalCost, CustomChartsSectionSubSectionsChartsSeriesMetricDefinitionCustomChartMetricRatioOutputDenominatorFieldPromptCost, CustomChartsSectionSubSectionsChartsSeriesMetricDefinitionCustomChartMetricRatioOutputDenominatorFieldCompletionCost:
 		return true
 	}
 	return false
@@ -3098,16 +3562,16 @@ type CustomChartsSectionSubSectionsChartsSeriesMetricDefinitionCustomChartMetric
 
 const (
 	CustomChartsSectionSubSectionsChartsSeriesMetricDefinitionCustomChartMetricRatioOutputDenominatorTypeCount      CustomChartsSectionSubSectionsChartsSeriesMetricDefinitionCustomChartMetricRatioOutputDenominatorType = "count"
-	CustomChartsSectionSubSectionsChartsSeriesMetricDefinitionCustomChartMetricRatioOutputDenominatorTypeSum        CustomChartsSectionSubSectionsChartsSeriesMetricDefinitionCustomChartMetricRatioOutputDenominatorType = "sum"
 	CustomChartsSectionSubSectionsChartsSeriesMetricDefinitionCustomChartMetricRatioOutputDenominatorTypeMax        CustomChartsSectionSubSectionsChartsSeriesMetricDefinitionCustomChartMetricRatioOutputDenominatorType = "max"
 	CustomChartsSectionSubSectionsChartsSeriesMetricDefinitionCustomChartMetricRatioOutputDenominatorTypeMin        CustomChartsSectionSubSectionsChartsSeriesMetricDefinitionCustomChartMetricRatioOutputDenominatorType = "min"
 	CustomChartsSectionSubSectionsChartsSeriesMetricDefinitionCustomChartMetricRatioOutputDenominatorTypeAvg        CustomChartsSectionSubSectionsChartsSeriesMetricDefinitionCustomChartMetricRatioOutputDenominatorType = "avg"
+	CustomChartsSectionSubSectionsChartsSeriesMetricDefinitionCustomChartMetricRatioOutputDenominatorTypeSum        CustomChartsSectionSubSectionsChartsSeriesMetricDefinitionCustomChartMetricRatioOutputDenominatorType = "sum"
 	CustomChartsSectionSubSectionsChartsSeriesMetricDefinitionCustomChartMetricRatioOutputDenominatorTypePercentile CustomChartsSectionSubSectionsChartsSeriesMetricDefinitionCustomChartMetricRatioOutputDenominatorType = "percentile"
 )
 
 func (r CustomChartsSectionSubSectionsChartsSeriesMetricDefinitionCustomChartMetricRatioOutputDenominatorType) IsKnown() bool {
 	switch r {
-	case CustomChartsSectionSubSectionsChartsSeriesMetricDefinitionCustomChartMetricRatioOutputDenominatorTypeCount, CustomChartsSectionSubSectionsChartsSeriesMetricDefinitionCustomChartMetricRatioOutputDenominatorTypeSum, CustomChartsSectionSubSectionsChartsSeriesMetricDefinitionCustomChartMetricRatioOutputDenominatorTypeMax, CustomChartsSectionSubSectionsChartsSeriesMetricDefinitionCustomChartMetricRatioOutputDenominatorTypeMin, CustomChartsSectionSubSectionsChartsSeriesMetricDefinitionCustomChartMetricRatioOutputDenominatorTypeAvg, CustomChartsSectionSubSectionsChartsSeriesMetricDefinitionCustomChartMetricRatioOutputDenominatorTypePercentile:
+	case CustomChartsSectionSubSectionsChartsSeriesMetricDefinitionCustomChartMetricRatioOutputDenominatorTypeCount, CustomChartsSectionSubSectionsChartsSeriesMetricDefinitionCustomChartMetricRatioOutputDenominatorTypeMax, CustomChartsSectionSubSectionsChartsSeriesMetricDefinitionCustomChartMetricRatioOutputDenominatorTypeMin, CustomChartsSectionSubSectionsChartsSeriesMetricDefinitionCustomChartMetricRatioOutputDenominatorTypeAvg, CustomChartsSectionSubSectionsChartsSeriesMetricDefinitionCustomChartMetricRatioOutputDenominatorTypeSum, CustomChartsSectionSubSectionsChartsSeriesMetricDefinitionCustomChartMetricRatioOutputDenominatorTypePercentile:
 		return true
 	}
 	return false
@@ -3117,6 +3581,7 @@ type CustomChartsSectionSubSectionsChartsSeriesMetricDefinitionCustomChartMetric
 	Field  CustomChartsSectionSubSectionsChartsSeriesMetricDefinitionCustomChartMetricRatioOutputNumeratorField `json:"field"`
 	Filter string                                                                                               `json:"filter" api:"nullable"`
 	// This field can have the runtime type of
+	// [CustomChartsSectionSubSectionsChartsSeriesMetricDefinitionCustomChartMetricRatioOutputNumeratorCustomChartFeedbackScoreMetricScalarParams],
 	// [CustomChartsSectionSubSectionsChartsSeriesMetricDefinitionCustomChartMetricRatioOutputNumeratorCustomChartMetricPercentileParams].
 	Params interface{}                                                                                         `json:"params"`
 	Type   CustomChartsSectionSubSectionsChartsSeriesMetricDefinitionCustomChartMetricRatioOutputNumeratorType `json:"type"`
@@ -3155,6 +3620,7 @@ func (r *CustomChartsSectionSubSectionsChartsSeriesMetricDefinitionCustomChartMe
 //
 // Possible runtime types of the union are
 // [CustomChartsSectionSubSectionsChartsSeriesMetricDefinitionCustomChartMetricRatioOutputNumeratorCustomChartMetricCount],
+// [CustomChartsSectionSubSectionsChartsSeriesMetricDefinitionCustomChartMetricRatioOutputNumeratorCustomChartFeedbackScoreMetricScalar],
 // [CustomChartsSectionSubSectionsChartsSeriesMetricDefinitionCustomChartMetricRatioOutputNumeratorCustomChartMetricScalar],
 // [CustomChartsSectionSubSectionsChartsSeriesMetricDefinitionCustomChartMetricRatioOutputNumeratorCustomChartMetricPercentile].
 func (r CustomChartsSectionSubSectionsChartsSeriesMetricDefinitionCustomChartMetricRatioOutputNumerator) AsUnion() CustomChartsSectionSubSectionsChartsSeriesMetricDefinitionCustomChartMetricRatioOutputNumeratorUnion {
@@ -3163,6 +3629,7 @@ func (r CustomChartsSectionSubSectionsChartsSeriesMetricDefinitionCustomChartMet
 
 // Union satisfied by
 // [CustomChartsSectionSubSectionsChartsSeriesMetricDefinitionCustomChartMetricRatioOutputNumeratorCustomChartMetricCount],
+// [CustomChartsSectionSubSectionsChartsSeriesMetricDefinitionCustomChartMetricRatioOutputNumeratorCustomChartFeedbackScoreMetricScalar],
 // [CustomChartsSectionSubSectionsChartsSeriesMetricDefinitionCustomChartMetricRatioOutputNumeratorCustomChartMetricScalar]
 // or
 // [CustomChartsSectionSubSectionsChartsSeriesMetricDefinitionCustomChartMetricRatioOutputNumeratorCustomChartMetricPercentile].
@@ -3177,6 +3644,10 @@ func init() {
 		apijson.UnionVariant{
 			TypeFilter: gjson.JSON,
 			Type:       reflect.TypeOf(CustomChartsSectionSubSectionsChartsSeriesMetricDefinitionCustomChartMetricRatioOutputNumeratorCustomChartMetricCount{}),
+		},
+		apijson.UnionVariant{
+			TypeFilter: gjson.JSON,
+			Type:       reflect.TypeOf(CustomChartsSectionSubSectionsChartsSeriesMetricDefinitionCustomChartMetricRatioOutputNumeratorCustomChartFeedbackScoreMetricScalar{}),
 		},
 		apijson.UnionVariant{
 			TypeFilter: gjson.JSON,
@@ -3230,6 +3701,89 @@ func (r CustomChartsSectionSubSectionsChartsSeriesMetricDefinitionCustomChartMet
 	return false
 }
 
+type CustomChartsSectionSubSectionsChartsSeriesMetricDefinitionCustomChartMetricRatioOutputNumeratorCustomChartFeedbackScoreMetricScalar struct {
+	Field  CustomChartsSectionSubSectionsChartsSeriesMetricDefinitionCustomChartMetricRatioOutputNumeratorCustomChartFeedbackScoreMetricScalarField  `json:"field" api:"required"`
+	Params CustomChartsSectionSubSectionsChartsSeriesMetricDefinitionCustomChartMetricRatioOutputNumeratorCustomChartFeedbackScoreMetricScalarParams `json:"params" api:"required"`
+	Type   CustomChartsSectionSubSectionsChartsSeriesMetricDefinitionCustomChartMetricRatioOutputNumeratorCustomChartFeedbackScoreMetricScalarType   `json:"type" api:"required"`
+	Filter string                                                                                                                                    `json:"filter" api:"nullable"`
+	JSON   customChartsSectionSubSectionsChartsSeriesMetricDefinitionCustomChartMetricRatioOutputNumeratorCustomChartFeedbackScoreMetricScalarJSON   `json:"-"`
+}
+
+// customChartsSectionSubSectionsChartsSeriesMetricDefinitionCustomChartMetricRatioOutputNumeratorCustomChartFeedbackScoreMetricScalarJSON
+// contains the JSON metadata for the struct
+// [CustomChartsSectionSubSectionsChartsSeriesMetricDefinitionCustomChartMetricRatioOutputNumeratorCustomChartFeedbackScoreMetricScalar]
+type customChartsSectionSubSectionsChartsSeriesMetricDefinitionCustomChartMetricRatioOutputNumeratorCustomChartFeedbackScoreMetricScalarJSON struct {
+	Field       apijson.Field
+	Params      apijson.Field
+	Type        apijson.Field
+	Filter      apijson.Field
+	raw         string
+	ExtraFields map[string]apijson.Field
+}
+
+func (r *CustomChartsSectionSubSectionsChartsSeriesMetricDefinitionCustomChartMetricRatioOutputNumeratorCustomChartFeedbackScoreMetricScalar) UnmarshalJSON(data []byte) (err error) {
+	return apijson.UnmarshalRoot(data, r)
+}
+
+func (r customChartsSectionSubSectionsChartsSeriesMetricDefinitionCustomChartMetricRatioOutputNumeratorCustomChartFeedbackScoreMetricScalarJSON) RawJSON() string {
+	return r.raw
+}
+
+func (r CustomChartsSectionSubSectionsChartsSeriesMetricDefinitionCustomChartMetricRatioOutputNumeratorCustomChartFeedbackScoreMetricScalar) implementsCustomChartsSectionSubSectionsChartsSeriesMetricDefinitionCustomChartMetricRatioOutputNumerator() {
+}
+
+type CustomChartsSectionSubSectionsChartsSeriesMetricDefinitionCustomChartMetricRatioOutputNumeratorCustomChartFeedbackScoreMetricScalarField string
+
+const (
+	CustomChartsSectionSubSectionsChartsSeriesMetricDefinitionCustomChartMetricRatioOutputNumeratorCustomChartFeedbackScoreMetricScalarFieldFeedbackScore CustomChartsSectionSubSectionsChartsSeriesMetricDefinitionCustomChartMetricRatioOutputNumeratorCustomChartFeedbackScoreMetricScalarField = "feedback_score"
+)
+
+func (r CustomChartsSectionSubSectionsChartsSeriesMetricDefinitionCustomChartMetricRatioOutputNumeratorCustomChartFeedbackScoreMetricScalarField) IsKnown() bool {
+	switch r {
+	case CustomChartsSectionSubSectionsChartsSeriesMetricDefinitionCustomChartMetricRatioOutputNumeratorCustomChartFeedbackScoreMetricScalarFieldFeedbackScore:
+		return true
+	}
+	return false
+}
+
+type CustomChartsSectionSubSectionsChartsSeriesMetricDefinitionCustomChartMetricRatioOutputNumeratorCustomChartFeedbackScoreMetricScalarParams struct {
+	FeedbackKey string                                                                                                                                        `json:"feedback_key" api:"required"`
+	JSON        customChartsSectionSubSectionsChartsSeriesMetricDefinitionCustomChartMetricRatioOutputNumeratorCustomChartFeedbackScoreMetricScalarParamsJSON `json:"-"`
+}
+
+// customChartsSectionSubSectionsChartsSeriesMetricDefinitionCustomChartMetricRatioOutputNumeratorCustomChartFeedbackScoreMetricScalarParamsJSON
+// contains the JSON metadata for the struct
+// [CustomChartsSectionSubSectionsChartsSeriesMetricDefinitionCustomChartMetricRatioOutputNumeratorCustomChartFeedbackScoreMetricScalarParams]
+type customChartsSectionSubSectionsChartsSeriesMetricDefinitionCustomChartMetricRatioOutputNumeratorCustomChartFeedbackScoreMetricScalarParamsJSON struct {
+	FeedbackKey apijson.Field
+	raw         string
+	ExtraFields map[string]apijson.Field
+}
+
+func (r *CustomChartsSectionSubSectionsChartsSeriesMetricDefinitionCustomChartMetricRatioOutputNumeratorCustomChartFeedbackScoreMetricScalarParams) UnmarshalJSON(data []byte) (err error) {
+	return apijson.UnmarshalRoot(data, r)
+}
+
+func (r customChartsSectionSubSectionsChartsSeriesMetricDefinitionCustomChartMetricRatioOutputNumeratorCustomChartFeedbackScoreMetricScalarParamsJSON) RawJSON() string {
+	return r.raw
+}
+
+type CustomChartsSectionSubSectionsChartsSeriesMetricDefinitionCustomChartMetricRatioOutputNumeratorCustomChartFeedbackScoreMetricScalarType string
+
+const (
+	CustomChartsSectionSubSectionsChartsSeriesMetricDefinitionCustomChartMetricRatioOutputNumeratorCustomChartFeedbackScoreMetricScalarTypeMax CustomChartsSectionSubSectionsChartsSeriesMetricDefinitionCustomChartMetricRatioOutputNumeratorCustomChartFeedbackScoreMetricScalarType = "max"
+	CustomChartsSectionSubSectionsChartsSeriesMetricDefinitionCustomChartMetricRatioOutputNumeratorCustomChartFeedbackScoreMetricScalarTypeMin CustomChartsSectionSubSectionsChartsSeriesMetricDefinitionCustomChartMetricRatioOutputNumeratorCustomChartFeedbackScoreMetricScalarType = "min"
+	CustomChartsSectionSubSectionsChartsSeriesMetricDefinitionCustomChartMetricRatioOutputNumeratorCustomChartFeedbackScoreMetricScalarTypeAvg CustomChartsSectionSubSectionsChartsSeriesMetricDefinitionCustomChartMetricRatioOutputNumeratorCustomChartFeedbackScoreMetricScalarType = "avg"
+)
+
+func (r CustomChartsSectionSubSectionsChartsSeriesMetricDefinitionCustomChartMetricRatioOutputNumeratorCustomChartFeedbackScoreMetricScalarType) IsKnown() bool {
+	switch r {
+	case CustomChartsSectionSubSectionsChartsSeriesMetricDefinitionCustomChartMetricRatioOutputNumeratorCustomChartFeedbackScoreMetricScalarTypeMax, CustomChartsSectionSubSectionsChartsSeriesMetricDefinitionCustomChartMetricRatioOutputNumeratorCustomChartFeedbackScoreMetricScalarTypeMin, CustomChartsSectionSubSectionsChartsSeriesMetricDefinitionCustomChartMetricRatioOutputNumeratorCustomChartFeedbackScoreMetricScalarTypeAvg:
+		return true
+	}
+	return false
+}
+
 type CustomChartsSectionSubSectionsChartsSeriesMetricDefinitionCustomChartMetricRatioOutputNumeratorCustomChartMetricScalar struct {
 	Field  CustomChartsSectionSubSectionsChartsSeriesMetricDefinitionCustomChartMetricRatioOutputNumeratorCustomChartMetricScalarField `json:"field" api:"required"`
 	Type   CustomChartsSectionSubSectionsChartsSeriesMetricDefinitionCustomChartMetricRatioOutputNumeratorCustomChartMetricScalarType  `json:"type" api:"required"`
@@ -3270,11 +3824,12 @@ const (
 	CustomChartsSectionSubSectionsChartsSeriesMetricDefinitionCustomChartMetricRatioOutputNumeratorCustomChartMetricScalarFieldTotalCost         CustomChartsSectionSubSectionsChartsSeriesMetricDefinitionCustomChartMetricRatioOutputNumeratorCustomChartMetricScalarField = "total_cost"
 	CustomChartsSectionSubSectionsChartsSeriesMetricDefinitionCustomChartMetricRatioOutputNumeratorCustomChartMetricScalarFieldPromptCost        CustomChartsSectionSubSectionsChartsSeriesMetricDefinitionCustomChartMetricRatioOutputNumeratorCustomChartMetricScalarField = "prompt_cost"
 	CustomChartsSectionSubSectionsChartsSeriesMetricDefinitionCustomChartMetricRatioOutputNumeratorCustomChartMetricScalarFieldCompletionCost    CustomChartsSectionSubSectionsChartsSeriesMetricDefinitionCustomChartMetricRatioOutputNumeratorCustomChartMetricScalarField = "completion_cost"
+	CustomChartsSectionSubSectionsChartsSeriesMetricDefinitionCustomChartMetricRatioOutputNumeratorCustomChartMetricScalarFieldFeedbackScore     CustomChartsSectionSubSectionsChartsSeriesMetricDefinitionCustomChartMetricRatioOutputNumeratorCustomChartMetricScalarField = "feedback_score"
 )
 
 func (r CustomChartsSectionSubSectionsChartsSeriesMetricDefinitionCustomChartMetricRatioOutputNumeratorCustomChartMetricScalarField) IsKnown() bool {
 	switch r {
-	case CustomChartsSectionSubSectionsChartsSeriesMetricDefinitionCustomChartMetricRatioOutputNumeratorCustomChartMetricScalarFieldLatencySeconds, CustomChartsSectionSubSectionsChartsSeriesMetricDefinitionCustomChartMetricRatioOutputNumeratorCustomChartMetricScalarFieldFirstTokenSeconds, CustomChartsSectionSubSectionsChartsSeriesMetricDefinitionCustomChartMetricRatioOutputNumeratorCustomChartMetricScalarFieldTotalTokens, CustomChartsSectionSubSectionsChartsSeriesMetricDefinitionCustomChartMetricRatioOutputNumeratorCustomChartMetricScalarFieldPromptTokens, CustomChartsSectionSubSectionsChartsSeriesMetricDefinitionCustomChartMetricRatioOutputNumeratorCustomChartMetricScalarFieldCompletionTokens, CustomChartsSectionSubSectionsChartsSeriesMetricDefinitionCustomChartMetricRatioOutputNumeratorCustomChartMetricScalarFieldTotalCost, CustomChartsSectionSubSectionsChartsSeriesMetricDefinitionCustomChartMetricRatioOutputNumeratorCustomChartMetricScalarFieldPromptCost, CustomChartsSectionSubSectionsChartsSeriesMetricDefinitionCustomChartMetricRatioOutputNumeratorCustomChartMetricScalarFieldCompletionCost:
+	case CustomChartsSectionSubSectionsChartsSeriesMetricDefinitionCustomChartMetricRatioOutputNumeratorCustomChartMetricScalarFieldLatencySeconds, CustomChartsSectionSubSectionsChartsSeriesMetricDefinitionCustomChartMetricRatioOutputNumeratorCustomChartMetricScalarFieldFirstTokenSeconds, CustomChartsSectionSubSectionsChartsSeriesMetricDefinitionCustomChartMetricRatioOutputNumeratorCustomChartMetricScalarFieldTotalTokens, CustomChartsSectionSubSectionsChartsSeriesMetricDefinitionCustomChartMetricRatioOutputNumeratorCustomChartMetricScalarFieldPromptTokens, CustomChartsSectionSubSectionsChartsSeriesMetricDefinitionCustomChartMetricRatioOutputNumeratorCustomChartMetricScalarFieldCompletionTokens, CustomChartsSectionSubSectionsChartsSeriesMetricDefinitionCustomChartMetricRatioOutputNumeratorCustomChartMetricScalarFieldTotalCost, CustomChartsSectionSubSectionsChartsSeriesMetricDefinitionCustomChartMetricRatioOutputNumeratorCustomChartMetricScalarFieldPromptCost, CustomChartsSectionSubSectionsChartsSeriesMetricDefinitionCustomChartMetricRatioOutputNumeratorCustomChartMetricScalarFieldCompletionCost, CustomChartsSectionSubSectionsChartsSeriesMetricDefinitionCustomChartMetricRatioOutputNumeratorCustomChartMetricScalarFieldFeedbackScore:
 		return true
 	}
 	return false
@@ -3339,11 +3894,12 @@ const (
 	CustomChartsSectionSubSectionsChartsSeriesMetricDefinitionCustomChartMetricRatioOutputNumeratorCustomChartMetricPercentileFieldTotalCost         CustomChartsSectionSubSectionsChartsSeriesMetricDefinitionCustomChartMetricRatioOutputNumeratorCustomChartMetricPercentileField = "total_cost"
 	CustomChartsSectionSubSectionsChartsSeriesMetricDefinitionCustomChartMetricRatioOutputNumeratorCustomChartMetricPercentileFieldPromptCost        CustomChartsSectionSubSectionsChartsSeriesMetricDefinitionCustomChartMetricRatioOutputNumeratorCustomChartMetricPercentileField = "prompt_cost"
 	CustomChartsSectionSubSectionsChartsSeriesMetricDefinitionCustomChartMetricRatioOutputNumeratorCustomChartMetricPercentileFieldCompletionCost    CustomChartsSectionSubSectionsChartsSeriesMetricDefinitionCustomChartMetricRatioOutputNumeratorCustomChartMetricPercentileField = "completion_cost"
+	CustomChartsSectionSubSectionsChartsSeriesMetricDefinitionCustomChartMetricRatioOutputNumeratorCustomChartMetricPercentileFieldFeedbackScore     CustomChartsSectionSubSectionsChartsSeriesMetricDefinitionCustomChartMetricRatioOutputNumeratorCustomChartMetricPercentileField = "feedback_score"
 )
 
 func (r CustomChartsSectionSubSectionsChartsSeriesMetricDefinitionCustomChartMetricRatioOutputNumeratorCustomChartMetricPercentileField) IsKnown() bool {
 	switch r {
-	case CustomChartsSectionSubSectionsChartsSeriesMetricDefinitionCustomChartMetricRatioOutputNumeratorCustomChartMetricPercentileFieldLatencySeconds, CustomChartsSectionSubSectionsChartsSeriesMetricDefinitionCustomChartMetricRatioOutputNumeratorCustomChartMetricPercentileFieldFirstTokenSeconds, CustomChartsSectionSubSectionsChartsSeriesMetricDefinitionCustomChartMetricRatioOutputNumeratorCustomChartMetricPercentileFieldTotalTokens, CustomChartsSectionSubSectionsChartsSeriesMetricDefinitionCustomChartMetricRatioOutputNumeratorCustomChartMetricPercentileFieldPromptTokens, CustomChartsSectionSubSectionsChartsSeriesMetricDefinitionCustomChartMetricRatioOutputNumeratorCustomChartMetricPercentileFieldCompletionTokens, CustomChartsSectionSubSectionsChartsSeriesMetricDefinitionCustomChartMetricRatioOutputNumeratorCustomChartMetricPercentileFieldTotalCost, CustomChartsSectionSubSectionsChartsSeriesMetricDefinitionCustomChartMetricRatioOutputNumeratorCustomChartMetricPercentileFieldPromptCost, CustomChartsSectionSubSectionsChartsSeriesMetricDefinitionCustomChartMetricRatioOutputNumeratorCustomChartMetricPercentileFieldCompletionCost:
+	case CustomChartsSectionSubSectionsChartsSeriesMetricDefinitionCustomChartMetricRatioOutputNumeratorCustomChartMetricPercentileFieldLatencySeconds, CustomChartsSectionSubSectionsChartsSeriesMetricDefinitionCustomChartMetricRatioOutputNumeratorCustomChartMetricPercentileFieldFirstTokenSeconds, CustomChartsSectionSubSectionsChartsSeriesMetricDefinitionCustomChartMetricRatioOutputNumeratorCustomChartMetricPercentileFieldTotalTokens, CustomChartsSectionSubSectionsChartsSeriesMetricDefinitionCustomChartMetricRatioOutputNumeratorCustomChartMetricPercentileFieldPromptTokens, CustomChartsSectionSubSectionsChartsSeriesMetricDefinitionCustomChartMetricRatioOutputNumeratorCustomChartMetricPercentileFieldCompletionTokens, CustomChartsSectionSubSectionsChartsSeriesMetricDefinitionCustomChartMetricRatioOutputNumeratorCustomChartMetricPercentileFieldTotalCost, CustomChartsSectionSubSectionsChartsSeriesMetricDefinitionCustomChartMetricRatioOutputNumeratorCustomChartMetricPercentileFieldPromptCost, CustomChartsSectionSubSectionsChartsSeriesMetricDefinitionCustomChartMetricRatioOutputNumeratorCustomChartMetricPercentileFieldCompletionCost, CustomChartsSectionSubSectionsChartsSeriesMetricDefinitionCustomChartMetricRatioOutputNumeratorCustomChartMetricPercentileFieldFeedbackScore:
 		return true
 	}
 	return false
@@ -3388,6 +3944,7 @@ func (r CustomChartsSectionSubSectionsChartsSeriesMetricDefinitionCustomChartMet
 type CustomChartsSectionSubSectionsChartsSeriesMetricDefinitionCustomChartMetricRatioOutputNumeratorField string
 
 const (
+	CustomChartsSectionSubSectionsChartsSeriesMetricDefinitionCustomChartMetricRatioOutputNumeratorFieldFeedbackScore     CustomChartsSectionSubSectionsChartsSeriesMetricDefinitionCustomChartMetricRatioOutputNumeratorField = "feedback_score"
 	CustomChartsSectionSubSectionsChartsSeriesMetricDefinitionCustomChartMetricRatioOutputNumeratorFieldLatencySeconds    CustomChartsSectionSubSectionsChartsSeriesMetricDefinitionCustomChartMetricRatioOutputNumeratorField = "latency_seconds"
 	CustomChartsSectionSubSectionsChartsSeriesMetricDefinitionCustomChartMetricRatioOutputNumeratorFieldFirstTokenSeconds CustomChartsSectionSubSectionsChartsSeriesMetricDefinitionCustomChartMetricRatioOutputNumeratorField = "first_token_seconds"
 	CustomChartsSectionSubSectionsChartsSeriesMetricDefinitionCustomChartMetricRatioOutputNumeratorFieldTotalTokens       CustomChartsSectionSubSectionsChartsSeriesMetricDefinitionCustomChartMetricRatioOutputNumeratorField = "total_tokens"
@@ -3400,7 +3957,7 @@ const (
 
 func (r CustomChartsSectionSubSectionsChartsSeriesMetricDefinitionCustomChartMetricRatioOutputNumeratorField) IsKnown() bool {
 	switch r {
-	case CustomChartsSectionSubSectionsChartsSeriesMetricDefinitionCustomChartMetricRatioOutputNumeratorFieldLatencySeconds, CustomChartsSectionSubSectionsChartsSeriesMetricDefinitionCustomChartMetricRatioOutputNumeratorFieldFirstTokenSeconds, CustomChartsSectionSubSectionsChartsSeriesMetricDefinitionCustomChartMetricRatioOutputNumeratorFieldTotalTokens, CustomChartsSectionSubSectionsChartsSeriesMetricDefinitionCustomChartMetricRatioOutputNumeratorFieldPromptTokens, CustomChartsSectionSubSectionsChartsSeriesMetricDefinitionCustomChartMetricRatioOutputNumeratorFieldCompletionTokens, CustomChartsSectionSubSectionsChartsSeriesMetricDefinitionCustomChartMetricRatioOutputNumeratorFieldTotalCost, CustomChartsSectionSubSectionsChartsSeriesMetricDefinitionCustomChartMetricRatioOutputNumeratorFieldPromptCost, CustomChartsSectionSubSectionsChartsSeriesMetricDefinitionCustomChartMetricRatioOutputNumeratorFieldCompletionCost:
+	case CustomChartsSectionSubSectionsChartsSeriesMetricDefinitionCustomChartMetricRatioOutputNumeratorFieldFeedbackScore, CustomChartsSectionSubSectionsChartsSeriesMetricDefinitionCustomChartMetricRatioOutputNumeratorFieldLatencySeconds, CustomChartsSectionSubSectionsChartsSeriesMetricDefinitionCustomChartMetricRatioOutputNumeratorFieldFirstTokenSeconds, CustomChartsSectionSubSectionsChartsSeriesMetricDefinitionCustomChartMetricRatioOutputNumeratorFieldTotalTokens, CustomChartsSectionSubSectionsChartsSeriesMetricDefinitionCustomChartMetricRatioOutputNumeratorFieldPromptTokens, CustomChartsSectionSubSectionsChartsSeriesMetricDefinitionCustomChartMetricRatioOutputNumeratorFieldCompletionTokens, CustomChartsSectionSubSectionsChartsSeriesMetricDefinitionCustomChartMetricRatioOutputNumeratorFieldTotalCost, CustomChartsSectionSubSectionsChartsSeriesMetricDefinitionCustomChartMetricRatioOutputNumeratorFieldPromptCost, CustomChartsSectionSubSectionsChartsSeriesMetricDefinitionCustomChartMetricRatioOutputNumeratorFieldCompletionCost:
 		return true
 	}
 	return false
@@ -3410,16 +3967,16 @@ type CustomChartsSectionSubSectionsChartsSeriesMetricDefinitionCustomChartMetric
 
 const (
 	CustomChartsSectionSubSectionsChartsSeriesMetricDefinitionCustomChartMetricRatioOutputNumeratorTypeCount      CustomChartsSectionSubSectionsChartsSeriesMetricDefinitionCustomChartMetricRatioOutputNumeratorType = "count"
-	CustomChartsSectionSubSectionsChartsSeriesMetricDefinitionCustomChartMetricRatioOutputNumeratorTypeSum        CustomChartsSectionSubSectionsChartsSeriesMetricDefinitionCustomChartMetricRatioOutputNumeratorType = "sum"
 	CustomChartsSectionSubSectionsChartsSeriesMetricDefinitionCustomChartMetricRatioOutputNumeratorTypeMax        CustomChartsSectionSubSectionsChartsSeriesMetricDefinitionCustomChartMetricRatioOutputNumeratorType = "max"
 	CustomChartsSectionSubSectionsChartsSeriesMetricDefinitionCustomChartMetricRatioOutputNumeratorTypeMin        CustomChartsSectionSubSectionsChartsSeriesMetricDefinitionCustomChartMetricRatioOutputNumeratorType = "min"
 	CustomChartsSectionSubSectionsChartsSeriesMetricDefinitionCustomChartMetricRatioOutputNumeratorTypeAvg        CustomChartsSectionSubSectionsChartsSeriesMetricDefinitionCustomChartMetricRatioOutputNumeratorType = "avg"
+	CustomChartsSectionSubSectionsChartsSeriesMetricDefinitionCustomChartMetricRatioOutputNumeratorTypeSum        CustomChartsSectionSubSectionsChartsSeriesMetricDefinitionCustomChartMetricRatioOutputNumeratorType = "sum"
 	CustomChartsSectionSubSectionsChartsSeriesMetricDefinitionCustomChartMetricRatioOutputNumeratorTypePercentile CustomChartsSectionSubSectionsChartsSeriesMetricDefinitionCustomChartMetricRatioOutputNumeratorType = "percentile"
 )
 
 func (r CustomChartsSectionSubSectionsChartsSeriesMetricDefinitionCustomChartMetricRatioOutputNumeratorType) IsKnown() bool {
 	switch r {
-	case CustomChartsSectionSubSectionsChartsSeriesMetricDefinitionCustomChartMetricRatioOutputNumeratorTypeCount, CustomChartsSectionSubSectionsChartsSeriesMetricDefinitionCustomChartMetricRatioOutputNumeratorTypeSum, CustomChartsSectionSubSectionsChartsSeriesMetricDefinitionCustomChartMetricRatioOutputNumeratorTypeMax, CustomChartsSectionSubSectionsChartsSeriesMetricDefinitionCustomChartMetricRatioOutputNumeratorTypeMin, CustomChartsSectionSubSectionsChartsSeriesMetricDefinitionCustomChartMetricRatioOutputNumeratorTypeAvg, CustomChartsSectionSubSectionsChartsSeriesMetricDefinitionCustomChartMetricRatioOutputNumeratorTypePercentile:
+	case CustomChartsSectionSubSectionsChartsSeriesMetricDefinitionCustomChartMetricRatioOutputNumeratorTypeCount, CustomChartsSectionSubSectionsChartsSeriesMetricDefinitionCustomChartMetricRatioOutputNumeratorTypeMax, CustomChartsSectionSubSectionsChartsSeriesMetricDefinitionCustomChartMetricRatioOutputNumeratorTypeMin, CustomChartsSectionSubSectionsChartsSeriesMetricDefinitionCustomChartMetricRatioOutputNumeratorTypeAvg, CustomChartsSectionSubSectionsChartsSeriesMetricDefinitionCustomChartMetricRatioOutputNumeratorTypeSum, CustomChartsSectionSubSectionsChartsSeriesMetricDefinitionCustomChartMetricRatioOutputNumeratorTypePercentile:
 		return true
 	}
 	return false
@@ -3442,6 +3999,7 @@ func (r CustomChartsSectionSubSectionsChartsSeriesMetricDefinitionCustomChartMet
 type CustomChartsSectionSubSectionsChartsSeriesMetricDefinitionField string
 
 const (
+	CustomChartsSectionSubSectionsChartsSeriesMetricDefinitionFieldFeedbackScore     CustomChartsSectionSubSectionsChartsSeriesMetricDefinitionField = "feedback_score"
 	CustomChartsSectionSubSectionsChartsSeriesMetricDefinitionFieldLatencySeconds    CustomChartsSectionSubSectionsChartsSeriesMetricDefinitionField = "latency_seconds"
 	CustomChartsSectionSubSectionsChartsSeriesMetricDefinitionFieldFirstTokenSeconds CustomChartsSectionSubSectionsChartsSeriesMetricDefinitionField = "first_token_seconds"
 	CustomChartsSectionSubSectionsChartsSeriesMetricDefinitionFieldTotalTokens       CustomChartsSectionSubSectionsChartsSeriesMetricDefinitionField = "total_tokens"
@@ -3454,7 +4012,7 @@ const (
 
 func (r CustomChartsSectionSubSectionsChartsSeriesMetricDefinitionField) IsKnown() bool {
 	switch r {
-	case CustomChartsSectionSubSectionsChartsSeriesMetricDefinitionFieldLatencySeconds, CustomChartsSectionSubSectionsChartsSeriesMetricDefinitionFieldFirstTokenSeconds, CustomChartsSectionSubSectionsChartsSeriesMetricDefinitionFieldTotalTokens, CustomChartsSectionSubSectionsChartsSeriesMetricDefinitionFieldPromptTokens, CustomChartsSectionSubSectionsChartsSeriesMetricDefinitionFieldCompletionTokens, CustomChartsSectionSubSectionsChartsSeriesMetricDefinitionFieldTotalCost, CustomChartsSectionSubSectionsChartsSeriesMetricDefinitionFieldPromptCost, CustomChartsSectionSubSectionsChartsSeriesMetricDefinitionFieldCompletionCost:
+	case CustomChartsSectionSubSectionsChartsSeriesMetricDefinitionFieldFeedbackScore, CustomChartsSectionSubSectionsChartsSeriesMetricDefinitionFieldLatencySeconds, CustomChartsSectionSubSectionsChartsSeriesMetricDefinitionFieldFirstTokenSeconds, CustomChartsSectionSubSectionsChartsSeriesMetricDefinitionFieldTotalTokens, CustomChartsSectionSubSectionsChartsSeriesMetricDefinitionFieldPromptTokens, CustomChartsSectionSubSectionsChartsSeriesMetricDefinitionFieldCompletionTokens, CustomChartsSectionSubSectionsChartsSeriesMetricDefinitionFieldTotalCost, CustomChartsSectionSubSectionsChartsSeriesMetricDefinitionFieldPromptCost, CustomChartsSectionSubSectionsChartsSeriesMetricDefinitionFieldCompletionCost:
 		return true
 	}
 	return false
@@ -3464,17 +4022,17 @@ type CustomChartsSectionSubSectionsChartsSeriesMetricDefinitionType string
 
 const (
 	CustomChartsSectionSubSectionsChartsSeriesMetricDefinitionTypeCount      CustomChartsSectionSubSectionsChartsSeriesMetricDefinitionType = "count"
-	CustomChartsSectionSubSectionsChartsSeriesMetricDefinitionTypeSum        CustomChartsSectionSubSectionsChartsSeriesMetricDefinitionType = "sum"
 	CustomChartsSectionSubSectionsChartsSeriesMetricDefinitionTypeMax        CustomChartsSectionSubSectionsChartsSeriesMetricDefinitionType = "max"
 	CustomChartsSectionSubSectionsChartsSeriesMetricDefinitionTypeMin        CustomChartsSectionSubSectionsChartsSeriesMetricDefinitionType = "min"
 	CustomChartsSectionSubSectionsChartsSeriesMetricDefinitionTypeAvg        CustomChartsSectionSubSectionsChartsSeriesMetricDefinitionType = "avg"
+	CustomChartsSectionSubSectionsChartsSeriesMetricDefinitionTypeSum        CustomChartsSectionSubSectionsChartsSeriesMetricDefinitionType = "sum"
 	CustomChartsSectionSubSectionsChartsSeriesMetricDefinitionTypePercentile CustomChartsSectionSubSectionsChartsSeriesMetricDefinitionType = "percentile"
 	CustomChartsSectionSubSectionsChartsSeriesMetricDefinitionTypeRatio      CustomChartsSectionSubSectionsChartsSeriesMetricDefinitionType = "ratio"
 )
 
 func (r CustomChartsSectionSubSectionsChartsSeriesMetricDefinitionType) IsKnown() bool {
 	switch r {
-	case CustomChartsSectionSubSectionsChartsSeriesMetricDefinitionTypeCount, CustomChartsSectionSubSectionsChartsSeriesMetricDefinitionTypeSum, CustomChartsSectionSubSectionsChartsSeriesMetricDefinitionTypeMax, CustomChartsSectionSubSectionsChartsSeriesMetricDefinitionTypeMin, CustomChartsSectionSubSectionsChartsSeriesMetricDefinitionTypeAvg, CustomChartsSectionSubSectionsChartsSeriesMetricDefinitionTypePercentile, CustomChartsSectionSubSectionsChartsSeriesMetricDefinitionTypeRatio:
+	case CustomChartsSectionSubSectionsChartsSeriesMetricDefinitionTypeCount, CustomChartsSectionSubSectionsChartsSeriesMetricDefinitionTypeMax, CustomChartsSectionSubSectionsChartsSeriesMetricDefinitionTypeMin, CustomChartsSectionSubSectionsChartsSeriesMetricDefinitionTypeAvg, CustomChartsSectionSubSectionsChartsSeriesMetricDefinitionTypeSum, CustomChartsSectionSubSectionsChartsSeriesMetricDefinitionTypePercentile, CustomChartsSectionSubSectionsChartsSeriesMetricDefinitionTypeRatio:
 		return true
 	}
 	return false
