@@ -104,21 +104,34 @@ func loadProfileOptionsForProfile(profileName string, explicit bool) ([]option.R
 	}
 
 	envAuthSet := os.Getenv("LANGSMITH_API_KEY") != ""
+	envTenantSet := os.Getenv("LANGSMITH_TENANT_ID") != "" || os.Getenv("LANGSMITH_WORKSPACE_ID") != ""
+	envEndpointSet := os.Getenv("LANGSMITH_ENDPOINT") != ""
 	hasOAuth := p.OAuth.AccessToken != "" || p.OAuth.RefreshToken != ""
 
 	var opts []option.RequestOption
-	if p.APIURL != "" {
-		opts = append(opts, option.WithBaseURL(p.APIURL))
-	}
-	if !envAuthSet {
-		if hasOAuth {
-			opts = append(opts, withProfileAuth(&profileAuth{state: state, override: explicit}))
-		} else if p.APIKey != "" {
-			opts = append(opts, option.WithAPIKey(p.APIKey))
+	if !envEndpointSet {
+		if p.APIURL != "" {
+			opts = append(opts, option.WithBaseURL(p.APIURL))
+		} else if explicit {
+			opts = append(opts, resetBaseURL())
 		}
 	}
-	if p.WorkspaceID != "" {
-		opts = append(opts, option.WithTenantID(p.WorkspaceID))
+	if !envAuthSet {
+		switch {
+		case hasOAuth:
+			opts = append(opts, withProfileAuth(&profileAuth{state: state, override: explicit}))
+		case p.APIKey != "":
+			opts = append(opts, option.WithAPIKey(p.APIKey))
+		case explicit:
+			opts = append(opts, resetAPIKey())
+		}
+	}
+	if !envTenantSet {
+		if p.WorkspaceID != "" {
+			opts = append(opts, option.WithTenantID(p.WorkspaceID))
+		} else if explicit {
+			opts = append(opts, resetTenantID())
+		}
 	}
 	return opts, nil
 }
@@ -155,6 +168,31 @@ func loadProfileState(profileName string, explicit bool) (*profileState, error) 
 		return nil, nil
 	}
 	return &profileState{path: path, cfg: cfg, profileName: profileName}, nil
+}
+
+// reset* clear a value an earlier option set, so an explicitly selected profile
+// that omits a dimension replaces current_profile's rather than inheriting it.
+func resetBaseURL() option.RequestOption {
+	return requestconfig.RequestOptionFunc(func(r *requestconfig.RequestConfig) error {
+		r.BaseURL = nil
+		return nil
+	})
+}
+
+func resetAPIKey() option.RequestOption {
+	return requestconfig.RequestOptionFunc(func(r *requestconfig.RequestConfig) error {
+		r.APIKey = ""
+		r.Request.Header.Del("X-API-Key")
+		return nil
+	})
+}
+
+func resetTenantID() option.RequestOption {
+	return requestconfig.RequestOptionFunc(func(r *requestconfig.RequestConfig) error {
+		r.TenantID = ""
+		r.Request.Header.Del("X-Tenant-Id")
+		return nil
+	})
 }
 
 // WithProfile returns a request option that uses a named profile from the
