@@ -90,6 +90,10 @@ func TestSandboxBoxNewWithOptionalParams(t *testing.T) {
 					MaxSizeBytes:     langsmith.F(int64(0)),
 					WritebackSeconds: langsmith.F(int64(0)),
 				}),
+				Contexthub: langsmith.F(langsmith.SandboxBoxNewParamsMountConfigMountsSandboxapiS3BucketMountSpecContexthub{
+					Repo:            langsmith.F("repo"),
+					InitialPullOnly: langsmith.F(true),
+				}),
 				Gcs: langsmith.F(langsmith.SandboxBoxNewParamsMountConfigMountsSandboxapiS3BucketMountSpecGcs{
 					Bucket: langsmith.F("bucket"),
 					Prefix: langsmith.F("prefix"),

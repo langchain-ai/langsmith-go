@@ -303,14 +303,15 @@ func (r SandboxBoxNewParamsMountConfigAuthGcpServiceAccountJsonType) IsKnown() b
 }
 
 type SandboxBoxNewParamsMountConfigMount struct {
-	ID        param.Field[string]                                   `json:"id" api:"required"`
-	MountPath param.Field[string]                                   `json:"mount_path" api:"required"`
-	Type      param.Field[SandboxBoxNewParamsMountConfigMountsType] `json:"type" api:"required"`
-	Cache     param.Field[interface{}]                              `json:"cache"`
-	Gcs       param.Field[interface{}]                              `json:"gcs"`
-	Git       param.Field[interface{}]                              `json:"git"`
-	ReadOnly  param.Field[bool]                                     `json:"read_only"`
-	S3        param.Field[interface{}]                              `json:"s3"`
+	ID         param.Field[string]                                   `json:"id" api:"required"`
+	MountPath  param.Field[string]                                   `json:"mount_path" api:"required"`
+	Type       param.Field[SandboxBoxNewParamsMountConfigMountsType] `json:"type" api:"required"`
+	Cache      param.Field[interface{}]                              `json:"cache"`
+	Contexthub param.Field[interface{}]                              `json:"contexthub"`
+	Gcs        param.Field[interface{}]                              `json:"gcs"`
+	Git        param.Field[interface{}]                              `json:"git"`
+	ReadOnly   param.Field[bool]                                     `json:"read_only"`
+	S3         param.Field[interface{}]                              `json:"s3"`
 }
 
 func (r SandboxBoxNewParamsMountConfigMount) MarshalJSON() (data []byte, err error) {
@@ -322,20 +323,22 @@ func (r SandboxBoxNewParamsMountConfigMount) implementsSandboxBoxNewParamsMountC
 // Satisfied by [SandboxBoxNewParamsMountConfigMountsSandboxapiS3BucketMountSpec],
 // [SandboxBoxNewParamsMountConfigMountsSandboxapiGcsBucketMountSpec],
 // [SandboxBoxNewParamsMountConfigMountsSandboxapiGitRepoMountSpec],
+// [SandboxBoxNewParamsMountConfigMountsSandboxapiContextHubRepoMountSpec],
 // [SandboxBoxNewParamsMountConfigMount].
 type SandboxBoxNewParamsMountConfigMountUnion interface {
 	implementsSandboxBoxNewParamsMountConfigMountUnion()
 }
 
 type SandboxBoxNewParamsMountConfigMountsSandboxapiS3BucketMountSpec struct {
-	ID        param.Field[string]                                                               `json:"id" api:"required"`
-	MountPath param.Field[string]                                                               `json:"mount_path" api:"required"`
-	S3        param.Field[SandboxBoxNewParamsMountConfigMountsSandboxapiS3BucketMountSpecS3]    `json:"s3" api:"required"`
-	Type      param.Field[SandboxBoxNewParamsMountConfigMountsSandboxapiS3BucketMountSpecType]  `json:"type" api:"required"`
-	Cache     param.Field[SandboxBoxNewParamsMountConfigMountsSandboxapiS3BucketMountSpecCache] `json:"cache"`
-	Gcs       param.Field[SandboxBoxNewParamsMountConfigMountsSandboxapiS3BucketMountSpecGcs]   `json:"gcs"`
-	Git       param.Field[SandboxBoxNewParamsMountConfigMountsSandboxapiS3BucketMountSpecGit]   `json:"git"`
-	ReadOnly  param.Field[bool]                                                                 `json:"read_only"`
+	ID         param.Field[string]                                                                    `json:"id" api:"required"`
+	MountPath  param.Field[string]                                                                    `json:"mount_path" api:"required"`
+	S3         param.Field[SandboxBoxNewParamsMountConfigMountsSandboxapiS3BucketMountSpecS3]         `json:"s3" api:"required"`
+	Type       param.Field[SandboxBoxNewParamsMountConfigMountsSandboxapiS3BucketMountSpecType]       `json:"type" api:"required"`
+	Cache      param.Field[SandboxBoxNewParamsMountConfigMountsSandboxapiS3BucketMountSpecCache]      `json:"cache"`
+	Contexthub param.Field[SandboxBoxNewParamsMountConfigMountsSandboxapiS3BucketMountSpecContexthub] `json:"contexthub"`
+	Gcs        param.Field[SandboxBoxNewParamsMountConfigMountsSandboxapiS3BucketMountSpecGcs]        `json:"gcs"`
+	Git        param.Field[SandboxBoxNewParamsMountConfigMountsSandboxapiS3BucketMountSpecGit]        `json:"git"`
+	ReadOnly   param.Field[bool]                                                                      `json:"read_only"`
 }
 
 func (r SandboxBoxNewParamsMountConfigMountsSandboxapiS3BucketMountSpec) MarshalJSON() (data []byte, err error) {
@@ -360,14 +363,15 @@ func (r SandboxBoxNewParamsMountConfigMountsSandboxapiS3BucketMountSpecS3) Marsh
 type SandboxBoxNewParamsMountConfigMountsSandboxapiS3BucketMountSpecType string
 
 const (
-	SandboxBoxNewParamsMountConfigMountsSandboxapiS3BucketMountSpecTypeS3  SandboxBoxNewParamsMountConfigMountsSandboxapiS3BucketMountSpecType = "s3"
-	SandboxBoxNewParamsMountConfigMountsSandboxapiS3BucketMountSpecTypeGcs SandboxBoxNewParamsMountConfigMountsSandboxapiS3BucketMountSpecType = "gcs"
-	SandboxBoxNewParamsMountConfigMountsSandboxapiS3BucketMountSpecTypeGit SandboxBoxNewParamsMountConfigMountsSandboxapiS3BucketMountSpecType = "git"
+	SandboxBoxNewParamsMountConfigMountsSandboxapiS3BucketMountSpecTypeS3         SandboxBoxNewParamsMountConfigMountsSandboxapiS3BucketMountSpecType = "s3"
+	SandboxBoxNewParamsMountConfigMountsSandboxapiS3BucketMountSpecTypeGcs        SandboxBoxNewParamsMountConfigMountsSandboxapiS3BucketMountSpecType = "gcs"
+	SandboxBoxNewParamsMountConfigMountsSandboxapiS3BucketMountSpecTypeGit        SandboxBoxNewParamsMountConfigMountsSandboxapiS3BucketMountSpecType = "git"
+	SandboxBoxNewParamsMountConfigMountsSandboxapiS3BucketMountSpecTypeContexthub SandboxBoxNewParamsMountConfigMountsSandboxapiS3BucketMountSpecType = "contexthub"
 )
 
 func (r SandboxBoxNewParamsMountConfigMountsSandboxapiS3BucketMountSpecType) IsKnown() bool {
 	switch r {
-	case SandboxBoxNewParamsMountConfigMountsSandboxapiS3BucketMountSpecTypeS3, SandboxBoxNewParamsMountConfigMountsSandboxapiS3BucketMountSpecTypeGcs, SandboxBoxNewParamsMountConfigMountsSandboxapiS3BucketMountSpecTypeGit:
+	case SandboxBoxNewParamsMountConfigMountsSandboxapiS3BucketMountSpecTypeS3, SandboxBoxNewParamsMountConfigMountsSandboxapiS3BucketMountSpecTypeGcs, SandboxBoxNewParamsMountConfigMountsSandboxapiS3BucketMountSpecTypeGit, SandboxBoxNewParamsMountConfigMountsSandboxapiS3BucketMountSpecTypeContexthub:
 		return true
 	}
 	return false
@@ -379,6 +383,20 @@ type SandboxBoxNewParamsMountConfigMountsSandboxapiS3BucketMountSpecCache struct
 }
 
 func (r SandboxBoxNewParamsMountConfigMountsSandboxapiS3BucketMountSpecCache) MarshalJSON() (data []byte, err error) {
+	return apijson.MarshalRoot(r)
+}
+
+type SandboxBoxNewParamsMountConfigMountsSandboxapiS3BucketMountSpecContexthub struct {
+	// Repo is the Context Hub repository to sync, as "owner/repo" (e.g. "-/my-agent",
+	// where "-" is the current workspace). The repo's latest commit tree is mirrored
+	// into the mount path.
+	Repo param.Field[string] `json:"repo" api:"required"`
+	// InitialPullOnly syncs the repo once at startup instead of polling for updates
+	// for the sandbox's lifetime.
+	InitialPullOnly param.Field[bool] `json:"initial_pull_only"`
+}
+
+func (r SandboxBoxNewParamsMountConfigMountsSandboxapiS3BucketMountSpecContexthub) MarshalJSON() (data []byte, err error) {
 	return apijson.MarshalRoot(r)
 }
 
@@ -426,14 +444,15 @@ func (r SandboxBoxNewParamsMountConfigMountsSandboxapiS3BucketMountSpecGitRefTyp
 }
 
 type SandboxBoxNewParamsMountConfigMountsSandboxapiGcsBucketMountSpec struct {
-	ID        param.Field[string]                                                                `json:"id" api:"required"`
-	Gcs       param.Field[SandboxBoxNewParamsMountConfigMountsSandboxapiGcsBucketMountSpecGcs]   `json:"gcs" api:"required"`
-	MountPath param.Field[string]                                                                `json:"mount_path" api:"required"`
-	Type      param.Field[SandboxBoxNewParamsMountConfigMountsSandboxapiGcsBucketMountSpecType]  `json:"type" api:"required"`
-	Cache     param.Field[SandboxBoxNewParamsMountConfigMountsSandboxapiGcsBucketMountSpecCache] `json:"cache"`
-	Git       param.Field[SandboxBoxNewParamsMountConfigMountsSandboxapiGcsBucketMountSpecGit]   `json:"git"`
-	ReadOnly  param.Field[bool]                                                                  `json:"read_only"`
-	S3        param.Field[SandboxBoxNewParamsMountConfigMountsSandboxapiGcsBucketMountSpecS3]    `json:"s3"`
+	ID         param.Field[string]                                                                     `json:"id" api:"required"`
+	Gcs        param.Field[SandboxBoxNewParamsMountConfigMountsSandboxapiGcsBucketMountSpecGcs]        `json:"gcs" api:"required"`
+	MountPath  param.Field[string]                                                                     `json:"mount_path" api:"required"`
+	Type       param.Field[SandboxBoxNewParamsMountConfigMountsSandboxapiGcsBucketMountSpecType]       `json:"type" api:"required"`
+	Cache      param.Field[SandboxBoxNewParamsMountConfigMountsSandboxapiGcsBucketMountSpecCache]      `json:"cache"`
+	Contexthub param.Field[SandboxBoxNewParamsMountConfigMountsSandboxapiGcsBucketMountSpecContexthub] `json:"contexthub"`
+	Git        param.Field[SandboxBoxNewParamsMountConfigMountsSandboxapiGcsBucketMountSpecGit]        `json:"git"`
+	ReadOnly   param.Field[bool]                                                                       `json:"read_only"`
+	S3         param.Field[SandboxBoxNewParamsMountConfigMountsSandboxapiGcsBucketMountSpecS3]         `json:"s3"`
 }
 
 func (r SandboxBoxNewParamsMountConfigMountsSandboxapiGcsBucketMountSpec) MarshalJSON() (data []byte, err error) {
@@ -455,14 +474,15 @@ func (r SandboxBoxNewParamsMountConfigMountsSandboxapiGcsBucketMountSpecGcs) Mar
 type SandboxBoxNewParamsMountConfigMountsSandboxapiGcsBucketMountSpecType string
 
 const (
-	SandboxBoxNewParamsMountConfigMountsSandboxapiGcsBucketMountSpecTypeS3  SandboxBoxNewParamsMountConfigMountsSandboxapiGcsBucketMountSpecType = "s3"
-	SandboxBoxNewParamsMountConfigMountsSandboxapiGcsBucketMountSpecTypeGcs SandboxBoxNewParamsMountConfigMountsSandboxapiGcsBucketMountSpecType = "gcs"
-	SandboxBoxNewParamsMountConfigMountsSandboxapiGcsBucketMountSpecTypeGit SandboxBoxNewParamsMountConfigMountsSandboxapiGcsBucketMountSpecType = "git"
+	SandboxBoxNewParamsMountConfigMountsSandboxapiGcsBucketMountSpecTypeS3         SandboxBoxNewParamsMountConfigMountsSandboxapiGcsBucketMountSpecType = "s3"
+	SandboxBoxNewParamsMountConfigMountsSandboxapiGcsBucketMountSpecTypeGcs        SandboxBoxNewParamsMountConfigMountsSandboxapiGcsBucketMountSpecType = "gcs"
+	SandboxBoxNewParamsMountConfigMountsSandboxapiGcsBucketMountSpecTypeGit        SandboxBoxNewParamsMountConfigMountsSandboxapiGcsBucketMountSpecType = "git"
+	SandboxBoxNewParamsMountConfigMountsSandboxapiGcsBucketMountSpecTypeContexthub SandboxBoxNewParamsMountConfigMountsSandboxapiGcsBucketMountSpecType = "contexthub"
 )
 
 func (r SandboxBoxNewParamsMountConfigMountsSandboxapiGcsBucketMountSpecType) IsKnown() bool {
 	switch r {
-	case SandboxBoxNewParamsMountConfigMountsSandboxapiGcsBucketMountSpecTypeS3, SandboxBoxNewParamsMountConfigMountsSandboxapiGcsBucketMountSpecTypeGcs, SandboxBoxNewParamsMountConfigMountsSandboxapiGcsBucketMountSpecTypeGit:
+	case SandboxBoxNewParamsMountConfigMountsSandboxapiGcsBucketMountSpecTypeS3, SandboxBoxNewParamsMountConfigMountsSandboxapiGcsBucketMountSpecTypeGcs, SandboxBoxNewParamsMountConfigMountsSandboxapiGcsBucketMountSpecTypeGit, SandboxBoxNewParamsMountConfigMountsSandboxapiGcsBucketMountSpecTypeContexthub:
 		return true
 	}
 	return false
@@ -474,6 +494,20 @@ type SandboxBoxNewParamsMountConfigMountsSandboxapiGcsBucketMountSpecCache struc
 }
 
 func (r SandboxBoxNewParamsMountConfigMountsSandboxapiGcsBucketMountSpecCache) MarshalJSON() (data []byte, err error) {
+	return apijson.MarshalRoot(r)
+}
+
+type SandboxBoxNewParamsMountConfigMountsSandboxapiGcsBucketMountSpecContexthub struct {
+	// Repo is the Context Hub repository to sync, as "owner/repo" (e.g. "-/my-agent",
+	// where "-" is the current workspace). The repo's latest commit tree is mirrored
+	// into the mount path.
+	Repo param.Field[string] `json:"repo" api:"required"`
+	// InitialPullOnly syncs the repo once at startup instead of polling for updates
+	// for the sandbox's lifetime.
+	InitialPullOnly param.Field[bool] `json:"initial_pull_only"`
+}
+
+func (r SandboxBoxNewParamsMountConfigMountsSandboxapiGcsBucketMountSpecContexthub) MarshalJSON() (data []byte, err error) {
 	return apijson.MarshalRoot(r)
 }
 
@@ -524,14 +558,15 @@ func (r SandboxBoxNewParamsMountConfigMountsSandboxapiGcsBucketMountSpecS3) Mars
 }
 
 type SandboxBoxNewParamsMountConfigMountsSandboxapiGitRepoMountSpec struct {
-	ID        param.Field[string]                                                              `json:"id" api:"required"`
-	Git       param.Field[SandboxBoxNewParamsMountConfigMountsSandboxapiGitRepoMountSpecGit]   `json:"git" api:"required"`
-	MountPath param.Field[string]                                                              `json:"mount_path" api:"required"`
-	Type      param.Field[SandboxBoxNewParamsMountConfigMountsSandboxapiGitRepoMountSpecType]  `json:"type" api:"required"`
-	Cache     param.Field[SandboxBoxNewParamsMountConfigMountsSandboxapiGitRepoMountSpecCache] `json:"cache"`
-	Gcs       param.Field[SandboxBoxNewParamsMountConfigMountsSandboxapiGitRepoMountSpecGcs]   `json:"gcs"`
-	ReadOnly  param.Field[bool]                                                                `json:"read_only"`
-	S3        param.Field[SandboxBoxNewParamsMountConfigMountsSandboxapiGitRepoMountSpecS3]    `json:"s3"`
+	ID         param.Field[string]                                                                   `json:"id" api:"required"`
+	Git        param.Field[SandboxBoxNewParamsMountConfigMountsSandboxapiGitRepoMountSpecGit]        `json:"git" api:"required"`
+	MountPath  param.Field[string]                                                                   `json:"mount_path" api:"required"`
+	Type       param.Field[SandboxBoxNewParamsMountConfigMountsSandboxapiGitRepoMountSpecType]       `json:"type" api:"required"`
+	Cache      param.Field[SandboxBoxNewParamsMountConfigMountsSandboxapiGitRepoMountSpecCache]      `json:"cache"`
+	Contexthub param.Field[SandboxBoxNewParamsMountConfigMountsSandboxapiGitRepoMountSpecContexthub] `json:"contexthub"`
+	Gcs        param.Field[SandboxBoxNewParamsMountConfigMountsSandboxapiGitRepoMountSpecGcs]        `json:"gcs"`
+	ReadOnly   param.Field[bool]                                                                     `json:"read_only"`
+	S3         param.Field[SandboxBoxNewParamsMountConfigMountsSandboxapiGitRepoMountSpecS3]         `json:"s3"`
 }
 
 func (r SandboxBoxNewParamsMountConfigMountsSandboxapiGitRepoMountSpec) MarshalJSON() (data []byte, err error) {
@@ -578,14 +613,15 @@ func (r SandboxBoxNewParamsMountConfigMountsSandboxapiGitRepoMountSpecGitRefType
 type SandboxBoxNewParamsMountConfigMountsSandboxapiGitRepoMountSpecType string
 
 const (
-	SandboxBoxNewParamsMountConfigMountsSandboxapiGitRepoMountSpecTypeS3  SandboxBoxNewParamsMountConfigMountsSandboxapiGitRepoMountSpecType = "s3"
-	SandboxBoxNewParamsMountConfigMountsSandboxapiGitRepoMountSpecTypeGcs SandboxBoxNewParamsMountConfigMountsSandboxapiGitRepoMountSpecType = "gcs"
-	SandboxBoxNewParamsMountConfigMountsSandboxapiGitRepoMountSpecTypeGit SandboxBoxNewParamsMountConfigMountsSandboxapiGitRepoMountSpecType = "git"
+	SandboxBoxNewParamsMountConfigMountsSandboxapiGitRepoMountSpecTypeS3         SandboxBoxNewParamsMountConfigMountsSandboxapiGitRepoMountSpecType = "s3"
+	SandboxBoxNewParamsMountConfigMountsSandboxapiGitRepoMountSpecTypeGcs        SandboxBoxNewParamsMountConfigMountsSandboxapiGitRepoMountSpecType = "gcs"
+	SandboxBoxNewParamsMountConfigMountsSandboxapiGitRepoMountSpecTypeGit        SandboxBoxNewParamsMountConfigMountsSandboxapiGitRepoMountSpecType = "git"
+	SandboxBoxNewParamsMountConfigMountsSandboxapiGitRepoMountSpecTypeContexthub SandboxBoxNewParamsMountConfigMountsSandboxapiGitRepoMountSpecType = "contexthub"
 )
 
 func (r SandboxBoxNewParamsMountConfigMountsSandboxapiGitRepoMountSpecType) IsKnown() bool {
 	switch r {
-	case SandboxBoxNewParamsMountConfigMountsSandboxapiGitRepoMountSpecTypeS3, SandboxBoxNewParamsMountConfigMountsSandboxapiGitRepoMountSpecTypeGcs, SandboxBoxNewParamsMountConfigMountsSandboxapiGitRepoMountSpecTypeGit:
+	case SandboxBoxNewParamsMountConfigMountsSandboxapiGitRepoMountSpecTypeS3, SandboxBoxNewParamsMountConfigMountsSandboxapiGitRepoMountSpecTypeGcs, SandboxBoxNewParamsMountConfigMountsSandboxapiGitRepoMountSpecTypeGit, SandboxBoxNewParamsMountConfigMountsSandboxapiGitRepoMountSpecTypeContexthub:
 		return true
 	}
 	return false
@@ -597,6 +633,20 @@ type SandboxBoxNewParamsMountConfigMountsSandboxapiGitRepoMountSpecCache struct 
 }
 
 func (r SandboxBoxNewParamsMountConfigMountsSandboxapiGitRepoMountSpecCache) MarshalJSON() (data []byte, err error) {
+	return apijson.MarshalRoot(r)
+}
+
+type SandboxBoxNewParamsMountConfigMountsSandboxapiGitRepoMountSpecContexthub struct {
+	// Repo is the Context Hub repository to sync, as "owner/repo" (e.g. "-/my-agent",
+	// where "-" is the current workspace). The repo's latest commit tree is mirrored
+	// into the mount path.
+	Repo param.Field[string] `json:"repo" api:"required"`
+	// InitialPullOnly syncs the repo once at startup instead of polling for updates
+	// for the sandbox's lifetime.
+	InitialPullOnly param.Field[bool] `json:"initial_pull_only"`
+}
+
+func (r SandboxBoxNewParamsMountConfigMountsSandboxapiGitRepoMountSpecContexthub) MarshalJSON() (data []byte, err error) {
 	return apijson.MarshalRoot(r)
 }
 
@@ -621,17 +671,132 @@ func (r SandboxBoxNewParamsMountConfigMountsSandboxapiGitRepoMountSpecS3) Marsha
 	return apijson.MarshalRoot(r)
 }
 
+type SandboxBoxNewParamsMountConfigMountsSandboxapiContextHubRepoMountSpec struct {
+	ID         param.Field[string]                                                                          `json:"id" api:"required"`
+	Contexthub param.Field[SandboxBoxNewParamsMountConfigMountsSandboxapiContextHubRepoMountSpecContexthub] `json:"contexthub" api:"required"`
+	MountPath  param.Field[string]                                                                          `json:"mount_path" api:"required"`
+	Type       param.Field[SandboxBoxNewParamsMountConfigMountsSandboxapiContextHubRepoMountSpecType]       `json:"type" api:"required"`
+	Cache      param.Field[SandboxBoxNewParamsMountConfigMountsSandboxapiContextHubRepoMountSpecCache]      `json:"cache"`
+	Gcs        param.Field[SandboxBoxNewParamsMountConfigMountsSandboxapiContextHubRepoMountSpecGcs]        `json:"gcs"`
+	Git        param.Field[SandboxBoxNewParamsMountConfigMountsSandboxapiContextHubRepoMountSpecGit]        `json:"git"`
+	ReadOnly   param.Field[bool]                                                                            `json:"read_only"`
+	S3         param.Field[SandboxBoxNewParamsMountConfigMountsSandboxapiContextHubRepoMountSpecS3]         `json:"s3"`
+}
+
+func (r SandboxBoxNewParamsMountConfigMountsSandboxapiContextHubRepoMountSpec) MarshalJSON() (data []byte, err error) {
+	return apijson.MarshalRoot(r)
+}
+
+func (r SandboxBoxNewParamsMountConfigMountsSandboxapiContextHubRepoMountSpec) implementsSandboxBoxNewParamsMountConfigMountUnion() {
+}
+
+type SandboxBoxNewParamsMountConfigMountsSandboxapiContextHubRepoMountSpecContexthub struct {
+	// Repo is the Context Hub repository to sync, as "owner/repo" (e.g. "-/my-agent",
+	// where "-" is the current workspace). The repo's latest commit tree is mirrored
+	// into the mount path.
+	Repo param.Field[string] `json:"repo" api:"required"`
+	// InitialPullOnly syncs the repo once at startup instead of polling for updates
+	// for the sandbox's lifetime.
+	InitialPullOnly param.Field[bool] `json:"initial_pull_only"`
+}
+
+func (r SandboxBoxNewParamsMountConfigMountsSandboxapiContextHubRepoMountSpecContexthub) MarshalJSON() (data []byte, err error) {
+	return apijson.MarshalRoot(r)
+}
+
+type SandboxBoxNewParamsMountConfigMountsSandboxapiContextHubRepoMountSpecType string
+
+const (
+	SandboxBoxNewParamsMountConfigMountsSandboxapiContextHubRepoMountSpecTypeS3         SandboxBoxNewParamsMountConfigMountsSandboxapiContextHubRepoMountSpecType = "s3"
+	SandboxBoxNewParamsMountConfigMountsSandboxapiContextHubRepoMountSpecTypeGcs        SandboxBoxNewParamsMountConfigMountsSandboxapiContextHubRepoMountSpecType = "gcs"
+	SandboxBoxNewParamsMountConfigMountsSandboxapiContextHubRepoMountSpecTypeGit        SandboxBoxNewParamsMountConfigMountsSandboxapiContextHubRepoMountSpecType = "git"
+	SandboxBoxNewParamsMountConfigMountsSandboxapiContextHubRepoMountSpecTypeContexthub SandboxBoxNewParamsMountConfigMountsSandboxapiContextHubRepoMountSpecType = "contexthub"
+)
+
+func (r SandboxBoxNewParamsMountConfigMountsSandboxapiContextHubRepoMountSpecType) IsKnown() bool {
+	switch r {
+	case SandboxBoxNewParamsMountConfigMountsSandboxapiContextHubRepoMountSpecTypeS3, SandboxBoxNewParamsMountConfigMountsSandboxapiContextHubRepoMountSpecTypeGcs, SandboxBoxNewParamsMountConfigMountsSandboxapiContextHubRepoMountSpecTypeGit, SandboxBoxNewParamsMountConfigMountsSandboxapiContextHubRepoMountSpecTypeContexthub:
+		return true
+	}
+	return false
+}
+
+type SandboxBoxNewParamsMountConfigMountsSandboxapiContextHubRepoMountSpecCache struct {
+	MaxSizeBytes     param.Field[int64] `json:"max_size_bytes"`
+	WritebackSeconds param.Field[int64] `json:"writeback_seconds"`
+}
+
+func (r SandboxBoxNewParamsMountConfigMountsSandboxapiContextHubRepoMountSpecCache) MarshalJSON() (data []byte, err error) {
+	return apijson.MarshalRoot(r)
+}
+
+type SandboxBoxNewParamsMountConfigMountsSandboxapiContextHubRepoMountSpecGcs struct {
+	Bucket param.Field[string] `json:"bucket" api:"required"`
+	Prefix param.Field[string] `json:"prefix"`
+}
+
+func (r SandboxBoxNewParamsMountConfigMountsSandboxapiContextHubRepoMountSpecGcs) MarshalJSON() (data []byte, err error) {
+	return apijson.MarshalRoot(r)
+}
+
+type SandboxBoxNewParamsMountConfigMountsSandboxapiContextHubRepoMountSpecGit struct {
+	RemoteURL              param.Field[string]                                                                      `json:"remote_url" api:"required"`
+	Ref                    param.Field[SandboxBoxNewParamsMountConfigMountsSandboxapiContextHubRepoMountSpecGitRef] `json:"ref"`
+	RefreshIntervalSeconds param.Field[int64]                                                                       `json:"refresh_interval_seconds"`
+}
+
+func (r SandboxBoxNewParamsMountConfigMountsSandboxapiContextHubRepoMountSpecGit) MarshalJSON() (data []byte, err error) {
+	return apijson.MarshalRoot(r)
+}
+
+type SandboxBoxNewParamsMountConfigMountsSandboxapiContextHubRepoMountSpecGitRef struct {
+	Name param.Field[string]                                                                          `json:"name" api:"required"`
+	Type param.Field[SandboxBoxNewParamsMountConfigMountsSandboxapiContextHubRepoMountSpecGitRefType] `json:"type" api:"required"`
+}
+
+func (r SandboxBoxNewParamsMountConfigMountsSandboxapiContextHubRepoMountSpecGitRef) MarshalJSON() (data []byte, err error) {
+	return apijson.MarshalRoot(r)
+}
+
+type SandboxBoxNewParamsMountConfigMountsSandboxapiContextHubRepoMountSpecGitRefType string
+
+const (
+	SandboxBoxNewParamsMountConfigMountsSandboxapiContextHubRepoMountSpecGitRefTypeBranch SandboxBoxNewParamsMountConfigMountsSandboxapiContextHubRepoMountSpecGitRefType = "branch"
+	SandboxBoxNewParamsMountConfigMountsSandboxapiContextHubRepoMountSpecGitRefTypeTag    SandboxBoxNewParamsMountConfigMountsSandboxapiContextHubRepoMountSpecGitRefType = "tag"
+)
+
+func (r SandboxBoxNewParamsMountConfigMountsSandboxapiContextHubRepoMountSpecGitRefType) IsKnown() bool {
+	switch r {
+	case SandboxBoxNewParamsMountConfigMountsSandboxapiContextHubRepoMountSpecGitRefTypeBranch, SandboxBoxNewParamsMountConfigMountsSandboxapiContextHubRepoMountSpecGitRefTypeTag:
+		return true
+	}
+	return false
+}
+
+type SandboxBoxNewParamsMountConfigMountsSandboxapiContextHubRepoMountSpecS3 struct {
+	Bucket      param.Field[string] `json:"bucket" api:"required"`
+	Region      param.Field[string] `json:"region" api:"required"`
+	EndpointURL param.Field[string] `json:"endpoint_url"`
+	PathStyle   param.Field[bool]   `json:"path_style"`
+	Prefix      param.Field[string] `json:"prefix"`
+}
+
+func (r SandboxBoxNewParamsMountConfigMountsSandboxapiContextHubRepoMountSpecS3) MarshalJSON() (data []byte, err error) {
+	return apijson.MarshalRoot(r)
+}
+
 type SandboxBoxNewParamsMountConfigMountsType string
 
 const (
-	SandboxBoxNewParamsMountConfigMountsTypeS3  SandboxBoxNewParamsMountConfigMountsType = "s3"
-	SandboxBoxNewParamsMountConfigMountsTypeGcs SandboxBoxNewParamsMountConfigMountsType = "gcs"
-	SandboxBoxNewParamsMountConfigMountsTypeGit SandboxBoxNewParamsMountConfigMountsType = "git"
+	SandboxBoxNewParamsMountConfigMountsTypeS3         SandboxBoxNewParamsMountConfigMountsType = "s3"
+	SandboxBoxNewParamsMountConfigMountsTypeGcs        SandboxBoxNewParamsMountConfigMountsType = "gcs"
+	SandboxBoxNewParamsMountConfigMountsTypeGit        SandboxBoxNewParamsMountConfigMountsType = "git"
+	SandboxBoxNewParamsMountConfigMountsTypeContexthub SandboxBoxNewParamsMountConfigMountsType = "contexthub"
 )
 
 func (r SandboxBoxNewParamsMountConfigMountsType) IsKnown() bool {
 	switch r {
-	case SandboxBoxNewParamsMountConfigMountsTypeS3, SandboxBoxNewParamsMountConfigMountsTypeGcs, SandboxBoxNewParamsMountConfigMountsTypeGit:
+	case SandboxBoxNewParamsMountConfigMountsTypeS3, SandboxBoxNewParamsMountConfigMountsTypeGcs, SandboxBoxNewParamsMountConfigMountsTypeGit, SandboxBoxNewParamsMountConfigMountsTypeContexthub:
 		return true
 	}
 	return false
