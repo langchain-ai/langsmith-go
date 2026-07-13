@@ -810,10 +810,10 @@ type ThreadQueryParams struct {
 	// for syntax.
 	Filter param.Field[string] `json:"filter"`
 	// `max_start_time` is the exclusive upper bound on thread activity (RFC3339
-	// date-time).
+	// date-time). Defaults to now (UTC) when omitted.
 	MaxStartTime param.Field[time.Time] `json:"max_start_time" format:"date-time"`
 	// `min_start_time` is the inclusive lower bound on thread activity (RFC3339
-	// date-time).
+	// date-time). Defaults to 1 day before now (UTC) when omitted.
 	MinStartTime param.Field[time.Time] `json:"min_start_time" format:"date-time"`
 	// `page_size` is the maximum number of threads to return in this response.
 	// Defaults to 20 when omitted; must be between 1 and 100 inclusive when set. The
