@@ -544,6 +544,9 @@ type ThreadTrace struct {
 	// `end_time` is when the root run ended (RFC3339 date-time). JSON null if the run
 	// is still in progress. Omitted unless included in `selects`.
 	EndTime time.Time `json:"end_time" format:"date-time"`
+	// `error` is the full root run error message when the run failed. Omitted unless
+	// included in `selects`.
+	Error string `json:"error"`
 	// `error_preview` is a short error summary when the run failed. Omitted unless
 	// included in `selects`.
 	ErrorPreview string `json:"error_preview"`
@@ -551,6 +554,9 @@ type ThreadTrace struct {
 	// date-time), for streamed runs when that metadata exists. Omitted unless included
 	// in `selects`.
 	FirstTokenTime time.Time `json:"first_token_time" format:"date-time"`
+	// `inputs` is the full root run input payload. Omitted unless included in
+	// `selects`.
+	Inputs interface{} `json:"inputs"`
 	// `inputs_preview` is a truncated text preview of inputs. Omitted unless included
 	// in `selects`.
 	InputsPreview string `json:"inputs_preview"`
@@ -566,6 +572,9 @@ type ThreadTrace struct {
 	// prefer the string `run_type` on `RunResponse` when available. Omitted unless
 	// included in `selects`.
 	Op float64 `json:"op"`
+	// `outputs` is the full root run output payload. Omitted unless included in
+	// `selects`.
+	Outputs interface{} `json:"outputs"`
 	// `outputs_preview` is a truncated text preview of outputs. Omitted unless
 	// included in `selects`.
 	OutputsPreview string `json:"outputs_preview"`
@@ -607,12 +616,15 @@ type threadTraceJSON struct {
 	CompletionTokenDetails apijson.Field
 	CompletionTokens       apijson.Field
 	EndTime                apijson.Field
+	Error                  apijson.Field
 	ErrorPreview           apijson.Field
 	FirstTokenTime         apijson.Field
+	Inputs                 apijson.Field
 	InputsPreview          apijson.Field
 	Latency                apijson.Field
 	Name                   apijson.Field
 	Op                     apijson.Field
+	Outputs                apijson.Field
 	OutputsPreview         apijson.Field
 	PromptCost             apijson.Field
 	PromptCostDetails      apijson.Field
@@ -778,6 +790,9 @@ const (
 	ThreadListTracesParamsSelectFirstTokenTime         ThreadListTracesParamsSelect = "FIRST_TOKEN_TIME"
 	ThreadListTracesParamsSelectInputsPreview          ThreadListTracesParamsSelect = "INPUTS_PREVIEW"
 	ThreadListTracesParamsSelectOutputsPreview         ThreadListTracesParamsSelect = "OUTPUTS_PREVIEW"
+	ThreadListTracesParamsSelectInputs                 ThreadListTracesParamsSelect = "INPUTS"
+	ThreadListTracesParamsSelectOutputs                ThreadListTracesParamsSelect = "OUTPUTS"
+	ThreadListTracesParamsSelectError                  ThreadListTracesParamsSelect = "ERROR"
 	ThreadListTracesParamsSelectPromptCost             ThreadListTracesParamsSelect = "PROMPT_COST"
 	ThreadListTracesParamsSelectCompletionCost         ThreadListTracesParamsSelect = "COMPLETION_COST"
 	ThreadListTracesParamsSelectTotalCost              ThreadListTracesParamsSelect = "TOTAL_COST"
@@ -791,7 +806,7 @@ const (
 
 func (r ThreadListTracesParamsSelect) IsKnown() bool {
 	switch r {
-	case ThreadListTracesParamsSelectThreadID, ThreadListTracesParamsSelectTraceID, ThreadListTracesParamsSelectOp, ThreadListTracesParamsSelectPromptTokens, ThreadListTracesParamsSelectCompletionTokens, ThreadListTracesParamsSelectTotalTokens, ThreadListTracesParamsSelectStartTime, ThreadListTracesParamsSelectEndTime, ThreadListTracesParamsSelectLatency, ThreadListTracesParamsSelectFirstTokenTime, ThreadListTracesParamsSelectInputsPreview, ThreadListTracesParamsSelectOutputsPreview, ThreadListTracesParamsSelectPromptCost, ThreadListTracesParamsSelectCompletionCost, ThreadListTracesParamsSelectTotalCost, ThreadListTracesParamsSelectPromptTokenDetails, ThreadListTracesParamsSelectCompletionTokenDetails, ThreadListTracesParamsSelectPromptCostDetails, ThreadListTracesParamsSelectCompletionCostDetails, ThreadListTracesParamsSelectName, ThreadListTracesParamsSelectErrorPreview:
+	case ThreadListTracesParamsSelectThreadID, ThreadListTracesParamsSelectTraceID, ThreadListTracesParamsSelectOp, ThreadListTracesParamsSelectPromptTokens, ThreadListTracesParamsSelectCompletionTokens, ThreadListTracesParamsSelectTotalTokens, ThreadListTracesParamsSelectStartTime, ThreadListTracesParamsSelectEndTime, ThreadListTracesParamsSelectLatency, ThreadListTracesParamsSelectFirstTokenTime, ThreadListTracesParamsSelectInputsPreview, ThreadListTracesParamsSelectOutputsPreview, ThreadListTracesParamsSelectInputs, ThreadListTracesParamsSelectOutputs, ThreadListTracesParamsSelectError, ThreadListTracesParamsSelectPromptCost, ThreadListTracesParamsSelectCompletionCost, ThreadListTracesParamsSelectTotalCost, ThreadListTracesParamsSelectPromptTokenDetails, ThreadListTracesParamsSelectCompletionTokenDetails, ThreadListTracesParamsSelectPromptCostDetails, ThreadListTracesParamsSelectCompletionCostDetails, ThreadListTracesParamsSelectName, ThreadListTracesParamsSelectErrorPreview:
 		return true
 	}
 	return false
