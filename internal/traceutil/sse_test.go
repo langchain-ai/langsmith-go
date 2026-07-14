@@ -75,3 +75,19 @@ func TestParseSSEChunks_NoDone(t *testing.T) {
 		t.Fatalf("expected 2 chunks, got %d", len(chunks))
 	}
 }
+
+func TestParseSSEChunks_LargeDataLine(t *testing.T) {
+	input := `data: {"type":"response.completed","payload":"` + strings.Repeat("x", 70*1024) + `","usage":{"input_tokens":1,"output_tokens":2}}
+`
+	chunks, err := ParseSSEChunks(strings.NewReader(input))
+	if err != nil {
+		t.Fatalf("unexpected error: %v", err)
+	}
+	if len(chunks) != 1 {
+		t.Fatalf("expected 1 chunk, got %d", len(chunks))
+	}
+	usage := chunks[0]["usage"].(map[string]any)
+	if usage["input_tokens"] != float64(1) || usage["output_tokens"] != float64(2) {
+		t.Fatalf("usage mismatch: %v", usage)
+	}
+}
