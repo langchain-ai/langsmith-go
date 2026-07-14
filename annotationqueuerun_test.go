@@ -111,6 +111,42 @@ func TestAnnotationQueueRunListWithOptionalParams(t *testing.T) {
 	}
 }
 
+func TestAnnotationQueueRunNewByKeyWithOptionalParams(t *testing.T) {
+	t.Skip("Mock server tests are disabled")
+	baseURL := "http://localhost:4010"
+	if envURL, ok := os.LookupEnv("TEST_API_BASE_URL"); ok {
+		baseURL = envURL
+	}
+	if !testutil.CheckTestServer(t, baseURL) {
+		return
+	}
+	client := langsmith.NewClient(
+		option.WithBaseURL(baseURL),
+		option.WithAPIKey("My API Key"),
+		option.WithTenantID("My Tenant ID"),
+	)
+	_, err := client.AnnotationQueues.Runs.NewByKey(
+		context.TODO(),
+		"182bd5e5-6e1a-4fe4-a799-aa6d9a6ab26e",
+		langsmith.AnnotationQueueRunNewByKeyParams{
+			Body: []langsmith.AnnotationQueueRunNewByKeyParamsBody{{
+				RunID:                   langsmith.F("182bd5e5-6e1a-4fe4-a799-aa6d9a6ab26e"),
+				SessionID:               langsmith.F("182bd5e5-6e1a-4fe4-a799-aa6d9a6ab26e"),
+				StartTime:               langsmith.F(time.Now()),
+				SourceProposedExampleID: langsmith.F("182bd5e5-6e1a-4fe4-a799-aa6d9a6ab26e"),
+			}},
+			ExtendTraceRetention: langsmith.F(true),
+		},
+	)
+	if err != nil {
+		var apierr *langsmith.Error
+		if errors.As(err, &apierr) {
+			t.Log(string(apierr.DumpRequest(true)))
+		}
+		t.Fatalf("err should be nil: %s", err.Error())
+	}
+}
+
 func TestAnnotationQueueRunDeleteAllWithOptionalParams(t *testing.T) {
 	t.Skip("Mock server tests are disabled")
 	baseURL := "http://localhost:4010"

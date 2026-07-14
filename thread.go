@@ -40,7 +40,7 @@ func NewThreadService(opts ...option.RequestOption) (r *ThreadService) {
 
 // **Alpha:** The request and response contract may change; Retrieve all traces
 // belonging to a specific thread within a project.
-func (r *ThreadService) ListTraces(ctx context.Context, threadID string, query ThreadListTracesParams, opts ...option.RequestOption) (res *pagination.ItemsCursorGetPagination[ThreadTraceListItem], err error) {
+func (r *ThreadService) ListTraces(ctx context.Context, threadID string, query ThreadListTracesParams, opts ...option.RequestOption) (res *pagination.ItemsCursorGetPagination[ThreadTrace], err error) {
 	var raw *http.Response
 	opts = slices.Concat(r.Options, opts)
 	opts = append([]option.RequestOption{option.WithResponseInto(&raw)}, opts...)
@@ -63,14 +63,14 @@ func (r *ThreadService) ListTraces(ctx context.Context, threadID string, query T
 
 // **Alpha:** The request and response contract may change; Retrieve all traces
 // belonging to a specific thread within a project.
-func (r *ThreadService) ListTracesAutoPaging(ctx context.Context, threadID string, query ThreadListTracesParams, opts ...option.RequestOption) *pagination.ItemsCursorGetPaginationAutoPager[ThreadTraceListItem] {
+func (r *ThreadService) ListTracesAutoPaging(ctx context.Context, threadID string, query ThreadListTracesParams, opts ...option.RequestOption) *pagination.ItemsCursorGetPaginationAutoPager[ThreadTrace] {
 	return pagination.NewItemsCursorGetPaginationAutoPager(r.ListTraces(ctx, threadID, query, opts...))
 }
 
 // **Alpha:** The request and response contract may change; Query threads within a
 // project (session), with cursor-based pagination. Returns threads matching the
 // given time range and optional filter.
-func (r *ThreadService) Query(ctx context.Context, body ThreadQueryParams, opts ...option.RequestOption) (res *pagination.ItemsCursorPostPagination[ThreadListItem], err error) {
+func (r *ThreadService) Query(ctx context.Context, body ThreadQueryParams, opts ...option.RequestOption) (res *pagination.ItemsCursorPostPagination[Thread], err error) {
 	var raw *http.Response
 	opts = slices.Concat(r.Options, opts)
 	opts = append([]option.RequestOption{option.WithResponseInto(&raw)}, opts...)
@@ -90,14 +90,14 @@ func (r *ThreadService) Query(ctx context.Context, body ThreadQueryParams, opts 
 // **Alpha:** The request and response contract may change; Query threads within a
 // project (session), with cursor-based pagination. Returns threads matching the
 // given time range and optional filter.
-func (r *ThreadService) QueryAutoPaging(ctx context.Context, body ThreadQueryParams, opts ...option.RequestOption) *pagination.ItemsCursorPostPaginationAutoPager[ThreadListItem] {
+func (r *ThreadService) QueryAutoPaging(ctx context.Context, body ThreadQueryParams, opts ...option.RequestOption) *pagination.ItemsCursorPostPaginationAutoPager[Thread] {
 	return pagination.NewItemsCursorPostPaginationAutoPager(r.Query(ctx, body, opts...))
 }
 
 // **Alpha:** The request and response contract may change; Compute aggregate stats
 // for a single thread (turn count, latency percentiles, token/cost sums, and
 // detail breakdowns) within a project.
-func (r *ThreadService) Stats(ctx context.Context, threadID string, query ThreadStatsParams, opts ...option.RequestOption) (res *ThreadStatsResponse, err error) {
+func (r *ThreadService) Stats(ctx context.Context, threadID string, query ThreadStatsParams, opts ...option.RequestOption) (res *ThreadStats, err error) {
 	opts = slices.Concat(r.Options, opts)
 	if threadID == "" {
 		err = errors.New("missing required thread_id parameter")
@@ -108,13 +108,13 @@ func (r *ThreadService) Stats(ctx context.Context, threadID string, query Thread
 	return res, err
 }
 
-type ThreadListItem struct {
+type Thread struct {
 	// `count` is how many root traces (conversation turns) fall in this thread for the
 	// query time range.
 	Count int64 `json:"count"`
 	// `feedback_stats` is the aggregated feedback across traces in the thread, keyed
 	// by feedback key; shape matches `feedback_stats` on a single run.
-	FeedbackStats map[string]ThreadListItemFeedbackStat `json:"feedback_stats"`
+	FeedbackStats map[string]ThreadFeedbackStat `json:"feedback_stats"`
 	// `first_inputs` is a truncated preview of inputs from the earliest trace in the
 	// thread for the query window.
 	FirstInputs string `json:"first_inputs"`
@@ -168,12 +168,12 @@ type ThreadListItem struct {
 	TotalTokens int64 `json:"total_tokens"`
 	// `trace_id` is a representative root trace UUID when the summary includes one,
 	// for example for deep links.
-	TraceID string             `json:"trace_id" format:"uuid"`
-	JSON    threadListItemJSON `json:"-"`
+	TraceID string     `json:"trace_id" format:"uuid"`
+	JSON    threadJSON `json:"-"`
 }
 
-// threadListItemJSON contains the JSON metadata for the struct [ThreadListItem]
-type threadListItemJSON struct {
+// threadJSON contains the JSON metadata for the struct [Thread]
+type threadJSON struct {
 	Count             apijson.Field
 	FeedbackStats     apijson.Field
 	FirstInputs       apijson.Field
@@ -197,15 +197,15 @@ type threadListItemJSON struct {
 	ExtraFields       map[string]apijson.Field
 }
 
-func (r *ThreadListItem) UnmarshalJSON(data []byte) (err error) {
+func (r *Thread) UnmarshalJSON(data []byte) (err error) {
 	return apijson.UnmarshalRoot(data, r)
 }
 
-func (r threadListItemJSON) RawJSON() string {
+func (r threadJSON) RawJSON() string {
 	return r.raw
 }
 
-type ThreadListItemFeedbackStat struct {
+type ThreadFeedbackStat struct {
 	// `avg` is the arithmetic mean of numeric feedback scores for this key on the run,
 	// or `null` when no numeric score has been recorded (for example purely
 	// categorical feedback).
@@ -245,13 +245,13 @@ type ThreadListItemFeedbackStat struct {
 	// `values` is the distribution of categorical feedback labels for this key,
 	// mapping each label to its occurrence count. Empty (`{}`) for purely numeric
 	// feedback.
-	Values map[string]int64               `json:"values"`
-	JSON   threadListItemFeedbackStatJSON `json:"-"`
+	Values map[string]int64       `json:"values"`
+	JSON   threadFeedbackStatJSON `json:"-"`
 }
 
-// threadListItemFeedbackStatJSON contains the JSON metadata for the struct
-// [ThreadListItemFeedbackStat]
-type threadListItemFeedbackStatJSON struct {
+// threadFeedbackStatJSON contains the JSON metadata for the struct
+// [ThreadFeedbackStat]
+type threadFeedbackStatJSON struct {
 	Avg                    apijson.Field
 	Comments               apijson.Field
 	ContainsThreadFeedback apijson.Field
@@ -266,25 +266,278 @@ type threadListItemFeedbackStatJSON struct {
 	ExtraFields            map[string]apijson.Field
 }
 
-func (r *ThreadListItemFeedbackStat) UnmarshalJSON(data []byte) (err error) {
+func (r *ThreadFeedbackStat) UnmarshalJSON(data []byte) (err error) {
 	return apijson.UnmarshalRoot(data, r)
 }
 
-func (r threadListItemFeedbackStatJSON) RawJSON() string {
+func (r threadFeedbackStatJSON) RawJSON() string {
 	return r.raw
 }
 
-type ThreadTraceListItem struct {
+type ThreadStats struct {
+	// `completion_cost` is the sum of per-trace completion costs across the thread, in
+	// USD. Populated when `COMPLETION_COST` is selected.
+	CompletionCost float64 `json:"completion_cost"`
+	// `completion_cost_details` is the per-sub-category sum of completion cost details
+	// across the thread. Populated when `COMPLETION_COST_DETAILS` is selected.
+	CompletionCostDetails ThreadStatsCompletionCostDetails `json:"completion_cost_details"`
+	// `completion_token_details` is the per-sub-category sum of completion token
+	// details across the thread. Populated when `COMPLETION_TOKEN_DETAILS` is
+	// selected.
+	CompletionTokenDetails ThreadStatsCompletionTokenDetails `json:"completion_token_details"`
+	// `completion_tokens` is the sum of per-trace completion token counts across the
+	// thread. Populated when `COMPLETION_TOKENS` is selected.
+	CompletionTokens int64 `json:"completion_tokens"`
+	// `feedback_stats` aggregates run-level feedback across the thread's traces, keyed
+	// by feedback key. Populated when `FEEDBACK_STATS` is selected.
+	FeedbackStats map[string]ThreadStatsFeedbackStat `json:"feedback_stats"`
+	// `first_start_time` is the earliest trace start time in the thread (RFC3339).
+	// Populated when `FIRST_START_TIME` is selected.
+	FirstStartTime time.Time `json:"first_start_time" format:"date-time"`
+	// `last_end_time` is the latest trace end time in the thread (RFC3339). Populated
+	// when `LAST_END_TIME` is selected.
+	LastEndTime time.Time `json:"last_end_time" format:"date-time"`
+	// `last_start_time` is the latest trace start time in the thread (RFC3339).
+	// Populated when `LAST_START_TIME` is selected.
+	LastStartTime time.Time `json:"last_start_time" format:"date-time"`
+	// `latency_p50_seconds` is the approximate p50 of trace latency across the thread,
+	// in seconds. Populated when `LATENCY_P50` is selected.
+	LatencyP50Seconds float64 `json:"latency_p50_seconds"`
+	// `latency_p99_seconds` is the approximate p99 of trace latency across the thread,
+	// in seconds. Populated when `LATENCY_P99` is selected.
+	LatencyP99Seconds float64 `json:"latency_p99_seconds"`
+	// `prompt_cost` is the sum of per-trace prompt costs across the thread, in USD.
+	// Populated when `PROMPT_COST` is selected.
+	PromptCost float64 `json:"prompt_cost"`
+	// `prompt_cost_details` is the per-sub-category sum of prompt cost details across
+	// the thread. Populated when `PROMPT_COST_DETAILS` is selected.
+	PromptCostDetails ThreadStatsPromptCostDetails `json:"prompt_cost_details"`
+	// `prompt_token_details` is the per-sub-category sum of prompt token details
+	// across the thread. Populated when `PROMPT_TOKEN_DETAILS` is selected.
+	PromptTokenDetails ThreadStatsPromptTokenDetails `json:"prompt_token_details"`
+	// `prompt_tokens` is the sum of per-trace prompt token counts across the thread.
+	// Populated when `PROMPT_TOKENS` is selected.
+	PromptTokens int64 `json:"prompt_tokens"`
+	// `total_cost` is the sum of per-trace total costs across the thread, in USD.
+	// Populated when `TOTAL_COST` is selected.
+	TotalCost float64 `json:"total_cost"`
+	// `total_tokens` is the sum of per-trace total token counts across the thread.
+	// Populated when `TOTAL_TOKENS` is selected.
+	TotalTokens int64 `json:"total_tokens"`
+	// `turns` is the number of distinct traces (turns) in the thread. Populated when
+	// `TURNS` is selected.
+	Turns int64           `json:"turns"`
+	JSON  threadStatsJSON `json:"-"`
+}
+
+// threadStatsJSON contains the JSON metadata for the struct [ThreadStats]
+type threadStatsJSON struct {
+	CompletionCost         apijson.Field
+	CompletionCostDetails  apijson.Field
+	CompletionTokenDetails apijson.Field
+	CompletionTokens       apijson.Field
+	FeedbackStats          apijson.Field
+	FirstStartTime         apijson.Field
+	LastEndTime            apijson.Field
+	LastStartTime          apijson.Field
+	LatencyP50Seconds      apijson.Field
+	LatencyP99Seconds      apijson.Field
+	PromptCost             apijson.Field
+	PromptCostDetails      apijson.Field
+	PromptTokenDetails     apijson.Field
+	PromptTokens           apijson.Field
+	TotalCost              apijson.Field
+	TotalTokens            apijson.Field
+	Turns                  apijson.Field
+	raw                    string
+	ExtraFields            map[string]apijson.Field
+}
+
+func (r *ThreadStats) UnmarshalJSON(data []byte) (err error) {
+	return apijson.UnmarshalRoot(data, r)
+}
+
+func (r threadStatsJSON) RawJSON() string {
+	return r.raw
+}
+
+// `completion_cost_details` is the per-sub-category sum of completion cost details
+// across the thread. Populated when `COMPLETION_COST_DETAILS` is selected.
+type ThreadStatsCompletionCostDetails struct {
+	// `raw` maps each category name to its estimated USD cost.
+	Raw  map[string]float64                   `json:"raw"`
+	JSON threadStatsCompletionCostDetailsJSON `json:"-"`
+}
+
+// threadStatsCompletionCostDetailsJSON contains the JSON metadata for the struct
+// [ThreadStatsCompletionCostDetails]
+type threadStatsCompletionCostDetailsJSON struct {
+	Raw         apijson.Field
+	raw         string
+	ExtraFields map[string]apijson.Field
+}
+
+func (r *ThreadStatsCompletionCostDetails) UnmarshalJSON(data []byte) (err error) {
+	return apijson.UnmarshalRoot(data, r)
+}
+
+func (r threadStatsCompletionCostDetailsJSON) RawJSON() string {
+	return r.raw
+}
+
+// `completion_token_details` is the per-sub-category sum of completion token
+// details across the thread. Populated when `COMPLETION_TOKEN_DETAILS` is
+// selected.
+type ThreadStatsCompletionTokenDetails struct {
+	// `raw` maps each category name to its completion-token count.
+	Raw  map[string]int64                      `json:"raw"`
+	JSON threadStatsCompletionTokenDetailsJSON `json:"-"`
+}
+
+// threadStatsCompletionTokenDetailsJSON contains the JSON metadata for the struct
+// [ThreadStatsCompletionTokenDetails]
+type threadStatsCompletionTokenDetailsJSON struct {
+	Raw         apijson.Field
+	raw         string
+	ExtraFields map[string]apijson.Field
+}
+
+func (r *ThreadStatsCompletionTokenDetails) UnmarshalJSON(data []byte) (err error) {
+	return apijson.UnmarshalRoot(data, r)
+}
+
+func (r threadStatsCompletionTokenDetailsJSON) RawJSON() string {
+	return r.raw
+}
+
+type ThreadStatsFeedbackStat struct {
+	// `avg` is the arithmetic mean of numeric feedback scores for this key on the run,
+	// or `null` when no numeric score has been recorded (for example purely
+	// categorical feedback).
+	Avg float64 `json:"avg"`
+	// `comments` is a sample of human-readable comments attached to feedback points
+	// for this key, in no particular order. May be empty; is not exhaustive when many
+	// comments exist.
+	Comments []string `json:"comments"`
+	// `contains_thread_feedback` is true when at least one feedback point for this key
+	// was submitted at the thread level (rather than at an individual run). Always
+	// false on responses that already describe a single run in isolation.
+	ContainsThreadFeedback bool `json:"contains_thread_feedback"`
+	// `errors` is the number of feedback points recorded as errors rather than
+	// successful scores (for example an automated evaluator that raised an exception).
+	// Defaults to 0 when no errors occurred.
+	Errors int64 `json:"errors"`
+	// `max` is the largest numeric feedback score recorded for this key on the run, or
+	// `null` when no numeric score has been recorded.
+	Max float64 `json:"max"`
+	// `min` is the smallest numeric feedback score recorded for this key on the run,
+	// or `null` when no numeric score has been recorded.
+	Min float64 `json:"min"`
+	// `n` is the number of feedback points recorded for this key on the run. For
+	// numeric feedback this is the sample size behind `avg`, `min`, `max`, and
+	// `stdev`; for categorical feedback it is the sum of the `values` counts.
+	N int64 `json:"n"`
+	// `sources` is a sample of feedback sources for this key. Each entry is either a
+	// plain string identifier (for example `"api"`, `"app"`, `"model"`) or a JSON
+	// object describing a synthetic source (for example
+	// `{"type": "__ls_composite_feedback"}` for a computed aggregate). Clients must
+	// tolerate both shapes.
+	Sources []interface{} `json:"sources"`
+	// `stdev` is the sample standard deviation of numeric feedback scores for this key
+	// on the run, or `null` when it cannot be computed (for example fewer than two
+	// numeric scores, or purely categorical feedback).
+	Stdev float64 `json:"stdev"`
+	// `values` is the distribution of categorical feedback labels for this key,
+	// mapping each label to its occurrence count. Empty (`{}`) for purely numeric
+	// feedback.
+	Values map[string]int64            `json:"values"`
+	JSON   threadStatsFeedbackStatJSON `json:"-"`
+}
+
+// threadStatsFeedbackStatJSON contains the JSON metadata for the struct
+// [ThreadStatsFeedbackStat]
+type threadStatsFeedbackStatJSON struct {
+	Avg                    apijson.Field
+	Comments               apijson.Field
+	ContainsThreadFeedback apijson.Field
+	Errors                 apijson.Field
+	Max                    apijson.Field
+	Min                    apijson.Field
+	N                      apijson.Field
+	Sources                apijson.Field
+	Stdev                  apijson.Field
+	Values                 apijson.Field
+	raw                    string
+	ExtraFields            map[string]apijson.Field
+}
+
+func (r *ThreadStatsFeedbackStat) UnmarshalJSON(data []byte) (err error) {
+	return apijson.UnmarshalRoot(data, r)
+}
+
+func (r threadStatsFeedbackStatJSON) RawJSON() string {
+	return r.raw
+}
+
+// `prompt_cost_details` is the per-sub-category sum of prompt cost details across
+// the thread. Populated when `PROMPT_COST_DETAILS` is selected.
+type ThreadStatsPromptCostDetails struct {
+	// `raw` maps each category name to its estimated USD cost.
+	Raw  map[string]float64               `json:"raw"`
+	JSON threadStatsPromptCostDetailsJSON `json:"-"`
+}
+
+// threadStatsPromptCostDetailsJSON contains the JSON metadata for the struct
+// [ThreadStatsPromptCostDetails]
+type threadStatsPromptCostDetailsJSON struct {
+	Raw         apijson.Field
+	raw         string
+	ExtraFields map[string]apijson.Field
+}
+
+func (r *ThreadStatsPromptCostDetails) UnmarshalJSON(data []byte) (err error) {
+	return apijson.UnmarshalRoot(data, r)
+}
+
+func (r threadStatsPromptCostDetailsJSON) RawJSON() string {
+	return r.raw
+}
+
+// `prompt_token_details` is the per-sub-category sum of prompt token details
+// across the thread. Populated when `PROMPT_TOKEN_DETAILS` is selected.
+type ThreadStatsPromptTokenDetails struct {
+	// `raw` maps each category name to its prompt-token count.
+	Raw  map[string]int64                  `json:"raw"`
+	JSON threadStatsPromptTokenDetailsJSON `json:"-"`
+}
+
+// threadStatsPromptTokenDetailsJSON contains the JSON metadata for the struct
+// [ThreadStatsPromptTokenDetails]
+type threadStatsPromptTokenDetailsJSON struct {
+	Raw         apijson.Field
+	raw         string
+	ExtraFields map[string]apijson.Field
+}
+
+func (r *ThreadStatsPromptTokenDetails) UnmarshalJSON(data []byte) (err error) {
+	return apijson.UnmarshalRoot(data, r)
+}
+
+func (r threadStatsPromptTokenDetailsJSON) RawJSON() string {
+	return r.raw
+}
+
+type ThreadTrace struct {
 	// `completion_cost` is the estimated USD cost for the completion. Omitted unless
 	// included in `selects`.
 	CompletionCost float64 `json:"completion_cost"`
 	// `completion_cost_details` is the USD cost breakdown for completion-side
 	// categories; per-category values are under `raw`. Omitted unless included in
 	// `selects`.
-	CompletionCostDetails ThreadTraceListItemCompletionCostDetails `json:"completion_cost_details"`
+	CompletionCostDetails ThreadTraceCompletionCostDetails `json:"completion_cost_details"`
 	// `completion_token_details` is the completion-side token breakdown by category;
 	// per-category counts are under `raw`. Omitted unless included in `selects`.
-	CompletionTokenDetails ThreadTraceListItemCompletionTokenDetails `json:"completion_token_details"`
+	CompletionTokenDetails ThreadTraceCompletionTokenDetails `json:"completion_token_details"`
 	// `completion_tokens` is the completion-side token count. Omitted unless included
 	// in `selects`.
 	CompletionTokens int64 `json:"completion_tokens"`
@@ -321,11 +574,11 @@ type ThreadTraceListItem struct {
 	PromptCost float64 `json:"prompt_cost"`
 	// `prompt_cost_details` is the USD cost breakdown for prompt-side categories;
 	// per-category values are under `raw`. Omitted unless included in `selects`.
-	PromptCostDetails ThreadTraceListItemPromptCostDetails `json:"prompt_cost_details"`
+	PromptCostDetails ThreadTracePromptCostDetails `json:"prompt_cost_details"`
 	// `prompt_token_details` is the prompt-side token breakdown by category;
 	// per-category counts are under nested `raw`. Omitted unless included in
 	// `selects`.
-	PromptTokenDetails ThreadTraceListItemPromptTokenDetails `json:"prompt_token_details"`
+	PromptTokenDetails ThreadTracePromptTokenDetails `json:"prompt_token_details"`
 	// `prompt_tokens` is the prompt-side token count. Omitted unless included in
 	// `selects`.
 	PromptTokens int64 `json:"prompt_tokens"`
@@ -343,13 +596,12 @@ type ThreadTraceListItem struct {
 	// included in `selects`.
 	TotalTokens int64 `json:"total_tokens"`
 	// `trace_id` is the UUID of this trace (the root run). Always present.
-	TraceID string                  `json:"trace_id" format:"uuid"`
-	JSON    threadTraceListItemJSON `json:"-"`
+	TraceID string          `json:"trace_id" format:"uuid"`
+	JSON    threadTraceJSON `json:"-"`
 }
 
-// threadTraceListItemJSON contains the JSON metadata for the struct
-// [ThreadTraceListItem]
-type threadTraceListItemJSON struct {
+// threadTraceJSON contains the JSON metadata for the struct [ThreadTrace]
+type threadTraceJSON struct {
 	CompletionCost         apijson.Field
 	CompletionCostDetails  apijson.Field
 	CompletionTokenDetails apijson.Field
@@ -375,363 +627,109 @@ type threadTraceListItemJSON struct {
 	ExtraFields            map[string]apijson.Field
 }
 
-func (r *ThreadTraceListItem) UnmarshalJSON(data []byte) (err error) {
+func (r *ThreadTrace) UnmarshalJSON(data []byte) (err error) {
 	return apijson.UnmarshalRoot(data, r)
 }
 
-func (r threadTraceListItemJSON) RawJSON() string {
+func (r threadTraceJSON) RawJSON() string {
 	return r.raw
 }
 
 // `completion_cost_details` is the USD cost breakdown for completion-side
 // categories; per-category values are under `raw`. Omitted unless included in
 // `selects`.
-type ThreadTraceListItemCompletionCostDetails struct {
+type ThreadTraceCompletionCostDetails struct {
 	// `raw` maps each category name to its estimated USD cost.
-	Raw  map[string]float64                           `json:"raw"`
-	JSON threadTraceListItemCompletionCostDetailsJSON `json:"-"`
+	Raw  map[string]float64                   `json:"raw"`
+	JSON threadTraceCompletionCostDetailsJSON `json:"-"`
 }
 
-// threadTraceListItemCompletionCostDetailsJSON contains the JSON metadata for the
-// struct [ThreadTraceListItemCompletionCostDetails]
-type threadTraceListItemCompletionCostDetailsJSON struct {
+// threadTraceCompletionCostDetailsJSON contains the JSON metadata for the struct
+// [ThreadTraceCompletionCostDetails]
+type threadTraceCompletionCostDetailsJSON struct {
 	Raw         apijson.Field
 	raw         string
 	ExtraFields map[string]apijson.Field
 }
 
-func (r *ThreadTraceListItemCompletionCostDetails) UnmarshalJSON(data []byte) (err error) {
+func (r *ThreadTraceCompletionCostDetails) UnmarshalJSON(data []byte) (err error) {
 	return apijson.UnmarshalRoot(data, r)
 }
 
-func (r threadTraceListItemCompletionCostDetailsJSON) RawJSON() string {
+func (r threadTraceCompletionCostDetailsJSON) RawJSON() string {
 	return r.raw
 }
 
 // `completion_token_details` is the completion-side token breakdown by category;
 // per-category counts are under `raw`. Omitted unless included in `selects`.
-type ThreadTraceListItemCompletionTokenDetails struct {
+type ThreadTraceCompletionTokenDetails struct {
 	// `raw` maps each category name to its completion-token count.
-	Raw  map[string]int64                              `json:"raw"`
-	JSON threadTraceListItemCompletionTokenDetailsJSON `json:"-"`
+	Raw  map[string]int64                      `json:"raw"`
+	JSON threadTraceCompletionTokenDetailsJSON `json:"-"`
 }
 
-// threadTraceListItemCompletionTokenDetailsJSON contains the JSON metadata for the
-// struct [ThreadTraceListItemCompletionTokenDetails]
-type threadTraceListItemCompletionTokenDetailsJSON struct {
+// threadTraceCompletionTokenDetailsJSON contains the JSON metadata for the struct
+// [ThreadTraceCompletionTokenDetails]
+type threadTraceCompletionTokenDetailsJSON struct {
 	Raw         apijson.Field
 	raw         string
 	ExtraFields map[string]apijson.Field
 }
 
-func (r *ThreadTraceListItemCompletionTokenDetails) UnmarshalJSON(data []byte) (err error) {
+func (r *ThreadTraceCompletionTokenDetails) UnmarshalJSON(data []byte) (err error) {
 	return apijson.UnmarshalRoot(data, r)
 }
 
-func (r threadTraceListItemCompletionTokenDetailsJSON) RawJSON() string {
+func (r threadTraceCompletionTokenDetailsJSON) RawJSON() string {
 	return r.raw
 }
 
 // `prompt_cost_details` is the USD cost breakdown for prompt-side categories;
 // per-category values are under `raw`. Omitted unless included in `selects`.
-type ThreadTraceListItemPromptCostDetails struct {
+type ThreadTracePromptCostDetails struct {
 	// `raw` maps each category name to its estimated USD cost.
-	Raw  map[string]float64                       `json:"raw"`
-	JSON threadTraceListItemPromptCostDetailsJSON `json:"-"`
+	Raw  map[string]float64               `json:"raw"`
+	JSON threadTracePromptCostDetailsJSON `json:"-"`
 }
 
-// threadTraceListItemPromptCostDetailsJSON contains the JSON metadata for the
-// struct [ThreadTraceListItemPromptCostDetails]
-type threadTraceListItemPromptCostDetailsJSON struct {
+// threadTracePromptCostDetailsJSON contains the JSON metadata for the struct
+// [ThreadTracePromptCostDetails]
+type threadTracePromptCostDetailsJSON struct {
 	Raw         apijson.Field
 	raw         string
 	ExtraFields map[string]apijson.Field
 }
 
-func (r *ThreadTraceListItemPromptCostDetails) UnmarshalJSON(data []byte) (err error) {
+func (r *ThreadTracePromptCostDetails) UnmarshalJSON(data []byte) (err error) {
 	return apijson.UnmarshalRoot(data, r)
 }
 
-func (r threadTraceListItemPromptCostDetailsJSON) RawJSON() string {
+func (r threadTracePromptCostDetailsJSON) RawJSON() string {
 	return r.raw
 }
 
 // `prompt_token_details` is the prompt-side token breakdown by category;
 // per-category counts are under nested `raw`. Omitted unless included in
 // `selects`.
-type ThreadTraceListItemPromptTokenDetails struct {
+type ThreadTracePromptTokenDetails struct {
 	// `raw` maps each category name to its prompt-token count.
-	Raw  map[string]int64                          `json:"raw"`
-	JSON threadTraceListItemPromptTokenDetailsJSON `json:"-"`
+	Raw  map[string]int64                  `json:"raw"`
+	JSON threadTracePromptTokenDetailsJSON `json:"-"`
 }
 
-// threadTraceListItemPromptTokenDetailsJSON contains the JSON metadata for the
-// struct [ThreadTraceListItemPromptTokenDetails]
-type threadTraceListItemPromptTokenDetailsJSON struct {
+// threadTracePromptTokenDetailsJSON contains the JSON metadata for the struct
+// [ThreadTracePromptTokenDetails]
+type threadTracePromptTokenDetailsJSON struct {
 	Raw         apijson.Field
 	raw         string
 	ExtraFields map[string]apijson.Field
 }
 
-func (r *ThreadTraceListItemPromptTokenDetails) UnmarshalJSON(data []byte) (err error) {
+func (r *ThreadTracePromptTokenDetails) UnmarshalJSON(data []byte) (err error) {
 	return apijson.UnmarshalRoot(data, r)
 }
 
-func (r threadTraceListItemPromptTokenDetailsJSON) RawJSON() string {
-	return r.raw
-}
-
-type ThreadStatsResponse struct {
-	// `completion_cost` is the sum of per-trace completion costs across the thread, in
-	// USD. Populated when `COMPLETION_COST` is selected.
-	CompletionCost float64 `json:"completion_cost"`
-	// `completion_cost_details` is the per-sub-category sum of completion cost details
-	// across the thread. Populated when `COMPLETION_COST_DETAILS` is selected.
-	CompletionCostDetails ThreadStatsResponseCompletionCostDetails `json:"completion_cost_details"`
-	// `completion_token_details` is the per-sub-category sum of completion token
-	// details across the thread. Populated when `COMPLETION_TOKEN_DETAILS` is
-	// selected.
-	CompletionTokenDetails ThreadStatsResponseCompletionTokenDetails `json:"completion_token_details"`
-	// `completion_tokens` is the sum of per-trace completion token counts across the
-	// thread. Populated when `COMPLETION_TOKENS` is selected.
-	CompletionTokens int64 `json:"completion_tokens"`
-	// `feedback_stats` aggregates run-level feedback across the thread's traces, keyed
-	// by feedback key. Populated when `FEEDBACK_STATS` is selected.
-	FeedbackStats map[string]ThreadStatsResponseFeedbackStat `json:"feedback_stats"`
-	// `first_start_time` is the earliest trace start time in the thread (RFC3339).
-	// Populated when `FIRST_START_TIME` is selected.
-	FirstStartTime time.Time `json:"first_start_time" format:"date-time"`
-	// `last_end_time` is the latest trace end time in the thread (RFC3339). Populated
-	// when `LAST_END_TIME` is selected.
-	LastEndTime time.Time `json:"last_end_time" format:"date-time"`
-	// `last_start_time` is the latest trace start time in the thread (RFC3339).
-	// Populated when `LAST_START_TIME` is selected.
-	LastStartTime time.Time `json:"last_start_time" format:"date-time"`
-	// `latency_p50_seconds` is the approximate p50 of trace latency across the thread,
-	// in seconds. Populated when `LATENCY_P50` is selected.
-	LatencyP50Seconds float64 `json:"latency_p50_seconds"`
-	// `latency_p99_seconds` is the approximate p99 of trace latency across the thread,
-	// in seconds. Populated when `LATENCY_P99` is selected.
-	LatencyP99Seconds float64 `json:"latency_p99_seconds"`
-	// `prompt_cost` is the sum of per-trace prompt costs across the thread, in USD.
-	// Populated when `PROMPT_COST` is selected.
-	PromptCost float64 `json:"prompt_cost"`
-	// `prompt_cost_details` is the per-sub-category sum of prompt cost details across
-	// the thread. Populated when `PROMPT_COST_DETAILS` is selected.
-	PromptCostDetails ThreadStatsResponsePromptCostDetails `json:"prompt_cost_details"`
-	// `prompt_token_details` is the per-sub-category sum of prompt token details
-	// across the thread. Populated when `PROMPT_TOKEN_DETAILS` is selected.
-	PromptTokenDetails ThreadStatsResponsePromptTokenDetails `json:"prompt_token_details"`
-	// `prompt_tokens` is the sum of per-trace prompt token counts across the thread.
-	// Populated when `PROMPT_TOKENS` is selected.
-	PromptTokens int64 `json:"prompt_tokens"`
-	// `total_cost` is the sum of per-trace total costs across the thread, in USD.
-	// Populated when `TOTAL_COST` is selected.
-	TotalCost float64 `json:"total_cost"`
-	// `total_tokens` is the sum of per-trace total token counts across the thread.
-	// Populated when `TOTAL_TOKENS` is selected.
-	TotalTokens int64 `json:"total_tokens"`
-	// `turns` is the number of distinct traces (turns) in the thread. Populated when
-	// `TURNS` is selected.
-	Turns int64                   `json:"turns"`
-	JSON  threadStatsResponseJSON `json:"-"`
-}
-
-// threadStatsResponseJSON contains the JSON metadata for the struct
-// [ThreadStatsResponse]
-type threadStatsResponseJSON struct {
-	CompletionCost         apijson.Field
-	CompletionCostDetails  apijson.Field
-	CompletionTokenDetails apijson.Field
-	CompletionTokens       apijson.Field
-	FeedbackStats          apijson.Field
-	FirstStartTime         apijson.Field
-	LastEndTime            apijson.Field
-	LastStartTime          apijson.Field
-	LatencyP50Seconds      apijson.Field
-	LatencyP99Seconds      apijson.Field
-	PromptCost             apijson.Field
-	PromptCostDetails      apijson.Field
-	PromptTokenDetails     apijson.Field
-	PromptTokens           apijson.Field
-	TotalCost              apijson.Field
-	TotalTokens            apijson.Field
-	Turns                  apijson.Field
-	raw                    string
-	ExtraFields            map[string]apijson.Field
-}
-
-func (r *ThreadStatsResponse) UnmarshalJSON(data []byte) (err error) {
-	return apijson.UnmarshalRoot(data, r)
-}
-
-func (r threadStatsResponseJSON) RawJSON() string {
-	return r.raw
-}
-
-// `completion_cost_details` is the per-sub-category sum of completion cost details
-// across the thread. Populated when `COMPLETION_COST_DETAILS` is selected.
-type ThreadStatsResponseCompletionCostDetails struct {
-	// `raw` maps each category name to its estimated USD cost.
-	Raw  map[string]float64                           `json:"raw"`
-	JSON threadStatsResponseCompletionCostDetailsJSON `json:"-"`
-}
-
-// threadStatsResponseCompletionCostDetailsJSON contains the JSON metadata for the
-// struct [ThreadStatsResponseCompletionCostDetails]
-type threadStatsResponseCompletionCostDetailsJSON struct {
-	Raw         apijson.Field
-	raw         string
-	ExtraFields map[string]apijson.Field
-}
-
-func (r *ThreadStatsResponseCompletionCostDetails) UnmarshalJSON(data []byte) (err error) {
-	return apijson.UnmarshalRoot(data, r)
-}
-
-func (r threadStatsResponseCompletionCostDetailsJSON) RawJSON() string {
-	return r.raw
-}
-
-// `completion_token_details` is the per-sub-category sum of completion token
-// details across the thread. Populated when `COMPLETION_TOKEN_DETAILS` is
-// selected.
-type ThreadStatsResponseCompletionTokenDetails struct {
-	// `raw` maps each category name to its completion-token count.
-	Raw  map[string]int64                              `json:"raw"`
-	JSON threadStatsResponseCompletionTokenDetailsJSON `json:"-"`
-}
-
-// threadStatsResponseCompletionTokenDetailsJSON contains the JSON metadata for the
-// struct [ThreadStatsResponseCompletionTokenDetails]
-type threadStatsResponseCompletionTokenDetailsJSON struct {
-	Raw         apijson.Field
-	raw         string
-	ExtraFields map[string]apijson.Field
-}
-
-func (r *ThreadStatsResponseCompletionTokenDetails) UnmarshalJSON(data []byte) (err error) {
-	return apijson.UnmarshalRoot(data, r)
-}
-
-func (r threadStatsResponseCompletionTokenDetailsJSON) RawJSON() string {
-	return r.raw
-}
-
-type ThreadStatsResponseFeedbackStat struct {
-	// `avg` is the arithmetic mean of numeric feedback scores for this key on the run,
-	// or `null` when no numeric score has been recorded (for example purely
-	// categorical feedback).
-	Avg float64 `json:"avg"`
-	// `comments` is a sample of human-readable comments attached to feedback points
-	// for this key, in no particular order. May be empty; is not exhaustive when many
-	// comments exist.
-	Comments []string `json:"comments"`
-	// `contains_thread_feedback` is true when at least one feedback point for this key
-	// was submitted at the thread level (rather than at an individual run). Always
-	// false on responses that already describe a single run in isolation.
-	ContainsThreadFeedback bool `json:"contains_thread_feedback"`
-	// `errors` is the number of feedback points recorded as errors rather than
-	// successful scores (for example an automated evaluator that raised an exception).
-	// Defaults to 0 when no errors occurred.
-	Errors int64 `json:"errors"`
-	// `max` is the largest numeric feedback score recorded for this key on the run, or
-	// `null` when no numeric score has been recorded.
-	Max float64 `json:"max"`
-	// `min` is the smallest numeric feedback score recorded for this key on the run,
-	// or `null` when no numeric score has been recorded.
-	Min float64 `json:"min"`
-	// `n` is the number of feedback points recorded for this key on the run. For
-	// numeric feedback this is the sample size behind `avg`, `min`, `max`, and
-	// `stdev`; for categorical feedback it is the sum of the `values` counts.
-	N int64 `json:"n"`
-	// `sources` is a sample of feedback sources for this key. Each entry is either a
-	// plain string identifier (for example `"api"`, `"app"`, `"model"`) or a JSON
-	// object describing a synthetic source (for example
-	// `{"type": "__ls_composite_feedback"}` for a computed aggregate). Clients must
-	// tolerate both shapes.
-	Sources []interface{} `json:"sources"`
-	// `stdev` is the sample standard deviation of numeric feedback scores for this key
-	// on the run, or `null` when it cannot be computed (for example fewer than two
-	// numeric scores, or purely categorical feedback).
-	Stdev float64 `json:"stdev"`
-	// `values` is the distribution of categorical feedback labels for this key,
-	// mapping each label to its occurrence count. Empty (`{}`) for purely numeric
-	// feedback.
-	Values map[string]int64                    `json:"values"`
-	JSON   threadStatsResponseFeedbackStatJSON `json:"-"`
-}
-
-// threadStatsResponseFeedbackStatJSON contains the JSON metadata for the struct
-// [ThreadStatsResponseFeedbackStat]
-type threadStatsResponseFeedbackStatJSON struct {
-	Avg                    apijson.Field
-	Comments               apijson.Field
-	ContainsThreadFeedback apijson.Field
-	Errors                 apijson.Field
-	Max                    apijson.Field
-	Min                    apijson.Field
-	N                      apijson.Field
-	Sources                apijson.Field
-	Stdev                  apijson.Field
-	Values                 apijson.Field
-	raw                    string
-	ExtraFields            map[string]apijson.Field
-}
-
-func (r *ThreadStatsResponseFeedbackStat) UnmarshalJSON(data []byte) (err error) {
-	return apijson.UnmarshalRoot(data, r)
-}
-
-func (r threadStatsResponseFeedbackStatJSON) RawJSON() string {
-	return r.raw
-}
-
-// `prompt_cost_details` is the per-sub-category sum of prompt cost details across
-// the thread. Populated when `PROMPT_COST_DETAILS` is selected.
-type ThreadStatsResponsePromptCostDetails struct {
-	// `raw` maps each category name to its estimated USD cost.
-	Raw  map[string]float64                       `json:"raw"`
-	JSON threadStatsResponsePromptCostDetailsJSON `json:"-"`
-}
-
-// threadStatsResponsePromptCostDetailsJSON contains the JSON metadata for the
-// struct [ThreadStatsResponsePromptCostDetails]
-type threadStatsResponsePromptCostDetailsJSON struct {
-	Raw         apijson.Field
-	raw         string
-	ExtraFields map[string]apijson.Field
-}
-
-func (r *ThreadStatsResponsePromptCostDetails) UnmarshalJSON(data []byte) (err error) {
-	return apijson.UnmarshalRoot(data, r)
-}
-
-func (r threadStatsResponsePromptCostDetailsJSON) RawJSON() string {
-	return r.raw
-}
-
-// `prompt_token_details` is the per-sub-category sum of prompt token details
-// across the thread. Populated when `PROMPT_TOKEN_DETAILS` is selected.
-type ThreadStatsResponsePromptTokenDetails struct {
-	// `raw` maps each category name to its prompt-token count.
-	Raw  map[string]int64                          `json:"raw"`
-	JSON threadStatsResponsePromptTokenDetailsJSON `json:"-"`
-}
-
-// threadStatsResponsePromptTokenDetailsJSON contains the JSON metadata for the
-// struct [ThreadStatsResponsePromptTokenDetails]
-type threadStatsResponsePromptTokenDetailsJSON struct {
-	Raw         apijson.Field
-	raw         string
-	ExtraFields map[string]apijson.Field
-}
-
-func (r *ThreadStatsResponsePromptTokenDetails) UnmarshalJSON(data []byte) (err error) {
-	return apijson.UnmarshalRoot(data, r)
-}
-
-func (r threadStatsResponsePromptTokenDetailsJSON) RawJSON() string {
+func (r threadTracePromptTokenDetailsJSON) RawJSON() string {
 	return r.raw
 }
 
@@ -810,10 +808,10 @@ type ThreadQueryParams struct {
 	// for syntax.
 	Filter param.Field[string] `json:"filter"`
 	// `max_start_time` is the exclusive upper bound on thread activity (RFC3339
-	// date-time).
+	// date-time). Defaults to now (UTC) when omitted.
 	MaxStartTime param.Field[time.Time] `json:"max_start_time" format:"date-time"`
 	// `min_start_time` is the inclusive lower bound on thread activity (RFC3339
-	// date-time).
+	// date-time). Defaults to 1 day before now (UTC) when omitted.
 	MinStartTime param.Field[time.Time] `json:"min_start_time" format:"date-time"`
 	// `page_size` is the maximum number of threads to return in this response.
 	// Defaults to 20 when omitted; must be between 1 and 100 inclusive when set. The
@@ -835,6 +833,12 @@ type ThreadStatsParams struct {
 	Selects param.Field[[]ThreadStatsParamsSelect] `query:"selects" api:"required"`
 	// `session_id` is the tracing project (session) UUID (required).
 	SessionID param.Field[string] `query:"session_id" api:"required" format:"uuid"`
+	// `filter` narrows which of the thread's traces are aggregated, using a LangSmith
+	// filter expression. For example: lt(start_time, "2025-01-01T00:00:00Z") or
+	// eq(trace_id, "0190a1b2-c3d4-7ef0-a5b6-6ea3a82e9328"). See
+	// https://docs.langchain.com/langsmith/trace-query-syntax#filter-query-language
+	// for syntax.
+	Filter param.Field[string] `query:"filter"`
 }
 
 // URLQuery serializes [ThreadStatsParams]'s query parameters as `url.Values`.
