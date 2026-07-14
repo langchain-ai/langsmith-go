@@ -170,7 +170,13 @@ type SandboxBoxNewParams struct {
 	MemBytes               param.Field[int64]                          `json:"mem_bytes"`
 	MountConfig            param.Field[SandboxBoxNewParamsMountConfig] `json:"mount_config"`
 	Name                   param.Field[string]                         `json:"name"`
-	ProxyConfig            param.Field[SandboxBoxNewParamsProxyConfig] `json:"proxy_config"`
+	// PreserveMemoryOnStop, when true, suspends the sandbox's memory on a voluntary
+	// stop (idle timeout or explicit stop) so the next start resumes from where it
+	// left off. Default false discards memory and keeps only the filesystem, so the
+	// next start is a cold boot. Restarts triggered by infrastructure maintenance
+	// always preserve memory regardless of this setting.
+	PreserveMemoryOnStop param.Field[bool]                           `json:"preserve_memory_on_stop"`
+	ProxyConfig          param.Field[SandboxBoxNewParamsProxyConfig] `json:"proxy_config"`
 	// RestoreMemory selects how the sandbox handles a snapshot's captured memory:
 	//
 	// nil → if-present: resume from memory when the snapshot has it, else cold-boot

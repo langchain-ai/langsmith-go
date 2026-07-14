@@ -70,6 +70,7 @@ type SandboxResponse struct {
 	MemBytes               int64                      `json:"mem_bytes"`
 	MountConfig            SandboxResponseMountConfig `json:"mount_config"`
 	Name                   string                     `json:"name"`
+	PreserveMemoryOnStop   bool                       `json:"preserve_memory_on_stop"`
 	ProxyConfig            SandboxResponseProxyConfig `json:"proxy_config"`
 	SizeClass              string                     `json:"size_class"`
 	SnapshotID             string                     `json:"snapshot_id"`
@@ -95,6 +96,7 @@ type sandboxResponseJSON struct {
 	MemBytes               apijson.Field
 	MountConfig            apijson.Field
 	Name                   apijson.Field
+	PreserveMemoryOnStop   apijson.Field
 	ProxyConfig            apijson.Field
 	SizeClass              apijson.Field
 	SnapshotID             apijson.Field
