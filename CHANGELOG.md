@@ -1,5 +1,30 @@
 # Changelog
 
+## [0.19.0](https://github.com/langchain-ai/langsmith-go/compare/v0.18.2...v0.19.0) (2026-07-14)
+
+
+### Features
+
+* **dashboards:** convert prebuilts to v2 charts on clone [LSO-3306, LSO-3322] ([6632d79](https://github.com/langchain-ai/langsmith-go/commit/6632d7943e646d8830f17d8c06fcb62731129e60))
+* **evaluators:** expose is_managed on Go evaluator reads [LSE-2532] ([0fca76d](https://github.com/langchain-ai/langsmith-go/commit/0fca76d59cfeb81a2c039235ca449c10981f78e8))
+
+
+### Bug Fixes
+
+* **smith-go:** default time bounds for POST /v2/threads/query ([ef3b87d](https://github.com/langchain-ai/langsmith-go/commit/ef3b87d536d8a61dc8d493e18d4f45571e3c7fc7))
+* **smith-sdks:** name thread stats response model ThreadStats ([9568867](https://github.com/langchain-ai/langsmith-go/commit/9568867746c5c56966427e1f71126226951867cf))
+* update golang.org/x/crypto to v0.52.0 ([#76](https://github.com/langchain-ai/langsmith-go/issues/76)) ([34adfef](https://github.com/langchain-ai/langsmith-go/commit/34adfefe2a1a220791ee4cb79581b73d6bde0058))
+
+
+### Refactors
+
+* **sandboxes:** make context hub sync a generic mount ([cb4c9ae](https://github.com/langchain-ai/langsmith-go/commit/cb4c9aec96804743c8a5470c273359163eea515c))
+
+
+### Build System
+
+* **deps:** bump golang.org/x/crypto from 0.51.0 to 0.52.0 in the go_modules group across 1 directory ([#75](https://github.com/langchain-ai/langsmith-go/issues/75)) ([4863ff3](https://github.com/langchain-ai/langsmith-go/commit/4863ff368afa0437e8183bf4e1ae024343bfa311))
+
 ## [0.18.2](https://github.com/langchain-ai/langsmith-go/compare/v0.18.1...v0.18.2) (2026-07-10)
 
 
