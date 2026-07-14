@@ -95,6 +95,7 @@ func TestRepoDirectoryCommitWithOptionalParams(t *testing.T) {
 				"foo": "bar",
 			}),
 			ParentCommit: langsmith.F("parent_commit"),
+			SkipWebhooks: langsmith.F(true),
 		},
 	)
 	if err != nil {
