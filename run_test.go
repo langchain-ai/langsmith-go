@@ -431,6 +431,7 @@ func TestRunStatsWithOptionalParams(t *testing.T) {
 			IsRoot:                langsmith.F(true),
 			ParentRun:             langsmith.F("182bd5e5-6e1a-4fe4-a799-aa6d9a6ab26e"),
 			Query:                 langsmith.F("query"),
+			ReferenceDatasetID:    langsmith.F("182bd5e5-6e1a-4fe4-a799-aa6d9a6ab26e"),
 			ReferenceExample:      langsmith.F([]string{"182bd5e5-6e1a-4fe4-a799-aa6d9a6ab26e"}),
 			RunType:               langsmith.F(langsmith.RunTypeEnumTool),
 			SearchFilter:          langsmith.F("search_filter"),

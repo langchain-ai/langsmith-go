@@ -176,6 +176,11 @@ type RepoDirectoryCommitParams struct {
 	// Files maps path to an Entry (object = create/update/link, null = delete/unlink).
 	Files        param.Field[map[string]interface{}] `json:"files"`
 	ParentCommit param.Field[string]                 `json:"parent_commit"`
+	// SkipWebhooks, when true, suppresses Context Hub commit webhooks for this commit.
+	// Deliberately a plain bool, not the any (bool | []string) shape of the prompt-hub
+	// CreateCommitReq.SkipWebhooks: Context Hub v1 has no per-webhook filtering, so a
+	// bool is the correct shape.
+	SkipWebhooks param.Field[bool] `json:"skip_webhooks"`
 }
 
 func (r RepoDirectoryCommitParams) MarshalJSON() (data []byte, err error) {

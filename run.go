@@ -836,13 +836,14 @@ type RunStatsQueryParams struct {
 	ExecutionOrder param.Field[int64]                        `json:"execution_order"`
 	Filter         param.Field[string]                       `json:"filter"`
 	// Group by param for run stats.
-	GroupBy          param.Field[RunStatsGroupByParam] `json:"group_by"`
-	Groups           param.Field[[]string]             `json:"groups"`
-	IncludeDetails   param.Field[bool]                 `json:"include_details"`
-	IsRoot           param.Field[bool]                 `json:"is_root"`
-	ParentRun        param.Field[string]               `json:"parent_run" format:"uuid"`
-	Query            param.Field[string]               `json:"query"`
-	ReferenceExample param.Field[[]string]             `json:"reference_example" format:"uuid"`
+	GroupBy            param.Field[RunStatsGroupByParam] `json:"group_by"`
+	Groups             param.Field[[]string]             `json:"groups"`
+	IncludeDetails     param.Field[bool]                 `json:"include_details"`
+	IsRoot             param.Field[bool]                 `json:"is_root"`
+	ParentRun          param.Field[string]               `json:"parent_run" format:"uuid"`
+	Query              param.Field[string]               `json:"query"`
+	ReferenceDatasetID param.Field[string]               `json:"reference_dataset_id" format:"uuid"`
+	ReferenceExample   param.Field[[]string]             `json:"reference_example" format:"uuid"`
 	// Enum for run types.
 	RunType        param.Field[RunTypeEnum]                 `json:"run_type"`
 	SearchFilter   param.Field[string]                      `json:"search_filter"`
