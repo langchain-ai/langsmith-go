@@ -1,5 +1,19 @@
 # Changelog
 
+## [0.20.0](https://github.com/langchain-ai/langsmith-go/compare/v0.19.0...v0.20.0) (2026-07-15)
+
+
+### Features
+
+* **context-hub:** fire commit webhook and deliver async ([a9b00f3](https://github.com/langchain-ai/langsmith-go/commit/a9b00f35b5127f025b59869696be3558e2925ded))
+* **runs-stats:** forward reference_example and reference_dataset_id to SmithDB ([91020ca](https://github.com/langchain-ai/langsmith-go/commit/91020ca86923146eb2da329733ca8cb527b6b695))
+* **sandboxes:** add preserve_memory_on_stop create attribute ([e6f6758](https://github.com/langchain-ai/langsmith-go/commit/e6f675879d8f4830e440a641762e019152b012ca))
+
+
+### Chores
+
+* update smithdb proto generated code ([ae90fd5](https://github.com/langchain-ai/langsmith-go/commit/ae90fd5e88ee075fcfd39ef63e3f960807b1a780))
+
 ## [0.19.0](https://github.com/langchain-ai/langsmith-go/compare/v0.18.2...v0.19.0) (2026-07-14)
 
 
