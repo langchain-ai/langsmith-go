@@ -120,6 +120,7 @@ type Evaluator struct {
 	IncludeExtendedStats                bool                      `json:"include_extended_stats"`
 	IsEnabled                           bool                      `json:"is_enabled"`
 	IsManagedEvaluator                  bool                      `json:"is_managed_evaluator"`
+	IsTracingDisabled                   bool                      `json:"is_tracing_disabled"`
 	NumFewShotExamples                  int64                     `json:"num_few_shot_examples" api:"nullable"`
 	SessionID                           string                    `json:"session_id" api:"nullable" format:"uuid"`
 	SessionName                         string                    `json:"session_name" api:"nullable"`
@@ -172,6 +173,7 @@ type evaluatorJSON struct {
 	IncludeExtendedStats                apijson.Field
 	IsEnabled                           apijson.Field
 	IsManagedEvaluator                  apijson.Field
+	IsTracingDisabled                   apijson.Field
 	NumFewShotExamples                  apijson.Field
 	SessionID                           apijson.Field
 	SessionName                         apijson.Field
