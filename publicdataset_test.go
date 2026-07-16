@@ -7,6 +7,7 @@ import (
 	"errors"
 	"os"
 	"testing"
+	"time"
 
 	"github.com/langchain-ai/langsmith-go"
 	"github.com/langchain-ai/langsmith-go/internal/testutil"
@@ -138,17 +139,22 @@ func TestPublicDatasetListSessionsWithOptionalParams(t *testing.T) {
 		context.TODO(),
 		"182bd5e5-6e1a-4fe4-a799-aa6d9a6ab26e",
 		langsmith.PublicDatasetListSessionsParams{
-			ID:                langsmith.F([]string{"182bd5e5-6e1a-4fe4-a799-aa6d9a6ab26e", "182bd5e5-6e1a-4fe4-a799-aa6d9a6ab26e"}),
-			DatasetVersion:    langsmith.F("dataset_version"),
-			Facets:            langsmith.F(true),
-			Limit:             langsmith.F(int64(1)),
-			Name:              langsmith.F("name"),
-			NameContains:      langsmith.F("name_contains"),
-			Offset:            langsmith.F(int64(0)),
-			SortBy:            langsmith.F(langsmith.SessionSortableColumnsName),
-			SortByDesc:        langsmith.F(true),
-			SortByFeedbackKey: langsmith.F("sort_by_feedback_key"),
-			Accept:            langsmith.F("accept"),
+			ID:                   langsmith.F([]string{"182bd5e5-6e1a-4fe4-a799-aa6d9a6ab26e", "182bd5e5-6e1a-4fe4-a799-aa6d9a6ab26e"}),
+			DatasetVersion:       langsmith.F("dataset_version"),
+			Facets:               langsmith.F(true),
+			Limit:                langsmith.F(int64(1)),
+			Name:                 langsmith.F("name"),
+			NameContains:         langsmith.F("name_contains"),
+			Offset:               langsmith.F(int64(0)),
+			SortBy:               langsmith.F(langsmith.SessionSortableColumnsName),
+			SortByDesc:           langsmith.F(true),
+			SortByFeedbackKey:    langsmith.F("sort_by_feedback_key"),
+			SortByFeedbackSource: langsmith.F("sort_by_feedback_source"),
+			StatsFilter:          langsmith.F("stats_filter"),
+			StatsSelect:          langsmith.F([]string{"string", "string"}),
+			StatsStartTime:       langsmith.F(time.Now()),
+			UseApproxStats:       langsmith.F(true),
+			Accept:               langsmith.F("accept"),
 		},
 	)
 	if err != nil {
