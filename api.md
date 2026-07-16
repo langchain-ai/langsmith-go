@@ -240,6 +240,17 @@ Methods:
 - <code title="post /api/v1/runs/stats">client.Runs.<a href="https://pkg.go.dev/github.com/langchain-ai/langsmith-go#RunService.Stats">Stats</a>(ctx <a href="https://pkg.go.dev/context">context</a>.<a href="https://pkg.go.dev/context#Context">Context</a>, body <a href="https://pkg.go.dev/github.com/langchain-ai/langsmith-go">langsmith</a>.<a href="https://pkg.go.dev/github.com/langchain-ai/langsmith-go#RunStatsParams">RunStatsParams</a>) (\*<a href="https://pkg.go.dev/github.com/langchain-ai/langsmith-go">langsmith</a>.<a href="https://pkg.go.dev/github.com/langchain-ai/langsmith-go#RunStatsResponseUnion">RunStatsResponseUnion</a>, <a href="https://pkg.go.dev/builtin#error">error</a>)</code>
 - <code title="patch /api/v1/runs/{run_id}">client.Runs.<a href="https://pkg.go.dev/github.com/langchain-ai/langsmith-go#RunService.Update2">Update2</a>(ctx <a href="https://pkg.go.dev/context">context</a>.<a href="https://pkg.go.dev/context#Context">Context</a>, runID <a href="https://pkg.go.dev/builtin#string">string</a>) (\*<a href="https://pkg.go.dev/github.com/langchain-ai/langsmith-go">langsmith</a>.<a href="https://pkg.go.dev/github.com/langchain-ai/langsmith-go#RunUpdate2Response">RunUpdate2Response</a>, <a href="https://pkg.go.dev/builtin#error">error</a>)</code>
 
+## Share
+
+Response Types:
+
+- <a href="https://pkg.go.dev/github.com/langchain-ai/langsmith-go">langsmith</a>.<a href="https://pkg.go.dev/github.com/langchain-ai/langsmith-go#RunShareNewResponse">RunShareNewResponse</a>
+
+Methods:
+
+- <code title="post /v2/runs/{run_id}/share">client.Runs.Share.<a href="https://pkg.go.dev/github.com/langchain-ai/langsmith-go#RunShareService.New">New</a>(ctx <a href="https://pkg.go.dev/context">context</a>.<a href="https://pkg.go.dev/context#Context">Context</a>, runID <a href="https://pkg.go.dev/builtin#string">string</a>, body <a href="https://pkg.go.dev/github.com/langchain-ai/langsmith-go">langsmith</a>.<a href="https://pkg.go.dev/github.com/langchain-ai/langsmith-go#RunShareNewParams">RunShareNewParams</a>) (\*<a href="https://pkg.go.dev/github.com/langchain-ai/langsmith-go">langsmith</a>.<a href="https://pkg.go.dev/github.com/langchain-ai/langsmith-go#RunShareNewResponse">RunShareNewResponse</a>, <a href="https://pkg.go.dev/builtin#error">error</a>)</code>
+- <code title="delete /v2/runs/{trace_id}/share">client.Runs.Share.<a href="https://pkg.go.dev/github.com/langchain-ai/langsmith-go#RunShareService.Delete">Delete</a>(ctx <a href="https://pkg.go.dev/context">context</a>.<a href="https://pkg.go.dev/context#Context">Context</a>, traceID <a href="https://pkg.go.dev/builtin#string">string</a>, body <a href="https://pkg.go.dev/github.com/langchain-ai/langsmith-go">langsmith</a>.<a href="https://pkg.go.dev/github.com/langchain-ai/langsmith-go#RunShareDeleteParams">RunShareDeleteParams</a>) <a href="https://pkg.go.dev/builtin#error">error</a></code>
+
 # Threads
 
 Response Types:
