@@ -680,6 +680,21 @@ func TestExtractStreamingResponsesCompletion(t *testing.T) {
 	}
 }
 
+func TestExtractStreamingResponsesCompletion_LargeCompletedEvent(t *testing.T) {
+	sse := `data: {"type":"response.completed","response":{"output":[{"type":"message","content":[{"type":"output_text","text":"done"}],"payload":"` +
+		strings.Repeat("x", 70*1024) +
+		`"}],"usage":{"input_tokens":7,"output_tokens":3}}}
+`
+	completion, usage := extractStreamingResponsesCompletion([]byte(sse))
+
+	if !strings.Contains(completion, "done") {
+		t.Errorf("completion should contain 'done': %s", completion)
+	}
+	if usage.InputTokens != 7 || usage.OutputTokens != 3 || !usage.HasUsage {
+		t.Errorf("usage = %+v, want input 7 output 3", usage)
+	}
+}
+
 func TestExtractStreamingResponsesCompletion_NoCompletedEvent(t *testing.T) {
 	sse := "data: {\"type\":\"response.created\"}\n"
 	completion, usage := extractStreamingResponsesCompletion([]byte(sse))

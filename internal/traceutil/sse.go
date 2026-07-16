@@ -7,11 +7,14 @@ import (
 	"strings"
 )
 
+const maxSSELineBytes = 16 << 20
+
 // ParseSSEChunks reads an SSE stream and returns the parsed JSON objects
 // from each "data: " line. It skips event/id/retry/empty lines and stops
 // when it encounters a "data: [DONE]" sentinel.
 func ParseSSEChunks(r io.Reader) ([]map[string]any, error) {
 	scanner := bufio.NewScanner(r)
+	scanner.Buffer(make([]byte, 0, 64*1024), maxSSELineBytes)
 	var chunks []map[string]any
 
 	for scanner.Scan() {
