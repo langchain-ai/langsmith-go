@@ -1,5 +1,13 @@
 # Changelog
 
+## [0.20.1](https://github.com/langchain-ai/langsmith-go/compare/v0.20.0...v0.20.1) (2026-07-16)
+
+
+### Bug Fixes
+
+* parse large SSE events for response usage ([b1221bd](https://github.com/langchain-ai/langsmith-go/commit/b1221bdd31b7986959bd1c0a41a9cce79de78e09))
+* parse large SSE events for response usage ([#160](https://github.com/langchain-ai/langsmith-go/issues/160)) ([2f60fd3](https://github.com/langchain-ai/langsmith-go/commit/2f60fd3acaa05c5da2bf3a33790ea5af5fc73c60))
+
 ## [0.20.0](https://github.com/langchain-ai/langsmith-go/compare/v0.19.0...v0.20.0) (2026-07-15)
 
 
