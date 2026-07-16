@@ -39,7 +39,7 @@ func TestDatasetExperimentRunQueryWithOptionalParams(t *testing.T) {
 				"foo": {"string"},
 			}),
 			PageSize: langsmith.F(int64(0)),
-			Selects:  langsmith.F([]langsmith.DatasetExperimentRunQueryParamsSelect{langsmith.DatasetExperimentRunQueryParamsSelectID}),
+			Selects:  langsmith.F([]langsmith.RunSelectField{langsmith.RunSelectFieldID}),
 			Sort: langsmith.F(langsmith.DatasetExperimentRunQueryParamsSort{
 				By:    langsmith.F("by"),
 				Order: langsmith.F("order"),

@@ -14,7 +14,7 @@ import (
 	"github.com/langchain-ai/langsmith-go/option"
 )
 
-func TestTraceListRunsWithOptionalParams(t *testing.T) {
+func TestPublicRunGetWithOptionalParams(t *testing.T) {
 	t.Skip("Mock server tests are disabled")
 	baseURL := "http://localhost:4010"
 	if envURL, ok := os.LookupEnv("TEST_API_BASE_URL"); ok {
@@ -28,16 +28,14 @@ func TestTraceListRunsWithOptionalParams(t *testing.T) {
 		option.WithAPIKey("My API Key"),
 		option.WithTenantID("My Tenant ID"),
 	)
-	_, err := client.Traces.ListRuns(
+	_, err := client.Public.Runs.Get(
 		context.TODO(),
 		"182bd5e5-6e1a-4fe4-a799-aa6d9a6ab26e",
-		langsmith.TraceListRunsParams{
-			ProjectID:    langsmith.F("182bd5e5-6e1a-4fe4-a799-aa6d9a6ab26e"),
-			Filter:       langsmith.F("filter"),
-			MaxStartTime: langsmith.F(time.Now()),
-			MinStartTime: langsmith.F(time.Now()),
-			Selects:      langsmith.F([]langsmith.TraceListRunsParamsSelect{langsmith.TraceListRunsParamsSelectID}),
-			Accept:       langsmith.F("Accept"),
+		"182bd5e5-6e1a-4fe4-a799-aa6d9a6ab26e",
+		langsmith.PublicRunGetParams{
+			Selects:   langsmith.F([]string{"string"}),
+			StartTime: langsmith.F(time.Now()),
+			Accept:    langsmith.F("Accept"),
 		},
 	)
 	if err != nil {
@@ -49,7 +47,7 @@ func TestTraceListRunsWithOptionalParams(t *testing.T) {
 	}
 }
 
-func TestTraceQueryWithOptionalParams(t *testing.T) {
+func TestPublicRunQueryWithOptionalParams(t *testing.T) {
 	t.Skip("Mock server tests are disabled")
 	baseURL := "http://localhost:4010"
 	if envURL, ok := os.LookupEnv("TEST_API_BASE_URL"); ok {
@@ -63,17 +61,14 @@ func TestTraceQueryWithOptionalParams(t *testing.T) {
 		option.WithAPIKey("My API Key"),
 		option.WithTenantID("My Tenant ID"),
 	)
-	_, err := client.Traces.Query(context.TODO(), langsmith.TraceQueryParams{
-		Cursor:       langsmith.F("cursor"),
-		MaxStartTime: langsmith.F(time.Now()),
-		MinStartTime: langsmith.F(time.Now()),
-		PageSize:     langsmith.F(int64(20)),
-		ProjectID:    langsmith.F("018e4c7e-a9fb-7ef0-a5b6-6ea3a82e9327"),
-		Selects:      langsmith.F([]langsmith.RunSelectField{langsmith.RunSelectFieldID, langsmith.RunSelectFieldName, langsmith.RunSelectFieldStartTime, langsmith.RunSelectFieldStatus, langsmith.RunSelectFieldTotalTokens, langsmith.RunSelectFieldTotalCost, langsmith.RunSelectFieldFirstTokenTime}),
-		TraceFilter:  langsmith.F(`eq(status, "error")`),
-		TraceIDs:     langsmith.F([]string{"182bd5e5-6e1a-4fe4-a799-aa6d9a6ab26e"}),
-		TreeFilter:   langsmith.F(`has(tags, "production")`),
-	})
+	_, err := client.Public.Runs.Query(
+		context.TODO(),
+		"182bd5e5-6e1a-4fe4-a799-aa6d9a6ab26e",
+		langsmith.PublicRunQueryParams{
+			Selects: langsmith.F([]langsmith.PublicRunQueryParamsSelect{langsmith.PublicRunQueryParamsSelectID, langsmith.PublicRunQueryParamsSelectName, langsmith.PublicRunQueryParamsSelectProjectID, langsmith.PublicRunQueryParamsSelectStartTime, langsmith.PublicRunQueryParamsSelectRunType, langsmith.PublicRunQueryParamsSelectStatus, langsmith.PublicRunQueryParamsSelectInputsPreview, langsmith.PublicRunQueryParamsSelectOutputsPreview, langsmith.PublicRunQueryParamsSelectMetadata}),
+			Accept:  langsmith.F("Accept"),
+		},
+	)
 	if err != nil {
 		var apierr *langsmith.Error
 		if errors.As(err, &apierr) {

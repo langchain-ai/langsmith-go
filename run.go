@@ -303,7 +303,7 @@ type Run struct {
 	// `run_type` identifies what kind of operation this run represents (for example an
 	// LLM call, a tool invocation, or a chain step). See the `RunType` enum for
 	// allowed values.
-	RunType RunRunType `json:"run_type"`
+	RunType RunType `json:"run_type"`
 	// `share_url` is the fully-qualified URL of this run's public view, rooted at the
 	// deployment's LangSmith app origin (for example
 	// `https://smith.langchain.com/public/4f7a1b2c-8d9e-4a0b-9c1d-2e3f4a5b6c7d/r`). It
@@ -593,29 +593,6 @@ func (r runPromptTokenDetailsJSON) RawJSON() string {
 	return r.raw
 }
 
-// `run_type` identifies what kind of operation this run represents (for example an
-// LLM call, a tool invocation, or a chain step). See the `RunType` enum for
-// allowed values.
-type RunRunType string
-
-const (
-	RunRunTypeTool      RunRunType = "TOOL"
-	RunRunTypeChain     RunRunType = "CHAIN"
-	RunRunTypeLlm       RunRunType = "LLM"
-	RunRunTypeRetriever RunRunType = "RETRIEVER"
-	RunRunTypeEmbedding RunRunType = "EMBEDDING"
-	RunRunTypePrompt    RunRunType = "PROMPT"
-	RunRunTypeParser    RunRunType = "PARSER"
-)
-
-func (r RunRunType) IsKnown() bool {
-	switch r {
-	case RunRunTypeTool, RunRunTypeChain, RunRunTypeLlm, RunRunTypeRetriever, RunRunTypeEmbedding, RunRunTypePrompt, RunRunTypeParser:
-		return true
-	}
-	return false
-}
-
 // `status` is the completion status of the run.
 type RunStatus string
 
@@ -826,6 +803,63 @@ func (r RunSchemaTraceTier) IsKnown() bool {
 	return false
 }
 
+type RunSelectField string
+
+const (
+	RunSelectFieldID                     RunSelectField = "ID"
+	RunSelectFieldName                   RunSelectField = "NAME"
+	RunSelectFieldRunType                RunSelectField = "RUN_TYPE"
+	RunSelectFieldStatus                 RunSelectField = "STATUS"
+	RunSelectFieldStartTime              RunSelectField = "START_TIME"
+	RunSelectFieldEndTime                RunSelectField = "END_TIME"
+	RunSelectFieldLatencySeconds         RunSelectField = "LATENCY_SECONDS"
+	RunSelectFieldFirstTokenTime         RunSelectField = "FIRST_TOKEN_TIME"
+	RunSelectFieldError                  RunSelectField = "ERROR"
+	RunSelectFieldErrorPreview           RunSelectField = "ERROR_PREVIEW"
+	RunSelectFieldExtra                  RunSelectField = "EXTRA"
+	RunSelectFieldMetadata               RunSelectField = "METADATA"
+	RunSelectFieldEvents                 RunSelectField = "EVENTS"
+	RunSelectFieldInputs                 RunSelectField = "INPUTS"
+	RunSelectFieldInputsPreview          RunSelectField = "INPUTS_PREVIEW"
+	RunSelectFieldOutputs                RunSelectField = "OUTPUTS"
+	RunSelectFieldOutputsPreview         RunSelectField = "OUTPUTS_PREVIEW"
+	RunSelectFieldManifest               RunSelectField = "MANIFEST"
+	RunSelectFieldParentRunIDs           RunSelectField = "PARENT_RUN_IDS"
+	RunSelectFieldProjectID              RunSelectField = "PROJECT_ID"
+	RunSelectFieldTraceID                RunSelectField = "TRACE_ID"
+	RunSelectFieldThreadID               RunSelectField = "THREAD_ID"
+	RunSelectFieldDottedOrder            RunSelectField = "DOTTED_ORDER"
+	RunSelectFieldIsRoot                 RunSelectField = "IS_ROOT"
+	RunSelectFieldReferenceExampleID     RunSelectField = "REFERENCE_EXAMPLE_ID"
+	RunSelectFieldReferenceDatasetID     RunSelectField = "REFERENCE_DATASET_ID"
+	RunSelectFieldTotalTokens            RunSelectField = "TOTAL_TOKENS"
+	RunSelectFieldPromptTokens           RunSelectField = "PROMPT_TOKENS"
+	RunSelectFieldCompletionTokens       RunSelectField = "COMPLETION_TOKENS"
+	RunSelectFieldTotalCost              RunSelectField = "TOTAL_COST"
+	RunSelectFieldPromptCost             RunSelectField = "PROMPT_COST"
+	RunSelectFieldCompletionCost         RunSelectField = "COMPLETION_COST"
+	RunSelectFieldPromptTokenDetails     RunSelectField = "PROMPT_TOKEN_DETAILS"
+	RunSelectFieldCompletionTokenDetails RunSelectField = "COMPLETION_TOKEN_DETAILS"
+	RunSelectFieldPromptCostDetails      RunSelectField = "PROMPT_COST_DETAILS"
+	RunSelectFieldCompletionCostDetails  RunSelectField = "COMPLETION_COST_DETAILS"
+	RunSelectFieldPriceModelID           RunSelectField = "PRICE_MODEL_ID"
+	RunSelectFieldTags                   RunSelectField = "TAGS"
+	RunSelectFieldAppPath                RunSelectField = "APP_PATH"
+	RunSelectFieldAttachments            RunSelectField = "ATTACHMENTS"
+	RunSelectFieldThreadEvaluationTime   RunSelectField = "THREAD_EVALUATION_TIME"
+	RunSelectFieldIsInDataset            RunSelectField = "IS_IN_DATASET"
+	RunSelectFieldShareURL               RunSelectField = "SHARE_URL"
+	RunSelectFieldFeedbackStats          RunSelectField = "FEEDBACK_STATS"
+)
+
+func (r RunSelectField) IsKnown() bool {
+	switch r {
+	case RunSelectFieldID, RunSelectFieldName, RunSelectFieldRunType, RunSelectFieldStatus, RunSelectFieldStartTime, RunSelectFieldEndTime, RunSelectFieldLatencySeconds, RunSelectFieldFirstTokenTime, RunSelectFieldError, RunSelectFieldErrorPreview, RunSelectFieldExtra, RunSelectFieldMetadata, RunSelectFieldEvents, RunSelectFieldInputs, RunSelectFieldInputsPreview, RunSelectFieldOutputs, RunSelectFieldOutputsPreview, RunSelectFieldManifest, RunSelectFieldParentRunIDs, RunSelectFieldProjectID, RunSelectFieldTraceID, RunSelectFieldThreadID, RunSelectFieldDottedOrder, RunSelectFieldIsRoot, RunSelectFieldReferenceExampleID, RunSelectFieldReferenceDatasetID, RunSelectFieldTotalTokens, RunSelectFieldPromptTokens, RunSelectFieldCompletionTokens, RunSelectFieldTotalCost, RunSelectFieldPromptCost, RunSelectFieldCompletionCost, RunSelectFieldPromptTokenDetails, RunSelectFieldCompletionTokenDetails, RunSelectFieldPromptCostDetails, RunSelectFieldCompletionCostDetails, RunSelectFieldPriceModelID, RunSelectFieldTags, RunSelectFieldAppPath, RunSelectFieldAttachments, RunSelectFieldThreadEvaluationTime, RunSelectFieldIsInDataset, RunSelectFieldShareURL, RunSelectFieldFeedbackStats:
+		return true
+	}
+	return false
+}
+
 // Query params for run stats.
 type RunStatsQueryParams struct {
 	ID param.Field[[]string] `json:"id" format:"uuid"`
@@ -906,6 +940,26 @@ const (
 func (r RunStatsQueryParamsSelect) IsKnown() bool {
 	switch r {
 	case RunStatsQueryParamsSelectRunCount, RunStatsQueryParamsSelectLatencyP50, RunStatsQueryParamsSelectLatencyP99, RunStatsQueryParamsSelectLatencyAvg, RunStatsQueryParamsSelectFirstTokenP50, RunStatsQueryParamsSelectFirstTokenP99, RunStatsQueryParamsSelectTotalTokens, RunStatsQueryParamsSelectPromptTokens, RunStatsQueryParamsSelectCompletionTokens, RunStatsQueryParamsSelectMedianTokens, RunStatsQueryParamsSelectCompletionTokensP50, RunStatsQueryParamsSelectPromptTokensP50, RunStatsQueryParamsSelectTokensP99, RunStatsQueryParamsSelectCompletionTokensP99, RunStatsQueryParamsSelectPromptTokensP99, RunStatsQueryParamsSelectLastRunStartTime, RunStatsQueryParamsSelectFeedbackStats, RunStatsQueryParamsSelectThreadFeedbackStats, RunStatsQueryParamsSelectRunFacets, RunStatsQueryParamsSelectErrorRate, RunStatsQueryParamsSelectStreamingRate, RunStatsQueryParamsSelectTotalCost, RunStatsQueryParamsSelectPromptCost, RunStatsQueryParamsSelectCompletionCost, RunStatsQueryParamsSelectCostP50, RunStatsQueryParamsSelectCostP99, RunStatsQueryParamsSelectSessionFeedbackStats, RunStatsQueryParamsSelectAllRunStats, RunStatsQueryParamsSelectAllTokenStats, RunStatsQueryParamsSelectGroupCount, RunStatsQueryParamsSelectPromptTokenDetails, RunStatsQueryParamsSelectCompletionTokenDetails, RunStatsQueryParamsSelectPromptCostDetails, RunStatsQueryParamsSelectCompletionCostDetails:
+		return true
+	}
+	return false
+}
+
+type RunType string
+
+const (
+	RunTypeTool      RunType = "TOOL"
+	RunTypeChain     RunType = "CHAIN"
+	RunTypeLlm       RunType = "LLM"
+	RunTypeRetriever RunType = "RETRIEVER"
+	RunTypeEmbedding RunType = "EMBEDDING"
+	RunTypePrompt    RunType = "PROMPT"
+	RunTypeParser    RunType = "PARSER"
+)
+
+func (r RunType) IsKnown() bool {
+	switch r {
+	case RunTypeTool, RunTypeChain, RunTypeLlm, RunTypeRetriever, RunTypeEmbedding, RunTypePrompt, RunTypeParser:
 		return true
 	}
 	return false
@@ -1385,10 +1439,10 @@ type RunQueryV2Params struct {
 	ReferenceExamples param.Field[[]string] `json:"reference_examples" format:"uuid"`
 	// `run_type`, when set, restricts results to runs whose `run_type` equals this
 	// value.
-	RunType param.Field[RunQueryV2ParamsRunType] `json:"run_type"`
+	RunType param.Field[RunType] `json:"run_type"`
 	// `selects` lists which properties to include on each returned run. If omitted,
 	// only `id` is returned. Properties not listed are omitted from each run object.
-	Selects param.Field[[]RunQueryV2ParamsSelect] `json:"selects"`
+	Selects param.Field[[]RunSelectField] `json:"selects"`
 	// `trace_filter` narrows results to runs whose root trace matches this LangSmith
 	// filter expression. Use this to filter by properties of the trace's root run —
 	// for example eq(status, "success") to include only traces that completed without
@@ -1411,85 +1465,6 @@ type RunQueryV2Params struct {
 
 func (r RunQueryV2Params) MarshalJSON() (data []byte, err error) {
 	return apijson.MarshalRoot(r)
-}
-
-// `run_type`, when set, restricts results to runs whose `run_type` equals this
-// value.
-type RunQueryV2ParamsRunType string
-
-const (
-	RunQueryV2ParamsRunTypeTool      RunQueryV2ParamsRunType = "TOOL"
-	RunQueryV2ParamsRunTypeChain     RunQueryV2ParamsRunType = "CHAIN"
-	RunQueryV2ParamsRunTypeLlm       RunQueryV2ParamsRunType = "LLM"
-	RunQueryV2ParamsRunTypeRetriever RunQueryV2ParamsRunType = "RETRIEVER"
-	RunQueryV2ParamsRunTypeEmbedding RunQueryV2ParamsRunType = "EMBEDDING"
-	RunQueryV2ParamsRunTypePrompt    RunQueryV2ParamsRunType = "PROMPT"
-	RunQueryV2ParamsRunTypeParser    RunQueryV2ParamsRunType = "PARSER"
-)
-
-func (r RunQueryV2ParamsRunType) IsKnown() bool {
-	switch r {
-	case RunQueryV2ParamsRunTypeTool, RunQueryV2ParamsRunTypeChain, RunQueryV2ParamsRunTypeLlm, RunQueryV2ParamsRunTypeRetriever, RunQueryV2ParamsRunTypeEmbedding, RunQueryV2ParamsRunTypePrompt, RunQueryV2ParamsRunTypeParser:
-		return true
-	}
-	return false
-}
-
-type RunQueryV2ParamsSelect string
-
-const (
-	RunQueryV2ParamsSelectID                     RunQueryV2ParamsSelect = "ID"
-	RunQueryV2ParamsSelectName                   RunQueryV2ParamsSelect = "NAME"
-	RunQueryV2ParamsSelectRunType                RunQueryV2ParamsSelect = "RUN_TYPE"
-	RunQueryV2ParamsSelectStatus                 RunQueryV2ParamsSelect = "STATUS"
-	RunQueryV2ParamsSelectStartTime              RunQueryV2ParamsSelect = "START_TIME"
-	RunQueryV2ParamsSelectEndTime                RunQueryV2ParamsSelect = "END_TIME"
-	RunQueryV2ParamsSelectLatencySeconds         RunQueryV2ParamsSelect = "LATENCY_SECONDS"
-	RunQueryV2ParamsSelectFirstTokenTime         RunQueryV2ParamsSelect = "FIRST_TOKEN_TIME"
-	RunQueryV2ParamsSelectError                  RunQueryV2ParamsSelect = "ERROR"
-	RunQueryV2ParamsSelectErrorPreview           RunQueryV2ParamsSelect = "ERROR_PREVIEW"
-	RunQueryV2ParamsSelectExtra                  RunQueryV2ParamsSelect = "EXTRA"
-	RunQueryV2ParamsSelectMetadata               RunQueryV2ParamsSelect = "METADATA"
-	RunQueryV2ParamsSelectEvents                 RunQueryV2ParamsSelect = "EVENTS"
-	RunQueryV2ParamsSelectInputs                 RunQueryV2ParamsSelect = "INPUTS"
-	RunQueryV2ParamsSelectInputsPreview          RunQueryV2ParamsSelect = "INPUTS_PREVIEW"
-	RunQueryV2ParamsSelectOutputs                RunQueryV2ParamsSelect = "OUTPUTS"
-	RunQueryV2ParamsSelectOutputsPreview         RunQueryV2ParamsSelect = "OUTPUTS_PREVIEW"
-	RunQueryV2ParamsSelectManifest               RunQueryV2ParamsSelect = "MANIFEST"
-	RunQueryV2ParamsSelectParentRunIDs           RunQueryV2ParamsSelect = "PARENT_RUN_IDS"
-	RunQueryV2ParamsSelectProjectID              RunQueryV2ParamsSelect = "PROJECT_ID"
-	RunQueryV2ParamsSelectTraceID                RunQueryV2ParamsSelect = "TRACE_ID"
-	RunQueryV2ParamsSelectThreadID               RunQueryV2ParamsSelect = "THREAD_ID"
-	RunQueryV2ParamsSelectDottedOrder            RunQueryV2ParamsSelect = "DOTTED_ORDER"
-	RunQueryV2ParamsSelectIsRoot                 RunQueryV2ParamsSelect = "IS_ROOT"
-	RunQueryV2ParamsSelectReferenceExampleID     RunQueryV2ParamsSelect = "REFERENCE_EXAMPLE_ID"
-	RunQueryV2ParamsSelectReferenceDatasetID     RunQueryV2ParamsSelect = "REFERENCE_DATASET_ID"
-	RunQueryV2ParamsSelectTotalTokens            RunQueryV2ParamsSelect = "TOTAL_TOKENS"
-	RunQueryV2ParamsSelectPromptTokens           RunQueryV2ParamsSelect = "PROMPT_TOKENS"
-	RunQueryV2ParamsSelectCompletionTokens       RunQueryV2ParamsSelect = "COMPLETION_TOKENS"
-	RunQueryV2ParamsSelectTotalCost              RunQueryV2ParamsSelect = "TOTAL_COST"
-	RunQueryV2ParamsSelectPromptCost             RunQueryV2ParamsSelect = "PROMPT_COST"
-	RunQueryV2ParamsSelectCompletionCost         RunQueryV2ParamsSelect = "COMPLETION_COST"
-	RunQueryV2ParamsSelectPromptTokenDetails     RunQueryV2ParamsSelect = "PROMPT_TOKEN_DETAILS"
-	RunQueryV2ParamsSelectCompletionTokenDetails RunQueryV2ParamsSelect = "COMPLETION_TOKEN_DETAILS"
-	RunQueryV2ParamsSelectPromptCostDetails      RunQueryV2ParamsSelect = "PROMPT_COST_DETAILS"
-	RunQueryV2ParamsSelectCompletionCostDetails  RunQueryV2ParamsSelect = "COMPLETION_COST_DETAILS"
-	RunQueryV2ParamsSelectPriceModelID           RunQueryV2ParamsSelect = "PRICE_MODEL_ID"
-	RunQueryV2ParamsSelectTags                   RunQueryV2ParamsSelect = "TAGS"
-	RunQueryV2ParamsSelectAppPath                RunQueryV2ParamsSelect = "APP_PATH"
-	RunQueryV2ParamsSelectAttachments            RunQueryV2ParamsSelect = "ATTACHMENTS"
-	RunQueryV2ParamsSelectThreadEvaluationTime   RunQueryV2ParamsSelect = "THREAD_EVALUATION_TIME"
-	RunQueryV2ParamsSelectIsInDataset            RunQueryV2ParamsSelect = "IS_IN_DATASET"
-	RunQueryV2ParamsSelectShareURL               RunQueryV2ParamsSelect = "SHARE_URL"
-	RunQueryV2ParamsSelectFeedbackStats          RunQueryV2ParamsSelect = "FEEDBACK_STATS"
-)
-
-func (r RunQueryV2ParamsSelect) IsKnown() bool {
-	switch r {
-	case RunQueryV2ParamsSelectID, RunQueryV2ParamsSelectName, RunQueryV2ParamsSelectRunType, RunQueryV2ParamsSelectStatus, RunQueryV2ParamsSelectStartTime, RunQueryV2ParamsSelectEndTime, RunQueryV2ParamsSelectLatencySeconds, RunQueryV2ParamsSelectFirstTokenTime, RunQueryV2ParamsSelectError, RunQueryV2ParamsSelectErrorPreview, RunQueryV2ParamsSelectExtra, RunQueryV2ParamsSelectMetadata, RunQueryV2ParamsSelectEvents, RunQueryV2ParamsSelectInputs, RunQueryV2ParamsSelectInputsPreview, RunQueryV2ParamsSelectOutputs, RunQueryV2ParamsSelectOutputsPreview, RunQueryV2ParamsSelectManifest, RunQueryV2ParamsSelectParentRunIDs, RunQueryV2ParamsSelectProjectID, RunQueryV2ParamsSelectTraceID, RunQueryV2ParamsSelectThreadID, RunQueryV2ParamsSelectDottedOrder, RunQueryV2ParamsSelectIsRoot, RunQueryV2ParamsSelectReferenceExampleID, RunQueryV2ParamsSelectReferenceDatasetID, RunQueryV2ParamsSelectTotalTokens, RunQueryV2ParamsSelectPromptTokens, RunQueryV2ParamsSelectCompletionTokens, RunQueryV2ParamsSelectTotalCost, RunQueryV2ParamsSelectPromptCost, RunQueryV2ParamsSelectCompletionCost, RunQueryV2ParamsSelectPromptTokenDetails, RunQueryV2ParamsSelectCompletionTokenDetails, RunQueryV2ParamsSelectPromptCostDetails, RunQueryV2ParamsSelectCompletionCostDetails, RunQueryV2ParamsSelectPriceModelID, RunQueryV2ParamsSelectTags, RunQueryV2ParamsSelectAppPath, RunQueryV2ParamsSelectAttachments, RunQueryV2ParamsSelectThreadEvaluationTime, RunQueryV2ParamsSelectIsInDataset, RunQueryV2ParamsSelectShareURL, RunQueryV2ParamsSelectFeedbackStats:
-		return true
-	}
-	return false
 }
 
 type RunGetV1Params struct {
