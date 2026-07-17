@@ -110,7 +110,7 @@ func getSpanAttr(spans tracetest.SpanStubs, key string) (string, bool) {
 	for _, s := range spans {
 		for _, attr := range s.Attributes {
 			if string(attr.Key) == key {
-				return attr.Value.Emit(), true
+				return attr.Value.String(), true
 			}
 		}
 	}
