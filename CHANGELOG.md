@@ -1,5 +1,12 @@
 # Changelog
 
+## [0.21.1](https://github.com/langchain-ai/langsmith-go/compare/v0.21.0...v0.21.1) (2026-07-17)
+
+
+### Chores
+
+* deprecated Emit() to String() ([#166](https://github.com/langchain-ai/langsmith-go/issues/166)) ([1a2b73a](https://github.com/langchain-ai/langsmith-go/commit/1a2b73a9a18d363475ed60c8ba46c3f3d850264c))
+
 ## [0.21.0](https://github.com/langchain-ai/langsmith-go/compare/v0.20.2...v0.21.0) (2026-07-17)
 
 
