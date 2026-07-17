@@ -141,8 +141,8 @@ func (r *RunService) GetV1(ctx context.Context, runID string, query RunGetV1Para
 }
 
 // **Alpha:** The request and response contract may change; Returns one run by ID
-// for the given session and start_time. Use the `selects` query parameter
-// (repeatable) to select fields to return.
+// for the given session. Use the `selects` query parameter (repeatable) to select
+// fields to return.
 func (r *RunService) GetV2(ctx context.Context, runID string, params RunGetV2Params, opts ...option.RequestOption) (res *Run, err error) {
 	if params.Accept.Present {
 		opts = append(opts, option.WithHeader("Accept", fmt.Sprintf("%v", params.Accept)))
@@ -1488,14 +1488,14 @@ func (r RunGetV1Params) URLQuery() (v url.Values) {
 type RunGetV2Params struct {
 	// `project_id` is the UUID of the tracing project that owns the run.
 	ProjectID param.Field[string] `query:"project_id" api:"required" format:"uuid"`
-	// `start_time` is the run's `start_time` (RFC3339 date-time), used together with
-	// `project_id` to locate the run.
-	StartTime param.Field[time.Time] `query:"start_time" api:"required" format:"date-time"`
 	// `selects` lists which properties to include on the returned run (repeatable
 	// query parameter). Accepts any value of the `RunSelectField` enum. If omitted,
 	// only `id` is returned.
 	Selects param.Field[[]RunGetV2ParamsSelect] `query:"selects"`
-	Accept  param.Field[string]                 `header:"Accept"`
+	// `start_time` is the run's `start_time` (RFC3339 date-time). Providing it speeds
+	// up retrieval.
+	StartTime param.Field[time.Time] `query:"start_time" format:"date-time"`
+	Accept    param.Field[string]    `header:"Accept"`
 }
 
 // URLQuery serializes [RunGetV2Params]'s query parameters as `url.Values`.

@@ -82,9 +82,9 @@ func (r *CommitService) Get(ctx context.Context, owner string, repo string, comm
 	return res, err
 }
 
-// Lists all commits for a repository with pagination support. This endpoint
-// supports both authenticated and unauthenticated access. Authenticated users can
-// access private repos, while unauthenticated users can only access public repos.
+// List commits for a repository, with pagination support. This endpoint supports
+// both authenticated and unauthenticated access. Authenticated users can access
+// private repositories; unauthenticated users can only access public repositories.
 // The include_stats parameter controls whether download and view statistics are
 // computed (defaults to true).
 func (r *CommitService) List(ctx context.Context, owner string, repo string, query CommitListParams, opts ...option.RequestOption) (res *pagination.OffsetPaginationCommits[CommitWithLookups], err error) {
@@ -112,9 +112,9 @@ func (r *CommitService) List(ctx context.Context, owner string, repo string, que
 	return res, nil
 }
 
-// Lists all commits for a repository with pagination support. This endpoint
-// supports both authenticated and unauthenticated access. Authenticated users can
-// access private repos, while unauthenticated users can only access public repos.
+// List commits for a repository, with pagination support. This endpoint supports
+// both authenticated and unauthenticated access. Authenticated users can access
+// private repositories; unauthenticated users can only access public repositories.
 // The include_stats parameter controls whether download and view statistics are
 // computed (defaults to true).
 func (r *CommitService) ListAutoPaging(ctx context.Context, owner string, repo string, query CommitListParams, opts ...option.RequestOption) *pagination.OffsetPaginationCommitsAutoPager[CommitWithLookups] {

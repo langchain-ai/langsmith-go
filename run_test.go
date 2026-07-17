@@ -385,8 +385,8 @@ func TestRunGetV2WithOptionalParams(t *testing.T) {
 		"182bd5e5-6e1a-4fe4-a799-aa6d9a6ab26e",
 		langsmith.RunGetV2Params{
 			ProjectID: langsmith.F("182bd5e5-6e1a-4fe4-a799-aa6d9a6ab26e"),
-			StartTime: langsmith.F(time.Now()),
 			Selects:   langsmith.F([]langsmith.RunGetV2ParamsSelect{langsmith.RunGetV2ParamsSelectID}),
+			StartTime: langsmith.F(time.Now()),
 			Accept:    langsmith.F("Accept"),
 		},
 	)
