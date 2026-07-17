@@ -203,14 +203,15 @@ type FeedbackCreateSchemaParam struct {
 	FeedbackConfig          param.Field[FeedbackCreateSchemaFeedbackConfigParam]  `json:"feedback_config"`
 	FeedbackGroupID         param.Field[string]                                   `json:"feedback_group_id" format:"uuid"`
 	// Feedback from the LangChainPlus App.
-	FeedbackSource param.Field[FeedbackCreateSchemaFeedbackSourceUnionParam] `json:"feedback_source"`
-	ModifiedAt     param.Field[time.Time]                                    `json:"modified_at" format:"date-time"`
-	RunID          param.Field[string]                                       `json:"run_id" format:"uuid"`
-	Score          param.Field[FeedbackCreateSchemaScoreUnionParam]          `json:"score"`
-	SessionID      param.Field[string]                                       `json:"session_id" format:"uuid"`
-	StartTime      param.Field[time.Time]                                    `json:"start_time" format:"date-time"`
-	TraceID        param.Field[string]                                       `json:"trace_id" format:"uuid"`
-	Value          param.Field[FeedbackCreateSchemaValueUnionParam]          `json:"value"`
+	FeedbackSource   param.Field[FeedbackCreateSchemaFeedbackSourceUnionParam] `json:"feedback_source"`
+	FeedbackThreadID param.Field[string]                                       `json:"feedback_thread_id"`
+	ModifiedAt       param.Field[time.Time]                                    `json:"modified_at" format:"date-time"`
+	RunID            param.Field[string]                                       `json:"run_id" format:"uuid"`
+	Score            param.Field[FeedbackCreateSchemaScoreUnionParam]          `json:"score"`
+	SessionID        param.Field[string]                                       `json:"session_id" format:"uuid"`
+	StartTime        param.Field[time.Time]                                    `json:"start_time" format:"date-time"`
+	TraceID          param.Field[string]                                       `json:"trace_id" format:"uuid"`
+	Value            param.Field[FeedbackCreateSchemaValueUnionParam]          `json:"value"`
 }
 
 func (r FeedbackCreateSchemaParam) MarshalJSON() (data []byte, err error) {
@@ -651,6 +652,7 @@ func (r FeedbackUpdateParamsValueMap) ImplementsFeedbackUpdateParamsValueUnion()
 
 type FeedbackListParams struct {
 	ComparativeExperimentID param.Field[string]   `query:"comparative_experiment_id" format:"uuid"`
+	FeedbackThreadID        param.Field[string]   `query:"feedback_thread_id"`
 	HasComment              param.Field[bool]     `query:"has_comment"`
 	HasScore                param.Field[bool]     `query:"has_score"`
 	IncludeUserNames        param.Field[bool]     `query:"include_user_names"`

@@ -283,7 +283,7 @@ type TraceQueryParams struct {
 	// `total_tokens`, `total_cost`, and `first_token_time` appear under
 	// `trace_aggregates`; everything else appears under `root_run`. If omitted, only
 	// `id` is returned on `root_run`.
-	Selects param.Field[[]TraceQueryParamsSelect] `json:"selects"`
+	Selects param.Field[[]RunSelectField] `json:"selects"`
 	// `trace_filter` narrows results to traces whose root run matches this LangSmith
 	// filter expression. This filter targets root runs only — `is_root = true` is
 	// implied. See
@@ -301,61 +301,4 @@ type TraceQueryParams struct {
 
 func (r TraceQueryParams) MarshalJSON() (data []byte, err error) {
 	return apijson.MarshalRoot(r)
-}
-
-type TraceQueryParamsSelect string
-
-const (
-	TraceQueryParamsSelectID                     TraceQueryParamsSelect = "ID"
-	TraceQueryParamsSelectName                   TraceQueryParamsSelect = "NAME"
-	TraceQueryParamsSelectRunType                TraceQueryParamsSelect = "RUN_TYPE"
-	TraceQueryParamsSelectStatus                 TraceQueryParamsSelect = "STATUS"
-	TraceQueryParamsSelectStartTime              TraceQueryParamsSelect = "START_TIME"
-	TraceQueryParamsSelectEndTime                TraceQueryParamsSelect = "END_TIME"
-	TraceQueryParamsSelectLatencySeconds         TraceQueryParamsSelect = "LATENCY_SECONDS"
-	TraceQueryParamsSelectFirstTokenTime         TraceQueryParamsSelect = "FIRST_TOKEN_TIME"
-	TraceQueryParamsSelectError                  TraceQueryParamsSelect = "ERROR"
-	TraceQueryParamsSelectErrorPreview           TraceQueryParamsSelect = "ERROR_PREVIEW"
-	TraceQueryParamsSelectExtra                  TraceQueryParamsSelect = "EXTRA"
-	TraceQueryParamsSelectMetadata               TraceQueryParamsSelect = "METADATA"
-	TraceQueryParamsSelectEvents                 TraceQueryParamsSelect = "EVENTS"
-	TraceQueryParamsSelectInputs                 TraceQueryParamsSelect = "INPUTS"
-	TraceQueryParamsSelectInputsPreview          TraceQueryParamsSelect = "INPUTS_PREVIEW"
-	TraceQueryParamsSelectOutputs                TraceQueryParamsSelect = "OUTPUTS"
-	TraceQueryParamsSelectOutputsPreview         TraceQueryParamsSelect = "OUTPUTS_PREVIEW"
-	TraceQueryParamsSelectManifest               TraceQueryParamsSelect = "MANIFEST"
-	TraceQueryParamsSelectParentRunIDs           TraceQueryParamsSelect = "PARENT_RUN_IDS"
-	TraceQueryParamsSelectProjectID              TraceQueryParamsSelect = "PROJECT_ID"
-	TraceQueryParamsSelectTraceID                TraceQueryParamsSelect = "TRACE_ID"
-	TraceQueryParamsSelectThreadID               TraceQueryParamsSelect = "THREAD_ID"
-	TraceQueryParamsSelectDottedOrder            TraceQueryParamsSelect = "DOTTED_ORDER"
-	TraceQueryParamsSelectIsRoot                 TraceQueryParamsSelect = "IS_ROOT"
-	TraceQueryParamsSelectReferenceExampleID     TraceQueryParamsSelect = "REFERENCE_EXAMPLE_ID"
-	TraceQueryParamsSelectReferenceDatasetID     TraceQueryParamsSelect = "REFERENCE_DATASET_ID"
-	TraceQueryParamsSelectTotalTokens            TraceQueryParamsSelect = "TOTAL_TOKENS"
-	TraceQueryParamsSelectPromptTokens           TraceQueryParamsSelect = "PROMPT_TOKENS"
-	TraceQueryParamsSelectCompletionTokens       TraceQueryParamsSelect = "COMPLETION_TOKENS"
-	TraceQueryParamsSelectTotalCost              TraceQueryParamsSelect = "TOTAL_COST"
-	TraceQueryParamsSelectPromptCost             TraceQueryParamsSelect = "PROMPT_COST"
-	TraceQueryParamsSelectCompletionCost         TraceQueryParamsSelect = "COMPLETION_COST"
-	TraceQueryParamsSelectPromptTokenDetails     TraceQueryParamsSelect = "PROMPT_TOKEN_DETAILS"
-	TraceQueryParamsSelectCompletionTokenDetails TraceQueryParamsSelect = "COMPLETION_TOKEN_DETAILS"
-	TraceQueryParamsSelectPromptCostDetails      TraceQueryParamsSelect = "PROMPT_COST_DETAILS"
-	TraceQueryParamsSelectCompletionCostDetails  TraceQueryParamsSelect = "COMPLETION_COST_DETAILS"
-	TraceQueryParamsSelectPriceModelID           TraceQueryParamsSelect = "PRICE_MODEL_ID"
-	TraceQueryParamsSelectTags                   TraceQueryParamsSelect = "TAGS"
-	TraceQueryParamsSelectAppPath                TraceQueryParamsSelect = "APP_PATH"
-	TraceQueryParamsSelectAttachments            TraceQueryParamsSelect = "ATTACHMENTS"
-	TraceQueryParamsSelectThreadEvaluationTime   TraceQueryParamsSelect = "THREAD_EVALUATION_TIME"
-	TraceQueryParamsSelectIsInDataset            TraceQueryParamsSelect = "IS_IN_DATASET"
-	TraceQueryParamsSelectShareURL               TraceQueryParamsSelect = "SHARE_URL"
-	TraceQueryParamsSelectFeedbackStats          TraceQueryParamsSelect = "FEEDBACK_STATS"
-)
-
-func (r TraceQueryParamsSelect) IsKnown() bool {
-	switch r {
-	case TraceQueryParamsSelectID, TraceQueryParamsSelectName, TraceQueryParamsSelectRunType, TraceQueryParamsSelectStatus, TraceQueryParamsSelectStartTime, TraceQueryParamsSelectEndTime, TraceQueryParamsSelectLatencySeconds, TraceQueryParamsSelectFirstTokenTime, TraceQueryParamsSelectError, TraceQueryParamsSelectErrorPreview, TraceQueryParamsSelectExtra, TraceQueryParamsSelectMetadata, TraceQueryParamsSelectEvents, TraceQueryParamsSelectInputs, TraceQueryParamsSelectInputsPreview, TraceQueryParamsSelectOutputs, TraceQueryParamsSelectOutputsPreview, TraceQueryParamsSelectManifest, TraceQueryParamsSelectParentRunIDs, TraceQueryParamsSelectProjectID, TraceQueryParamsSelectTraceID, TraceQueryParamsSelectThreadID, TraceQueryParamsSelectDottedOrder, TraceQueryParamsSelectIsRoot, TraceQueryParamsSelectReferenceExampleID, TraceQueryParamsSelectReferenceDatasetID, TraceQueryParamsSelectTotalTokens, TraceQueryParamsSelectPromptTokens, TraceQueryParamsSelectCompletionTokens, TraceQueryParamsSelectTotalCost, TraceQueryParamsSelectPromptCost, TraceQueryParamsSelectCompletionCost, TraceQueryParamsSelectPromptTokenDetails, TraceQueryParamsSelectCompletionTokenDetails, TraceQueryParamsSelectPromptCostDetails, TraceQueryParamsSelectCompletionCostDetails, TraceQueryParamsSelectPriceModelID, TraceQueryParamsSelectTags, TraceQueryParamsSelectAppPath, TraceQueryParamsSelectAttachments, TraceQueryParamsSelectThreadEvaluationTime, TraceQueryParamsSelectIsInDataset, TraceQueryParamsSelectShareURL, TraceQueryParamsSelectFeedbackStats:
-		return true
-	}
-	return false
 }

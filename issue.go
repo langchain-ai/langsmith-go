@@ -97,43 +97,49 @@ type Issue struct {
 	ProposedExamples     []interface{} `json:"proposed_examples"`
 	ProposedFix          string        `json:"proposed_fix"`
 	ProposedPromptFixes  []interface{} `json:"proposed_prompt_fixes"`
-	SessionID            string        `json:"session_id"`
-	Severity             IssueSeverity `json:"severity"`
-	Status               IssueStatus   `json:"status"`
-	Tags                 []string      `json:"tags"`
-	TenantID             string        `json:"tenant_id"`
-	Traces               interface{}   `json:"traces"`
-	UpdatedAt            string        `json:"updated_at"`
-	JSON                 issueJSON     `json:"-"`
+	// RecurrencesSinceWatching counts linked traces whose run start_time is after
+	// watching_since — i.e. recurrences observed during the current watch period.
+	RecurrencesSinceWatching int64         `json:"recurrences_since_watching"`
+	SessionID                string        `json:"session_id"`
+	Severity                 IssueSeverity `json:"severity"`
+	Status                   IssueStatus   `json:"status"`
+	Tags                     []string      `json:"tags"`
+	TenantID                 string        `json:"tenant_id"`
+	Traces                   interface{}   `json:"traces"`
+	UpdatedAt                string        `json:"updated_at"`
+	WatchingSince            string        `json:"watching_since"`
+	JSON                     issueJSON     `json:"-"`
 }
 
 // issueJSON contains the JSON metadata for the struct [Issue]
 type issueJSON struct {
-	ID                   apijson.Field
-	Actions              apijson.Field
-	CreatedAt            apijson.Field
-	Description          apijson.Field
-	FirstSeenAt          apijson.Field
-	FixBranch            apijson.Field
-	FixDispatchedAt      apijson.Field
-	FixPrNumber          apijson.Field
-	FixPrompt            apijson.Field
-	FixVerification      apijson.Field
-	LastSeenAt           apijson.Field
-	Name                 apijson.Field
-	ProposedContextFixes apijson.Field
-	ProposedExamples     apijson.Field
-	ProposedFix          apijson.Field
-	ProposedPromptFixes  apijson.Field
-	SessionID            apijson.Field
-	Severity             apijson.Field
-	Status               apijson.Field
-	Tags                 apijson.Field
-	TenantID             apijson.Field
-	Traces               apijson.Field
-	UpdatedAt            apijson.Field
-	raw                  string
-	ExtraFields          map[string]apijson.Field
+	ID                       apijson.Field
+	Actions                  apijson.Field
+	CreatedAt                apijson.Field
+	Description              apijson.Field
+	FirstSeenAt              apijson.Field
+	FixBranch                apijson.Field
+	FixDispatchedAt          apijson.Field
+	FixPrNumber              apijson.Field
+	FixPrompt                apijson.Field
+	FixVerification          apijson.Field
+	LastSeenAt               apijson.Field
+	Name                     apijson.Field
+	ProposedContextFixes     apijson.Field
+	ProposedExamples         apijson.Field
+	ProposedFix              apijson.Field
+	ProposedPromptFixes      apijson.Field
+	RecurrencesSinceWatching apijson.Field
+	SessionID                apijson.Field
+	Severity                 apijson.Field
+	Status                   apijson.Field
+	Tags                     apijson.Field
+	TenantID                 apijson.Field
+	Traces                   apijson.Field
+	UpdatedAt                apijson.Field
+	WatchingSince            apijson.Field
+	raw                      string
+	ExtraFields              map[string]apijson.Field
 }
 
 func (r *Issue) UnmarshalJSON(data []byte) (err error) {
@@ -165,13 +171,15 @@ type IssueStatus string
 
 const (
 	IssueStatusOpen      IssueStatus = "open"
+	IssueStatusFixing    IssueStatus = "fixing"
+	IssueStatusWatching  IssueStatus = "watching"
 	IssueStatusCompleted IssueStatus = "completed"
 	IssueStatusIgnored   IssueStatus = "ignored"
 )
 
 func (r IssueStatus) IsKnown() bool {
 	switch r {
-	case IssueStatusOpen, IssueStatusCompleted, IssueStatusIgnored:
+	case IssueStatusOpen, IssueStatusFixing, IssueStatusWatching, IssueStatusCompleted, IssueStatusIgnored:
 		return true
 	}
 	return false

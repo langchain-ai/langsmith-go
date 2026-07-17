@@ -57,13 +57,14 @@ func TestFeedbackNewWithOptionalParams(t *testing.T) {
 				}),
 				Type: langsmith.F(langsmith.AppFeedbackSourceTypeApp),
 			}),
-			ModifiedAt: langsmith.F(time.Now()),
-			RunID:      langsmith.F("182bd5e5-6e1a-4fe4-a799-aa6d9a6ab26e"),
-			Score:      langsmith.F[langsmith.FeedbackCreateSchemaScoreUnionParam](shared.UnionFloat(0.000000)),
-			SessionID:  langsmith.F("182bd5e5-6e1a-4fe4-a799-aa6d9a6ab26e"),
-			StartTime:  langsmith.F(time.Now()),
-			TraceID:    langsmith.F("182bd5e5-6e1a-4fe4-a799-aa6d9a6ab26e"),
-			Value:      langsmith.F[langsmith.FeedbackCreateSchemaValueUnionParam](shared.UnionFloat(0.000000)),
+			FeedbackThreadID: langsmith.F("feedback_thread_id"),
+			ModifiedAt:       langsmith.F(time.Now()),
+			RunID:            langsmith.F("182bd5e5-6e1a-4fe4-a799-aa6d9a6ab26e"),
+			Score:            langsmith.F[langsmith.FeedbackCreateSchemaScoreUnionParam](shared.UnionFloat(0.000000)),
+			SessionID:        langsmith.F("182bd5e5-6e1a-4fe4-a799-aa6d9a6ab26e"),
+			StartTime:        langsmith.F(time.Now()),
+			TraceID:          langsmith.F("182bd5e5-6e1a-4fe4-a799-aa6d9a6ab26e"),
+			Value:            langsmith.F[langsmith.FeedbackCreateSchemaValueUnionParam](shared.UnionFloat(0.000000)),
 		},
 	})
 	if err != nil {
@@ -165,6 +166,7 @@ func TestFeedbackListWithOptionalParams(t *testing.T) {
 	)
 	_, err := client.Feedback.List(context.TODO(), langsmith.FeedbackListParams{
 		ComparativeExperimentID: langsmith.F("182bd5e5-6e1a-4fe4-a799-aa6d9a6ab26e"),
+		FeedbackThreadID:        langsmith.F("feedback_thread_id"),
 		HasComment:              langsmith.F(true),
 		HasScore:                langsmith.F(true),
 		IncludeUserNames:        langsmith.F(true),

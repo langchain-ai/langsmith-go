@@ -137,70 +137,13 @@ type DatasetExperimentRunQueryParams struct {
 	PageSize param.Field[int64] `json:"page_size"`
 	// `selects` lists which run properties to include. Omitted => only `id`. Tokens
 	// mirror /v2/runs/query.
-	Selects param.Field[[]DatasetExperimentRunQueryParamsSelect] `json:"selects"`
+	Selects param.Field[[]RunSelectField] `json:"selects"`
 	// `sort` controls feedback-score sorting (single project only).
 	Sort param.Field[DatasetExperimentRunQueryParamsSort] `json:"sort"`
 }
 
 func (r DatasetExperimentRunQueryParams) MarshalJSON() (data []byte, err error) {
 	return apijson.MarshalRoot(r)
-}
-
-type DatasetExperimentRunQueryParamsSelect string
-
-const (
-	DatasetExperimentRunQueryParamsSelectID                     DatasetExperimentRunQueryParamsSelect = "ID"
-	DatasetExperimentRunQueryParamsSelectName                   DatasetExperimentRunQueryParamsSelect = "NAME"
-	DatasetExperimentRunQueryParamsSelectRunType                DatasetExperimentRunQueryParamsSelect = "RUN_TYPE"
-	DatasetExperimentRunQueryParamsSelectStatus                 DatasetExperimentRunQueryParamsSelect = "STATUS"
-	DatasetExperimentRunQueryParamsSelectStartTime              DatasetExperimentRunQueryParamsSelect = "START_TIME"
-	DatasetExperimentRunQueryParamsSelectEndTime                DatasetExperimentRunQueryParamsSelect = "END_TIME"
-	DatasetExperimentRunQueryParamsSelectLatencySeconds         DatasetExperimentRunQueryParamsSelect = "LATENCY_SECONDS"
-	DatasetExperimentRunQueryParamsSelectFirstTokenTime         DatasetExperimentRunQueryParamsSelect = "FIRST_TOKEN_TIME"
-	DatasetExperimentRunQueryParamsSelectError                  DatasetExperimentRunQueryParamsSelect = "ERROR"
-	DatasetExperimentRunQueryParamsSelectErrorPreview           DatasetExperimentRunQueryParamsSelect = "ERROR_PREVIEW"
-	DatasetExperimentRunQueryParamsSelectExtra                  DatasetExperimentRunQueryParamsSelect = "EXTRA"
-	DatasetExperimentRunQueryParamsSelectMetadata               DatasetExperimentRunQueryParamsSelect = "METADATA"
-	DatasetExperimentRunQueryParamsSelectEvents                 DatasetExperimentRunQueryParamsSelect = "EVENTS"
-	DatasetExperimentRunQueryParamsSelectInputs                 DatasetExperimentRunQueryParamsSelect = "INPUTS"
-	DatasetExperimentRunQueryParamsSelectInputsPreview          DatasetExperimentRunQueryParamsSelect = "INPUTS_PREVIEW"
-	DatasetExperimentRunQueryParamsSelectOutputs                DatasetExperimentRunQueryParamsSelect = "OUTPUTS"
-	DatasetExperimentRunQueryParamsSelectOutputsPreview         DatasetExperimentRunQueryParamsSelect = "OUTPUTS_PREVIEW"
-	DatasetExperimentRunQueryParamsSelectManifest               DatasetExperimentRunQueryParamsSelect = "MANIFEST"
-	DatasetExperimentRunQueryParamsSelectParentRunIDs           DatasetExperimentRunQueryParamsSelect = "PARENT_RUN_IDS"
-	DatasetExperimentRunQueryParamsSelectProjectID              DatasetExperimentRunQueryParamsSelect = "PROJECT_ID"
-	DatasetExperimentRunQueryParamsSelectTraceID                DatasetExperimentRunQueryParamsSelect = "TRACE_ID"
-	DatasetExperimentRunQueryParamsSelectThreadID               DatasetExperimentRunQueryParamsSelect = "THREAD_ID"
-	DatasetExperimentRunQueryParamsSelectDottedOrder            DatasetExperimentRunQueryParamsSelect = "DOTTED_ORDER"
-	DatasetExperimentRunQueryParamsSelectIsRoot                 DatasetExperimentRunQueryParamsSelect = "IS_ROOT"
-	DatasetExperimentRunQueryParamsSelectReferenceExampleID     DatasetExperimentRunQueryParamsSelect = "REFERENCE_EXAMPLE_ID"
-	DatasetExperimentRunQueryParamsSelectReferenceDatasetID     DatasetExperimentRunQueryParamsSelect = "REFERENCE_DATASET_ID"
-	DatasetExperimentRunQueryParamsSelectTotalTokens            DatasetExperimentRunQueryParamsSelect = "TOTAL_TOKENS"
-	DatasetExperimentRunQueryParamsSelectPromptTokens           DatasetExperimentRunQueryParamsSelect = "PROMPT_TOKENS"
-	DatasetExperimentRunQueryParamsSelectCompletionTokens       DatasetExperimentRunQueryParamsSelect = "COMPLETION_TOKENS"
-	DatasetExperimentRunQueryParamsSelectTotalCost              DatasetExperimentRunQueryParamsSelect = "TOTAL_COST"
-	DatasetExperimentRunQueryParamsSelectPromptCost             DatasetExperimentRunQueryParamsSelect = "PROMPT_COST"
-	DatasetExperimentRunQueryParamsSelectCompletionCost         DatasetExperimentRunQueryParamsSelect = "COMPLETION_COST"
-	DatasetExperimentRunQueryParamsSelectPromptTokenDetails     DatasetExperimentRunQueryParamsSelect = "PROMPT_TOKEN_DETAILS"
-	DatasetExperimentRunQueryParamsSelectCompletionTokenDetails DatasetExperimentRunQueryParamsSelect = "COMPLETION_TOKEN_DETAILS"
-	DatasetExperimentRunQueryParamsSelectPromptCostDetails      DatasetExperimentRunQueryParamsSelect = "PROMPT_COST_DETAILS"
-	DatasetExperimentRunQueryParamsSelectCompletionCostDetails  DatasetExperimentRunQueryParamsSelect = "COMPLETION_COST_DETAILS"
-	DatasetExperimentRunQueryParamsSelectPriceModelID           DatasetExperimentRunQueryParamsSelect = "PRICE_MODEL_ID"
-	DatasetExperimentRunQueryParamsSelectTags                   DatasetExperimentRunQueryParamsSelect = "TAGS"
-	DatasetExperimentRunQueryParamsSelectAppPath                DatasetExperimentRunQueryParamsSelect = "APP_PATH"
-	DatasetExperimentRunQueryParamsSelectAttachments            DatasetExperimentRunQueryParamsSelect = "ATTACHMENTS"
-	DatasetExperimentRunQueryParamsSelectThreadEvaluationTime   DatasetExperimentRunQueryParamsSelect = "THREAD_EVALUATION_TIME"
-	DatasetExperimentRunQueryParamsSelectIsInDataset            DatasetExperimentRunQueryParamsSelect = "IS_IN_DATASET"
-	DatasetExperimentRunQueryParamsSelectShareURL               DatasetExperimentRunQueryParamsSelect = "SHARE_URL"
-	DatasetExperimentRunQueryParamsSelectFeedbackStats          DatasetExperimentRunQueryParamsSelect = "FEEDBACK_STATS"
-)
-
-func (r DatasetExperimentRunQueryParamsSelect) IsKnown() bool {
-	switch r {
-	case DatasetExperimentRunQueryParamsSelectID, DatasetExperimentRunQueryParamsSelectName, DatasetExperimentRunQueryParamsSelectRunType, DatasetExperimentRunQueryParamsSelectStatus, DatasetExperimentRunQueryParamsSelectStartTime, DatasetExperimentRunQueryParamsSelectEndTime, DatasetExperimentRunQueryParamsSelectLatencySeconds, DatasetExperimentRunQueryParamsSelectFirstTokenTime, DatasetExperimentRunQueryParamsSelectError, DatasetExperimentRunQueryParamsSelectErrorPreview, DatasetExperimentRunQueryParamsSelectExtra, DatasetExperimentRunQueryParamsSelectMetadata, DatasetExperimentRunQueryParamsSelectEvents, DatasetExperimentRunQueryParamsSelectInputs, DatasetExperimentRunQueryParamsSelectInputsPreview, DatasetExperimentRunQueryParamsSelectOutputs, DatasetExperimentRunQueryParamsSelectOutputsPreview, DatasetExperimentRunQueryParamsSelectManifest, DatasetExperimentRunQueryParamsSelectParentRunIDs, DatasetExperimentRunQueryParamsSelectProjectID, DatasetExperimentRunQueryParamsSelectTraceID, DatasetExperimentRunQueryParamsSelectThreadID, DatasetExperimentRunQueryParamsSelectDottedOrder, DatasetExperimentRunQueryParamsSelectIsRoot, DatasetExperimentRunQueryParamsSelectReferenceExampleID, DatasetExperimentRunQueryParamsSelectReferenceDatasetID, DatasetExperimentRunQueryParamsSelectTotalTokens, DatasetExperimentRunQueryParamsSelectPromptTokens, DatasetExperimentRunQueryParamsSelectCompletionTokens, DatasetExperimentRunQueryParamsSelectTotalCost, DatasetExperimentRunQueryParamsSelectPromptCost, DatasetExperimentRunQueryParamsSelectCompletionCost, DatasetExperimentRunQueryParamsSelectPromptTokenDetails, DatasetExperimentRunQueryParamsSelectCompletionTokenDetails, DatasetExperimentRunQueryParamsSelectPromptCostDetails, DatasetExperimentRunQueryParamsSelectCompletionCostDetails, DatasetExperimentRunQueryParamsSelectPriceModelID, DatasetExperimentRunQueryParamsSelectTags, DatasetExperimentRunQueryParamsSelectAppPath, DatasetExperimentRunQueryParamsSelectAttachments, DatasetExperimentRunQueryParamsSelectThreadEvaluationTime, DatasetExperimentRunQueryParamsSelectIsInDataset, DatasetExperimentRunQueryParamsSelectShareURL, DatasetExperimentRunQueryParamsSelectFeedbackStats:
-		return true
-	}
-	return false
 }
 
 // `sort` controls feedback-score sorting (single project only).

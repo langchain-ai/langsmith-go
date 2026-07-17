@@ -26,6 +26,7 @@ import (
 type PublicService struct {
 	Options  []option.RequestOption
 	Datasets *PublicDatasetService
+	Runs     *PublicRunService
 }
 
 // NewPublicService generates a new service that applies the given options to each
@@ -35,6 +36,7 @@ func NewPublicService(opts ...option.RequestOption) (r *PublicService) {
 	r = &PublicService{}
 	r.Options = opts
 	r.Datasets = NewPublicDatasetService(opts...)
+	r.Runs = NewPublicRunService(opts...)
 	return
 }
 
