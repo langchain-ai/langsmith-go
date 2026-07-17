@@ -1,5 +1,17 @@
 # Changelog
 
+## [0.21.0](https://github.com/langchain-ai/langsmith-go/compare/v0.20.2...v0.21.0) (2026-07-17)
+
+
+### Features
+
+* **runs/v2:** make start_time optional in GET /v2/runs/:id ([18155e7](https://github.com/langchain-ai/langsmith-go/commit/18155e7b00d755d98584bd7191d2ae857e0f2f00))
+
+
+### Documentation
+
+* minor rewording of List Commits endpoint description ([f3c5e9c](https://github.com/langchain-ai/langsmith-go/commit/f3c5e9ce4c354c87c9b2390d5314e835a8774781))
+
 ## [0.20.2](https://github.com/langchain-ai/langsmith-go/compare/v0.20.1...v0.20.2) (2026-07-17)
 
 
