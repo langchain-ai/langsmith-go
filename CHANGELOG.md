@@ -1,5 +1,12 @@
 # Changelog
 
+## [0.20.2](https://github.com/langchain-ai/langsmith-go/compare/v0.20.1...v0.20.2) (2026-07-17)
+
+
+### Chores
+
+* new unshare endpoint that doesn't require lookup ([2908774](https://github.com/langchain-ai/langsmith-go/commit/29087746fc3d5577c670efe396568e697b29bd93))
+
 ## [0.20.1](https://github.com/langchain-ai/langsmith-go/compare/v0.20.0...v0.20.1) (2026-07-16)
 
 
