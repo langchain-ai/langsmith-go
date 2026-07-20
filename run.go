@@ -64,6 +64,20 @@ func (r *RunService) Update(ctx context.Context, runID string, body RunUpdatePar
 	return res, err
 }
 
+// Returns the URL to view a specific run in the LangSmith UI. The caller must
+// supply the run's project_id and trace_id as query parameters; start_time is
+// optional.
+func (r *RunService) GetURL(ctx context.Context, runID string, query RunGetURLParams, opts ...option.RequestOption) (res *RunGetURLResponse, err error) {
+	opts = slices.Concat(r.Options, opts)
+	if runID == "" {
+		err = errors.New("missing required run_id parameter")
+		return nil, err
+	}
+	path := fmt.Sprintf("v2/runs/%s/url", runID)
+	err = requestconfig.ExecuteNewRequest(ctx, http.MethodGet, path, query, &res, opts...)
+	return res, err
+}
+
 // Ingests a batch of runs in a single JSON payload. The payload must have `post`
 // and/or `patch` arrays containing run objects. Prefer this endpoint over
 // single‑run ingestion when submitting hundreds of runs, but `/runs/multipart`
@@ -1049,6 +1063,27 @@ func (r runUpdateResponseItemJSON) RawJSON() string {
 	return r.raw
 }
 
+type RunGetURLResponse struct {
+	URL  string                `json:"url"`
+	JSON runGetURLResponseJSON `json:"-"`
+}
+
+// runGetURLResponseJSON contains the JSON metadata for the struct
+// [RunGetURLResponse]
+type runGetURLResponseJSON struct {
+	URL         apijson.Field
+	raw         string
+	ExtraFields map[string]apijson.Field
+}
+
+func (r *RunGetURLResponse) UnmarshalJSON(data []byte) (err error) {
+	return apijson.UnmarshalRoot(data, r)
+}
+
+func (r runGetURLResponseJSON) RawJSON() string {
+	return r.raw
+}
+
 type RunIngestBatchResponse map[string]RunIngestBatchResponseItem
 
 type RunIngestBatchResponseItem struct {
@@ -1262,6 +1297,23 @@ type RunUpdateParams struct {
 
 func (r RunUpdateParams) MarshalJSON() (data []byte, err error) {
 	return apijson.MarshalRoot(r.RunIngest)
+}
+
+type RunGetURLParams struct {
+	// Project (session) UUID
+	ProjectID param.Field[string] `query:"project_id" api:"required"`
+	// Trace UUID
+	TraceID param.Field[string] `query:"trace_id" api:"required"`
+	// Run start time in RFC3339 format; omit if unknown
+	StartTime param.Field[string] `query:"start_time"`
+}
+
+// URLQuery serializes [RunGetURLParams]'s query parameters as `url.Values`.
+func (r RunGetURLParams) URLQuery() (v url.Values) {
+	return apiquery.MarshalWithSettings(r, apiquery.QuerySettings{
+		ArrayFormat:  apiquery.ArrayQueryFormatRepeat,
+		NestedFormat: apiquery.NestedQueryFormatBrackets,
+	})
 }
 
 type RunIngestBatchParams struct {
