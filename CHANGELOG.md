@@ -1,5 +1,12 @@
 # Changelog
 
+## [0.22.0](https://github.com/langchain-ai/langsmith-go/compare/v0.21.1...v0.22.0) (2026-07-20)
+
+
+### Features
+
+* **runs:** add GET /v2/runs/{run_id}/url endpoint and SDK runs.get_url method ([1096438](https://github.com/langchain-ai/langsmith-go/commit/10964388b624719b5a74a0ad1039dec8e03c4f2a))
+
 ## [0.21.1](https://github.com/langchain-ai/langsmith-go/compare/v0.21.0...v0.21.1) (2026-07-17)
 
 
