@@ -218,9 +218,11 @@ func (r createOnlineEvaluatorResponseJSON) RawJSON() string {
 }
 
 type CreateOnlineLlmEvaluatorRequestParam struct {
-	CommitHashOrTag  param.Field[string]      `json:"commit_hash_or_tag"`
-	PromptRepoHandle param.Field[string]      `json:"prompt_repo_handle"`
-	VariableMapping  param.Field[interface{}] `json:"variable_mapping"`
+	CommitHashOrTag param.Field[string] `json:"commit_hash_or_tag"`
+	// Model Configuration ID
+	PlaygroundSettingsID param.Field[string]      `json:"playground_settings_id"`
+	PromptRepoHandle     param.Field[string]      `json:"prompt_repo_handle"`
+	VariableMapping      param.Field[interface{}] `json:"variable_mapping"`
 }
 
 func (r CreateOnlineLlmEvaluatorRequestParam) MarshalJSON() (data []byte, err error) {
@@ -564,8 +566,10 @@ func (r updateOnlineEvaluatorResponseJSON) RawJSON() string {
 }
 
 type UpdateOnlineLlmEvaluatorRequestParam struct {
-	CommitHashOrTag       param.Field[string]      `json:"commit_hash_or_tag"`
-	NumFewShotExamples    param.Field[int64]       `json:"num_few_shot_examples"`
+	CommitHashOrTag    param.Field[string] `json:"commit_hash_or_tag"`
+	NumFewShotExamples param.Field[int64]  `json:"num_few_shot_examples"`
+	// Model Configuration ID
+	PlaygroundSettingsID  param.Field[string]      `json:"playground_settings_id"`
 	PromptRepoHandle      param.Field[string]      `json:"prompt_repo_handle"`
 	UseCorrectionsDataset param.Field[bool]        `json:"use_corrections_dataset"`
 	VariableMapping       param.Field[interface{}] `json:"variable_mapping"`

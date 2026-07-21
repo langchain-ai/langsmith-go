@@ -34,9 +34,10 @@ func TestOnlineEvaluatorNewWithOptionalParams(t *testing.T) {
 				Language: langsmith.F("language"),
 			}),
 			LlmEvaluator: langsmith.F(langsmith.CreateOnlineLlmEvaluatorRequestParam{
-				CommitHashOrTag:  langsmith.F("commit_hash_or_tag"),
-				PromptRepoHandle: langsmith.F("prompt_repo_handle"),
-				VariableMapping:  langsmith.F[any](map[string]interface{}{}),
+				CommitHashOrTag:      langsmith.F("commit_hash_or_tag"),
+				PlaygroundSettingsID: langsmith.F("playground_settings_id"),
+				PromptRepoHandle:     langsmith.F("prompt_repo_handle"),
+				VariableMapping:      langsmith.F[any](map[string]interface{}{}),
 			}),
 			Name: langsmith.F("name"),
 			Type: langsmith.F(langsmith.OnlineEvaluatorTypeLlm),
@@ -101,6 +102,7 @@ func TestOnlineEvaluatorUpdateWithOptionalParams(t *testing.T) {
 				LlmEvaluator: langsmith.F(langsmith.UpdateOnlineLlmEvaluatorRequestParam{
 					CommitHashOrTag:       langsmith.F("commit_hash_or_tag"),
 					NumFewShotExamples:    langsmith.F(int64(0)),
+					PlaygroundSettingsID:  langsmith.F("playground_settings_id"),
 					PromptRepoHandle:      langsmith.F("prompt_repo_handle"),
 					UseCorrectionsDataset: langsmith.F(true),
 					VariableMapping:       langsmith.F[any](map[string]interface{}{}),
