@@ -31,7 +31,10 @@ func TestSandboxSnapshotNewWithOptionalParams(t *testing.T) {
 		DockerImage:     langsmith.F("docker_image"),
 		FsCapacityBytes: langsmith.F(int64(0)),
 		Name:            langsmith.F("name"),
-		RegistryID:      langsmith.F("registry_id"),
+		Labels: langsmith.F(map[string]string{
+			"foo": "string",
+		}),
+		RegistryID: langsmith.F("registry_id"),
 	})
 	if err != nil {
 		var apierr *langsmith.Error
@@ -82,6 +85,7 @@ func TestSandboxSnapshotListWithOptionalParams(t *testing.T) {
 	)
 	_, err := client.Sandboxes.Snapshots.List(context.TODO(), langsmith.SandboxSnapshotListParams{
 		CreatedBy:     langsmith.F("created_by"),
+		Label:         langsmith.F([]string{"string"}),
 		Limit:         langsmith.F(int64(0)),
 		NameContains:  langsmith.F("name_contains"),
 		Offset:        langsmith.F(int64(0)),

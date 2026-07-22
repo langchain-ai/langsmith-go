@@ -162,14 +162,17 @@ type SandboxBoxNewParams struct {
 	// CPUMillicores optionally requests CPU at millicore granularity (e.g. 500 = 0.5
 	// vCPU); takes precedence over VCPUs. Fractional (sub-vCPU) values are not
 	// available for every sandbox.
-	CPUMillicores          param.Field[int64]                          `json:"cpu_millicores"`
-	DeleteAfterStopSeconds param.Field[int64]                          `json:"delete_after_stop_seconds"`
-	EnvVars                param.Field[map[string]string]              `json:"env_vars"`
-	FsCapacityBytes        param.Field[int64]                          `json:"fs_capacity_bytes"`
-	IdleTtlSeconds         param.Field[int64]                          `json:"idle_ttl_seconds"`
-	MemBytes               param.Field[int64]                          `json:"mem_bytes"`
-	MountConfig            param.Field[SandboxBoxNewParamsMountConfig] `json:"mount_config"`
-	Name                   param.Field[string]                         `json:"name"`
+	CPUMillicores          param.Field[int64]             `json:"cpu_millicores"`
+	DeleteAfterStopSeconds param.Field[int64]             `json:"delete_after_stop_seconds"`
+	EnvVars                param.Field[map[string]string] `json:"env_vars"`
+	FsCapacityBytes        param.Field[int64]             `json:"fs_capacity_bytes"`
+	IdleTtlSeconds         param.Field[int64]             `json:"idle_ttl_seconds"`
+	// Labels are free-form key/value metadata persisted with the sandbox and returned
+	// on reads. Labels from the source snapshot are inherited unless overridden here.
+	Labels      param.Field[map[string]string]              `json:"labels"`
+	MemBytes    param.Field[int64]                          `json:"mem_bytes"`
+	MountConfig param.Field[SandboxBoxNewParamsMountConfig] `json:"mount_config"`
+	Name        param.Field[string]                         `json:"name"`
 	// PreserveMemoryOnStop, when true, suspends the sandbox's memory on a voluntary
 	// stop (idle timeout or explicit stop) so the next start resumes from where it
 	// left off. Default false discards memory and keeps only the filesystem, so the
@@ -1239,6 +1242,9 @@ func (r SandboxBoxUpdateParamsProxyConfigRulesHeadersType) IsKnown() bool {
 type SandboxBoxListParams struct {
 	// Filter by creator identity. Only 'me' is supported.
 	CreatedBy param.Field[string] `query:"created_by"`
+	// Filter by label. Repeatable; all must match. Use 'key' to match on key presence
+	// or 'key=value' for equality.
+	Label param.Field[[]string] `query:"label"`
 	// Maximum number of results
 	Limit param.Field[int64] `query:"limit"`
 	// Filter by name substring
@@ -1274,6 +1280,8 @@ type SandboxBoxNewSnapshotParams struct {
 	// omitted (i.e. a fresh in-VM checkpoint is requested). Defaults to false to keep
 	// snapshots small unless memory restore is explicitly desired.
 	IncludeMemory param.Field[bool] `json:"include_memory"`
+	// Labels seed the captured snapshot's labels.
+	Labels param.Field[map[string]string] `json:"labels"`
 }
 
 func (r SandboxBoxNewSnapshotParams) MarshalJSON() (data []byte, err error) {
