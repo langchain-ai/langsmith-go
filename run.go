@@ -883,8 +883,7 @@ func (r RunSelectField) IsKnown() bool {
 
 // Query params for run stats.
 type RunStatsQueryParams struct {
-	Session param.Field[[]string] `json:"session" api:"required" format:"uuid"`
-	ID      param.Field[[]string] `json:"id" format:"uuid"`
+	ID param.Field[[]string] `json:"id" format:"uuid"`
 	// Enum for run data source types.
 	DataSourceType param.Field[RunsFilterDataSourceTypeEnum] `json:"data_source_type"`
 	EndTime        param.Field[time.Time]                    `json:"end_time" format:"date-time"`
@@ -904,6 +903,7 @@ type RunStatsQueryParams struct {
 	RunType        param.Field[RunTypeEnum]                 `json:"run_type"`
 	SearchFilter   param.Field[string]                      `json:"search_filter"`
 	Select         param.Field[[]RunStatsQueryParamsSelect] `json:"select"`
+	Session        param.Field[[]string]                    `json:"session" format:"uuid"`
 	SkipPagination param.Field[bool]                        `json:"skip_pagination"`
 	StartTime      param.Field[time.Time]                   `json:"start_time" format:"date-time"`
 	// Filter runs by trace ID. When set, limit and cursor-based pagination are not
