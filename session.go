@@ -285,6 +285,7 @@ type CustomChartsSectionChartsSeries struct {
 	// Include additional information about where the group_by param was set.
 	GroupBy            CustomChartsSectionChartsSeriesGroupBy             `json:"group_by" api:"nullable"`
 	GroupByDefinitions []CustomChartsSectionChartsSeriesGroupByDefinition `json:"group_by_definitions" api:"nullable"`
+	Metadata           map[string]interface{}                             `json:"metadata" api:"nullable"`
 	// Metrics you can chart. Feedback metrics are not available for
 	// organization-scoped charts.
 	Metric           CustomChartsSectionChartsSeriesMetric           `json:"metric" api:"nullable"`
@@ -305,6 +306,7 @@ type customChartsSectionChartsSeriesJSON struct {
 	Filters            apijson.Field
 	GroupBy            apijson.Field
 	GroupByDefinitions apijson.Field
+	Metadata           apijson.Field
 	Metric             apijson.Field
 	MetricDefinition   apijson.Field
 	ProjectMetric      apijson.Field
@@ -2453,6 +2455,7 @@ type CustomChartsSectionSubSectionsChartsSeries struct {
 	// Include additional information about where the group_by param was set.
 	GroupBy            CustomChartsSectionSubSectionsChartsSeriesGroupBy             `json:"group_by" api:"nullable"`
 	GroupByDefinitions []CustomChartsSectionSubSectionsChartsSeriesGroupByDefinition `json:"group_by_definitions" api:"nullable"`
+	Metadata           map[string]interface{}                                        `json:"metadata" api:"nullable"`
 	// Metrics you can chart. Feedback metrics are not available for
 	// organization-scoped charts.
 	Metric           CustomChartsSectionSubSectionsChartsSeriesMetric           `json:"metric" api:"nullable"`
@@ -2473,6 +2476,7 @@ type customChartsSectionSubSectionsChartsSeriesJSON struct {
 	Filters            apijson.Field
 	GroupBy            apijson.Field
 	GroupByDefinitions apijson.Field
+	Metadata           apijson.Field
 	Metric             apijson.Field
 	MetricDefinition   apijson.Field
 	ProjectMetric      apijson.Field
