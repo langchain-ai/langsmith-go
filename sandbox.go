@@ -1567,9 +1567,16 @@ func (r SandboxResponseProxyConfigCallbacksRequestHeadersType) IsKnown() bool {
 }
 
 type SandboxResponseProxyConfigRule struct {
-	Name    string                                  `json:"name" api:"required"`
-	Aws     SandboxResponseProxyConfigRulesAws      `json:"aws"`
-	Enabled bool                                    `json:"enabled"`
+	Name    string                             `json:"name" api:"required"`
+	Aws     SandboxResponseProxyConfigRulesAws `json:"aws"`
+	Enabled bool                               `json:"enabled"`
+	// EnvVars are plaintext env vars set for every command in the sandbox while this
+	// rule is enabled. Use them for tools that refuse to run unless a credential env
+	// var is present (e.g. gh needs GH_TOKEN) even though this rule injects the real
+	// credential on the wire — set a dummy value here so the command starts. Explicit
+	// per-sandbox env_vars win over these, and provider-managed (AWS/GCP) vars win
+	// over both.
+	EnvVars map[string]string                       `json:"env_vars"`
 	Gcp     SandboxResponseProxyConfigRulesGcp      `json:"gcp"`
 	Headers []SandboxResponseProxyConfigRulesHeader `json:"headers"`
 	// MatchHosts is only accepted for header injection rules. Provider auth rules use
@@ -1586,6 +1593,7 @@ type sandboxResponseProxyConfigRuleJSON struct {
 	Name        apijson.Field
 	Aws         apijson.Field
 	Enabled     apijson.Field
+	EnvVars     apijson.Field
 	Gcp         apijson.Field
 	Headers     apijson.Field
 	MatchHosts  apijson.Field

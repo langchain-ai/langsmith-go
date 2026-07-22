@@ -868,9 +868,16 @@ func (r SandboxBoxNewParamsProxyConfigCallbacksRequestHeadersType) IsKnown() boo
 }
 
 type SandboxBoxNewParamsProxyConfigRule struct {
-	Name    param.Field[string]                                      `json:"name" api:"required"`
-	Aws     param.Field[SandboxBoxNewParamsProxyConfigRulesAws]      `json:"aws"`
-	Enabled param.Field[bool]                                        `json:"enabled"`
+	Name    param.Field[string]                                 `json:"name" api:"required"`
+	Aws     param.Field[SandboxBoxNewParamsProxyConfigRulesAws] `json:"aws"`
+	Enabled param.Field[bool]                                   `json:"enabled"`
+	// EnvVars are plaintext env vars set for every command in the sandbox while this
+	// rule is enabled. Use them for tools that refuse to run unless a credential env
+	// var is present (e.g. gh needs GH_TOKEN) even though this rule injects the real
+	// credential on the wire — set a dummy value here so the command starts. Explicit
+	// per-sandbox env_vars win over these, and provider-managed (AWS/GCP) vars win
+	// over both.
+	EnvVars param.Field[map[string]string]                           `json:"env_vars"`
 	Gcp     param.Field[SandboxBoxNewParamsProxyConfigRulesGcp]      `json:"gcp"`
 	Headers param.Field[[]SandboxBoxNewParamsProxyConfigRulesHeader] `json:"headers"`
 	// MatchHosts is only accepted for header injection rules. Provider auth rules use
@@ -1083,9 +1090,16 @@ func (r SandboxBoxUpdateParamsProxyConfigCallbacksRequestHeadersType) IsKnown() 
 }
 
 type SandboxBoxUpdateParamsProxyConfigRule struct {
-	Name    param.Field[string]                                         `json:"name" api:"required"`
-	Aws     param.Field[SandboxBoxUpdateParamsProxyConfigRulesAws]      `json:"aws"`
-	Enabled param.Field[bool]                                           `json:"enabled"`
+	Name    param.Field[string]                                    `json:"name" api:"required"`
+	Aws     param.Field[SandboxBoxUpdateParamsProxyConfigRulesAws] `json:"aws"`
+	Enabled param.Field[bool]                                      `json:"enabled"`
+	// EnvVars are plaintext env vars set for every command in the sandbox while this
+	// rule is enabled. Use them for tools that refuse to run unless a credential env
+	// var is present (e.g. gh needs GH_TOKEN) even though this rule injects the real
+	// credential on the wire — set a dummy value here so the command starts. Explicit
+	// per-sandbox env_vars win over these, and provider-managed (AWS/GCP) vars win
+	// over both.
+	EnvVars param.Field[map[string]string]                              `json:"env_vars"`
 	Gcp     param.Field[SandboxBoxUpdateParamsProxyConfigRulesGcp]      `json:"gcp"`
 	Headers param.Field[[]SandboxBoxUpdateParamsProxyConfigRulesHeader] `json:"headers"`
 	// MatchHosts is only accepted for header injection rules. Provider auth rules use

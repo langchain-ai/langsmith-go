@@ -144,6 +144,9 @@ func TestSandboxBoxNewWithOptionalParams(t *testing.T) {
 					}),
 				}),
 				Enabled: langsmith.F(true),
+				EnvVars: langsmith.F(map[string]string{
+					"foo": "string",
+				}),
 				Gcp: langsmith.F(langsmith.SandboxBoxNewParamsProxyConfigRulesGcp{
 					Scopes: langsmith.F([]string{"string"}),
 					ServiceAccountJson: langsmith.F(langsmith.SandboxBoxNewParamsProxyConfigRulesGcpServiceAccountJson{
@@ -259,6 +262,9 @@ func TestSandboxBoxUpdateWithOptionalParams(t *testing.T) {
 						}),
 					}),
 					Enabled: langsmith.F(true),
+					EnvVars: langsmith.F(map[string]string{
+						"foo": "string",
+					}),
 					Gcp: langsmith.F(langsmith.SandboxBoxUpdateParamsProxyConfigRulesGcp{
 						Scopes: langsmith.F([]string{"string"}),
 						ServiceAccountJson: langsmith.F(langsmith.SandboxBoxUpdateParamsProxyConfigRulesGcpServiceAccountJson{
