@@ -67,6 +67,7 @@ type SandboxResponse struct {
 	DeleteAfterStopSeconds int64                      `json:"delete_after_stop_seconds"`
 	FsCapacityBytes        int64                      `json:"fs_capacity_bytes"`
 	IdleTtlSeconds         int64                      `json:"idle_ttl_seconds"`
+	Labels                 map[string]string          `json:"labels"`
 	MemBytes               int64                      `json:"mem_bytes"`
 	MountConfig            SandboxResponseMountConfig `json:"mount_config"`
 	Name                   string                     `json:"name"`
@@ -93,6 +94,7 @@ type sandboxResponseJSON struct {
 	DeleteAfterStopSeconds apijson.Field
 	FsCapacityBytes        apijson.Field
 	IdleTtlSeconds         apijson.Field
+	Labels                 apijson.Field
 	MemBytes               apijson.Field
 	MountConfig            apijson.Field
 	Name                   apijson.Field
@@ -1567,9 +1569,16 @@ func (r SandboxResponseProxyConfigCallbacksRequestHeadersType) IsKnown() bool {
 }
 
 type SandboxResponseProxyConfigRule struct {
-	Name    string                                  `json:"name" api:"required"`
-	Aws     SandboxResponseProxyConfigRulesAws      `json:"aws"`
-	Enabled bool                                    `json:"enabled"`
+	Name    string                             `json:"name" api:"required"`
+	Aws     SandboxResponseProxyConfigRulesAws `json:"aws"`
+	Enabled bool                               `json:"enabled"`
+	// EnvVars are plaintext env vars set for every command in the sandbox while this
+	// rule is enabled. Use them for tools that refuse to run unless a credential env
+	// var is present (e.g. gh needs GH_TOKEN) even though this rule injects the real
+	// credential on the wire — set a dummy value here so the command starts. Explicit
+	// per-sandbox env_vars win over these, and provider-managed (AWS/GCP) vars win
+	// over both.
+	EnvVars map[string]string                       `json:"env_vars"`
 	Gcp     SandboxResponseProxyConfigRulesGcp      `json:"gcp"`
 	Headers []SandboxResponseProxyConfigRulesHeader `json:"headers"`
 	// MatchHosts is only accepted for header injection rules. Provider auth rules use
@@ -1586,6 +1595,7 @@ type sandboxResponseProxyConfigRuleJSON struct {
 	Name        apijson.Field
 	Aws         apijson.Field
 	Enabled     apijson.Field
+	EnvVars     apijson.Field
 	Gcp         apijson.Field
 	Headers     apijson.Field
 	MatchHosts  apijson.Field
@@ -1889,13 +1899,14 @@ func (r snapshotListResponseJSON) RawJSON() string {
 }
 
 type SnapshotResponse struct {
-	ID              string `json:"id"`
-	CreatedAt       string `json:"created_at"`
-	CreatedBy       string `json:"created_by"`
-	DockerImage     string `json:"docker_image"`
-	FsCapacityBytes int64  `json:"fs_capacity_bytes"`
-	FsUsedBytes     int64  `json:"fs_used_bytes"`
-	ImageDigest     string `json:"image_digest"`
+	ID              string            `json:"id"`
+	CreatedAt       string            `json:"created_at"`
+	CreatedBy       string            `json:"created_by"`
+	DockerImage     string            `json:"docker_image"`
+	FsCapacityBytes int64             `json:"fs_capacity_bytes"`
+	FsUsedBytes     int64             `json:"fs_used_bytes"`
+	ImageDigest     string            `json:"image_digest"`
+	Labels          map[string]string `json:"labels"`
 	// MemorySnapshotSizeBytes is non-nil iff the snapshot was captured with VM memory
 	// state. A non-nil value is the canonical signal that this snapshot can
 	// warm-restore from memory; nil means rootfs only.
@@ -1919,6 +1930,7 @@ type snapshotResponseJSON struct {
 	FsCapacityBytes         apijson.Field
 	FsUsedBytes             apijson.Field
 	ImageDigest             apijson.Field
+	Labels                  apijson.Field
 	MemorySnapshotSizeBytes apijson.Field
 	Name                    apijson.Field
 	RegistryID              apijson.Field

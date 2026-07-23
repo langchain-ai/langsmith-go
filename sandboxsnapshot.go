@@ -82,7 +82,10 @@ type SandboxSnapshotNewParams struct {
 	DockerImage     param.Field[string] `json:"docker_image" api:"required"`
 	FsCapacityBytes param.Field[int64]  `json:"fs_capacity_bytes" api:"required"`
 	Name            param.Field[string] `json:"name" api:"required"`
-	RegistryID      param.Field[string] `json:"registry_id"`
+	// Labels seed the snapshot's labels, overriding any label of the same key derived
+	// from the Docker image.
+	Labels     param.Field[map[string]string] `json:"labels"`
+	RegistryID param.Field[string]            `json:"registry_id"`
 }
 
 func (r SandboxSnapshotNewParams) MarshalJSON() (data []byte, err error) {
@@ -92,6 +95,9 @@ func (r SandboxSnapshotNewParams) MarshalJSON() (data []byte, err error) {
 type SandboxSnapshotListParams struct {
 	// Filter by creator identity. Only 'me' is supported.
 	CreatedBy param.Field[string] `query:"created_by"`
+	// Filter by label. Repeatable; all must match. Use 'key' to match on key presence
+	// or 'key=value' for equality.
+	Label param.Field[[]string] `query:"label"`
 	// Maximum number of results
 	Limit param.Field[int64] `query:"limit"`
 	// Filter by name substring

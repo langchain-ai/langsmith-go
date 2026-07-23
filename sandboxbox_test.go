@@ -52,7 +52,10 @@ func TestSandboxBoxNewWithOptionalParams(t *testing.T) {
 		}),
 		FsCapacityBytes: langsmith.F(int64(0)),
 		IdleTtlSeconds:  langsmith.F(int64(0)),
-		MemBytes:        langsmith.F(int64(0)),
+		Labels: langsmith.F(map[string]string{
+			"foo": "string",
+		}),
+		MemBytes: langsmith.F(int64(0)),
 		MountConfig: langsmith.F(langsmith.SandboxBoxNewParamsMountConfig{
 			Auth: langsmith.F(langsmith.SandboxBoxNewParamsMountConfigAuth{
 				Aws: langsmith.F(langsmith.SandboxBoxNewParamsMountConfigAuthAws{
@@ -144,6 +147,9 @@ func TestSandboxBoxNewWithOptionalParams(t *testing.T) {
 					}),
 				}),
 				Enabled: langsmith.F(true),
+				EnvVars: langsmith.F(map[string]string{
+					"foo": "string",
+				}),
 				Gcp: langsmith.F(langsmith.SandboxBoxNewParamsProxyConfigRulesGcp{
 					Scopes: langsmith.F([]string{"string"}),
 					ServiceAccountJson: langsmith.F(langsmith.SandboxBoxNewParamsProxyConfigRulesGcpServiceAccountJson{
@@ -259,6 +265,9 @@ func TestSandboxBoxUpdateWithOptionalParams(t *testing.T) {
 						}),
 					}),
 					Enabled: langsmith.F(true),
+					EnvVars: langsmith.F(map[string]string{
+						"foo": "string",
+					}),
 					Gcp: langsmith.F(langsmith.SandboxBoxUpdateParamsProxyConfigRulesGcp{
 						Scopes: langsmith.F([]string{"string"}),
 						ServiceAccountJson: langsmith.F(langsmith.SandboxBoxUpdateParamsProxyConfigRulesGcpServiceAccountJson{
@@ -307,6 +316,7 @@ func TestSandboxBoxListWithOptionalParams(t *testing.T) {
 	)
 	_, err := client.Sandboxes.Boxes.List(context.TODO(), langsmith.SandboxBoxListParams{
 		CreatedBy:     langsmith.F("created_by"),
+		Label:         langsmith.F([]string{"string"}),
 		Limit:         langsmith.F(int64(0)),
 		NameContains:  langsmith.F("name_contains"),
 		Offset:        langsmith.F(int64(0)),
@@ -370,6 +380,9 @@ func TestSandboxBoxNewSnapshotWithOptionalParams(t *testing.T) {
 			DockerImage:     langsmith.F("docker_image"),
 			FsCapacityBytes: langsmith.F(int64(0)),
 			IncludeMemory:   langsmith.F(true),
+			Labels: langsmith.F(map[string]string{
+				"foo": "string",
+			}),
 		},
 	)
 	if err != nil {

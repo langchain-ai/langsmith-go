@@ -137,6 +137,7 @@ type CustomChartsSection struct {
 	Title       string                          `json:"title" api:"required"`
 	Description string                          `json:"description" api:"nullable"`
 	Index       int64                           `json:"index" api:"nullable"`
+	Layout      CustomChartsSectionLayout       `json:"layout" api:"nullable"`
 	SessionID   string                          `json:"session_id" api:"nullable" format:"uuid"`
 	SubSections []CustomChartsSectionSubSection `json:"sub_sections" api:"nullable"`
 	JSON        customChartsSectionJSON         `json:"-"`
@@ -150,6 +151,7 @@ type customChartsSectionJSON struct {
 	Title       apijson.Field
 	Description apijson.Field
 	Index       apijson.Field
+	Layout      apijson.Field
 	SessionID   apijson.Field
 	SubSections apijson.Field
 	raw         string
@@ -283,6 +285,7 @@ type CustomChartsSectionChartsSeries struct {
 	// Include additional information about where the group_by param was set.
 	GroupBy            CustomChartsSectionChartsSeriesGroupBy             `json:"group_by" api:"nullable"`
 	GroupByDefinitions []CustomChartsSectionChartsSeriesGroupByDefinition `json:"group_by_definitions" api:"nullable"`
+	Metadata           map[string]interface{}                             `json:"metadata" api:"nullable"`
 	// Metrics you can chart. Feedback metrics are not available for
 	// organization-scoped charts.
 	Metric           CustomChartsSectionChartsSeriesMetric           `json:"metric" api:"nullable"`
@@ -303,6 +306,7 @@ type customChartsSectionChartsSeriesJSON struct {
 	Filters            apijson.Field
 	GroupBy            apijson.Field
 	GroupByDefinitions apijson.Field
+	Metadata           apijson.Field
 	Metric             apijson.Field
 	MetricDefinition   apijson.Field
 	ProjectMetric      apijson.Field
@@ -2070,11 +2074,12 @@ const (
 	CustomChartsSectionChartsSeriesProjectMetricResponsesPerSecond      CustomChartsSectionChartsSeriesProjectMetric = "responses_per_second"
 	CustomChartsSectionChartsSeriesProjectMetricErrorResponsesPerSecond CustomChartsSectionChartsSeriesProjectMetric = "error_responses_per_second"
 	CustomChartsSectionChartsSeriesProjectMetricP95Latency              CustomChartsSectionChartsSeriesProjectMetric = "p95_latency"
+	CustomChartsSectionChartsSeriesProjectMetricRunQueueWaitTime        CustomChartsSectionChartsSeriesProjectMetric = "run_queue_wait_time"
 )
 
 func (r CustomChartsSectionChartsSeriesProjectMetric) IsKnown() bool {
 	switch r {
-	case CustomChartsSectionChartsSeriesProjectMetricMemoryUsage, CustomChartsSectionChartsSeriesProjectMetricCPUUsage, CustomChartsSectionChartsSeriesProjectMetricDiskUsage, CustomChartsSectionChartsSeriesProjectMetricRestartCount, CustomChartsSectionChartsSeriesProjectMetricReplicaCount, CustomChartsSectionChartsSeriesProjectMetricWorkerCount, CustomChartsSectionChartsSeriesProjectMetricLgRunCount, CustomChartsSectionChartsSeriesProjectMetricResponsesPerSecond, CustomChartsSectionChartsSeriesProjectMetricErrorResponsesPerSecond, CustomChartsSectionChartsSeriesProjectMetricP95Latency:
+	case CustomChartsSectionChartsSeriesProjectMetricMemoryUsage, CustomChartsSectionChartsSeriesProjectMetricCPUUsage, CustomChartsSectionChartsSeriesProjectMetricDiskUsage, CustomChartsSectionChartsSeriesProjectMetricRestartCount, CustomChartsSectionChartsSeriesProjectMetricReplicaCount, CustomChartsSectionChartsSeriesProjectMetricWorkerCount, CustomChartsSectionChartsSeriesProjectMetricLgRunCount, CustomChartsSectionChartsSeriesProjectMetricResponsesPerSecond, CustomChartsSectionChartsSeriesProjectMetricErrorResponsesPerSecond, CustomChartsSectionChartsSeriesProjectMetricP95Latency, CustomChartsSectionChartsSeriesProjectMetricRunQueueWaitTime:
 		return true
 	}
 	return false
@@ -2105,6 +2110,200 @@ func (r *CustomChartsSectionChartsCommonFilters) UnmarshalJSON(data []byte) (err
 
 func (r customChartsSectionChartsCommonFiltersJSON) RawJSON() string {
 	return r.raw
+}
+
+type CustomChartsSectionLayout struct {
+	Breakpoints CustomChartsSectionLayoutBreakpoints `json:"breakpoints" api:"required"`
+	Version     CustomChartsSectionLayoutVersion     `json:"version" api:"required"`
+	JSON        customChartsSectionLayoutJSON        `json:"-"`
+}
+
+// customChartsSectionLayoutJSON contains the JSON metadata for the struct
+// [CustomChartsSectionLayout]
+type customChartsSectionLayoutJSON struct {
+	Breakpoints apijson.Field
+	Version     apijson.Field
+	raw         string
+	ExtraFields map[string]apijson.Field
+}
+
+func (r *CustomChartsSectionLayout) UnmarshalJSON(data []byte) (err error) {
+	return apijson.UnmarshalRoot(data, r)
+}
+
+func (r customChartsSectionLayoutJSON) RawJSON() string {
+	return r.raw
+}
+
+type CustomChartsSectionLayoutBreakpoints struct {
+	Md   CustomChartsSectionLayoutBreakpointsMd   `json:"md" api:"required"`
+	Sm   CustomChartsSectionLayoutBreakpointsSm   `json:"sm" api:"required"`
+	JSON customChartsSectionLayoutBreakpointsJSON `json:"-"`
+}
+
+// customChartsSectionLayoutBreakpointsJSON contains the JSON metadata for the
+// struct [CustomChartsSectionLayoutBreakpoints]
+type customChartsSectionLayoutBreakpointsJSON struct {
+	Md          apijson.Field
+	Sm          apijson.Field
+	raw         string
+	ExtraFields map[string]apijson.Field
+}
+
+func (r *CustomChartsSectionLayoutBreakpoints) UnmarshalJSON(data []byte) (err error) {
+	return apijson.UnmarshalRoot(data, r)
+}
+
+func (r customChartsSectionLayoutBreakpointsJSON) RawJSON() string {
+	return r.raw
+}
+
+type CustomChartsSectionLayoutBreakpointsMd struct {
+	Rows []CustomChartsSectionLayoutBreakpointsMdRow `json:"rows" api:"required"`
+	JSON customChartsSectionLayoutBreakpointsMdJSON  `json:"-"`
+}
+
+// customChartsSectionLayoutBreakpointsMdJSON contains the JSON metadata for the
+// struct [CustomChartsSectionLayoutBreakpointsMd]
+type customChartsSectionLayoutBreakpointsMdJSON struct {
+	Rows        apijson.Field
+	raw         string
+	ExtraFields map[string]apijson.Field
+}
+
+func (r *CustomChartsSectionLayoutBreakpointsMd) UnmarshalJSON(data []byte) (err error) {
+	return apijson.UnmarshalRoot(data, r)
+}
+
+func (r customChartsSectionLayoutBreakpointsMdJSON) RawJSON() string {
+	return r.raw
+}
+
+type CustomChartsSectionLayoutBreakpointsMdRow struct {
+	HeightUnits int64                                            `json:"height_units" api:"required"`
+	Items       []CustomChartsSectionLayoutBreakpointsMdRowsItem `json:"items" api:"required"`
+	JSON        customChartsSectionLayoutBreakpointsMdRowJSON    `json:"-"`
+}
+
+// customChartsSectionLayoutBreakpointsMdRowJSON contains the JSON metadata for the
+// struct [CustomChartsSectionLayoutBreakpointsMdRow]
+type customChartsSectionLayoutBreakpointsMdRowJSON struct {
+	HeightUnits apijson.Field
+	Items       apijson.Field
+	raw         string
+	ExtraFields map[string]apijson.Field
+}
+
+func (r *CustomChartsSectionLayoutBreakpointsMdRow) UnmarshalJSON(data []byte) (err error) {
+	return apijson.UnmarshalRoot(data, r)
+}
+
+func (r customChartsSectionLayoutBreakpointsMdRowJSON) RawJSON() string {
+	return r.raw
+}
+
+type CustomChartsSectionLayoutBreakpointsMdRowsItem struct {
+	ChartID    string                                             `json:"chart_id" api:"required" format:"uuid"`
+	WidthUnits int64                                              `json:"width_units" api:"required"`
+	JSON       customChartsSectionLayoutBreakpointsMdRowsItemJSON `json:"-"`
+}
+
+// customChartsSectionLayoutBreakpointsMdRowsItemJSON contains the JSON metadata
+// for the struct [CustomChartsSectionLayoutBreakpointsMdRowsItem]
+type customChartsSectionLayoutBreakpointsMdRowsItemJSON struct {
+	ChartID     apijson.Field
+	WidthUnits  apijson.Field
+	raw         string
+	ExtraFields map[string]apijson.Field
+}
+
+func (r *CustomChartsSectionLayoutBreakpointsMdRowsItem) UnmarshalJSON(data []byte) (err error) {
+	return apijson.UnmarshalRoot(data, r)
+}
+
+func (r customChartsSectionLayoutBreakpointsMdRowsItemJSON) RawJSON() string {
+	return r.raw
+}
+
+type CustomChartsSectionLayoutBreakpointsSm struct {
+	Rows []CustomChartsSectionLayoutBreakpointsSmRow `json:"rows" api:"required"`
+	JSON customChartsSectionLayoutBreakpointsSmJSON  `json:"-"`
+}
+
+// customChartsSectionLayoutBreakpointsSmJSON contains the JSON metadata for the
+// struct [CustomChartsSectionLayoutBreakpointsSm]
+type customChartsSectionLayoutBreakpointsSmJSON struct {
+	Rows        apijson.Field
+	raw         string
+	ExtraFields map[string]apijson.Field
+}
+
+func (r *CustomChartsSectionLayoutBreakpointsSm) UnmarshalJSON(data []byte) (err error) {
+	return apijson.UnmarshalRoot(data, r)
+}
+
+func (r customChartsSectionLayoutBreakpointsSmJSON) RawJSON() string {
+	return r.raw
+}
+
+type CustomChartsSectionLayoutBreakpointsSmRow struct {
+	HeightUnits int64                                            `json:"height_units" api:"required"`
+	Items       []CustomChartsSectionLayoutBreakpointsSmRowsItem `json:"items" api:"required"`
+	JSON        customChartsSectionLayoutBreakpointsSmRowJSON    `json:"-"`
+}
+
+// customChartsSectionLayoutBreakpointsSmRowJSON contains the JSON metadata for the
+// struct [CustomChartsSectionLayoutBreakpointsSmRow]
+type customChartsSectionLayoutBreakpointsSmRowJSON struct {
+	HeightUnits apijson.Field
+	Items       apijson.Field
+	raw         string
+	ExtraFields map[string]apijson.Field
+}
+
+func (r *CustomChartsSectionLayoutBreakpointsSmRow) UnmarshalJSON(data []byte) (err error) {
+	return apijson.UnmarshalRoot(data, r)
+}
+
+func (r customChartsSectionLayoutBreakpointsSmRowJSON) RawJSON() string {
+	return r.raw
+}
+
+type CustomChartsSectionLayoutBreakpointsSmRowsItem struct {
+	ChartID    string                                             `json:"chart_id" api:"required" format:"uuid"`
+	WidthUnits int64                                              `json:"width_units" api:"required"`
+	JSON       customChartsSectionLayoutBreakpointsSmRowsItemJSON `json:"-"`
+}
+
+// customChartsSectionLayoutBreakpointsSmRowsItemJSON contains the JSON metadata
+// for the struct [CustomChartsSectionLayoutBreakpointsSmRowsItem]
+type customChartsSectionLayoutBreakpointsSmRowsItemJSON struct {
+	ChartID     apijson.Field
+	WidthUnits  apijson.Field
+	raw         string
+	ExtraFields map[string]apijson.Field
+}
+
+func (r *CustomChartsSectionLayoutBreakpointsSmRowsItem) UnmarshalJSON(data []byte) (err error) {
+	return apijson.UnmarshalRoot(data, r)
+}
+
+func (r customChartsSectionLayoutBreakpointsSmRowsItemJSON) RawJSON() string {
+	return r.raw
+}
+
+type CustomChartsSectionLayoutVersion int64
+
+const (
+	CustomChartsSectionLayoutVersion1 CustomChartsSectionLayoutVersion = 1
+)
+
+func (r CustomChartsSectionLayoutVersion) IsKnown() bool {
+	switch r {
+	case CustomChartsSectionLayoutVersion1:
+		return true
+	}
+	return false
 }
 
 type CustomChartsSectionSubSection struct {
@@ -2256,6 +2455,7 @@ type CustomChartsSectionSubSectionsChartsSeries struct {
 	// Include additional information about where the group_by param was set.
 	GroupBy            CustomChartsSectionSubSectionsChartsSeriesGroupBy             `json:"group_by" api:"nullable"`
 	GroupByDefinitions []CustomChartsSectionSubSectionsChartsSeriesGroupByDefinition `json:"group_by_definitions" api:"nullable"`
+	Metadata           map[string]interface{}                                        `json:"metadata" api:"nullable"`
 	// Metrics you can chart. Feedback metrics are not available for
 	// organization-scoped charts.
 	Metric           CustomChartsSectionSubSectionsChartsSeriesMetric           `json:"metric" api:"nullable"`
@@ -2276,6 +2476,7 @@ type customChartsSectionSubSectionsChartsSeriesJSON struct {
 	Filters            apijson.Field
 	GroupBy            apijson.Field
 	GroupByDefinitions apijson.Field
+	Metadata           apijson.Field
 	Metric             apijson.Field
 	MetricDefinition   apijson.Field
 	ProjectMetric      apijson.Field
@@ -4052,11 +4253,12 @@ const (
 	CustomChartsSectionSubSectionsChartsSeriesProjectMetricResponsesPerSecond      CustomChartsSectionSubSectionsChartsSeriesProjectMetric = "responses_per_second"
 	CustomChartsSectionSubSectionsChartsSeriesProjectMetricErrorResponsesPerSecond CustomChartsSectionSubSectionsChartsSeriesProjectMetric = "error_responses_per_second"
 	CustomChartsSectionSubSectionsChartsSeriesProjectMetricP95Latency              CustomChartsSectionSubSectionsChartsSeriesProjectMetric = "p95_latency"
+	CustomChartsSectionSubSectionsChartsSeriesProjectMetricRunQueueWaitTime        CustomChartsSectionSubSectionsChartsSeriesProjectMetric = "run_queue_wait_time"
 )
 
 func (r CustomChartsSectionSubSectionsChartsSeriesProjectMetric) IsKnown() bool {
 	switch r {
-	case CustomChartsSectionSubSectionsChartsSeriesProjectMetricMemoryUsage, CustomChartsSectionSubSectionsChartsSeriesProjectMetricCPUUsage, CustomChartsSectionSubSectionsChartsSeriesProjectMetricDiskUsage, CustomChartsSectionSubSectionsChartsSeriesProjectMetricRestartCount, CustomChartsSectionSubSectionsChartsSeriesProjectMetricReplicaCount, CustomChartsSectionSubSectionsChartsSeriesProjectMetricWorkerCount, CustomChartsSectionSubSectionsChartsSeriesProjectMetricLgRunCount, CustomChartsSectionSubSectionsChartsSeriesProjectMetricResponsesPerSecond, CustomChartsSectionSubSectionsChartsSeriesProjectMetricErrorResponsesPerSecond, CustomChartsSectionSubSectionsChartsSeriesProjectMetricP95Latency:
+	case CustomChartsSectionSubSectionsChartsSeriesProjectMetricMemoryUsage, CustomChartsSectionSubSectionsChartsSeriesProjectMetricCPUUsage, CustomChartsSectionSubSectionsChartsSeriesProjectMetricDiskUsage, CustomChartsSectionSubSectionsChartsSeriesProjectMetricRestartCount, CustomChartsSectionSubSectionsChartsSeriesProjectMetricReplicaCount, CustomChartsSectionSubSectionsChartsSeriesProjectMetricWorkerCount, CustomChartsSectionSubSectionsChartsSeriesProjectMetricLgRunCount, CustomChartsSectionSubSectionsChartsSeriesProjectMetricResponsesPerSecond, CustomChartsSectionSubSectionsChartsSeriesProjectMetricErrorResponsesPerSecond, CustomChartsSectionSubSectionsChartsSeriesProjectMetricP95Latency, CustomChartsSectionSubSectionsChartsSeriesProjectMetricRunQueueWaitTime:
 		return true
 	}
 	return false
