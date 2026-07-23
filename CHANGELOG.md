@@ -1,5 +1,33 @@
 # Changelog
 
+## [0.23.0](https://github.com/langchain-ai/langsmith-go/compare/v0.22.0...v0.23.0) (2026-07-23)
+
+
+### Features
+
+* **backend:** Allow storing grid layout to custom dashboards ([6cd7821](https://github.com/langchain-ai/langsmith-go/commit/6cd78210828a320fd22d2220006fd3518ad8a5b3))
+* **backend:** update CRUD endpoint to allow retrieving / storing chart series metadata ([6d960a4](https://github.com/langchain-ai/langsmith-go/commit/6d960a4208323ce8c221177e3d307f52ec446de0))
+* **host:** p50/p99 run queue wait-time chart in project monitoring [LSD-1547] ([986d99d](https://github.com/langchain-ai/langsmith-go/commit/986d99dde7f441bf7a85f1a7f8aa35137832e52e))
+* **sandboxes:** free-form labels on sandboxes and snapshots ([65a3bc8](https://github.com/langchain-ai/langsmith-go/commit/65a3bc8d5df8e432eec9fce6f561c2cddbc48164))
+* **sandboxes:** let proxy rules contribute sandbox env vars ([bbc4a24](https://github.com/langchain-ai/langsmith-go/commit/bbc4a24839a95049789dca37971a7ba23c9ba1ae))
+
+
+### Bug Fixes
+
+* **evaluators:** persist and wire through playground_settings_id for llm-as-judge oauth models [part of ENT-1402] ([9085eb7](https://github.com/langchain-ai/langsmith-go/commit/9085eb798ae6ec52537c909ae713ecfc3a42a777))
+* **runs:** require session in POST /runs/stats ([beaef39](https://github.com/langchain-ai/langsmith-go/commit/beaef392cb387fc31e3ccf461e315c4872cd2f19))
+* support last_queued_at in v2 runs query ([38917cb](https://github.com/langchain-ai/langsmith-go/commit/38917cbb47f616a5646095d22274aea8b4967b47))
+
+
+### Reverts
+
+* **runs:** require session in POST /runs/stats ([ec94123](https://github.com/langchain-ai/langsmith-go/commit/ec94123c1540af5cba9fb30ed7b069e6e94208ad))
+
+
+### Refactors
+
+* **runs:** remove SmithDB v2 endpoint flag [LSO-3391] ([94df746](https://github.com/langchain-ai/langsmith-go/commit/94df746124337d369cad60ef0e69121d6484512a))
+
 ## [0.22.0](https://github.com/langchain-ai/langsmith-go/compare/v0.21.1...v0.22.0) (2026-07-20)
 
 
