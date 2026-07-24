@@ -6,7 +6,6 @@ import (
 	"context"
 	"net/http"
 	"slices"
-	"time"
 
 	"github.com/langchain-ai/langsmith-go/internal/apijson"
 	"github.com/langchain-ai/langsmith-go/internal/requestconfig"
@@ -32,7 +31,9 @@ func NewInfoService(opts ...option.RequestOption) (r *InfoService) {
 	return
 }
 
-// Get information about the current deployment of LangSmith.
+// Returns information about the current LangSmith deployment: version, instance
+// feature flags, batch-ingest limits, and max SDK versions. Unauthenticated by
+// default; set FF_INFO_ENDPOINT_AUTH_REQUIRED=true to require auth.
 func (r *InfoService) List(ctx context.Context, opts ...option.RequestOption) (res *InfoListResponse, err error) {
 	opts = slices.Concat(r.Options, opts)
 	path := "api/v1/info"
@@ -40,28 +41,27 @@ func (r *InfoService) List(ctx context.Context, opts ...option.RequestOption) (r
 	return res, err
 }
 
-// The LangSmith server info.
 type InfoListResponse struct {
-	Version string `json:"version" api:"required"`
-	// Batch ingest config.
-	BatchIngestConfig InfoListResponseBatchIngestConfig `json:"batch_ingest_config"`
-	// Customer info.
-	CustomerInfo          InfoListResponseCustomerInfo `json:"customer_info" api:"nullable"`
-	GitSha                string                       `json:"git_sha" api:"nullable"`
-	InstanceFlags         map[string]interface{}       `json:"instance_flags"`
-	LicenseExpirationTime time.Time                    `json:"license_expiration_time" api:"nullable" format:"date-time"`
-	JSON                  infoListResponseJSON         `json:"-"`
+	BatchIngestConfig     InfoListResponseBatchIngestConfig `json:"batch_ingest_config"`
+	CustomerInfo          InfoListResponseCustomerInfo      `json:"customer_info"`
+	GitSha                string                            `json:"git_sha"`
+	InstanceFlags         map[string]interface{}            `json:"instance_flags"`
+	LicenseExpirationTime string                            `json:"license_expiration_time"`
+	SDKVersions           InfoListResponseSDKVersions       `json:"sdk_versions"`
+	Version               string                            `json:"version"`
+	JSON                  infoListResponseJSON              `json:"-"`
 }
 
 // infoListResponseJSON contains the JSON metadata for the struct
 // [InfoListResponse]
 type infoListResponseJSON struct {
-	Version               apijson.Field
 	BatchIngestConfig     apijson.Field
 	CustomerInfo          apijson.Field
 	GitSha                apijson.Field
 	InstanceFlags         apijson.Field
 	LicenseExpirationTime apijson.Field
+	SDKVersions           apijson.Field
+	Version               apijson.Field
 	raw                   string
 	ExtraFields           map[string]apijson.Field
 }
@@ -74,7 +74,6 @@ func (r infoListResponseJSON) RawJSON() string {
 	return r.raw
 }
 
-// Batch ingest config.
 type InfoListResponseBatchIngestConfig struct {
 	ScaleDownNemptyTrigger int64                                 `json:"scale_down_nempty_trigger"`
 	ScaleUpNthreadsLimit   int64                                 `json:"scale_up_nthreads_limit"`
@@ -106,10 +105,9 @@ func (r infoListResponseBatchIngestConfigJSON) RawJSON() string {
 	return r.raw
 }
 
-// Customer info.
 type InfoListResponseCustomerInfo struct {
-	CustomerID   string                           `json:"customer_id" api:"required"`
-	CustomerName string                           `json:"customer_name" api:"required"`
+	CustomerID   string                           `json:"customer_id"`
+	CustomerName string                           `json:"customer_name"`
 	JSON         infoListResponseCustomerInfoJSON `json:"-"`
 }
 
@@ -127,5 +125,32 @@ func (r *InfoListResponseCustomerInfo) UnmarshalJSON(data []byte) (err error) {
 }
 
 func (r infoListResponseCustomerInfoJSON) RawJSON() string {
+	return r.raw
+}
+
+type InfoListResponseSDKVersions struct {
+	MaxGoSDKVersion     string                          `json:"max_go_sdk_version"`
+	MaxJavaSDKVersion   string                          `json:"max_java_sdk_version"`
+	MaxJsSDKVersion     string                          `json:"max_js_sdk_version"`
+	MaxPythonSDKVersion string                          `json:"max_python_sdk_version"`
+	JSON                infoListResponseSDKVersionsJSON `json:"-"`
+}
+
+// infoListResponseSDKVersionsJSON contains the JSON metadata for the struct
+// [InfoListResponseSDKVersions]
+type infoListResponseSDKVersionsJSON struct {
+	MaxGoSDKVersion     apijson.Field
+	MaxJavaSDKVersion   apijson.Field
+	MaxJsSDKVersion     apijson.Field
+	MaxPythonSDKVersion apijson.Field
+	raw                 string
+	ExtraFields         map[string]apijson.Field
+}
+
+func (r *InfoListResponseSDKVersions) UnmarshalJSON(data []byte) (err error) {
+	return apijson.UnmarshalRoot(data, r)
+}
+
+func (r infoListResponseSDKVersionsJSON) RawJSON() string {
 	return r.raw
 }
