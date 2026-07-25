@@ -68,15 +68,15 @@ func (UnionInt) ImplementsAnnotationQueueUpdateParamsNumReviewersPerItemUnion() 
 
 type UnionFloat float64
 
-func (UnionFloat) ImplementsCustomChartsSectionChartsDataValueUnion()            {}
-func (UnionFloat) ImplementsCustomChartsSectionSubSectionsChartsDataValueUnion() {}
-func (UnionFloat) ImplementsFeedbackCreateSchemaScoreUnionParam()                {}
-func (UnionFloat) ImplementsFeedbackCreateSchemaValueUnionParam()                {}
-func (UnionFloat) ImplementsFeedbackSchemaScoreUnion()                           {}
-func (UnionFloat) ImplementsFeedbackSchemaValueUnion()                           {}
-func (UnionFloat) ImplementsFeedbackUpdateParamsScoreUnion()                     {}
-func (UnionFloat) ImplementsFeedbackUpdateParamsValueUnion()                     {}
-func (UnionFloat) ImplementsFeedbackTokenGetParamsScoreUnion()                   {}
-func (UnionFloat) ImplementsFeedbackTokenGetParamsValueUnion()                   {}
-func (UnionFloat) ImplementsFeedbackTokenUpdateParamsScoreUnion()                {}
-func (UnionFloat) ImplementsFeedbackTokenUpdateParamsValueUnion()                {}
+func (UnionFloat) ImplementsCustomChartsSectionChartsSingleCustomChartResponseDataValueUnion() {}
+func (UnionFloat) ImplementsCustomChartsSectionSubSectionsChartsDataValueUnion()               {}
+func (UnionFloat) ImplementsFeedbackCreateSchemaScoreUnionParam()                              {}
+func (UnionFloat) ImplementsFeedbackCreateSchemaValueUnionParam()                              {}
+func (UnionFloat) ImplementsFeedbackSchemaScoreUnion()                                         {}
+func (UnionFloat) ImplementsFeedbackSchemaValueUnion()                                         {}
+func (UnionFloat) ImplementsFeedbackUpdateParamsScoreUnion()                                   {}
+func (UnionFloat) ImplementsFeedbackUpdateParamsValueUnion()                                   {}
+func (UnionFloat) ImplementsFeedbackTokenGetParamsScoreUnion()                                 {}
+func (UnionFloat) ImplementsFeedbackTokenGetParamsValueUnion()                                 {}
+func (UnionFloat) ImplementsFeedbackTokenUpdateParamsScoreUnion()                              {}
+func (UnionFloat) ImplementsFeedbackTokenUpdateParamsValueUnion()                              {}
