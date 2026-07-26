@@ -36,6 +36,9 @@ func (e *SandboxNotReadyError) Error() string {
 // cannot be established or is interrupted unexpectedly.
 type SandboxConnectionError struct {
 	Message string
+	// StatusCode is the HTTP status the server returned when it refused the
+	// WebSocket upgrade, or 0 when the failure was not an HTTP response.
+	StatusCode int
 }
 
 func (e *SandboxConnectionError) Error() string {

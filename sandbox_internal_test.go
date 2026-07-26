@@ -3,6 +3,10 @@ package langsmith
 import (
 	"context"
 	"errors"
+	"net"
+	"net/http"
+	"net/http/httptest"
+	"strings"
 	"testing"
 	"time"
 
@@ -77,6 +81,53 @@ func TestRequireSandboxDataplaneURL(t *testing.T) {
 	var notConfigured *SandboxDataplaneNotConfiguredError
 	if _, err := requireSandboxDataplaneURL("box-a", "ready", ""); !errors.As(err, &notConfigured) {
 		t.Fatalf("expected SandboxDataplaneNotConfiguredError, got %T: %v", err, err)
+	}
+}
+
+func TestDialSandboxWebSocketURLRejectedUpgrade(t *testing.T) {
+	srv := httptest.NewServer(http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
+		w.Header().Set("Content-Type", "application/json")
+		w.WriteHeader(http.StatusForbidden)
+		_, _ = w.Write([]byte(`{"detail":{"error":"Forbidden","message":"insufficient sandbox access"}}`))
+	}))
+	defer srv.Close()
+
+	wsURL := "ws" + strings.TrimPrefix(srv.URL, "http") + "/execute/ws"
+	_, err := dialSandboxWebSocketURL(context.Background(), wsURL, option.WithAPIKey("test-api-key"))
+
+	var connErr *SandboxConnectionError
+	if !errors.As(err, &connErr) {
+		t.Fatalf("expected SandboxConnectionError, got %T: %v", err, err)
+	}
+	if connErr.StatusCode != http.StatusForbidden {
+		t.Fatalf("expected status 403, got %d", connErr.StatusCode)
+	}
+	if !strings.Contains(connErr.Message, "403 Forbidden") {
+		t.Fatalf("expected status text in error, got %q", connErr.Message)
+	}
+	if !strings.Contains(connErr.Message, "insufficient sandbox access") {
+		t.Fatalf("expected response body in error, got %q", connErr.Message)
+	}
+}
+
+func TestDialSandboxWebSocketURLUnreachable(t *testing.T) {
+	listener, err := net.Listen("tcp", "127.0.0.1:0")
+	if err != nil {
+		t.Fatalf("listen: %v", err)
+	}
+	addr := listener.Addr().String()
+	if err := listener.Close(); err != nil {
+		t.Fatalf("close listener: %v", err)
+	}
+
+	_, err = dialSandboxWebSocketURL(context.Background(), "ws://"+addr+"/execute/ws")
+
+	var connErr *SandboxConnectionError
+	if !errors.As(err, &connErr) {
+		t.Fatalf("expected SandboxConnectionError, got %T: %v", err, err)
+	}
+	if connErr.StatusCode != 0 {
+		t.Fatalf("expected no status code for transport failure, got %d", connErr.StatusCode)
 	}
 }
 

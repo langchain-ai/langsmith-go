@@ -1,11 +1,18 @@
 package langsmith
 
 import (
+	"bufio"
+	"bytes"
 	"context"
+	"crypto/tls"
+	"errors"
 	"fmt"
+	"io"
+	"net"
 	"net/http"
 	"net/url"
 	"strings"
+	"sync"
 	"time"
 
 	"github.com/langchain-ai/langsmith-go/internal/param"
@@ -107,19 +114,131 @@ func dialSandboxWebSocketURL(ctx context.Context, wsURL string, opts ...option.R
 	}
 	ch := make(chan dialResult, 1)
 	go func() {
-		ws, err := websocket.DialConfig(config)
+		ws, err := dialSandboxWebSocketConfig(ctx, config)
 		ch <- dialResult{ws: ws, err: err}
 	}()
 
 	select {
 	case res := <-ch:
 		if res.err != nil {
-			return nil, &SandboxConnectionError{Message: fmt.Sprintf("langsmith: failed to connect to sandbox command WebSocket: %v", res.err)}
+			return nil, res.err
 		}
 		return res.ws, nil
 	case <-ctx.Done():
+		go func() {
+			if res := <-ch; res.ws != nil {
+				_ = res.ws.Close()
+			}
+		}()
 		return nil, ctx.Err()
 	}
+}
+
+// dialSandboxWebSocketConfig handshakes over a connection that records the
+// server's reply, so a refused upgrade reports its HTTP status and body rather
+// than websocket.ErrBadStatus, which drops both.
+func dialSandboxWebSocketConfig(ctx context.Context, config *websocket.Config) (*websocket.Conn, error) {
+	conn, err := dialSandboxWebSocketTransport(ctx, config)
+	if err != nil {
+		return nil, &SandboxConnectionError{Message: sandboxWebSocketDialErrorf("%v", err)}
+	}
+	recorder := &sandboxHandshakeRecorder{Conn: conn}
+	ws, err := websocket.NewClient(config, recorder)
+	if err != nil {
+		_ = conn.Close()
+		status, detail := recorder.handshakeResponse()
+		if detail == "" {
+			return nil, &SandboxConnectionError{Message: sandboxWebSocketDialErrorf("%v", err)}
+		}
+		return nil, &SandboxConnectionError{
+			Message:    sandboxWebSocketDialErrorf("%s", detail),
+			StatusCode: status,
+		}
+	}
+	recorder.stop()
+	return ws, nil
+}
+
+func sandboxWebSocketDialErrorf(format string, args ...any) string {
+	return "langsmith: failed to connect to sandbox command WebSocket: " + fmt.Sprintf(format, args...)
+}
+
+func dialSandboxWebSocketTransport(ctx context.Context, config *websocket.Config) (net.Conn, error) {
+	if config.Location == nil {
+		return nil, errors.New("missing WebSocket URL")
+	}
+	dialer := config.Dialer
+	if dialer == nil {
+		dialer = &net.Dialer{}
+	}
+	host := config.Location.Host
+	switch config.Location.Scheme {
+	case "ws":
+		if config.Location.Port() == "" {
+			host = net.JoinHostPort(host, "80")
+		}
+		return dialer.DialContext(ctx, "tcp", host)
+	case "wss":
+		if config.Location.Port() == "" {
+			host = net.JoinHostPort(host, "443")
+		}
+		return (&tls.Dialer{NetDialer: dialer, Config: config.TlsConfig}).DialContext(ctx, "tcp", host)
+	default:
+		return nil, fmt.Errorf("unsupported WebSocket URL scheme %q", config.Location.Scheme)
+	}
+}
+
+const (
+	sandboxHandshakeRecordLimitBytes = 8 << 10
+	sandboxHandshakeDetailMaxBytes   = 512
+)
+
+type sandboxHandshakeRecorder struct {
+	net.Conn
+
+	mu      sync.Mutex
+	buf     bytes.Buffer
+	stopped bool
+}
+
+func (r *sandboxHandshakeRecorder) Read(p []byte) (int, error) {
+	n, err := r.Conn.Read(p)
+	if n > 0 {
+		r.mu.Lock()
+		if room := sandboxHandshakeRecordLimitBytes - r.buf.Len(); !r.stopped && room > 0 {
+			r.buf.Write(p[:min(n, room)])
+		}
+		r.mu.Unlock()
+	}
+	return n, err
+}
+
+func (r *sandboxHandshakeRecorder) stop() {
+	r.mu.Lock()
+	defer r.mu.Unlock()
+	r.stopped = true
+	r.buf.Reset()
+}
+
+// handshakeResponse returns the status code and a "<status>: <body>" summary of
+// the recorded reply, or (0, "") when it was not a readable HTTP response.
+func (r *sandboxHandshakeRecorder) handshakeResponse() (int, string) {
+	r.mu.Lock()
+	raw := bytes.Clone(r.buf.Bytes())
+	r.mu.Unlock()
+
+	resp, err := http.ReadResponse(bufio.NewReader(bytes.NewReader(raw)), nil)
+	if err != nil {
+		return 0, ""
+	}
+	defer resp.Body.Close()
+
+	body, _ := io.ReadAll(io.LimitReader(resp.Body, sandboxHandshakeDetailMaxBytes))
+	detail := strings.Join(strings.Fields(string(body)), " ")
+	if detail == "" {
+		return resp.StatusCode, resp.Status
+	}
+	return resp.StatusCode, resp.Status + ": " + detail
 }
 
 func sandboxWebSocketOrigin(wsURL string) (string, error) {
