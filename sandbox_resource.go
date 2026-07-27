@@ -93,8 +93,8 @@ func (s *Sandbox) Stop(ctx context.Context, opts ...option.RequestOption) error 
 	if err := s.boxes.Stop(ctx, s.Name, opts...); err != nil {
 		return err
 	}
+	// DataplaneURL stays set: it is stable across stop/start and a request on it resumes the sandbox.
 	s.Status = "stopped"
-	s.DataplaneURL = ""
 	return nil
 }
 
