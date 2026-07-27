@@ -1,5 +1,22 @@
 # Changelog
 
+## [0.24.0](https://github.com/langchain-ai/langsmith-go/compare/v0.23.0...v0.24.0) (2026-07-27)
+
+
+### Features
+
+* **backend:** allow storing markdown / text blocks as charts in /v1/charts/{...} endpoints ([cecbd3f](https://github.com/langchain-ai/langsmith-go/commit/cecbd3fbffb6fd669944efdb757e75ec10249202))
+
+
+### Bug Fixes
+
+* **threads:** make trace_id in list_traces respect the selects contract ([3b596d2](https://github.com/langchain-ai/langsmith-go/commit/3b596d2fa16f2e1e969f45e7b3a1e6112c32de17))
+
+
+### Chores
+
+* **info:** remove legacy Python /info endpoint, serve from smith-go ([080c862](https://github.com/langchain-ai/langsmith-go/commit/080c862c30698b608327dfe4650d7e6b72f88282))
+
 ## [0.23.0](https://github.com/langchain-ai/langsmith-go/compare/v0.22.0...v0.23.0) (2026-07-23)
 
 
