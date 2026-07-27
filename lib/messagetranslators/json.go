@@ -3,7 +3,6 @@ package messagetranslators
 import (
 	"bytes"
 	"crypto/sha256"
-	"encoding/base64"
 	"encoding/hex"
 	"encoding/json"
 	"errors"
@@ -110,9 +109,11 @@ func rejectNonEmptyArray(o map[string]any, key, path string) error {
 	return nil
 }
 
-func rejectPhase(o map[string]any, path string) error {
-	if _, ok := o["phase"]; ok {
-		return at(path+".phase", ErrUnsupported)
+func rejectPresent(o map[string]any, path string, keys ...string) error {
+	for _, key := range keys {
+		if _, ok := o[key]; ok {
+			return at(path+"."+key, ErrUnsupported)
+		}
 	}
 	return nil
 }
@@ -235,30 +236,9 @@ func anthropicSystem(v any) (string, error) {
 }
 
 func anthropicImageToResponses(o map[string]any, path string) (map[string]any, error) {
-	s, ok := obj(o["source"])
-	if !ok {
-		return nil, at(path+".source", ErrInvalidWireData)
-	}
-	t, _ := str(s["type"])
-	var u string
-	switch t {
-	case "url":
-		u, ok = str(s["url"])
-		if !ok || u == "" {
-			return nil, at(path+".source.url", ErrInvalidWireData)
-		}
-	case "base64":
-		media, mok := str(s["media_type"])
-		data, dok := str(s["data"])
-		if !mok || !dok || media == "" || data == "" {
-			return nil, at(path+".source", fmt.Errorf("%w: non-empty media_type and data required", ErrInvalidWireData))
-		}
-		if _, err := base64.StdEncoding.DecodeString(data); err != nil {
-			return nil, at(path+".source.data", fmt.Errorf("%w: invalid base64", ErrInvalidWireData))
-		}
-		u = "data:" + media + ";base64," + data
-	default:
-		return nil, at(path+".source.type", ErrUnsupported)
+	u, err := anthropicImageURL(o, path, fmt.Errorf("%w: non-empty media_type and data required", ErrInvalidWireData))
+	if err != nil {
+		return nil, err
 	}
 	return map[string]any{"type": "input_image", "image_url": u}, nil
 }
@@ -282,7 +262,7 @@ func anthContent(v any, role, path string) ([]any, error) {
 		if !ok {
 			return nil, at(p, ErrInvalidWireData)
 		}
-		if err := rejectPhase(o, p); err != nil {
+		if err := rejectPresent(o, p, "phase"); err != nil {
 			return nil, err
 		}
 		t, _ := str(o["type"])
@@ -350,28 +330,9 @@ func anthContent(v any, role, path string) ([]any, error) {
 			if err != nil {
 				return nil, err
 			}
-			var output string
-			switch c := o["content"].(type) {
-			case string:
-				output = c
-			case nil:
-				output = ""
-			case []any:
-				var b strings.Builder
-				for j, z := range c {
-					q, ok := obj(z)
-					if !ok || q["type"] != "text" {
-						return nil, at(fmt.Sprintf("%s.content[%d]", p, j), ErrUnsupported)
-					}
-					tx, ok := str(q["text"])
-					if !ok {
-						return nil, at(fmt.Sprintf("%s.content[%d].text", p, j), ErrInvalidWireData)
-					}
-					b.WriteString(tx)
-				}
-				output = b.String()
-			default:
-				return nil, at(p+".content", ErrInvalidWireData)
+			output, err := flattenTextBlocks(o["content"], p+".content", true)
+			if err != nil {
+				return nil, err
 			}
 			out = append(out, map[string]any{"type": "function_call_output", "call_id": id, "output": output})
 		default:
@@ -389,21 +350,18 @@ func AnthropicRequestToResponses(body []byte, model string) ([]byte, error) {
 
 // AnthropicRequestToResponsesWithOptions is AnthropicRequestToResponses with per-conversion warning options.
 func AnthropicRequestToResponsesWithOptions(body []byte, model string, options ConversionOptions) ([]byte, error) {
-	if options.WarningHandler != nil {
-		o, err := decodeObject(body)
-		if err != nil {
-			return nil, err
-		}
-		inspectAnthropicObject(o, false, options, "$")
-	}
-	return anthropicRequestToResponses(body, model)
-}
-
-func anthropicRequestToResponses(body []byte, model string) ([]byte, error) {
 	a, err := decodeObject(body)
 	if err != nil {
 		return nil, err
 	}
+	if options.WarningHandler != nil {
+		inspectAnthropicObject(a, false, options, "$")
+	}
+	return anthropicRequestToResponses(a, model)
+}
+
+func anthropicRequestToResponses(a map[string]any, model string) ([]byte, error) {
+	var err error
 	for _, key := range []string{"thinking", "stop_sequences", "top_k", "service_tier", "output_config"} {
 		if _, ok := a[key]; ok {
 			return nil, at("$."+key, ErrUnsupported)
@@ -452,69 +410,65 @@ func anthropicRequestToResponses(body []byte, model string) ([]byte, error) {
 	copyIf(r, a, "temperature", "temperature")
 	copyIf(r, a, "top_p", "top_p")
 	copyIf(r, a, "stream", "stream")
-	if ms, ok := arr(a["messages"]); ok {
-		input := []any{}
-		pendingCalls := map[string]bool{}
-		for i, x := range ms {
-			o, ok := obj(x)
-			if !ok {
-				return nil, at(fmt.Sprintf("$.messages[%d]", i), ErrInvalidWireData)
-			}
-			role, err := requiredString(o, "role", fmt.Sprintf("$.messages[%d]", i))
-			if err != nil {
-				return nil, err
-			}
-			if role != "user" && role != "assistant" {
-				return nil, at(fmt.Sprintf("$.messages[%d].role", i), ErrUnsupported)
-			}
-			c, err := anthContent(o["content"], role, fmt.Sprintf("$.messages[%d].content", i))
-			if err != nil {
-				return nil, err
-			}
-			if len(c) == 0 {
-				return nil, at(fmt.Sprintf("$.messages[%d].content", i), fmt.Errorf("%w: non-empty content required", ErrInvalidWireData))
-			}
-			var normal []any
-			for _, z := range c {
-				zo := z.(map[string]any)
-				if zo["type"] == "function_call" {
-					id := zo["call_id"].(string)
-					if pendingCalls[id] {
-						return nil, at(fmt.Sprintf("$.messages[%d].content", i), fmt.Errorf("%w: duplicate unresolved tool ID", ErrInvalidSequence))
-					}
-					pendingCalls[id] = true
-				} else if zo["type"] == "function_call_output" {
-					id := zo["call_id"].(string)
-					if !pendingCalls[id] {
-						return nil, at(fmt.Sprintf("$.messages[%d].content", i), fmt.Errorf("%w: tool_result has no preceding tool_use", ErrInvalidSequence))
-					}
-					delete(pendingCalls, id)
+	input := []any{}
+	pendingCalls := map[string]bool{}
+	for i, x := range ms {
+		o, ok := obj(x)
+		if !ok {
+			return nil, at(fmt.Sprintf("$.messages[%d]", i), ErrInvalidWireData)
+		}
+		role, err := requiredString(o, "role", fmt.Sprintf("$.messages[%d]", i))
+		if err != nil {
+			return nil, err
+		}
+		if role != "user" && role != "assistant" {
+			return nil, at(fmt.Sprintf("$.messages[%d].role", i), ErrUnsupported)
+		}
+		c, err := anthContent(o["content"], role, fmt.Sprintf("$.messages[%d].content", i))
+		if err != nil {
+			return nil, err
+		}
+		if len(c) == 0 {
+			return nil, at(fmt.Sprintf("$.messages[%d].content", i), fmt.Errorf("%w: non-empty content required", ErrInvalidWireData))
+		}
+		var normal []any
+		for _, z := range c {
+			zo := z.(map[string]any)
+			if zo["type"] == "function_call" {
+				id := zo["call_id"].(string)
+				if pendingCalls[id] {
+					return nil, at(fmt.Sprintf("$.messages[%d].content", i), fmt.Errorf("%w: duplicate unresolved tool ID", ErrInvalidSequence))
 				}
-				if zo["type"] == "function_call" || zo["type"] == "function_call_output" {
-					if len(normal) > 0 {
-						input = append(input, map[string]any{"type": "message", "role": role, "content": normal})
-						normal = nil
-					}
-					input = append(input, zo)
-				} else {
-					normal = append(normal, zo)
+				pendingCalls[id] = true
+			} else if zo["type"] == "function_call_output" {
+				id := zo["call_id"].(string)
+				if !pendingCalls[id] {
+					return nil, at(fmt.Sprintf("$.messages[%d].content", i), fmt.Errorf("%w: tool_result has no preceding tool_use", ErrInvalidSequence))
 				}
+				delete(pendingCalls, id)
 			}
-			if len(normal) > 0 {
-				input = append(input, map[string]any{"type": "message", "role": role, "content": normal})
+			if zo["type"] == "function_call" || zo["type"] == "function_call_output" {
+				if len(normal) > 0 {
+					input = append(input, map[string]any{"type": "message", "role": role, "content": normal})
+					normal = nil
+				}
+				input = append(input, zo)
+			} else {
+				normal = append(normal, zo)
 			}
 		}
-		first := ms[0].(map[string]any)
-		if first["role"] != "user" {
-			return nil, at("$.messages[0].role", fmt.Errorf("%w: conversation must begin with user", ErrInvalidSequence))
+		if len(normal) > 0 {
+			input = append(input, map[string]any{"type": "message", "role": role, "content": normal})
 		}
-		if len(pendingCalls) != 0 {
-			return nil, at("$.messages", fmt.Errorf("%w: tool_use requires a following tool_result", ErrInvalidSequence))
-		}
-		r["input"] = input
-	} else if a["messages"] != nil {
-		return nil, at("$.messages", ErrInvalidWireData)
 	}
+	first := ms[0].(map[string]any)
+	if first["role"] != "user" {
+		return nil, at("$.messages[0].role", fmt.Errorf("%w: conversation must begin with user", ErrInvalidSequence))
+	}
+	if len(pendingCalls) != 0 {
+		return nil, at("$.messages", fmt.Errorf("%w: tool_use requires a following tool_result", ErrInvalidSequence))
+	}
+	r["input"] = input
 	if ts, ok := arr(a["tools"]); ok {
 		tools := []any{}
 		for i, x := range ts {
@@ -529,25 +483,16 @@ func anthropicRequestToResponses(body []byte, model string) ([]byte, error) {
 			if _, ok := o["type"]; ok {
 				return nil, at(fmt.Sprintf("$.tools[%d].type", i), ErrUnsupported)
 			}
-			if v, ok := o["description"]; ok {
-				if _, ok := str(v); !ok {
-					return nil, at(fmt.Sprintf("$.tools[%d].description", i), ErrInvalidWireData)
-				}
-			}
-			if v, ok := o["input_schema"]; ok {
-				if _, ok := obj(v); !ok {
-					return nil, at(fmt.Sprintf("$.tools[%d].input_schema", i), ErrInvalidWireData)
-				}
+			_, description, schema, err := normalizeToolDefinition(o, fmt.Sprintf("$.tools[%d]", i), "input_schema")
+			if err != nil {
+				return nil, err
 			}
 			if _, ok := o["strict"]; ok {
 				return nil, at(fmt.Sprintf("$.tools[%d].strict", i), ErrUnsupported)
 			}
-			t := map[string]any{"type": "function", "name": name}
-			copyIf(t, o, "description", "description")
-			if p, ok := o["input_schema"]; ok {
-				t["parameters"] = p
-			} else {
-				t["parameters"] = map[string]any{"type": "object"}
+			t := map[string]any{"type": "function", "name": name, "parameters": schema}
+			if description != nil {
+				t["description"] = description
 			}
 			tools = append(tools, t)
 		}
@@ -586,21 +531,7 @@ func responsesImageToAnthropic(o map[string]any, path string) (map[string]any, e
 	if !ok || u == "" {
 		return nil, at(path+".image_url", ErrInvalidWireData)
 	}
-	if strings.HasPrefix(u, "data:") {
-		parts := strings.SplitN(strings.TrimPrefix(u, "data:"), ",", 2)
-		if len(parts) != 2 || !strings.HasSuffix(parts[0], ";base64") {
-			return nil, at(path+".image_url", ErrUnsupported)
-		}
-		media := strings.TrimSuffix(parts[0], ";base64")
-		if media == "" || parts[1] == "" {
-			return nil, at(path+".image_url", ErrInvalidWireData)
-		}
-		if _, e := base64.StdEncoding.DecodeString(parts[1]); e != nil {
-			return nil, at(path+".image_url", ErrInvalidWireData)
-		}
-		return map[string]any{"type": "image", "source": map[string]any{"type": "base64", "media_type": media, "data": parts[1]}}, nil
-	}
-	return map[string]any{"type": "image", "source": map[string]any{"type": "url", "url": u}}, nil
+	return imageURLToAnthropic(u, path+".image_url")
 }
 
 func responseMessageContent(v any, role, path string) ([]any, error) {
@@ -629,7 +560,7 @@ func responseMessageContent(v any, role, path string) ([]any, error) {
 					return nil, err
 				}
 			}
-			if err := rejectPhase(o, p); err != nil {
+			if err := rejectPresent(o, p, "phase"); err != nil {
 				return nil, err
 			}
 			out = append(out, map[string]any{"type": "text", "text": t})
@@ -640,7 +571,7 @@ func responseMessageContent(v any, role, path string) ([]any, error) {
 			if _, exists := o["detail"]; exists {
 				return nil, at(p+".detail", ErrUnsupported)
 			}
-			if err := rejectPhase(o, p); err != nil {
+			if err := rejectPresent(o, p, "phase"); err != nil {
 				return nil, err
 			}
 			im, e := responsesImageToAnthropic(o, p)
@@ -684,21 +615,18 @@ func ResponsesRequestToAnthropic(body []byte, model string) ([]byte, error) {
 
 // ResponsesRequestToAnthropicWithOptions is ResponsesRequestToAnthropic with per-conversion warning options.
 func ResponsesRequestToAnthropicWithOptions(body []byte, model string, options ConversionOptions) ([]byte, error) {
-	if options.WarningHandler != nil {
-		o, err := decodeObject(body)
-		if err != nil {
-			return nil, err
-		}
-		inspectResponsesObject(o, false, options, "$")
-	}
-	return responsesRequestToAnthropic(body, model)
-}
-
-func responsesRequestToAnthropic(body []byte, model string) ([]byte, error) {
 	r, err := decodeObject(body)
 	if err != nil {
 		return nil, err
 	}
+	if options.WarningHandler != nil {
+		inspectResponsesObject(r, false, options, "$")
+	}
+	return responsesRequestToAnthropic(r, model)
+}
+
+func responsesRequestToAnthropic(r map[string]any, model string) ([]byte, error) {
+	var err error
 	for _, key := range []string{"previous_response_id", "reasoning", "truncation", "max_tool_calls", "parallel_tool_calls", "text", "phase", "prompt_cache_key", "prompt_cache_retention"} {
 		if _, ok := r[key]; ok {
 			return nil, at("$."+key, ErrUnsupported)
@@ -846,26 +774,13 @@ func responsesRequestToAnthropic(body []byte, model string) ([]byte, error) {
 			if _, ok := o["strict"]; ok {
 				return nil, at(p+".strict", ErrUnsupported)
 			}
-			if v, ok := o["description"]; ok {
-				if _, ok := str(v); !ok {
-					return nil, at(p+".description", ErrInvalidWireData)
-				}
-			}
-			if v, ok := o["parameters"]; ok {
-				if _, ok := obj(v); !ok {
-					return nil, at(p+".parameters", ErrInvalidWireData)
-				}
-			}
-			name, err := requiredString(o, "name", p)
+			name, description, schema, err := normalizeToolDefinition(o, p, "parameters")
 			if err != nil {
 				return nil, err
 			}
-			t := map[string]any{"name": name}
-			copyIf(t, o, "description", "description")
-			if v, ok := o["parameters"]; ok {
-				t["input_schema"] = v
-			} else {
-				t["input_schema"] = map[string]any{"type": "object"}
+			t := map[string]any{"name": name, "input_schema": schema}
+			if description != nil {
+				t["description"] = description
 			}
 			tools = append(tools, t)
 		}
@@ -910,21 +825,17 @@ func ResponsesResponseToAnthropic(body []byte, model string) ([]byte, error) {
 
 // ResponsesResponseToAnthropicWithOptions is ResponsesResponseToAnthropic with per-conversion warning options.
 func ResponsesResponseToAnthropicWithOptions(body []byte, model string, options ConversionOptions) ([]byte, error) {
-	if options.WarningHandler != nil {
-		o, err := decodeObject(body)
-		if err != nil {
-			return nil, err
-		}
-		inspectResponsesObject(o, true, options, "$")
-	}
-	return responsesResponseToAnthropic(body, model)
-}
-
-func responsesResponseToAnthropic(body []byte, model string) ([]byte, error) {
 	r, err := decodeObject(body)
 	if err != nil {
 		return nil, err
 	}
+	if options.WarningHandler != nil {
+		inspectResponsesObject(r, true, options, "$")
+	}
+	return responsesResponseToAnthropic(r, model)
+}
+
+func responsesResponseToAnthropic(r map[string]any, model string) ([]byte, error) {
 	status, ok := str(r["status"])
 	if !ok || (status != "completed" && status != "incomplete") {
 		return nil, at("$.status", fmt.Errorf("%w: completed or incomplete status required", ErrInvalidWireData))
@@ -932,7 +843,7 @@ func responsesResponseToAnthropic(body []byte, model string) ([]byte, error) {
 	if v, exists := r["object"]; exists && v != "response" {
 		return nil, at("$.object", ErrInvalidWireData)
 	}
-	if err := rejectPhase(r, "$"); err != nil {
+	if err := rejectPresent(r, "$", "phase"); err != nil {
 		return nil, err
 	}
 	sourceID, err := requiredString(r, "id", "$")
@@ -978,7 +889,7 @@ func responsesResponseToAnthropic(body []byte, model string) ([]byte, error) {
 		if !ok {
 			return nil, at(p, ErrInvalidWireData)
 		}
-		if err := rejectPhase(o, p); err != nil {
+		if err := rejectPresent(o, p, "phase"); err != nil {
 			return nil, err
 		}
 		if o["type"] == nil || o["type"] == "" {
@@ -1015,7 +926,7 @@ func responsesResponseToAnthropic(body []byte, model string) ([]byte, error) {
 				if err := rejectNonEmptyArray(q, "annotations", cp); err != nil {
 					return nil, err
 				}
-				if err := rejectPhase(q, cp); err != nil {
+				if err := rejectPresent(q, cp, "phase"); err != nil {
 					return nil, err
 				}
 				t, ok := str(q["text"])
@@ -1096,28 +1007,25 @@ func AnthropicResponseToResponses(body []byte, model string) ([]byte, error) {
 
 // AnthropicResponseToResponsesWithOptions is AnthropicResponseToResponses with per-conversion warning options.
 func AnthropicResponseToResponsesWithOptions(body []byte, model string, options ConversionOptions) ([]byte, error) {
-	if options.WarningHandler != nil {
-		o, err := decodeObject(body)
-		if err != nil {
-			return nil, err
-		}
-		inspectAnthropicObject(o, true, options, "$")
-	}
-	return anthropicResponseToResponses(body, model)
-}
-
-func anthropicResponseToResponses(body []byte, model string) ([]byte, error) {
 	a, err := decodeObject(body)
 	if err != nil {
 		return nil, err
 	}
+	if options.WarningHandler != nil {
+		inspectAnthropicObject(a, true, options, "$")
+	}
+	return anthropicResponseToResponses(a, model)
+}
+
+func anthropicResponseToResponses(a map[string]any, model string) ([]byte, error) {
+	var err error
 	if a["type"] != "message" {
 		return nil, at("$.type", fmt.Errorf("%w: completed Anthropic response type must be message", ErrInvalidWireData))
 	}
 	if a["role"] != "assistant" {
 		return nil, at("$.role", fmt.Errorf("%w: completed Anthropic response role must be assistant", ErrInvalidWireData))
 	}
-	if err := rejectPhase(a, "$"); err != nil {
+	if err := rejectPresent(a, "$", "phase"); err != nil {
 		return nil, err
 	}
 	sourceID, _ := str(a["id"])
@@ -1186,7 +1094,7 @@ func anthropicResponseToResponses(body []byte, model string) ([]byte, error) {
 		if !ok {
 			return nil, at(p, ErrInvalidWireData)
 		}
-		if err := rejectPhase(o, p); err != nil {
+		if err := rejectPresent(o, p, "phase"); err != nil {
 			return nil, err
 		}
 		if o["type"] == nil || o["type"] == "" {

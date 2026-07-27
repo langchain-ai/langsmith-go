@@ -15,6 +15,14 @@ func object(t *testing.T, b []byte) map[string]any {
 	}
 	return v
 }
+
+func requireErrorIs(t *testing.T, err, target error) {
+	t.Helper()
+	if !errors.Is(err, target) {
+		t.Fatalf("error = %v, want errors.Is(_, %v)", err, target)
+	}
+}
+
 func list(t *testing.T, v any) []any {
 	t.Helper()
 	a, ok := v.([]any)

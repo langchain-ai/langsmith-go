@@ -1,7 +1,6 @@
 package messagetranslators
 
 import (
-	"encoding/base64"
 	"encoding/json"
 	"fmt"
 	"strings"
@@ -97,41 +96,12 @@ func anthropicUsageToChatCompletions(u map[string]any, path string) (map[string]
 	}, nil
 }
 
-func rejectPresent(o map[string]any, path string, keys ...string) error {
-	for _, key := range keys {
-		if _, ok := o[key]; ok {
-			return at(path+"."+key, ErrUnsupported)
-		}
-	}
-	return nil
-}
-
 func anthropicImageToChatCompletions(o map[string]any, path string) (map[string]any, error) {
-	s, ok := obj(o["source"])
-	if !ok {
-		return nil, at(path+".source", ErrInvalidWireData)
+	u, err := anthropicImageURL(o, path, ErrInvalidWireData)
+	if err != nil {
+		return nil, err
 	}
-	var url string
-	switch s["type"] {
-	case "url":
-		url, ok = str(s["url"])
-		if !ok || url == "" {
-			return nil, at(path+".source.url", ErrInvalidWireData)
-		}
-	case "base64":
-		media, mok := str(s["media_type"])
-		data, dok := str(s["data"])
-		if !mok || !dok || media == "" || data == "" {
-			return nil, at(path+".source", ErrInvalidWireData)
-		}
-		if _, err := base64.StdEncoding.DecodeString(data); err != nil {
-			return nil, at(path+".source.data", fmt.Errorf("%w: invalid base64", ErrInvalidWireData))
-		}
-		url = "data:" + media + ";base64," + data
-	default:
-		return nil, at(path+".source.type", ErrUnsupported)
-	}
-	return map[string]any{"type": "image_url", "image_url": map[string]any{"url": url}}, nil
+	return map[string]any{"type": "image_url", "image_url": map[string]any{"url": u}}, nil
 }
 
 func chatCompletionsImageToAnthropic(o map[string]any, path string) (map[string]any, error) {
@@ -146,21 +116,7 @@ func chatCompletionsImageToAnthropic(o map[string]any, path string) (map[string]
 	if !ok || u == "" {
 		return nil, at(path+".image_url.url", ErrInvalidWireData)
 	}
-	if strings.HasPrefix(u, "data:") {
-		parts := strings.SplitN(strings.TrimPrefix(u, "data:"), ",", 2)
-		if len(parts) != 2 || !strings.HasSuffix(parts[0], ";base64") {
-			return nil, at(path+".image_url.url", ErrUnsupported)
-		}
-		media := strings.TrimSuffix(parts[0], ";base64")
-		if media == "" || parts[1] == "" {
-			return nil, at(path+".image_url.url", ErrInvalidWireData)
-		}
-		if _, err := base64.StdEncoding.DecodeString(parts[1]); err != nil {
-			return nil, at(path+".image_url.url", ErrInvalidWireData)
-		}
-		return map[string]any{"type": "image", "source": map[string]any{"type": "base64", "media_type": media, "data": parts[1]}}, nil
-	}
-	return map[string]any{"type": "image", "source": map[string]any{"type": "url", "url": u}}, nil
+	return imageURLToAnthropic(u, path+".image_url.url")
 }
 
 func anthropicToolsToChatCompletions(v any, path string) ([]any, error) {
@@ -178,24 +134,13 @@ func anthropicToolsToChatCompletions(v any, path string) ([]any, error) {
 		if err := rejectPresent(o, p, "type", "strict"); err != nil {
 			return nil, err
 		}
-		name, err := requiredString(o, "name", p)
+		name, description, schema, err := normalizeToolDefinition(o, p, "input_schema")
 		if err != nil {
 			return nil, err
 		}
-		f := map[string]any{"name": name}
-		if v, ok := o["description"]; ok {
-			if _, ok := str(v); !ok {
-				return nil, at(p+".description", ErrInvalidWireData)
-			}
-			f["description"] = v
-		}
-		if v, ok := o["input_schema"]; ok {
-			if _, ok := obj(v); !ok {
-				return nil, at(p+".input_schema", ErrInvalidWireData)
-			}
-			f["parameters"] = v
-		} else {
-			f["parameters"] = map[string]any{"type": "object"}
+		f := map[string]any{"name": name, "parameters": schema}
+		if description != nil {
+			f["description"] = description
 		}
 		out = append(out, map[string]any{"type": "function", "function": f})
 	}
@@ -224,24 +169,13 @@ func chatCompletionsToolsToAnthropic(v any, path string) ([]any, error) {
 		if err := rejectPresent(f, p+".function", "strict"); err != nil {
 			return nil, err
 		}
-		name, err := requiredString(f, "name", p+".function")
+		name, description, schema, err := normalizeToolDefinition(f, p+".function", "parameters")
 		if err != nil {
 			return nil, err
 		}
-		t := map[string]any{"name": name}
-		if v, ok := f["description"]; ok {
-			if _, ok := str(v); !ok {
-				return nil, at(p+".function.description", ErrInvalidWireData)
-			}
-			t["description"] = v
-		}
-		if v, ok := f["parameters"]; ok {
-			if _, ok := obj(v); !ok {
-				return nil, at(p+".function.parameters", ErrInvalidWireData)
-			}
-			t["input_schema"] = v
-		} else {
-			t["input_schema"] = map[string]any{"type": "object"}
+		t := map[string]any{"name": name, "input_schema": schema}
+		if description != nil {
+			t["description"] = description
 		}
 		out = append(out, t)
 	}
@@ -256,21 +190,18 @@ func AnthropicRequestToChatCompletions(body []byte, model string) ([]byte, error
 
 // AnthropicRequestToChatCompletionsWithOptions is AnthropicRequestToChatCompletions with per-conversion warning options.
 func AnthropicRequestToChatCompletionsWithOptions(body []byte, model string, options ConversionOptions) ([]byte, error) {
-	if options.WarningHandler != nil {
-		o, err := decodeObject(body)
-		if err != nil {
-			return nil, err
-		}
-		inspectAnthropicObject(o, false, options, "$")
-	}
-	return anthropicRequestToChatCompletions(body, model)
-}
-
-func anthropicRequestToChatCompletions(body []byte, model string) ([]byte, error) {
 	a, err := decodeObject(body)
 	if err != nil {
 		return nil, err
 	}
+	if options.WarningHandler != nil {
+		inspectAnthropicObject(a, false, options, "$")
+	}
+	return anthropicRequestToChatCompletions(a, model)
+}
+
+func anthropicRequestToChatCompletions(a map[string]any, model string) ([]byte, error) {
+	var err error
 	if err := rejectPresent(a, "$", "thinking", "top_k", "service_tier", "output_config", "metadata", "mcp_servers", "context_management"); err != nil {
 		return nil, err
 	}
@@ -530,33 +461,7 @@ func anthropicRequestToChatCompletions(body []byte, model string) ([]byte, error
 }
 
 func anthropicToolResultText(v any, path string) (string, error) {
-	if v == nil {
-		return "", nil
-	}
-	if s, ok := str(v); ok {
-		return s, nil
-	}
-	a, ok := arr(v)
-	if !ok {
-		return "", at(path, ErrInvalidWireData)
-	}
-	var b strings.Builder
-	for i, x := range a {
-		p := fmt.Sprintf("%s[%d]", path, i)
-		o, ok := obj(x)
-		if !ok || o["type"] != "text" {
-			return "", at(p, ErrUnsupported)
-		}
-		if err := rejectPresent(o, p, "citations"); err != nil {
-			return "", err
-		}
-		t, ok := str(o["text"])
-		if !ok {
-			return "", at(p+".text", ErrInvalidWireData)
-		}
-		b.WriteString(t)
-	}
-	return b.String(), nil
+	return flattenTextBlocks(v, path, true, "citations")
 }
 
 func chatCompletionsTextContent(v any, role, path string) ([]any, error) {
@@ -607,21 +512,18 @@ func ChatCompletionsRequestToAnthropic(body []byte, model string) ([]byte, error
 
 // ChatCompletionsRequestToAnthropicWithOptions is ChatCompletionsRequestToAnthropic with per-conversion warning options.
 func ChatCompletionsRequestToAnthropicWithOptions(body []byte, model string, options ConversionOptions) ([]byte, error) {
-	if options.WarningHandler != nil {
-		o, err := decodeObject(body)
-		if err != nil {
-			return nil, err
-		}
-		inspectChatCompletionsObject(o, false, options, "$")
-	}
-	return chatCompletionsRequestToAnthropic(body, model)
-}
-
-func chatCompletionsRequestToAnthropic(body []byte, model string) ([]byte, error) {
 	r, err := decodeObject(body)
 	if err != nil {
 		return nil, err
 	}
+	if options.WarningHandler != nil {
+		inspectChatCompletionsObject(r, false, options, "$")
+	}
+	return chatCompletionsRequestToAnthropic(r, model)
+}
+
+func chatCompletionsRequestToAnthropic(r map[string]any, model string) ([]byte, error) {
+	var err error
 	if err := rejectPresent(r, "$", "functions", "function_call", "response_format", "parallel_tool_calls", "logprobs", "top_logprobs", "prediction", "modalities", "audio", "service_tier", "store", "metadata", "seed", "user", "reasoning_effort", "web_search_options", "frequency_penalty", "presence_penalty", "logit_bias", "verbosity", "safety_identifier"); err != nil {
 		return nil, err
 	}
@@ -798,37 +700,13 @@ func chatCompletionsRequestToAnthropic(body []byte, model string) ([]byte, error
 				}
 			}
 			if v, ok := m["tool_calls"]; ok {
-				calls, ok := arr(v)
-				if !ok || len(calls) == 0 {
-					return nil, at(p+".tool_calls", ErrInvalidWireData)
+				toolUses, ids, e := chatToolCallsToAnthropic(v, p+".tool_calls", seen, fmt.Errorf("%w: duplicate tool call ID", ErrInvalidSequence))
+				if e != nil {
+					return nil, e
 				}
-				for j, z := range calls {
-					q := fmt.Sprintf("%s.tool_calls[%d]", p, j)
-					tc, ok := obj(z)
-					if !ok || tc["type"] != "function" {
-						return nil, at(q+".type", ErrUnsupported)
-					}
-					id, e := requiredString(tc, "id", q)
-					if e != nil {
-						return nil, e
-					}
-					if seen[id] {
-						return nil, at(q+".id", fmt.Errorf("%w: duplicate tool call ID", ErrInvalidSequence))
-					}
-					f, ok := obj(tc["function"])
-					if !ok {
-						return nil, at(q+".function", ErrInvalidWireData)
-					}
-					name, e := requiredString(f, "name", q+".function")
-					if e != nil {
-						return nil, e
-					}
-					args, e := parseArguments(f["arguments"], q+".function.arguments")
-					if e != nil {
-						return nil, e
-					}
-					content = append(content, map[string]any{"type": "tool_use", "id": id, "name": name, "input": args})
-					seen[id], pending[id] = true, true
+				content = append(content, toolUses...)
+				for _, id := range ids {
+					pending[id] = true
 				}
 			}
 			if len(content) == 0 {
@@ -906,27 +784,7 @@ func chatCompletionsRequestToAnthropic(body []byte, model string) ([]byte, error
 }
 
 func chatCompletionsToolText(v any, path string) (string, error) {
-	if s, ok := str(v); ok {
-		return s, nil
-	}
-	a, ok := arr(v)
-	if !ok {
-		return "", at(path, ErrInvalidWireData)
-	}
-	var b strings.Builder
-	for i, x := range a {
-		p := fmt.Sprintf("%s[%d]", path, i)
-		o, ok := obj(x)
-		if !ok || o["type"] != "text" {
-			return "", at(p, ErrUnsupported)
-		}
-		t, ok := str(o["text"])
-		if !ok {
-			return "", at(p+".text", ErrInvalidWireData)
-		}
-		b.WriteString(t)
-	}
-	return b.String(), nil
+	return flattenTextBlocks(v, path, false)
 }
 
 // ChatCompletionsResponseToAnthropic converts one completed Chat Completions response.
@@ -936,21 +794,17 @@ func ChatCompletionsResponseToAnthropic(body []byte, model string) ([]byte, erro
 
 // ChatCompletionsResponseToAnthropicWithOptions is ChatCompletionsResponseToAnthropic with per-conversion warning options.
 func ChatCompletionsResponseToAnthropicWithOptions(body []byte, model string, options ConversionOptions) ([]byte, error) {
-	if options.WarningHandler != nil {
-		o, err := decodeObject(body)
-		if err != nil {
-			return nil, err
-		}
-		inspectChatCompletionsObject(o, true, options, "$")
-	}
-	return chatCompletionsResponseToAnthropic(body, model)
-}
-
-func chatCompletionsResponseToAnthropic(body []byte, model string) ([]byte, error) {
 	r, err := decodeObject(body)
 	if err != nil {
 		return nil, err
 	}
+	if options.WarningHandler != nil {
+		inspectChatCompletionsObject(r, true, options, "$")
+	}
+	return chatCompletionsResponseToAnthropic(r, model)
+}
+
+func chatCompletionsResponseToAnthropic(r map[string]any, model string) ([]byte, error) {
 	if r["object"] != "chat.completion" {
 		return nil, at("$.object", ErrInvalidWireData)
 	}
@@ -1016,39 +870,11 @@ func chatCompletionsResponseToAnthropic(body []byte, model string) ([]byte, erro
 		content = append(content, parts...)
 	}
 	if v, ok := m["tool_calls"]; ok {
-		calls, ok := arr(v)
-		if !ok || len(calls) == 0 {
-			return nil, at("$.choices[0].message.tool_calls", ErrInvalidWireData)
+		toolUses, _, e := chatToolCallsToAnthropic(v, "$.choices[0].message.tool_calls", map[string]bool{}, ErrInvalidSequence)
+		if e != nil {
+			return nil, e
 		}
-		seen := map[string]bool{}
-		for i, x := range calls {
-			p := fmt.Sprintf("$.choices[0].message.tool_calls[%d]", i)
-			tc, ok := obj(x)
-			if !ok || tc["type"] != "function" {
-				return nil, at(p+".type", ErrUnsupported)
-			}
-			cid, e := requiredString(tc, "id", p)
-			if e != nil {
-				return nil, e
-			}
-			if seen[cid] {
-				return nil, at(p+".id", ErrInvalidSequence)
-			}
-			seen[cid] = true
-			f, ok := obj(tc["function"])
-			if !ok {
-				return nil, at(p+".function", ErrInvalidWireData)
-			}
-			name, e := requiredString(f, "name", p+".function")
-			if e != nil {
-				return nil, e
-			}
-			args, e := parseArguments(f["arguments"], p+".function.arguments")
-			if e != nil {
-				return nil, e
-			}
-			content = append(content, map[string]any{"type": "tool_use", "id": cid, "name": name, "input": args})
-		}
+		content = append(content, toolUses...)
 	}
 	if !contentPresent && len(content) == 0 {
 		return nil, at("$.choices[0].message.content", fmt.Errorf("%w: content is required when no tool calls are present", ErrInvalidWireData))
@@ -1063,24 +889,9 @@ func chatCompletionsResponseToAnthropic(body []byte, model string) ([]byte, erro
 			hasTool = true
 		}
 	}
-	var stop string
-	switch finish {
-	case "stop":
-		if hasTool {
-			return nil, at("$.choices[0].finish_reason", ErrInvalidSequence)
-		}
-		stop = "end_turn"
-	case "tool_calls":
-		if !hasTool {
-			return nil, at("$.choices[0].finish_reason", ErrInvalidSequence)
-		}
-		stop = "tool_use"
-	case "length":
-		stop = "max_tokens"
-	case "content_filter", "function_call":
-		return nil, at("$.choices[0].finish_reason", ErrUnsupported)
-	default:
-		return nil, at("$.choices[0].finish_reason", ErrInvalidWireData)
+	stop, err := chatCompletionsFinishReasonToAnthropic(finish, hasTool, "$.choices[0].finish_reason")
+	if err != nil {
+		return nil, err
 	}
 	u, ok := obj(r["usage"])
 	if !ok {
@@ -1104,21 +915,17 @@ func AnthropicResponseToChatCompletions(body []byte, model string) ([]byte, erro
 
 // AnthropicResponseToChatCompletionsWithOptions is AnthropicResponseToChatCompletions with per-conversion warning options.
 func AnthropicResponseToChatCompletionsWithOptions(body []byte, model string, options ConversionOptions) ([]byte, error) {
-	if options.WarningHandler != nil {
-		o, err := decodeObject(body)
-		if err != nil {
-			return nil, err
-		}
-		inspectAnthropicObject(o, true, options, "$")
-	}
-	return anthropicResponseToChatCompletions(body, model)
-}
-
-func anthropicResponseToChatCompletions(body []byte, model string) ([]byte, error) {
 	a, err := decodeObject(body)
 	if err != nil {
 		return nil, err
 	}
+	if options.WarningHandler != nil {
+		inspectAnthropicObject(a, true, options, "$")
+	}
+	return anthropicResponseToChatCompletions(a, model)
+}
+
+func anthropicResponseToChatCompletions(a map[string]any, model string) ([]byte, error) {
 	if a["type"] != "message" {
 		return nil, at("$.type", ErrInvalidWireData)
 	}
@@ -1201,24 +1008,9 @@ func anthropicResponseToChatCompletions(body []byte, model string) ([]byte, erro
 	if !ok {
 		return nil, at("$.stop_reason", ErrInvalidWireData)
 	}
-	var finish string
-	switch stop {
-	case "end_turn", "stop_sequence":
-		if len(calls) > 0 {
-			return nil, at("$.stop_reason", ErrInvalidSequence)
-		}
-		finish = "stop"
-	case "tool_use":
-		if len(calls) == 0 {
-			return nil, at("$.stop_reason", ErrInvalidSequence)
-		}
-		finish = "tool_calls"
-	case "max_tokens":
-		finish = "length"
-	case "pause_turn", "refusal":
-		return nil, at("$.stop_reason", ErrUnsupported)
-	default:
-		return nil, at("$.stop_reason", ErrInvalidWireData)
+	finish, err := anthropicStopReasonToChatCompletions(stop, len(calls) > 0, "$.stop_reason")
+	if err != nil {
+		return nil, err
 	}
 	m := map[string]any{"role": "assistant", "content": text.String(), "refusal": nil}
 	if text.Len() == 0 && len(calls) > 0 {

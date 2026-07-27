@@ -7,8 +7,22 @@ import (
 	"time"
 )
 
-func chatCompletionsChunkObject(e SSEEvent) (map[string]any, bool, error) {
+type decodedChatCompletionsEvent struct {
+	object map[string]any
+	done   bool
+	err    error
+}
+
+func decodeChatCompletionsEvent(e SSEEvent) decodedChatCompletionsEvent {
 	if string(e.Data) == "[DONE]" {
+		return decodedChatCompletionsEvent{done: true}
+	}
+	o, err := decodeObject(e.Data)
+	return decodedChatCompletionsEvent{object: o, err: err}
+}
+
+func chatCompletionsChunkObject(e SSEEvent, decoded decodedChatCompletionsEvent) (map[string]any, bool, error) {
+	if decoded.done {
 		if e.Event != "" && e.Event != "message" {
 			return nil, false, at("event", ErrInvalidWireData)
 		}
@@ -17,17 +31,16 @@ func chatCompletionsChunkObject(e SSEEvent) (map[string]any, bool, error) {
 	if e.Event != "" && e.Event != "message" && e.Event != "error" {
 		return nil, false, at("event "+e.Event, ErrUnsupported)
 	}
-	o, err := decodeObject(e.Data)
-	if err != nil {
-		return nil, false, at("event", err)
+	if decoded.err != nil {
+		return nil, false, at("event", decoded.err)
 	}
-	if er, ok := obj(o["error"]); ok {
+	if er, ok := obj(decoded.object["error"]); ok {
 		return map[string]any{"_chat_completions_error": er}, false, nil
 	}
-	if o["object"] != "chat.completion.chunk" {
+	if decoded.object["object"] != "chat.completion.chunk" {
 		return nil, false, at("event.object", ErrInvalidWireData)
 	}
-	return o, false, nil
+	return decoded.object, false, nil
 }
 
 type chatCompletionsStreamTool struct {
@@ -62,6 +75,33 @@ func NewChatCompletionsToAnthropicStreamWithOptions(model string, options Conver
 	return &ChatCompletionsToAnthropicStream{model: model, options: options, tools: map[int]*chatCompletionsStreamTool{}, textBlock: -1}
 }
 
+func (s *ChatCompletionsToAnthropicStream) applyUsage(v any, path string, terminal, compareOutput bool) (map[string]any, error) {
+	if terminal && s.terminalUsageKnown {
+		return nil, at(path, fmt.Errorf("%w: duplicate terminal usage", ErrInvalidSequence))
+	}
+	u, ok := obj(v)
+	if !ok {
+		return nil, at(path, ErrInvalidWireData)
+	}
+	usage, err := chatCompletionsUsageToAnthropic(u, path)
+	if err != nil {
+		return nil, err
+	}
+	input := usage["input_tokens"].(int64)
+	cached := usage["cache_read_input_tokens"].(int64)
+	output := usage["output_tokens"].(int64)
+	if terminal {
+		if s.startUsageKnown && (input != s.inputTokens || cached != s.cachedTokens || compareOutput && output != s.outputTokens) {
+			return nil, at(path, fmt.Errorf("%w: usage changed", ErrInvalidSequence))
+		}
+		s.terminalUsageKnown = true
+	} else {
+		s.startUsageKnown = true
+	}
+	s.inputTokens, s.cachedTokens, s.outputTokens = input, cached, output
+	return usage, nil
+}
+
 func (s *ChatCompletionsToAnthropicStream) start(o map[string]any) (SSEEvent, error) {
 	id, err := requiredString(o, "id", "event")
 	if err != nil {
@@ -82,18 +122,11 @@ func (s *ChatCompletionsToAnthropicStream) start(o map[string]any) (SSEEvent, er
 		dstModel = wireModel
 	}
 	usage := map[string]any{"input_tokens": int64(0), "output_tokens": int64(0)}
-	if u, ok := obj(o["usage"]); ok {
-		au, e := chatCompletionsUsageToAnthropic(u, "event.usage")
-		if e != nil {
-			return SSEEvent{}, e
+	if o["usage"] != nil {
+		usage, err = s.applyUsage(o["usage"], "event.usage", false, false)
+		if err != nil {
+			return SSEEvent{}, err
 		}
-		usage = au
-		s.inputTokens = au["input_tokens"].(int64)
-		s.cachedTokens = au["cache_read_input_tokens"].(int64)
-		s.outputTokens = au["output_tokens"].(int64)
-		s.startUsageKnown = true
-	} else if o["usage"] != nil {
-		return SSEEvent{}, at("event.usage", ErrInvalidWireData)
 	}
 	e, err := event("message_start", map[string]any{"message": map[string]any{"id": s.id, "type": "message", "role": "assistant", "content": []any{}, "model": dstModel, "stop_reason": nil, "stop_sequence": nil, "usage": usage}})
 	if err == nil {
@@ -124,14 +157,17 @@ func (s *ChatCompletionsToAnthropicStream) validateIdentity(o map[string]any) er
 // Convert translates one complete Chat Completions SSE event. State is rolled
 // back when validation fails, so callers never observe a partially accepted event.
 func (s *ChatCompletionsToAnthropicStream) Convert(e SSEEvent) ([]SSEEvent, error) {
-	inspectChatCompletionsEvent(e, s.options)
+	decoded := decodeChatCompletionsEvent(e)
+	if decoded.err == nil && !decoded.done {
+		inspectChatCompletionsEvent(decoded.object, s.options)
+	}
 	before := *s
-	before.tools = make(map[int]*chatCompletionsStreamTool, len(s.tools))
-	for index, tool := range s.tools {
+	before.tools = cloneMap(s.tools)
+	for index, tool := range before.tools {
 		copyTool := *tool
 		before.tools[index] = &copyTool
 	}
-	out, err := s.convert(e)
+	out, err := s.convert(e, decoded)
 	if err != nil {
 		*s = before
 		return nil, err
@@ -139,11 +175,11 @@ func (s *ChatCompletionsToAnthropicStream) Convert(e SSEEvent) ([]SSEEvent, erro
 	return out, nil
 }
 
-func (s *ChatCompletionsToAnthropicStream) convert(e SSEEvent) ([]SSEEvent, error) {
+func (s *ChatCompletionsToAnthropicStream) convert(e SSEEvent, decoded decodedChatCompletionsEvent) ([]SSEEvent, error) {
 	if s.terminal {
 		return nil, fmt.Errorf("%w: event after terminal event", ErrInvalidSequence)
 	}
-	o, done, err := chatCompletionsChunkObject(e)
+	o, done, err := chatCompletionsChunkObject(e, decoded)
 	if err != nil {
 		return nil, err
 	}
@@ -216,24 +252,9 @@ func (s *ChatCompletionsToAnthropicStream) convert(e SSEEvent) ([]SSEEvent, erro
 		if !s.finishSeen {
 			return nil, at("event.choices", fmt.Errorf("%w: usage-only chunk before finish", ErrInvalidSequence))
 		}
-		if s.terminalUsageKnown {
-			return nil, at("event.usage", fmt.Errorf("%w: duplicate terminal usage", ErrInvalidSequence))
+		if _, err := s.applyUsage(o["usage"], "event.usage", true, false); err != nil {
+			return nil, err
 		}
-		u, ok := obj(o["usage"])
-		if !ok {
-			return nil, at("event.usage", ErrInvalidWireData)
-		}
-		au, e := chatCompletionsUsageToAnthropic(u, "event.usage")
-		if e != nil {
-			return nil, e
-		}
-		if s.startUsageKnown && (au["input_tokens"] != s.inputTokens || au["cache_read_input_tokens"] != s.cachedTokens) {
-			return nil, at("event.usage", fmt.Errorf("%w: usage changed", ErrInvalidSequence))
-		}
-		s.inputTokens = au["input_tokens"].(int64)
-		s.cachedTokens = au["cache_read_input_tokens"].(int64)
-		s.outputTokens = au["output_tokens"].(int64)
-		s.terminalUsageKnown = true
 		return out, nil
 	}
 	if len(choices) != 1 {
@@ -376,24 +397,9 @@ func (s *ChatCompletionsToAnthropicStream) convert(e SSEEvent) ([]SSEEvent, erro
 		if !ok {
 			return nil, at("event.choices[0].finish_reason", ErrInvalidWireData)
 		}
-		hasTools := len(s.tools) > 0
-		switch f {
-		case "stop":
-			if hasTools {
-				return nil, at("event.choices[0].finish_reason", ErrInvalidSequence)
-			}
-			s.finish = "end_turn"
-		case "tool_calls":
-			if !hasTools {
-				return nil, at("event.choices[0].finish_reason", ErrInvalidSequence)
-			}
-			s.finish = "tool_use"
-		case "length":
-			s.finish = "max_tokens"
-		case "content_filter", "function_call":
-			return nil, at("event.choices[0].finish_reason", ErrUnsupported)
-		default:
-			return nil, at("event.choices[0].finish_reason", ErrInvalidWireData)
+		s.finish, e2 = chatCompletionsFinishReasonToAnthropic(f, len(s.tools) > 0, "event.choices[0].finish_reason")
+		if e2 != nil {
+			return nil, e2
 		}
 		// Validate every accumulated argument before emitting any stops.
 		for _, tool := range s.tools {
@@ -419,26 +425,16 @@ func (s *ChatCompletionsToAnthropicStream) convert(e SSEEvent) ([]SSEEvent, erro
 		}
 		s.finishSeen = true
 	}
-	if u, ok := obj(o["usage"]); ok {
+	if o["usage"] != nil {
+		if _, ok := obj(o["usage"]); !ok {
+			return nil, at("event.usage", ErrInvalidWireData)
+		}
 		if !s.finishSeen {
 			return nil, at("event.usage", fmt.Errorf("%w: usage before finish_reason", ErrInvalidSequence))
 		}
-		if s.terminalUsageKnown {
-			return nil, at("event.usage", fmt.Errorf("%w: duplicate terminal usage", ErrInvalidSequence))
+		if _, err := s.applyUsage(o["usage"], "event.usage", true, true); err != nil {
+			return nil, err
 		}
-		au, e := chatCompletionsUsageToAnthropic(u, "event.usage")
-		if e != nil {
-			return nil, e
-		}
-		if s.startUsageKnown && (au["input_tokens"] != s.inputTokens || au["cache_read_input_tokens"] != s.cachedTokens || au["output_tokens"] != s.outputTokens) {
-			return nil, at("event.usage", fmt.Errorf("%w: usage changed", ErrInvalidSequence))
-		}
-		s.inputTokens = au["input_tokens"].(int64)
-		s.cachedTokens = au["cache_read_input_tokens"].(int64)
-		s.outputTokens = au["output_tokens"].(int64)
-		s.terminalUsageKnown = true
-	} else if o["usage"] != nil {
-		return nil, at("event.usage", ErrInvalidWireData)
 	}
 	return out, nil
 }
@@ -488,18 +484,14 @@ func (s *AnthropicToChatCompletionsStream) choice(delta map[string]any, finish a
 // Convert translates one complete Anthropic Messages SSE event. Failed events
 // do not advance the converter state.
 func (s *AnthropicToChatCompletionsStream) Convert(e SSEEvent) ([]SSEEvent, error) {
-	inspectAnthropicEvent(e, s.options)
+	decoded := decodeStreamEvent(e)
+	if decoded.err == nil && !decoded.done {
+		inspectDecodedAnthropicEvent(decoded.object, decoded.typ, s.options)
+	}
 	before := *s
-	before.blocks = make(map[int]*anthropicBlock, len(s.blocks))
-	for index, block := range s.blocks {
-		copyBlock := *block
-		before.blocks[index] = &copyBlock
-	}
-	before.toolIDs = make(map[string]bool, len(s.toolIDs))
-	for id := range s.toolIDs {
-		before.toolIDs[id] = true
-	}
-	out, err := s.convert(e)
+	before.blocks = cloneBlockMap(s.blocks)
+	before.toolIDs = cloneMap(s.toolIDs)
+	out, err := s.convert(e, decoded)
 	if err != nil {
 		*s = before
 		return nil, err
@@ -507,11 +499,11 @@ func (s *AnthropicToChatCompletionsStream) Convert(e SSEEvent) ([]SSEEvent, erro
 	return out, nil
 }
 
-func (s *AnthropicToChatCompletionsStream) convert(e SSEEvent) ([]SSEEvent, error) {
+func (s *AnthropicToChatCompletionsStream) convert(e SSEEvent, decoded decodedStreamEvent) ([]SSEEvent, error) {
 	if s.terminal {
 		return nil, fmt.Errorf("%w: event after terminal event", ErrInvalidSequence)
 	}
-	o, typ, err := streamObject(e)
+	o, typ, err := streamObject(e, decoded)
 	if err != nil {
 		return nil, err
 	}
@@ -714,23 +706,9 @@ func (s *AnthropicToChatCompletionsStream) convert(e SSEEvent) ([]SSEEvent, erro
 				return nil, at("event.delta.stop_sequence", ErrInvalidWireData)
 			}
 		}
-		switch stop {
-		case "end_turn", "stop_sequence":
-			if s.sawTool {
-				return nil, at("event.delta.stop_reason", ErrInvalidSequence)
-			}
-			s.finish = "stop"
-		case "tool_use":
-			if !s.sawTool {
-				return nil, at("event.delta.stop_reason", ErrInvalidSequence)
-			}
-			s.finish = "tool_calls"
-		case "max_tokens":
-			s.finish = "length"
-		case "pause_turn", "refusal":
-			return nil, at("event.delta.stop_reason", ErrUnsupported)
-		default:
-			return nil, at("event.delta.stop_reason", ErrInvalidWireData)
+		s.finish, err = anthropicStopReasonToChatCompletions(stop, s.sawTool, "event.delta.stop_reason")
+		if err != nil {
+			return nil, err
 		}
 		u, ok := obj(o["usage"])
 		if !ok {

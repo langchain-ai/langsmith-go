@@ -7,13 +7,13 @@ import (
 
 var (
 	// ErrInvalidWireData means that JSON or an event payload is malformed.
-	ErrInvalidWireData = errors.New("messagetranslators: invalid wire data")
+	ErrInvalidWireData = errors.New("invalid wire data")
 	// ErrUnsupported means that a known, semantically significant feature has no safe mapping.
-	ErrUnsupported = errors.New("messagetranslators: unsupported feature")
+	ErrUnsupported = errors.New("unsupported feature")
 	// ErrInvalidSequence means that otherwise valid stream events arrived out of order.
-	ErrInvalidSequence = errors.New("messagetranslators: invalid stream sequence")
+	ErrInvalidSequence = errors.New("invalid stream sequence")
 	// ErrTruncatedStream means Finish was called before a terminal stream event.
-	ErrTruncatedStream = errors.New("messagetranslators: truncated stream")
+	ErrTruncatedStream = errors.New("truncated stream")
 )
 
 // ConversionError adds a JSON path or stream-event location to a conversion error.

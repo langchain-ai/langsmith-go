@@ -39,7 +39,7 @@ func TestV0CompletedPayloadAndOrderingMatrix(t *testing.T) {
 	})
 
 	t.Run("anthropic-contiguous-text-and-multiple-tools", func(t *testing.T) {
-		content := `[{"type":"text","text":"a"},{"type":"text","text":"b"},{"type":"tool_use","id":"c1","name":"f","input":{"x":"☃"}},{"type":"tool_use","id":"c2","name":"g","input":{}},{"type":"text","text":"c"}]`
+		content := `[{"type":"text","text":"a"},{"type":"text","text":"b"},{"type":"tool_use","id":"c1","name":"f","input":{"x":"☃"}},{"type":"tool_use","id":"c2","name":"g","input":{}},{"type":"text","text":"c"},{"type":"text","text":"d"}]`
 		got, err := AnthropicResponseToResponses(anthropicCompleted(content, "tool_use", `{"input_tokens":1,"output_tokens":2}`), "g")
 		if err != nil {
 			t.Fatal(err)
@@ -48,7 +48,9 @@ func TestV0CompletedPayloadAndOrderingMatrix(t *testing.T) {
 		if len(outs) != 4 {
 			t.Fatalf("outputs=%#v", outs)
 		}
-		if len(list(t, mapv(t, outs[0])["content"])) != 2 || mapv(t, outs[1])["arguments"] != `{"x":"☃"}` || mapv(t, outs[2])["call_id"] != "c2" || mapv(t, list(t, mapv(t, outs[3])["content"])[0])["text"] != "c" {
+		first := list(t, mapv(t, outs[0])["content"])
+		last := list(t, mapv(t, outs[3])["content"])
+		if len(first) != 2 || mapv(t, first[0])["text"] != "a" || mapv(t, first[1])["text"] != "b" || mapv(t, outs[1])["arguments"] != `{"x":"☃"}` || mapv(t, outs[2])["call_id"] != "c2" || len(last) != 2 || mapv(t, last[0])["text"] != "c" || mapv(t, last[1])["text"] != "d" {
 			t.Fatalf("outputs=%#v", outs)
 		}
 	})
@@ -61,6 +63,7 @@ func TestV0CompletedPayloadAndOrderingMatrix(t *testing.T) {
 		}{
 			{"responses-object", ResponsesResponseToAnthropic, []byte(`{"id":"r","object":"list","model":"g","status":"completed","output":[],"usage":{"input_tokens":0,"output_tokens":0}}`)},
 			{"responses-id", ResponsesResponseToAnthropic, []byte(`{"model":"g","status":"completed","output":[],"usage":{"input_tokens":0,"output_tokens":0}}`)},
+			{"responses-output", ResponsesResponseToAnthropic, []byte(`{"id":"r","model":"g","status":"completed","usage":{"input_tokens":0,"output_tokens":0}}`)},
 			{"responses-output-type", ResponsesResponseToAnthropic, responsesCompleted(`[{"id":"m","role":"assistant","status":"completed","content":[]}]`, `{"input_tokens":0,"output_tokens":0}`)},
 			{"responses-message-id", ResponsesResponseToAnthropic, responsesCompleted(`[{"type":"message","role":"assistant","status":"completed","content":[]}]`, `{"input_tokens":0,"output_tokens":0}`)},
 			{"responses-message-role", ResponsesResponseToAnthropic, responsesCompleted(`[{"type":"message","id":"m","role":"user","status":"completed","content":[]}]`, `{"input_tokens":0,"output_tokens":0}`)},
@@ -216,10 +219,13 @@ func TestV0CompletedUnsupportedMatrix(t *testing.T) {
 	})
 
 	t.Run("annotations-citations-and-phase", func(t *testing.T) {
-		for _, annotations := range []string{`[]`} {
-			if _, err := ResponsesResponseToAnthropic(responsesCompleted(`[{"type":"message","id":"m","role":"assistant","status":"completed","content":[{"type":"output_text","text":"x","annotations":`+annotations+`}]}]`, `{"input_tokens":0,"output_tokens":0}`), "a"); err != nil {
-				t.Fatal(err)
-			}
+		// Source parity: SDK-default empty metadata is harmless, but semantic
+		// citation or annotation data must never be dropped.
+		if _, err := ResponsesResponseToAnthropic(responsesCompleted(`[{"type":"message","id":"m","role":"assistant","status":"completed","content":[{"type":"output_text","text":"x","annotations":[]}]}]`, `{"input_tokens":0,"output_tokens":0}`), "a"); err != nil {
+			t.Fatalf("empty annotations: %v", err)
+		}
+		if _, err := AnthropicResponseToResponses(anthropicCompleted(`[{"type":"text","text":"x","citations":[]}]`, `end_turn`, `{"input_tokens":0,"output_tokens":0}`), "g"); err != nil {
+			t.Fatalf("empty citations: %v", err)
 		}
 		for _, tc := range []struct {
 			name, body string

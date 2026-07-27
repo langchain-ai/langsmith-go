@@ -22,6 +22,9 @@ func TestV0AnthropicToResponsesStreamPayloadMatrix(t *testing.T) {
 					se(t, "message_start", `{"message":{"id":"m","model":"a","usage":{"input_tokens":0,"output_tokens":0}}}`),
 					se(t, "content_block_start", `{"index":0,"content_block":{"type":"text","text":"`+initial+`","cache_control":{"type":"ephemeral"}}}`),
 					se(t, "content_block_stop", `{"index":0}`), se(t, "message_delta", `{"delta":{"stop_reason":"end_turn"},"usage":{"output_tokens":0}}`), se(t, "message_stop", `{}`))
+				// Source parity: the start payload is represented by the added part,
+				// not by a synthetic output_text.delta event.
+				equalNames(t, out, "response.created", "response.in_progress", "response.output_item.added", "response.content_part.added", "response.output_text.done", "response.content_part.done", "response.output_item.done", "response.completed")
 				part := mapv(t, object(t, out[3].Data)["part"])
 				if part["text"] != initial {
 					t.Fatalf("part=%#v", part)
@@ -183,6 +186,11 @@ func TestV0ResponsesStreamSequenceMatrix(t *testing.T) {
 		c := startMessage(t)
 		convertError(t, c.Convert, se(t, "response.output_item.done", `{"output_index":0,"item":{"type":"function_call","id":"m"}}`), ErrInvalidSequence)
 	})
+	t.Run("item-done-with-open-content", func(t *testing.T) {
+		c := startMessage(t)
+		collect(t, c.Convert, se(t, "response.content_part.added", `{"output_index":0,"content_index":0,"part":{"type":"output_text","text":""}}`))
+		convertError(t, c.Convert, se(t, "response.output_item.done", `{"output_index":0}`), ErrInvalidSequence)
+	})
 	t.Run("terminal-with-open-block", func(t *testing.T) {
 		c := startMessage(t)
 		collect(t, c.Convert, se(t, "response.content_part.added", `{"output_index":0,"content_index":0,"part":{"type":"output_text","text":""}}`))
@@ -290,6 +298,14 @@ func TestV0AnthropicStreamSequenceAndFramingMatrix(t *testing.T) {
 
 // Source parity: explicit unsupported Responses/Anthropic stream event and content-block boundaries.
 func TestV0StreamUnsupportedMatrix(t *testing.T) {
+	t.Run("responses-content-annotations", func(t *testing.T) {
+		c := NewResponsesToAnthropicStream("a")
+		collect(t, c.Convert,
+			se(t, "response.created", `{"response":{"id":"r","model":"g"}}`),
+			se(t, "response.output_item.added", `{"output_index":0,"item":{"type":"message","id":"m"}}`),
+		)
+		convertError(t, c.Convert, se(t, "response.content_part.added", `{"output_index":0,"content_index":0,"part":{"type":"output_text","text":"","annotations":[{"type":"url_citation"}]}}`), ErrUnsupported)
+	})
 	t.Run("responses-events", func(t *testing.T) {
 		for _, typ := range []string{"response.reasoning_summary_part.added", "response.reasoning_summary_part.done", "response.reasoning_summary_text.delta", "response.reasoning_summary_text.done", "response.refusal.delta", "response.refusal.done", "response.output_text.annotation.added", "response.output_text.annotation.delta", "response.output_text.annotation.done"} {
 			t.Run(typ, func(t *testing.T) {

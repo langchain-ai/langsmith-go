@@ -1,25 +1,6 @@
 package messagetranslators
 
-func eventObjectForWarnings(e SSEEvent) (map[string]any, string, bool) {
-	if string(e.Data) == "[DONE]" {
-		return nil, "", false
-	}
-	o, err := decodeObject(e.Data)
-	if err != nil {
-		return nil, "", false
-	}
-	typ := e.Event
-	if typ == "" {
-		typ, _ = str(o["type"])
-	}
-	return o, typ, true
-}
-
-func inspectAnthropicEvent(e SSEEvent, options ConversionOptions) {
-	o, typ, ok := eventObjectForWarnings(e)
-	if !ok {
-		return
-	}
+func inspectDecodedAnthropicEvent(o map[string]any, typ string, options ConversionOptions) {
 	i := wireInspector{options}
 	switch typ {
 	case "message_start":
@@ -67,11 +48,7 @@ func inspectAnthropicEvent(e SSEEvent, options ConversionOptions) {
 	}
 }
 
-func inspectResponsesEvent(e SSEEvent, options ConversionOptions) {
-	o, typ, ok := eventObjectForWarnings(e)
-	if !ok {
-		return
-	}
+func inspectResponsesEvent(o map[string]any, typ string, options ConversionOptions) {
 	i := wireInspector{options}
 	common := []string{"type", "sequence_number"}
 	allow := func(names ...string) map[string]struct{} { return fields(append(common, names...)...) }
@@ -126,14 +103,7 @@ func inspectResponseEventPart(i wireInspector, part map[string]any, path string)
 	}
 }
 
-func inspectChatCompletionsEvent(e SSEEvent, options ConversionOptions) {
-	if string(e.Data) == "[DONE]" {
-		return
-	}
-	o, err := decodeObject(e.Data)
-	if err != nil {
-		return
-	}
+func inspectChatCompletionsEvent(o map[string]any, options ConversionOptions) {
 	i := wireInspector{options}
 	if er, ok := obj(o["error"]); ok {
 		i.object(o, "event", fields("error"))
