@@ -604,7 +604,8 @@ type ThreadTrace struct {
 	// `total_tokens` is the total token count (prompt plus completion). Omitted unless
 	// included in `selects`.
 	TotalTokens int64 `json:"total_tokens"`
-	// `trace_id` is the UUID of this trace (the root run). Always present.
+	// `trace_id` is the UUID of this trace (the root run). Returned when `TRACE_ID` is
+	// in `selects`, or when `selects` is omitted entirely (sole fallback field).
 	TraceID string          `json:"trace_id" format:"uuid"`
 	JSON    threadTraceJSON `json:"-"`
 }
