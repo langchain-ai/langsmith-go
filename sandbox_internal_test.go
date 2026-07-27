@@ -61,7 +61,7 @@ func TestSandboxInternalURLHelpers(t *testing.T) {
 }
 
 func TestRequireSandboxDataplaneURL(t *testing.T) {
-	got, err := requireSandboxDataplaneURL("box-a", "ready", "https://sandbox.example")
+	got, err := requireSandboxDataplaneURL("box-a", "https://sandbox.example")
 	if err != nil {
 		t.Fatalf("requireSandboxDataplaneURL returned error: %v", err)
 	}
@@ -69,13 +69,8 @@ func TestRequireSandboxDataplaneURL(t *testing.T) {
 		t.Fatalf("unexpected dataplane URL: %q", got)
 	}
 
-	var notReady *SandboxNotReadyError
-	if _, err := requireSandboxDataplaneURL("box-a", "starting", "https://sandbox.example"); !errors.As(err, &notReady) {
-		t.Fatalf("expected SandboxNotReadyError, got %T: %v", err, err)
-	}
-
 	var notConfigured *SandboxDataplaneNotConfiguredError
-	if _, err := requireSandboxDataplaneURL("box-a", "ready", ""); !errors.As(err, &notConfigured) {
+	if _, err := requireSandboxDataplaneURL("box-a", ""); !errors.As(err, &notConfigured) {
 		t.Fatalf("expected SandboxDataplaneNotConfiguredError, got %T: %v", err, err)
 	}
 }

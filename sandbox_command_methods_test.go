@@ -9,6 +9,7 @@ import (
 	"testing"
 
 	"github.com/langchain-ai/langsmith-go/option"
+	"github.com/stretchr/testify/require"
 )
 
 func TestSandboxCommandWrapperRunUsesCurrentDataplaneURL(t *testing.T) {
@@ -54,17 +55,46 @@ func TestSandboxCommandWrapperRunUsesCurrentDataplaneURL(t *testing.T) {
 	}
 }
 
-func TestSandboxCommandWrapperRejectsNotReadySandbox(t *testing.T) {
+func TestSandboxCommandWrapperDoesNotGateOnStatus(t *testing.T) {
+	var called bool
+
+	srv := httptest.NewServer(http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
+		called = true
+		w.Header().Set("Content-Type", "application/json")
+		_ = json.NewEncoder(w).Encode(map[string]any{
+			"stdout":    "ok",
+			"stderr":    "",
+			"exit_code": 0,
+		})
+	}))
+	defer srv.Close()
+
 	sandbox := &Sandbox{
 		Name:         "box-a",
-		Status:       "starting",
-		DataplaneURL: "https://sandbox.example",
-		boxes:        NewSandboxBoxService(),
+		Status:       "stopped",
+		DataplaneURL: srv.URL,
+		boxes: NewSandboxBoxService(
+			option.WithBaseURL("http://control-plane.test"),
+			option.WithAPIKey("test-api-key"),
+			option.WithMaxRetries(0),
+		),
+	}
+
+	result, err := sandbox.Run(context.Background(), SandboxBoxRunParams{Command: String("echo ok")})
+	require.NoError(t, err)
+	require.True(t, called, "expected the dataplane request to be issued for a stopped sandbox")
+	require.Equal(t, "ok", result.Stdout)
+}
+
+func TestSandboxCommandWrapperRejectsMissingDataplaneURL(t *testing.T) {
+	sandbox := &Sandbox{
+		Name:  "box-a",
+		boxes: NewSandboxBoxService(),
 	}
 
 	_, err := sandbox.Run(context.Background(), SandboxBoxRunParams{Command: String("echo ok")})
-	var notReady *SandboxNotReadyError
-	if !errors.As(err, &notReady) {
-		t.Fatalf("expected SandboxNotReadyError, got %T: %v", err, err)
+	var notConfigured *SandboxDataplaneNotConfiguredError
+	if !errors.As(err, &notConfigured) {
+		t.Fatalf("expected SandboxDataplaneNotConfiguredError, got %T: %v", err, err)
 	}
 }
