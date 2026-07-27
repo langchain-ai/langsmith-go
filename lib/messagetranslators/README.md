@@ -13,28 +13,28 @@ and SSE framing.
 ### Requests
 
 ```go
-AnthropicRequestToResponses(body, model, ...Option)
-ResponsesRequestToAnthropic(body, model, ...Option)
-AnthropicRequestToChatCompletions(body, model, ...Option)
-ChatCompletionsRequestToAnthropic(body, model, ...Option)
+AnthropicRequestToResponses(body, modelOverride, ...Option)
+ResponsesRequestToAnthropic(body, modelOverride, ...Option)
+AnthropicRequestToChatCompletions(body, modelOverride, ...Option)
+ChatCompletionsRequestToAnthropic(body, modelOverride, ...Option)
 ```
 
 ### Completed responses
 
 ```go
-ResponsesResponseToAnthropic(body, model, ...Option)
-AnthropicResponseToResponses(body, model, ...Option)
-ChatCompletionsResponseToAnthropic(body, model, ...Option)
-AnthropicResponseToChatCompletions(body, model, ...Option)
+ResponsesResponseToAnthropic(body, modelOverride, ...Option)
+AnthropicResponseToResponses(body, modelOverride, ...Option)
+ChatCompletionsResponseToAnthropic(body, modelOverride, ...Option)
+AnthropicResponseToChatCompletions(body, modelOverride, ...Option)
 ```
 
 ### Streaming responses
 
 ```go
-NewResponsesToAnthropicStream(model, ...Option)
-NewAnthropicToResponsesStream(model, ...Option)
-NewChatCompletionsToAnthropicStream(model, ...Option)
-NewAnthropicToChatCompletionsStream(model, ...Option)
+NewResponsesToAnthropicStream(modelOverride, ...Option)
+NewAnthropicToResponsesStream(modelOverride, ...Option)
+NewChatCompletionsToAnthropicStream(modelOverride, ...Option)
+NewAnthropicToChatCompletionsStream(modelOverride, ...Option)
 ```
 
 Each stream converter accepts complete events through:
@@ -58,7 +58,7 @@ package-global state or a package logger.
 collector := &messagetranslators.WarningCollector{}
 out, err := messagetranslators.ResponsesRequestToAnthropic(
     body,
-    model,
+    modelOverride,
     messagetranslators.WithWarningHandler(collector.HandleWarning),
 )
 warnings := collector.Warnings() // a concurrency-safe copy

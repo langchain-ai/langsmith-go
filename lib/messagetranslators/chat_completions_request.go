@@ -7,18 +7,18 @@ import (
 )
 
 // AnthropicRequestToChatCompletions converts an Anthropic Messages request to
-// an OpenAI Chat Completions request. model overrides the wire model when non-empty.
-func AnthropicRequestToChatCompletions(body []byte, model string, options ...Option) ([]byte, error) {
+// an OpenAI Chat Completions request. modelOverride replaces the source model when non-empty.
+func AnthropicRequestToChatCompletions(body []byte, modelOverride string, options ...Option) ([]byte, error) {
 	cfg := newConfig(options)
 	a, err := decodeObject(body)
 	if err != nil {
 		return nil, err
 	}
 	inspectAnthropicObject(a, false, cfg, "$")
-	return anthropicRequestToChatCompletions(a, model, cfg)
+	return anthropicRequestToChatCompletions(a, modelOverride, cfg)
 }
 
-func anthropicRequestToChatCompletions(a map[string]any, model string, cfg config) ([]byte, error) {
+func anthropicRequestToChatCompletions(a map[string]any, modelOverride string, cfg config) ([]byte, error) {
 	if err := rejectUnsupportedFields(a, "$", anthropicRequestUnsupported); err != nil {
 		return nil, err
 	}
@@ -51,7 +51,7 @@ func anthropicRequestToChatCompletions(a map[string]any, model string, cfg confi
 	if err != nil {
 		return nil, err
 	}
-	dstModel, err := resolveModel(a, model, "$")
+	dstModel, err := resolveModel(a, modelOverride, "$")
 	if err != nil {
 		return nil, err
 	}
@@ -275,17 +275,17 @@ func anthropicRequestToChatCompletions(a map[string]any, model string, cfg confi
 
 // ChatCompletionsRequestToAnthropic converts an OpenAI Chat Completions request
 // to an Anthropic Messages request. Legacy functions/function_call are rejected.
-func ChatCompletionsRequestToAnthropic(body []byte, model string, options ...Option) ([]byte, error) {
+func ChatCompletionsRequestToAnthropic(body []byte, modelOverride string, options ...Option) ([]byte, error) {
 	cfg := newConfig(options)
 	r, err := decodeObject(body)
 	if err != nil {
 		return nil, err
 	}
 	inspectChatCompletionsObject(r, false, cfg, "$")
-	return chatCompletionsRequestToAnthropic(r, model, cfg)
+	return chatCompletionsRequestToAnthropic(r, modelOverride, cfg)
 }
 
-func chatCompletionsRequestToAnthropic(r map[string]any, model string, cfg config) ([]byte, error) {
+func chatCompletionsRequestToAnthropic(r map[string]any, modelOverride string, cfg config) ([]byte, error) {
 	if err := rejectUnsupportedFields(r, "$", chatCompletionsRequestUnsupported); err != nil {
 		return nil, err
 	}
@@ -343,7 +343,7 @@ func chatCompletionsRequestToAnthropic(r map[string]any, model string, cfg confi
 	if err != nil {
 		return nil, err
 	}
-	dstModel, err := resolveModel(r, model, "$")
+	dstModel, err := resolveModel(r, modelOverride, "$")
 	if err != nil {
 		return nil, err
 	}

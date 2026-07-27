@@ -125,9 +125,9 @@ type ResponsesToAnthropicStream struct {
 }
 
 // NewResponsesToAnthropicStream constructs a Responses-to-Anthropic stream converter.
-func NewResponsesToAnthropicStream(model string, options ...Option) *ResponsesToAnthropicStream {
+func NewResponsesToAnthropicStream(modelOverride string, options ...Option) *ResponsesToAnthropicStream {
 	return &ResponsesToAnthropicStream{
-		model: model, cfg: newConfig(options),
+		model: modelOverride, cfg: newConfig(options),
 		blocks: map[responseBlockKey]responseBlockState{},
 		items:  map[int]responseItemState{},
 	}
@@ -695,10 +695,10 @@ type AnthropicToResponsesStream struct {
 }
 
 // NewAnthropicToResponsesStream constructs an Anthropic-to-Responses stream converter.
-func NewAnthropicToResponsesStream(model string, options ...Option) *AnthropicToResponsesStream {
+func NewAnthropicToResponsesStream(modelOverride string, options ...Option) *AnthropicToResponsesStream {
 	// outputs starts non-nil: it is marshaled into response.created, where a
 	// null would violate the Responses schema.
-	return &AnthropicToResponsesStream{model: model, cfg: newConfig(options), blocks: map[int]*anthropicBlock{}, outputs: []any{}}
+	return &AnthropicToResponsesStream{model: modelOverride, cfg: newConfig(options), blocks: map[int]*anthropicBlock{}, outputs: []any{}}
 }
 
 // Usage returns the token accounting observed so far, in Anthropic terms.

@@ -66,8 +66,8 @@ type ChatCompletionsToAnthropicStream struct {
 }
 
 // NewChatCompletionsToAnthropicStream constructs a converter from Chat Completions to Anthropic Messages.
-func NewChatCompletionsToAnthropicStream(model string, options ...Option) *ChatCompletionsToAnthropicStream {
-	return &ChatCompletionsToAnthropicStream{model: model, cfg: newConfig(options), tools: map[int]*chatCompletionsStreamTool{}, textBlock: -1}
+func NewChatCompletionsToAnthropicStream(modelOverride string, options ...Option) *ChatCompletionsToAnthropicStream {
+	return &ChatCompletionsToAnthropicStream{model: modelOverride, cfg: newConfig(options), tools: map[int]*chatCompletionsStreamTool{}, textBlock: -1}
 }
 
 // Usage returns the token accounting observed so far, in Anthropic terms.
@@ -459,8 +459,8 @@ type AnthropicToChatCompletionsStream struct {
 }
 
 // NewAnthropicToChatCompletionsStream constructs a converter from Anthropic Messages to Chat Completions.
-func NewAnthropicToChatCompletionsStream(model string, options ...Option) *AnthropicToChatCompletionsStream {
-	return &AnthropicToChatCompletionsStream{model: model, cfg: newConfig(options), blocks: map[int]*anthropicBlock{}, toolIDs: map[string]bool{}}
+func NewAnthropicToChatCompletionsStream(modelOverride string, options ...Option) *AnthropicToChatCompletionsStream {
+	return &AnthropicToChatCompletionsStream{model: modelOverride, cfg: newConfig(options), blocks: map[int]*anthropicBlock{}, toolIDs: map[string]bool{}}
 }
 
 // Usage returns the token accounting observed so far, in Anthropic terms.

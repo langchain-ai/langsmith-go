@@ -8,17 +8,17 @@ import (
 
 // ResponsesResponseToAnthropic converts a completed OpenAI Responses response
 // JSON body to an Anthropic Messages response JSON body.
-func ResponsesResponseToAnthropic(body []byte, model string, options ...Option) ([]byte, error) {
+func ResponsesResponseToAnthropic(body []byte, modelOverride string, options ...Option) ([]byte, error) {
 	cfg := newConfig(options)
 	r, err := decodeObject(body)
 	if err != nil {
 		return nil, err
 	}
 	inspectResponsesObject(r, true, cfg, "$")
-	return responsesResponseToAnthropic(r, model, cfg)
+	return responsesResponseToAnthropic(r, modelOverride, cfg)
 }
 
-func responsesResponseToAnthropic(r map[string]any, model string, cfg config) ([]byte, error) {
+func responsesResponseToAnthropic(r map[string]any, modelOverride string, cfg config) ([]byte, error) {
 	status, ok := str(r["status"])
 	if !ok || (status != "completed" && status != "incomplete") {
 		return nil, at("$.status", fmt.Errorf("%w: completed or incomplete status required", ErrInvalidWireData))
@@ -34,7 +34,7 @@ func responsesResponseToAnthropic(r map[string]any, model string, cfg config) ([
 		return nil, err
 	}
 	a := map[string]any{"type": "message", "role": "assistant", "id": destinationID("msg", sourceID, 0)}
-	if a["model"], err = resolveModel(r, model, "$"); err != nil {
+	if a["model"], err = resolveModel(r, modelOverride, "$"); err != nil {
 		return nil, err
 	}
 	if status == "incomplete" {
@@ -175,17 +175,17 @@ func responsesResponseToAnthropic(r map[string]any, model string, cfg config) ([
 
 // AnthropicResponseToResponses converts a completed Anthropic Messages response
 // JSON body to an OpenAI Responses response JSON body.
-func AnthropicResponseToResponses(body []byte, model string, options ...Option) ([]byte, error) {
+func AnthropicResponseToResponses(body []byte, modelOverride string, options ...Option) ([]byte, error) {
 	cfg := newConfig(options)
 	a, err := decodeObject(body)
 	if err != nil {
 		return nil, err
 	}
 	inspectAnthropicObject(a, true, cfg, "$")
-	return anthropicResponseToResponses(a, model, cfg)
+	return anthropicResponseToResponses(a, modelOverride, cfg)
 }
 
-func anthropicResponseToResponses(a map[string]any, model string, cfg config) ([]byte, error) {
+func anthropicResponseToResponses(a map[string]any, modelOverride string, cfg config) ([]byte, error) {
 	var err error
 	if a["type"] != "message" {
 		return nil, at("$.type", fmt.Errorf("%w: completed Anthropic response type must be message", ErrInvalidWireData))
@@ -229,7 +229,7 @@ func anthropicResponseToResponses(a map[string]any, model string, cfg config) ([
 		"truncation":             "disabled",
 		"user":                   nil,
 	}
-	if r["model"], err = resolveModel(a, model, "$"); err != nil {
+	if r["model"], err = resolveModel(a, modelOverride, "$"); err != nil {
 		return nil, err
 	}
 	outs := []any{}

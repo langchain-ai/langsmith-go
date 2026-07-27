@@ -7,17 +7,17 @@ import (
 )
 
 // ChatCompletionsResponseToAnthropic converts one completed Chat Completions response.
-func ChatCompletionsResponseToAnthropic(body []byte, model string, options ...Option) ([]byte, error) {
+func ChatCompletionsResponseToAnthropic(body []byte, modelOverride string, options ...Option) ([]byte, error) {
 	cfg := newConfig(options)
 	r, err := decodeObject(body)
 	if err != nil {
 		return nil, err
 	}
 	inspectChatCompletionsObject(r, true, cfg, "$")
-	return chatCompletionsResponseToAnthropic(r, model, cfg)
+	return chatCompletionsResponseToAnthropic(r, modelOverride, cfg)
 }
 
-func chatCompletionsResponseToAnthropic(r map[string]any, model string, cfg config) ([]byte, error) {
+func chatCompletionsResponseToAnthropic(r map[string]any, modelOverride string, cfg config) ([]byte, error) {
 	if r["object"] != "chat.completion" {
 		return nil, at("$.object", ErrInvalidWireData)
 	}
@@ -31,7 +31,7 @@ func chatCompletionsResponseToAnthropic(r map[string]any, model string, cfg conf
 	if err != nil {
 		return nil, err
 	}
-	dst, err := resolveRequiredModel(r, model, "$")
+	dst, err := resolveRequiredModel(r, modelOverride, "$")
 	if err != nil {
 		return nil, err
 	}
@@ -122,17 +122,17 @@ func chatCompletionsResponseToAnthropic(r map[string]any, model string, cfg conf
 }
 
 // AnthropicResponseToChatCompletions converts one completed Anthropic Messages response.
-func AnthropicResponseToChatCompletions(body []byte, model string, options ...Option) ([]byte, error) {
+func AnthropicResponseToChatCompletions(body []byte, modelOverride string, options ...Option) ([]byte, error) {
 	cfg := newConfig(options)
 	a, err := decodeObject(body)
 	if err != nil {
 		return nil, err
 	}
 	inspectAnthropicObject(a, true, cfg, "$")
-	return anthropicResponseToChatCompletions(a, model, cfg)
+	return anthropicResponseToChatCompletions(a, modelOverride, cfg)
 }
 
-func anthropicResponseToChatCompletions(a map[string]any, model string, cfg config) ([]byte, error) {
+func anthropicResponseToChatCompletions(a map[string]any, modelOverride string, cfg config) ([]byte, error) {
 	if a["type"] != "message" {
 		return nil, at("$.type", ErrInvalidWireData)
 	}
@@ -146,7 +146,7 @@ func anthropicResponseToChatCompletions(a map[string]any, model string, cfg conf
 	if err != nil {
 		return nil, err
 	}
-	dst, err := resolveRequiredModel(a, model, "$")
+	dst, err := resolveRequiredModel(a, modelOverride, "$")
 	if err != nil {
 		return nil, err
 	}

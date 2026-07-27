@@ -5,18 +5,18 @@ import (
 )
 
 // AnthropicRequestToResponses converts an Anthropic Messages request JSON body
-// to an OpenAI Responses request JSON body. model overrides the wire model when non-empty.
-func AnthropicRequestToResponses(body []byte, model string, options ...Option) ([]byte, error) {
+// to an OpenAI Responses request JSON body. modelOverride replaces the source model when non-empty.
+func AnthropicRequestToResponses(body []byte, modelOverride string, options ...Option) ([]byte, error) {
 	cfg := newConfig(options)
 	a, err := decodeObject(body)
 	if err != nil {
 		return nil, err
 	}
 	inspectAnthropicObject(a, false, cfg, "$")
-	return anthropicRequestToResponses(a, model, cfg)
+	return anthropicRequestToResponses(a, modelOverride, cfg)
 }
 
-func anthropicRequestToResponses(a map[string]any, model string, cfg config) ([]byte, error) {
+func anthropicRequestToResponses(a map[string]any, modelOverride string, cfg config) ([]byte, error) {
 	if err := rejectUnsupportedFields(a, "$", anthropicRequestUnsupported, anthropicToResponsesUnsupported); err != nil {
 		return nil, err
 	}
@@ -37,7 +37,7 @@ func anthropicRequestToResponses(a map[string]any, model string, cfg config) ([]
 	if err != nil {
 		return nil, err
 	}
-	dstModel, err := resolveModel(a, model, "$")
+	dstModel, err := resolveModel(a, modelOverride, "$")
 	if err != nil {
 		return nil, err
 	}
@@ -172,18 +172,18 @@ func anthropicRequestToResponses(a map[string]any, model string, cfg config) ([]
 }
 
 // ResponsesRequestToAnthropic converts an OpenAI Responses request JSON body
-// to an Anthropic Messages request JSON body. model overrides the wire model when non-empty.
-func ResponsesRequestToAnthropic(body []byte, model string, options ...Option) ([]byte, error) {
+// to an Anthropic Messages request JSON body. modelOverride replaces the source model when non-empty.
+func ResponsesRequestToAnthropic(body []byte, modelOverride string, options ...Option) ([]byte, error) {
 	cfg := newConfig(options)
 	r, err := decodeObject(body)
 	if err != nil {
 		return nil, err
 	}
 	inspectResponsesObject(r, false, cfg, "$")
-	return responsesRequestToAnthropic(r, model, cfg)
+	return responsesRequestToAnthropic(r, modelOverride, cfg)
 }
 
-func responsesRequestToAnthropic(r map[string]any, model string, cfg config) ([]byte, error) {
+func responsesRequestToAnthropic(r map[string]any, modelOverride string, cfg config) ([]byte, error) {
 	if err := rejectUnsupportedFields(r, "$", responsesRequestUnsupported); err != nil {
 		return nil, err
 	}
@@ -204,7 +204,7 @@ func responsesRequestToAnthropic(r map[string]any, model string, cfg config) ([]
 	if err != nil {
 		return nil, err
 	}
-	dstModel, err := resolveModel(r, model, "$")
+	dstModel, err := resolveModel(r, modelOverride, "$")
 	if err != nil {
 		return nil, err
 	}
