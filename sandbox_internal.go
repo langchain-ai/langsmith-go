@@ -34,10 +34,8 @@ func sandboxFieldValue[T any](field param.Field[T], fallback T) T {
 	return fallback
 }
 
-func requireSandboxDataplaneURL(name string, status string, dataplaneURL string) (string, error) {
-	if status != "" && status != "ready" {
-		return "", &SandboxNotReadyError{SandboxName: name, Status: status}
-	}
+// requireSandboxDataplaneURL ignores lifecycle status: the platform resumes a stopped sandbox when the dataplane request arrives, and the server rejects a genuinely not-ready box.
+func requireSandboxDataplaneURL(name string, dataplaneURL string) (string, error) {
 	if dataplaneURL == "" {
 		return "", &SandboxDataplaneNotConfiguredError{SandboxName: name}
 	}

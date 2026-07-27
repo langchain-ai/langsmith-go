@@ -137,7 +137,7 @@ func TestSandboxRefreshUpdateAndStop(t *testing.T) {
 	if err := sandbox.Stop(context.Background()); err != nil {
 		t.Fatalf("Stop returned error: %v", err)
 	}
-	if !stopped || sandbox.Status != "stopped" || sandbox.DataplaneURL != "" {
+	if !stopped || sandbox.Status != "stopped" || sandbox.DataplaneURL != "https://sandbox.example/updated" {
 		t.Fatalf("unexpected stopped state: stopped=%v sandbox=%#v", stopped, sandbox)
 	}
 }
