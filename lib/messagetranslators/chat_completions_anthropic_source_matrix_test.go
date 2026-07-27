@@ -27,7 +27,6 @@ func TestAnthropicToChatCompletionsRequestValidationMatrix(t *testing.T) {
 			{"stream-type", `{"model":"a","max_tokens":1,"stream":"true","messages":[{"role":"user","content":"u"}]}`},
 			{"stop-type", `{"model":"a","max_tokens":1,"stop_sequences":"x","messages":[{"role":"user","content":"u"}]}`},
 			{"stop-empty", `{"model":"a","max_tokens":1,"stop_sequences":[""],"messages":[{"role":"user","content":"u"}]}`},
-			{"stop-too-many", `{"model":"a","max_tokens":1,"stop_sequences":["1","2","3","4","5"],"messages":[{"role":"user","content":"u"}]}`},
 		} {
 			t.Run(tc.name, func(t *testing.T) {
 				_, err := AnthropicRequestToChatCompletions([]byte(tc.body), "")
@@ -121,7 +120,7 @@ func TestAnthropicToChatCompletionsRequestValidationMatrix(t *testing.T) {
 		}
 	})
 	t.Run("explicit-top-level-unsupported", func(t *testing.T) {
-		for _, field := range []string{"thinking", "top_k", "service_tier", "output_config", "metadata", "mcp_servers", "context_management"} {
+		for _, field := range []string{"thinking", "top_k", "service_tier", "output_config", "mcp_servers", "context_management"} {
 			t.Run(field, func(t *testing.T) {
 				_, err := AnthropicRequestToChatCompletions([]byte(`{"model":"a","max_tokens":1,"`+field+`":{},"messages":[{"role":"user","content":"u"}]}`), "g")
 				requireErrorIs(t, err, ErrUnsupported)
@@ -148,11 +147,8 @@ func TestAnthropicToChatCompletionsCompletedValidationMatrix(t *testing.T) {
 		{"tool-input-null", `[{"type":"tool_use","id":"c","name":"f","input":null}]`, "tool_use", nil},
 		{"tool-input-array", `[{"type":"tool_use","id":"c","name":"f","input":[]}]`, "tool_use", ErrInvalidWireData},
 		{"tool-missing-id", `[{"type":"tool_use","name":"f","input":{}}]`, "tool_use", ErrInvalidWireData},
-		{"tool-stop-no-tool", `[]`, "tool_use", ErrInvalidSequence},
-		{"end-with-tool", `[{"type":"tool_use","id":"c","name":"f","input":{}}]`, "end_turn", ErrInvalidSequence},
 		{"stop-sequence", `[{"type":"text","text":"x"}]`, "stop_sequence", nil},
 		{"pause", `[]`, "pause_turn", ErrUnsupported},
-		{"refusal-stop", `[]`, "refusal", ErrUnsupported},
 		{"unknown-stop", `[]`, "wat", ErrInvalidWireData},
 		{"cache-control", `[{"type":"text","text":"x","cache_control":{"type":"ephemeral"}}]`, "end_turn", nil},
 		{"phase", `[{"type":"text","text":"x","phase":"final"}]`, "end_turn", ErrUnsupported},

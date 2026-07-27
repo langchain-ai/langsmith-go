@@ -48,10 +48,38 @@
 // this low-level package does not redact them. A gateway that requires a
 // different disclosure policy must apply it at its HTTP integration boundary.
 //
-// Option-bearing conversions and stream constructors can synchronously report
-// unknown source fields through ConversionOptions.WarningHandler. The zero value
-// keeps the historical silent tolerance. Warning callbacks must not panic; a
-// warning may already have been delivered when later validation rejects an event,
-// while failed stream events themselves do not advance converter state. See
-// README.md for the tolerance table and inspection boundaries.
+// Every conversion function and stream constructor takes variadic Options.
+// WithWarningHandler enables synchronous reporting of unknown source fields and
+// lossy mappings; with no handler installed, nothing is inspected and unknown
+// fields are silently tolerated. WithClock replaces time.Now for generated
+// timestamps. WithUsageHandler reports final token accounting. Warning callbacks
+// must not panic; a warning may already have been delivered when later
+// validation rejects an event, while failed stream events themselves do not
+// advance converter state. See README.md for the tolerance table and inspection
+// boundaries.
+//
+// Request fields with no destination equivalent are rejected with ErrUnsupported,
+// except when they carry the value the source provider documents as the default.
+// SDKs send those unprompted (parallel_tool_calls: true, truncation: "disabled",
+// response_format: {"type":"text"}, zero sampling penalties), and rejecting a
+// request that asked for nothing unusual would be a false negative. An explicit
+// JSON null is likewise treated as an absent field. The same field carrying any
+// other value is still rejected rather than silently dropped.
+//
+// Where a source's terminal reason disagrees with its own content, the content
+// wins: a completion carrying tool calls is mapped as a tool-call turn whatever
+// its finish_reason says. Several OpenAI-compatible servers report "stop"
+// alongside a populated tool_calls array, and the alternative is rejecting
+// responses that are otherwise perfectly representable.
+//
+// Errors are reported with a JSON path or stream-event location on
+// ConversionError.Path. Callers must decide the HTTP status themselves, because
+// the same sentinel means different things by direction: ErrInvalidWireData on a
+// request is a client error, while on a response it is an upstream failure. See
+// README.md for a mapping table.
+//
+// Stream converters emit events built entirely from validated values, so
+// serialization cannot fail on well-formed converter output and is not reported
+// as an error. A serialization failure would be a bug in this package and
+// panics rather than emitting a truncated event into a live stream.
 package messagetranslators

@@ -157,7 +157,7 @@ func TestRequiredRequestValidation(t *testing.T) {
 
 	cases := []struct {
 		name string
-		fn   func([]byte, string) ([]byte, error)
+		fn   func([]byte, string, ...Option) ([]byte, error)
 		body string
 	}{
 		{"anthropic-model", AnthropicRequestToResponses, `{"max_tokens":1,"messages":[{"role":"user","content":"x"}]}`},
@@ -265,7 +265,7 @@ func TestSemanticRejectionsAndRoleOrder(t *testing.T) {
 func TestMalformedAndUnsupported(t *testing.T) {
 	cases := []struct {
 		name   string
-		fn     func([]byte, string) ([]byte, error)
+		fn     func([]byte, string, ...Option) ([]byte, error)
 		body   string
 		target error
 	}{

@@ -1,10 +1,8 @@
 package messagetranslators
 
 import (
-	"encoding/json"
 	"fmt"
 	"sort"
-	"time"
 )
 
 type decodedChatCompletionsEvent struct {
@@ -45,14 +43,16 @@ func chatCompletionsChunkObject(e SSEEvent, decoded decodedChatCompletionsEvent)
 
 type chatCompletionsStreamTool struct {
 	chatCompletionsIndex, block int
-	id, name, args              string
-	open                        bool
+	id, name                    string
+	// args grows by append so a pre-event snapshot keeps its own length.
+	args []byte
+	open bool
 }
 
 // ChatCompletionsToAnthropicStream incrementally translates complete Chat
 // Completions SSE events into complete Anthropic Messages SSE events.
 type ChatCompletionsToAnthropicStream struct {
-	options                                   ConversionOptions
+	cfg                                       config
 	model                                     string
 	started, role, finishSeen, terminal, text bool
 	sourceID, id, sourceModel                 string
@@ -66,13 +66,17 @@ type ChatCompletionsToAnthropicStream struct {
 }
 
 // NewChatCompletionsToAnthropicStream constructs a converter from Chat Completions to Anthropic Messages.
-func NewChatCompletionsToAnthropicStream(model string) *ChatCompletionsToAnthropicStream {
-	return NewChatCompletionsToAnthropicStreamWithOptions(model, ConversionOptions{})
+func NewChatCompletionsToAnthropicStream(model string, options ...Option) *ChatCompletionsToAnthropicStream {
+	return &ChatCompletionsToAnthropicStream{model: model, cfg: newConfig(options), tools: map[int]*chatCompletionsStreamTool{}, textBlock: -1}
 }
 
-// NewChatCompletionsToAnthropicStreamWithOptions constructs a converter with per-stream warning options.
-func NewChatCompletionsToAnthropicStreamWithOptions(model string, options ConversionOptions) *ChatCompletionsToAnthropicStream {
-	return &ChatCompletionsToAnthropicStream{model: model, options: options, tools: map[int]*chatCompletionsStreamTool{}, textBlock: -1}
+// Usage returns the token accounting observed so far, in Anthropic terms.
+//
+// A Chat Completions stream discloses input usage only in its optional terminal
+// usage chunk, after the Anthropic message_start has been emitted. Reading it
+// here recovers those counts without reparsing the source stream.
+func (s *ChatCompletionsToAnthropicStream) Usage() Usage {
+	return Usage{InputTokens: s.inputTokens, OutputTokens: s.outputTokens, CacheReadInputTokens: s.cachedTokens}
 }
 
 func (s *ChatCompletionsToAnthropicStream) applyUsage(v any, path string, terminal, compareOutput bool) (map[string]any, error) {
@@ -83,7 +87,7 @@ func (s *ChatCompletionsToAnthropicStream) applyUsage(v any, path string, termin
 	if !ok {
 		return nil, at(path, ErrInvalidWireData)
 	}
-	usage, err := chatCompletionsUsageToAnthropic(u, path)
+	usage, err := chatCompletionsUsageToAnthropic(u, path, s.cfg)
 	if err != nil {
 		return nil, err
 	}
@@ -128,11 +132,8 @@ func (s *ChatCompletionsToAnthropicStream) start(o map[string]any) (SSEEvent, er
 			return SSEEvent{}, err
 		}
 	}
-	e, err := event("message_start", map[string]any{"message": map[string]any{"id": s.id, "type": "message", "role": "assistant", "content": []any{}, "model": dstModel, "stop_reason": nil, "stop_sequence": nil, "usage": usage}})
-	if err == nil {
-		s.started = true
-	}
-	return e, err
+	s.started = true
+	return event("message_start", map[string]any{"message": map[string]any{"id": s.id, "type": "message", "role": "assistant", "content": []any{}, "model": dstModel, "stop_reason": nil, "stop_sequence": nil, "usage": usage}}), nil
 }
 
 func (s *ChatCompletionsToAnthropicStream) validateIdentity(o map[string]any) error {
@@ -156,10 +157,10 @@ func (s *ChatCompletionsToAnthropicStream) validateIdentity(o map[string]any) er
 
 // Convert translates one complete Chat Completions SSE event. State is rolled
 // back when validation fails, so callers never observe a partially accepted event.
-func (s *ChatCompletionsToAnthropicStream) Convert(e SSEEvent) ([]SSEEvent, error) {
-	decoded := decodeChatCompletionsEvent(e)
+func (s *ChatCompletionsToAnthropicStream) Convert(raw SSEEvent) ([]SSEEvent, error) {
+	decoded := decodeChatCompletionsEvent(raw)
 	if decoded.err == nil && !decoded.done {
-		inspectChatCompletionsEvent(decoded.object, s.options)
+		inspectChatCompletionsEvent(decoded.object, s.cfg)
 	}
 	before := *s
 	before.tools = cloneMap(s.tools)
@@ -167,7 +168,7 @@ func (s *ChatCompletionsToAnthropicStream) Convert(e SSEEvent) ([]SSEEvent, erro
 		copyTool := *tool
 		before.tools[index] = &copyTool
 	}
-	out, err := s.convert(e, decoded)
+	out, err := s.convert(raw, decoded)
 	if err != nil {
 		*s = before
 		return nil, err
@@ -175,22 +176,26 @@ func (s *ChatCompletionsToAnthropicStream) Convert(e SSEEvent) ([]SSEEvent, erro
 	return out, nil
 }
 
-func (s *ChatCompletionsToAnthropicStream) convert(e SSEEvent, decoded decodedChatCompletionsEvent) ([]SSEEvent, error) {
+func (s *ChatCompletionsToAnthropicStream) convert(raw SSEEvent, decoded decodedChatCompletionsEvent) ([]SSEEvent, error) {
 	if s.terminal {
-		return nil, fmt.Errorf("%w: event after terminal event", ErrInvalidSequence)
+		return nil, at("event", fmt.Errorf("%w: event after terminal event", ErrInvalidSequence))
 	}
-	o, done, err := chatCompletionsChunkObject(e, decoded)
+	o, done, err := chatCompletionsChunkObject(raw, decoded)
 	if err != nil {
 		return nil, err
 	}
 	if done {
 		if !s.started || !s.finishSeen {
-			return nil, fmt.Errorf("%w: [DONE] before finish_reason", ErrInvalidSequence)
+			return nil, at("event", fmt.Errorf("%w: [DONE] before finish_reason", ErrInvalidSequence))
 		}
+		// Output usage only, matching the documented v0 contract. Input counts
+		// learned from a terminal usage chunk cannot amend the already-emitted
+		// message_start, so callers that need them read Usage instead.
 		usage := map[string]any{"output_tokens": s.outputTokens}
-		d1, _ := event("message_delta", map[string]any{"delta": map[string]any{"stop_reason": s.finish, "stop_sequence": nil}, "usage": usage})
-		d2, _ := event("message_stop", map[string]any{})
+		d1 := event("message_delta", map[string]any{"delta": map[string]any{"stop_reason": s.finish, "stop_sequence": nil}, "usage": usage})
+		d2 := event("message_stop", map[string]any{})
 		s.terminal = true
+		s.cfg.reportUsage(s.Usage())
 		return []SSEEvent{d1, d2}, nil
 	}
 	if er, ok := obj(o["_chat_completions_error"]); ok {
@@ -215,12 +220,10 @@ func (s *ChatCompletionsToAnthropicStream) convert(e SSEEvent, decoded decodedCh
 			}
 			sort.Ints(blocks)
 			for _, block := range blocks {
-				x, _ := event("content_block_stop", map[string]any{"index": block})
-				out = append(out, x)
+				out = append(out, event("content_block_stop", map[string]any{"index": block}))
 			}
 		}
-		x, _ := event("error", map[string]any{"error": map[string]any{"type": code, "message": message}})
-		out = append(out, x)
+		out = append(out, event("error", map[string]any{"error": map[string]any{"type": code, "message": message}}))
 		s.terminal = true
 		return out, nil
 	}
@@ -264,11 +267,11 @@ func (s *ChatCompletionsToAnthropicStream) convert(e SSEEvent, decoded decodedCh
 	if !ok {
 		return nil, at("event.choices[0]", ErrInvalidWireData)
 	}
-	idx, e2 := integer(c["index"], "event.choices[0].index", false)
-	if e2 != nil || idx != 0 {
-		if e2 != nil {
-			return nil, e2
-		}
+	idx, err := integer(c["index"], "event.choices[0].index", false)
+	if err != nil {
+		return nil, err
+	}
+	if idx != 0 {
 		return nil, at("event.choices[0].index", ErrUnsupported)
 	}
 	if v, ok := c["logprobs"]; ok && v != nil {
@@ -288,7 +291,7 @@ func (s *ChatCompletionsToAnthropicStream) convert(e SSEEvent, decoded decodedCh
 		s.role = true
 	}
 	if !s.role && (d["content"] != nil || d["tool_calls"] != nil) {
-		return nil, fmt.Errorf("%w: content before assistant role delta", ErrInvalidSequence)
+		return nil, at("event", fmt.Errorf("%w: content before assistant role delta", ErrInvalidSequence))
 	}
 	if v, ok := d["content"]; ok && v != nil {
 		t, ok := str(v)
@@ -302,11 +305,9 @@ func (s *ChatCompletionsToAnthropicStream) convert(e SSEEvent, decoded decodedCh
 				s.text = true
 				s.textBlock = s.nextBlock
 				s.nextBlock++
-				x, _ := event("content_block_start", map[string]any{"index": s.textBlock, "content_block": map[string]any{"type": "text", "text": ""}})
-				out = append(out, x)
+				out = append(out, event("content_block_start", map[string]any{"index": s.textBlock, "content_block": map[string]any{"type": "text", "text": ""}}))
 			}
-			x, _ := event("content_block_delta", map[string]any{"index": s.textBlock, "delta": map[string]any{"type": "text_delta", "text": t}})
-			out = append(out, x)
+			out = append(out, event("content_block_delta", map[string]any{"index": s.textBlock, "delta": map[string]any{"type": "text_delta", "text": t}}))
 		}
 	}
 	if v, ok := d["tool_calls"]; ok {
@@ -361,8 +362,7 @@ func (s *ChatCompletionsToAnthropicStream) convert(e SSEEvent, decoded decodedCh
 				tool = &chatCompletionsStreamTool{chatCompletionsIndex: ci, block: s.nextBlock, id: id, name: name, open: true}
 				s.nextBlock++
 				s.tools[ci] = tool
-				x, _ := event("content_block_start", map[string]any{"index": tool.block, "content_block": map[string]any{"type": "tool_use", "id": id, "name": name, "input": map[string]any{}}})
-				out = append(out, x)
+				out = append(out, event("content_block_start", map[string]any{"index": tool.block, "content_block": map[string]any{"type": "tool_use", "id": id, "name": name, "input": map[string]any{}}}))
 			} else {
 				if id, ok := str(tc["id"]); ok && id != tool.id {
 					return nil, at(p+".id", ErrInvalidSequence)
@@ -382,9 +382,8 @@ func (s *ChatCompletionsToAnthropicStream) convert(e SSEEvent, decoded decodedCh
 					if !ok {
 						return nil, at(p+".function.arguments", ErrInvalidWireData)
 					}
-					tool.args += frag
-					x, _ := event("content_block_delta", map[string]any{"index": tool.block, "delta": map[string]any{"type": "input_json_delta", "partial_json": frag}})
-					out = append(out, x)
+					tool.args = append(tool.args, frag...)
+					out = append(out, event("content_block_delta", map[string]any{"index": tool.block, "delta": map[string]any{"type": "input_json_delta", "partial_json": frag}}))
 				}
 			}
 		}
@@ -397,19 +396,18 @@ func (s *ChatCompletionsToAnthropicStream) convert(e SSEEvent, decoded decodedCh
 		if !ok {
 			return nil, at("event.choices[0].finish_reason", ErrInvalidWireData)
 		}
-		s.finish, e2 = chatCompletionsFinishReasonToAnthropic(f, len(s.tools) > 0, "event.choices[0].finish_reason")
-		if e2 != nil {
-			return nil, e2
+		s.finish, err = chatCompletionsFinishReasonToAnthropic(f, len(s.tools) > 0, "event.choices[0].finish_reason")
+		if err != nil {
+			return nil, err
 		}
 		// Validate every accumulated argument before emitting any stops.
 		for _, tool := range s.tools {
-			if _, e := parseArguments(tool.args, "event.tool_calls.arguments"); e != nil {
+			if _, e := parseArgumentsRaw(tool.args, "event.tool_calls.arguments"); e != nil {
 				return nil, e
 			}
 		}
 		if s.text {
-			x, _ := event("content_block_stop", map[string]any{"index": s.textBlock})
-			out = append(out, x)
+			out = append(out, event("content_block_stop", map[string]any{"index": s.textBlock}))
 		}
 		blocks := make([]int, 0, len(s.tools))
 		byBlock := map[int]*chatCompletionsStreamTool{}
@@ -419,8 +417,7 @@ func (s *ChatCompletionsToAnthropicStream) convert(e SSEEvent, decoded decodedCh
 		}
 		sort.Ints(blocks)
 		for _, b := range blocks {
-			x, _ := event("content_block_stop", map[string]any{"index": b})
-			out = append(out, x)
+			out = append(out, event("content_block_stop", map[string]any{"index": b}))
 			byBlock[b].open = false
 		}
 		s.finishSeen = true
@@ -450,7 +447,7 @@ func (s *ChatCompletionsToAnthropicStream) Finish() error {
 // AnthropicToChatCompletionsStream incrementally translates complete Anthropic
 // Messages SSE events into complete Chat Completions SSE events.
 type AnthropicToChatCompletionsStream struct {
-	options                                  ConversionOptions
+	cfg                                      config
 	model, id, sourceID                      string
 	created                                  int64
 	started, messageDelta, terminal, sawTool bool
@@ -462,36 +459,36 @@ type AnthropicToChatCompletionsStream struct {
 }
 
 // NewAnthropicToChatCompletionsStream constructs a converter from Anthropic Messages to Chat Completions.
-func NewAnthropicToChatCompletionsStream(model string) *AnthropicToChatCompletionsStream {
-	return NewAnthropicToChatCompletionsStreamWithOptions(model, ConversionOptions{})
+func NewAnthropicToChatCompletionsStream(model string, options ...Option) *AnthropicToChatCompletionsStream {
+	return &AnthropicToChatCompletionsStream{model: model, cfg: newConfig(options), blocks: map[int]*anthropicBlock{}, toolIDs: map[string]bool{}}
 }
 
-// NewAnthropicToChatCompletionsStreamWithOptions constructs a converter with per-stream warning options.
-func NewAnthropicToChatCompletionsStreamWithOptions(model string, options ConversionOptions) *AnthropicToChatCompletionsStream {
-	return &AnthropicToChatCompletionsStream{model: model, options: options, blocks: map[int]*anthropicBlock{}, toolIDs: map[string]bool{}}
+// Usage returns the token accounting observed so far, in Anthropic terms.
+func (s *AnthropicToChatCompletionsStream) Usage() Usage {
+	return Usage{InputTokens: s.inputTokens - s.cachedTokens, OutputTokens: s.outputTokens, CacheReadInputTokens: s.cachedTokens}
 }
-func (s *AnthropicToChatCompletionsStream) chunk(choices []any, usage any) (SSEEvent, error) {
+func (s *AnthropicToChatCompletionsStream) chunk(choices []any, usage any) SSEEvent {
 	return chatCompletionsEvent(map[string]any{"id": s.id, "object": "chat.completion.chunk", "created": s.created, "model": s.model, "choices": choices, "usage": usage})
 }
-func chatCompletionsEvent(v map[string]any) (SSEEvent, error) {
-	b, e := json.Marshal(v)
-	return SSEEvent{Data: b}, e
-}
-func (s *AnthropicToChatCompletionsStream) choice(delta map[string]any, finish any) (SSEEvent, error) {
+
+// Chat Completions streams are unnamed data-only events, so no Event field is set.
+func chatCompletionsEvent(v map[string]any) SSEEvent { return SSEEvent{Data: mustMarshal(v)} }
+
+func (s *AnthropicToChatCompletionsStream) choice(delta map[string]any, finish any) SSEEvent {
 	return s.chunk([]any{map[string]any{"index": int64(0), "delta": delta, "finish_reason": finish, "logprobs": nil}}, nil)
 }
 
 // Convert translates one complete Anthropic Messages SSE event. Failed events
 // do not advance the converter state.
-func (s *AnthropicToChatCompletionsStream) Convert(e SSEEvent) ([]SSEEvent, error) {
-	decoded := decodeStreamEvent(e)
+func (s *AnthropicToChatCompletionsStream) Convert(raw SSEEvent) ([]SSEEvent, error) {
+	decoded := decodeStreamEvent(raw)
 	if decoded.err == nil && !decoded.done {
-		inspectDecodedAnthropicEvent(decoded.object, decoded.typ, s.options)
+		inspectDecodedAnthropicEvent(decoded.object, decoded.typ, s.cfg)
 	}
 	before := *s
 	before.blocks = cloneBlockMap(s.blocks)
 	before.toolIDs = cloneMap(s.toolIDs)
-	out, err := s.convert(e, decoded)
+	out, err := s.convert(raw, decoded)
 	if err != nil {
 		*s = before
 		return nil, err
@@ -499,21 +496,21 @@ func (s *AnthropicToChatCompletionsStream) Convert(e SSEEvent) ([]SSEEvent, erro
 	return out, nil
 }
 
-func (s *AnthropicToChatCompletionsStream) convert(e SSEEvent, decoded decodedStreamEvent) ([]SSEEvent, error) {
+func (s *AnthropicToChatCompletionsStream) convert(raw SSEEvent, decoded decodedStreamEvent) ([]SSEEvent, error) {
 	if s.terminal {
-		return nil, fmt.Errorf("%w: event after terminal event", ErrInvalidSequence)
+		return nil, at("event", fmt.Errorf("%w: event after terminal event", ErrInvalidSequence))
 	}
-	o, typ, err := streamObject(e, decoded)
+	o, typ, err := streamObject(raw, decoded)
 	if err != nil {
 		return nil, err
 	}
 	if s.messageDelta && typ != "message_stop" && typ != "error" && typ != "ping" {
-		return nil, fmt.Errorf("%w: event after message_delta", ErrInvalidSequence)
+		return nil, at("event "+typ, fmt.Errorf("%w: event after message_delta", ErrInvalidSequence))
 	}
 	switch typ {
 	case "message_start":
 		if s.started {
-			return nil, fmt.Errorf("%w: duplicate message_start", ErrInvalidSequence)
+			return nil, at("event "+typ, fmt.Errorf("%w: duplicate message_start", ErrInvalidSequence))
 		}
 		m, ok := obj(o["message"])
 		if !ok {
@@ -545,9 +542,9 @@ func (s *AnthropicToChatCompletionsStream) convert(e SSEEvent, decoded decodedSt
 		if s.model == "" {
 			s.model = wire
 		}
-		s.created = time.Now().Unix()
+		s.created = s.cfg.now().Unix()
 		if u, ok := obj(m["usage"]); ok {
-			cu, e := anthropicUsageToChatCompletions(u, "event.message.usage")
+			cu, e := anthropicUsageToChatCompletions(u, "event.message.usage", s.cfg)
 			if e != nil {
 				return nil, e
 			}
@@ -558,18 +555,17 @@ func (s *AnthropicToChatCompletionsStream) convert(e SSEEvent, decoded decodedSt
 			return nil, at("event.message.usage", ErrInvalidWireData)
 		}
 		s.started = true
-		x, _ := s.choice(map[string]any{"role": "assistant"}, nil)
-		return []SSEEvent{x}, nil
+		return []SSEEvent{s.choice(map[string]any{"role": "assistant"}, nil)}, nil
 	case "content_block_start":
 		if !s.started {
-			return nil, fmt.Errorf("%w: block before message_start", ErrInvalidSequence)
+			return nil, at("event "+typ, fmt.Errorf("%w: block before message_start", ErrInvalidSequence))
 		}
 		idx, e := eventIndex(o)
 		if e != nil {
 			return nil, e
 		}
 		if _, ok := s.blocks[idx]; ok {
-			return nil, fmt.Errorf("%w: duplicate block", ErrInvalidSequence)
+			return nil, at("event "+typ, fmt.Errorf("%w: duplicate block", ErrInvalidSequence))
 		}
 		c, ok := obj(o["content_block"])
 		if !ok {
@@ -591,14 +587,14 @@ func (s *AnthropicToChatCompletionsStream) convert(e SSEEvent, decoded decodedSt
 			if err := rejectNonEmptyArray(c, "citations", "event.content_block"); err != nil {
 				return nil, err
 			}
+			// Unlike the Responses converter, this one forwards each fragment as it
+			// arrives and never needs the assembled text, so none is accumulated.
 			b.kind = "text"
-			b.text = t
 			s.blocks[idx] = b
 			if t == "" {
 				return nil, nil
 			}
-			x, _ := s.choice(map[string]any{"content": t}, nil)
-			return []SSEEvent{x}, nil
+			return []SSEEvent{s.choice(map[string]any{"content": t}, nil)}, nil
 		case "tool_use":
 			input, ok := obj(c["input"])
 			if !ok || len(input) != 0 {
@@ -623,8 +619,7 @@ func (s *AnthropicToChatCompletionsStream) convert(e SSEEvent, decoded decodedSt
 			s.sawTool = true
 			s.toolIDs[id] = true
 			s.blocks[idx] = b
-			x, _ := s.choice(map[string]any{"tool_calls": []any{map[string]any{"index": b.output, "id": id, "type": "function", "function": map[string]any{"name": name, "arguments": ""}}}}, nil)
-			return []SSEEvent{x}, nil
+			return []SSEEvent{s.choice(map[string]any{"tool_calls": []any{map[string]any{"index": b.output, "id": id, "type": "function", "function": map[string]any{"name": name, "arguments": ""}}}}, nil)}, nil
 		default:
 			return nil, at("event.content_block.type", ErrUnsupported)
 		}
@@ -635,7 +630,7 @@ func (s *AnthropicToChatCompletionsStream) convert(e SSEEvent, decoded decodedSt
 		}
 		b, ok := s.blocks[idx]
 		if !ok {
-			return nil, fmt.Errorf("%w: delta for unknown block", ErrInvalidSequence)
+			return nil, at("event "+typ, fmt.Errorf("%w: delta for unknown block", ErrInvalidSequence))
 		}
 		d, ok := obj(o["delta"])
 		if !ok {
@@ -652,9 +647,7 @@ func (s *AnthropicToChatCompletionsStream) convert(e SSEEvent, decoded decodedSt
 			if !ok {
 				return nil, at("event.delta.text", ErrInvalidWireData)
 			}
-			b.text += t
-			x, _ := s.choice(map[string]any{"content": t}, nil)
-			return []SSEEvent{x}, nil
+			return []SSEEvent{s.choice(map[string]any{"content": t}, nil)}, nil
 		}
 		if d["type"] != "input_json_delta" {
 			return nil, at("event.delta.type", ErrInvalidWireData)
@@ -663,9 +656,8 @@ func (s *AnthropicToChatCompletionsStream) convert(e SSEEvent, decoded decodedSt
 		if !ok {
 			return nil, at("event.delta.partial_json", ErrInvalidWireData)
 		}
-		b.args += frag
-		x, _ := s.choice(map[string]any{"tool_calls": []any{map[string]any{"index": b.output, "function": map[string]any{"arguments": frag}}}}, nil)
-		return []SSEEvent{x}, nil
+		b.args = append(b.args, frag...)
+		return []SSEEvent{s.choice(map[string]any{"tool_calls": []any{map[string]any{"index": b.output, "function": map[string]any{"arguments": frag}}}}, nil)}, nil
 	case "content_block_stop":
 		idx, e := eventIndex(o)
 		if e != nil {
@@ -673,10 +665,10 @@ func (s *AnthropicToChatCompletionsStream) convert(e SSEEvent, decoded decodedSt
 		}
 		b, ok := s.blocks[idx]
 		if !ok {
-			return nil, fmt.Errorf("%w: stop for unknown block", ErrInvalidSequence)
+			return nil, at("event "+typ, fmt.Errorf("%w: stop for unknown block", ErrInvalidSequence))
 		}
 		if b.kind == "tool" {
-			if _, e := parseArguments(b.args, "event.arguments"); e != nil {
+			if _, e := parseArgumentsRaw(b.args, "event.arguments"); e != nil {
 				return nil, e
 			}
 		}
@@ -684,10 +676,10 @@ func (s *AnthropicToChatCompletionsStream) convert(e SSEEvent, decoded decodedSt
 		return nil, nil
 	case "message_delta":
 		if !s.started || s.messageDelta {
-			return nil, fmt.Errorf("%w: invalid message_delta", ErrInvalidSequence)
+			return nil, at("event "+typ, fmt.Errorf("%w: invalid message_delta", ErrInvalidSequence))
 		}
 		if len(s.blocks) > 0 {
-			return nil, fmt.Errorf("%w: message_delta with open blocks", ErrInvalidSequence)
+			return nil, at("event "+typ, fmt.Errorf("%w: message_delta with open blocks", ErrInvalidSequence))
 		}
 		d, ok := obj(o["delta"])
 		if !ok {
@@ -720,15 +712,15 @@ func (s *AnthropicToChatCompletionsStream) convert(e SSEEvent, decoded decodedSt
 		}
 		s.outputTokens = n
 		s.messageDelta = true
-		x, _ := s.choice(map[string]any{}, s.finish)
-		return []SSEEvent{x}, nil
+		return []SSEEvent{s.choice(map[string]any{}, s.finish)}, nil
 	case "message_stop":
 		if !s.started || !s.messageDelta {
-			return nil, fmt.Errorf("%w: message_stop before message_delta", ErrInvalidSequence)
+			return nil, at("event "+typ, fmt.Errorf("%w: message_stop before message_delta", ErrInvalidSequence))
 		}
 		usage := map[string]any{"prompt_tokens": s.inputTokens, "completion_tokens": s.outputTokens, "total_tokens": s.inputTokens + s.outputTokens, "prompt_tokens_details": map[string]any{"cached_tokens": s.cachedTokens}}
-		x, _ := s.chunk([]any{}, usage)
+		x := s.chunk([]any{}, usage)
 		s.terminal = true
+		s.cfg.reportUsage(s.Usage())
 		return []SSEEvent{x, {Data: []byte("[DONE]")}}, nil
 	case "error":
 		er, ok := obj(o["error"])
@@ -743,7 +735,7 @@ func (s *AnthropicToChatCompletionsStream) convert(e SSEEvent, decoded decodedSt
 		if code == "" {
 			code = "anthropic_error"
 		}
-		x, _ := chatCompletionsEvent(map[string]any{"error": map[string]any{"message": message, "type": code, "code": code}})
+		x := chatCompletionsEvent(map[string]any{"error": map[string]any{"message": message, "type": code, "code": code}})
 		s.terminal = true
 		return []SSEEvent{x}, nil
 	case "ping":

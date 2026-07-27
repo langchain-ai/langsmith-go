@@ -6,9 +6,9 @@ import (
 	"testing"
 )
 
-func warningOptions() (ConversionOptions, *WarningCollector) {
+func warningOptions() (Option, *WarningCollector) {
 	collector := &WarningCollector{}
-	return ConversionOptions{WarningHandler: collector.HandleWarning}, collector
+	return WithWarningHandler(collector.HandleWarning), collector
 }
 
 func hasWarning(warnings []Warning, path, field string) bool {
@@ -31,18 +31,18 @@ func TestJSONWarningsAcrossProviderFamiliesAndDirections(t *testing.T) {
 	tests := []struct {
 		name       string
 		body       []byte
-		convert    func([]byte, string, ConversionOptions) ([]byte, error)
+		convert    func([]byte, string, ...Option) ([]byte, error)
 		nestedPath string
 		nested     string
 	}{
-		{"anthropic-request-responses", anthropicRequest, AnthropicRequestToResponsesWithOptions, "$.messages[0].content[0].future_part", "future_part"},
-		{"anthropic-request-chat", anthropicRequest, AnthropicRequestToChatCompletionsWithOptions, "$.messages[0].content[0].future_part", "future_part"},
-		{"responses-request", responsesRequest, ResponsesRequestToAnthropicWithOptions, "$.input[0].content[0].future_part", "future_part"},
-		{"chat-request", chatRequest, ChatCompletionsRequestToAnthropicWithOptions, "$.messages[0].content[0].future_part", "future_part"},
-		{"responses-response", responsesResponse, ResponsesResponseToAnthropicWithOptions, "$.output[0].content[0].future_part", "future_part"},
-		{"chat-response", chatResponse, ChatCompletionsResponseToAnthropicWithOptions, "$.choices[0].future_choice", "future_choice"},
-		{"anthropic-response-responses", anthropicResponse, AnthropicResponseToResponsesWithOptions, "$.content[0].future_part", "future_part"},
-		{"anthropic-response-chat", anthropicResponse, AnthropicResponseToChatCompletionsWithOptions, "$.content[0].future_part", "future_part"},
+		{"anthropic-request-responses", anthropicRequest, AnthropicRequestToResponses, "$.messages[0].content[0].future_part", "future_part"},
+		{"anthropic-request-chat", anthropicRequest, AnthropicRequestToChatCompletions, "$.messages[0].content[0].future_part", "future_part"},
+		{"responses-request", responsesRequest, ResponsesRequestToAnthropic, "$.input[0].content[0].future_part", "future_part"},
+		{"chat-request", chatRequest, ChatCompletionsRequestToAnthropic, "$.messages[0].content[0].future_part", "future_part"},
+		{"responses-response", responsesResponse, ResponsesResponseToAnthropic, "$.output[0].content[0].future_part", "future_part"},
+		{"chat-response", chatResponse, ChatCompletionsResponseToAnthropic, "$.choices[0].future_choice", "future_choice"},
+		{"anthropic-response-responses", anthropicResponse, AnthropicResponseToResponses, "$.content[0].future_part", "future_part"},
+		{"anthropic-response-chat", anthropicResponse, AnthropicResponseToChatCompletions, "$.content[0].future_part", "future_part"},
 	}
 	for _, test := range tests {
 		t.Run(test.name, func(t *testing.T) {
@@ -63,10 +63,10 @@ func TestJSONWarningsAcrossProviderFamiliesAndDirections(t *testing.T) {
 
 func TestWarningsDoNotDowngradeErrors(t *testing.T) {
 	options, _ := warningOptions()
-	if _, err := AnthropicRequestToResponsesWithOptions([]byte(`{"model":"a","max_tokens":1,"thinking":{},"messages":[{"role":"user","content":"x"}]}`), "", options); !errors.Is(err, ErrUnsupported) {
+	if _, err := AnthropicRequestToResponses([]byte(`{"model":"a","max_tokens":1,"thinking":{},"messages":[{"role":"user","content":"x"}]}`), "", options); !errors.Is(err, ErrUnsupported) {
 		t.Fatalf("known unsupported field: %v", err)
 	}
-	if _, err := ChatCompletionsRequestToAnthropicWithOptions([]byte(`{"model":"g","max_tokens":1}`), "", options); !errors.Is(err, ErrInvalidWireData) {
+	if _, err := ChatCompletionsRequestToAnthropic([]byte(`{"model":"g","max_tokens":1}`), "", options); !errors.Is(err, ErrInvalidWireData) {
 		t.Fatalf("missing required field: %v", err)
 	}
 }
@@ -80,17 +80,17 @@ func TestRepresentativePayloadsHaveNoWarningsAndLegacyWrappersWork(t *testing.T)
 	chatResponse := []byte(`{"id":"c","object":"chat.completion","created":1,"model":"g","choices":[{"index":0,"message":{"role":"assistant","content":"ok"},"finish_reason":"stop"}],"usage":{"prompt_tokens":1,"completion_tokens":1,"total_tokens":2}}`)
 	tests := []struct {
 		body    []byte
-		with    func([]byte, string, ConversionOptions) ([]byte, error)
-		without func([]byte, string) ([]byte, error)
+		with    func([]byte, string, ...Option) ([]byte, error)
+		without func([]byte, string, ...Option) ([]byte, error)
 	}{
-		{anthropicRequest, AnthropicRequestToResponsesWithOptions, AnthropicRequestToResponses},
-		{anthropicRequest, AnthropicRequestToChatCompletionsWithOptions, AnthropicRequestToChatCompletions},
-		{responsesRequest, ResponsesRequestToAnthropicWithOptions, ResponsesRequestToAnthropic},
-		{chatRequest, ChatCompletionsRequestToAnthropicWithOptions, ChatCompletionsRequestToAnthropic},
-		{responsesResponse, ResponsesResponseToAnthropicWithOptions, ResponsesResponseToAnthropic},
-		{chatResponse, ChatCompletionsResponseToAnthropicWithOptions, ChatCompletionsResponseToAnthropic},
-		{anthropicResponse, AnthropicResponseToResponsesWithOptions, AnthropicResponseToResponses},
-		{anthropicResponse, AnthropicResponseToChatCompletionsWithOptions, AnthropicResponseToChatCompletions},
+		{anthropicRequest, AnthropicRequestToResponses, AnthropicRequestToResponses},
+		{anthropicRequest, AnthropicRequestToChatCompletions, AnthropicRequestToChatCompletions},
+		{responsesRequest, ResponsesRequestToAnthropic, ResponsesRequestToAnthropic},
+		{chatRequest, ChatCompletionsRequestToAnthropic, ChatCompletionsRequestToAnthropic},
+		{responsesResponse, ResponsesResponseToAnthropic, ResponsesResponseToAnthropic},
+		{chatResponse, ChatCompletionsResponseToAnthropic, ChatCompletionsResponseToAnthropic},
+		{anthropicResponse, AnthropicResponseToResponses, AnthropicResponseToResponses},
+		{anthropicResponse, AnthropicResponseToChatCompletions, AnthropicResponseToChatCompletions},
 	}
 	for n, test := range tests {
 		options, collector := warningOptions()
@@ -108,7 +108,7 @@ func TestRepresentativePayloadsHaveNoWarningsAndLegacyWrappersWork(t *testing.T)
 
 func TestStreamWarningAndFailedEventRollback(t *testing.T) {
 	options, collector := warningOptions()
-	s := NewChatCompletionsToAnthropicStreamWithOptions("claude", options)
+	s := NewChatCompletionsToAnthropicStream("claude", options)
 	first := SSEEvent{Data: []byte(`{"id":"c","object":"chat.completion.chunk","created":1,"model":"g","future_envelope":1,"choices":[{"index":0,"delta":{"role":"assistant","future_delta":1},"finish_reason":null}]}`)}
 	if _, err := s.Convert(first); err != nil {
 		t.Fatal(err)
@@ -133,22 +133,22 @@ func TestStreamWarningAndFailedEventRollback(t *testing.T) {
 	}
 }
 
-func TestAllStreamConstructorsWithOptions(t *testing.T) {
-	options := ConversionOptions{WarningHandler: func(Warning) {}}
-	if NewResponsesToAnthropicStream("") == nil || NewResponsesToAnthropicStreamWithOptions("", options) == nil ||
-		NewAnthropicToResponsesStream("") == nil || NewAnthropicToResponsesStreamWithOptions("", options) == nil ||
-		NewChatCompletionsToAnthropicStream("") == nil || NewChatCompletionsToAnthropicStreamWithOptions("", options) == nil ||
-		NewAnthropicToChatCompletionsStream("") == nil || NewAnthropicToChatCompletionsStreamWithOptions("", options) == nil {
+func TestAllStreamConstructorsAcceptOptions(t *testing.T) {
+	options := WithWarningHandler(func(Warning) {})
+	if NewResponsesToAnthropicStream("") == nil || NewResponsesToAnthropicStream("", options) == nil ||
+		NewAnthropicToResponsesStream("") == nil || NewAnthropicToResponsesStream("", options) == nil ||
+		NewChatCompletionsToAnthropicStream("") == nil || NewChatCompletionsToAnthropicStream("", options) == nil ||
+		NewAnthropicToChatCompletionsStream("") == nil || NewAnthropicToChatCompletionsStream("", options) == nil {
 		t.Fatal("constructor returned nil")
 	}
 }
 
 func TestWarningHandlerIsSynchronousAndPanicPropagates(t *testing.T) {
 	called := false
-	options := ConversionOptions{WarningHandler: func(Warning) {
+	options := WithWarningHandler(func(Warning) {
 		called = true
 		panic("handler panic")
-	}}
+	})
 	defer func() {
 		if recover() == nil {
 			t.Fatal("warning-handler panic was unexpectedly recovered")
@@ -157,7 +157,7 @@ func TestWarningHandlerIsSynchronousAndPanicPropagates(t *testing.T) {
 			t.Fatal("warning handler was not called synchronously")
 		}
 	}()
-	_, _ = AnthropicRequestToResponsesWithOptions([]byte(`{"model":"a","max_tokens":1,"messages":[{"role":"user","content":"x"}],"new_field":true}`), "", options)
+	_, _ = AnthropicRequestToResponses([]byte(`{"model":"a","max_tokens":1,"messages":[{"role":"user","content":"x"}],"new_field":true}`), "", options)
 }
 
 func TestWarningCollectorConcurrent(t *testing.T) {

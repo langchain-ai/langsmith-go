@@ -3,8 +3,8 @@ package messagetranslators
 import (
 	"encoding/json"
 	"fmt"
+	"math"
 	"sort"
-	"time"
 )
 
 // SSEEvent is one complete server-sent event. Data contains only the event's
@@ -50,18 +50,27 @@ func streamObject(e SSEEvent, decoded decodedStreamEvent) (map[string]any, strin
 	}
 	return o, decoded.typ, nil
 }
-func event(typ string, v map[string]any) (SSEEvent, error) {
-	v["type"] = typ
+
+// mustMarshal serializes an event this package built. Every value placed in one
+// is a string, bool, int64, nil, a nested map or slice of those, or a
+// json.Number that already round tripped through decodeObject, so marshaling
+// cannot fail on well-formed converter output. A failure here is a bug in this
+// package rather than bad input, and is raised rather than allowed to emit a
+// silently truncated event into a live stream.
+func mustMarshal(v any) []byte {
 	b, err := json.Marshal(v)
-	return SSEEvent{Event: typ, Data: b}, err
-}
-func one(typ string, v map[string]any) ([]SSEEvent, error) {
-	e, err := event(typ, v)
 	if err != nil {
-		return nil, err
+		panic("messagetranslators: bug: unmarshalable generated event: " + err.Error())
 	}
-	return []SSEEvent{e}, nil
+	return b
 }
+
+func event(typ string, v map[string]any) SSEEvent {
+	v["type"] = typ
+	return SSEEvent{Event: typ, Data: mustMarshal(v)}
+}
+
+func one(typ string, v map[string]any) []SSEEvent { return []SSEEvent{event(typ, v)} }
 
 // ResponsesToAnthropicStream incrementally translates complete Responses API
 // SSE events into complete Anthropic Messages SSE events.
@@ -92,15 +101,17 @@ type responseBlockKey struct {
 }
 
 type responseBlockState struct {
-	index        int
-	open         bool
-	arguments    string
+	index int
+	open  bool
+	// arguments accumulates by append so that a snapshot taken before an event
+	// keeps its own length and therefore its own view of the content.
+	arguments    []byte
 	argumentDone bool
 	textDone     bool
 }
 
 type ResponsesToAnthropicStream struct {
-	options           ConversionOptions
+	cfg               config
 	model             string
 	started, terminal bool
 	id, sourceID      string
@@ -110,20 +121,26 @@ type ResponsesToAnthropicStream struct {
 	inputUsageKnown   bool
 	inputTokens       int64
 	cacheReadTokens   int64
+	outputTokens      int64
 }
 
 // NewResponsesToAnthropicStream constructs a Responses-to-Anthropic stream converter.
-func NewResponsesToAnthropicStream(model string) *ResponsesToAnthropicStream {
-	return NewResponsesToAnthropicStreamWithOptions(model, ConversionOptions{})
-}
-
-// NewResponsesToAnthropicStreamWithOptions constructs a converter with per-stream warning options.
-func NewResponsesToAnthropicStreamWithOptions(model string, options ConversionOptions) *ResponsesToAnthropicStream {
+func NewResponsesToAnthropicStream(model string, options ...Option) *ResponsesToAnthropicStream {
 	return &ResponsesToAnthropicStream{
-		model: model, options: options,
+		model: model, cfg: newConfig(options),
 		blocks: map[responseBlockKey]responseBlockState{},
 		items:  map[int]responseItemState{},
 	}
+}
+
+// Usage returns the token accounting observed so far, in Anthropic terms.
+//
+// A Responses stream reports input usage only in its terminal event, by which
+// time the Anthropic message_start that would have carried it has already been
+// emitted. Reading it here is the only way to recover those counts without
+// reparsing the source stream.
+func (s *ResponsesToAnthropicStream) Usage() Usage {
+	return Usage{InputTokens: s.inputTokens, OutputTokens: s.outputTokens, CacheReadInputTokens: s.cacheReadTokens}
 }
 
 func textBlockKey(outputIndex, contentIndex int) responseBlockKey {
@@ -147,23 +164,23 @@ func (s *ResponsesToAnthropicStream) allocate(key responseBlockKey) responseBloc
 func (s *ResponsesToAnthropicStream) close(key responseBlockKey) ([]SSEEvent, error) {
 	block, ok := s.blocks[key]
 	if !ok || !block.open {
-		return nil, fmt.Errorf("%w: duplicate stop", ErrInvalidSequence)
+		return nil, at("event", fmt.Errorf("%w: duplicate stop", ErrInvalidSequence))
 	}
 	block.open = false
 	s.blocks[key] = block
-	return one("content_block_stop", map[string]any{"index": block.index})
+	return one("content_block_stop", map[string]any{"index": block.index}), nil
 }
 
 // Convert translates one complete event and may return zero or more events.
-func (s *ResponsesToAnthropicStream) Convert(e SSEEvent) ([]SSEEvent, error) {
-	decoded := decodeStreamEvent(e)
+func (s *ResponsesToAnthropicStream) Convert(raw SSEEvent) ([]SSEEvent, error) {
+	decoded := decodeStreamEvent(raw)
 	if decoded.err == nil && !decoded.done {
-		inspectResponsesEvent(decoded.object, decoded.typ, s.options)
+		inspectResponsesEvent(decoded.object, decoded.typ, s.cfg)
 	}
 	before := *s
 	before.blocks = cloneMap(s.blocks)
 	before.items = cloneMap(s.items)
-	out, err := s.convert(e, decoded)
+	out, err := s.convert(raw, decoded)
 	if err != nil {
 		*s = before
 		return nil, err
@@ -171,11 +188,11 @@ func (s *ResponsesToAnthropicStream) Convert(e SSEEvent) ([]SSEEvent, error) {
 	return out, nil
 }
 
-func (s *ResponsesToAnthropicStream) convert(e SSEEvent, decoded decodedStreamEvent) ([]SSEEvent, error) {
+func (s *ResponsesToAnthropicStream) convert(raw SSEEvent, decoded decodedStreamEvent) ([]SSEEvent, error) {
 	if s.terminal {
-		return nil, fmt.Errorf("%w: event after terminal event", ErrInvalidSequence)
+		return nil, at("event", fmt.Errorf("%w: event after terminal event", ErrInvalidSequence))
 	}
-	o, typ, err := streamObject(e, decoded)
+	o, typ, err := streamObject(raw, decoded)
 	if err != nil {
 		return nil, err
 	}
@@ -214,12 +231,12 @@ func (s *ResponsesToAnthropicStream) convert(e SSEEvent, decoded decodedStreamEv
 	switch typ {
 	case "response.in_progress":
 		if !s.started {
-			return nil, fmt.Errorf("%w: in_progress before response.created", ErrInvalidSequence)
+			return nil, at("event "+typ, fmt.Errorf("%w: in_progress before response.created", ErrInvalidSequence))
 		}
 		return nil, nil
 	case "response.created":
 		if s.started {
-			return nil, fmt.Errorf("%w: duplicate response start", ErrInvalidSequence)
+			return nil, at("event "+typ, fmt.Errorf("%w: duplicate response start", ErrInvalidSequence))
 		}
 		r, _ := obj(o["response"])
 		if r == nil {
@@ -239,7 +256,7 @@ func (s *ResponsesToAnthropicStream) convert(e SSEEvent, decoded decodedStreamEv
 		}
 		usage := map[string]any{"input_tokens": int64(0), "output_tokens": int64(0)}
 		if u, ok := obj(r["usage"]); ok {
-			au, err := openAIUsageToAnthropic(u, "event.response.usage")
+			au, err := openAIUsageToAnthropic(u, "event.response.usage", s.cfg)
 			if err != nil {
 				return nil, err
 			}
@@ -251,10 +268,10 @@ func (s *ResponsesToAnthropicStream) convert(e SSEEvent, decoded decodedStreamEv
 			return nil, at("event.response.usage", ErrInvalidWireData)
 		}
 		s.started = true
-		return one("message_start", map[string]any{"message": map[string]any{"id": s.id, "type": "message", "role": "assistant", "content": []any{}, "model": m, "stop_reason": nil, "stop_sequence": nil, "usage": usage}})
+		return one("message_start", map[string]any{"message": map[string]any{"id": s.id, "type": "message", "role": "assistant", "content": []any{}, "model": m, "stop_reason": nil, "stop_sequence": nil, "usage": usage}}), nil
 	case "response.output_item.added":
 		if !s.started {
-			return nil, fmt.Errorf("%w: output before response start", ErrInvalidSequence)
+			return nil, at("event "+typ, fmt.Errorf("%w: output before response start", ErrInvalidSequence))
 		}
 		item, ok := obj(o["item"])
 		if !ok {
@@ -266,7 +283,7 @@ func (s *ResponsesToAnthropicStream) convert(e SSEEvent, decoded decodedStreamEv
 			return nil, at("event.output_index", ErrInvalidWireData)
 		}
 		if _, exists := s.items[outIndex]; exists {
-			return nil, fmt.Errorf("%w: duplicate output item", ErrInvalidSequence)
+			return nil, at("event "+typ, fmt.Errorf("%w: duplicate output item", ErrInvalidSequence))
 		}
 		if err := rejectPresent(item, "event.item", "phase"); err != nil {
 			return nil, err
@@ -299,22 +316,22 @@ func (s *ResponsesToAnthropicStream) convert(e SSEEvent, decoded decodedStreamEv
 		}
 		block.open = true
 		s.blocks[key] = block
-		return one("content_block_start", map[string]any{"index": block.index, "content_block": map[string]any{"type": "tool_use", "id": id, "name": name, "input": map[string]any{}}})
+		return one("content_block_start", map[string]any{"index": block.index, "content_block": map[string]any{"type": "tool_use", "id": id, "name": name, "input": map[string]any{}}}), nil
 	case "response.content_part.added":
 		if !s.started {
-			return nil, fmt.Errorf("%w: content before start", ErrInvalidSequence)
+			return nil, at("event "+typ, fmt.Errorf("%w: content before start", ErrInvalidSequence))
 		}
 		out64, _ := integer(o["output_index"], "event.output_index", false)
 		out := int(out64)
 		item, exists := s.items[out]
 		if int64(out) != out64 || !exists {
-			return nil, fmt.Errorf("%w: content for unknown output item", ErrInvalidSequence)
+			return nil, at("event "+typ, fmt.Errorf("%w: content for unknown output item", ErrInvalidSequence))
 		}
 		if item.done {
-			return nil, fmt.Errorf("%w: content after output item done", ErrInvalidSequence)
+			return nil, at("event "+typ, fmt.Errorf("%w: content after output item done", ErrInvalidSequence))
 		}
 		if item.kind != responseMessageItem {
-			return nil, fmt.Errorf("%w: content part on tool output item", ErrInvalidSequence)
+			return nil, at("event "+typ, fmt.Errorf("%w: content part on tool output item", ErrInvalidSequence))
 		}
 		part, ok := obj(o["part"])
 		if !ok {
@@ -341,54 +358,54 @@ func (s *ResponsesToAnthropicStream) convert(e SSEEvent, decoded decodedStreamEv
 		key := textBlockKey(out, content)
 		block := s.allocate(key)
 		if block.open {
-			return nil, fmt.Errorf("%w: duplicate content part", ErrInvalidSequence)
+			return nil, at("event "+typ, fmt.Errorf("%w: duplicate content part", ErrInvalidSequence))
 		}
 		block.open = true
 		s.blocks[key] = block
-		return one("content_block_start", map[string]any{"index": block.index, "content_block": map[string]any{"type": "text", "text": initial}})
+		return one("content_block_start", map[string]any{"index": block.index, "content_block": map[string]any{"type": "text", "text": initial}}), nil
 	case "response.output_text.delta":
 		out64, _ := integer(o["output_index"], "event.output_index", false)
 		out := int(out64)
 		item, ok := s.items[out]
 		if int64(out) != out64 || !ok || item.kind != responseMessageItem || item.done {
-			return nil, fmt.Errorf("%w: text delta on non-message or done item", ErrInvalidSequence)
+			return nil, at("event "+typ, fmt.Errorf("%w: text delta on non-message or done item", ErrInvalidSequence))
 		}
 		content64, _ := integer(o["content_index"], "event.content_index", false)
 		content := int(content64)
 		block, ok := s.blocks[textBlockKey(out, content)]
 		if int64(content) != content64 || !ok || !block.open || block.textDone {
-			return nil, fmt.Errorf("%w: text delta before content start", ErrInvalidSequence)
+			return nil, at("event "+typ, fmt.Errorf("%w: text delta before content start", ErrInvalidSequence))
 		}
 		d, ok := str(o["delta"])
 		if !ok {
 			return nil, at("event.delta", ErrInvalidWireData)
 		}
-		return one("content_block_delta", map[string]any{"index": block.index, "delta": map[string]any{"type": "text_delta", "text": d}})
+		return one("content_block_delta", map[string]any{"index": block.index, "delta": map[string]any{"type": "text_delta", "text": d}}), nil
 	case "response.function_call_arguments.delta":
 		out64, _ := integer(o["output_index"], "event.output_index", false)
 		out := int(out64)
 		item, ok := s.items[out]
 		if int64(out) != out64 || !ok || item.kind != responseToolItem || item.done {
-			return nil, fmt.Errorf("%w: arguments delta on non-tool or done item", ErrInvalidSequence)
+			return nil, at("event "+typ, fmt.Errorf("%w: arguments delta on non-tool or done item", ErrInvalidSequence))
 		}
 		key := toolBlockKey(out)
 		block, ok := s.blocks[key]
 		if !ok || !block.open || block.argumentDone {
-			return nil, fmt.Errorf("%w: arguments delta before tool start", ErrInvalidSequence)
+			return nil, at("event "+typ, fmt.Errorf("%w: arguments delta before tool start", ErrInvalidSequence))
 		}
 		d, ok := str(o["delta"])
 		if !ok {
 			return nil, at("event.delta", ErrInvalidWireData)
 		}
-		block.arguments += d
+		block.arguments = append(block.arguments, d...)
 		s.blocks[key] = block
-		return one("content_block_delta", map[string]any{"index": block.index, "delta": map[string]any{"type": "input_json_delta", "partial_json": d}})
+		return one("content_block_delta", map[string]any{"index": block.index, "delta": map[string]any{"type": "input_json_delta", "partial_json": d}}), nil
 	case "response.content_part.done":
 		out64, _ := integer(o["output_index"], "event.output_index", false)
 		out := int(out64)
 		item, ok := s.items[out]
 		if int64(out) != out64 || !ok || item.kind != responseMessageItem || item.done {
-			return nil, fmt.Errorf("%w: content done on non-message or done item", ErrInvalidSequence)
+			return nil, at("event "+typ, fmt.Errorf("%w: content done on non-message or done item", ErrInvalidSequence))
 		}
 		if part, exists := o["part"]; exists {
 			q, ok := obj(part)
@@ -403,10 +420,10 @@ func (s *ResponsesToAnthropicStream) convert(e SSEEvent, decoded decodedStreamEv
 		content := int(content64)
 		key := textBlockKey(out, content)
 		if int64(content) != content64 {
-			return nil, fmt.Errorf("%w: unknown content part", ErrInvalidSequence)
+			return nil, at("event "+typ, fmt.Errorf("%w: unknown content part", ErrInvalidSequence))
 		}
 		if _, ok := s.blocks[key]; !ok {
-			return nil, fmt.Errorf("%w: unknown content part", ErrInvalidSequence)
+			return nil, at("event "+typ, fmt.Errorf("%w: unknown content part", ErrInvalidSequence))
 		}
 		return s.close(key)
 	case "response.output_item.done":
@@ -417,10 +434,10 @@ func (s *ResponsesToAnthropicStream) convert(e SSEEvent, decoded decodedStreamEv
 		}
 		itemState, exists := s.items[out]
 		if !exists {
-			return nil, fmt.Errorf("%w: done for unknown output item", ErrInvalidSequence)
+			return nil, at("event "+typ, fmt.Errorf("%w: done for unknown output item", ErrInvalidSequence))
 		}
 		if itemState.done {
-			return nil, fmt.Errorf("%w: duplicate output item done", ErrInvalidSequence)
+			return nil, at("event "+typ, fmt.Errorf("%w: duplicate output item done", ErrInvalidSequence))
 		}
 		if item, exists := o["item"]; exists {
 			q, ok := obj(item)
@@ -438,7 +455,7 @@ func (s *ResponsesToAnthropicStream) convert(e SSEEvent, decoded decodedStreamEv
 		if itemState.kind == responseMessageItem {
 			for key, block := range s.blocks {
 				if key.kind == responseTextBlock && key.outputIndex == out && block.open {
-					return nil, fmt.Errorf("%w: output item done with open content part", ErrInvalidSequence)
+					return nil, at("event "+typ, fmt.Errorf("%w: output item done with open content part", ErrInvalidSequence))
 				}
 			}
 		}
@@ -452,10 +469,10 @@ func (s *ResponsesToAnthropicStream) convert(e SSEEvent, decoded decodedStreamEv
 		final := block.arguments
 		if item, ok := obj(o["item"]); ok {
 			if x, ok := str(item["arguments"]); ok {
-				final = x
+				final = []byte(x)
 			}
 		}
-		if _, err := parseArguments(final, "event.item.arguments"); err != nil {
+		if _, err := parseArgumentsRaw(final, "event.item.arguments"); err != nil {
 			return nil, err
 		}
 		return s.close(key)
@@ -464,22 +481,22 @@ func (s *ResponsesToAnthropicStream) convert(e SSEEvent, decoded decodedStreamEv
 		out := int(out64)
 		item, ok := s.items[out]
 		if int64(out) != out64 || !ok || item.kind != responseToolItem || item.done {
-			return nil, fmt.Errorf("%w: arguments done on non-tool or done item", ErrInvalidSequence)
+			return nil, at("event "+typ, fmt.Errorf("%w: arguments done on non-tool or done item", ErrInvalidSequence))
 		}
 		key := toolBlockKey(out)
 		block, ok := s.blocks[key]
 		if !ok || !block.open {
-			return nil, fmt.Errorf("%w: arguments done for unknown or stopped tool", ErrInvalidSequence)
+			return nil, at("event "+typ, fmt.Errorf("%w: arguments done for unknown or stopped tool", ErrInvalidSequence))
 		}
 		if block.argumentDone {
-			return nil, fmt.Errorf("%w: duplicate arguments done", ErrInvalidSequence)
+			return nil, at("event "+typ, fmt.Errorf("%w: duplicate arguments done", ErrInvalidSequence))
 		}
 		block.argumentDone = true
 		final := block.arguments
 		if x, ok := str(o["arguments"]); ok {
-			final = x
+			final = []byte(x)
 		}
-		if _, err := parseArguments(final, "event.arguments"); err != nil {
+		if _, err := parseArgumentsRaw(final, "event.arguments"); err != nil {
 			return nil, err
 		}
 		block.arguments = final
@@ -490,7 +507,7 @@ func (s *ResponsesToAnthropicStream) convert(e SSEEvent, decoded decodedStreamEv
 		out := int(out64)
 		item, ok := s.items[out]
 		if int64(out) != out64 || !ok || item.kind != responseMessageItem || item.done {
-			return nil, fmt.Errorf("%w: text done on non-message or done item", ErrInvalidSequence)
+			return nil, at("event "+typ, fmt.Errorf("%w: text done on non-message or done item", ErrInvalidSequence))
 		}
 		if err := rejectNonEmptyArray(o, "annotations", "event"); err != nil {
 			return nil, err
@@ -500,10 +517,10 @@ func (s *ResponsesToAnthropicStream) convert(e SSEEvent, decoded decodedStreamEv
 		key := textBlockKey(out, content)
 		block, ok := s.blocks[key]
 		if int64(content) != content64 || !ok || !block.open {
-			return nil, fmt.Errorf("%w: text done for unknown or stopped text", ErrInvalidSequence)
+			return nil, at("event "+typ, fmt.Errorf("%w: text done for unknown or stopped text", ErrInvalidSequence))
 		}
 		if block.textDone {
-			return nil, fmt.Errorf("%w: duplicate text done", ErrInvalidSequence)
+			return nil, at("event "+typ, fmt.Errorf("%w: duplicate text done", ErrInvalidSequence))
 		}
 		if _, ok := str(o["text"]); !ok {
 			return nil, at("event.text", ErrInvalidWireData)
@@ -513,7 +530,7 @@ func (s *ResponsesToAnthropicStream) convert(e SSEEvent, decoded decodedStreamEv
 		return nil, nil
 	case "response.completed", "response.incomplete":
 		if !s.started {
-			return nil, fmt.Errorf("%w: terminal event before start", ErrInvalidSequence)
+			return nil, at("event "+typ, fmt.Errorf("%w: terminal event before start", ErrInvalidSequence))
 		}
 		r, _ := obj(o["response"])
 		if r == nil {
@@ -545,7 +562,7 @@ func (s *ResponsesToAnthropicStream) convert(e SSEEvent, decoded decodedStreamEv
 			if status == "incomplete" && key.kind == responseToolBlock {
 				return nil, at("event.response.output", fmt.Errorf("%w: incomplete response contains a truncated function call", ErrUnsupported))
 			}
-			return nil, fmt.Errorf("%w: terminal event with open output", ErrInvalidSequence)
+			return nil, at("event "+typ, fmt.Errorf("%w: terminal event with open output", ErrInvalidSequence))
 		}
 		reason := "end_turn"
 		if hasTool {
@@ -567,22 +584,29 @@ func (s *ResponsesToAnthropicStream) convert(e SSEEvent, decoded decodedStreamEv
 		} else if details, exists := r["incomplete_details"]; exists && details != nil {
 			return nil, at("event.response.incomplete_details", fmt.Errorf("%w: completed terminal cannot have incomplete details", ErrInvalidWireData))
 		}
-		usage := map[string]any{}
-		if u, ok := obj(r["usage"]); ok {
-			au, err := openAIUsageToAnthropic(u, "event.response.usage")
-			if err != nil {
-				return nil, err
-			}
-			if s.inputUsageKnown && (au["input_tokens"].(int64) != s.inputTokens || au["cache_read_input_tokens"].(int64) != s.cacheReadTokens) {
-				return nil, at("event.response.usage", fmt.Errorf("%w: terminal input usage does not match response.created", ErrInvalidSequence))
-			}
-			usage["output_tokens"] = au["output_tokens"]
-		} else {
+		u, ok := obj(r["usage"])
+		if !ok {
 			return nil, at("event.response.usage", fmt.Errorf("%w: terminal usage object required", ErrInvalidWireData))
 		}
-		d1, _ := event("message_delta", map[string]any{"delta": map[string]any{"stop_reason": reason, "stop_sequence": nil}, "usage": usage})
-		d2, _ := event("message_stop", map[string]any{})
+		au, err := openAIUsageToAnthropic(u, "event.response.usage", s.cfg)
+		if err != nil {
+			return nil, err
+		}
+		if s.inputUsageKnown && (au["input_tokens"].(int64) != s.inputTokens || au["cache_read_input_tokens"].(int64) != s.cacheReadTokens) {
+			return nil, at("event.response.usage", fmt.Errorf("%w: terminal input usage does not match response.created", ErrInvalidSequence))
+		}
+		s.inputTokens = au["input_tokens"].(int64)
+		s.cacheReadTokens = au["cache_read_input_tokens"].(int64)
+		s.outputTokens = au["output_tokens"].(int64)
+		// The emitted delta reports output usage only, matching the documented v0
+		// contract. Input counts the source withheld until its terminal event
+		// cannot amend the already-emitted message_start, so callers that need
+		// them read Usage instead.
+		usage := map[string]any{"output_tokens": s.outputTokens}
+		d1 := event("message_delta", map[string]any{"delta": map[string]any{"stop_reason": reason, "stop_sequence": nil}, "usage": usage})
+		d2 := event("message_stop", map[string]any{})
 		s.terminal = true
+		s.cfg.reportUsage(s.Usage())
 		return []SSEEvent{d1, d2}, nil
 	case "error", "response.failed":
 		var source map[string]any
@@ -627,11 +651,7 @@ func (s *ResponsesToAnthropicStream) convert(e SSEEvent, decoded decodedStreamEv
 			}
 			out = append(out, stops...)
 		}
-		errEvent, marshalErr := event("error", map[string]any{"error": map[string]any{"type": code, "message": message}})
-		if marshalErr != nil {
-			return nil, marshalErr
-		}
-		out = append(out, errEvent)
+		out = append(out, event("error", map[string]any{"error": map[string]any{"type": code, "message": message}}))
 		s.terminal = true
 		return out, nil
 	case "response.refusal.delta", "response.refusal.done", "response.output_text.annotation.added", "response.output_text.annotation.delta", "response.output_text.annotation.done", "response.reasoning_summary_part.added", "response.reasoning_summary_part.done", "response.reasoning_summary_text.delta", "response.reasoning_summary_text.done":
@@ -652,13 +672,16 @@ func (s *ResponsesToAnthropicStream) Finish() error {
 type anthropicBlock struct {
 	kind, id, itemID, name string
 	index, output          int
-	text, args             string
+	// text and args grow by append, never by reassignment, so a snapshot taken
+	// before an event retains its own length and therefore its own contents even
+	// though it shares the backing array. See cloneBlockMap.
+	text, args []byte
 }
 
 // AnthropicToResponsesStream incrementally translates complete Anthropic
 // Messages SSE events into complete Responses API SSE events.
 type AnthropicToResponsesStream struct {
-	options                                    ConversionOptions
+	cfg                                        config
 	model, id                                  string
 	started, terminal                          bool
 	blocks                                     map[int]*anthropicBlock
@@ -672,13 +695,15 @@ type AnthropicToResponsesStream struct {
 }
 
 // NewAnthropicToResponsesStream constructs an Anthropic-to-Responses stream converter.
-func NewAnthropicToResponsesStream(model string) *AnthropicToResponsesStream {
-	return NewAnthropicToResponsesStreamWithOptions(model, ConversionOptions{})
+func NewAnthropicToResponsesStream(model string, options ...Option) *AnthropicToResponsesStream {
+	// outputs starts non-nil: it is marshaled into response.created, where a
+	// null would violate the Responses schema.
+	return &AnthropicToResponsesStream{model: model, cfg: newConfig(options), blocks: map[int]*anthropicBlock{}, outputs: []any{}}
 }
 
-// NewAnthropicToResponsesStreamWithOptions constructs a converter with per-stream warning options.
-func NewAnthropicToResponsesStreamWithOptions(model string, options ConversionOptions) *AnthropicToResponsesStream {
-	return &AnthropicToResponsesStream{model: model, options: options, blocks: map[int]*anthropicBlock{}}
+// Usage returns the token accounting observed so far, in Anthropic terms.
+func (s *AnthropicToResponsesStream) Usage() Usage {
+	return Usage{InputTokens: s.inputTokens, OutputTokens: s.outputTokens, CacheReadInputTokens: s.cacheReadTokens}
 }
 func (s *AnthropicToResponsesStream) response(status string, terminal bool) map[string]any {
 	r := map[string]any{
@@ -695,7 +720,7 @@ func (s *AnthropicToResponsesStream) response(status string, terminal bool) map[
 		"top_p": 1.0, "truncation": "disabled", "user": nil,
 	}
 	if terminal {
-		r["completed_at"] = time.Now().Unix()
+		r["completed_at"] = s.cfg.now().Unix()
 		r["usage"] = map[string]any{"input_tokens": s.inputTokens, "output_tokens": s.outputTokens, "total_tokens": s.inputTokens + s.outputTokens, "input_tokens_details": map[string]any{"cached_tokens": s.cacheReadTokens}, "output_tokens_details": map[string]any{"reasoning_tokens": int64(0)}}
 	} else {
 		r["usage"] = nil
@@ -706,30 +731,26 @@ func (s *AnthropicToResponsesStream) response(status string, terminal bool) map[
 	return r
 }
 
-func (s *AnthropicToResponsesStream) emit(typ string, v map[string]any) (SSEEvent, error) {
+func (s *AnthropicToResponsesStream) emit(typ string, v map[string]any) SSEEvent {
 	v["sequence_number"] = s.sequence
 	s.sequence++
 	return event(typ, v)
 }
 
-func (s *AnthropicToResponsesStream) one(typ string, v map[string]any) ([]SSEEvent, error) {
-	e, err := s.emit(typ, v)
-	if err != nil {
-		return nil, err
-	}
-	return []SSEEvent{e}, nil
+func (s *AnthropicToResponsesStream) one(typ string, v map[string]any) []SSEEvent {
+	return []SSEEvent{s.emit(typ, v)}
 }
 
 // Convert translates one complete event and may return zero or more events.
-func (s *AnthropicToResponsesStream) Convert(e SSEEvent) ([]SSEEvent, error) {
-	decoded := decodeStreamEvent(e)
+func (s *AnthropicToResponsesStream) Convert(raw SSEEvent) ([]SSEEvent, error) {
+	decoded := decodeStreamEvent(raw)
 	if decoded.err == nil && !decoded.done {
-		inspectDecodedAnthropicEvent(decoded.object, decoded.typ, s.options)
+		inspectDecodedAnthropicEvent(decoded.object, decoded.typ, s.cfg)
 	}
 	before := *s
 	before.blocks = cloneBlockMap(s.blocks)
 	before.outputs = append([]any(nil), s.outputs...)
-	out, err := s.convert(e, decoded)
+	out, err := s.convert(raw, decoded)
 	if err != nil {
 		*s = before
 		return nil, err
@@ -737,21 +758,21 @@ func (s *AnthropicToResponsesStream) Convert(e SSEEvent) ([]SSEEvent, error) {
 	return out, nil
 }
 
-func (s *AnthropicToResponsesStream) convert(e SSEEvent, decoded decodedStreamEvent) ([]SSEEvent, error) {
+func (s *AnthropicToResponsesStream) convert(raw SSEEvent, decoded decodedStreamEvent) ([]SSEEvent, error) {
 	if s.terminal {
-		return nil, fmt.Errorf("%w: event after terminal event", ErrInvalidSequence)
+		return nil, at("event", fmt.Errorf("%w: event after terminal event", ErrInvalidSequence))
 	}
-	o, typ, err := streamObject(e, decoded)
+	o, typ, err := streamObject(raw, decoded)
 	if err != nil {
 		return nil, err
 	}
 	if s.messageDelta && typ != "message_stop" && typ != "error" && typ != "ping" {
-		return nil, fmt.Errorf("%w: event after message_delta", ErrInvalidSequence)
+		return nil, at("event "+typ, fmt.Errorf("%w: event after message_delta", ErrInvalidSequence))
 	}
 	switch typ {
 	case "message_start":
 		if s.started {
-			return nil, fmt.Errorf("%w: duplicate message start", ErrInvalidSequence)
+			return nil, at("event "+typ, fmt.Errorf("%w: duplicate message start", ErrInvalidSequence))
 		}
 		m, ok := obj(o["message"])
 		if !ok {
@@ -762,7 +783,7 @@ func (s *AnthropicToResponsesStream) convert(e SSEEvent, decoded decodedStreamEv
 			return nil, at("event.message.id", ErrInvalidWireData)
 		}
 		s.id = destinationID("resp", sourceID, 0)
-		s.createdAt = time.Now().Unix()
+		s.createdAt = s.cfg.now().Unix()
 		if s.model == "" {
 			s.model, _ = str(m["model"])
 		}
@@ -770,7 +791,7 @@ func (s *AnthropicToResponsesStream) convert(e SSEEvent, decoded decodedStreamEv
 			return nil, at("event.message.model", ErrInvalidWireData)
 		}
 		if u, ok := obj(m["usage"]); ok {
-			ru, err := anthropicUsageToOpenAI(u, "event.message.usage")
+			ru, err := anthropicUsageToOpenAI(u, "event.message.usage", s.cfg)
 			if err != nil {
 				return nil, err
 			}
@@ -781,19 +802,19 @@ func (s *AnthropicToResponsesStream) convert(e SSEEvent, decoded decodedStreamEv
 			return nil, at("event.message.usage", ErrInvalidWireData)
 		}
 		s.started = true
-		e1, _ := s.emit("response.created", map[string]any{"response": s.response("in_progress", false)})
-		e2, _ := s.emit("response.in_progress", map[string]any{"response": s.response("in_progress", false)})
+		e1 := s.emit("response.created", map[string]any{"response": s.response("in_progress", false)})
+		e2 := s.emit("response.in_progress", map[string]any{"response": s.response("in_progress", false)})
 		return []SSEEvent{e1, e2}, nil
 	case "content_block_start":
 		if !s.started {
-			return nil, fmt.Errorf("%w: block before message start", ErrInvalidSequence)
+			return nil, at("event "+typ, fmt.Errorf("%w: block before message start", ErrInvalidSequence))
 		}
 		idx, err := eventIndex(o)
 		if err != nil {
 			return nil, err
 		}
 		if _, ok := s.blocks[idx]; ok {
-			return nil, fmt.Errorf("%w: duplicate block index", ErrInvalidSequence)
+			return nil, at("event "+typ, fmt.Errorf("%w: duplicate block index", ErrInvalidSequence))
 		}
 		c, ok := obj(o["content_block"])
 		if !ok {
@@ -815,7 +836,7 @@ func (s *AnthropicToResponsesStream) convert(e SSEEvent, decoded decodedStreamEv
 			if err := rejectNonEmptyArray(c, "citations", "event.content_block"); err != nil {
 				return nil, err
 			}
-			b.kind, b.text = "text", text
+			b.kind, b.text = "text", []byte(text)
 		case "tool_use":
 			if input, ok := obj(c["input"]); !ok || len(input) != 0 {
 				return nil, at("event.content_block.input", fmt.Errorf("%w: streaming tool block must start with empty input", ErrInvalidWireData))
@@ -837,15 +858,15 @@ func (s *AnthropicToResponsesStream) convert(e SSEEvent, decoded decodedStreamEv
 		if b.kind == "text" {
 			b.id = destinationID("msg", s.id, out)
 			item := map[string]any{"id": b.id, "type": "message", "status": "in_progress", "role": "assistant", "content": []any{}}
-			e1, _ := s.emit("response.output_item.added", map[string]any{"output_index": out, "item": item})
+			e1 := s.emit("response.output_item.added", map[string]any{"output_index": out, "item": item})
 			// Non-empty initial text is legal in Anthropic streams. Carry it in the
 			// added part and final item; do not invent an empty delta.
-			e2, _ := s.emit("response.content_part.added", map[string]any{"item_id": b.id, "output_index": out, "content_index": 0, "part": map[string]any{"type": "output_text", "text": b.text, "annotations": []any{}, "logprobs": []any{}}})
+			e2 := s.emit("response.content_part.added", map[string]any{"item_id": b.id, "output_index": out, "content_index": 0, "part": map[string]any{"type": "output_text", "text": string(b.text), "annotations": []any{}, "logprobs": []any{}}})
 			return []SSEEvent{e1, e2}, nil
 		}
 		b.itemID = destinationID("fc", s.id, out)
 		item := map[string]any{"id": b.itemID, "call_id": b.id, "type": "function_call", "name": b.name, "arguments": "", "status": "in_progress"}
-		return s.one("response.output_item.added", map[string]any{"output_index": out, "item": item})
+		return s.one("response.output_item.added", map[string]any{"output_index": out, "item": item}), nil
 	case "content_block_delta":
 		idx, err := eventIndex(o)
 		if err != nil {
@@ -853,7 +874,7 @@ func (s *AnthropicToResponsesStream) convert(e SSEEvent, decoded decodedStreamEv
 		}
 		b, ok := s.blocks[idx]
 		if !ok {
-			return nil, fmt.Errorf("%w: delta for unknown block", ErrInvalidSequence)
+			return nil, at("event "+typ, fmt.Errorf("%w: delta for unknown block", ErrInvalidSequence))
 		}
 		d, ok := obj(o["delta"])
 		if !ok {
@@ -873,8 +894,8 @@ func (s *AnthropicToResponsesStream) convert(e SSEEvent, decoded decodedStreamEv
 			if !ok {
 				return nil, at("event.delta.text", ErrInvalidWireData)
 			}
-			b.text += x
-			return s.one("response.output_text.delta", map[string]any{"item_id": b.id, "output_index": b.output, "content_index": 0, "delta": x})
+			b.text = append(b.text, x...)
+			return s.one("response.output_text.delta", map[string]any{"item_id": b.id, "output_index": b.output, "content_index": 0, "delta": x}), nil
 		}
 		if d["type"] != "input_json_delta" {
 			return nil, at("event.delta.type", ErrInvalidWireData)
@@ -883,8 +904,8 @@ func (s *AnthropicToResponsesStream) convert(e SSEEvent, decoded decodedStreamEv
 		if !ok {
 			return nil, at("event.delta.partial_json", ErrInvalidWireData)
 		}
-		b.args += x
-		return s.one("response.function_call_arguments.delta", map[string]any{"item_id": b.itemID, "output_index": b.output, "delta": x})
+		b.args = append(b.args, x...)
+		return s.one("response.function_call_arguments.delta", map[string]any{"item_id": b.itemID, "output_index": b.output, "delta": x}), nil
 	case "content_block_stop":
 		idx, err := eventIndex(o)
 		if err != nil {
@@ -892,38 +913,38 @@ func (s *AnthropicToResponsesStream) convert(e SSEEvent, decoded decodedStreamEv
 		}
 		b, ok := s.blocks[idx]
 		if !ok {
-			return nil, fmt.Errorf("%w: stop for unknown block", ErrInvalidSequence)
+			return nil, at("event "+typ, fmt.Errorf("%w: stop for unknown block", ErrInvalidSequence))
 		}
 		delete(s.blocks, idx)
 		if b.kind == "text" {
-			part := map[string]any{"type": "output_text", "text": b.text, "annotations": []any{}, "logprobs": []any{}}
+			part := map[string]any{"type": "output_text", "text": string(b.text), "annotations": []any{}, "logprobs": []any{}}
 			item := map[string]any{"id": b.id, "type": "message", "status": "completed", "role": "assistant", "content": []any{part}}
 			for len(s.outputs) <= b.output {
 				s.outputs = append(s.outputs, nil)
 			}
 			s.outputs[b.output] = item
-			e1, _ := s.emit("response.output_text.done", map[string]any{"item_id": b.id, "output_index": b.output, "content_index": 0, "text": b.text})
-			e2, _ := s.emit("response.content_part.done", map[string]any{"item_id": b.id, "output_index": b.output, "content_index": 0, "part": part})
-			e3, _ := s.emit("response.output_item.done", map[string]any{"output_index": b.output, "item": item})
+			e1 := s.emit("response.output_text.done", map[string]any{"item_id": b.id, "output_index": b.output, "content_index": 0, "text": string(b.text)})
+			e2 := s.emit("response.content_part.done", map[string]any{"item_id": b.id, "output_index": b.output, "content_index": 0, "part": part})
+			e3 := s.emit("response.output_item.done", map[string]any{"output_index": b.output, "item": item})
 			return []SSEEvent{e1, e2, e3}, nil
 		}
-		if _, err := parseArguments(b.args, "event.arguments"); err != nil {
+		if _, err := parseArgumentsRaw(b.args, "event.arguments"); err != nil {
 			return nil, err
 		}
-		item := map[string]any{"id": b.itemID, "call_id": b.id, "type": "function_call", "name": b.name, "arguments": b.args, "status": "completed"}
+		item := map[string]any{"id": b.itemID, "call_id": b.id, "type": "function_call", "name": b.name, "arguments": string(b.args), "status": "completed"}
 		for len(s.outputs) <= b.output {
 			s.outputs = append(s.outputs, nil)
 		}
 		s.outputs[b.output] = item
-		e1, _ := s.emit("response.function_call_arguments.done", map[string]any{"item_id": item["id"], "output_index": b.output, "arguments": b.args})
-		e2, _ := s.emit("response.output_item.done", map[string]any{"output_index": b.output, "item": item})
+		e1 := s.emit("response.function_call_arguments.done", map[string]any{"item_id": item["id"], "output_index": b.output, "arguments": string(b.args)})
+		e2 := s.emit("response.output_item.done", map[string]any{"output_index": b.output, "item": item})
 		return []SSEEvent{e1, e2}, nil
 	case "message_delta":
 		if !s.started {
-			return nil, fmt.Errorf("%w: message_delta before message_start", ErrInvalidSequence)
+			return nil, at("event "+typ, fmt.Errorf("%w: message_delta before message_start", ErrInvalidSequence))
 		}
 		if s.messageDelta {
-			return nil, fmt.Errorf("%w: duplicate message_delta", ErrInvalidSequence)
+			return nil, at("event "+typ, fmt.Errorf("%w: duplicate message_delta", ErrInvalidSequence))
 		}
 		d, ok := obj(o["delta"])
 		if !ok {
@@ -946,7 +967,7 @@ func (s *AnthropicToResponsesStream) convert(e SSEEvent, decoded decodedStreamEv
 			if err != nil {
 				return nil, err
 			}
-			if n > int64(^uint64(0)>>1)-s.inputTokens {
+			if n > math.MaxInt64-s.inputTokens {
 				return nil, at("event.usage.output_tokens", fmt.Errorf("%w: token total overflows int64", ErrInvalidWireData))
 			}
 			s.outputTokens = n
@@ -957,34 +978,29 @@ func (s *AnthropicToResponsesStream) convert(e SSEEvent, decoded decodedStreamEv
 		return nil, nil
 	case "message_stop":
 		if !s.started || !s.messageDelta {
-			return nil, fmt.Errorf("%w: message_stop requires message_start and message_delta", ErrInvalidSequence)
+			return nil, at("event "+typ, fmt.Errorf("%w: message_stop requires message_start and message_delta", ErrInvalidSequence))
 		}
 		if len(s.blocks) > 0 {
-			return nil, fmt.Errorf("%w: message stop with open block", ErrInvalidSequence)
+			return nil, at("event "+typ, fmt.Errorf("%w: message stop with open block", ErrInvalidSequence))
 		}
 		status := "completed"
-		typ := "response.completed"
+		responseType := "response.completed"
 		if s.stop == "max_tokens" {
 			status = "incomplete"
-			typ = "response.incomplete"
+			responseType = "response.incomplete"
 		}
-		hasTool := false
 		for _, output := range s.outputs {
 			if output == nil {
-				return nil, fmt.Errorf("%w: output blocks completed out of order with a missing output", ErrInvalidSequence)
-			}
-			if output.(map[string]any)["type"] == "function_call" {
-				hasTool = true
+				return nil, at("event "+typ, fmt.Errorf("%w: output blocks completed out of order with a missing output", ErrInvalidSequence))
 			}
 		}
-		if s.stop == "tool_use" && !hasTool {
-			return nil, fmt.Errorf("%w: tool_use stop without tool output", ErrInvalidSequence)
-		}
-		if (s.stop == "end_turn" || s.stop == "stop_sequence") && hasTool {
-			return nil, fmt.Errorf("%w: tool output without tool_use stop", ErrInvalidSequence)
-		}
+		// Whether the turn ended in a tool call is not cross-checked against
+		// stop_reason here: Responses encodes no tool-specific terminal state, so
+		// a source that disagrees with its own content changes nothing about the
+		// output. See reason_mapping.go for the same policy where it does matter.
 		s.terminal = true
-		return s.one(typ, map[string]any{"response": s.response(status, true)})
+		s.cfg.reportUsage(s.Usage())
+		return s.one(responseType, map[string]any{"response": s.response(status, true)}), nil
 	case "error":
 		eo, ok := obj(o["error"])
 		if !ok {
@@ -1002,7 +1018,7 @@ func (s *AnthropicToResponsesStream) convert(e SSEEvent, decoded decodedStreamEv
 			code = "anthropic_error"
 		}
 		s.terminal = true
-		return s.one("error", map[string]any{"code": code, "message": message, "param": nil})
+		return s.one("error", map[string]any{"code": code, "message": message, "param": nil}), nil
 	case "ping":
 		return nil, nil
 	default:

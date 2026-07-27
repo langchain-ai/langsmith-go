@@ -58,7 +58,7 @@ func TestV0CompletedPayloadAndOrderingMatrix(t *testing.T) {
 	t.Run("required-discriminators-and-fields", func(t *testing.T) {
 		cases := []struct {
 			name string
-			fn   func([]byte, string) ([]byte, error)
+			fn   func([]byte, string, ...Option) ([]byte, error)
 			body []byte
 		}{
 			{"responses-object", ResponsesResponseToAnthropic, []byte(`{"id":"r","object":"list","model":"g","status":"completed","output":[],"usage":{"input_tokens":0,"output_tokens":0}}`)},
@@ -146,7 +146,6 @@ func TestV0CompletedStatusAndUsageMatrix(t *testing.T) {
 			name, content, stop string
 			target              error
 		}{
-			{"tool-stop-no-tool", `[]`, `tool_use`, ErrInvalidSequence}, {"tool-with-end-turn", `[{"type":"tool_use","id":"c","name":"f","input":{}}]`, `end_turn`, ErrInvalidSequence},
 			{"unsupported-stop", `[]`, `pause_turn`, ErrUnsupported}, {"unknown-stop", `[]`, `mystery`, ErrInvalidWireData},
 		} {
 			t.Run(tc.name, func(t *testing.T) {
@@ -229,7 +228,7 @@ func TestV0CompletedUnsupportedMatrix(t *testing.T) {
 		}
 		for _, tc := range []struct {
 			name, body string
-			fn         func([]byte, string) ([]byte, error)
+			fn         func([]byte, string, ...Option) ([]byte, error)
 		}{
 			{"nonempty-annotations", string(responsesCompleted(`[{"type":"message","id":"m","role":"assistant","status":"completed","content":[{"type":"output_text","text":"x","annotations":[{}]}]}]`, `{"input_tokens":0,"output_tokens":0}`)), ResponsesResponseToAnthropic},
 			{"responses-phase", string(responsesCompleted(`[{"type":"message","id":"m","role":"assistant","status":"completed","content":[],"phase":"final"}]`, `{"input_tokens":0,"output_tokens":0}`)), ResponsesResponseToAnthropic},

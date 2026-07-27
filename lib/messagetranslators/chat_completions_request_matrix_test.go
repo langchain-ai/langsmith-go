@@ -123,7 +123,7 @@ func TestChatCompletionsRequestToolChoiceAndDefinitions(t *testing.T) {
 	t.Run("malformed-choices", func(t *testing.T) {
 		cases := []struct {
 			name, body string
-			fn         func([]byte, string) ([]byte, error)
+			fn         func([]byte, string, ...Option) ([]byte, error)
 			target     error
 		}{
 			{"chat-completions-unknown", `{"model":"g","max_tokens":1,"tool_choice":"any","messages":[{"role":"user","content":"u"}]}`, ChatCompletionsRequestToAnthropic, ErrUnsupported},
@@ -161,7 +161,7 @@ func TestChatCompletionsRequestToolChoiceAndDefinitions(t *testing.T) {
 	t.Run("malformed-strict-and-hosted-tools", func(t *testing.T) {
 		cases := []struct {
 			name, tool string
-			fn         func([]byte, string) ([]byte, error)
+			fn         func([]byte, string, ...Option) ([]byte, error)
 			target     error
 		}{
 			{"chat-completions-hosted", `{"type":"web_search"}`, ChatCompletionsRequestToAnthropic, ErrUnsupported},
@@ -283,7 +283,7 @@ func TestChatCompletionsRequestContentImagesAndHistory(t *testing.T) {
 }
 
 func TestChatCompletionsRequestExplicitUnsupportedMatrix(t *testing.T) {
-	for _, field := range []string{"functions", "function_call", "response_format", "parallel_tool_calls", "logprobs", "top_logprobs", "prediction", "modalities", "audio", "service_tier", "store", "metadata", "seed", "user", "reasoning_effort", "web_search_options", "frequency_penalty", "presence_penalty", "logit_bias", "verbosity", "safety_identifier"} {
+	for _, field := range []string{"functions", "function_call", "response_format", "parallel_tool_calls", "logprobs", "top_logprobs", "prediction", "modalities", "audio", "service_tier", "store", "seed", "user", "reasoning_effort", "web_search_options", "frequency_penalty", "presence_penalty", "verbosity", "safety_identifier"} {
 		t.Run("top-"+field, func(t *testing.T) {
 			_, err := ChatCompletionsRequestToAnthropic(chatCompletionsRequest(`{"model":"g","max_tokens":1,"`+field+`":{},"messages":[{"role":"user","content":"u"}]}`), "a")
 			requireErrorIs(t, err, ErrUnsupported)

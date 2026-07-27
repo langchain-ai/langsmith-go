@@ -65,7 +65,7 @@ func TestV0RequestConfigurationMatrix(t *testing.T) {
 	t.Run("malformed-tool-choice", func(t *testing.T) {
 		cases := []struct {
 			name   string
-			fn     func([]byte, string) ([]byte, error)
+			fn     func([]byte, string, ...Option) ([]byte, error)
 			body   string
 			target error
 		}{
@@ -84,7 +84,7 @@ func TestV0RequestConfigurationMatrix(t *testing.T) {
 	t.Run("tools-defaults-and-validation", func(t *testing.T) {
 		for _, tc := range []struct {
 			name, body string
-			fn         func([]byte, string) ([]byte, error)
+			fn         func([]byte, string, ...Option) ([]byte, error)
 			target     error
 		}{
 			{"anth-default-schema", `{"model":"a","max_tokens":1,"messages":[{"role":"user","content":"x"}],"tools":[{"name":"f"}]}`, AnthropicRequestToResponses, nil},
@@ -289,7 +289,7 @@ func TestV0RequestMediaAndUnsupportedMatrix(t *testing.T) {
 	t.Run("missing-text-unknown-blocks-and-roles", func(t *testing.T) {
 		cases := []struct {
 			name   string
-			fn     func([]byte, string) ([]byte, error)
+			fn     func([]byte, string, ...Option) ([]byte, error)
 			body   string
 			target error
 		}{

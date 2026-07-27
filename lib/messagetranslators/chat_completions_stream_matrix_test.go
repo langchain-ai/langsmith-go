@@ -153,8 +153,7 @@ func TestChatCompletionsToAnthropicStreamEnvelopeAndSequenceMatrix(t *testing.T)
 			tools        bool
 			target       error
 		}{
-			{"stop-with-tool", `"stop"`, true, ErrInvalidSequence}, {"tool-without-tool", `"tool_calls"`, false, ErrInvalidSequence},
-			{"content-filter", `"content_filter"`, false, ErrUnsupported}, {"function-call", `"function_call"`, false, ErrUnsupported}, {"unknown", `"wat"`, false, ErrInvalidWireData},
+			{"function-call", `"function_call"`, false, ErrUnsupported}, {"unknown", `"wat"`, false, ErrInvalidWireData},
 		} {
 			t.Run(tc.name, func(t *testing.T) {
 				s := start(t)

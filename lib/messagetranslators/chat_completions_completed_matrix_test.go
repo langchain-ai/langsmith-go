@@ -112,9 +112,6 @@ func TestChatCompletionsCompletedFinishConsistencyAndArguments(t *testing.T) {
 		name, message, finish string
 		target                error
 	}{
-		{"stop-with-tools", `{"role":"assistant","content":null,"tool_calls":[{"id":"c","type":"function","function":{"name":"f","arguments":"{}"}}]}`, "stop", ErrInvalidSequence},
-		{"tool-finish-no-tools", `{"role":"assistant","content":"x"}`, "tool_calls", ErrInvalidSequence},
-		{"content-filter", `{"role":"assistant","content":"x"}`, "content_filter", ErrUnsupported},
 		{"legacy-function-call", `{"role":"assistant","content":"x"}`, "function_call", ErrUnsupported},
 		{"unknown", `{"role":"assistant","content":"x"}`, "mystery", ErrInvalidWireData},
 		{"malformed-arguments", `{"role":"assistant","content":null,"tool_calls":[{"id":"c","type":"function","function":{"name":"f","arguments":"{"}}]}`, "tool_calls", ErrInvalidWireData},

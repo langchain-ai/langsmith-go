@@ -1,34 +1,17 @@
 package messagetranslators
 
-import (
-	"errors"
-	"fmt"
-)
+import "github.com/langchain-ai/langsmith-go/lib/messagetranslators/internal/utils"
 
 var (
 	// ErrInvalidWireData means that JSON or an event payload is malformed.
-	ErrInvalidWireData = errors.New("invalid wire data")
+	ErrInvalidWireData = utils.ErrInvalidWireData
 	// ErrUnsupported means that a known, semantically significant feature has no safe mapping.
-	ErrUnsupported = errors.New("unsupported feature")
+	ErrUnsupported = utils.ErrUnsupported
 	// ErrInvalidSequence means that otherwise valid stream events arrived out of order.
-	ErrInvalidSequence = errors.New("invalid stream sequence")
+	ErrInvalidSequence = utils.ErrInvalidSequence
 	// ErrTruncatedStream means Finish was called before a terminal stream event.
-	ErrTruncatedStream = errors.New("truncated stream")
+	ErrTruncatedStream = utils.ErrTruncatedStream
 )
 
 // ConversionError adds a JSON path or stream-event location to a conversion error.
-type ConversionError struct {
-	Path string
-	Err  error
-}
-
-func (e *ConversionError) Error() string {
-	if e.Path == "" {
-		return fmt.Sprintf("messagetranslators: %v", e.Err)
-	}
-	return fmt.Sprintf("messagetranslators: %s: %v", e.Path, e.Err)
-}
-
-func (e *ConversionError) Unwrap() error { return e.Err }
-
-func at(path string, err error) error { return &ConversionError{Path: path, Err: err} }
+type ConversionError = utils.ConversionError
