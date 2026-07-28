@@ -8,11 +8,10 @@ import (
 // to an OpenAI Responses request JSON body. modelOverride replaces the source model when non-empty.
 func AnthropicRequestToResponses(body []byte, modelOverride string, options ...Option) ([]byte, error) {
 	cfg := newConfig(options)
-	a, err := decodeObject(body)
+	a, err := decodeAnthropicPayload(body, false, cfg)
 	if err != nil {
 		return nil, err
 	}
-	inspectAnthropicObject(a, false, cfg, "$")
 	return anthropicRequestToResponses(a, modelOverride, cfg)
 }
 

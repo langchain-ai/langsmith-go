@@ -123,6 +123,37 @@ func TestFetchSendsButDoesNotCaptureSecret(t *testing.T) {
 	}
 }
 
+func TestFetchCapturesAnthropicAPIVersion(t *testing.T) {
+	const version = "2023-06-01"
+	server := httptest.NewServer(http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
+		if got := r.Header.Get("anthropic-version"); got != version {
+			t.Errorf("anthropic-version = %q", got)
+		}
+		if got := r.Header.Get("x-api-key"); got != "test-key" {
+			t.Errorf("x-api-key = %q", got)
+		}
+		_, _ = w.Write([]byte(`{"id":"message-id"}`))
+	}))
+	defer server.Close()
+
+	o := options{anthropicBase: server.URL, anthropicKey: "test-key", anthropicVer: version}
+	c := capture{provider: "anthropic", api: apiMessages, mode: "completed", scenario: "text", request: map[string]any{"model": "test"}}
+	s, err := fetch(context.Background(), server.Client(), o, c)
+	if err != nil {
+		t.Fatal(err)
+	}
+	if s.APIVersion != version {
+		t.Fatalf("API version = %q", s.APIVersion)
+	}
+	encoded, err := json.Marshal(s)
+	if err != nil {
+		t.Fatal(err)
+	}
+	if !strings.Contains(string(encoded), `"api_version":"`+version+`"`) || strings.Contains(string(encoded), "captured_at") {
+		t.Fatalf("unexpected snapshot metadata: %s", encoded)
+	}
+}
+
 func TestWriteJSONAtomicOverwrite(t *testing.T) {
 	dir := t.TempDir()
 	path := filepath.Join(dir, "fixture.json")

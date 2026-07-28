@@ -177,11 +177,10 @@ func responsesResponseToAnthropic(r map[string]any, modelOverride string, cfg co
 // JSON body to an OpenAI Responses response JSON body.
 func AnthropicResponseToResponses(body []byte, modelOverride string, options ...Option) ([]byte, error) {
 	cfg := newConfig(options)
-	a, err := decodeObject(body)
+	a, err := decodeAnthropicPayload(body, true, cfg)
 	if err != nil {
 		return nil, err
 	}
-	inspectAnthropicObject(a, true, cfg, "$")
 	return anthropicResponseToResponses(a, modelOverride, cfg)
 }
 

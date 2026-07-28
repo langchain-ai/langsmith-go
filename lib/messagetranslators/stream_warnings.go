@@ -11,7 +11,7 @@ var (
 	anthropicEventBareFields         = fields("type")
 	anthropicEventErrorFields        = fields("type", "error")
 	anthropicEventErrorBodyFields    = fields("type", "code", "message")
-	anthropicEventStopDeltaFields    = fields("stop_reason", "stop_sequence")
+	anthropicEventStopDeltaFields    = fields("stop_reason", "stop_sequence", "stop_details")
 	anthropicTextDeltaFields         = fields("type", "text", "citations")
 	anthropicJSONDeltaFields         = fields("type", "partial_json")
 	anthropicCitationDeltaFields     = fields("type", "citation")
@@ -28,12 +28,7 @@ func inspectDecodedAnthropicEvent(o map[string]any, typ string, cfg config) {
 	case "content_block_start":
 		i.object(o, "event", anthropicEventBlockStartFields)
 		if b, ok := obj(o["content_block"]); ok {
-			switch b["type"] {
-			case "text":
-				i.object(b, "event.content_block", anthropicTextBlockFields)
-			case "tool_use":
-				i.object(b, "event.content_block", anthropicToolUseBlockFields)
-			}
+			inspectAnthropicContentBlock(i, b, "event.content_block")
 		}
 	case "content_block_delta":
 		i.object(o, "event", anthropicEventBlockDeltaFields)
@@ -53,6 +48,7 @@ func inspectDecodedAnthropicEvent(o map[string]any, typ string, cfg config) {
 		i.object(o, "event", anthropicEventMessageDeltaFields)
 		if d, ok := obj(o["delta"]); ok {
 			i.object(d, "event.delta", anthropicEventStopDeltaFields)
+			inspectAnthropicStopDetails(i, d, "event.delta")
 		}
 		inspectAnthropicUsage(i, o["usage"], "event.usage")
 	case "message_stop", "ping":

@@ -1,0 +1,76 @@
+{
+  "schema_version": 1,
+  "provider": "anthropic",
+  "api": "messages",
+  "api_version": "2023-06-01",
+  "mode": "completed",
+  "scenario": "tool",
+  "request": {
+    "max_tokens": 64,
+    "messages": [
+      {
+        "content": "Call get_weather once. Use the location exactly \"São Paulo, Brazil\".",
+        "role": "user"
+      }
+    ],
+    "model": "claude-haiku-4-5",
+    "stream": false,
+    "temperature": 0,
+    "tool_choice": {
+      "name": "get_weather",
+      "type": "tool"
+    },
+    "tools": [
+      {
+        "description": "Get the weather for a location.",
+        "input_schema": {
+          "additionalProperties": false,
+          "properties": {
+            "location": {
+              "type": "string"
+            }
+          },
+          "required": [
+            "location"
+          ],
+          "type": "object"
+        },
+        "name": "get_weather"
+      }
+    ]
+  },
+  "response": {
+    "content": [
+      {
+        "caller": {
+          "type": "direct"
+        },
+        "id": "toolu_01E79mih7C74BjqrAtDtahvJ",
+        "input": {
+          "location": "São Paulo, Brazil"
+        },
+        "name": "get_weather",
+        "type": "tool_use"
+      }
+    ],
+    "id": "msg_011CdTSPWdmeomLovT882qSR",
+    "model": "claude-haiku-4-5-20251001",
+    "role": "assistant",
+    "stop_details": null,
+    "stop_reason": "tool_use",
+    "stop_sequence": null,
+    "type": "message",
+    "usage": {
+      "cache_creation": {
+        "ephemeral_1h_input_tokens": 0,
+        "ephemeral_5m_input_tokens": 0
+      },
+      "cache_creation_input_tokens": 0,
+      "cache_read_input_tokens": 0,
+      "inference_geo": "not_available",
+      "input_tokens": 677,
+      "output_tokens": 36,
+      "service_tier": "standard"
+    }
+  }
+}

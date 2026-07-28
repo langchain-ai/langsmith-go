@@ -124,11 +124,10 @@ func chatCompletionsResponseToAnthropic(r map[string]any, modelOverride string, 
 // AnthropicResponseToChatCompletions converts one completed Anthropic Messages response.
 func AnthropicResponseToChatCompletions(body []byte, modelOverride string, options ...Option) ([]byte, error) {
 	cfg := newConfig(options)
-	a, err := decodeObject(body)
+	a, err := decodeAnthropicPayload(body, true, cfg)
 	if err != nil {
 		return nil, err
 	}
-	inspectAnthropicObject(a, true, cfg, "$")
 	return anthropicResponseToChatCompletions(a, modelOverride, cfg)
 }
 

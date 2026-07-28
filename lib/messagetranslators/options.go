@@ -66,9 +66,10 @@ func (c config) unknownField(path, field string) {
 	})
 }
 
-// lossy reports source data that was understood and validated but cannot be
-// represented at the destination. Unlike an unknown field, the loss is known
-// and intentional; the warning exists so a gateway can measure it.
+// lossy reports recognized source metadata that is intentionally dropped
+// because it cannot be represented at the destination. Unlike an unknown
+// field, the loss is known and intentional; the warning exists so a gateway
+// can measure it.
 func (c config) lossy(path, field, message string) {
 	c.warn(Warning{Code: WarningLossyConversion, Path: path, Field: field, Message: message})
 }

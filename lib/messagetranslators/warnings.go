@@ -14,8 +14,8 @@ const (
 	// source schema. It is schema-drift telemetry, not a guarantee that the
 	// field was semantically harmless.
 	WarningUnknownField WarningCode = "unknown_field"
-	// WarningLossyConversion reports source data that was understood and
-	// validated but has no destination representation.
+	// WarningLossyConversion reports recognized source metadata that is
+	// intentionally dropped because it has no destination representation.
 	WarningLossyConversion WarningCode = "lossy_conversion"
 )
 
@@ -99,9 +99,32 @@ func eachObject(v any, fn func(int, map[string]any)) {
 	}
 }
 
+func inspectAnthropicStopDetails(i wireInspector, o map[string]any, path string) {
+	if details, present := o["stop_details"]; present && details != nil {
+		i.cfg.lossy(path+".stop_details", "stop_details",
+			"stop_details at "+path+".stop_details was dropped because it has no destination equivalent")
+	}
+}
+
+func inspectAnthropicCaller(i wireInspector, block map[string]any, path string) {
+	value, present := block["caller"]
+	if !present || value == nil {
+		return
+	}
+	caller, isObject := obj(value)
+	if isObject {
+		i.object(caller, path+".caller", anthropicCallerFields)
+		if len(caller) == 1 && caller["type"] == "direct" {
+			return
+		}
+	}
+	i.cfg.lossy(path+".caller", "caller",
+		"caller at "+path+".caller was dropped because its invocation metadata has no destination equivalent")
+}
+
 var (
 	anthropicEnvelopeFields        = fields("model", "messages", "max_tokens", "system", "temperature", "top_p", "top_k", "stop_sequences", "stream", "tools", "tool_choice", "metadata", "thinking", "service_tier", "output_config", "cache_control", "mcp_servers", "context_management", "container", "inference_geo")
-	anthropicResponseFields        = fields("id", "type", "role", "model", "content", "stop_reason", "stop_sequence", "usage", "cache_control", "phase", "container")
+	anthropicResponseFields        = fields("id", "type", "role", "model", "content", "stop_reason", "stop_sequence", "stop_details", "usage", "cache_control", "phase", "container")
 	anthropicUsageFields           = fields("input_tokens", "output_tokens", "cache_read_input_tokens", "cache_creation_input_tokens", "cache_creation", "server_tool_use", "service_tier", "inference_geo")
 	anthropicSystemBlockFields     = fields("type", "text", "cache_control", "citations")
 	anthropicMessageFields         = fields("role", "content", "name")
@@ -110,7 +133,8 @@ var (
 	anthropicTextBlockFields       = fields("type", "text", "citations", "cache_control", "phase")
 	anthropicImageBlockFields      = fields("type", "source", "cache_control", "phase")
 	anthropicImageSourceFields     = fields("type", "url", "media_type", "data")
-	anthropicToolUseBlockFields    = fields("type", "id", "name", "input", "cache_control", "phase")
+	anthropicToolUseBlockFields    = fields("type", "id", "name", "input", "caller", "cache_control", "phase")
+	anthropicCallerFields          = fields("type", "tool_id")
 	anthropicToolResultBlockFields = fields("type", "tool_use_id", "content", "is_error", "cache_control", "phase")
 	anthropicToolResultPartFields  = fields("type", "text", "citations", "cache_control")
 	anthropicCacheCreationFields   = fields("ephemeral_5m_input_tokens", "ephemeral_1h_input_tokens")
@@ -121,6 +145,7 @@ func inspectAnthropicObject(root map[string]any, response bool, cfg config, base
 	i := wireInspector{cfg}
 	if response {
 		i.object(root, base, anthropicResponseFields)
+		inspectAnthropicStopDetails(i, root, base)
 		inspectAnthropicContent(i, root["content"], base+".content")
 		inspectAnthropicUsage(i, root["usage"], base+".usage")
 		return
@@ -148,32 +173,36 @@ func inspectAnthropicObject(root map[string]any, response bool, cfg config, base
 
 func inspectAnthropicContent(i wireInspector, v any, path string) {
 	eachObject(v, func(n int, block map[string]any) {
-		p := fmt.Sprintf("%s[%d]", path, n)
-		switch block["type"] {
-		case "text":
-			i.object(block, p, anthropicTextBlockFields)
-		case "image":
-			i.object(block, p, anthropicImageBlockFields)
-			if source, ok := obj(block["source"]); ok {
-				i.object(source, p+".source", anthropicImageSourceFields)
-			}
-		case "tool_use":
-			i.object(block, p, anthropicToolUseBlockFields)
-		case "tool_result":
-			i.object(block, p, anthropicToolResultBlockFields)
-			eachObject(block["content"], func(j int, part map[string]any) {
-				i.object(part, fmt.Sprintf("%s.content[%d]", p, j), anthropicToolResultPartFields)
-			})
-		default:
-			// The discriminator is validated by the converter; do not describe the
-			// rest of an object whose schema is not recognized as harmless drift.
-			return
-		}
-		if _, ok := block["cache_control"]; ok {
-			i.cfg.lossy(p+".cache_control", "cache_control",
-				"cache_control at "+p+" has no destination equivalent; cache behavior and billing may differ")
-		}
+		inspectAnthropicContentBlock(i, block, fmt.Sprintf("%s[%d]", path, n))
 	})
+}
+
+func inspectAnthropicContentBlock(i wireInspector, block map[string]any, path string) {
+	switch block["type"] {
+	case "text":
+		i.object(block, path, anthropicTextBlockFields)
+	case "image":
+		i.object(block, path, anthropicImageBlockFields)
+		if source, ok := obj(block["source"]); ok {
+			i.object(source, path+".source", anthropicImageSourceFields)
+		}
+	case "tool_use":
+		i.object(block, path, anthropicToolUseBlockFields)
+		inspectAnthropicCaller(i, block, path)
+	case "tool_result":
+		i.object(block, path, anthropicToolResultBlockFields)
+		eachObject(block["content"], func(j int, part map[string]any) {
+			i.object(part, fmt.Sprintf("%s.content[%d]", path, j), anthropicToolResultPartFields)
+		})
+	default:
+		// The discriminator is validated by the converter; do not describe the
+		// rest of an object whose schema is not recognized as harmless drift.
+		return
+	}
+	if _, ok := block["cache_control"]; ok {
+		i.cfg.lossy(path+".cache_control", "cache_control",
+			"cache_control at "+path+" has no destination equivalent; cache behavior and billing may differ")
+	}
 }
 
 func inspectAnthropicUsage(i wireInspector, v any, path string) {

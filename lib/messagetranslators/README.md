@@ -104,7 +104,7 @@ Where a source's advisory terminal reason disagrees with its own content, the
 content wins: a completion carrying tool calls maps to a tool-call turn whatever
 its `finish_reason` says. OpenAI reports `tool_calls`, but several
 OpenAI-compatible servers report `stop` beside a populated `tool_calls` array.
-`content_filter` and Anthropic's `refusal` map to each other.
+`content_filter` and Anthropic's `refusal` map to each other. Optional additive response metadata never changes whether the core response can be translated: populated Anthropic `stop_details` is dropped with a lossy-conversion warning rather than rejected.
 
 Warnings are schema-drift telemetry, **not** a guarantee that an unknown field is
 semantically harmless. A production gateway should monitor new field names and
@@ -134,7 +134,11 @@ never inspected.
 
 Known source fields that are accepted, validated, ignored as harmless defaults,
 or rejected as unsupported are included in the relevant allowlist and do not
-produce an unknown-field warning.
+produce an unknown-field warning. Additive Anthropic response metadata is
+tolerated regardless of shape: absent/null `stop_details` and an exact
+`caller: {"type":"direct"}` are silent, while populated `stop_details` and any
+non-default `caller` are dropped with `WarningLossyConversion`. Unknown nested
+caller fields may additionally produce `WarningUnknownField`.
 
 ### Callback and stream semantics
 
@@ -197,7 +201,8 @@ destination, the destination is named.
 | Text following a `tool_use` block in one message → Chat Completions | **Throws** (see [Ordering](#ordering-and-pairing)) |
 | `pause_turn` stop reason | **Throws** |
 | `refusal` stop reason → Responses | **Throws** |
-| `refusal` stop reason → Chat Completions | Best effort: mapped to `content_filter` |
+| `refusal` stop reason → Chat Completions | Best effort: mapped to `content_filter`; populated `stop_details` is dropped with a lossy warning |
+| Populated `stop_details` or non-default tool-use `caller` metadata | Best effort: dropped with `WarningLossyConversion`; absent/null values and exact `caller: {"type":"direct"}` are silent |
 | `cache_control` hints anywhere | Best effort: dropped. Destination cache behavior and billing will differ |
 | `cache_creation_input_tokens` | Best effort: folded into the OpenAI input total, losing its separately-billed identity |
 | `stop_sequence` value on a completed response | Best effort: dropped; neither OpenAI format reports which sequence matched |

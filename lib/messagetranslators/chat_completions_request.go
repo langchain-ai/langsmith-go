@@ -10,11 +10,10 @@ import (
 // an OpenAI Chat Completions request. modelOverride replaces the source model when non-empty.
 func AnthropicRequestToChatCompletions(body []byte, modelOverride string, options ...Option) ([]byte, error) {
 	cfg := newConfig(options)
-	a, err := decodeObject(body)
+	a, err := decodeAnthropicPayload(body, false, cfg)
 	if err != nil {
 		return nil, err
 	}
-	inspectAnthropicObject(a, false, cfg, "$")
 	return anthropicRequestToChatCompletions(a, modelOverride, cfg)
 }
 

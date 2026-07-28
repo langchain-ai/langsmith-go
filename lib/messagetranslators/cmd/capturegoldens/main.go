@@ -61,6 +61,7 @@ type snapshot struct {
 	SchemaVersion int            `json:"schema_version"`
 	Provider      string         `json:"provider"`
 	API           string         `json:"api"`
+	APIVersion    string         `json:"api_version,omitempty"`
 	Mode          string         `json:"mode"`
 	Scenario      string         `json:"scenario"`
 	Request       map[string]any `json:"request"`
@@ -305,6 +306,9 @@ func fetch(ctx context.Context, client *http.Client, o options, c capture) (snap
 		return snapshot{}, fmt.Errorf("HTTP %s: %s%s", resp.Status, strings.TrimSpace(string(b)), truncated)
 	}
 	s := snapshot{SchemaVersion: schemaVersion, Provider: c.provider, API: c.api, Mode: c.mode, Scenario: c.scenario, Request: c.request}
+	if c.provider == "anthropic" {
+		s.APIVersion = o.anthropicVer
+	}
 	if c.mode == "stream" {
 		var events []sseEvent
 		events, err = parseSSE(resp.Body)
