@@ -157,7 +157,7 @@ func connectSandboxTunnelSession(ctx context.Context, dataplaneURL string, opts 
 	if err != nil {
 		return nil, err
 	}
-	ws, err := dialSandboxWebSocketURL(ctx, wsURL, opts...)
+	ws, err := dialSandboxWebSocketURL(ctx, wsURL, sandboxCommandConnectTimeout, opts...)
 	if err != nil {
 		return nil, err
 	}
