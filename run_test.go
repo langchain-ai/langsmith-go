@@ -447,6 +447,7 @@ func TestRunStatsWithOptionalParams(t *testing.T) {
 	)
 	_, err := client.Runs.Stats(context.TODO(), langsmith.RunStatsParams{
 		RunStatsQueryParams: langsmith.RunStatsQueryParams{
+			Session:        langsmith.F([]string{"182bd5e5-6e1a-4fe4-a799-aa6d9a6ab26e"}),
 			ID:             langsmith.F([]string{"182bd5e5-6e1a-4fe4-a799-aa6d9a6ab26e"}),
 			DataSourceType: langsmith.F(langsmith.RunsFilterDataSourceTypeEnumCurrent),
 			EndTime:        langsmith.F(time.Now()),
@@ -468,7 +469,6 @@ func TestRunStatsWithOptionalParams(t *testing.T) {
 			RunType:               langsmith.F(langsmith.RunTypeEnumTool),
 			SearchFilter:          langsmith.F("search_filter"),
 			Select:                langsmith.F([]langsmith.RunStatsQueryParamsSelect{langsmith.RunStatsQueryParamsSelectRunCount}),
-			Session:               langsmith.F([]string{"182bd5e5-6e1a-4fe4-a799-aa6d9a6ab26e"}),
 			SkipPagination:        langsmith.F(true),
 			StartTime:             langsmith.F(time.Now()),
 			Trace:                 langsmith.F("182bd5e5-6e1a-4fe4-a799-aa6d9a6ab26e"),
