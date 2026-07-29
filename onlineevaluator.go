@@ -40,7 +40,7 @@ func NewOnlineEvaluatorService(opts ...option.RequestOption) (r *OnlineEvaluator
 // Create a new LLM or code evaluator for the current workspace.
 func (r *OnlineEvaluatorService) New(ctx context.Context, body OnlineEvaluatorNewParams, opts ...option.RequestOption) (res *CreateOnlineEvaluatorResponse, err error) {
 	opts = slices.Concat(r.Options, opts)
-	path := "v1/platform/evaluators"
+	path := "api/v1/platform/evaluators"
 	err = requestconfig.ExecuteNewRequest(ctx, http.MethodPost, path, body, &res, opts...)
 	return res, err
 }
@@ -52,7 +52,7 @@ func (r *OnlineEvaluatorService) Get(ctx context.Context, evaluatorID string, op
 		err = errors.New("missing required evaluator_id parameter")
 		return nil, err
 	}
-	path := fmt.Sprintf("v1/platform/evaluators/%s", evaluatorID)
+	path := fmt.Sprintf("api/v1/platform/evaluators/%s", evaluatorID)
 	err = requestconfig.ExecuteNewRequest(ctx, http.MethodGet, path, nil, &res, opts...)
 	return res, err
 }
@@ -64,7 +64,7 @@ func (r *OnlineEvaluatorService) Update(ctx context.Context, evaluatorID string,
 		err = errors.New("missing required evaluator_id parameter")
 		return nil, err
 	}
-	path := fmt.Sprintf("v1/platform/evaluators/%s", evaluatorID)
+	path := fmt.Sprintf("api/v1/platform/evaluators/%s", evaluatorID)
 	err = requestconfig.ExecuteNewRequest(ctx, http.MethodPatch, path, body, &res, opts...)
 	return res, err
 }
@@ -75,7 +75,7 @@ func (r *OnlineEvaluatorService) List(ctx context.Context, query OnlineEvaluator
 	var raw *http.Response
 	opts = slices.Concat(r.Options, opts)
 	opts = append([]option.RequestOption{option.WithResponseInto(&raw)}, opts...)
-	path := "v1/platform/evaluators"
+	path := "api/v1/platform/evaluators"
 	cfg, err := requestconfig.NewRequestConfig(ctx, http.MethodGet, path, query, &res, opts...)
 	if err != nil {
 		return nil, err
@@ -105,7 +105,7 @@ func (r *OnlineEvaluatorService) Delete(ctx context.Context, evaluatorID string,
 		err = errors.New("missing required evaluator_id parameter")
 		return err
 	}
-	path := fmt.Sprintf("v1/platform/evaluators/%s", evaluatorID)
+	path := fmt.Sprintf("api/v1/platform/evaluators/%s", evaluatorID)
 	err = requestconfig.ExecuteNewRequest(ctx, http.MethodDelete, path, body, nil, opts...)
 	return err
 }
@@ -113,7 +113,7 @@ func (r *OnlineEvaluatorService) Delete(ctx context.Context, evaluatorID string,
 // Delete multiple evaluators by their IDs. Returns per-item success/failure.
 func (r *OnlineEvaluatorService) BulkDelete(ctx context.Context, body OnlineEvaluatorBulkDeleteParams, opts ...option.RequestOption) (res *BulkDeleteEvaluatorsResponse, err error) {
 	opts = slices.Concat(r.Options, opts)
-	path := "v1/platform/evaluators"
+	path := "api/v1/platform/evaluators"
 	err = requestconfig.ExecuteNewRequest(ctx, http.MethodDelete, path, body, &res, opts...)
 	return res, err
 }
@@ -124,7 +124,7 @@ func (r *OnlineEvaluatorService) BulkDelete(ctx context.Context, body OnlineEval
 // be supplied with group_by to narrow listing aggregations.
 func (r *OnlineEvaluatorService) Spend(ctx context.Context, query OnlineEvaluatorSpendParams, opts ...option.RequestOption) (res *GetOnlineEvaluatorSpendResponse, err error) {
 	opts = slices.Concat(r.Options, opts)
-	path := "v1/platform/evaluators/spend"
+	path := "api/v1/platform/evaluators/spend"
 	err = requestconfig.ExecuteNewRequest(ctx, http.MethodGet, path, query, &res, opts...)
 	return res, err
 }

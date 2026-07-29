@@ -46,7 +46,7 @@ func (r *DatasetExperimentRunService) Query(ctx context.Context, datasetID strin
 		err = errors.New("missing required dataset_id parameter")
 		return nil, err
 	}
-	path := fmt.Sprintf("v2/datasets/%s/experiment-runs", datasetID)
+	path := fmt.Sprintf("api/v2/datasets/%s/experiment-runs", datasetID)
 	cfg, err := requestconfig.NewRequestConfig(ctx, http.MethodPost, path, body, &res, opts...)
 	if err != nil {
 		return nil, err

@@ -41,7 +41,7 @@ func (r *RunShareService) New(ctx context.Context, runID string, body RunShareNe
 		err = errors.New("missing required run_id parameter")
 		return nil, err
 	}
-	path := fmt.Sprintf("v2/runs/%s/share", runID)
+	path := fmt.Sprintf("api/v2/runs/%s/share", runID)
 	err = requestconfig.ExecuteNewRequest(ctx, http.MethodPost, path, body, &res, opts...)
 	return res, err
 }
@@ -55,7 +55,7 @@ func (r *RunShareService) Delete(ctx context.Context, traceID string, body RunSh
 		err = errors.New("missing required trace_id parameter")
 		return err
 	}
-	path := fmt.Sprintf("v2/runs/%s/share", traceID)
+	path := fmt.Sprintf("api/v2/runs/%s/share", traceID)
 	err = requestconfig.ExecuteNewRequest(ctx, http.MethodDelete, path, body, nil, opts...)
 	return err
 }

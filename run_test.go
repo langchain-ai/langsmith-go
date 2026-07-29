@@ -486,7 +486,7 @@ func TestRunStatsWithOptionalParams(t *testing.T) {
 	}
 }
 
-func TestRunUpdate2(t *testing.T) {
+func TestRunUpdate2WithOptionalParams(t *testing.T) {
 	t.Skip("Mock server tests are disabled")
 	baseURL := "http://localhost:4010"
 	if envURL, ok := os.LookupEnv("TEST_API_BASE_URL"); ok {
@@ -500,7 +500,49 @@ func TestRunUpdate2(t *testing.T) {
 		option.WithAPIKey("My API Key"),
 		option.WithTenantID("My Tenant ID"),
 	)
-	_, err := client.Runs.Update2(context.TODO(), "182bd5e5-6e1a-4fe4-a799-aa6d9a6ab26e")
+	_, err := client.Runs.Update2(
+		context.TODO(),
+		"182bd5e5-6e1a-4fe4-a799-aa6d9a6ab26e",
+		langsmith.RunUpdate2Params{
+			RunIngest: langsmith.RunIngestParam{
+				ID:          langsmith.F("id"),
+				DottedOrder: langsmith.F("dotted_order"),
+				EndTime:     langsmith.F("end_time"),
+				Error:       langsmith.F("error"),
+				Events: langsmith.F([]map[string]interface{}{{
+					"foo": "bar",
+				}}),
+				Extra: langsmith.F(map[string]interface{}{
+					"foo": "bar",
+				}),
+				InputAttachments: langsmith.F(map[string]interface{}{
+					"foo": "bar",
+				}),
+				Inputs: langsmith.F(map[string]interface{}{
+					"foo": "bar",
+				}),
+				Name: langsmith.F("name"),
+				OutputAttachments: langsmith.F(map[string]interface{}{
+					"foo": "bar",
+				}),
+				Outputs: langsmith.F(map[string]interface{}{
+					"foo": "bar",
+				}),
+				ParentRunID:        langsmith.F("parent_run_id"),
+				ReferenceExampleID: langsmith.F("reference_example_id"),
+				RunType:            langsmith.F(langsmith.RunIngestRunTypeTool),
+				Serialized: langsmith.F(map[string]interface{}{
+					"foo": "bar",
+				}),
+				SessionID:   langsmith.F("session_id"),
+				SessionName: langsmith.F("session_name"),
+				StartTime:   langsmith.F("start_time"),
+				Status:      langsmith.F("status"),
+				Tags:        langsmith.F([]string{"string"}),
+				TraceID:     langsmith.F("trace_id"),
+			},
+		},
+	)
 	if err != nil {
 		var apierr *langsmith.Error
 		if errors.As(err, &apierr) {

@@ -39,7 +39,7 @@ func NewSandboxRegistryService(opts ...option.RequestOption) (r *SandboxRegistry
 // Create a sandbox registry for pulling private images.
 func (r *SandboxRegistryService) New(ctx context.Context, body SandboxRegistryNewParams, opts ...option.RequestOption) (res *RegistryResponse, err error) {
 	opts = slices.Concat(r.Options, opts)
-	path := "v2/sandboxes/registries"
+	path := "api/v2/sandboxes/registries"
 	err = requestconfig.ExecuteNewRequest(ctx, http.MethodPost, path, body, &res, opts...)
 	return res, err
 }
@@ -51,7 +51,7 @@ func (r *SandboxRegistryService) Get(ctx context.Context, name string, opts ...o
 		err = errors.New("missing required name parameter")
 		return nil, err
 	}
-	path := fmt.Sprintf("v2/sandboxes/registries/%s", name)
+	path := fmt.Sprintf("api/v2/sandboxes/registries/%s", name)
 	err = requestconfig.ExecuteNewRequest(ctx, http.MethodGet, path, nil, &res, opts...)
 	return res, err
 }
@@ -63,7 +63,7 @@ func (r *SandboxRegistryService) Update(ctx context.Context, name string, body S
 		err = errors.New("missing required name parameter")
 		return nil, err
 	}
-	path := fmt.Sprintf("v2/sandboxes/registries/%s", name)
+	path := fmt.Sprintf("api/v2/sandboxes/registries/%s", name)
 	err = requestconfig.ExecuteNewRequest(ctx, http.MethodPatch, path, body, &res, opts...)
 	return res, err
 }
@@ -71,7 +71,7 @@ func (r *SandboxRegistryService) Update(ctx context.Context, name string, body S
 // List sandbox registries for pulling private images.
 func (r *SandboxRegistryService) List(ctx context.Context, query SandboxRegistryListParams, opts ...option.RequestOption) (res *RegistryListResponse, err error) {
 	opts = slices.Concat(r.Options, opts)
-	path := "v2/sandboxes/registries"
+	path := "api/v2/sandboxes/registries"
 	err = requestconfig.ExecuteNewRequest(ctx, http.MethodGet, path, query, &res, opts...)
 	return res, err
 }
@@ -84,7 +84,7 @@ func (r *SandboxRegistryService) Delete(ctx context.Context, name string, opts .
 		err = errors.New("missing required name parameter")
 		return err
 	}
-	path := fmt.Sprintf("v2/sandboxes/registries/%s", name)
+	path := fmt.Sprintf("api/v2/sandboxes/registries/%s", name)
 	err = requestconfig.ExecuteNewRequest(ctx, http.MethodDelete, path, nil, nil, opts...)
 	return err
 }

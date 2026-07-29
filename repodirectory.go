@@ -48,7 +48,7 @@ func (r *RepoDirectoryService) List(ctx context.Context, owner string, repo stri
 		err = errors.New("missing required repo parameter")
 		return nil, err
 	}
-	path := fmt.Sprintf("v1/platform/hub/repos/%s/%s/directories", owner, repo)
+	path := fmt.Sprintf("api/v1/platform/hub/repos/%s/%s/directories", owner, repo)
 	err = requestconfig.ExecuteNewRequest(ctx, http.MethodGet, path, query, &res, opts...)
 	return res, err
 }
@@ -65,7 +65,7 @@ func (r *RepoDirectoryService) Delete(ctx context.Context, owner string, repo st
 		err = errors.New("missing required repo parameter")
 		return err
 	}
-	path := fmt.Sprintf("v1/platform/hub/repos/%s/%s/directories", owner, repo)
+	path := fmt.Sprintf("api/v1/platform/hub/repos/%s/%s/directories", owner, repo)
 	err = requestconfig.ExecuteNewRequest(ctx, http.MethodDelete, path, nil, nil, opts...)
 	return err
 }
@@ -82,7 +82,7 @@ func (r *RepoDirectoryService) Commit(ctx context.Context, owner string, repo st
 		err = errors.New("missing required repo parameter")
 		return nil, err
 	}
-	path := fmt.Sprintf("v1/platform/hub/repos/%s/%s/directories/commits", owner, repo)
+	path := fmt.Sprintf("api/v1/platform/hub/repos/%s/%s/directories/commits", owner, repo)
 	err = requestconfig.ExecuteNewRequest(ctx, http.MethodPost, path, body, &res, opts...)
 	return res, err
 }

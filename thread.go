@@ -48,7 +48,7 @@ func (r *ThreadService) ListTraces(ctx context.Context, threadID string, query T
 		err = errors.New("missing required thread_id parameter")
 		return nil, err
 	}
-	path := fmt.Sprintf("v2/threads/%s/traces", threadID)
+	path := fmt.Sprintf("api/v2/threads/%s/traces", threadID)
 	cfg, err := requestconfig.NewRequestConfig(ctx, http.MethodGet, path, query, &res, opts...)
 	if err != nil {
 		return nil, err
@@ -74,7 +74,7 @@ func (r *ThreadService) Query(ctx context.Context, body ThreadQueryParams, opts 
 	var raw *http.Response
 	opts = slices.Concat(r.Options, opts)
 	opts = append([]option.RequestOption{option.WithResponseInto(&raw)}, opts...)
-	path := "v2/threads/query"
+	path := "api/v2/threads/query"
 	cfg, err := requestconfig.NewRequestConfig(ctx, http.MethodPost, path, body, &res, opts...)
 	if err != nil {
 		return nil, err
@@ -103,7 +103,7 @@ func (r *ThreadService) Stats(ctx context.Context, threadID string, query Thread
 		err = errors.New("missing required thread_id parameter")
 		return nil, err
 	}
-	path := fmt.Sprintf("v2/threads/%s/stats", threadID)
+	path := fmt.Sprintf("api/v2/threads/%s/stats", threadID)
 	err = requestconfig.ExecuteNewRequest(ctx, http.MethodGet, path, query, &res, opts...)
 	return res, err
 }
