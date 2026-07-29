@@ -40,7 +40,7 @@ func NewAnnotationQueueItemService(opts ...option.RequestOption) (r *AnnotationQ
 
 // Add RUN or THREAD items to a single annotation queue. RUN items require run_id
 // unless they are created from a suggested example. THREAD items require thread_id
-// and session_id.
+// and project_id.
 func (r *AnnotationQueueItemService) New(ctx context.Context, queueID string, params AnnotationQueueItemNewParams, opts ...option.RequestOption) (res *AnnotationQueueItemNewResponse, err error) {
 	opts = slices.Concat(r.Options, opts)
 	if queueID == "" {
@@ -189,9 +189,9 @@ type AnnotationQueueItemNewResponseItem struct {
 	ItemType AnnotationQueueItemNewResponseItemsItemType `json:"item_type"`
 	// LastReviewedTime is always present on the wire (null until reviewed).
 	LastReviewedTime        string                                 `json:"last_reviewed_time"`
+	ProjectID               string                                 `json:"project_id"`
 	QueueID                 string                                 `json:"queue_id"`
 	RunID                   string                                 `json:"run_id"`
-	SessionID               string                                 `json:"session_id"`
 	SourceProposedExampleID string                                 `json:"source_proposed_example_id"`
 	StartTime               string                                 `json:"start_time"`
 	ThreadID                string                                 `json:"thread_id"`
@@ -205,9 +205,9 @@ type annotationQueueItemNewResponseItemJSON struct {
 	AddedAt                 apijson.Field
 	ItemType                apijson.Field
 	LastReviewedTime        apijson.Field
+	ProjectID               apijson.Field
 	QueueID                 apijson.Field
 	RunID                   apijson.Field
-	SessionID               apijson.Field
 	SourceProposedExampleID apijson.Field
 	StartTime               apijson.Field
 	ThreadID                apijson.Field
@@ -244,9 +244,9 @@ type AnnotationQueueItemUpdateResponse struct {
 	ItemType AnnotationQueueItemUpdateResponseItemType `json:"item_type"`
 	// LastReviewedTime is always present on the wire (null until reviewed).
 	LastReviewedTime        string                                `json:"last_reviewed_time"`
+	ProjectID               string                                `json:"project_id"`
 	QueueID                 string                                `json:"queue_id"`
 	RunID                   string                                `json:"run_id"`
-	SessionID               string                                `json:"session_id"`
 	SourceProposedExampleID string                                `json:"source_proposed_example_id"`
 	StartTime               string                                `json:"start_time"`
 	ThreadID                string                                `json:"thread_id"`
@@ -260,9 +260,9 @@ type annotationQueueItemUpdateResponseJSON struct {
 	AddedAt                 apijson.Field
 	ItemType                apijson.Field
 	LastReviewedTime        apijson.Field
+	ProjectID               apijson.Field
 	QueueID                 apijson.Field
 	RunID                   apijson.Field
-	SessionID               apijson.Field
 	SourceProposedExampleID apijson.Field
 	StartTime               apijson.Field
 	ThreadID                apijson.Field
@@ -301,10 +301,10 @@ type AnnotationQueueItemListResponse struct {
 	ItemType         AnnotationQueueItemListResponseItemType `json:"item_type"`
 	// LastReviewedTime is always present on the wire (null until reviewed).
 	LastReviewedTime        string                              `json:"last_reviewed_time"`
+	ProjectID               string                              `json:"project_id"`
 	QueueID                 string                              `json:"queue_id"`
 	ReservedBy              []string                            `json:"reserved_by"`
 	RunID                   string                              `json:"run_id"`
-	SessionID               string                              `json:"session_id"`
 	SourceProposedExampleID string                              `json:"source_proposed_example_id"`
 	StartTime               string                              `json:"start_time"`
 	ThreadID                string                              `json:"thread_id"`
@@ -320,10 +320,10 @@ type annotationQueueItemListResponseJSON struct {
 	EffectiveAddedAt        apijson.Field
 	ItemType                apijson.Field
 	LastReviewedTime        apijson.Field
+	ProjectID               apijson.Field
 	QueueID                 apijson.Field
 	ReservedBy              apijson.Field
 	RunID                   apijson.Field
-	SessionID               apijson.Field
 	SourceProposedExampleID apijson.Field
 	StartTime               apijson.Field
 	ThreadID                apijson.Field
@@ -497,18 +497,17 @@ func (r AnnotationQueueItemNewParams) URLQuery() (v url.Values) {
 }
 
 type AnnotationQueueItemNewParamsItem struct {
-	ItemType param.Field[AnnotationQueueItemNewParamsItemsItemType] `json:"item_type"`
+	ItemType  param.Field[AnnotationQueueItemNewParamsItemsItemType] `json:"item_type"`
+	ProjectID param.Field[string]                                    `json:"project_id"`
 	// RUN fields
 	RunID param.Field[string] `json:"run_id"`
-	// SessionID is the ID of the tracing project that contains the run or thread.
+	// SessionID is an alias for project_id.
 	SessionID param.Field[string] `json:"session_id"`
 	// SourceProposedExampleID links the queue item to the suggested example it was
 	// created from, when applicable.
-	SourceProposedExampleID param.Field[string] `json:"source_proposed_example_id"`
-	// StartTime is the start time of the run being added, used to identify it.
-	StartTime param.Field[time.Time] `json:"start_time" format:"date-time"`
-	// ThreadID is the ID of the thread being added.
-	ThreadID param.Field[string] `json:"thread_id"`
+	SourceProposedExampleID param.Field[string]    `json:"source_proposed_example_id"`
+	StartTime               param.Field[time.Time] `json:"start_time" format:"date-time"`
+	ThreadID                param.Field[string]    `json:"thread_id"`
 }
 
 func (r AnnotationQueueItemNewParamsItem) MarshalJSON() (data []byte, err error) {

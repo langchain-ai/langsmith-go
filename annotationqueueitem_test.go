@@ -35,6 +35,7 @@ func TestAnnotationQueueItemNewWithOptionalParams(t *testing.T) {
 			ExtendTraceRetention: langsmith.F(true),
 			Items: langsmith.F([]langsmith.AnnotationQueueItemNewParamsItem{{
 				ItemType:                langsmith.F(langsmith.AnnotationQueueItemNewParamsItemsItemTypeRun),
+				ProjectID:               langsmith.F("project_id"),
 				RunID:                   langsmith.F("run_id"),
 				SessionID:               langsmith.F("session_id"),
 				SourceProposedExampleID: langsmith.F("source_proposed_example_id"),
