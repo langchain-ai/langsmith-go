@@ -85,7 +85,7 @@ func TestSandboxBoxRunFetchesDataplaneURL(t *testing.T) {
 	srv := httptest.NewServer(http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
 		w.Header().Set("Content-Type", "application/json")
 		switch {
-		case r.Method == http.MethodGet && r.URL.Path == "/v2/sandboxes/boxes/test-box":
+		case r.Method == http.MethodGet && r.URL.Path == "/api/v2/sandboxes/boxes/test-box":
 			_ = json.NewEncoder(w).Encode(map[string]any{
 				"name":          "test-box",
 				"status":        "ready",

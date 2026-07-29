@@ -17,7 +17,7 @@ func TestSandboxFileMethodsResolveNamedSandbox(t *testing.T) {
 
 	srv := httptest.NewServer(http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
 		switch {
-		case r.Method == http.MethodGet && r.URL.Path == "/v2/sandboxes/boxes/box-a":
+		case r.Method == http.MethodGet && r.URL.Path == "/api/v2/sandboxes/boxes/box-a":
 			w.Header().Set("Content-Type", "application/json")
 			_ = json.NewEncoder(w).Encode(map[string]any{
 				"name":          "box-a",

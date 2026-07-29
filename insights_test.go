@@ -45,7 +45,7 @@ func TestGenerateInsights(t *testing.T) {
 			})
 
 		// POST ingest runs — verify run name is "trace"
-		case r.Method == http.MethodPost && r.URL.Path == "/runs/batch":
+		case r.Method == http.MethodPost && r.URL.Path == "/api/v1/runs/batch":
 			var body map[string]interface{}
 			json.NewDecoder(r.Body).Decode(&body)
 			posts, _ := body["post"].([]interface{})
@@ -144,7 +144,7 @@ func TestGenerateInsights_StoresAPIKey(t *testing.T) {
 				"start_time": time.Now().Format(time.RFC3339),
 			})
 
-		case r.Method == http.MethodPost && r.URL.Path == "/runs/batch":
+		case r.Method == http.MethodPost && r.URL.Path == "/api/v1/runs/batch":
 			json.NewEncoder(w).Encode(map[string]interface{}{})
 
 		case r.Method == http.MethodPost && r.URL.Path == "/api/v1/sessions/"+sessionID+"/insights":
