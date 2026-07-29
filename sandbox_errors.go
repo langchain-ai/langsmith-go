@@ -42,6 +42,25 @@ func (e *SandboxConnectionError) Error() string {
 	return e.Message
 }
 
+// SandboxConnectTimeoutError is returned when the socket fails or times out
+// before the WebSocket handshake completes.
+//
+// Distinct from SandboxConnectionError because it is safely retryable: the
+// execute frame was never sent, so re-issuing the same command ID cannot
+// double-run a command. It unwraps to SandboxConnectionError so callers
+// matching the broader type are unaffected.
+type SandboxConnectTimeoutError struct {
+	Message string
+}
+
+func (e *SandboxConnectTimeoutError) Error() string {
+	return e.Message
+}
+
+func (e *SandboxConnectTimeoutError) Unwrap() error {
+	return &SandboxConnectionError{Message: e.Message}
+}
+
 // SandboxOperationError is returned when the sandbox dataplane reports a
 // command operation error.
 type SandboxOperationError struct {
