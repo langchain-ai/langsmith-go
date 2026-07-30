@@ -1,5 +1,12 @@
 # Changelog
 
+## [0.25.3](https://github.com/langchain-ai/langsmith-go/compare/v0.25.2...v0.25.3) (2026-07-30)
+
+
+### Bug Fixes
+
+* **sandbox:** count an acknowledged reattachment as progress ([#91](https://github.com/langchain-ai/langsmith-go/issues/91)) ([083d97c](https://github.com/langchain-ai/langsmith-go/commit/083d97c32009022e7c51c66c47eced3ecef42434))
+
 ## [0.25.2](https://github.com/langchain-ai/langsmith-go/compare/v0.25.1...v0.25.2) (2026-07-30)
 
 
