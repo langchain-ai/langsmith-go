@@ -1,5 +1,24 @@
 # Changelog
 
+## [0.25.0](https://github.com/langchain-ai/langsmith-go/compare/v0.24.0...v0.25.0) (2026-07-30)
+
+
+### Features
+
+* **annotation-queues:** rename items wire field session_id to project_id ([6b1d691](https://github.com/langchain-ai/langsmith-go/commit/6b1d691717f80d82eb30b261699b36c97cc49adb))
+* expose annotation queue item APIs publicly [LSE-2550] ([1ba4eb3](https://github.com/langchain-ai/langsmith-go/commit/1ba4eb3a117b46e810cee6ba4b470810c4d22baf))
+* **smith-go:** declare v2 endpoints under /api/v2 in the OpenAPI spec ([990c80a](https://github.com/langchain-ai/langsmith-go/commit/990c80a5756bc9f8564f823922a18b013c16cd81))
+
+
+### Bug Fixes
+
+* build, lint, and test failures (feat(smith-go): declare v2 endpoints under /api/v2 in the OpenAPI spec) ([377e1fa](https://github.com/langchain-ai/langsmith-go/commit/377e1fa94677f9f8a2e98e680f0d2212419106ee))
+* **evaluators:** show an evaluator's current name wherever it's attached [LSE-2687] ([828ee4b](https://github.com/langchain-ai/langsmith-go/commit/828ee4b0ae4d4e2717858b19113827a78463ece1))
+* remove internal annotation queue API docs ([41c4659](https://github.com/langchain-ai/langsmith-go/commit/41c4659deacff052d78d83a1bf0be71e0f55f810))
+* **runs:** restore optional session on public dataset stats endpoint ([eca1f04](https://github.com/langchain-ai/langsmith-go/commit/eca1f040ff91133a2112cbac631d74b79ffd1803))
+* **sandbox:** don't gate dataplane operations on lifecycle status ([#85](https://github.com/langchain-ai/langsmith-go/issues/85)) ([a72eda9](https://github.com/langchain-ai/langsmith-go/commit/a72eda9cc20f2f967dccd9d3e5de79b7e8806bbd))
+* **sandbox:** retry WebSocket connect failures when starting a command ([#88](https://github.com/langchain-ai/langsmith-go/issues/88)) ([cb5e08c](https://github.com/langchain-ai/langsmith-go/commit/cb5e08cbebc198254258fd1b88acdd906678e814))
+
 ## [0.24.0](https://github.com/langchain-ai/langsmith-go/compare/v0.23.0...v0.24.0) (2026-07-27)
 
 
