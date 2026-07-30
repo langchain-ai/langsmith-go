@@ -46,7 +46,7 @@ func (r *IssueService) Get(ctx context.Context, id string, opts ...option.Reques
 		err = errors.New("missing required id parameter")
 		return nil, err
 	}
-	path := fmt.Sprintf("v1/platform/issues/%s", id)
+	path := fmt.Sprintf("api/v1/platform/issues/%s", id)
 	err = requestconfig.ExecuteNewRequest(ctx, http.MethodGet, path, nil, &res, opts...)
 	return res, err
 }
@@ -59,7 +59,7 @@ func (r *IssueService) List(ctx context.Context, query IssueListParams, opts ...
 	var raw *http.Response
 	opts = slices.Concat(r.Options, opts)
 	opts = append([]option.RequestOption{option.WithResponseInto(&raw)}, opts...)
-	path := "v1/platform/issues"
+	path := "api/v1/platform/issues"
 	cfg, err := requestconfig.NewRequestConfig(ctx, http.MethodGet, path, query, &res, opts...)
 	if err != nil {
 		return nil, err

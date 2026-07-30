@@ -186,7 +186,7 @@ func (h *SandboxCommandHandle) Reconnect(ctx context.Context) (*SandboxCommandHa
 	if h.CommandID == "" {
 		return nil, &SandboxOperationError{Operation: "reconnect", Message: "cannot reconnect: command ID is not available"}
 	}
-	ws, err := dialSandboxCommandWebSocket(ctx, h.dataplaneURL, h.opts...)
+	ws, err := dialSandboxCommandWebSocket(ctx, h.dataplaneURL, sandboxCommandConnectTimeout, h.opts...)
 	if err != nil {
 		return nil, err
 	}
@@ -281,7 +281,7 @@ func (h *SandboxCommandHandle) reconnectForReadLoop(attempt int) bool {
 		return false
 	}
 
-	ws, err := dialSandboxCommandWebSocket(context.Background(), h.dataplaneURL, h.opts...)
+	ws, err := dialSandboxCommandWebSocket(context.Background(), h.dataplaneURL, sandboxCommandConnectTimeout, h.opts...)
 	if err != nil {
 		return false
 	}

@@ -46,7 +46,7 @@ func NewRunService(opts ...option.RequestOption) (r *RunService) {
 // object that follows the Run schema.
 func (r *RunService) New(ctx context.Context, body RunNewParams, opts ...option.RequestOption) (res *RunNewResponse, err error) {
 	opts = slices.Concat(r.Options, opts)
-	path := "runs"
+	path := "api/v1/runs"
 	err = requestconfig.ExecuteNewRequest(ctx, http.MethodPost, path, body, &res, opts...)
 	return res, err
 }
@@ -59,7 +59,7 @@ func (r *RunService) Update(ctx context.Context, runID string, body RunUpdatePar
 		err = errors.New("missing required run_id parameter")
 		return nil, err
 	}
-	path := fmt.Sprintf("runs/%s", runID)
+	path := fmt.Sprintf("api/v1/runs/%s", runID)
 	err = requestconfig.ExecuteNewRequest(ctx, http.MethodPatch, path, body, &res, opts...)
 	return res, err
 }
@@ -73,7 +73,7 @@ func (r *RunService) GetURL(ctx context.Context, runID string, query RunGetURLPa
 		err = errors.New("missing required run_id parameter")
 		return nil, err
 	}
-	path := fmt.Sprintf("v2/runs/%s/url", runID)
+	path := fmt.Sprintf("api/v2/runs/%s/url", runID)
 	err = requestconfig.ExecuteNewRequest(ctx, http.MethodGet, path, query, &res, opts...)
 	return res, err
 }
@@ -84,7 +84,7 @@ func (r *RunService) GetURL(ctx context.Context, runID string, query RunGetURLPa
 // offers better handling for very large fields and attachments.
 func (r *RunService) IngestBatch(ctx context.Context, body RunIngestBatchParams, opts ...option.RequestOption) (res *RunIngestBatchResponse, err error) {
 	opts = slices.Concat(r.Options, opts)
-	path := "runs/batch"
+	path := "api/v1/runs/batch"
 	err = requestconfig.ExecuteNewRequest(ctx, http.MethodPost, path, body, &res, opts...)
 	return res, err
 }
@@ -122,7 +122,7 @@ func (r *RunService) QueryV2(ctx context.Context, params RunQueryV2Params, opts 
 	}
 	opts = slices.Concat(r.Options, opts)
 	opts = append([]option.RequestOption{option.WithResponseInto(&raw)}, opts...)
-	path := "v2/runs/query"
+	path := "api/v2/runs/query"
 	cfg, err := requestconfig.NewRequestConfig(ctx, http.MethodPost, path, params, &res, opts...)
 	if err != nil {
 		return nil, err
@@ -166,7 +166,7 @@ func (r *RunService) GetV2(ctx context.Context, runID string, params RunGetV2Par
 		err = errors.New("missing required run_id parameter")
 		return nil, err
 	}
-	path := fmt.Sprintf("v2/runs/%s", runID)
+	path := fmt.Sprintf("api/v2/runs/%s", runID)
 	err = requestconfig.ExecuteNewRequest(ctx, http.MethodGet, path, params, &res, opts...)
 	return res, err
 }
@@ -184,15 +184,16 @@ func (r *RunService) Stats(ctx context.Context, body RunStatsParams, opts ...opt
 	return res, nil
 }
 
-// Update a run.
-func (r *RunService) Update2(ctx context.Context, runID string, opts ...option.RequestOption) (res *RunUpdate2Response, err error) {
+// Updates a run identified by its ID. The body should contain only the fields to
+// be changed; unknown fields are ignored.
+func (r *RunService) Update2(ctx context.Context, runID string, body RunUpdate2Params, opts ...option.RequestOption) (res *RunUpdate2Response, err error) {
 	opts = slices.Concat(r.Options, opts)
 	if runID == "" {
 		err = errors.New("missing required run_id parameter")
 		return nil, err
 	}
 	path := fmt.Sprintf("api/v1/runs/%s", runID)
-	err = requestconfig.ExecuteNewRequest(ctx, http.MethodPatch, path, nil, &res, opts...)
+	err = requestconfig.ExecuteNewRequest(ctx, http.MethodPatch, path, body, &res, opts...)
 	return res, err
 }
 
@@ -883,7 +884,8 @@ func (r RunSelectField) IsKnown() bool {
 
 // Query params for run stats.
 type RunStatsQueryParams struct {
-	ID param.Field[[]string] `json:"id" format:"uuid"`
+	Session param.Field[[]string] `json:"session" api:"required" format:"uuid"`
+	ID      param.Field[[]string] `json:"id" format:"uuid"`
 	// Enum for run data source types.
 	DataSourceType param.Field[RunsFilterDataSourceTypeEnum] `json:"data_source_type"`
 	EndTime        param.Field[time.Time]                    `json:"end_time" format:"date-time"`
@@ -903,7 +905,6 @@ type RunStatsQueryParams struct {
 	RunType        param.Field[RunTypeEnum]                 `json:"run_type"`
 	SearchFilter   param.Field[string]                      `json:"search_filter"`
 	Select         param.Field[[]RunStatsQueryParamsSelect] `json:"select"`
-	Session        param.Field[[]string]                    `json:"session" format:"uuid"`
 	SkipPagination param.Field[bool]                        `json:"skip_pagination"`
 	StartTime      param.Field[time.Time]                   `json:"start_time" format:"date-time"`
 	// Filter runs by trace ID. When set, limit and cursor-based pagination are not
@@ -1286,7 +1287,26 @@ func (r runStatsResponseMapItemJSON) RawJSON() string {
 	return r.raw
 }
 
-type RunUpdate2Response = interface{}
+type RunUpdate2Response map[string]RunUpdate2ResponseItem
+
+type RunUpdate2ResponseItem struct {
+	JSON runUpdate2ResponseItemJSON `json:"-"`
+}
+
+// runUpdate2ResponseItemJSON contains the JSON metadata for the struct
+// [RunUpdate2ResponseItem]
+type runUpdate2ResponseItemJSON struct {
+	raw         string
+	ExtraFields map[string]apijson.Field
+}
+
+func (r *RunUpdate2ResponseItem) UnmarshalJSON(data []byte) (err error) {
+	return apijson.UnmarshalRoot(data, r)
+}
+
+func (r runUpdate2ResponseItemJSON) RawJSON() string {
+	return r.raw
+}
 
 type RunNewParams struct {
 	RunIngest RunIngestParam `json:"run_ingest" api:"required"`
@@ -1628,6 +1648,14 @@ type RunStatsParams struct {
 
 func (r RunStatsParams) MarshalJSON() (data []byte, err error) {
 	return apijson.MarshalRoot(r.RunStatsQueryParams)
+}
+
+type RunUpdate2Params struct {
+	RunIngest RunIngestParam `json:"run_ingest" api:"required"`
+}
+
+func (r RunUpdate2Params) MarshalJSON() (data []byte, err error) {
+	return apijson.MarshalRoot(r.RunIngest)
 }
 
 type RunGetParams struct {

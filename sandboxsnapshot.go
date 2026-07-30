@@ -39,7 +39,7 @@ func NewSandboxSnapshotService(opts ...option.RequestOption) (r *SandboxSnapshot
 // Create a snapshot from a Docker image (async build).
 func (r *SandboxSnapshotService) New(ctx context.Context, body SandboxSnapshotNewParams, opts ...option.RequestOption) (res *SnapshotResponse, err error) {
 	opts = slices.Concat(r.Options, opts)
-	path := "v2/sandboxes/snapshots"
+	path := "api/v2/sandboxes/snapshots"
 	err = requestconfig.ExecuteNewRequest(ctx, http.MethodPost, path, body, &res, opts...)
 	return res, err
 }
@@ -51,7 +51,7 @@ func (r *SandboxSnapshotService) Get(ctx context.Context, snapshotID string, opt
 		err = errors.New("missing required snapshot_id parameter")
 		return nil, err
 	}
-	path := fmt.Sprintf("v2/sandboxes/snapshots/%s", snapshotID)
+	path := fmt.Sprintf("api/v2/sandboxes/snapshots/%s", snapshotID)
 	err = requestconfig.ExecuteNewRequest(ctx, http.MethodGet, path, nil, &res, opts...)
 	return res, err
 }
@@ -60,7 +60,7 @@ func (r *SandboxSnapshotService) Get(ctx context.Context, snapshotID string, opt
 // sorting, and pagination.
 func (r *SandboxSnapshotService) List(ctx context.Context, query SandboxSnapshotListParams, opts ...option.RequestOption) (res *SnapshotListResponse, err error) {
 	opts = slices.Concat(r.Options, opts)
-	path := "v2/sandboxes/snapshots"
+	path := "api/v2/sandboxes/snapshots"
 	err = requestconfig.ExecuteNewRequest(ctx, http.MethodGet, path, query, &res, opts...)
 	return res, err
 }
@@ -73,7 +73,7 @@ func (r *SandboxSnapshotService) Delete(ctx context.Context, snapshotID string, 
 		err = errors.New("missing required snapshot_id parameter")
 		return err
 	}
-	path := fmt.Sprintf("v2/sandboxes/snapshots/%s", snapshotID)
+	path := fmt.Sprintf("api/v2/sandboxes/snapshots/%s", snapshotID)
 	err = requestconfig.ExecuteNewRequest(ctx, http.MethodDelete, path, nil, nil, opts...)
 	return err
 }

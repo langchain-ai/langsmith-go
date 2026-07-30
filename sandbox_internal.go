@@ -2,7 +2,9 @@ package langsmith
 
 import (
 	"context"
+	"errors"
 	"fmt"
+	"net"
 	"net/http"
 	"net/url"
 	"strings"
@@ -34,10 +36,8 @@ func sandboxFieldValue[T any](field param.Field[T], fallback T) T {
 	return fallback
 }
 
-func requireSandboxDataplaneURL(name string, status string, dataplaneURL string) (string, error) {
-	if status != "" && status != "ready" {
-		return "", &SandboxNotReadyError{SandboxName: name, Status: status}
-	}
+// requireSandboxDataplaneURL ignores lifecycle status: the platform resumes a stopped sandbox when the dataplane request arrives, and the server rejects a genuinely not-ready box.
+func requireSandboxDataplaneURL(name string, dataplaneURL string) (string, error) {
 	if dataplaneURL == "" {
 		return "", &SandboxDataplaneNotConfiguredError{SandboxName: name}
 	}
@@ -75,15 +75,16 @@ func sandboxWebSocketURL(dataplaneURL string) (string, error) {
 	return u.String(), nil
 }
 
-func dialSandboxCommandWebSocket(ctx context.Context, dataplaneURL string, opts ...option.RequestOption) (*websocket.Conn, error) {
+func dialSandboxCommandWebSocket(ctx context.Context, dataplaneURL string, connectTimeout time.Duration, opts ...option.RequestOption) (*websocket.Conn, error) {
 	wsURL, err := sandboxWebSocketURL(dataplaneURL)
 	if err != nil {
 		return nil, err
 	}
-	return dialSandboxWebSocketURL(ctx, wsURL, opts...)
+	return dialSandboxWebSocketURL(ctx, wsURL, connectTimeout, opts...)
 }
 
-func dialSandboxWebSocketURL(ctx context.Context, wsURL string, opts ...option.RequestOption) (*websocket.Conn, error) {
+// dialSandboxWebSocketURL dials wsURL; connectTimeout must be positive, since net.Dialer treats zero as no timeout.
+func dialSandboxWebSocketURL(ctx context.Context, wsURL string, connectTimeout time.Duration, opts ...option.RequestOption) (*websocket.Conn, error) {
 	if err := ctx.Err(); err != nil {
 		return nil, err
 	}
@@ -100,6 +101,10 @@ func dialSandboxWebSocketURL(ctx context.Context, wsURL string, opts ...option.R
 		return nil, err
 	}
 	config.Header = headers
+	if connectTimeout <= 0 {
+		connectTimeout = sandboxCommandConnectTimeout
+	}
+	config.Dialer = &net.Dialer{Timeout: connectTimeout}
 
 	type dialResult struct {
 		ws  *websocket.Conn
@@ -114,7 +119,18 @@ func dialSandboxWebSocketURL(ctx context.Context, wsURL string, opts ...option.R
 	select {
 	case res := <-ch:
 		if res.err != nil {
-			return nil, &SandboxConnectionError{Message: fmt.Sprintf("langsmith: failed to connect to sandbox command WebSocket: %v", res.err)}
+			msg := fmt.Sprintf("langsmith: failed to connect to sandbox command WebSocket: %v", res.err)
+			// A rejected handshake is permanent, any other failure is retryable; DialError has no Unwrap, hence the manual step.
+			cause := res.err
+			var dialErr *websocket.DialError
+			if errors.As(cause, &dialErr) && dialErr.Err != nil {
+				cause = dialErr.Err
+			}
+			var protoErr *websocket.ProtocolError
+			if errors.As(cause, &protoErr) {
+				return nil, &SandboxConnectionError{Message: msg}
+			}
+			return nil, &SandboxConnectTimeoutError{Message: msg}
 		}
 		return res.ws, nil
 	case <-ctx.Done():

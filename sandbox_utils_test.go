@@ -85,27 +85,27 @@ func TestSandboxWaitHelpers(t *testing.T) {
 	srv := httptest.NewServer(http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
 		w.Header().Set("Content-Type", "application/json")
 		switch {
-		case r.Method == http.MethodGet && r.URL.Path == "/v2/sandboxes/boxes/test-box/status":
+		case r.Method == http.MethodGet && r.URL.Path == "/api/v2/sandboxes/boxes/test-box/status":
 			if sandboxStatusCalls.Add(1) == 1 {
 				_ = json.NewEncoder(w).Encode(map[string]any{"status": "provisioning"})
 				return
 			}
 			_ = json.NewEncoder(w).Encode(map[string]any{"status": "ready"})
-		case r.Method == http.MethodGet && r.URL.Path == "/v2/sandboxes/boxes/test-box":
+		case r.Method == http.MethodGet && r.URL.Path == "/api/v2/sandboxes/boxes/test-box":
 			_ = json.NewEncoder(w).Encode(map[string]any{
 				"id":            "box-id",
 				"name":          "test-box",
 				"status":        "ready",
 				"dataplane_url": "http://dataplane.test",
 			})
-		case r.Method == http.MethodPost && r.URL.Path == "/v2/sandboxes/snapshots":
+		case r.Method == http.MethodPost && r.URL.Path == "/api/v2/sandboxes/snapshots":
 			_ = json.NewEncoder(w).Encode(map[string]any{
 				"id":                "snap-1",
 				"name":              "snap",
 				"status":            "building",
 				"fs_capacity_bytes": 1024,
 			})
-		case r.Method == http.MethodGet && r.URL.Path == "/v2/sandboxes/snapshots/snap-1":
+		case r.Method == http.MethodGet && r.URL.Path == "/api/v2/sandboxes/snapshots/snap-1":
 			if snapshotGetCalls.Add(1) == 1 {
 				_ = json.NewEncoder(w).Encode(map[string]any{
 					"id":                "snap-1",
@@ -175,7 +175,7 @@ func TestSandboxServiceURLRefreshAndRequest(t *testing.T) {
 	srv := httptest.NewServer(http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
 		w.Header().Set("Content-Type", "application/json")
 		switch {
-		case r.Method == http.MethodPost && r.URL.Path == "/v2/sandboxes/boxes/test-box/service-url":
+		case r.Method == http.MethodPost && r.URL.Path == "/api/v2/sandboxes/boxes/test-box/service-url":
 			call := serviceURLCalls.Add(1)
 			var payload map[string]any
 			if err := json.NewDecoder(r.Body).Decode(&payload); err != nil {

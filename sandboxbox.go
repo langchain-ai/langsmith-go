@@ -40,7 +40,7 @@ func NewSandboxBoxService(opts ...option.RequestOption) (r *SandboxBoxService) {
 // `snapshot_name`; if neither is provided, the server uses the default snapshot.
 func (r *SandboxBoxService) New(ctx context.Context, body SandboxBoxNewParams, opts ...option.RequestOption) (res *SandboxResponse, err error) {
 	opts = slices.Concat(r.Options, opts)
-	path := "v2/sandboxes/boxes"
+	path := "api/v2/sandboxes/boxes"
 	err = requestconfig.ExecuteNewRequest(ctx, http.MethodPost, path, body, &res, opts...)
 	return res, err
 }
@@ -52,7 +52,7 @@ func (r *SandboxBoxService) Get(ctx context.Context, name string, opts ...option
 		err = errors.New("missing required name parameter")
 		return nil, err
 	}
-	path := fmt.Sprintf("v2/sandboxes/boxes/%s", name)
+	path := fmt.Sprintf("api/v2/sandboxes/boxes/%s", name)
 	err = requestconfig.ExecuteNewRequest(ctx, http.MethodGet, path, nil, &res, opts...)
 	return res, err
 }
@@ -64,7 +64,7 @@ func (r *SandboxBoxService) Update(ctx context.Context, name string, body Sandbo
 		err = errors.New("missing required name parameter")
 		return nil, err
 	}
-	path := fmt.Sprintf("v2/sandboxes/boxes/%s", name)
+	path := fmt.Sprintf("api/v2/sandboxes/boxes/%s", name)
 	err = requestconfig.ExecuteNewRequest(ctx, http.MethodPatch, path, body, &res, opts...)
 	return res, err
 }
@@ -73,7 +73,7 @@ func (r *SandboxBoxService) Update(ctx context.Context, name string, body Sandbo
 // and pagination.
 func (r *SandboxBoxService) List(ctx context.Context, query SandboxBoxListParams, opts ...option.RequestOption) (res *SandboxListResponse, err error) {
 	opts = slices.Concat(r.Options, opts)
-	path := "v2/sandboxes/boxes"
+	path := "api/v2/sandboxes/boxes"
 	err = requestconfig.ExecuteNewRequest(ctx, http.MethodGet, path, query, &res, opts...)
 	return res, err
 }
@@ -87,7 +87,7 @@ func (r *SandboxBoxService) Delete(ctx context.Context, name string, opts ...opt
 		err = errors.New("missing required name parameter")
 		return err
 	}
-	path := fmt.Sprintf("v2/sandboxes/boxes/%s", name)
+	path := fmt.Sprintf("api/v2/sandboxes/boxes/%s", name)
 	err = requestconfig.ExecuteNewRequest(ctx, http.MethodDelete, path, nil, nil, opts...)
 	return err
 }
@@ -100,7 +100,7 @@ func (r *SandboxBoxService) NewSnapshot(ctx context.Context, name string, body S
 		err = errors.New("missing required name parameter")
 		return nil, err
 	}
-	path := fmt.Sprintf("v2/sandboxes/boxes/%s/snapshot", name)
+	path := fmt.Sprintf("api/v2/sandboxes/boxes/%s/snapshot", name)
 	err = requestconfig.ExecuteNewRequest(ctx, http.MethodPost, path, body, &res, opts...)
 	return res, err
 }
@@ -115,7 +115,7 @@ func (r *SandboxBoxService) GenerateServiceURL(ctx context.Context, name string,
 		err = errors.New("missing required name parameter")
 		return nil, err
 	}
-	path := fmt.Sprintf("v2/sandboxes/boxes/%s/service-url", name)
+	path := fmt.Sprintf("api/v2/sandboxes/boxes/%s/service-url", name)
 	err = requestconfig.ExecuteNewRequest(ctx, http.MethodPost, path, body, &res, opts...)
 	return res, err
 }
@@ -127,7 +127,7 @@ func (r *SandboxBoxService) GetStatus(ctx context.Context, name string, opts ...
 		err = errors.New("missing required name parameter")
 		return nil, err
 	}
-	path := fmt.Sprintf("v2/sandboxes/boxes/%s/status", name)
+	path := fmt.Sprintf("api/v2/sandboxes/boxes/%s/status", name)
 	err = requestconfig.ExecuteNewRequest(ctx, http.MethodGet, path, nil, &res, opts...)
 	return res, err
 }
@@ -139,7 +139,7 @@ func (r *SandboxBoxService) Start(ctx context.Context, name string, opts ...opti
 		err = errors.New("missing required name parameter")
 		return nil, err
 	}
-	path := fmt.Sprintf("v2/sandboxes/boxes/%s/start", name)
+	path := fmt.Sprintf("api/v2/sandboxes/boxes/%s/start", name)
 	err = requestconfig.ExecuteNewRequest(ctx, http.MethodPost, path, nil, &res, opts...)
 	return res, err
 }
@@ -153,7 +153,7 @@ func (r *SandboxBoxService) Stop(ctx context.Context, name string, opts ...optio
 		err = errors.New("missing required name parameter")
 		return err
 	}
-	path := fmt.Sprintf("v2/sandboxes/boxes/%s/stop", name)
+	path := fmt.Sprintf("api/v2/sandboxes/boxes/%s/stop", name)
 	err = requestconfig.ExecuteNewRequest(ctx, http.MethodPost, path, nil, nil, opts...)
 	return err
 }

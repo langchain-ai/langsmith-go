@@ -17,12 +17,12 @@ func TestSandboxWaitFailureAndTimeout(t *testing.T) {
 	srv := httptest.NewServer(http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
 		w.Header().Set("Content-Type", "application/json")
 		switch {
-		case r.Method == http.MethodGet && r.URL.Path == "/v2/sandboxes/boxes/failed-box/status":
+		case r.Method == http.MethodGet && r.URL.Path == "/api/v2/sandboxes/boxes/failed-box/status":
 			_ = json.NewEncoder(w).Encode(map[string]any{
 				"status":         "failed",
 				"status_message": "boot failed",
 			})
-		case r.Method == http.MethodGet && r.URL.Path == "/v2/sandboxes/boxes/slow-box/status":
+		case r.Method == http.MethodGet && r.URL.Path == "/api/v2/sandboxes/boxes/slow-box/status":
 			_ = json.NewEncoder(w).Encode(map[string]any{"status": "starting"})
 		default:
 			http.Error(w, "unexpected "+r.Method+" "+r.URL.Path, http.StatusInternalServerError)
@@ -67,16 +67,16 @@ func TestSandboxStartAndWait(t *testing.T) {
 	srv := httptest.NewServer(http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
 		w.Header().Set("Content-Type", "application/json")
 		switch {
-		case r.Method == http.MethodPost && r.URL.Path == "/v2/sandboxes/boxes/box-a/start":
+		case r.Method == http.MethodPost && r.URL.Path == "/api/v2/sandboxes/boxes/box-a/start":
 			_ = json.NewEncoder(w).Encode(map[string]any{"status": "starting"})
-		case r.Method == http.MethodGet && r.URL.Path == "/v2/sandboxes/boxes/box-a/status":
+		case r.Method == http.MethodGet && r.URL.Path == "/api/v2/sandboxes/boxes/box-a/status":
 			statusCalls++
 			status := "starting"
 			if statusCalls > 1 {
 				status = "ready"
 			}
 			_ = json.NewEncoder(w).Encode(map[string]any{"status": status})
-		case r.Method == http.MethodGet && r.URL.Path == "/v2/sandboxes/boxes/box-a":
+		case r.Method == http.MethodGet && r.URL.Path == "/api/v2/sandboxes/boxes/box-a":
 			_ = json.NewEncoder(w).Encode(map[string]any{
 				"name":          "box-a",
 				"status":        "ready",

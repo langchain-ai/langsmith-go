@@ -50,7 +50,7 @@ func (r *TraceService) ListRuns(ctx context.Context, traceID string, params Trac
 		err = errors.New("missing required trace_id parameter")
 		return nil, err
 	}
-	path := fmt.Sprintf("v2/traces/%s/runs", traceID)
+	path := fmt.Sprintf("api/v2/traces/%s/runs", traceID)
 	err = requestconfig.ExecuteNewRequest(ctx, http.MethodGet, path, params, &res, opts...)
 	return res, err
 }
@@ -70,7 +70,7 @@ func (r *TraceService) Query(ctx context.Context, body TraceQueryParams, opts ..
 	var raw *http.Response
 	opts = slices.Concat(r.Options, opts)
 	opts = append([]option.RequestOption{option.WithResponseInto(&raw)}, opts...)
-	path := "v2/traces/query"
+	path := "api/v2/traces/query"
 	cfg, err := requestconfig.NewRequestConfig(ctx, http.MethodPost, path, body, &res, opts...)
 	if err != nil {
 		return nil, err

@@ -15,7 +15,7 @@ func TestSandboxResourceWrappers(t *testing.T) {
 	srv := httptest.NewServer(http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
 		w.Header().Set("Content-Type", "application/json")
 		switch {
-		case r.Method == http.MethodPost && r.URL.Path == "/v2/sandboxes/boxes":
+		case r.Method == http.MethodPost && r.URL.Path == "/api/v2/sandboxes/boxes":
 			_ = json.NewEncoder(w).Encode(map[string]any{
 				"id":                "new-id",
 				"name":              "new-box",
@@ -24,7 +24,7 @@ func TestSandboxResourceWrappers(t *testing.T) {
 				"ttl_seconds":       600,
 				"fs_capacity_bytes": 1024,
 			})
-		case r.Method == http.MethodGet && r.URL.Path == "/v2/sandboxes/boxes/new-box":
+		case r.Method == http.MethodGet && r.URL.Path == "/api/v2/sandboxes/boxes/new-box":
 			_ = json.NewEncoder(w).Encode(map[string]any{
 				"id":                "get-id",
 				"name":              "new-box",
@@ -33,7 +33,7 @@ func TestSandboxResourceWrappers(t *testing.T) {
 				"ttl_seconds":       700,
 				"fs_capacity_bytes": 2048,
 			})
-		case r.Method == http.MethodGet && r.URL.Path == "/v2/sandboxes/boxes":
+		case r.Method == http.MethodGet && r.URL.Path == "/api/v2/sandboxes/boxes":
 			_ = json.NewEncoder(w).Encode(map[string]any{
 				"offset": 0,
 				"sandboxes": []map[string]any{
@@ -93,21 +93,21 @@ func TestSandboxRefreshUpdateAndStop(t *testing.T) {
 	srv := httptest.NewServer(http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
 		w.Header().Set("Content-Type", "application/json")
 		switch {
-		case r.Method == http.MethodGet && r.URL.Path == "/v2/sandboxes/boxes/box-a":
+		case r.Method == http.MethodGet && r.URL.Path == "/api/v2/sandboxes/boxes/box-a":
 			_ = json.NewEncoder(w).Encode(map[string]any{
 				"id":            "box-id",
 				"name":          "box-a",
 				"status":        "ready",
 				"dataplane_url": "https://sandbox.example/refreshed",
 			})
-		case r.Method == http.MethodPatch && r.URL.Path == "/v2/sandboxes/boxes/box-a":
+		case r.Method == http.MethodPatch && r.URL.Path == "/api/v2/sandboxes/boxes/box-a":
 			_ = json.NewEncoder(w).Encode(map[string]any{
 				"id":            "box-id",
 				"name":          "box-renamed",
 				"status":        "ready",
 				"dataplane_url": "https://sandbox.example/updated",
 			})
-		case r.Method == http.MethodPost && r.URL.Path == "/v2/sandboxes/boxes/box-renamed/stop":
+		case r.Method == http.MethodPost && r.URL.Path == "/api/v2/sandboxes/boxes/box-renamed/stop":
 			stopped = true
 			w.WriteHeader(http.StatusNoContent)
 		default:
@@ -137,7 +137,7 @@ func TestSandboxRefreshUpdateAndStop(t *testing.T) {
 	if err := sandbox.Stop(context.Background()); err != nil {
 		t.Fatalf("Stop returned error: %v", err)
 	}
-	if !stopped || sandbox.Status != "stopped" || sandbox.DataplaneURL != "" {
+	if !stopped || sandbox.Status != "stopped" || sandbox.DataplaneURL != "https://sandbox.example/updated" {
 		t.Fatalf("unexpected stopped state: stopped=%v sandbox=%#v", stopped, sandbox)
 	}
 }

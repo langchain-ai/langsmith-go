@@ -8,6 +8,8 @@ import (
 	"slices"
 	"time"
 
+	"github.com/google/uuid"
+
 	"github.com/langchain-ai/langsmith-go/internal/apijson"
 	"github.com/langchain-ai/langsmith-go/internal/param"
 	"github.com/langchain-ai/langsmith-go/internal/requestconfig"
@@ -21,6 +23,8 @@ const (
 	defaultSandboxCommandIdleTimeout    = int64(300)
 	defaultSandboxCommandTTLSeconds     = int64(600)
 	sandboxCommandMaxAutoReconnects     = 5
+	sandboxCommandConnectTimeout        = 30 * time.Second
+	sandboxCommandConnectBudget         = 120 * time.Second
 	sandboxCommandReconnectBackoffBase  = 500 * time.Millisecond
 	sandboxCommandReconnectBackoffMax   = 8 * time.Second
 )
@@ -102,7 +106,7 @@ func (r *SandboxBoxService) Run(ctx context.Context, name string, body SandboxBo
 	if err != nil {
 		return nil, err
 	}
-	dataplaneURL, err := requireSandboxDataplaneURL(box.Name, box.Status, box.DataplaneURL)
+	dataplaneURL, err := requireSandboxDataplaneURL(box.Name, box.DataplaneURL)
 	if err != nil {
 		return nil, err
 	}
@@ -135,7 +139,7 @@ func (r *SandboxBoxService) StartCommand(ctx context.Context, name string, body 
 	if err != nil {
 		return nil, err
 	}
-	dataplaneURL, err := requireSandboxDataplaneURL(box.Name, box.Status, box.DataplaneURL)
+	dataplaneURL, err := requireSandboxDataplaneURL(box.Name, box.DataplaneURL)
 	if err != nil {
 		return nil, err
 	}
@@ -175,7 +179,7 @@ func (r *SandboxBoxService) StartCommandWithCallbacks(ctx context.Context, name 
 	if err != nil {
 		return nil, err
 	}
-	dataplaneURL, err := requireSandboxDataplaneURL(box.Name, box.Status, box.DataplaneURL)
+	dataplaneURL, err := requireSandboxDataplaneURL(box.Name, box.DataplaneURL)
 	if err != nil {
 		return nil, err
 	}
@@ -195,18 +199,85 @@ func (r *SandboxBoxService) startCommandWithDataplaneURL(ctx context.Context, da
 		return nil, err
 	}
 
-	ws, err := dialSandboxCommandWebSocket(ctx, dataplaneURL, opts...)
+	// The daemon does get-or-create on command_id, so a re-issue reattaches instead of spawning a second command.
+	commandID, err := uuid.NewV7()
+	if err != nil {
+		return nil, fmt.Errorf("langsmith: failed to generate sandbox command id: %w", err)
+	}
+	payload.CommandID = F(commandID.String())
+
+	deadline := time.Now().Add(sandboxCommandConnectBudget)
+	for attempt := 0; ; attempt++ {
+		remaining := time.Until(deadline)
+		if remaining <= 0 {
+			return nil, &SandboxConnectTimeoutError{Message: fmt.Sprintf("langsmith: gave up connecting to sandbox command WebSocket after %s", sandboxCommandConnectBudget)}
+		}
+		handle, err := startSandboxCommandAttemptFn(ctx, dataplaneURL, payload, min(sandboxCommandConnectTimeout, remaining), opts...)
+		if err == nil {
+			handle.callbacks = callbacks
+			handle.start()
+			return handle, nil
+		}
+		if !sandboxCommandStartRetryable(err) || attempt >= sandboxCommandMaxAutoReconnects {
+			return nil, err
+		}
+		backoff := min(sandboxCommandReconnectBackoffBase<<attempt, sandboxCommandReconnectBackoffMax)
+		if left := time.Until(deadline); left <= 0 {
+			return nil, err
+		} else if backoff > left {
+			backoff = left
+		}
+		select {
+		case <-ctx.Done():
+			return nil, ctx.Err()
+		case <-time.After(backoff):
+		}
+	}
+}
+
+// startSandboxCommandAttemptFn is swapped in tests that exercise the retry loop's timing without a network.
+var startSandboxCommandAttemptFn = startSandboxCommandAttempt
+
+// sandboxCommandStartRetryable reports whether a failed attempt left the command unstarted, and so can be re-issued.
+func sandboxCommandStartRetryable(err error) bool {
+	var connErr *SandboxConnectTimeoutError
+	if errors.As(err, &connErr) {
+		return true
+	}
+	var earlyClose *sandboxStreamEndedBeforeStartedError
+	return errors.As(err, &earlyClose)
+}
+
+// sandboxStreamEndedBeforeStartedError marks a stream closed before the "started" frame, as distinct from a command failure.
+type sandboxStreamEndedBeforeStartedError struct {
+	Message string
+}
+
+func (e *sandboxStreamEndedBeforeStartedError) Error() string {
+	return e.Message
+}
+
+func (e *sandboxStreamEndedBeforeStartedError) Unwrap() error {
+	return &SandboxConnectionError{Message: e.Message}
+}
+
+func startSandboxCommandAttempt(ctx context.Context, dataplaneURL string, payload sandboxCommandStartRequest, connectTimeout time.Duration, opts ...option.RequestOption) (*SandboxCommandHandle, error) {
+	ws, err := dialSandboxCommandWebSocket(ctx, dataplaneURL, connectTimeout, opts...)
 	if err != nil {
 		return nil, err
 	}
 	if err := websocket.JSON.Send(ws, payload); err != nil {
 		_ = ws.Close()
-		return nil, &SandboxConnectionError{Message: fmt.Sprintf("langsmith: failed to send sandbox command request: %v", err)}
+		return nil, &sandboxStreamEndedBeforeStartedError{Message: fmt.Sprintf("langsmith: failed to send sandbox command request: %v", err)}
 	}
 
 	started, err := receiveSandboxWSMessage(ctx, ws)
 	if err != nil {
 		_ = ws.Close()
+		var connErr *SandboxConnectionError
+		if errors.As(err, &connErr) {
+			return nil, &sandboxStreamEndedBeforeStartedError{Message: connErr.Message}
+		}
 		return nil, err
 	}
 	if started.Type == "error" {
@@ -221,10 +292,7 @@ func (r *SandboxBoxService) startCommandWithDataplaneURL(ctx context.Context, da
 		}
 	}
 
-	handle := newSandboxCommandHandle(ws, dataplaneURL, opts, started.CommandID, started.PID, 0, 0)
-	handle.callbacks = callbacks
-	handle.start()
-	return handle, nil
+	return newSandboxCommandHandle(ws, dataplaneURL, opts, started.CommandID, started.PID, 0, 0), nil
 }
 
 // ReconnectCommand reconnects to a running or recently-finished command in the
@@ -237,7 +305,7 @@ func (r *SandboxBoxService) ReconnectCommand(ctx context.Context, name string, c
 	if err != nil {
 		return nil, err
 	}
-	dataplaneURL, err := requireSandboxDataplaneURL(box.Name, box.Status, box.DataplaneURL)
+	dataplaneURL, err := requireSandboxDataplaneURL(box.Name, box.DataplaneURL)
 	if err != nil {
 		return nil, err
 	}
@@ -254,7 +322,7 @@ func (r *SandboxBoxService) ReconnectCommandWithDataplaneURL(ctx context.Context
 	stdoutOffset := sandboxFieldValue(body.StdoutOffset, int64(0))
 	stderrOffset := sandboxFieldValue(body.StderrOffset, int64(0))
 
-	ws, err := dialSandboxCommandWebSocket(ctx, dataplaneURL, opts...)
+	ws, err := dialSandboxCommandWebSocket(ctx, dataplaneURL, sandboxCommandConnectTimeout, opts...)
 	if err != nil {
 		return nil, err
 	}
@@ -277,6 +345,7 @@ func (r *SandboxBoxService) ReconnectCommandWithDataplaneURL(ctx context.Context
 type sandboxCommandStartRequest struct {
 	Type               param.Field[string]            `json:"type" api:"required"`
 	Command            param.Field[string]            `json:"command" api:"required"`
+	CommandID          param.Field[string]            `json:"command_id"`
 	TimeoutSeconds     param.Field[int64]             `json:"timeout_seconds"`
 	Env                param.Field[map[string]string] `json:"env"`
 	CWD                param.Field[string]            `json:"cwd"`

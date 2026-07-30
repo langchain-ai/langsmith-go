@@ -103,7 +103,7 @@ func (r *SandboxBoxService) Tunnel(ctx context.Context, name string, remotePort 
 	if err != nil {
 		return nil, err
 	}
-	dataplaneURL, err := requireSandboxDataplaneURL(box.Name, box.Status, box.DataplaneURL)
+	dataplaneURL, err := requireSandboxDataplaneURL(box.Name, box.DataplaneURL)
 	if err != nil {
 		return nil, err
 	}
@@ -117,7 +117,7 @@ func (r *SandboxBoxService) OpenTunnelStream(ctx context.Context, name string, r
 	if err != nil {
 		return nil, err
 	}
-	dataplaneURL, err := requireSandboxDataplaneURL(box.Name, box.Status, box.DataplaneURL)
+	dataplaneURL, err := requireSandboxDataplaneURL(box.Name, box.DataplaneURL)
 	if err != nil {
 		return nil, err
 	}
@@ -169,7 +169,7 @@ func (r *SandboxBoxService) TunnelWithDataplaneURL(ctx context.Context, dataplan
 
 // OpenTunnelStream opens a single TCP stream to a port inside this sandbox.
 func (s *Sandbox) OpenTunnelStream(ctx context.Context, remotePort int, opts ...option.RequestOption) (*SandboxTunnelStream, error) {
-	dataplaneURL, err := requireSandboxDataplaneURL(s.Name, s.Status, s.DataplaneURL)
+	dataplaneURL, err := requireSandboxDataplaneURL(s.Name, s.DataplaneURL)
 	if err != nil {
 		return nil, err
 	}
@@ -178,7 +178,7 @@ func (s *Sandbox) OpenTunnelStream(ctx context.Context, remotePort int, opts ...
 
 // Tunnel opens a TCP tunnel from localhost to a port inside this sandbox.
 func (s *Sandbox) Tunnel(ctx context.Context, remotePort int, params SandboxTunnelParams, opts ...option.RequestOption) (*SandboxTunnel, error) {
-	dataplaneURL, err := requireSandboxDataplaneURL(s.Name, s.Status, s.DataplaneURL)
+	dataplaneURL, err := requireSandboxDataplaneURL(s.Name, s.DataplaneURL)
 	if err != nil {
 		return nil, err
 	}

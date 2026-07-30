@@ -53,7 +53,7 @@ func (r *PublicRunService) Get(ctx context.Context, shareToken string, runID str
 		err = errors.New("missing required run_id parameter")
 		return nil, err
 	}
-	path := fmt.Sprintf("v2/public/%s/run/%s", shareToken, runID)
+	path := fmt.Sprintf("api/v2/public/%s/run/%s", shareToken, runID)
 	err = requestconfig.ExecuteNewRequest(ctx, http.MethodGet, path, params, &res, opts...)
 	return res, err
 }
@@ -70,7 +70,7 @@ func (r *PublicRunService) Query(ctx context.Context, shareToken string, params 
 		err = errors.New("missing required share_token parameter")
 		return nil, err
 	}
-	path := fmt.Sprintf("v2/public/%s/runs/v2/query", shareToken)
+	path := fmt.Sprintf("api/v2/public/%s/runs/v2/query", shareToken)
 	err = requestconfig.ExecuteNewRequest(ctx, http.MethodPost, path, params, &res, opts...)
 	return res, err
 }

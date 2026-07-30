@@ -19,14 +19,14 @@ func TestSandboxCaptureSnapshotAndWait(t *testing.T) {
 	srv := httptest.NewServer(http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
 		w.Header().Set("Content-Type", "application/json")
 		switch {
-		case r.Method == http.MethodPost && r.URL.Path == "/v2/sandboxes/boxes/box-a/snapshot":
+		case r.Method == http.MethodPost && r.URL.Path == "/api/v2/sandboxes/boxes/box-a/snapshot":
 			_ = json.NewEncoder(w).Encode(map[string]any{
 				"id":                "snap-1",
 				"name":              "snap",
 				"status":            "building",
 				"fs_capacity_bytes": 1024,
 			})
-		case r.Method == http.MethodGet && r.URL.Path == "/v2/sandboxes/snapshots/snap-1":
+		case r.Method == http.MethodGet && r.URL.Path == "/api/v2/sandboxes/snapshots/snap-1":
 			status := "building"
 			if snapshotGets.Add(1) > 1 {
 				status = "ready"

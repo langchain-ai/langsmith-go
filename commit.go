@@ -50,7 +50,7 @@ func (r *CommitService) New(ctx context.Context, owner string, repo string, body
 		err = errors.New("missing required repo parameter")
 		return nil, err
 	}
-	path := fmt.Sprintf("commits/%s/%s", owner, repo)
+	path := fmt.Sprintf("api/v1/commits/%s/%s", owner, repo)
 	err = requestconfig.ExecuteNewRequest(ctx, http.MethodPost, path, body, &res, opts...)
 	return res, err
 }
@@ -77,7 +77,7 @@ func (r *CommitService) Get(ctx context.Context, owner string, repo string, comm
 		err = errors.New("missing required commit parameter")
 		return nil, err
 	}
-	path := fmt.Sprintf("commits/%s/%s/%s", owner, repo, commit)
+	path := fmt.Sprintf("api/v1/commits/%s/%s/%s", owner, repo, commit)
 	err = requestconfig.ExecuteNewRequest(ctx, http.MethodGet, path, query, &res, opts...)
 	return res, err
 }
@@ -99,7 +99,7 @@ func (r *CommitService) List(ctx context.Context, owner string, repo string, que
 		err = errors.New("missing required repo parameter")
 		return nil, err
 	}
-	path := fmt.Sprintf("commits/%s/%s", owner, repo)
+	path := fmt.Sprintf("api/v1/commits/%s/%s", owner, repo)
 	cfg, err := requestconfig.NewRequestConfig(ctx, http.MethodGet, path, query, &res, opts...)
 	if err != nil {
 		return nil, err
