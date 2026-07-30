@@ -1,5 +1,12 @@
 # Changelog
 
+## [0.25.2](https://github.com/langchain-ai/langsmith-go/compare/v0.25.1...v0.25.2) (2026-07-30)
+
+
+### Documentation
+
+* **feedback:** document session_id as required on feedback creation ([1bd2df3](https://github.com/langchain-ai/langsmith-go/commit/1bd2df3ca7ace5ac52b7f8e422cff502f0d2c792))
+
 ## [0.25.1](https://github.com/langchain-ai/langsmith-go/compare/v0.25.0...v0.25.1) (2026-07-30)
 
 
