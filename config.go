@@ -453,6 +453,5 @@ func saveConfig(path string, cfg configFile) error {
 }
 
 func normalizeConfigURL(apiURL string) string {
-	u := strings.TrimRight(apiURL, "/")
-	return strings.TrimSuffix(u, "/api/v1")
+	return strings.TrimRight(normalizeBaseURL(strings.TrimRight(apiURL, "/")), "/")
 }

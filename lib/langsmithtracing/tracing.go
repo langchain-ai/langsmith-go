@@ -215,7 +215,10 @@ func NewTracingClient(ctx context.Context, opts ...Option) (*TracingClient, erro
 	}
 
 	endpoint := models.WriteEndpoint{
-		URL:              cfg.apiURL,
+		// The exporter appends "/runs/multipart" and "/runs/batch", so a trailing
+		// slash here would produce a doubled separator. option.WithBaseURL adds one
+		// to any base URL that has a path.
+		URL:              strings.TrimRight(cfg.apiURL, "/"),
 		Key:              cfg.apiKey,
 		OAuthAccessToken: cfg.oauthAccessToken,
 		Project:          cfg.project,
