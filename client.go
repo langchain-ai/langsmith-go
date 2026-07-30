@@ -83,6 +83,7 @@ func DefaultClientOptions() []option.RequestOption {
 // and requests that this client makes.
 func NewClient(opts ...option.RequestOption) (r *Client) {
 	opts = append(DefaultClientOptions(), opts...)
+	opts = append(opts, withNormalizedBaseURL()) // see baseurl.go
 
 	r = &Client{Options: opts}
 
@@ -122,7 +123,8 @@ func (r *Client) tracing() (*langsmithtracing.TracingClient, error) {
 			Request:    req,
 			HTTPClient: http.DefaultClient,
 		}
-		if err := cfg.Apply(slices.Clone(r.Options)...); err != nil {
+		// Ingest keeps the base URL as configured, unstripped; see baseurl.go.
+		if err := cfg.Apply(withoutBaseURLNormalization(r.Options)...); err != nil {
 			r.tracingErr = fmt.Errorf("langsmith: resolve tracing config: %w", err)
 			return
 		}
