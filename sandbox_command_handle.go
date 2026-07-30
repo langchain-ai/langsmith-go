@@ -6,6 +6,7 @@ import (
 	"encoding/json"
 	"errors"
 	"fmt"
+	"log"
 	"strings"
 	"sync"
 	"time"
@@ -250,6 +251,13 @@ func (h *SandboxCommandHandle) readLoop() {
 			}
 			if h.PID == 0 {
 				h.PID = msg.PID
+			}
+			if msg.CommandID == h.CommandID {
+				// A reattachment landed. For a command producing no output this is the
+				// only evidence of that, and the budget bounds *failed* reattachments.
+				reconnectAttempts = 0
+			} else {
+				log.Printf("langsmith: ignoring reconnect acknowledgement for command %q while attached to %q", msg.CommandID, h.CommandID)
 			}
 		default:
 			h.setErr(&SandboxOperationError{Operation: "command", Message: fmt.Sprintf("unknown sandbox command message type %q", msg.Type)})
