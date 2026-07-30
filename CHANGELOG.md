@@ -1,5 +1,13 @@
 # Changelog
 
+## [0.25.1](https://github.com/langchain-ai/langsmith-go/compare/v0.25.0...v0.25.1) (2026-07-30)
+
+
+### Bug Fixes
+
+* **annotation-queues:** document item endpoints at their served path ([ddd4e6a](https://github.com/langchain-ai/langsmith-go/commit/ddd4e6a8c6b929c1f372fa4b913a03ed73fdd79d))
+* strip a trailing /api or /api/v1 from the configured base URL ([#89](https://github.com/langchain-ai/langsmith-go/issues/89)) ([368d234](https://github.com/langchain-ai/langsmith-go/commit/368d23465fdd9b9926114dd2cb910cab64ac5464))
+
 ## [0.25.0](https://github.com/langchain-ai/langsmith-go/compare/v0.24.0...v0.25.0) (2026-07-30)
 
 
