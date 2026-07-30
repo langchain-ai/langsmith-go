@@ -47,7 +47,7 @@ func (r *AnnotationQueueItemService) New(ctx context.Context, queueID string, pa
 		err = errors.New("missing required queue_id parameter")
 		return nil, err
 	}
-	path := fmt.Sprintf("api/v1/annotation-queues/%s/items", queueID)
+	path := fmt.Sprintf("api/v1/platform/annotation-queues/%s/items", queueID)
 	err = requestconfig.ExecuteNewRequest(ctx, http.MethodPost, path, params, &res, opts...)
 	return res, err
 }
@@ -65,7 +65,7 @@ func (r *AnnotationQueueItemService) Update(ctx context.Context, queueID string,
 		err = errors.New("missing required item_id parameter")
 		return nil, err
 	}
-	path := fmt.Sprintf("api/v1/annotation-queues/%s/items/%s", queueID, itemID)
+	path := fmt.Sprintf("api/v1/platform/annotation-queues/%s/items/%s", queueID, itemID)
 	err = requestconfig.ExecuteNewRequest(ctx, http.MethodPatch, path, body, &res, opts...)
 	return res, err
 }
@@ -84,7 +84,7 @@ func (r *AnnotationQueueItemService) List(ctx context.Context, queueID string, q
 		err = errors.New("missing required queue_id parameter")
 		return nil, err
 	}
-	path := fmt.Sprintf("api/v1/annotation-queues/%s/items", queueID)
+	path := fmt.Sprintf("api/v1/platform/annotation-queues/%s/items", queueID)
 	cfg, err := requestconfig.NewRequestConfig(ctx, http.MethodGet, path, query, &res, opts...)
 	if err != nil {
 		return nil, err
@@ -115,7 +115,7 @@ func (r *AnnotationQueueItemService) NewStatus(ctx context.Context, queueItemID 
 		err = errors.New("missing required queue_item_id parameter")
 		return nil, err
 	}
-	path := fmt.Sprintf("api/v1/annotation-queues/items/%s/status", queueItemID)
+	path := fmt.Sprintf("api/v1/platform/annotation-queues/items/%s/status", queueItemID)
 	err = requestconfig.ExecuteNewRequest(ctx, http.MethodPost, path, body, &res, opts...)
 	return res, err
 }
@@ -127,7 +127,7 @@ func (r *AnnotationQueueItemService) DeleteAll(ctx context.Context, queueID stri
 		err = errors.New("missing required queue_id parameter")
 		return nil, err
 	}
-	path := fmt.Sprintf("api/v1/annotation-queues/%s/items/delete", queueID)
+	path := fmt.Sprintf("api/v1/platform/annotation-queues/%s/items/delete", queueID)
 	err = requestconfig.ExecuteNewRequest(ctx, http.MethodPost, path, body, &res, opts...)
 	return res, err
 }
@@ -140,7 +140,7 @@ func (r *AnnotationQueueItemService) GetCount(ctx context.Context, queueID strin
 		err = errors.New("missing required queue_id parameter")
 		return nil, err
 	}
-	path := fmt.Sprintf("api/v1/annotation-queues/%s/items/count", queueID)
+	path := fmt.Sprintf("api/v1/platform/annotation-queues/%s/items/count", queueID)
 	err = requestconfig.ExecuteNewRequest(ctx, http.MethodGet, path, query, &res, opts...)
 	return res, err
 }
@@ -157,7 +157,7 @@ func (r *AnnotationQueueItemService) GetPlacement(ctx context.Context, queueID s
 		err = errors.New("missing required item_id parameter")
 		return nil, err
 	}
-	path := fmt.Sprintf("api/v1/annotation-queues/%s/items/%s/placement", queueID, itemID)
+	path := fmt.Sprintf("api/v1/platform/annotation-queues/%s/items/%s/placement", queueID, itemID)
 	err = requestconfig.ExecuteNewRequest(ctx, http.MethodGet, path, nil, &res, opts...)
 	return res, err
 }
