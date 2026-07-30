@@ -46,6 +46,9 @@ func NewFeedbackService(opts ...option.RequestOption) (r *FeedbackService) {
 }
 
 // Create a new feedback.
+//
+// `session_id` is required: it identifies the tracing project the feedback belongs
+// to.
 func (r *FeedbackService) New(ctx context.Context, body FeedbackNewParams, opts ...option.RequestOption) (res *FeedbackSchema, err error) {
 	opts = slices.Concat(r.Options, opts)
 	path := "api/v1/feedback"
@@ -208,10 +211,11 @@ type FeedbackCreateSchemaParam struct {
 	ModifiedAt       param.Field[time.Time]                                    `json:"modified_at" format:"date-time"`
 	RunID            param.Field[string]                                       `json:"run_id" format:"uuid"`
 	Score            param.Field[FeedbackCreateSchemaScoreUnionParam]          `json:"score"`
-	SessionID        param.Field[string]                                       `json:"session_id" format:"uuid"`
-	StartTime        param.Field[time.Time]                                    `json:"start_time" format:"date-time"`
-	TraceID          param.Field[string]                                       `json:"trace_id" format:"uuid"`
-	Value            param.Field[FeedbackCreateSchemaValueUnionParam]          `json:"value"`
+	// Required. The ID of the tracing project (session) the feedback belongs to.
+	SessionID param.Field[string]                              `json:"session_id" format:"uuid"`
+	StartTime param.Field[time.Time]                           `json:"start_time" format:"date-time"`
+	TraceID   param.Field[string]                              `json:"trace_id" format:"uuid"`
+	Value     param.Field[FeedbackCreateSchemaValueUnionParam] `json:"value"`
 }
 
 func (r FeedbackCreateSchemaParam) MarshalJSON() (data []byte, err error) {
