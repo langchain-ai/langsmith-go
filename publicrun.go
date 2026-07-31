@@ -37,9 +37,10 @@ func NewPublicRunService(opts ...option.RequestOption) (r *PublicRunService) {
 	return
 }
 
-// **Alpha:** The request and response contract may change; Returns one run within
-// the trace identified by the share token. The request supplies only the run ID
-// and that run's exact start_time coordinate.
+// Returns one run within the trace identified by the share token. The request
+// supplies only the run ID and that run's exact start_time coordinate.
+//
+// Self-hosted deployments require LangSmith `v0.16` or later.
 func (r *PublicRunService) Get(ctx context.Context, shareToken string, runID string, params PublicRunGetParams, opts ...option.RequestOption) (res *Run, err error) {
 	if params.Accept.Present {
 		opts = append(opts, option.WithHeader("Accept", fmt.Sprintf("%v", params.Accept)))
@@ -58,9 +59,10 @@ func (r *PublicRunService) Get(ctx context.Context, shareToken string, runID str
 	return res, err
 }
 
-// **Alpha:** The request and response contract may change; Returns all runs within
-// the trace identified by the share token. The share token supplies the tenant,
-// project, and trace scope.
+// Returns all runs within the trace identified by the share token. The share token
+// supplies the tenant, project, and trace scope.
+//
+// Self-hosted deployments require LangSmith `v0.16` or later.
 func (r *PublicRunService) Query(ctx context.Context, shareToken string, params PublicRunQueryParams, opts ...option.RequestOption) (res *PublicRunQueryResponse, err error) {
 	if params.Accept.Present {
 		opts = append(opts, option.WithHeader("Accept", fmt.Sprintf("%v", params.Accept)))

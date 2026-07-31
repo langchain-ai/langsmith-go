@@ -38,9 +38,10 @@ func NewTraceService(opts ...option.RequestOption) (r *TraceService) {
 	return
 }
 
-// **Alpha:** The request and response contract may change; Returns runs for a
-// trace ID within min/max start time. Optional `filter`; repeatable `selects` to
-// select fields to return.
+// Returns runs for a trace ID within min/max start time. Optional `filter`;
+// repeatable `selects` to select fields to return.
+//
+// Self-hosted deployments require LangSmith `v0.16` or later.
 func (r *TraceService) ListRuns(ctx context.Context, traceID string, params TraceListRunsParams, opts ...option.RequestOption) (res *TraceListRunsResponse, err error) {
 	if params.Accept.Present {
 		opts = append(opts, option.WithHeader("Accept", fmt.Sprintf("%v", params.Accept)))
@@ -66,6 +67,8 @@ func (r *TraceService) ListRuns(ctx context.Context, traceID string, params Trac
 //
 // Supports filters (`trace_filter`, `tree_filter`), cursor pagination (`cursor`),
 // and field projection (`selects`).
+//
+// Self-hosted deployments require LangSmith `v0.16` or later.
 func (r *TraceService) Query(ctx context.Context, body TraceQueryParams, opts ...option.RequestOption) (res *pagination.ItemsCursorPostPagination[Trace], err error) {
 	var raw *http.Response
 	opts = slices.Concat(r.Options, opts)
@@ -94,6 +97,8 @@ func (r *TraceService) Query(ctx context.Context, body TraceQueryParams, opts ..
 //
 // Supports filters (`trace_filter`, `tree_filter`), cursor pagination (`cursor`),
 // and field projection (`selects`).
+//
+// Self-hosted deployments require LangSmith `v0.16` or later.
 func (r *TraceService) QueryAutoPaging(ctx context.Context, body TraceQueryParams, opts ...option.RequestOption) *pagination.ItemsCursorPostPaginationAutoPager[Trace] {
 	return pagination.NewItemsCursorPostPaginationAutoPager(r.Query(ctx, body, opts...))
 }

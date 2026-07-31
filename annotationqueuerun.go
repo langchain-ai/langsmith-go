@@ -38,6 +38,9 @@ func NewAnnotationQueueRunService(opts ...option.RequestOption) (r *AnnotationQu
 }
 
 // Add Runs To Annotation Queue
+//
+// Deprecated: Deprecated: use AnnotationQueues.Items.New() instead. Will be
+// removed after Jan 31, 2027.
 func (r *AnnotationQueueRunService) New(ctx context.Context, queueID string, params AnnotationQueueRunNewParams, opts ...option.RequestOption) (res *[]AnnotationQueueRunNewResponse, err error) {
 	opts = slices.Concat(r.Options, opts)
 	if queueID == "" {
@@ -50,6 +53,10 @@ func (r *AnnotationQueueRunService) New(ctx context.Context, queueID string, par
 }
 
 // Update Run In Annotation Queue
+//
+// Deprecated: Deprecated: use the annotation queue items update method (PATCH
+// /api/v1/platform/annotation-queues/{queue_id}/items/{item_id}) instead. Will be
+// removed after Jan 31, 2027.
 func (r *AnnotationQueueRunService) Update(ctx context.Context, queueID string, queueRunID string, body AnnotationQueueRunUpdateParams, opts ...option.RequestOption) (res *AnnotationQueueRunUpdateResponse, err error) {
 	opts = slices.Concat(r.Options, opts)
 	if queueID == "" {
@@ -66,6 +73,10 @@ func (r *AnnotationQueueRunService) Update(ctx context.Context, queueID string, 
 }
 
 // Get Runs From Annotation Queue
+//
+// Deprecated: Deprecated: use the annotation queue items list method (GET
+// /api/v1/platform/annotation-queues/{queue_id}/items) instead. Will be removed
+// after Jan 31, 2027.
 func (r *AnnotationQueueRunService) List(ctx context.Context, queueID string, query AnnotationQueueRunListParams, opts ...option.RequestOption) (res *[]RunSchemaWithAnnotationQueueInfo, err error) {
 	opts = slices.Concat(r.Options, opts)
 	if queueID == "" {
@@ -77,7 +88,10 @@ func (r *AnnotationQueueRunService) List(ctx context.Context, queueID string, qu
 	return res, err
 }
 
-// Add Runs To Annotation Queue By Key
+// Self-hosted deployments require LangSmith `v0.16` or later.
+//
+// Deprecated: Deprecated: use AnnotationQueues.Items.New() instead. Will be
+// removed after Jan 31, 2027.
 func (r *AnnotationQueueRunService) NewByKey(ctx context.Context, queueID string, params AnnotationQueueRunNewByKeyParams, opts ...option.RequestOption) (res *[]AnnotationQueueRunNewByKeyResponse, err error) {
 	opts = slices.Concat(r.Options, opts)
 	if queueID == "" {
@@ -90,6 +104,10 @@ func (r *AnnotationQueueRunService) NewByKey(ctx context.Context, queueID string
 }
 
 // Delete Runs From Annotation Queue
+//
+// Deprecated: Deprecated: use the annotation queue items delete_all method (POST
+// /api/v1/platform/annotation-queues/{queue_id}/items/delete) instead. Will be
+// removed after Jan 31, 2027.
 func (r *AnnotationQueueRunService) DeleteAll(ctx context.Context, queueID string, body AnnotationQueueRunDeleteAllParams, opts ...option.RequestOption) (res *AnnotationQueueRunDeleteAllResponse, err error) {
 	opts = slices.Concat(r.Options, opts)
 	if queueID == "" {
@@ -102,6 +120,10 @@ func (r *AnnotationQueueRunService) DeleteAll(ctx context.Context, queueID strin
 }
 
 // Delete Run From Annotation Queue
+//
+// Deprecated: Deprecated: use the annotation queue items delete_all method (POST
+// /api/v1/platform/annotation-queues/{queue_id}/items/delete) with the item ID
+// instead. Will be removed after Jan 31, 2027.
 func (r *AnnotationQueueRunService) DeleteQueue(ctx context.Context, queueID string, queueRunID string, opts ...option.RequestOption) (res *AnnotationQueueRunDeleteQueueResponse, err error) {
 	opts = slices.Concat(r.Options, opts)
 	if queueID == "" {

@@ -38,6 +38,8 @@ func NewDatasetExperimentRunService(opts ...option.RequestOption) (r *DatasetExp
 
 // Returns a paginated page of dataset examples with runs from the requested
 // experiments. Response uses the canonical `{items, next_cursor}` envelope.
+//
+// Self-hosted deployments require LangSmith `v0.16` or later.
 func (r *DatasetExperimentRunService) Query(ctx context.Context, datasetID string, body DatasetExperimentRunQueryParams, opts ...option.RequestOption) (res *pagination.ItemsCursorPostPagination[DatasetExperimentRunQueryResponse], err error) {
 	var raw *http.Response
 	opts = slices.Concat(r.Options, opts)
@@ -61,6 +63,8 @@ func (r *DatasetExperimentRunService) Query(ctx context.Context, datasetID strin
 
 // Returns a paginated page of dataset examples with runs from the requested
 // experiments. Response uses the canonical `{items, next_cursor}` envelope.
+//
+// Self-hosted deployments require LangSmith `v0.16` or later.
 func (r *DatasetExperimentRunService) QueryAutoPaging(ctx context.Context, datasetID string, body DatasetExperimentRunQueryParams, opts ...option.RequestOption) *pagination.ItemsCursorPostPaginationAutoPager[DatasetExperimentRunQueryResponse] {
 	return pagination.NewItemsCursorPostPaginationAutoPager(r.Query(ctx, datasetID, body, opts...))
 }
