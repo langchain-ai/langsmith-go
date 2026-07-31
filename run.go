@@ -67,6 +67,8 @@ func (r *RunService) Update(ctx context.Context, runID string, body RunUpdatePar
 // Returns the URL to view a specific run in the LangSmith UI. The caller must
 // supply the run's project_id and trace_id as query parameters; start_time is
 // optional.
+//
+// Self-hosted deployments require LangSmith `v0.16` or later.
 func (r *RunService) GetURL(ctx context.Context, runID string, query RunGetURLParams, opts ...option.RequestOption) (res *RunGetURLResponse, err error) {
 	opts = slices.Concat(r.Options, opts)
 	if runID == "" {
@@ -90,6 +92,10 @@ func (r *RunService) IngestBatch(ctx context.Context, body RunIngestBatchParams,
 }
 
 // Query Runs
+//
+// Deprecated: Deprecated: use QueryV2 instead, which calls /api/v2/runs/query. See
+// https://docs.langchain.com/langsmith/smithdb-sdk-migration#runs-query for the
+// migration guide. Will be removed after Jan 31, 2027.
 func (r *RunService) QueryV1(ctx context.Context, body RunQueryV1Params, opts ...option.RequestOption) (res *pagination.CursorPagination[RunSchema], err error) {
 	var raw *http.Response
 	opts = slices.Concat(r.Options, opts)
@@ -108,13 +114,19 @@ func (r *RunService) QueryV1(ctx context.Context, body RunQueryV1Params, opts ..
 }
 
 // Query Runs
+//
+// Deprecated: Deprecated: use QueryV2 instead, which calls /api/v2/runs/query. See
+// https://docs.langchain.com/langsmith/smithdb-sdk-migration#runs-query for the
+// migration guide. Will be removed after Jan 31, 2027.
 func (r *RunService) QueryV1AutoPaging(ctx context.Context, body RunQueryV1Params, opts ...option.RequestOption) *pagination.CursorPaginationAutoPager[RunSchema] {
 	return pagination.NewCursorPaginationAutoPager(r.QueryV1(ctx, body, opts...))
 }
 
-// **Alpha:** The request and response contract may change; Returns a paginated
-// list of runs for the given projects within min/max start_time. Supports filters,
-// cursor pagination, and `selects` to select fields to return.
+// Returns a paginated list of runs for the given projects within min/max
+// start_time. Supports filters, cursor pagination, and `selects` to select fields
+// to return.
+//
+// Self-hosted deployments require LangSmith `v0.16` or later.
 func (r *RunService) QueryV2(ctx context.Context, params RunQueryV2Params, opts ...option.RequestOption) (res *pagination.ItemsCursorPostPagination[Run], err error) {
 	var raw *http.Response
 	if params.Accept.Present {
@@ -135,14 +147,21 @@ func (r *RunService) QueryV2(ctx context.Context, params RunQueryV2Params, opts 
 	return res, nil
 }
 
-// **Alpha:** The request and response contract may change; Returns a paginated
-// list of runs for the given projects within min/max start_time. Supports filters,
-// cursor pagination, and `selects` to select fields to return.
+// Returns a paginated list of runs for the given projects within min/max
+// start_time. Supports filters, cursor pagination, and `selects` to select fields
+// to return.
+//
+// Self-hosted deployments require LangSmith `v0.16` or later.
 func (r *RunService) QueryV2AutoPaging(ctx context.Context, params RunQueryV2Params, opts ...option.RequestOption) *pagination.ItemsCursorPostPaginationAutoPager[Run] {
 	return pagination.NewItemsCursorPostPaginationAutoPager(r.QueryV2(ctx, params, opts...))
 }
 
 // Get a specific run.
+//
+// Deprecated: Deprecated: use RetrieveV2 instead, which calls
+// /api/v2/runs/{run_id}. See
+// https://docs.langchain.com/langsmith/smithdb-sdk-migration#runs-retrieve for the
+// migration guide. Will be removed after Jan 31, 2027.
 func (r *RunService) GetV1(ctx context.Context, runID string, query RunGetV1Params, opts ...option.RequestOption) (res *RunSchema, err error) {
 	opts = slices.Concat(r.Options, opts)
 	if runID == "" {
@@ -154,9 +173,10 @@ func (r *RunService) GetV1(ctx context.Context, runID string, query RunGetV1Para
 	return res, err
 }
 
-// **Alpha:** The request and response contract may change; Returns one run by ID
-// for the given session. Use the `selects` query parameter (repeatable) to select
-// fields to return.
+// Returns one run by ID for the given session. Use the `selects` query parameter
+// (repeatable) to select fields to return.
+//
+// Self-hosted deployments require LangSmith `v0.16` or later.
 func (r *RunService) GetV2(ctx context.Context, runID string, params RunGetV2Params, opts ...option.RequestOption) (res *Run, err error) {
 	if params.Accept.Present {
 		opts = append(opts, option.WithHeader("Accept", fmt.Sprintf("%v", params.Accept)))

@@ -35,6 +35,8 @@ func NewRunShareService(opts ...option.RequestOption) (r *RunShareService) {
 }
 
 // Creates or returns a share token for a run. Child runs share their trace root.
+//
+// Self-hosted deployments require LangSmith `v0.16` or later.
 func (r *RunShareService) New(ctx context.Context, runID string, body RunShareNewParams, opts ...option.RequestOption) (res *RunShareNewResponse, err error) {
 	opts = slices.Concat(r.Options, opts)
 	if runID == "" {
@@ -48,6 +50,8 @@ func (r *RunShareService) New(ctx context.Context, runID string, body RunShareNe
 
 // Deletes the share token for the trace identified by trace_id and session_id.
 // Idempotent: returns 204 whether or not a share token existed.
+//
+// Self-hosted deployments require LangSmith `v0.16` or later.
 func (r *RunShareService) Delete(ctx context.Context, traceID string, body RunShareDeleteParams, opts ...option.RequestOption) (err error) {
 	opts = slices.Concat(r.Options, opts)
 	opts = append([]option.RequestOption{option.WithHeader("Accept", "*/*")}, opts...)

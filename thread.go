@@ -38,8 +38,9 @@ func NewThreadService(opts ...option.RequestOption) (r *ThreadService) {
 	return
 }
 
-// **Alpha:** The request and response contract may change; Retrieve all traces
-// belonging to a specific thread within a project.
+// Retrieve all traces belonging to a specific thread within a project.
+//
+// Self-hosted deployments require LangSmith `v0.16` or later.
 func (r *ThreadService) ListTraces(ctx context.Context, threadID string, query ThreadListTracesParams, opts ...option.RequestOption) (res *pagination.ItemsCursorGetPagination[ThreadTrace], err error) {
 	var raw *http.Response
 	opts = slices.Concat(r.Options, opts)
@@ -61,15 +62,17 @@ func (r *ThreadService) ListTraces(ctx context.Context, threadID string, query T
 	return res, nil
 }
 
-// **Alpha:** The request and response contract may change; Retrieve all traces
-// belonging to a specific thread within a project.
+// Retrieve all traces belonging to a specific thread within a project.
+//
+// Self-hosted deployments require LangSmith `v0.16` or later.
 func (r *ThreadService) ListTracesAutoPaging(ctx context.Context, threadID string, query ThreadListTracesParams, opts ...option.RequestOption) *pagination.ItemsCursorGetPaginationAutoPager[ThreadTrace] {
 	return pagination.NewItemsCursorGetPaginationAutoPager(r.ListTraces(ctx, threadID, query, opts...))
 }
 
-// **Alpha:** The request and response contract may change; Query threads within a
-// project (session), with cursor-based pagination. Returns threads matching the
-// given time range and optional filter.
+// Query threads within a project (session), with cursor-based pagination. Returns
+// threads matching the given time range and optional filter.
+//
+// Self-hosted deployments require LangSmith `v0.16` or later.
 func (r *ThreadService) Query(ctx context.Context, body ThreadQueryParams, opts ...option.RequestOption) (res *pagination.ItemsCursorPostPagination[Thread], err error) {
 	var raw *http.Response
 	opts = slices.Concat(r.Options, opts)
@@ -87,16 +90,18 @@ func (r *ThreadService) Query(ctx context.Context, body ThreadQueryParams, opts 
 	return res, nil
 }
 
-// **Alpha:** The request and response contract may change; Query threads within a
-// project (session), with cursor-based pagination. Returns threads matching the
-// given time range and optional filter.
+// Query threads within a project (session), with cursor-based pagination. Returns
+// threads matching the given time range and optional filter.
+//
+// Self-hosted deployments require LangSmith `v0.16` or later.
 func (r *ThreadService) QueryAutoPaging(ctx context.Context, body ThreadQueryParams, opts ...option.RequestOption) *pagination.ItemsCursorPostPaginationAutoPager[Thread] {
 	return pagination.NewItemsCursorPostPaginationAutoPager(r.Query(ctx, body, opts...))
 }
 
-// **Alpha:** The request and response contract may change; Compute aggregate stats
-// for a single thread (turn count, latency percentiles, token/cost sums, and
-// detail breakdowns) within a project.
+// Compute aggregate stats for a single thread (turn count, latency percentiles,
+// token/cost sums, and detail breakdowns) within a project.
+//
+// Self-hosted deployments require LangSmith `v0.16` or later.
 func (r *ThreadService) Stats(ctx context.Context, threadID string, query ThreadStatsParams, opts ...option.RequestOption) (res *ThreadStats, err error) {
 	opts = slices.Concat(r.Options, opts)
 	if threadID == "" {

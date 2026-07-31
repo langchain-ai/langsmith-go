@@ -87,6 +87,10 @@ func (r *AnnotationQueueService) AnnotationQueues(ctx context.Context, body Anno
 }
 
 // Create Identity Annotation Queue Run Status
+//
+// Deprecated: Deprecated: use the annotation queue items create_status method
+// (POST /api/v1/platform/annotation-queues/items/{queue_item_id}/status) instead.
+// Will be removed after Jan 31, 2027.
 func (r *AnnotationQueueService) NewRunStatus(ctx context.Context, annotationQueueRunID string, body AnnotationQueueNewRunStatusParams, opts ...option.RequestOption) (res *AnnotationQueueNewRunStatusResponse, err error) {
 	opts = slices.Concat(r.Options, opts)
 	if annotationQueueRunID == "" {
@@ -154,6 +158,12 @@ func (r *AnnotationQueueService) GetQueues(ctx context.Context, runID string, op
 }
 
 // Get a run from an annotation queue
+//
+// Deprecated: Deprecated: use the annotation queue items list and
+// retrieve_placement methods instead, which call GET
+// /api/v1/platform/annotation-queues/{queue_id}/items and GET
+// /api/v1/platform/annotation-queues/{queue_id}/items/{item_id}/placement. Will be
+// removed after Jan 31, 2027.
 func (r *AnnotationQueueService) GetRun(ctx context.Context, queueID string, index int64, query AnnotationQueueGetRunParams, opts ...option.RequestOption) (res *RunSchemaWithAnnotationQueueInfo, err error) {
 	opts = slices.Concat(r.Options, opts)
 	if queueID == "" {
@@ -166,6 +176,10 @@ func (r *AnnotationQueueService) GetRun(ctx context.Context, queueID string, ind
 }
 
 // Get Size From Annotation Queue
+//
+// Deprecated: Deprecated: use the annotation queue items retrieve_count method
+// (GET /api/v1/platform/annotation-queues/{queue_id}/items/count) with the desired
+// status instead. Will be removed after Jan 31, 2027.
 func (r *AnnotationQueueService) GetSize(ctx context.Context, queueID string, query AnnotationQueueGetSizeParams, opts ...option.RequestOption) (res *AnnotationQueueSizeSchema, err error) {
 	opts = slices.Concat(r.Options, opts)
 	if queueID == "" {
@@ -178,6 +192,10 @@ func (r *AnnotationQueueService) GetSize(ctx context.Context, queueID string, qu
 }
 
 // Get Total Archived From Annotation Queue
+//
+// Deprecated: Deprecated: use the annotation queue items retrieve_count method
+// (GET /api/v1/platform/annotation-queues/{queue_id}/items/count?status=archived)
+// instead. Will be removed after Jan 31, 2027.
 func (r *AnnotationQueueService) GetTotalArchived(ctx context.Context, queueID string, query AnnotationQueueGetTotalArchivedParams, opts ...option.RequestOption) (res *AnnotationQueueSizeSchema, err error) {
 	opts = slices.Concat(r.Options, opts)
 	if queueID == "" {
@@ -190,6 +208,10 @@ func (r *AnnotationQueueService) GetTotalArchived(ctx context.Context, queueID s
 }
 
 // Get Total Size From Annotation Queue
+//
+// Deprecated: Deprecated: use the annotation queue items retrieve_count method
+// (GET /api/v1/platform/annotation-queues/{queue_id}/items/count?status=all)
+// instead. Will be removed after Jan 31, 2027.
 func (r *AnnotationQueueService) GetTotalSize(ctx context.Context, queueID string, opts ...option.RequestOption) (res *AnnotationQueueSizeSchema, err error) {
 	opts = slices.Concat(r.Options, opts)
 	if queueID == "" {

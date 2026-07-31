@@ -254,13 +254,15 @@ type IssueListParamsStatus string
 
 const (
 	IssueListParamsStatusOpen      IssueListParamsStatus = "open"
+	IssueListParamsStatusFixing    IssueListParamsStatus = "fixing"
+	IssueListParamsStatusWatching  IssueListParamsStatus = "watching"
 	IssueListParamsStatusCompleted IssueListParamsStatus = "completed"
 	IssueListParamsStatusIgnored   IssueListParamsStatus = "ignored"
 )
 
 func (r IssueListParamsStatus) IsKnown() bool {
 	switch r {
-	case IssueListParamsStatusOpen, IssueListParamsStatusCompleted, IssueListParamsStatusIgnored:
+	case IssueListParamsStatusOpen, IssueListParamsStatusFixing, IssueListParamsStatusWatching, IssueListParamsStatusCompleted, IssueListParamsStatusIgnored:
 		return true
 	}
 	return false
