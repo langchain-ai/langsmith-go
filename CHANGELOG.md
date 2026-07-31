@@ -1,5 +1,19 @@
 # Changelog
 
+## [0.25.4](https://github.com/langchain-ai/langsmith-go/compare/v0.25.3...v0.25.4) (2026-07-31)
+
+
+### Bug Fixes
+
+* **api:** document all five issue statuses on GET /v1/platform/issues ([eb622b5](https://github.com/langchain-ai/langsmith-go/commit/eb622b5fa207333e842d9c9e1765b30e7d905037))
+* **runs:** drop the duplicated /v2 from the public shared runs query path ([8210437](https://github.com/langchain-ai/langsmith-go/commit/8210437a2f09865e50786298ebe08de5b84560dd))
+
+
+### Chores
+
+* deprecate legacy SmithDB-migration API endpoints and SDK methods ([aaf66aa](https://github.com/langchain-ai/langsmith-go/commit/aaf66aa03ddf216c4ea1a46b90ebaaee2f71af6d))
+* note light-review expectation on generated SDK release PRs ([#92](https://github.com/langchain-ai/langsmith-go/issues/92)) ([39a0623](https://github.com/langchain-ai/langsmith-go/commit/39a0623dcb4f260e95be21f7a46884f6a911f6a6))
+
 ## [0.25.3](https://github.com/langchain-ai/langsmith-go/compare/v0.25.2...v0.25.3) (2026-07-30)
 
 
