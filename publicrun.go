@@ -72,7 +72,7 @@ func (r *PublicRunService) Query(ctx context.Context, shareToken string, params 
 		err = errors.New("missing required share_token parameter")
 		return nil, err
 	}
-	path := fmt.Sprintf("api/v2/public/%s/runs/v2/query", shareToken)
+	path := fmt.Sprintf("api/v2/public/%s/runs/query", shareToken)
 	err = requestconfig.ExecuteNewRequest(ctx, http.MethodPost, path, params, &res, opts...)
 	return res, err
 }
