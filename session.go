@@ -913,14 +913,17 @@ func (r CustomChartsSectionChartsSingleCustomChartResponseSeriesMetric) IsKnown(
 type CustomChartsSectionChartsSingleCustomChartResponseSeriesMetricDefinition struct {
 	// This field can have the runtime type of
 	// [CustomChartsSectionChartsSingleCustomChartResponseSeriesMetricDefinitionCustomChartMetricRatioOutputDenominator].
-	Denominator interface{}                                                                   `json:"denominator"`
-	Field       CustomChartsSectionChartsSingleCustomChartResponseSeriesMetricDefinitionField `json:"field"`
-	Filter      string                                                                        `json:"filter" api:"nullable"`
+	Denominator interface{}                                                                    `json:"denominator"`
+	Entity      CustomChartsSectionChartsSingleCustomChartResponseSeriesMetricDefinitionEntity `json:"entity"`
+	Field       CustomChartsSectionChartsSingleCustomChartResponseSeriesMetricDefinitionField  `json:"field"`
+	Filter      string                                                                         `json:"filter" api:"nullable"`
 	// This field can have the runtime type of
 	// [CustomChartsSectionChartsSingleCustomChartResponseSeriesMetricDefinitionCustomChartMetricRatioOutputNumerator].
 	Numerator interface{} `json:"numerator"`
 	// This field can have the runtime type of
+	// [CustomChartsSectionChartsSingleCustomChartResponseSeriesMetricDefinitionCustomChartFeedbackCountMetricParams],
 	// [CustomChartsSectionChartsSingleCustomChartResponseSeriesMetricDefinitionCustomChartFeedbackScoreMetricScalarParams],
+	// [CustomChartsSectionChartsSingleCustomChartResponseSeriesMetricDefinitionCustomChartFeedbackScoreMetricPercentileParams],
 	// [CustomChartsSectionChartsSingleCustomChartResponseSeriesMetricDefinitionCustomChartMetricPercentileParams].
 	Params interface{}                                                                  `json:"params"`
 	Type   CustomChartsSectionChartsSingleCustomChartResponseSeriesMetricDefinitionType `json:"type"`
@@ -933,6 +936,7 @@ type CustomChartsSectionChartsSingleCustomChartResponseSeriesMetricDefinition st
 // [CustomChartsSectionChartsSingleCustomChartResponseSeriesMetricDefinition]
 type customChartsSectionChartsSingleCustomChartResponseSeriesMetricDefinitionJSON struct {
 	Denominator apijson.Field
+	Entity      apijson.Field
 	Field       apijson.Field
 	Filter      apijson.Field
 	Numerator   apijson.Field
@@ -960,9 +964,11 @@ func (r *CustomChartsSectionChartsSingleCustomChartResponseSeriesMetricDefinitio
 // interface which you can cast to the specific types for more type safety.
 //
 // Possible runtime types of the union are
+// [CustomChartsSectionChartsSingleCustomChartResponseSeriesMetricDefinitionCustomChartFeedbackCountMetric],
 // [CustomChartsSectionChartsSingleCustomChartResponseSeriesMetricDefinitionCustomChartMetricCount],
 // [CustomChartsSectionChartsSingleCustomChartResponseSeriesMetricDefinitionCustomChartFeedbackScoreMetricScalar],
 // [CustomChartsSectionChartsSingleCustomChartResponseSeriesMetricDefinitionCustomChartMetricScalar],
+// [CustomChartsSectionChartsSingleCustomChartResponseSeriesMetricDefinitionCustomChartFeedbackScoreMetricPercentile],
 // [CustomChartsSectionChartsSingleCustomChartResponseSeriesMetricDefinitionCustomChartMetricPercentile],
 // [CustomChartsSectionChartsSingleCustomChartResponseSeriesMetricDefinitionCustomChartMetricRatioOutput].
 func (r CustomChartsSectionChartsSingleCustomChartResponseSeriesMetricDefinition) AsUnion() CustomChartsSectionChartsSingleCustomChartResponseSeriesMetricDefinitionUnion {
@@ -970,9 +976,11 @@ func (r CustomChartsSectionChartsSingleCustomChartResponseSeriesMetricDefinition
 }
 
 // Union satisfied by
+// [CustomChartsSectionChartsSingleCustomChartResponseSeriesMetricDefinitionCustomChartFeedbackCountMetric],
 // [CustomChartsSectionChartsSingleCustomChartResponseSeriesMetricDefinitionCustomChartMetricCount],
 // [CustomChartsSectionChartsSingleCustomChartResponseSeriesMetricDefinitionCustomChartFeedbackScoreMetricScalar],
 // [CustomChartsSectionChartsSingleCustomChartResponseSeriesMetricDefinitionCustomChartMetricScalar],
+// [CustomChartsSectionChartsSingleCustomChartResponseSeriesMetricDefinitionCustomChartFeedbackScoreMetricPercentile],
 // [CustomChartsSectionChartsSingleCustomChartResponseSeriesMetricDefinitionCustomChartMetricPercentile]
 // or
 // [CustomChartsSectionChartsSingleCustomChartResponseSeriesMetricDefinitionCustomChartMetricRatioOutput].
@@ -984,6 +992,10 @@ func init() {
 	apijson.RegisterUnion(
 		reflect.TypeOf((*CustomChartsSectionChartsSingleCustomChartResponseSeriesMetricDefinitionUnion)(nil)).Elem(),
 		"",
+		apijson.UnionVariant{
+			TypeFilter: gjson.JSON,
+			Type:       reflect.TypeOf(CustomChartsSectionChartsSingleCustomChartResponseSeriesMetricDefinitionCustomChartFeedbackCountMetric{}),
+		},
 		apijson.UnionVariant{
 			TypeFilter: gjson.JSON,
 			Type:       reflect.TypeOf(CustomChartsSectionChartsSingleCustomChartResponseSeriesMetricDefinitionCustomChartMetricCount{}),
@@ -998,6 +1010,10 @@ func init() {
 		},
 		apijson.UnionVariant{
 			TypeFilter: gjson.JSON,
+			Type:       reflect.TypeOf(CustomChartsSectionChartsSingleCustomChartResponseSeriesMetricDefinitionCustomChartFeedbackScoreMetricPercentile{}),
+		},
+		apijson.UnionVariant{
+			TypeFilter: gjson.JSON,
 			Type:       reflect.TypeOf(CustomChartsSectionChartsSingleCustomChartResponseSeriesMetricDefinitionCustomChartMetricPercentile{}),
 		},
 		apijson.UnionVariant{
@@ -1005,6 +1021,87 @@ func init() {
 			Type:       reflect.TypeOf(CustomChartsSectionChartsSingleCustomChartResponseSeriesMetricDefinitionCustomChartMetricRatioOutput{}),
 		},
 	)
+}
+
+type CustomChartsSectionChartsSingleCustomChartResponseSeriesMetricDefinitionCustomChartFeedbackCountMetric struct {
+	Entity CustomChartsSectionChartsSingleCustomChartResponseSeriesMetricDefinitionCustomChartFeedbackCountMetricEntity `json:"entity" api:"required"`
+	Params CustomChartsSectionChartsSingleCustomChartResponseSeriesMetricDefinitionCustomChartFeedbackCountMetricParams `json:"params" api:"required"`
+	Filter string                                                                                                       `json:"filter" api:"nullable"`
+	Type   CustomChartsSectionChartsSingleCustomChartResponseSeriesMetricDefinitionCustomChartFeedbackCountMetricType   `json:"type"`
+	JSON   customChartsSectionChartsSingleCustomChartResponseSeriesMetricDefinitionCustomChartFeedbackCountMetricJSON   `json:"-"`
+}
+
+// customChartsSectionChartsSingleCustomChartResponseSeriesMetricDefinitionCustomChartFeedbackCountMetricJSON
+// contains the JSON metadata for the struct
+// [CustomChartsSectionChartsSingleCustomChartResponseSeriesMetricDefinitionCustomChartFeedbackCountMetric]
+type customChartsSectionChartsSingleCustomChartResponseSeriesMetricDefinitionCustomChartFeedbackCountMetricJSON struct {
+	Entity      apijson.Field
+	Params      apijson.Field
+	Filter      apijson.Field
+	Type        apijson.Field
+	raw         string
+	ExtraFields map[string]apijson.Field
+}
+
+func (r *CustomChartsSectionChartsSingleCustomChartResponseSeriesMetricDefinitionCustomChartFeedbackCountMetric) UnmarshalJSON(data []byte) (err error) {
+	return apijson.UnmarshalRoot(data, r)
+}
+
+func (r customChartsSectionChartsSingleCustomChartResponseSeriesMetricDefinitionCustomChartFeedbackCountMetricJSON) RawJSON() string {
+	return r.raw
+}
+
+func (r CustomChartsSectionChartsSingleCustomChartResponseSeriesMetricDefinitionCustomChartFeedbackCountMetric) implementsCustomChartsSectionChartsSingleCustomChartResponseSeriesMetricDefinition() {
+}
+
+type CustomChartsSectionChartsSingleCustomChartResponseSeriesMetricDefinitionCustomChartFeedbackCountMetricEntity string
+
+const (
+	CustomChartsSectionChartsSingleCustomChartResponseSeriesMetricDefinitionCustomChartFeedbackCountMetricEntityFeedback CustomChartsSectionChartsSingleCustomChartResponseSeriesMetricDefinitionCustomChartFeedbackCountMetricEntity = "feedback"
+)
+
+func (r CustomChartsSectionChartsSingleCustomChartResponseSeriesMetricDefinitionCustomChartFeedbackCountMetricEntity) IsKnown() bool {
+	switch r {
+	case CustomChartsSectionChartsSingleCustomChartResponseSeriesMetricDefinitionCustomChartFeedbackCountMetricEntityFeedback:
+		return true
+	}
+	return false
+}
+
+type CustomChartsSectionChartsSingleCustomChartResponseSeriesMetricDefinitionCustomChartFeedbackCountMetricParams struct {
+	FeedbackKey string                                                                                                           `json:"feedback_key" api:"required"`
+	JSON        customChartsSectionChartsSingleCustomChartResponseSeriesMetricDefinitionCustomChartFeedbackCountMetricParamsJSON `json:"-"`
+}
+
+// customChartsSectionChartsSingleCustomChartResponseSeriesMetricDefinitionCustomChartFeedbackCountMetricParamsJSON
+// contains the JSON metadata for the struct
+// [CustomChartsSectionChartsSingleCustomChartResponseSeriesMetricDefinitionCustomChartFeedbackCountMetricParams]
+type customChartsSectionChartsSingleCustomChartResponseSeriesMetricDefinitionCustomChartFeedbackCountMetricParamsJSON struct {
+	FeedbackKey apijson.Field
+	raw         string
+	ExtraFields map[string]apijson.Field
+}
+
+func (r *CustomChartsSectionChartsSingleCustomChartResponseSeriesMetricDefinitionCustomChartFeedbackCountMetricParams) UnmarshalJSON(data []byte) (err error) {
+	return apijson.UnmarshalRoot(data, r)
+}
+
+func (r customChartsSectionChartsSingleCustomChartResponseSeriesMetricDefinitionCustomChartFeedbackCountMetricParamsJSON) RawJSON() string {
+	return r.raw
+}
+
+type CustomChartsSectionChartsSingleCustomChartResponseSeriesMetricDefinitionCustomChartFeedbackCountMetricType string
+
+const (
+	CustomChartsSectionChartsSingleCustomChartResponseSeriesMetricDefinitionCustomChartFeedbackCountMetricTypeCount CustomChartsSectionChartsSingleCustomChartResponseSeriesMetricDefinitionCustomChartFeedbackCountMetricType = "count"
+)
+
+func (r CustomChartsSectionChartsSingleCustomChartResponseSeriesMetricDefinitionCustomChartFeedbackCountMetricType) IsKnown() bool {
+	switch r {
+	case CustomChartsSectionChartsSingleCustomChartResponseSeriesMetricDefinitionCustomChartFeedbackCountMetricTypeCount:
+		return true
+	}
+	return false
 }
 
 type CustomChartsSectionChartsSingleCustomChartResponseSeriesMetricDefinitionCustomChartMetricCount struct {
@@ -1199,6 +1296,89 @@ func (r CustomChartsSectionChartsSingleCustomChartResponseSeriesMetricDefinition
 	return false
 }
 
+type CustomChartsSectionChartsSingleCustomChartResponseSeriesMetricDefinitionCustomChartFeedbackScoreMetricPercentile struct {
+	Field  CustomChartsSectionChartsSingleCustomChartResponseSeriesMetricDefinitionCustomChartFeedbackScoreMetricPercentileField  `json:"field" api:"required"`
+	Params CustomChartsSectionChartsSingleCustomChartResponseSeriesMetricDefinitionCustomChartFeedbackScoreMetricPercentileParams `json:"params" api:"required"`
+	Type   CustomChartsSectionChartsSingleCustomChartResponseSeriesMetricDefinitionCustomChartFeedbackScoreMetricPercentileType   `json:"type" api:"required"`
+	Filter string                                                                                                                 `json:"filter" api:"nullable"`
+	JSON   customChartsSectionChartsSingleCustomChartResponseSeriesMetricDefinitionCustomChartFeedbackScoreMetricPercentileJSON   `json:"-"`
+}
+
+// customChartsSectionChartsSingleCustomChartResponseSeriesMetricDefinitionCustomChartFeedbackScoreMetricPercentileJSON
+// contains the JSON metadata for the struct
+// [CustomChartsSectionChartsSingleCustomChartResponseSeriesMetricDefinitionCustomChartFeedbackScoreMetricPercentile]
+type customChartsSectionChartsSingleCustomChartResponseSeriesMetricDefinitionCustomChartFeedbackScoreMetricPercentileJSON struct {
+	Field       apijson.Field
+	Params      apijson.Field
+	Type        apijson.Field
+	Filter      apijson.Field
+	raw         string
+	ExtraFields map[string]apijson.Field
+}
+
+func (r *CustomChartsSectionChartsSingleCustomChartResponseSeriesMetricDefinitionCustomChartFeedbackScoreMetricPercentile) UnmarshalJSON(data []byte) (err error) {
+	return apijson.UnmarshalRoot(data, r)
+}
+
+func (r customChartsSectionChartsSingleCustomChartResponseSeriesMetricDefinitionCustomChartFeedbackScoreMetricPercentileJSON) RawJSON() string {
+	return r.raw
+}
+
+func (r CustomChartsSectionChartsSingleCustomChartResponseSeriesMetricDefinitionCustomChartFeedbackScoreMetricPercentile) implementsCustomChartsSectionChartsSingleCustomChartResponseSeriesMetricDefinition() {
+}
+
+type CustomChartsSectionChartsSingleCustomChartResponseSeriesMetricDefinitionCustomChartFeedbackScoreMetricPercentileField string
+
+const (
+	CustomChartsSectionChartsSingleCustomChartResponseSeriesMetricDefinitionCustomChartFeedbackScoreMetricPercentileFieldFeedbackScore CustomChartsSectionChartsSingleCustomChartResponseSeriesMetricDefinitionCustomChartFeedbackScoreMetricPercentileField = "feedback_score"
+)
+
+func (r CustomChartsSectionChartsSingleCustomChartResponseSeriesMetricDefinitionCustomChartFeedbackScoreMetricPercentileField) IsKnown() bool {
+	switch r {
+	case CustomChartsSectionChartsSingleCustomChartResponseSeriesMetricDefinitionCustomChartFeedbackScoreMetricPercentileFieldFeedbackScore:
+		return true
+	}
+	return false
+}
+
+type CustomChartsSectionChartsSingleCustomChartResponseSeriesMetricDefinitionCustomChartFeedbackScoreMetricPercentileParams struct {
+	FeedbackKey string                                                                                                                     `json:"feedback_key" api:"required"`
+	P           float64                                                                                                                    `json:"p" api:"required"`
+	JSON        customChartsSectionChartsSingleCustomChartResponseSeriesMetricDefinitionCustomChartFeedbackScoreMetricPercentileParamsJSON `json:"-"`
+}
+
+// customChartsSectionChartsSingleCustomChartResponseSeriesMetricDefinitionCustomChartFeedbackScoreMetricPercentileParamsJSON
+// contains the JSON metadata for the struct
+// [CustomChartsSectionChartsSingleCustomChartResponseSeriesMetricDefinitionCustomChartFeedbackScoreMetricPercentileParams]
+type customChartsSectionChartsSingleCustomChartResponseSeriesMetricDefinitionCustomChartFeedbackScoreMetricPercentileParamsJSON struct {
+	FeedbackKey apijson.Field
+	P           apijson.Field
+	raw         string
+	ExtraFields map[string]apijson.Field
+}
+
+func (r *CustomChartsSectionChartsSingleCustomChartResponseSeriesMetricDefinitionCustomChartFeedbackScoreMetricPercentileParams) UnmarshalJSON(data []byte) (err error) {
+	return apijson.UnmarshalRoot(data, r)
+}
+
+func (r customChartsSectionChartsSingleCustomChartResponseSeriesMetricDefinitionCustomChartFeedbackScoreMetricPercentileParamsJSON) RawJSON() string {
+	return r.raw
+}
+
+type CustomChartsSectionChartsSingleCustomChartResponseSeriesMetricDefinitionCustomChartFeedbackScoreMetricPercentileType string
+
+const (
+	CustomChartsSectionChartsSingleCustomChartResponseSeriesMetricDefinitionCustomChartFeedbackScoreMetricPercentileTypePercentile CustomChartsSectionChartsSingleCustomChartResponseSeriesMetricDefinitionCustomChartFeedbackScoreMetricPercentileType = "percentile"
+)
+
+func (r CustomChartsSectionChartsSingleCustomChartResponseSeriesMetricDefinitionCustomChartFeedbackScoreMetricPercentileType) IsKnown() bool {
+	switch r {
+	case CustomChartsSectionChartsSingleCustomChartResponseSeriesMetricDefinitionCustomChartFeedbackScoreMetricPercentileTypePercentile:
+		return true
+	}
+	return false
+}
+
 type CustomChartsSectionChartsSingleCustomChartResponseSeriesMetricDefinitionCustomChartMetricPercentile struct {
 	Field  CustomChartsSectionChartsSingleCustomChartResponseSeriesMetricDefinitionCustomChartMetricPercentileField  `json:"field" api:"required"`
 	Params CustomChartsSectionChartsSingleCustomChartResponseSeriesMetricDefinitionCustomChartMetricPercentileParams `json:"params" api:"required"`
@@ -1318,10 +1498,13 @@ func (r CustomChartsSectionChartsSingleCustomChartResponseSeriesMetricDefinition
 }
 
 type CustomChartsSectionChartsSingleCustomChartResponseSeriesMetricDefinitionCustomChartMetricRatioOutputDenominator struct {
-	Field  CustomChartsSectionChartsSingleCustomChartResponseSeriesMetricDefinitionCustomChartMetricRatioOutputDenominatorField `json:"field"`
-	Filter string                                                                                                               `json:"filter" api:"nullable"`
+	Entity CustomChartsSectionChartsSingleCustomChartResponseSeriesMetricDefinitionCustomChartMetricRatioOutputDenominatorEntity `json:"entity"`
+	Field  CustomChartsSectionChartsSingleCustomChartResponseSeriesMetricDefinitionCustomChartMetricRatioOutputDenominatorField  `json:"field"`
+	Filter string                                                                                                                `json:"filter" api:"nullable"`
 	// This field can have the runtime type of
+	// [CustomChartsSectionChartsSingleCustomChartResponseSeriesMetricDefinitionCustomChartMetricRatioOutputDenominatorCustomChartFeedbackCountMetricParams],
 	// [CustomChartsSectionChartsSingleCustomChartResponseSeriesMetricDefinitionCustomChartMetricRatioOutputDenominatorCustomChartFeedbackScoreMetricScalarParams],
+	// [CustomChartsSectionChartsSingleCustomChartResponseSeriesMetricDefinitionCustomChartMetricRatioOutputDenominatorCustomChartFeedbackScoreMetricPercentileParams],
 	// [CustomChartsSectionChartsSingleCustomChartResponseSeriesMetricDefinitionCustomChartMetricRatioOutputDenominatorCustomChartMetricPercentileParams].
 	Params interface{}                                                                                                         `json:"params"`
 	Type   CustomChartsSectionChartsSingleCustomChartResponseSeriesMetricDefinitionCustomChartMetricRatioOutputDenominatorType `json:"type"`
@@ -1333,6 +1516,7 @@ type CustomChartsSectionChartsSingleCustomChartResponseSeriesMetricDefinitionCus
 // contains the JSON metadata for the struct
 // [CustomChartsSectionChartsSingleCustomChartResponseSeriesMetricDefinitionCustomChartMetricRatioOutputDenominator]
 type customChartsSectionChartsSingleCustomChartResponseSeriesMetricDefinitionCustomChartMetricRatioOutputDenominatorJSON struct {
+	Entity      apijson.Field
 	Field       apijson.Field
 	Filter      apijson.Field
 	Params      apijson.Field
@@ -1359,18 +1543,22 @@ func (r *CustomChartsSectionChartsSingleCustomChartResponseSeriesMetricDefinitio
 // interface which you can cast to the specific types for more type safety.
 //
 // Possible runtime types of the union are
+// [CustomChartsSectionChartsSingleCustomChartResponseSeriesMetricDefinitionCustomChartMetricRatioOutputDenominatorCustomChartFeedbackCountMetric],
 // [CustomChartsSectionChartsSingleCustomChartResponseSeriesMetricDefinitionCustomChartMetricRatioOutputDenominatorCustomChartMetricCount],
 // [CustomChartsSectionChartsSingleCustomChartResponseSeriesMetricDefinitionCustomChartMetricRatioOutputDenominatorCustomChartFeedbackScoreMetricScalar],
 // [CustomChartsSectionChartsSingleCustomChartResponseSeriesMetricDefinitionCustomChartMetricRatioOutputDenominatorCustomChartMetricScalar],
+// [CustomChartsSectionChartsSingleCustomChartResponseSeriesMetricDefinitionCustomChartMetricRatioOutputDenominatorCustomChartFeedbackScoreMetricPercentile],
 // [CustomChartsSectionChartsSingleCustomChartResponseSeriesMetricDefinitionCustomChartMetricRatioOutputDenominatorCustomChartMetricPercentile].
 func (r CustomChartsSectionChartsSingleCustomChartResponseSeriesMetricDefinitionCustomChartMetricRatioOutputDenominator) AsUnion() CustomChartsSectionChartsSingleCustomChartResponseSeriesMetricDefinitionCustomChartMetricRatioOutputDenominatorUnion {
 	return r.union
 }
 
 // Union satisfied by
+// [CustomChartsSectionChartsSingleCustomChartResponseSeriesMetricDefinitionCustomChartMetricRatioOutputDenominatorCustomChartFeedbackCountMetric],
 // [CustomChartsSectionChartsSingleCustomChartResponseSeriesMetricDefinitionCustomChartMetricRatioOutputDenominatorCustomChartMetricCount],
 // [CustomChartsSectionChartsSingleCustomChartResponseSeriesMetricDefinitionCustomChartMetricRatioOutputDenominatorCustomChartFeedbackScoreMetricScalar],
-// [CustomChartsSectionChartsSingleCustomChartResponseSeriesMetricDefinitionCustomChartMetricRatioOutputDenominatorCustomChartMetricScalar]
+// [CustomChartsSectionChartsSingleCustomChartResponseSeriesMetricDefinitionCustomChartMetricRatioOutputDenominatorCustomChartMetricScalar],
+// [CustomChartsSectionChartsSingleCustomChartResponseSeriesMetricDefinitionCustomChartMetricRatioOutputDenominatorCustomChartFeedbackScoreMetricPercentile]
 // or
 // [CustomChartsSectionChartsSingleCustomChartResponseSeriesMetricDefinitionCustomChartMetricRatioOutputDenominatorCustomChartMetricPercentile].
 type CustomChartsSectionChartsSingleCustomChartResponseSeriesMetricDefinitionCustomChartMetricRatioOutputDenominatorUnion interface {
@@ -1381,6 +1569,10 @@ func init() {
 	apijson.RegisterUnion(
 		reflect.TypeOf((*CustomChartsSectionChartsSingleCustomChartResponseSeriesMetricDefinitionCustomChartMetricRatioOutputDenominatorUnion)(nil)).Elem(),
 		"",
+		apijson.UnionVariant{
+			TypeFilter: gjson.JSON,
+			Type:       reflect.TypeOf(CustomChartsSectionChartsSingleCustomChartResponseSeriesMetricDefinitionCustomChartMetricRatioOutputDenominatorCustomChartFeedbackCountMetric{}),
+		},
 		apijson.UnionVariant{
 			TypeFilter: gjson.JSON,
 			Type:       reflect.TypeOf(CustomChartsSectionChartsSingleCustomChartResponseSeriesMetricDefinitionCustomChartMetricRatioOutputDenominatorCustomChartMetricCount{}),
@@ -1395,9 +1587,94 @@ func init() {
 		},
 		apijson.UnionVariant{
 			TypeFilter: gjson.JSON,
+			Type:       reflect.TypeOf(CustomChartsSectionChartsSingleCustomChartResponseSeriesMetricDefinitionCustomChartMetricRatioOutputDenominatorCustomChartFeedbackScoreMetricPercentile{}),
+		},
+		apijson.UnionVariant{
+			TypeFilter: gjson.JSON,
 			Type:       reflect.TypeOf(CustomChartsSectionChartsSingleCustomChartResponseSeriesMetricDefinitionCustomChartMetricRatioOutputDenominatorCustomChartMetricPercentile{}),
 		},
 	)
+}
+
+type CustomChartsSectionChartsSingleCustomChartResponseSeriesMetricDefinitionCustomChartMetricRatioOutputDenominatorCustomChartFeedbackCountMetric struct {
+	Entity CustomChartsSectionChartsSingleCustomChartResponseSeriesMetricDefinitionCustomChartMetricRatioOutputDenominatorCustomChartFeedbackCountMetricEntity `json:"entity" api:"required"`
+	Params CustomChartsSectionChartsSingleCustomChartResponseSeriesMetricDefinitionCustomChartMetricRatioOutputDenominatorCustomChartFeedbackCountMetricParams `json:"params" api:"required"`
+	Filter string                                                                                                                                              `json:"filter" api:"nullable"`
+	Type   CustomChartsSectionChartsSingleCustomChartResponseSeriesMetricDefinitionCustomChartMetricRatioOutputDenominatorCustomChartFeedbackCountMetricType   `json:"type"`
+	JSON   customChartsSectionChartsSingleCustomChartResponseSeriesMetricDefinitionCustomChartMetricRatioOutputDenominatorCustomChartFeedbackCountMetricJSON   `json:"-"`
+}
+
+// customChartsSectionChartsSingleCustomChartResponseSeriesMetricDefinitionCustomChartMetricRatioOutputDenominatorCustomChartFeedbackCountMetricJSON
+// contains the JSON metadata for the struct
+// [CustomChartsSectionChartsSingleCustomChartResponseSeriesMetricDefinitionCustomChartMetricRatioOutputDenominatorCustomChartFeedbackCountMetric]
+type customChartsSectionChartsSingleCustomChartResponseSeriesMetricDefinitionCustomChartMetricRatioOutputDenominatorCustomChartFeedbackCountMetricJSON struct {
+	Entity      apijson.Field
+	Params      apijson.Field
+	Filter      apijson.Field
+	Type        apijson.Field
+	raw         string
+	ExtraFields map[string]apijson.Field
+}
+
+func (r *CustomChartsSectionChartsSingleCustomChartResponseSeriesMetricDefinitionCustomChartMetricRatioOutputDenominatorCustomChartFeedbackCountMetric) UnmarshalJSON(data []byte) (err error) {
+	return apijson.UnmarshalRoot(data, r)
+}
+
+func (r customChartsSectionChartsSingleCustomChartResponseSeriesMetricDefinitionCustomChartMetricRatioOutputDenominatorCustomChartFeedbackCountMetricJSON) RawJSON() string {
+	return r.raw
+}
+
+func (r CustomChartsSectionChartsSingleCustomChartResponseSeriesMetricDefinitionCustomChartMetricRatioOutputDenominatorCustomChartFeedbackCountMetric) implementsCustomChartsSectionChartsSingleCustomChartResponseSeriesMetricDefinitionCustomChartMetricRatioOutputDenominator() {
+}
+
+type CustomChartsSectionChartsSingleCustomChartResponseSeriesMetricDefinitionCustomChartMetricRatioOutputDenominatorCustomChartFeedbackCountMetricEntity string
+
+const (
+	CustomChartsSectionChartsSingleCustomChartResponseSeriesMetricDefinitionCustomChartMetricRatioOutputDenominatorCustomChartFeedbackCountMetricEntityFeedback CustomChartsSectionChartsSingleCustomChartResponseSeriesMetricDefinitionCustomChartMetricRatioOutputDenominatorCustomChartFeedbackCountMetricEntity = "feedback"
+)
+
+func (r CustomChartsSectionChartsSingleCustomChartResponseSeriesMetricDefinitionCustomChartMetricRatioOutputDenominatorCustomChartFeedbackCountMetricEntity) IsKnown() bool {
+	switch r {
+	case CustomChartsSectionChartsSingleCustomChartResponseSeriesMetricDefinitionCustomChartMetricRatioOutputDenominatorCustomChartFeedbackCountMetricEntityFeedback:
+		return true
+	}
+	return false
+}
+
+type CustomChartsSectionChartsSingleCustomChartResponseSeriesMetricDefinitionCustomChartMetricRatioOutputDenominatorCustomChartFeedbackCountMetricParams struct {
+	FeedbackKey string                                                                                                                                                  `json:"feedback_key" api:"required"`
+	JSON        customChartsSectionChartsSingleCustomChartResponseSeriesMetricDefinitionCustomChartMetricRatioOutputDenominatorCustomChartFeedbackCountMetricParamsJSON `json:"-"`
+}
+
+// customChartsSectionChartsSingleCustomChartResponseSeriesMetricDefinitionCustomChartMetricRatioOutputDenominatorCustomChartFeedbackCountMetricParamsJSON
+// contains the JSON metadata for the struct
+// [CustomChartsSectionChartsSingleCustomChartResponseSeriesMetricDefinitionCustomChartMetricRatioOutputDenominatorCustomChartFeedbackCountMetricParams]
+type customChartsSectionChartsSingleCustomChartResponseSeriesMetricDefinitionCustomChartMetricRatioOutputDenominatorCustomChartFeedbackCountMetricParamsJSON struct {
+	FeedbackKey apijson.Field
+	raw         string
+	ExtraFields map[string]apijson.Field
+}
+
+func (r *CustomChartsSectionChartsSingleCustomChartResponseSeriesMetricDefinitionCustomChartMetricRatioOutputDenominatorCustomChartFeedbackCountMetricParams) UnmarshalJSON(data []byte) (err error) {
+	return apijson.UnmarshalRoot(data, r)
+}
+
+func (r customChartsSectionChartsSingleCustomChartResponseSeriesMetricDefinitionCustomChartMetricRatioOutputDenominatorCustomChartFeedbackCountMetricParamsJSON) RawJSON() string {
+	return r.raw
+}
+
+type CustomChartsSectionChartsSingleCustomChartResponseSeriesMetricDefinitionCustomChartMetricRatioOutputDenominatorCustomChartFeedbackCountMetricType string
+
+const (
+	CustomChartsSectionChartsSingleCustomChartResponseSeriesMetricDefinitionCustomChartMetricRatioOutputDenominatorCustomChartFeedbackCountMetricTypeCount CustomChartsSectionChartsSingleCustomChartResponseSeriesMetricDefinitionCustomChartMetricRatioOutputDenominatorCustomChartFeedbackCountMetricType = "count"
+)
+
+func (r CustomChartsSectionChartsSingleCustomChartResponseSeriesMetricDefinitionCustomChartMetricRatioOutputDenominatorCustomChartFeedbackCountMetricType) IsKnown() bool {
+	switch r {
+	case CustomChartsSectionChartsSingleCustomChartResponseSeriesMetricDefinitionCustomChartMetricRatioOutputDenominatorCustomChartFeedbackCountMetricTypeCount:
+		return true
+	}
+	return false
 }
 
 type CustomChartsSectionChartsSingleCustomChartResponseSeriesMetricDefinitionCustomChartMetricRatioOutputDenominatorCustomChartMetricCount struct {
@@ -1592,6 +1869,89 @@ func (r CustomChartsSectionChartsSingleCustomChartResponseSeriesMetricDefinition
 	return false
 }
 
+type CustomChartsSectionChartsSingleCustomChartResponseSeriesMetricDefinitionCustomChartMetricRatioOutputDenominatorCustomChartFeedbackScoreMetricPercentile struct {
+	Field  CustomChartsSectionChartsSingleCustomChartResponseSeriesMetricDefinitionCustomChartMetricRatioOutputDenominatorCustomChartFeedbackScoreMetricPercentileField  `json:"field" api:"required"`
+	Params CustomChartsSectionChartsSingleCustomChartResponseSeriesMetricDefinitionCustomChartMetricRatioOutputDenominatorCustomChartFeedbackScoreMetricPercentileParams `json:"params" api:"required"`
+	Type   CustomChartsSectionChartsSingleCustomChartResponseSeriesMetricDefinitionCustomChartMetricRatioOutputDenominatorCustomChartFeedbackScoreMetricPercentileType   `json:"type" api:"required"`
+	Filter string                                                                                                                                                        `json:"filter" api:"nullable"`
+	JSON   customChartsSectionChartsSingleCustomChartResponseSeriesMetricDefinitionCustomChartMetricRatioOutputDenominatorCustomChartFeedbackScoreMetricPercentileJSON   `json:"-"`
+}
+
+// customChartsSectionChartsSingleCustomChartResponseSeriesMetricDefinitionCustomChartMetricRatioOutputDenominatorCustomChartFeedbackScoreMetricPercentileJSON
+// contains the JSON metadata for the struct
+// [CustomChartsSectionChartsSingleCustomChartResponseSeriesMetricDefinitionCustomChartMetricRatioOutputDenominatorCustomChartFeedbackScoreMetricPercentile]
+type customChartsSectionChartsSingleCustomChartResponseSeriesMetricDefinitionCustomChartMetricRatioOutputDenominatorCustomChartFeedbackScoreMetricPercentileJSON struct {
+	Field       apijson.Field
+	Params      apijson.Field
+	Type        apijson.Field
+	Filter      apijson.Field
+	raw         string
+	ExtraFields map[string]apijson.Field
+}
+
+func (r *CustomChartsSectionChartsSingleCustomChartResponseSeriesMetricDefinitionCustomChartMetricRatioOutputDenominatorCustomChartFeedbackScoreMetricPercentile) UnmarshalJSON(data []byte) (err error) {
+	return apijson.UnmarshalRoot(data, r)
+}
+
+func (r customChartsSectionChartsSingleCustomChartResponseSeriesMetricDefinitionCustomChartMetricRatioOutputDenominatorCustomChartFeedbackScoreMetricPercentileJSON) RawJSON() string {
+	return r.raw
+}
+
+func (r CustomChartsSectionChartsSingleCustomChartResponseSeriesMetricDefinitionCustomChartMetricRatioOutputDenominatorCustomChartFeedbackScoreMetricPercentile) implementsCustomChartsSectionChartsSingleCustomChartResponseSeriesMetricDefinitionCustomChartMetricRatioOutputDenominator() {
+}
+
+type CustomChartsSectionChartsSingleCustomChartResponseSeriesMetricDefinitionCustomChartMetricRatioOutputDenominatorCustomChartFeedbackScoreMetricPercentileField string
+
+const (
+	CustomChartsSectionChartsSingleCustomChartResponseSeriesMetricDefinitionCustomChartMetricRatioOutputDenominatorCustomChartFeedbackScoreMetricPercentileFieldFeedbackScore CustomChartsSectionChartsSingleCustomChartResponseSeriesMetricDefinitionCustomChartMetricRatioOutputDenominatorCustomChartFeedbackScoreMetricPercentileField = "feedback_score"
+)
+
+func (r CustomChartsSectionChartsSingleCustomChartResponseSeriesMetricDefinitionCustomChartMetricRatioOutputDenominatorCustomChartFeedbackScoreMetricPercentileField) IsKnown() bool {
+	switch r {
+	case CustomChartsSectionChartsSingleCustomChartResponseSeriesMetricDefinitionCustomChartMetricRatioOutputDenominatorCustomChartFeedbackScoreMetricPercentileFieldFeedbackScore:
+		return true
+	}
+	return false
+}
+
+type CustomChartsSectionChartsSingleCustomChartResponseSeriesMetricDefinitionCustomChartMetricRatioOutputDenominatorCustomChartFeedbackScoreMetricPercentileParams struct {
+	FeedbackKey string                                                                                                                                                            `json:"feedback_key" api:"required"`
+	P           float64                                                                                                                                                           `json:"p" api:"required"`
+	JSON        customChartsSectionChartsSingleCustomChartResponseSeriesMetricDefinitionCustomChartMetricRatioOutputDenominatorCustomChartFeedbackScoreMetricPercentileParamsJSON `json:"-"`
+}
+
+// customChartsSectionChartsSingleCustomChartResponseSeriesMetricDefinitionCustomChartMetricRatioOutputDenominatorCustomChartFeedbackScoreMetricPercentileParamsJSON
+// contains the JSON metadata for the struct
+// [CustomChartsSectionChartsSingleCustomChartResponseSeriesMetricDefinitionCustomChartMetricRatioOutputDenominatorCustomChartFeedbackScoreMetricPercentileParams]
+type customChartsSectionChartsSingleCustomChartResponseSeriesMetricDefinitionCustomChartMetricRatioOutputDenominatorCustomChartFeedbackScoreMetricPercentileParamsJSON struct {
+	FeedbackKey apijson.Field
+	P           apijson.Field
+	raw         string
+	ExtraFields map[string]apijson.Field
+}
+
+func (r *CustomChartsSectionChartsSingleCustomChartResponseSeriesMetricDefinitionCustomChartMetricRatioOutputDenominatorCustomChartFeedbackScoreMetricPercentileParams) UnmarshalJSON(data []byte) (err error) {
+	return apijson.UnmarshalRoot(data, r)
+}
+
+func (r customChartsSectionChartsSingleCustomChartResponseSeriesMetricDefinitionCustomChartMetricRatioOutputDenominatorCustomChartFeedbackScoreMetricPercentileParamsJSON) RawJSON() string {
+	return r.raw
+}
+
+type CustomChartsSectionChartsSingleCustomChartResponseSeriesMetricDefinitionCustomChartMetricRatioOutputDenominatorCustomChartFeedbackScoreMetricPercentileType string
+
+const (
+	CustomChartsSectionChartsSingleCustomChartResponseSeriesMetricDefinitionCustomChartMetricRatioOutputDenominatorCustomChartFeedbackScoreMetricPercentileTypePercentile CustomChartsSectionChartsSingleCustomChartResponseSeriesMetricDefinitionCustomChartMetricRatioOutputDenominatorCustomChartFeedbackScoreMetricPercentileType = "percentile"
+)
+
+func (r CustomChartsSectionChartsSingleCustomChartResponseSeriesMetricDefinitionCustomChartMetricRatioOutputDenominatorCustomChartFeedbackScoreMetricPercentileType) IsKnown() bool {
+	switch r {
+	case CustomChartsSectionChartsSingleCustomChartResponseSeriesMetricDefinitionCustomChartMetricRatioOutputDenominatorCustomChartFeedbackScoreMetricPercentileTypePercentile:
+		return true
+	}
+	return false
+}
+
 type CustomChartsSectionChartsSingleCustomChartResponseSeriesMetricDefinitionCustomChartMetricRatioOutputDenominatorCustomChartMetricPercentile struct {
 	Field  CustomChartsSectionChartsSingleCustomChartResponseSeriesMetricDefinitionCustomChartMetricRatioOutputDenominatorCustomChartMetricPercentileField  `json:"field" api:"required"`
 	Params CustomChartsSectionChartsSingleCustomChartResponseSeriesMetricDefinitionCustomChartMetricRatioOutputDenominatorCustomChartMetricPercentileParams `json:"params" api:"required"`
@@ -1681,6 +2041,20 @@ func (r CustomChartsSectionChartsSingleCustomChartResponseSeriesMetricDefinition
 	return false
 }
 
+type CustomChartsSectionChartsSingleCustomChartResponseSeriesMetricDefinitionCustomChartMetricRatioOutputDenominatorEntity string
+
+const (
+	CustomChartsSectionChartsSingleCustomChartResponseSeriesMetricDefinitionCustomChartMetricRatioOutputDenominatorEntityFeedback CustomChartsSectionChartsSingleCustomChartResponseSeriesMetricDefinitionCustomChartMetricRatioOutputDenominatorEntity = "feedback"
+)
+
+func (r CustomChartsSectionChartsSingleCustomChartResponseSeriesMetricDefinitionCustomChartMetricRatioOutputDenominatorEntity) IsKnown() bool {
+	switch r {
+	case CustomChartsSectionChartsSingleCustomChartResponseSeriesMetricDefinitionCustomChartMetricRatioOutputDenominatorEntityFeedback:
+		return true
+	}
+	return false
+}
+
 type CustomChartsSectionChartsSingleCustomChartResponseSeriesMetricDefinitionCustomChartMetricRatioOutputDenominatorField string
 
 const (
@@ -1723,10 +2097,13 @@ func (r CustomChartsSectionChartsSingleCustomChartResponseSeriesMetricDefinition
 }
 
 type CustomChartsSectionChartsSingleCustomChartResponseSeriesMetricDefinitionCustomChartMetricRatioOutputNumerator struct {
-	Field  CustomChartsSectionChartsSingleCustomChartResponseSeriesMetricDefinitionCustomChartMetricRatioOutputNumeratorField `json:"field"`
-	Filter string                                                                                                             `json:"filter" api:"nullable"`
+	Entity CustomChartsSectionChartsSingleCustomChartResponseSeriesMetricDefinitionCustomChartMetricRatioOutputNumeratorEntity `json:"entity"`
+	Field  CustomChartsSectionChartsSingleCustomChartResponseSeriesMetricDefinitionCustomChartMetricRatioOutputNumeratorField  `json:"field"`
+	Filter string                                                                                                              `json:"filter" api:"nullable"`
 	// This field can have the runtime type of
+	// [CustomChartsSectionChartsSingleCustomChartResponseSeriesMetricDefinitionCustomChartMetricRatioOutputNumeratorCustomChartFeedbackCountMetricParams],
 	// [CustomChartsSectionChartsSingleCustomChartResponseSeriesMetricDefinitionCustomChartMetricRatioOutputNumeratorCustomChartFeedbackScoreMetricScalarParams],
+	// [CustomChartsSectionChartsSingleCustomChartResponseSeriesMetricDefinitionCustomChartMetricRatioOutputNumeratorCustomChartFeedbackScoreMetricPercentileParams],
 	// [CustomChartsSectionChartsSingleCustomChartResponseSeriesMetricDefinitionCustomChartMetricRatioOutputNumeratorCustomChartMetricPercentileParams].
 	Params interface{}                                                                                                       `json:"params"`
 	Type   CustomChartsSectionChartsSingleCustomChartResponseSeriesMetricDefinitionCustomChartMetricRatioOutputNumeratorType `json:"type"`
@@ -1738,6 +2115,7 @@ type CustomChartsSectionChartsSingleCustomChartResponseSeriesMetricDefinitionCus
 // contains the JSON metadata for the struct
 // [CustomChartsSectionChartsSingleCustomChartResponseSeriesMetricDefinitionCustomChartMetricRatioOutputNumerator]
 type customChartsSectionChartsSingleCustomChartResponseSeriesMetricDefinitionCustomChartMetricRatioOutputNumeratorJSON struct {
+	Entity      apijson.Field
 	Field       apijson.Field
 	Filter      apijson.Field
 	Params      apijson.Field
@@ -1764,18 +2142,22 @@ func (r *CustomChartsSectionChartsSingleCustomChartResponseSeriesMetricDefinitio
 // interface which you can cast to the specific types for more type safety.
 //
 // Possible runtime types of the union are
+// [CustomChartsSectionChartsSingleCustomChartResponseSeriesMetricDefinitionCustomChartMetricRatioOutputNumeratorCustomChartFeedbackCountMetric],
 // [CustomChartsSectionChartsSingleCustomChartResponseSeriesMetricDefinitionCustomChartMetricRatioOutputNumeratorCustomChartMetricCount],
 // [CustomChartsSectionChartsSingleCustomChartResponseSeriesMetricDefinitionCustomChartMetricRatioOutputNumeratorCustomChartFeedbackScoreMetricScalar],
 // [CustomChartsSectionChartsSingleCustomChartResponseSeriesMetricDefinitionCustomChartMetricRatioOutputNumeratorCustomChartMetricScalar],
+// [CustomChartsSectionChartsSingleCustomChartResponseSeriesMetricDefinitionCustomChartMetricRatioOutputNumeratorCustomChartFeedbackScoreMetricPercentile],
 // [CustomChartsSectionChartsSingleCustomChartResponseSeriesMetricDefinitionCustomChartMetricRatioOutputNumeratorCustomChartMetricPercentile].
 func (r CustomChartsSectionChartsSingleCustomChartResponseSeriesMetricDefinitionCustomChartMetricRatioOutputNumerator) AsUnion() CustomChartsSectionChartsSingleCustomChartResponseSeriesMetricDefinitionCustomChartMetricRatioOutputNumeratorUnion {
 	return r.union
 }
 
 // Union satisfied by
+// [CustomChartsSectionChartsSingleCustomChartResponseSeriesMetricDefinitionCustomChartMetricRatioOutputNumeratorCustomChartFeedbackCountMetric],
 // [CustomChartsSectionChartsSingleCustomChartResponseSeriesMetricDefinitionCustomChartMetricRatioOutputNumeratorCustomChartMetricCount],
 // [CustomChartsSectionChartsSingleCustomChartResponseSeriesMetricDefinitionCustomChartMetricRatioOutputNumeratorCustomChartFeedbackScoreMetricScalar],
-// [CustomChartsSectionChartsSingleCustomChartResponseSeriesMetricDefinitionCustomChartMetricRatioOutputNumeratorCustomChartMetricScalar]
+// [CustomChartsSectionChartsSingleCustomChartResponseSeriesMetricDefinitionCustomChartMetricRatioOutputNumeratorCustomChartMetricScalar],
+// [CustomChartsSectionChartsSingleCustomChartResponseSeriesMetricDefinitionCustomChartMetricRatioOutputNumeratorCustomChartFeedbackScoreMetricPercentile]
 // or
 // [CustomChartsSectionChartsSingleCustomChartResponseSeriesMetricDefinitionCustomChartMetricRatioOutputNumeratorCustomChartMetricPercentile].
 type CustomChartsSectionChartsSingleCustomChartResponseSeriesMetricDefinitionCustomChartMetricRatioOutputNumeratorUnion interface {
@@ -1786,6 +2168,10 @@ func init() {
 	apijson.RegisterUnion(
 		reflect.TypeOf((*CustomChartsSectionChartsSingleCustomChartResponseSeriesMetricDefinitionCustomChartMetricRatioOutputNumeratorUnion)(nil)).Elem(),
 		"",
+		apijson.UnionVariant{
+			TypeFilter: gjson.JSON,
+			Type:       reflect.TypeOf(CustomChartsSectionChartsSingleCustomChartResponseSeriesMetricDefinitionCustomChartMetricRatioOutputNumeratorCustomChartFeedbackCountMetric{}),
+		},
 		apijson.UnionVariant{
 			TypeFilter: gjson.JSON,
 			Type:       reflect.TypeOf(CustomChartsSectionChartsSingleCustomChartResponseSeriesMetricDefinitionCustomChartMetricRatioOutputNumeratorCustomChartMetricCount{}),
@@ -1800,9 +2186,94 @@ func init() {
 		},
 		apijson.UnionVariant{
 			TypeFilter: gjson.JSON,
+			Type:       reflect.TypeOf(CustomChartsSectionChartsSingleCustomChartResponseSeriesMetricDefinitionCustomChartMetricRatioOutputNumeratorCustomChartFeedbackScoreMetricPercentile{}),
+		},
+		apijson.UnionVariant{
+			TypeFilter: gjson.JSON,
 			Type:       reflect.TypeOf(CustomChartsSectionChartsSingleCustomChartResponseSeriesMetricDefinitionCustomChartMetricRatioOutputNumeratorCustomChartMetricPercentile{}),
 		},
 	)
+}
+
+type CustomChartsSectionChartsSingleCustomChartResponseSeriesMetricDefinitionCustomChartMetricRatioOutputNumeratorCustomChartFeedbackCountMetric struct {
+	Entity CustomChartsSectionChartsSingleCustomChartResponseSeriesMetricDefinitionCustomChartMetricRatioOutputNumeratorCustomChartFeedbackCountMetricEntity `json:"entity" api:"required"`
+	Params CustomChartsSectionChartsSingleCustomChartResponseSeriesMetricDefinitionCustomChartMetricRatioOutputNumeratorCustomChartFeedbackCountMetricParams `json:"params" api:"required"`
+	Filter string                                                                                                                                            `json:"filter" api:"nullable"`
+	Type   CustomChartsSectionChartsSingleCustomChartResponseSeriesMetricDefinitionCustomChartMetricRatioOutputNumeratorCustomChartFeedbackCountMetricType   `json:"type"`
+	JSON   customChartsSectionChartsSingleCustomChartResponseSeriesMetricDefinitionCustomChartMetricRatioOutputNumeratorCustomChartFeedbackCountMetricJSON   `json:"-"`
+}
+
+// customChartsSectionChartsSingleCustomChartResponseSeriesMetricDefinitionCustomChartMetricRatioOutputNumeratorCustomChartFeedbackCountMetricJSON
+// contains the JSON metadata for the struct
+// [CustomChartsSectionChartsSingleCustomChartResponseSeriesMetricDefinitionCustomChartMetricRatioOutputNumeratorCustomChartFeedbackCountMetric]
+type customChartsSectionChartsSingleCustomChartResponseSeriesMetricDefinitionCustomChartMetricRatioOutputNumeratorCustomChartFeedbackCountMetricJSON struct {
+	Entity      apijson.Field
+	Params      apijson.Field
+	Filter      apijson.Field
+	Type        apijson.Field
+	raw         string
+	ExtraFields map[string]apijson.Field
+}
+
+func (r *CustomChartsSectionChartsSingleCustomChartResponseSeriesMetricDefinitionCustomChartMetricRatioOutputNumeratorCustomChartFeedbackCountMetric) UnmarshalJSON(data []byte) (err error) {
+	return apijson.UnmarshalRoot(data, r)
+}
+
+func (r customChartsSectionChartsSingleCustomChartResponseSeriesMetricDefinitionCustomChartMetricRatioOutputNumeratorCustomChartFeedbackCountMetricJSON) RawJSON() string {
+	return r.raw
+}
+
+func (r CustomChartsSectionChartsSingleCustomChartResponseSeriesMetricDefinitionCustomChartMetricRatioOutputNumeratorCustomChartFeedbackCountMetric) implementsCustomChartsSectionChartsSingleCustomChartResponseSeriesMetricDefinitionCustomChartMetricRatioOutputNumerator() {
+}
+
+type CustomChartsSectionChartsSingleCustomChartResponseSeriesMetricDefinitionCustomChartMetricRatioOutputNumeratorCustomChartFeedbackCountMetricEntity string
+
+const (
+	CustomChartsSectionChartsSingleCustomChartResponseSeriesMetricDefinitionCustomChartMetricRatioOutputNumeratorCustomChartFeedbackCountMetricEntityFeedback CustomChartsSectionChartsSingleCustomChartResponseSeriesMetricDefinitionCustomChartMetricRatioOutputNumeratorCustomChartFeedbackCountMetricEntity = "feedback"
+)
+
+func (r CustomChartsSectionChartsSingleCustomChartResponseSeriesMetricDefinitionCustomChartMetricRatioOutputNumeratorCustomChartFeedbackCountMetricEntity) IsKnown() bool {
+	switch r {
+	case CustomChartsSectionChartsSingleCustomChartResponseSeriesMetricDefinitionCustomChartMetricRatioOutputNumeratorCustomChartFeedbackCountMetricEntityFeedback:
+		return true
+	}
+	return false
+}
+
+type CustomChartsSectionChartsSingleCustomChartResponseSeriesMetricDefinitionCustomChartMetricRatioOutputNumeratorCustomChartFeedbackCountMetricParams struct {
+	FeedbackKey string                                                                                                                                                `json:"feedback_key" api:"required"`
+	JSON        customChartsSectionChartsSingleCustomChartResponseSeriesMetricDefinitionCustomChartMetricRatioOutputNumeratorCustomChartFeedbackCountMetricParamsJSON `json:"-"`
+}
+
+// customChartsSectionChartsSingleCustomChartResponseSeriesMetricDefinitionCustomChartMetricRatioOutputNumeratorCustomChartFeedbackCountMetricParamsJSON
+// contains the JSON metadata for the struct
+// [CustomChartsSectionChartsSingleCustomChartResponseSeriesMetricDefinitionCustomChartMetricRatioOutputNumeratorCustomChartFeedbackCountMetricParams]
+type customChartsSectionChartsSingleCustomChartResponseSeriesMetricDefinitionCustomChartMetricRatioOutputNumeratorCustomChartFeedbackCountMetricParamsJSON struct {
+	FeedbackKey apijson.Field
+	raw         string
+	ExtraFields map[string]apijson.Field
+}
+
+func (r *CustomChartsSectionChartsSingleCustomChartResponseSeriesMetricDefinitionCustomChartMetricRatioOutputNumeratorCustomChartFeedbackCountMetricParams) UnmarshalJSON(data []byte) (err error) {
+	return apijson.UnmarshalRoot(data, r)
+}
+
+func (r customChartsSectionChartsSingleCustomChartResponseSeriesMetricDefinitionCustomChartMetricRatioOutputNumeratorCustomChartFeedbackCountMetricParamsJSON) RawJSON() string {
+	return r.raw
+}
+
+type CustomChartsSectionChartsSingleCustomChartResponseSeriesMetricDefinitionCustomChartMetricRatioOutputNumeratorCustomChartFeedbackCountMetricType string
+
+const (
+	CustomChartsSectionChartsSingleCustomChartResponseSeriesMetricDefinitionCustomChartMetricRatioOutputNumeratorCustomChartFeedbackCountMetricTypeCount CustomChartsSectionChartsSingleCustomChartResponseSeriesMetricDefinitionCustomChartMetricRatioOutputNumeratorCustomChartFeedbackCountMetricType = "count"
+)
+
+func (r CustomChartsSectionChartsSingleCustomChartResponseSeriesMetricDefinitionCustomChartMetricRatioOutputNumeratorCustomChartFeedbackCountMetricType) IsKnown() bool {
+	switch r {
+	case CustomChartsSectionChartsSingleCustomChartResponseSeriesMetricDefinitionCustomChartMetricRatioOutputNumeratorCustomChartFeedbackCountMetricTypeCount:
+		return true
+	}
+	return false
 }
 
 type CustomChartsSectionChartsSingleCustomChartResponseSeriesMetricDefinitionCustomChartMetricRatioOutputNumeratorCustomChartMetricCount struct {
@@ -1997,6 +2468,89 @@ func (r CustomChartsSectionChartsSingleCustomChartResponseSeriesMetricDefinition
 	return false
 }
 
+type CustomChartsSectionChartsSingleCustomChartResponseSeriesMetricDefinitionCustomChartMetricRatioOutputNumeratorCustomChartFeedbackScoreMetricPercentile struct {
+	Field  CustomChartsSectionChartsSingleCustomChartResponseSeriesMetricDefinitionCustomChartMetricRatioOutputNumeratorCustomChartFeedbackScoreMetricPercentileField  `json:"field" api:"required"`
+	Params CustomChartsSectionChartsSingleCustomChartResponseSeriesMetricDefinitionCustomChartMetricRatioOutputNumeratorCustomChartFeedbackScoreMetricPercentileParams `json:"params" api:"required"`
+	Type   CustomChartsSectionChartsSingleCustomChartResponseSeriesMetricDefinitionCustomChartMetricRatioOutputNumeratorCustomChartFeedbackScoreMetricPercentileType   `json:"type" api:"required"`
+	Filter string                                                                                                                                                      `json:"filter" api:"nullable"`
+	JSON   customChartsSectionChartsSingleCustomChartResponseSeriesMetricDefinitionCustomChartMetricRatioOutputNumeratorCustomChartFeedbackScoreMetricPercentileJSON   `json:"-"`
+}
+
+// customChartsSectionChartsSingleCustomChartResponseSeriesMetricDefinitionCustomChartMetricRatioOutputNumeratorCustomChartFeedbackScoreMetricPercentileJSON
+// contains the JSON metadata for the struct
+// [CustomChartsSectionChartsSingleCustomChartResponseSeriesMetricDefinitionCustomChartMetricRatioOutputNumeratorCustomChartFeedbackScoreMetricPercentile]
+type customChartsSectionChartsSingleCustomChartResponseSeriesMetricDefinitionCustomChartMetricRatioOutputNumeratorCustomChartFeedbackScoreMetricPercentileJSON struct {
+	Field       apijson.Field
+	Params      apijson.Field
+	Type        apijson.Field
+	Filter      apijson.Field
+	raw         string
+	ExtraFields map[string]apijson.Field
+}
+
+func (r *CustomChartsSectionChartsSingleCustomChartResponseSeriesMetricDefinitionCustomChartMetricRatioOutputNumeratorCustomChartFeedbackScoreMetricPercentile) UnmarshalJSON(data []byte) (err error) {
+	return apijson.UnmarshalRoot(data, r)
+}
+
+func (r customChartsSectionChartsSingleCustomChartResponseSeriesMetricDefinitionCustomChartMetricRatioOutputNumeratorCustomChartFeedbackScoreMetricPercentileJSON) RawJSON() string {
+	return r.raw
+}
+
+func (r CustomChartsSectionChartsSingleCustomChartResponseSeriesMetricDefinitionCustomChartMetricRatioOutputNumeratorCustomChartFeedbackScoreMetricPercentile) implementsCustomChartsSectionChartsSingleCustomChartResponseSeriesMetricDefinitionCustomChartMetricRatioOutputNumerator() {
+}
+
+type CustomChartsSectionChartsSingleCustomChartResponseSeriesMetricDefinitionCustomChartMetricRatioOutputNumeratorCustomChartFeedbackScoreMetricPercentileField string
+
+const (
+	CustomChartsSectionChartsSingleCustomChartResponseSeriesMetricDefinitionCustomChartMetricRatioOutputNumeratorCustomChartFeedbackScoreMetricPercentileFieldFeedbackScore CustomChartsSectionChartsSingleCustomChartResponseSeriesMetricDefinitionCustomChartMetricRatioOutputNumeratorCustomChartFeedbackScoreMetricPercentileField = "feedback_score"
+)
+
+func (r CustomChartsSectionChartsSingleCustomChartResponseSeriesMetricDefinitionCustomChartMetricRatioOutputNumeratorCustomChartFeedbackScoreMetricPercentileField) IsKnown() bool {
+	switch r {
+	case CustomChartsSectionChartsSingleCustomChartResponseSeriesMetricDefinitionCustomChartMetricRatioOutputNumeratorCustomChartFeedbackScoreMetricPercentileFieldFeedbackScore:
+		return true
+	}
+	return false
+}
+
+type CustomChartsSectionChartsSingleCustomChartResponseSeriesMetricDefinitionCustomChartMetricRatioOutputNumeratorCustomChartFeedbackScoreMetricPercentileParams struct {
+	FeedbackKey string                                                                                                                                                          `json:"feedback_key" api:"required"`
+	P           float64                                                                                                                                                         `json:"p" api:"required"`
+	JSON        customChartsSectionChartsSingleCustomChartResponseSeriesMetricDefinitionCustomChartMetricRatioOutputNumeratorCustomChartFeedbackScoreMetricPercentileParamsJSON `json:"-"`
+}
+
+// customChartsSectionChartsSingleCustomChartResponseSeriesMetricDefinitionCustomChartMetricRatioOutputNumeratorCustomChartFeedbackScoreMetricPercentileParamsJSON
+// contains the JSON metadata for the struct
+// [CustomChartsSectionChartsSingleCustomChartResponseSeriesMetricDefinitionCustomChartMetricRatioOutputNumeratorCustomChartFeedbackScoreMetricPercentileParams]
+type customChartsSectionChartsSingleCustomChartResponseSeriesMetricDefinitionCustomChartMetricRatioOutputNumeratorCustomChartFeedbackScoreMetricPercentileParamsJSON struct {
+	FeedbackKey apijson.Field
+	P           apijson.Field
+	raw         string
+	ExtraFields map[string]apijson.Field
+}
+
+func (r *CustomChartsSectionChartsSingleCustomChartResponseSeriesMetricDefinitionCustomChartMetricRatioOutputNumeratorCustomChartFeedbackScoreMetricPercentileParams) UnmarshalJSON(data []byte) (err error) {
+	return apijson.UnmarshalRoot(data, r)
+}
+
+func (r customChartsSectionChartsSingleCustomChartResponseSeriesMetricDefinitionCustomChartMetricRatioOutputNumeratorCustomChartFeedbackScoreMetricPercentileParamsJSON) RawJSON() string {
+	return r.raw
+}
+
+type CustomChartsSectionChartsSingleCustomChartResponseSeriesMetricDefinitionCustomChartMetricRatioOutputNumeratorCustomChartFeedbackScoreMetricPercentileType string
+
+const (
+	CustomChartsSectionChartsSingleCustomChartResponseSeriesMetricDefinitionCustomChartMetricRatioOutputNumeratorCustomChartFeedbackScoreMetricPercentileTypePercentile CustomChartsSectionChartsSingleCustomChartResponseSeriesMetricDefinitionCustomChartMetricRatioOutputNumeratorCustomChartFeedbackScoreMetricPercentileType = "percentile"
+)
+
+func (r CustomChartsSectionChartsSingleCustomChartResponseSeriesMetricDefinitionCustomChartMetricRatioOutputNumeratorCustomChartFeedbackScoreMetricPercentileType) IsKnown() bool {
+	switch r {
+	case CustomChartsSectionChartsSingleCustomChartResponseSeriesMetricDefinitionCustomChartMetricRatioOutputNumeratorCustomChartFeedbackScoreMetricPercentileTypePercentile:
+		return true
+	}
+	return false
+}
+
 type CustomChartsSectionChartsSingleCustomChartResponseSeriesMetricDefinitionCustomChartMetricRatioOutputNumeratorCustomChartMetricPercentile struct {
 	Field  CustomChartsSectionChartsSingleCustomChartResponseSeriesMetricDefinitionCustomChartMetricRatioOutputNumeratorCustomChartMetricPercentileField  `json:"field" api:"required"`
 	Params CustomChartsSectionChartsSingleCustomChartResponseSeriesMetricDefinitionCustomChartMetricRatioOutputNumeratorCustomChartMetricPercentileParams `json:"params" api:"required"`
@@ -2086,6 +2640,20 @@ func (r CustomChartsSectionChartsSingleCustomChartResponseSeriesMetricDefinition
 	return false
 }
 
+type CustomChartsSectionChartsSingleCustomChartResponseSeriesMetricDefinitionCustomChartMetricRatioOutputNumeratorEntity string
+
+const (
+	CustomChartsSectionChartsSingleCustomChartResponseSeriesMetricDefinitionCustomChartMetricRatioOutputNumeratorEntityFeedback CustomChartsSectionChartsSingleCustomChartResponseSeriesMetricDefinitionCustomChartMetricRatioOutputNumeratorEntity = "feedback"
+)
+
+func (r CustomChartsSectionChartsSingleCustomChartResponseSeriesMetricDefinitionCustomChartMetricRatioOutputNumeratorEntity) IsKnown() bool {
+	switch r {
+	case CustomChartsSectionChartsSingleCustomChartResponseSeriesMetricDefinitionCustomChartMetricRatioOutputNumeratorEntityFeedback:
+		return true
+	}
+	return false
+}
+
 type CustomChartsSectionChartsSingleCustomChartResponseSeriesMetricDefinitionCustomChartMetricRatioOutputNumeratorField string
 
 const (
@@ -2136,6 +2704,20 @@ const (
 func (r CustomChartsSectionChartsSingleCustomChartResponseSeriesMetricDefinitionCustomChartMetricRatioOutputType) IsKnown() bool {
 	switch r {
 	case CustomChartsSectionChartsSingleCustomChartResponseSeriesMetricDefinitionCustomChartMetricRatioOutputTypeRatio:
+		return true
+	}
+	return false
+}
+
+type CustomChartsSectionChartsSingleCustomChartResponseSeriesMetricDefinitionEntity string
+
+const (
+	CustomChartsSectionChartsSingleCustomChartResponseSeriesMetricDefinitionEntityFeedback CustomChartsSectionChartsSingleCustomChartResponseSeriesMetricDefinitionEntity = "feedback"
+)
+
+func (r CustomChartsSectionChartsSingleCustomChartResponseSeriesMetricDefinitionEntity) IsKnown() bool {
+	switch r {
+	case CustomChartsSectionChartsSingleCustomChartResponseSeriesMetricDefinitionEntityFeedback:
 		return true
 	}
 	return false
@@ -3156,14 +3738,17 @@ func (r CustomChartsSectionSubSectionsChartsSeriesMetric) IsKnown() bool {
 type CustomChartsSectionSubSectionsChartsSeriesMetricDefinition struct {
 	// This field can have the runtime type of
 	// [CustomChartsSectionSubSectionsChartsSeriesMetricDefinitionCustomChartMetricRatioOutputDenominator].
-	Denominator interface{}                                                     `json:"denominator"`
-	Field       CustomChartsSectionSubSectionsChartsSeriesMetricDefinitionField `json:"field"`
-	Filter      string                                                          `json:"filter" api:"nullable"`
+	Denominator interface{}                                                      `json:"denominator"`
+	Entity      CustomChartsSectionSubSectionsChartsSeriesMetricDefinitionEntity `json:"entity"`
+	Field       CustomChartsSectionSubSectionsChartsSeriesMetricDefinitionField  `json:"field"`
+	Filter      string                                                           `json:"filter" api:"nullable"`
 	// This field can have the runtime type of
 	// [CustomChartsSectionSubSectionsChartsSeriesMetricDefinitionCustomChartMetricRatioOutputNumerator].
 	Numerator interface{} `json:"numerator"`
 	// This field can have the runtime type of
+	// [CustomChartsSectionSubSectionsChartsSeriesMetricDefinitionCustomChartFeedbackCountMetricParams],
 	// [CustomChartsSectionSubSectionsChartsSeriesMetricDefinitionCustomChartFeedbackScoreMetricScalarParams],
+	// [CustomChartsSectionSubSectionsChartsSeriesMetricDefinitionCustomChartFeedbackScoreMetricPercentileParams],
 	// [CustomChartsSectionSubSectionsChartsSeriesMetricDefinitionCustomChartMetricPercentileParams].
 	Params interface{}                                                    `json:"params"`
 	Type   CustomChartsSectionSubSectionsChartsSeriesMetricDefinitionType `json:"type"`
@@ -3176,6 +3761,7 @@ type CustomChartsSectionSubSectionsChartsSeriesMetricDefinition struct {
 // [CustomChartsSectionSubSectionsChartsSeriesMetricDefinition]
 type customChartsSectionSubSectionsChartsSeriesMetricDefinitionJSON struct {
 	Denominator apijson.Field
+	Entity      apijson.Field
 	Field       apijson.Field
 	Filter      apijson.Field
 	Numerator   apijson.Field
@@ -3203,9 +3789,11 @@ func (r *CustomChartsSectionSubSectionsChartsSeriesMetricDefinition) UnmarshalJS
 // which you can cast to the specific types for more type safety.
 //
 // Possible runtime types of the union are
+// [CustomChartsSectionSubSectionsChartsSeriesMetricDefinitionCustomChartFeedbackCountMetric],
 // [CustomChartsSectionSubSectionsChartsSeriesMetricDefinitionCustomChartMetricCount],
 // [CustomChartsSectionSubSectionsChartsSeriesMetricDefinitionCustomChartFeedbackScoreMetricScalar],
 // [CustomChartsSectionSubSectionsChartsSeriesMetricDefinitionCustomChartMetricScalar],
+// [CustomChartsSectionSubSectionsChartsSeriesMetricDefinitionCustomChartFeedbackScoreMetricPercentile],
 // [CustomChartsSectionSubSectionsChartsSeriesMetricDefinitionCustomChartMetricPercentile],
 // [CustomChartsSectionSubSectionsChartsSeriesMetricDefinitionCustomChartMetricRatioOutput].
 func (r CustomChartsSectionSubSectionsChartsSeriesMetricDefinition) AsUnion() CustomChartsSectionSubSectionsChartsSeriesMetricDefinitionUnion {
@@ -3213,9 +3801,11 @@ func (r CustomChartsSectionSubSectionsChartsSeriesMetricDefinition) AsUnion() Cu
 }
 
 // Union satisfied by
+// [CustomChartsSectionSubSectionsChartsSeriesMetricDefinitionCustomChartFeedbackCountMetric],
 // [CustomChartsSectionSubSectionsChartsSeriesMetricDefinitionCustomChartMetricCount],
 // [CustomChartsSectionSubSectionsChartsSeriesMetricDefinitionCustomChartFeedbackScoreMetricScalar],
 // [CustomChartsSectionSubSectionsChartsSeriesMetricDefinitionCustomChartMetricScalar],
+// [CustomChartsSectionSubSectionsChartsSeriesMetricDefinitionCustomChartFeedbackScoreMetricPercentile],
 // [CustomChartsSectionSubSectionsChartsSeriesMetricDefinitionCustomChartMetricPercentile]
 // or
 // [CustomChartsSectionSubSectionsChartsSeriesMetricDefinitionCustomChartMetricRatioOutput].
@@ -3227,6 +3817,10 @@ func init() {
 	apijson.RegisterUnion(
 		reflect.TypeOf((*CustomChartsSectionSubSectionsChartsSeriesMetricDefinitionUnion)(nil)).Elem(),
 		"",
+		apijson.UnionVariant{
+			TypeFilter: gjson.JSON,
+			Type:       reflect.TypeOf(CustomChartsSectionSubSectionsChartsSeriesMetricDefinitionCustomChartFeedbackCountMetric{}),
+		},
 		apijson.UnionVariant{
 			TypeFilter: gjson.JSON,
 			Type:       reflect.TypeOf(CustomChartsSectionSubSectionsChartsSeriesMetricDefinitionCustomChartMetricCount{}),
@@ -3241,6 +3835,10 @@ func init() {
 		},
 		apijson.UnionVariant{
 			TypeFilter: gjson.JSON,
+			Type:       reflect.TypeOf(CustomChartsSectionSubSectionsChartsSeriesMetricDefinitionCustomChartFeedbackScoreMetricPercentile{}),
+		},
+		apijson.UnionVariant{
+			TypeFilter: gjson.JSON,
 			Type:       reflect.TypeOf(CustomChartsSectionSubSectionsChartsSeriesMetricDefinitionCustomChartMetricPercentile{}),
 		},
 		apijson.UnionVariant{
@@ -3248,6 +3846,87 @@ func init() {
 			Type:       reflect.TypeOf(CustomChartsSectionSubSectionsChartsSeriesMetricDefinitionCustomChartMetricRatioOutput{}),
 		},
 	)
+}
+
+type CustomChartsSectionSubSectionsChartsSeriesMetricDefinitionCustomChartFeedbackCountMetric struct {
+	Entity CustomChartsSectionSubSectionsChartsSeriesMetricDefinitionCustomChartFeedbackCountMetricEntity `json:"entity" api:"required"`
+	Params CustomChartsSectionSubSectionsChartsSeriesMetricDefinitionCustomChartFeedbackCountMetricParams `json:"params" api:"required"`
+	Filter string                                                                                         `json:"filter" api:"nullable"`
+	Type   CustomChartsSectionSubSectionsChartsSeriesMetricDefinitionCustomChartFeedbackCountMetricType   `json:"type"`
+	JSON   customChartsSectionSubSectionsChartsSeriesMetricDefinitionCustomChartFeedbackCountMetricJSON   `json:"-"`
+}
+
+// customChartsSectionSubSectionsChartsSeriesMetricDefinitionCustomChartFeedbackCountMetricJSON
+// contains the JSON metadata for the struct
+// [CustomChartsSectionSubSectionsChartsSeriesMetricDefinitionCustomChartFeedbackCountMetric]
+type customChartsSectionSubSectionsChartsSeriesMetricDefinitionCustomChartFeedbackCountMetricJSON struct {
+	Entity      apijson.Field
+	Params      apijson.Field
+	Filter      apijson.Field
+	Type        apijson.Field
+	raw         string
+	ExtraFields map[string]apijson.Field
+}
+
+func (r *CustomChartsSectionSubSectionsChartsSeriesMetricDefinitionCustomChartFeedbackCountMetric) UnmarshalJSON(data []byte) (err error) {
+	return apijson.UnmarshalRoot(data, r)
+}
+
+func (r customChartsSectionSubSectionsChartsSeriesMetricDefinitionCustomChartFeedbackCountMetricJSON) RawJSON() string {
+	return r.raw
+}
+
+func (r CustomChartsSectionSubSectionsChartsSeriesMetricDefinitionCustomChartFeedbackCountMetric) implementsCustomChartsSectionSubSectionsChartsSeriesMetricDefinition() {
+}
+
+type CustomChartsSectionSubSectionsChartsSeriesMetricDefinitionCustomChartFeedbackCountMetricEntity string
+
+const (
+	CustomChartsSectionSubSectionsChartsSeriesMetricDefinitionCustomChartFeedbackCountMetricEntityFeedback CustomChartsSectionSubSectionsChartsSeriesMetricDefinitionCustomChartFeedbackCountMetricEntity = "feedback"
+)
+
+func (r CustomChartsSectionSubSectionsChartsSeriesMetricDefinitionCustomChartFeedbackCountMetricEntity) IsKnown() bool {
+	switch r {
+	case CustomChartsSectionSubSectionsChartsSeriesMetricDefinitionCustomChartFeedbackCountMetricEntityFeedback:
+		return true
+	}
+	return false
+}
+
+type CustomChartsSectionSubSectionsChartsSeriesMetricDefinitionCustomChartFeedbackCountMetricParams struct {
+	FeedbackKey string                                                                                             `json:"feedback_key" api:"required"`
+	JSON        customChartsSectionSubSectionsChartsSeriesMetricDefinitionCustomChartFeedbackCountMetricParamsJSON `json:"-"`
+}
+
+// customChartsSectionSubSectionsChartsSeriesMetricDefinitionCustomChartFeedbackCountMetricParamsJSON
+// contains the JSON metadata for the struct
+// [CustomChartsSectionSubSectionsChartsSeriesMetricDefinitionCustomChartFeedbackCountMetricParams]
+type customChartsSectionSubSectionsChartsSeriesMetricDefinitionCustomChartFeedbackCountMetricParamsJSON struct {
+	FeedbackKey apijson.Field
+	raw         string
+	ExtraFields map[string]apijson.Field
+}
+
+func (r *CustomChartsSectionSubSectionsChartsSeriesMetricDefinitionCustomChartFeedbackCountMetricParams) UnmarshalJSON(data []byte) (err error) {
+	return apijson.UnmarshalRoot(data, r)
+}
+
+func (r customChartsSectionSubSectionsChartsSeriesMetricDefinitionCustomChartFeedbackCountMetricParamsJSON) RawJSON() string {
+	return r.raw
+}
+
+type CustomChartsSectionSubSectionsChartsSeriesMetricDefinitionCustomChartFeedbackCountMetricType string
+
+const (
+	CustomChartsSectionSubSectionsChartsSeriesMetricDefinitionCustomChartFeedbackCountMetricTypeCount CustomChartsSectionSubSectionsChartsSeriesMetricDefinitionCustomChartFeedbackCountMetricType = "count"
+)
+
+func (r CustomChartsSectionSubSectionsChartsSeriesMetricDefinitionCustomChartFeedbackCountMetricType) IsKnown() bool {
+	switch r {
+	case CustomChartsSectionSubSectionsChartsSeriesMetricDefinitionCustomChartFeedbackCountMetricTypeCount:
+		return true
+	}
+	return false
 }
 
 type CustomChartsSectionSubSectionsChartsSeriesMetricDefinitionCustomChartMetricCount struct {
@@ -3442,6 +4121,89 @@ func (r CustomChartsSectionSubSectionsChartsSeriesMetricDefinitionCustomChartMet
 	return false
 }
 
+type CustomChartsSectionSubSectionsChartsSeriesMetricDefinitionCustomChartFeedbackScoreMetricPercentile struct {
+	Field  CustomChartsSectionSubSectionsChartsSeriesMetricDefinitionCustomChartFeedbackScoreMetricPercentileField  `json:"field" api:"required"`
+	Params CustomChartsSectionSubSectionsChartsSeriesMetricDefinitionCustomChartFeedbackScoreMetricPercentileParams `json:"params" api:"required"`
+	Type   CustomChartsSectionSubSectionsChartsSeriesMetricDefinitionCustomChartFeedbackScoreMetricPercentileType   `json:"type" api:"required"`
+	Filter string                                                                                                   `json:"filter" api:"nullable"`
+	JSON   customChartsSectionSubSectionsChartsSeriesMetricDefinitionCustomChartFeedbackScoreMetricPercentileJSON   `json:"-"`
+}
+
+// customChartsSectionSubSectionsChartsSeriesMetricDefinitionCustomChartFeedbackScoreMetricPercentileJSON
+// contains the JSON metadata for the struct
+// [CustomChartsSectionSubSectionsChartsSeriesMetricDefinitionCustomChartFeedbackScoreMetricPercentile]
+type customChartsSectionSubSectionsChartsSeriesMetricDefinitionCustomChartFeedbackScoreMetricPercentileJSON struct {
+	Field       apijson.Field
+	Params      apijson.Field
+	Type        apijson.Field
+	Filter      apijson.Field
+	raw         string
+	ExtraFields map[string]apijson.Field
+}
+
+func (r *CustomChartsSectionSubSectionsChartsSeriesMetricDefinitionCustomChartFeedbackScoreMetricPercentile) UnmarshalJSON(data []byte) (err error) {
+	return apijson.UnmarshalRoot(data, r)
+}
+
+func (r customChartsSectionSubSectionsChartsSeriesMetricDefinitionCustomChartFeedbackScoreMetricPercentileJSON) RawJSON() string {
+	return r.raw
+}
+
+func (r CustomChartsSectionSubSectionsChartsSeriesMetricDefinitionCustomChartFeedbackScoreMetricPercentile) implementsCustomChartsSectionSubSectionsChartsSeriesMetricDefinition() {
+}
+
+type CustomChartsSectionSubSectionsChartsSeriesMetricDefinitionCustomChartFeedbackScoreMetricPercentileField string
+
+const (
+	CustomChartsSectionSubSectionsChartsSeriesMetricDefinitionCustomChartFeedbackScoreMetricPercentileFieldFeedbackScore CustomChartsSectionSubSectionsChartsSeriesMetricDefinitionCustomChartFeedbackScoreMetricPercentileField = "feedback_score"
+)
+
+func (r CustomChartsSectionSubSectionsChartsSeriesMetricDefinitionCustomChartFeedbackScoreMetricPercentileField) IsKnown() bool {
+	switch r {
+	case CustomChartsSectionSubSectionsChartsSeriesMetricDefinitionCustomChartFeedbackScoreMetricPercentileFieldFeedbackScore:
+		return true
+	}
+	return false
+}
+
+type CustomChartsSectionSubSectionsChartsSeriesMetricDefinitionCustomChartFeedbackScoreMetricPercentileParams struct {
+	FeedbackKey string                                                                                                       `json:"feedback_key" api:"required"`
+	P           float64                                                                                                      `json:"p" api:"required"`
+	JSON        customChartsSectionSubSectionsChartsSeriesMetricDefinitionCustomChartFeedbackScoreMetricPercentileParamsJSON `json:"-"`
+}
+
+// customChartsSectionSubSectionsChartsSeriesMetricDefinitionCustomChartFeedbackScoreMetricPercentileParamsJSON
+// contains the JSON metadata for the struct
+// [CustomChartsSectionSubSectionsChartsSeriesMetricDefinitionCustomChartFeedbackScoreMetricPercentileParams]
+type customChartsSectionSubSectionsChartsSeriesMetricDefinitionCustomChartFeedbackScoreMetricPercentileParamsJSON struct {
+	FeedbackKey apijson.Field
+	P           apijson.Field
+	raw         string
+	ExtraFields map[string]apijson.Field
+}
+
+func (r *CustomChartsSectionSubSectionsChartsSeriesMetricDefinitionCustomChartFeedbackScoreMetricPercentileParams) UnmarshalJSON(data []byte) (err error) {
+	return apijson.UnmarshalRoot(data, r)
+}
+
+func (r customChartsSectionSubSectionsChartsSeriesMetricDefinitionCustomChartFeedbackScoreMetricPercentileParamsJSON) RawJSON() string {
+	return r.raw
+}
+
+type CustomChartsSectionSubSectionsChartsSeriesMetricDefinitionCustomChartFeedbackScoreMetricPercentileType string
+
+const (
+	CustomChartsSectionSubSectionsChartsSeriesMetricDefinitionCustomChartFeedbackScoreMetricPercentileTypePercentile CustomChartsSectionSubSectionsChartsSeriesMetricDefinitionCustomChartFeedbackScoreMetricPercentileType = "percentile"
+)
+
+func (r CustomChartsSectionSubSectionsChartsSeriesMetricDefinitionCustomChartFeedbackScoreMetricPercentileType) IsKnown() bool {
+	switch r {
+	case CustomChartsSectionSubSectionsChartsSeriesMetricDefinitionCustomChartFeedbackScoreMetricPercentileTypePercentile:
+		return true
+	}
+	return false
+}
+
 type CustomChartsSectionSubSectionsChartsSeriesMetricDefinitionCustomChartMetricPercentile struct {
 	Field  CustomChartsSectionSubSectionsChartsSeriesMetricDefinitionCustomChartMetricPercentileField  `json:"field" api:"required"`
 	Params CustomChartsSectionSubSectionsChartsSeriesMetricDefinitionCustomChartMetricPercentileParams `json:"params" api:"required"`
@@ -3561,10 +4323,13 @@ func (r CustomChartsSectionSubSectionsChartsSeriesMetricDefinitionCustomChartMet
 }
 
 type CustomChartsSectionSubSectionsChartsSeriesMetricDefinitionCustomChartMetricRatioOutputDenominator struct {
-	Field  CustomChartsSectionSubSectionsChartsSeriesMetricDefinitionCustomChartMetricRatioOutputDenominatorField `json:"field"`
-	Filter string                                                                                                 `json:"filter" api:"nullable"`
+	Entity CustomChartsSectionSubSectionsChartsSeriesMetricDefinitionCustomChartMetricRatioOutputDenominatorEntity `json:"entity"`
+	Field  CustomChartsSectionSubSectionsChartsSeriesMetricDefinitionCustomChartMetricRatioOutputDenominatorField  `json:"field"`
+	Filter string                                                                                                  `json:"filter" api:"nullable"`
 	// This field can have the runtime type of
+	// [CustomChartsSectionSubSectionsChartsSeriesMetricDefinitionCustomChartMetricRatioOutputDenominatorCustomChartFeedbackCountMetricParams],
 	// [CustomChartsSectionSubSectionsChartsSeriesMetricDefinitionCustomChartMetricRatioOutputDenominatorCustomChartFeedbackScoreMetricScalarParams],
+	// [CustomChartsSectionSubSectionsChartsSeriesMetricDefinitionCustomChartMetricRatioOutputDenominatorCustomChartFeedbackScoreMetricPercentileParams],
 	// [CustomChartsSectionSubSectionsChartsSeriesMetricDefinitionCustomChartMetricRatioOutputDenominatorCustomChartMetricPercentileParams].
 	Params interface{}                                                                                           `json:"params"`
 	Type   CustomChartsSectionSubSectionsChartsSeriesMetricDefinitionCustomChartMetricRatioOutputDenominatorType `json:"type"`
@@ -3576,6 +4341,7 @@ type CustomChartsSectionSubSectionsChartsSeriesMetricDefinitionCustomChartMetric
 // contains the JSON metadata for the struct
 // [CustomChartsSectionSubSectionsChartsSeriesMetricDefinitionCustomChartMetricRatioOutputDenominator]
 type customChartsSectionSubSectionsChartsSeriesMetricDefinitionCustomChartMetricRatioOutputDenominatorJSON struct {
+	Entity      apijson.Field
 	Field       apijson.Field
 	Filter      apijson.Field
 	Params      apijson.Field
@@ -3602,18 +4368,22 @@ func (r *CustomChartsSectionSubSectionsChartsSeriesMetricDefinitionCustomChartMe
 // interface which you can cast to the specific types for more type safety.
 //
 // Possible runtime types of the union are
+// [CustomChartsSectionSubSectionsChartsSeriesMetricDefinitionCustomChartMetricRatioOutputDenominatorCustomChartFeedbackCountMetric],
 // [CustomChartsSectionSubSectionsChartsSeriesMetricDefinitionCustomChartMetricRatioOutputDenominatorCustomChartMetricCount],
 // [CustomChartsSectionSubSectionsChartsSeriesMetricDefinitionCustomChartMetricRatioOutputDenominatorCustomChartFeedbackScoreMetricScalar],
 // [CustomChartsSectionSubSectionsChartsSeriesMetricDefinitionCustomChartMetricRatioOutputDenominatorCustomChartMetricScalar],
+// [CustomChartsSectionSubSectionsChartsSeriesMetricDefinitionCustomChartMetricRatioOutputDenominatorCustomChartFeedbackScoreMetricPercentile],
 // [CustomChartsSectionSubSectionsChartsSeriesMetricDefinitionCustomChartMetricRatioOutputDenominatorCustomChartMetricPercentile].
 func (r CustomChartsSectionSubSectionsChartsSeriesMetricDefinitionCustomChartMetricRatioOutputDenominator) AsUnion() CustomChartsSectionSubSectionsChartsSeriesMetricDefinitionCustomChartMetricRatioOutputDenominatorUnion {
 	return r.union
 }
 
 // Union satisfied by
+// [CustomChartsSectionSubSectionsChartsSeriesMetricDefinitionCustomChartMetricRatioOutputDenominatorCustomChartFeedbackCountMetric],
 // [CustomChartsSectionSubSectionsChartsSeriesMetricDefinitionCustomChartMetricRatioOutputDenominatorCustomChartMetricCount],
 // [CustomChartsSectionSubSectionsChartsSeriesMetricDefinitionCustomChartMetricRatioOutputDenominatorCustomChartFeedbackScoreMetricScalar],
-// [CustomChartsSectionSubSectionsChartsSeriesMetricDefinitionCustomChartMetricRatioOutputDenominatorCustomChartMetricScalar]
+// [CustomChartsSectionSubSectionsChartsSeriesMetricDefinitionCustomChartMetricRatioOutputDenominatorCustomChartMetricScalar],
+// [CustomChartsSectionSubSectionsChartsSeriesMetricDefinitionCustomChartMetricRatioOutputDenominatorCustomChartFeedbackScoreMetricPercentile]
 // or
 // [CustomChartsSectionSubSectionsChartsSeriesMetricDefinitionCustomChartMetricRatioOutputDenominatorCustomChartMetricPercentile].
 type CustomChartsSectionSubSectionsChartsSeriesMetricDefinitionCustomChartMetricRatioOutputDenominatorUnion interface {
@@ -3624,6 +4394,10 @@ func init() {
 	apijson.RegisterUnion(
 		reflect.TypeOf((*CustomChartsSectionSubSectionsChartsSeriesMetricDefinitionCustomChartMetricRatioOutputDenominatorUnion)(nil)).Elem(),
 		"",
+		apijson.UnionVariant{
+			TypeFilter: gjson.JSON,
+			Type:       reflect.TypeOf(CustomChartsSectionSubSectionsChartsSeriesMetricDefinitionCustomChartMetricRatioOutputDenominatorCustomChartFeedbackCountMetric{}),
+		},
 		apijson.UnionVariant{
 			TypeFilter: gjson.JSON,
 			Type:       reflect.TypeOf(CustomChartsSectionSubSectionsChartsSeriesMetricDefinitionCustomChartMetricRatioOutputDenominatorCustomChartMetricCount{}),
@@ -3638,9 +4412,94 @@ func init() {
 		},
 		apijson.UnionVariant{
 			TypeFilter: gjson.JSON,
+			Type:       reflect.TypeOf(CustomChartsSectionSubSectionsChartsSeriesMetricDefinitionCustomChartMetricRatioOutputDenominatorCustomChartFeedbackScoreMetricPercentile{}),
+		},
+		apijson.UnionVariant{
+			TypeFilter: gjson.JSON,
 			Type:       reflect.TypeOf(CustomChartsSectionSubSectionsChartsSeriesMetricDefinitionCustomChartMetricRatioOutputDenominatorCustomChartMetricPercentile{}),
 		},
 	)
+}
+
+type CustomChartsSectionSubSectionsChartsSeriesMetricDefinitionCustomChartMetricRatioOutputDenominatorCustomChartFeedbackCountMetric struct {
+	Entity CustomChartsSectionSubSectionsChartsSeriesMetricDefinitionCustomChartMetricRatioOutputDenominatorCustomChartFeedbackCountMetricEntity `json:"entity" api:"required"`
+	Params CustomChartsSectionSubSectionsChartsSeriesMetricDefinitionCustomChartMetricRatioOutputDenominatorCustomChartFeedbackCountMetricParams `json:"params" api:"required"`
+	Filter string                                                                                                                                `json:"filter" api:"nullable"`
+	Type   CustomChartsSectionSubSectionsChartsSeriesMetricDefinitionCustomChartMetricRatioOutputDenominatorCustomChartFeedbackCountMetricType   `json:"type"`
+	JSON   customChartsSectionSubSectionsChartsSeriesMetricDefinitionCustomChartMetricRatioOutputDenominatorCustomChartFeedbackCountMetricJSON   `json:"-"`
+}
+
+// customChartsSectionSubSectionsChartsSeriesMetricDefinitionCustomChartMetricRatioOutputDenominatorCustomChartFeedbackCountMetricJSON
+// contains the JSON metadata for the struct
+// [CustomChartsSectionSubSectionsChartsSeriesMetricDefinitionCustomChartMetricRatioOutputDenominatorCustomChartFeedbackCountMetric]
+type customChartsSectionSubSectionsChartsSeriesMetricDefinitionCustomChartMetricRatioOutputDenominatorCustomChartFeedbackCountMetricJSON struct {
+	Entity      apijson.Field
+	Params      apijson.Field
+	Filter      apijson.Field
+	Type        apijson.Field
+	raw         string
+	ExtraFields map[string]apijson.Field
+}
+
+func (r *CustomChartsSectionSubSectionsChartsSeriesMetricDefinitionCustomChartMetricRatioOutputDenominatorCustomChartFeedbackCountMetric) UnmarshalJSON(data []byte) (err error) {
+	return apijson.UnmarshalRoot(data, r)
+}
+
+func (r customChartsSectionSubSectionsChartsSeriesMetricDefinitionCustomChartMetricRatioOutputDenominatorCustomChartFeedbackCountMetricJSON) RawJSON() string {
+	return r.raw
+}
+
+func (r CustomChartsSectionSubSectionsChartsSeriesMetricDefinitionCustomChartMetricRatioOutputDenominatorCustomChartFeedbackCountMetric) implementsCustomChartsSectionSubSectionsChartsSeriesMetricDefinitionCustomChartMetricRatioOutputDenominator() {
+}
+
+type CustomChartsSectionSubSectionsChartsSeriesMetricDefinitionCustomChartMetricRatioOutputDenominatorCustomChartFeedbackCountMetricEntity string
+
+const (
+	CustomChartsSectionSubSectionsChartsSeriesMetricDefinitionCustomChartMetricRatioOutputDenominatorCustomChartFeedbackCountMetricEntityFeedback CustomChartsSectionSubSectionsChartsSeriesMetricDefinitionCustomChartMetricRatioOutputDenominatorCustomChartFeedbackCountMetricEntity = "feedback"
+)
+
+func (r CustomChartsSectionSubSectionsChartsSeriesMetricDefinitionCustomChartMetricRatioOutputDenominatorCustomChartFeedbackCountMetricEntity) IsKnown() bool {
+	switch r {
+	case CustomChartsSectionSubSectionsChartsSeriesMetricDefinitionCustomChartMetricRatioOutputDenominatorCustomChartFeedbackCountMetricEntityFeedback:
+		return true
+	}
+	return false
+}
+
+type CustomChartsSectionSubSectionsChartsSeriesMetricDefinitionCustomChartMetricRatioOutputDenominatorCustomChartFeedbackCountMetricParams struct {
+	FeedbackKey string                                                                                                                                    `json:"feedback_key" api:"required"`
+	JSON        customChartsSectionSubSectionsChartsSeriesMetricDefinitionCustomChartMetricRatioOutputDenominatorCustomChartFeedbackCountMetricParamsJSON `json:"-"`
+}
+
+// customChartsSectionSubSectionsChartsSeriesMetricDefinitionCustomChartMetricRatioOutputDenominatorCustomChartFeedbackCountMetricParamsJSON
+// contains the JSON metadata for the struct
+// [CustomChartsSectionSubSectionsChartsSeriesMetricDefinitionCustomChartMetricRatioOutputDenominatorCustomChartFeedbackCountMetricParams]
+type customChartsSectionSubSectionsChartsSeriesMetricDefinitionCustomChartMetricRatioOutputDenominatorCustomChartFeedbackCountMetricParamsJSON struct {
+	FeedbackKey apijson.Field
+	raw         string
+	ExtraFields map[string]apijson.Field
+}
+
+func (r *CustomChartsSectionSubSectionsChartsSeriesMetricDefinitionCustomChartMetricRatioOutputDenominatorCustomChartFeedbackCountMetricParams) UnmarshalJSON(data []byte) (err error) {
+	return apijson.UnmarshalRoot(data, r)
+}
+
+func (r customChartsSectionSubSectionsChartsSeriesMetricDefinitionCustomChartMetricRatioOutputDenominatorCustomChartFeedbackCountMetricParamsJSON) RawJSON() string {
+	return r.raw
+}
+
+type CustomChartsSectionSubSectionsChartsSeriesMetricDefinitionCustomChartMetricRatioOutputDenominatorCustomChartFeedbackCountMetricType string
+
+const (
+	CustomChartsSectionSubSectionsChartsSeriesMetricDefinitionCustomChartMetricRatioOutputDenominatorCustomChartFeedbackCountMetricTypeCount CustomChartsSectionSubSectionsChartsSeriesMetricDefinitionCustomChartMetricRatioOutputDenominatorCustomChartFeedbackCountMetricType = "count"
+)
+
+func (r CustomChartsSectionSubSectionsChartsSeriesMetricDefinitionCustomChartMetricRatioOutputDenominatorCustomChartFeedbackCountMetricType) IsKnown() bool {
+	switch r {
+	case CustomChartsSectionSubSectionsChartsSeriesMetricDefinitionCustomChartMetricRatioOutputDenominatorCustomChartFeedbackCountMetricTypeCount:
+		return true
+	}
+	return false
 }
 
 type CustomChartsSectionSubSectionsChartsSeriesMetricDefinitionCustomChartMetricRatioOutputDenominatorCustomChartMetricCount struct {
@@ -3835,6 +4694,89 @@ func (r CustomChartsSectionSubSectionsChartsSeriesMetricDefinitionCustomChartMet
 	return false
 }
 
+type CustomChartsSectionSubSectionsChartsSeriesMetricDefinitionCustomChartMetricRatioOutputDenominatorCustomChartFeedbackScoreMetricPercentile struct {
+	Field  CustomChartsSectionSubSectionsChartsSeriesMetricDefinitionCustomChartMetricRatioOutputDenominatorCustomChartFeedbackScoreMetricPercentileField  `json:"field" api:"required"`
+	Params CustomChartsSectionSubSectionsChartsSeriesMetricDefinitionCustomChartMetricRatioOutputDenominatorCustomChartFeedbackScoreMetricPercentileParams `json:"params" api:"required"`
+	Type   CustomChartsSectionSubSectionsChartsSeriesMetricDefinitionCustomChartMetricRatioOutputDenominatorCustomChartFeedbackScoreMetricPercentileType   `json:"type" api:"required"`
+	Filter string                                                                                                                                          `json:"filter" api:"nullable"`
+	JSON   customChartsSectionSubSectionsChartsSeriesMetricDefinitionCustomChartMetricRatioOutputDenominatorCustomChartFeedbackScoreMetricPercentileJSON   `json:"-"`
+}
+
+// customChartsSectionSubSectionsChartsSeriesMetricDefinitionCustomChartMetricRatioOutputDenominatorCustomChartFeedbackScoreMetricPercentileJSON
+// contains the JSON metadata for the struct
+// [CustomChartsSectionSubSectionsChartsSeriesMetricDefinitionCustomChartMetricRatioOutputDenominatorCustomChartFeedbackScoreMetricPercentile]
+type customChartsSectionSubSectionsChartsSeriesMetricDefinitionCustomChartMetricRatioOutputDenominatorCustomChartFeedbackScoreMetricPercentileJSON struct {
+	Field       apijson.Field
+	Params      apijson.Field
+	Type        apijson.Field
+	Filter      apijson.Field
+	raw         string
+	ExtraFields map[string]apijson.Field
+}
+
+func (r *CustomChartsSectionSubSectionsChartsSeriesMetricDefinitionCustomChartMetricRatioOutputDenominatorCustomChartFeedbackScoreMetricPercentile) UnmarshalJSON(data []byte) (err error) {
+	return apijson.UnmarshalRoot(data, r)
+}
+
+func (r customChartsSectionSubSectionsChartsSeriesMetricDefinitionCustomChartMetricRatioOutputDenominatorCustomChartFeedbackScoreMetricPercentileJSON) RawJSON() string {
+	return r.raw
+}
+
+func (r CustomChartsSectionSubSectionsChartsSeriesMetricDefinitionCustomChartMetricRatioOutputDenominatorCustomChartFeedbackScoreMetricPercentile) implementsCustomChartsSectionSubSectionsChartsSeriesMetricDefinitionCustomChartMetricRatioOutputDenominator() {
+}
+
+type CustomChartsSectionSubSectionsChartsSeriesMetricDefinitionCustomChartMetricRatioOutputDenominatorCustomChartFeedbackScoreMetricPercentileField string
+
+const (
+	CustomChartsSectionSubSectionsChartsSeriesMetricDefinitionCustomChartMetricRatioOutputDenominatorCustomChartFeedbackScoreMetricPercentileFieldFeedbackScore CustomChartsSectionSubSectionsChartsSeriesMetricDefinitionCustomChartMetricRatioOutputDenominatorCustomChartFeedbackScoreMetricPercentileField = "feedback_score"
+)
+
+func (r CustomChartsSectionSubSectionsChartsSeriesMetricDefinitionCustomChartMetricRatioOutputDenominatorCustomChartFeedbackScoreMetricPercentileField) IsKnown() bool {
+	switch r {
+	case CustomChartsSectionSubSectionsChartsSeriesMetricDefinitionCustomChartMetricRatioOutputDenominatorCustomChartFeedbackScoreMetricPercentileFieldFeedbackScore:
+		return true
+	}
+	return false
+}
+
+type CustomChartsSectionSubSectionsChartsSeriesMetricDefinitionCustomChartMetricRatioOutputDenominatorCustomChartFeedbackScoreMetricPercentileParams struct {
+	FeedbackKey string                                                                                                                                              `json:"feedback_key" api:"required"`
+	P           float64                                                                                                                                             `json:"p" api:"required"`
+	JSON        customChartsSectionSubSectionsChartsSeriesMetricDefinitionCustomChartMetricRatioOutputDenominatorCustomChartFeedbackScoreMetricPercentileParamsJSON `json:"-"`
+}
+
+// customChartsSectionSubSectionsChartsSeriesMetricDefinitionCustomChartMetricRatioOutputDenominatorCustomChartFeedbackScoreMetricPercentileParamsJSON
+// contains the JSON metadata for the struct
+// [CustomChartsSectionSubSectionsChartsSeriesMetricDefinitionCustomChartMetricRatioOutputDenominatorCustomChartFeedbackScoreMetricPercentileParams]
+type customChartsSectionSubSectionsChartsSeriesMetricDefinitionCustomChartMetricRatioOutputDenominatorCustomChartFeedbackScoreMetricPercentileParamsJSON struct {
+	FeedbackKey apijson.Field
+	P           apijson.Field
+	raw         string
+	ExtraFields map[string]apijson.Field
+}
+
+func (r *CustomChartsSectionSubSectionsChartsSeriesMetricDefinitionCustomChartMetricRatioOutputDenominatorCustomChartFeedbackScoreMetricPercentileParams) UnmarshalJSON(data []byte) (err error) {
+	return apijson.UnmarshalRoot(data, r)
+}
+
+func (r customChartsSectionSubSectionsChartsSeriesMetricDefinitionCustomChartMetricRatioOutputDenominatorCustomChartFeedbackScoreMetricPercentileParamsJSON) RawJSON() string {
+	return r.raw
+}
+
+type CustomChartsSectionSubSectionsChartsSeriesMetricDefinitionCustomChartMetricRatioOutputDenominatorCustomChartFeedbackScoreMetricPercentileType string
+
+const (
+	CustomChartsSectionSubSectionsChartsSeriesMetricDefinitionCustomChartMetricRatioOutputDenominatorCustomChartFeedbackScoreMetricPercentileTypePercentile CustomChartsSectionSubSectionsChartsSeriesMetricDefinitionCustomChartMetricRatioOutputDenominatorCustomChartFeedbackScoreMetricPercentileType = "percentile"
+)
+
+func (r CustomChartsSectionSubSectionsChartsSeriesMetricDefinitionCustomChartMetricRatioOutputDenominatorCustomChartFeedbackScoreMetricPercentileType) IsKnown() bool {
+	switch r {
+	case CustomChartsSectionSubSectionsChartsSeriesMetricDefinitionCustomChartMetricRatioOutputDenominatorCustomChartFeedbackScoreMetricPercentileTypePercentile:
+		return true
+	}
+	return false
+}
+
 type CustomChartsSectionSubSectionsChartsSeriesMetricDefinitionCustomChartMetricRatioOutputDenominatorCustomChartMetricPercentile struct {
 	Field  CustomChartsSectionSubSectionsChartsSeriesMetricDefinitionCustomChartMetricRatioOutputDenominatorCustomChartMetricPercentileField  `json:"field" api:"required"`
 	Params CustomChartsSectionSubSectionsChartsSeriesMetricDefinitionCustomChartMetricRatioOutputDenominatorCustomChartMetricPercentileParams `json:"params" api:"required"`
@@ -3924,6 +4866,20 @@ func (r CustomChartsSectionSubSectionsChartsSeriesMetricDefinitionCustomChartMet
 	return false
 }
 
+type CustomChartsSectionSubSectionsChartsSeriesMetricDefinitionCustomChartMetricRatioOutputDenominatorEntity string
+
+const (
+	CustomChartsSectionSubSectionsChartsSeriesMetricDefinitionCustomChartMetricRatioOutputDenominatorEntityFeedback CustomChartsSectionSubSectionsChartsSeriesMetricDefinitionCustomChartMetricRatioOutputDenominatorEntity = "feedback"
+)
+
+func (r CustomChartsSectionSubSectionsChartsSeriesMetricDefinitionCustomChartMetricRatioOutputDenominatorEntity) IsKnown() bool {
+	switch r {
+	case CustomChartsSectionSubSectionsChartsSeriesMetricDefinitionCustomChartMetricRatioOutputDenominatorEntityFeedback:
+		return true
+	}
+	return false
+}
+
 type CustomChartsSectionSubSectionsChartsSeriesMetricDefinitionCustomChartMetricRatioOutputDenominatorField string
 
 const (
@@ -3966,10 +4922,13 @@ func (r CustomChartsSectionSubSectionsChartsSeriesMetricDefinitionCustomChartMet
 }
 
 type CustomChartsSectionSubSectionsChartsSeriesMetricDefinitionCustomChartMetricRatioOutputNumerator struct {
-	Field  CustomChartsSectionSubSectionsChartsSeriesMetricDefinitionCustomChartMetricRatioOutputNumeratorField `json:"field"`
-	Filter string                                                                                               `json:"filter" api:"nullable"`
+	Entity CustomChartsSectionSubSectionsChartsSeriesMetricDefinitionCustomChartMetricRatioOutputNumeratorEntity `json:"entity"`
+	Field  CustomChartsSectionSubSectionsChartsSeriesMetricDefinitionCustomChartMetricRatioOutputNumeratorField  `json:"field"`
+	Filter string                                                                                                `json:"filter" api:"nullable"`
 	// This field can have the runtime type of
+	// [CustomChartsSectionSubSectionsChartsSeriesMetricDefinitionCustomChartMetricRatioOutputNumeratorCustomChartFeedbackCountMetricParams],
 	// [CustomChartsSectionSubSectionsChartsSeriesMetricDefinitionCustomChartMetricRatioOutputNumeratorCustomChartFeedbackScoreMetricScalarParams],
+	// [CustomChartsSectionSubSectionsChartsSeriesMetricDefinitionCustomChartMetricRatioOutputNumeratorCustomChartFeedbackScoreMetricPercentileParams],
 	// [CustomChartsSectionSubSectionsChartsSeriesMetricDefinitionCustomChartMetricRatioOutputNumeratorCustomChartMetricPercentileParams].
 	Params interface{}                                                                                         `json:"params"`
 	Type   CustomChartsSectionSubSectionsChartsSeriesMetricDefinitionCustomChartMetricRatioOutputNumeratorType `json:"type"`
@@ -3981,6 +4940,7 @@ type CustomChartsSectionSubSectionsChartsSeriesMetricDefinitionCustomChartMetric
 // contains the JSON metadata for the struct
 // [CustomChartsSectionSubSectionsChartsSeriesMetricDefinitionCustomChartMetricRatioOutputNumerator]
 type customChartsSectionSubSectionsChartsSeriesMetricDefinitionCustomChartMetricRatioOutputNumeratorJSON struct {
+	Entity      apijson.Field
 	Field       apijson.Field
 	Filter      apijson.Field
 	Params      apijson.Field
@@ -4007,18 +4967,22 @@ func (r *CustomChartsSectionSubSectionsChartsSeriesMetricDefinitionCustomChartMe
 // interface which you can cast to the specific types for more type safety.
 //
 // Possible runtime types of the union are
+// [CustomChartsSectionSubSectionsChartsSeriesMetricDefinitionCustomChartMetricRatioOutputNumeratorCustomChartFeedbackCountMetric],
 // [CustomChartsSectionSubSectionsChartsSeriesMetricDefinitionCustomChartMetricRatioOutputNumeratorCustomChartMetricCount],
 // [CustomChartsSectionSubSectionsChartsSeriesMetricDefinitionCustomChartMetricRatioOutputNumeratorCustomChartFeedbackScoreMetricScalar],
 // [CustomChartsSectionSubSectionsChartsSeriesMetricDefinitionCustomChartMetricRatioOutputNumeratorCustomChartMetricScalar],
+// [CustomChartsSectionSubSectionsChartsSeriesMetricDefinitionCustomChartMetricRatioOutputNumeratorCustomChartFeedbackScoreMetricPercentile],
 // [CustomChartsSectionSubSectionsChartsSeriesMetricDefinitionCustomChartMetricRatioOutputNumeratorCustomChartMetricPercentile].
 func (r CustomChartsSectionSubSectionsChartsSeriesMetricDefinitionCustomChartMetricRatioOutputNumerator) AsUnion() CustomChartsSectionSubSectionsChartsSeriesMetricDefinitionCustomChartMetricRatioOutputNumeratorUnion {
 	return r.union
 }
 
 // Union satisfied by
+// [CustomChartsSectionSubSectionsChartsSeriesMetricDefinitionCustomChartMetricRatioOutputNumeratorCustomChartFeedbackCountMetric],
 // [CustomChartsSectionSubSectionsChartsSeriesMetricDefinitionCustomChartMetricRatioOutputNumeratorCustomChartMetricCount],
 // [CustomChartsSectionSubSectionsChartsSeriesMetricDefinitionCustomChartMetricRatioOutputNumeratorCustomChartFeedbackScoreMetricScalar],
-// [CustomChartsSectionSubSectionsChartsSeriesMetricDefinitionCustomChartMetricRatioOutputNumeratorCustomChartMetricScalar]
+// [CustomChartsSectionSubSectionsChartsSeriesMetricDefinitionCustomChartMetricRatioOutputNumeratorCustomChartMetricScalar],
+// [CustomChartsSectionSubSectionsChartsSeriesMetricDefinitionCustomChartMetricRatioOutputNumeratorCustomChartFeedbackScoreMetricPercentile]
 // or
 // [CustomChartsSectionSubSectionsChartsSeriesMetricDefinitionCustomChartMetricRatioOutputNumeratorCustomChartMetricPercentile].
 type CustomChartsSectionSubSectionsChartsSeriesMetricDefinitionCustomChartMetricRatioOutputNumeratorUnion interface {
@@ -4029,6 +4993,10 @@ func init() {
 	apijson.RegisterUnion(
 		reflect.TypeOf((*CustomChartsSectionSubSectionsChartsSeriesMetricDefinitionCustomChartMetricRatioOutputNumeratorUnion)(nil)).Elem(),
 		"",
+		apijson.UnionVariant{
+			TypeFilter: gjson.JSON,
+			Type:       reflect.TypeOf(CustomChartsSectionSubSectionsChartsSeriesMetricDefinitionCustomChartMetricRatioOutputNumeratorCustomChartFeedbackCountMetric{}),
+		},
 		apijson.UnionVariant{
 			TypeFilter: gjson.JSON,
 			Type:       reflect.TypeOf(CustomChartsSectionSubSectionsChartsSeriesMetricDefinitionCustomChartMetricRatioOutputNumeratorCustomChartMetricCount{}),
@@ -4043,9 +5011,94 @@ func init() {
 		},
 		apijson.UnionVariant{
 			TypeFilter: gjson.JSON,
+			Type:       reflect.TypeOf(CustomChartsSectionSubSectionsChartsSeriesMetricDefinitionCustomChartMetricRatioOutputNumeratorCustomChartFeedbackScoreMetricPercentile{}),
+		},
+		apijson.UnionVariant{
+			TypeFilter: gjson.JSON,
 			Type:       reflect.TypeOf(CustomChartsSectionSubSectionsChartsSeriesMetricDefinitionCustomChartMetricRatioOutputNumeratorCustomChartMetricPercentile{}),
 		},
 	)
+}
+
+type CustomChartsSectionSubSectionsChartsSeriesMetricDefinitionCustomChartMetricRatioOutputNumeratorCustomChartFeedbackCountMetric struct {
+	Entity CustomChartsSectionSubSectionsChartsSeriesMetricDefinitionCustomChartMetricRatioOutputNumeratorCustomChartFeedbackCountMetricEntity `json:"entity" api:"required"`
+	Params CustomChartsSectionSubSectionsChartsSeriesMetricDefinitionCustomChartMetricRatioOutputNumeratorCustomChartFeedbackCountMetricParams `json:"params" api:"required"`
+	Filter string                                                                                                                              `json:"filter" api:"nullable"`
+	Type   CustomChartsSectionSubSectionsChartsSeriesMetricDefinitionCustomChartMetricRatioOutputNumeratorCustomChartFeedbackCountMetricType   `json:"type"`
+	JSON   customChartsSectionSubSectionsChartsSeriesMetricDefinitionCustomChartMetricRatioOutputNumeratorCustomChartFeedbackCountMetricJSON   `json:"-"`
+}
+
+// customChartsSectionSubSectionsChartsSeriesMetricDefinitionCustomChartMetricRatioOutputNumeratorCustomChartFeedbackCountMetricJSON
+// contains the JSON metadata for the struct
+// [CustomChartsSectionSubSectionsChartsSeriesMetricDefinitionCustomChartMetricRatioOutputNumeratorCustomChartFeedbackCountMetric]
+type customChartsSectionSubSectionsChartsSeriesMetricDefinitionCustomChartMetricRatioOutputNumeratorCustomChartFeedbackCountMetricJSON struct {
+	Entity      apijson.Field
+	Params      apijson.Field
+	Filter      apijson.Field
+	Type        apijson.Field
+	raw         string
+	ExtraFields map[string]apijson.Field
+}
+
+func (r *CustomChartsSectionSubSectionsChartsSeriesMetricDefinitionCustomChartMetricRatioOutputNumeratorCustomChartFeedbackCountMetric) UnmarshalJSON(data []byte) (err error) {
+	return apijson.UnmarshalRoot(data, r)
+}
+
+func (r customChartsSectionSubSectionsChartsSeriesMetricDefinitionCustomChartMetricRatioOutputNumeratorCustomChartFeedbackCountMetricJSON) RawJSON() string {
+	return r.raw
+}
+
+func (r CustomChartsSectionSubSectionsChartsSeriesMetricDefinitionCustomChartMetricRatioOutputNumeratorCustomChartFeedbackCountMetric) implementsCustomChartsSectionSubSectionsChartsSeriesMetricDefinitionCustomChartMetricRatioOutputNumerator() {
+}
+
+type CustomChartsSectionSubSectionsChartsSeriesMetricDefinitionCustomChartMetricRatioOutputNumeratorCustomChartFeedbackCountMetricEntity string
+
+const (
+	CustomChartsSectionSubSectionsChartsSeriesMetricDefinitionCustomChartMetricRatioOutputNumeratorCustomChartFeedbackCountMetricEntityFeedback CustomChartsSectionSubSectionsChartsSeriesMetricDefinitionCustomChartMetricRatioOutputNumeratorCustomChartFeedbackCountMetricEntity = "feedback"
+)
+
+func (r CustomChartsSectionSubSectionsChartsSeriesMetricDefinitionCustomChartMetricRatioOutputNumeratorCustomChartFeedbackCountMetricEntity) IsKnown() bool {
+	switch r {
+	case CustomChartsSectionSubSectionsChartsSeriesMetricDefinitionCustomChartMetricRatioOutputNumeratorCustomChartFeedbackCountMetricEntityFeedback:
+		return true
+	}
+	return false
+}
+
+type CustomChartsSectionSubSectionsChartsSeriesMetricDefinitionCustomChartMetricRatioOutputNumeratorCustomChartFeedbackCountMetricParams struct {
+	FeedbackKey string                                                                                                                                  `json:"feedback_key" api:"required"`
+	JSON        customChartsSectionSubSectionsChartsSeriesMetricDefinitionCustomChartMetricRatioOutputNumeratorCustomChartFeedbackCountMetricParamsJSON `json:"-"`
+}
+
+// customChartsSectionSubSectionsChartsSeriesMetricDefinitionCustomChartMetricRatioOutputNumeratorCustomChartFeedbackCountMetricParamsJSON
+// contains the JSON metadata for the struct
+// [CustomChartsSectionSubSectionsChartsSeriesMetricDefinitionCustomChartMetricRatioOutputNumeratorCustomChartFeedbackCountMetricParams]
+type customChartsSectionSubSectionsChartsSeriesMetricDefinitionCustomChartMetricRatioOutputNumeratorCustomChartFeedbackCountMetricParamsJSON struct {
+	FeedbackKey apijson.Field
+	raw         string
+	ExtraFields map[string]apijson.Field
+}
+
+func (r *CustomChartsSectionSubSectionsChartsSeriesMetricDefinitionCustomChartMetricRatioOutputNumeratorCustomChartFeedbackCountMetricParams) UnmarshalJSON(data []byte) (err error) {
+	return apijson.UnmarshalRoot(data, r)
+}
+
+func (r customChartsSectionSubSectionsChartsSeriesMetricDefinitionCustomChartMetricRatioOutputNumeratorCustomChartFeedbackCountMetricParamsJSON) RawJSON() string {
+	return r.raw
+}
+
+type CustomChartsSectionSubSectionsChartsSeriesMetricDefinitionCustomChartMetricRatioOutputNumeratorCustomChartFeedbackCountMetricType string
+
+const (
+	CustomChartsSectionSubSectionsChartsSeriesMetricDefinitionCustomChartMetricRatioOutputNumeratorCustomChartFeedbackCountMetricTypeCount CustomChartsSectionSubSectionsChartsSeriesMetricDefinitionCustomChartMetricRatioOutputNumeratorCustomChartFeedbackCountMetricType = "count"
+)
+
+func (r CustomChartsSectionSubSectionsChartsSeriesMetricDefinitionCustomChartMetricRatioOutputNumeratorCustomChartFeedbackCountMetricType) IsKnown() bool {
+	switch r {
+	case CustomChartsSectionSubSectionsChartsSeriesMetricDefinitionCustomChartMetricRatioOutputNumeratorCustomChartFeedbackCountMetricTypeCount:
+		return true
+	}
+	return false
 }
 
 type CustomChartsSectionSubSectionsChartsSeriesMetricDefinitionCustomChartMetricRatioOutputNumeratorCustomChartMetricCount struct {
@@ -4240,6 +5293,89 @@ func (r CustomChartsSectionSubSectionsChartsSeriesMetricDefinitionCustomChartMet
 	return false
 }
 
+type CustomChartsSectionSubSectionsChartsSeriesMetricDefinitionCustomChartMetricRatioOutputNumeratorCustomChartFeedbackScoreMetricPercentile struct {
+	Field  CustomChartsSectionSubSectionsChartsSeriesMetricDefinitionCustomChartMetricRatioOutputNumeratorCustomChartFeedbackScoreMetricPercentileField  `json:"field" api:"required"`
+	Params CustomChartsSectionSubSectionsChartsSeriesMetricDefinitionCustomChartMetricRatioOutputNumeratorCustomChartFeedbackScoreMetricPercentileParams `json:"params" api:"required"`
+	Type   CustomChartsSectionSubSectionsChartsSeriesMetricDefinitionCustomChartMetricRatioOutputNumeratorCustomChartFeedbackScoreMetricPercentileType   `json:"type" api:"required"`
+	Filter string                                                                                                                                        `json:"filter" api:"nullable"`
+	JSON   customChartsSectionSubSectionsChartsSeriesMetricDefinitionCustomChartMetricRatioOutputNumeratorCustomChartFeedbackScoreMetricPercentileJSON   `json:"-"`
+}
+
+// customChartsSectionSubSectionsChartsSeriesMetricDefinitionCustomChartMetricRatioOutputNumeratorCustomChartFeedbackScoreMetricPercentileJSON
+// contains the JSON metadata for the struct
+// [CustomChartsSectionSubSectionsChartsSeriesMetricDefinitionCustomChartMetricRatioOutputNumeratorCustomChartFeedbackScoreMetricPercentile]
+type customChartsSectionSubSectionsChartsSeriesMetricDefinitionCustomChartMetricRatioOutputNumeratorCustomChartFeedbackScoreMetricPercentileJSON struct {
+	Field       apijson.Field
+	Params      apijson.Field
+	Type        apijson.Field
+	Filter      apijson.Field
+	raw         string
+	ExtraFields map[string]apijson.Field
+}
+
+func (r *CustomChartsSectionSubSectionsChartsSeriesMetricDefinitionCustomChartMetricRatioOutputNumeratorCustomChartFeedbackScoreMetricPercentile) UnmarshalJSON(data []byte) (err error) {
+	return apijson.UnmarshalRoot(data, r)
+}
+
+func (r customChartsSectionSubSectionsChartsSeriesMetricDefinitionCustomChartMetricRatioOutputNumeratorCustomChartFeedbackScoreMetricPercentileJSON) RawJSON() string {
+	return r.raw
+}
+
+func (r CustomChartsSectionSubSectionsChartsSeriesMetricDefinitionCustomChartMetricRatioOutputNumeratorCustomChartFeedbackScoreMetricPercentile) implementsCustomChartsSectionSubSectionsChartsSeriesMetricDefinitionCustomChartMetricRatioOutputNumerator() {
+}
+
+type CustomChartsSectionSubSectionsChartsSeriesMetricDefinitionCustomChartMetricRatioOutputNumeratorCustomChartFeedbackScoreMetricPercentileField string
+
+const (
+	CustomChartsSectionSubSectionsChartsSeriesMetricDefinitionCustomChartMetricRatioOutputNumeratorCustomChartFeedbackScoreMetricPercentileFieldFeedbackScore CustomChartsSectionSubSectionsChartsSeriesMetricDefinitionCustomChartMetricRatioOutputNumeratorCustomChartFeedbackScoreMetricPercentileField = "feedback_score"
+)
+
+func (r CustomChartsSectionSubSectionsChartsSeriesMetricDefinitionCustomChartMetricRatioOutputNumeratorCustomChartFeedbackScoreMetricPercentileField) IsKnown() bool {
+	switch r {
+	case CustomChartsSectionSubSectionsChartsSeriesMetricDefinitionCustomChartMetricRatioOutputNumeratorCustomChartFeedbackScoreMetricPercentileFieldFeedbackScore:
+		return true
+	}
+	return false
+}
+
+type CustomChartsSectionSubSectionsChartsSeriesMetricDefinitionCustomChartMetricRatioOutputNumeratorCustomChartFeedbackScoreMetricPercentileParams struct {
+	FeedbackKey string                                                                                                                                            `json:"feedback_key" api:"required"`
+	P           float64                                                                                                                                           `json:"p" api:"required"`
+	JSON        customChartsSectionSubSectionsChartsSeriesMetricDefinitionCustomChartMetricRatioOutputNumeratorCustomChartFeedbackScoreMetricPercentileParamsJSON `json:"-"`
+}
+
+// customChartsSectionSubSectionsChartsSeriesMetricDefinitionCustomChartMetricRatioOutputNumeratorCustomChartFeedbackScoreMetricPercentileParamsJSON
+// contains the JSON metadata for the struct
+// [CustomChartsSectionSubSectionsChartsSeriesMetricDefinitionCustomChartMetricRatioOutputNumeratorCustomChartFeedbackScoreMetricPercentileParams]
+type customChartsSectionSubSectionsChartsSeriesMetricDefinitionCustomChartMetricRatioOutputNumeratorCustomChartFeedbackScoreMetricPercentileParamsJSON struct {
+	FeedbackKey apijson.Field
+	P           apijson.Field
+	raw         string
+	ExtraFields map[string]apijson.Field
+}
+
+func (r *CustomChartsSectionSubSectionsChartsSeriesMetricDefinitionCustomChartMetricRatioOutputNumeratorCustomChartFeedbackScoreMetricPercentileParams) UnmarshalJSON(data []byte) (err error) {
+	return apijson.UnmarshalRoot(data, r)
+}
+
+func (r customChartsSectionSubSectionsChartsSeriesMetricDefinitionCustomChartMetricRatioOutputNumeratorCustomChartFeedbackScoreMetricPercentileParamsJSON) RawJSON() string {
+	return r.raw
+}
+
+type CustomChartsSectionSubSectionsChartsSeriesMetricDefinitionCustomChartMetricRatioOutputNumeratorCustomChartFeedbackScoreMetricPercentileType string
+
+const (
+	CustomChartsSectionSubSectionsChartsSeriesMetricDefinitionCustomChartMetricRatioOutputNumeratorCustomChartFeedbackScoreMetricPercentileTypePercentile CustomChartsSectionSubSectionsChartsSeriesMetricDefinitionCustomChartMetricRatioOutputNumeratorCustomChartFeedbackScoreMetricPercentileType = "percentile"
+)
+
+func (r CustomChartsSectionSubSectionsChartsSeriesMetricDefinitionCustomChartMetricRatioOutputNumeratorCustomChartFeedbackScoreMetricPercentileType) IsKnown() bool {
+	switch r {
+	case CustomChartsSectionSubSectionsChartsSeriesMetricDefinitionCustomChartMetricRatioOutputNumeratorCustomChartFeedbackScoreMetricPercentileTypePercentile:
+		return true
+	}
+	return false
+}
+
 type CustomChartsSectionSubSectionsChartsSeriesMetricDefinitionCustomChartMetricRatioOutputNumeratorCustomChartMetricPercentile struct {
 	Field  CustomChartsSectionSubSectionsChartsSeriesMetricDefinitionCustomChartMetricRatioOutputNumeratorCustomChartMetricPercentileField  `json:"field" api:"required"`
 	Params CustomChartsSectionSubSectionsChartsSeriesMetricDefinitionCustomChartMetricRatioOutputNumeratorCustomChartMetricPercentileParams `json:"params" api:"required"`
@@ -4329,6 +5465,20 @@ func (r CustomChartsSectionSubSectionsChartsSeriesMetricDefinitionCustomChartMet
 	return false
 }
 
+type CustomChartsSectionSubSectionsChartsSeriesMetricDefinitionCustomChartMetricRatioOutputNumeratorEntity string
+
+const (
+	CustomChartsSectionSubSectionsChartsSeriesMetricDefinitionCustomChartMetricRatioOutputNumeratorEntityFeedback CustomChartsSectionSubSectionsChartsSeriesMetricDefinitionCustomChartMetricRatioOutputNumeratorEntity = "feedback"
+)
+
+func (r CustomChartsSectionSubSectionsChartsSeriesMetricDefinitionCustomChartMetricRatioOutputNumeratorEntity) IsKnown() bool {
+	switch r {
+	case CustomChartsSectionSubSectionsChartsSeriesMetricDefinitionCustomChartMetricRatioOutputNumeratorEntityFeedback:
+		return true
+	}
+	return false
+}
+
 type CustomChartsSectionSubSectionsChartsSeriesMetricDefinitionCustomChartMetricRatioOutputNumeratorField string
 
 const (
@@ -4379,6 +5529,20 @@ const (
 func (r CustomChartsSectionSubSectionsChartsSeriesMetricDefinitionCustomChartMetricRatioOutputType) IsKnown() bool {
 	switch r {
 	case CustomChartsSectionSubSectionsChartsSeriesMetricDefinitionCustomChartMetricRatioOutputTypeRatio:
+		return true
+	}
+	return false
+}
+
+type CustomChartsSectionSubSectionsChartsSeriesMetricDefinitionEntity string
+
+const (
+	CustomChartsSectionSubSectionsChartsSeriesMetricDefinitionEntityFeedback CustomChartsSectionSubSectionsChartsSeriesMetricDefinitionEntity = "feedback"
+)
+
+func (r CustomChartsSectionSubSectionsChartsSeriesMetricDefinitionEntity) IsKnown() bool {
+	switch r {
+	case CustomChartsSectionSubSectionsChartsSeriesMetricDefinitionEntityFeedback:
 		return true
 	}
 	return false
