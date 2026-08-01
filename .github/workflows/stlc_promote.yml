@@ -22,7 +22,7 @@ jobs:
 
       - name: Load GitHub App key from 1Password
         id: load-gh-app-secrets
-        uses: 1password/load-secrets-action@3a12b0ab99d9cd590a3e9b5a90ea017210ed9556 # v4.0.1
+        uses: 1password/load-secrets-action@eb2efd0703da22a93c467f2d1ffbb6826c11e19c # v4.1.1
         with:
           export-env: false
         env:
