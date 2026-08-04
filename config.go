@@ -392,7 +392,7 @@ func refreshOAuthToken(ctx context.Context, apiURL, refreshToken string) (*oauth
 	req, err := http.NewRequestWithContext(
 		ctx,
 		http.MethodPost,
-		strings.TrimRight(normalizeConfigURL(apiURL), "/")+"/oauth/token",
+		resolveTokenEndpoint(ctx, apiURL),
 		bytes.NewBufferString(values.Encode()),
 	)
 	if err != nil {
