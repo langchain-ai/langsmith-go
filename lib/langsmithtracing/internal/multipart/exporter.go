@@ -167,6 +167,7 @@ func (e *Exporter) doMultipartRequest(ctx context.Context, endpoint models.Write
 	}
 	req.Header.Set("Content-Type", "multipart/form-data; boundary="+boundary)
 	endpoint.SetAuthHeader(req)
+	endpoint.SetExtraHeaders(req)
 	if !e.compressionDisabled {
 		req.Header.Set("Content-Encoding", "zstd")
 		req.Header.Set("X-Pre-Compressed-Size", strconv.FormatInt(prePayloadBytes, 10))
@@ -306,6 +307,7 @@ func (e *Exporter) doBatchRequest(ctx context.Context, endpoint models.WriteEndp
 	}
 	req.Header.Set("Content-Type", "application/json")
 	endpoint.SetAuthHeader(req)
+	endpoint.SetExtraHeaders(req)
 
 	resp, err := e.client.Do(req)
 	if err != nil {
