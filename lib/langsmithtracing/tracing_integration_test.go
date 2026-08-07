@@ -385,16 +385,19 @@ func TestMultipartTracing(t *testing.T) {
 }
 
 // TestBatchFallbackOn404 verifies the full client → sink → exporter pipeline
-// falls back to /runs/batch when /runs/multipart returns 404.
+// falls back to /runs/batch when /runs/multipart returns 404, and that extra
+// headers are sent to both endpoints.
 // This uses a local httptest server and does not require LANGSMITH_API_KEY.
 func TestBatchFallbackOn404(t *testing.T) {
 	var mu sync.Mutex
 	var multipartCalls, batchCalls int
 	var batchBodies [][]byte
+	headersByPath := make(map[string]http.Header)
 
 	srv := httptest.NewServer(http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
 		mu.Lock()
 		defer mu.Unlock()
+		headersByPath[r.URL.Path] = r.Header.Clone()
 		switch r.URL.Path {
 		case "/runs/multipart":
 			multipartCalls++
@@ -415,6 +418,10 @@ func TestBatchFallbackOn404(t *testing.T) {
 		langsmithtracing.WithAPIURL(srv.URL),
 		langsmithtracing.WithAPIKey("test-key"),
 		langsmithtracing.WithProject("fallback-test"),
+		langsmithtracing.WithExtraHeaders(map[string]string{
+			"X-Tenant-Id": "tenant-1",
+			"X-API-Key":   "override",
+		}),
 	)
 
 	now := time.Now().UTC()
@@ -469,73 +476,18 @@ func TestBatchFallbackOn404(t *testing.T) {
 		t.Fatal("batch body contained no runs")
 	}
 
-	t.Logf("multipart attempts: %d, batch calls: %d, runs in first batch: post=%d patch=%d",
-		multipartCalls, batchCalls, len(parsed.Post), len(parsed.Patch))
-}
-
-// TestExtraHeaders verifies headers from WithExtraHeaders reach both the
-// multipart and batch endpoints, and that an entry replaces the header the
-// client would otherwise send under that name.
-// This uses a local httptest server and does not require LANGSMITH_API_KEY.
-func TestExtraHeaders(t *testing.T) {
-	var mu sync.Mutex
-	headersByPath := make(map[string]http.Header)
-
-	srv := httptest.NewServer(http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
-		mu.Lock()
-		headersByPath[r.URL.Path] = r.Header.Clone()
-		mu.Unlock()
-		if r.URL.Path == "/runs/multipart" {
-			// Force the batch fallback so both endpoints are exercised.
-			w.WriteHeader(http.StatusNotFound)
-			return
-		}
-		io.Copy(io.Discard, r.Body)
-		w.WriteHeader(http.StatusAccepted)
-	}))
-	defer srv.Close()
-
-	ctx := context.Background()
-	client := mustTracingClient(t, ctx,
-		langsmithtracing.WithAPIURL(srv.URL),
-		langsmithtracing.WithAPIKey("test-key"),
-		langsmithtracing.WithProject("extra-headers-test"),
-		langsmithtracing.WithExtraHeaders(map[string]string{
-			"X-Tenant-Id": "tenant-1",
-			"X-API-Key":   "override",
-		}),
-	)
-
-	now := time.Now().UTC()
-	runID := uuid.New()
-	if err := client.CreateRun(&langsmithtracing.RunCreate{
-		ID:          runID,
-		TraceID:     runID,
-		Name:        "extra-headers-run",
-		RunType:     "chain",
-		Inputs:      map[string]any{"q": "hello"},
-		StartTime:   now,
-		DottedOrder: formatDottedOrder(now, runID),
-	}); err != nil {
-		t.Fatalf("CreateRun: %v", err)
-	}
-	client.Close()
-
-	mu.Lock()
-	defer mu.Unlock()
 	for _, path := range []string{"/runs/multipart", "/runs/batch"} {
-		got, ok := headersByPath[path]
-		if !ok {
-			t.Errorf("no request to %s", path)
-			continue
-		}
-		if got, want := got.Get("X-Tenant-Id"), "tenant-1"; got != want {
+		h := headersByPath[path]
+		if got, want := h.Get("X-Tenant-Id"), "tenant-1"; got != want {
 			t.Errorf("%s X-Tenant-Id = %q, want %q", path, got, want)
 		}
-		if got, want := got.Get("X-API-Key"), "override"; got != want {
+		if got, want := h.Get("X-API-Key"), "override"; got != want {
 			t.Errorf("%s X-API-Key = %q, want %q", path, got, want)
 		}
 	}
+
+	t.Logf("multipart attempts: %d, batch calls: %d, runs in first batch: post=%d patch=%d",
+		multipartCalls, batchCalls, len(parsed.Post), len(parsed.Patch))
 }
 
 // TestWorkerPoolThroughputLive sends a burst of runs to LangSmith to exercise
