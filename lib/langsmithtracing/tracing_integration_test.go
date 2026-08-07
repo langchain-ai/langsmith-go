@@ -385,16 +385,19 @@ func TestMultipartTracing(t *testing.T) {
 }
 
 // TestBatchFallbackOn404 verifies the full client → sink → exporter pipeline
-// falls back to /runs/batch when /runs/multipart returns 404.
+// falls back to /runs/batch when /runs/multipart returns 404, and that extra
+// headers are sent to both endpoints.
 // This uses a local httptest server and does not require LANGSMITH_API_KEY.
 func TestBatchFallbackOn404(t *testing.T) {
 	var mu sync.Mutex
 	var multipartCalls, batchCalls int
 	var batchBodies [][]byte
+	headersByPath := make(map[string]http.Header)
 
 	srv := httptest.NewServer(http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
 		mu.Lock()
 		defer mu.Unlock()
+		headersByPath[r.URL.Path] = r.Header.Clone()
 		switch r.URL.Path {
 		case "/runs/multipart":
 			multipartCalls++
@@ -410,11 +413,18 @@ func TestBatchFallbackOn404(t *testing.T) {
 	}))
 	defer srv.Close()
 
+	extraHeaders := map[string]string{
+		"X-Tenant-Id": "tenant-1",
+		"Baggage":     "env=dev",
+		"X-API-Key":   "override",
+	}
+
 	ctx := context.Background()
 	client := mustTracingClient(t, ctx,
 		langsmithtracing.WithAPIURL(srv.URL),
 		langsmithtracing.WithAPIKey("test-key"),
 		langsmithtracing.WithProject("fallback-test"),
+		langsmithtracing.WithExtraHeaders(extraHeaders),
 	)
 
 	now := time.Now().UTC()
@@ -467,6 +477,15 @@ func TestBatchFallbackOn404(t *testing.T) {
 	totalRuns := len(parsed.Post) + len(parsed.Patch)
 	if totalRuns == 0 {
 		t.Fatal("batch body contained no runs")
+	}
+
+	for _, path := range []string{"/runs/multipart", "/runs/batch"} {
+		h := headersByPath[path]
+		for name, want := range extraHeaders {
+			if got := h.Get(name); got != want {
+				t.Errorf("%s %s = %q, want %q", path, name, got, want)
+			}
+		}
 	}
 
 	t.Logf("multipart attempts: %d, batch calls: %d, runs in first batch: post=%d patch=%d",

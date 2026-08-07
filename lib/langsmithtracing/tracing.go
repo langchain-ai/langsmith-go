@@ -113,6 +113,7 @@ type options struct {
 	apiURL              string
 	apiKey              string
 	oauthAccessToken    string
+	extraHeaders        map[string]string
 	project             string
 	drainConfig         *tracesink.DrainConfig
 	sampleRate          *float64
@@ -132,6 +133,20 @@ func WithAPIKey(key string) Option { return func(o *options) { o.apiKey = key } 
 // When set, it takes precedence over the API key.
 func WithOAuthAccessToken(token string) Option {
 	return func(o *options) { o.oauthAccessToken = token }
+}
+
+// WithExtraHeaders adds headers to every request sent to the LangSmith API.
+// Repeated calls merge, with later values winning. The headers are applied
+// after the API key and OAuth headers, so an entry may replace one of them.
+func WithExtraHeaders(headers map[string]string) Option {
+	return func(o *options) {
+		if o.extraHeaders == nil {
+			o.extraHeaders = make(map[string]string, len(headers))
+		}
+		for name, value := range headers {
+			o.extraHeaders[name] = value
+		}
+	}
 }
 
 // WithProject overrides the LangSmith project name.
@@ -221,6 +236,7 @@ func NewTracingClient(ctx context.Context, opts ...Option) (*TracingClient, erro
 		URL:              strings.TrimRight(cfg.apiURL, "/"),
 		Key:              cfg.apiKey,
 		OAuthAccessToken: cfg.oauthAccessToken,
+		ExtraHeaders:     cfg.extraHeaders,
 		Project:          cfg.project,
 	}
 
