@@ -413,15 +413,18 @@ func TestBatchFallbackOn404(t *testing.T) {
 	}))
 	defer srv.Close()
 
+	extraHeaders := map[string]string{
+		"X-Tenant-Id": "tenant-1",
+		"Baggage":     "env=dev",
+		"X-API-Key":   "override",
+	}
+
 	ctx := context.Background()
 	client := mustTracingClient(t, ctx,
 		langsmithtracing.WithAPIURL(srv.URL),
 		langsmithtracing.WithAPIKey("test-key"),
 		langsmithtracing.WithProject("fallback-test"),
-		langsmithtracing.WithExtraHeaders(map[string]string{
-			"X-Tenant-Id": "tenant-1",
-			"X-API-Key":   "override",
-		}),
+		langsmithtracing.WithExtraHeaders(extraHeaders),
 	)
 
 	now := time.Now().UTC()
@@ -478,11 +481,10 @@ func TestBatchFallbackOn404(t *testing.T) {
 
 	for _, path := range []string{"/runs/multipart", "/runs/batch"} {
 		h := headersByPath[path]
-		if got, want := h.Get("X-Tenant-Id"), "tenant-1"; got != want {
-			t.Errorf("%s X-Tenant-Id = %q, want %q", path, got, want)
-		}
-		if got, want := h.Get("X-API-Key"), "override"; got != want {
-			t.Errorf("%s X-API-Key = %q, want %q", path, got, want)
+		for name, want := range extraHeaders {
+			if got := h.Get(name); got != want {
+				t.Errorf("%s %s = %q, want %q", path, name, got, want)
+			}
 		}
 	}
 
