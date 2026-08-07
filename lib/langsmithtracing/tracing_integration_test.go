@@ -16,8 +16,8 @@ import (
 	"testing"
 	"time"
 
-	"github.com/klauspost/compress/zstd"
 	"github.com/google/uuid"
+	"github.com/klauspost/compress/zstd"
 
 	"github.com/langchain-ai/langsmith-go/lib/langsmithtracing"
 )
@@ -249,10 +249,10 @@ func TestMultipartTracing(t *testing.T) {
 	}
 
 	if err := client.UpdateRun(&langsmithtracing.RunUpdate{
-		ID:      updateAttachID,
-		TraceID: updateAttachID,
-		Outputs: map[string]any{"image_url": "data:image/png;base64,..."},
-		EndTime: updateAttachStart.Add(100 * time.Millisecond),
+		ID:          updateAttachID,
+		TraceID:     updateAttachID,
+		Outputs:     map[string]any{"image_url": "data:image/png;base64,..."},
+		EndTime:     updateAttachStart.Add(100 * time.Millisecond),
 		DottedOrder: updateAttachDotted,
 		Attachments: map[string]langsmithtracing.Attachment{
 			"generated_image": {
@@ -471,6 +471,71 @@ func TestBatchFallbackOn404(t *testing.T) {
 
 	t.Logf("multipart attempts: %d, batch calls: %d, runs in first batch: post=%d patch=%d",
 		multipartCalls, batchCalls, len(parsed.Post), len(parsed.Patch))
+}
+
+// TestExtraHeaders verifies headers from WithExtraHeaders reach both the
+// multipart and batch endpoints, and that an entry replaces the header the
+// client would otherwise send under that name.
+// This uses a local httptest server and does not require LANGSMITH_API_KEY.
+func TestExtraHeaders(t *testing.T) {
+	var mu sync.Mutex
+	headersByPath := make(map[string]http.Header)
+
+	srv := httptest.NewServer(http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
+		mu.Lock()
+		headersByPath[r.URL.Path] = r.Header.Clone()
+		mu.Unlock()
+		if r.URL.Path == "/runs/multipart" {
+			// Force the batch fallback so both endpoints are exercised.
+			w.WriteHeader(http.StatusNotFound)
+			return
+		}
+		io.Copy(io.Discard, r.Body)
+		w.WriteHeader(http.StatusAccepted)
+	}))
+	defer srv.Close()
+
+	ctx := context.Background()
+	client := mustTracingClient(t, ctx,
+		langsmithtracing.WithAPIURL(srv.URL),
+		langsmithtracing.WithAPIKey("test-key"),
+		langsmithtracing.WithProject("extra-headers-test"),
+		langsmithtracing.WithExtraHeaders(map[string]string{
+			"X-Tenant-Id": "tenant-1",
+			"X-API-Key":   "override",
+		}),
+	)
+
+	now := time.Now().UTC()
+	runID := uuid.New()
+	if err := client.CreateRun(&langsmithtracing.RunCreate{
+		ID:          runID,
+		TraceID:     runID,
+		Name:        "extra-headers-run",
+		RunType:     "chain",
+		Inputs:      map[string]any{"q": "hello"},
+		StartTime:   now,
+		DottedOrder: formatDottedOrder(now, runID),
+	}); err != nil {
+		t.Fatalf("CreateRun: %v", err)
+	}
+	client.Close()
+
+	mu.Lock()
+	defer mu.Unlock()
+	for _, path := range []string{"/runs/multipart", "/runs/batch"} {
+		got, ok := headersByPath[path]
+		if !ok {
+			t.Errorf("no request to %s", path)
+			continue
+		}
+		if got, want := got.Get("X-Tenant-Id"), "tenant-1"; got != want {
+			t.Errorf("%s X-Tenant-Id = %q, want %q", path, got, want)
+		}
+		if got, want := got.Get("X-API-Key"), "override"; got != want {
+			t.Errorf("%s X-API-Key = %q, want %q", path, got, want)
+		}
+	}
 }
 
 // TestWorkerPoolThroughputLive sends a burst of runs to LangSmith to exercise
@@ -1004,11 +1069,11 @@ func TestUpdateRunFields(t *testing.T) {
 
 	if err := client.CreateRun(&langsmithtracing.RunCreate{
 		ID: runID, TraceID: runID,
-		Name:    "original-name",
-		RunType: "chain",
-		Inputs:  map[string]any{"original": true},
-		Extra:   map[string]any{"metadata": map[string]any{"version": "v1"}},
-		Tags:    []string{"initial"},
+		Name:      "original-name",
+		RunType:   "chain",
+		Inputs:    map[string]any{"original": true},
+		Extra:     map[string]any{"metadata": map[string]any{"version": "v1"}},
+		Tags:      []string{"initial"},
 		StartTime: now, DottedOrder: dotted,
 	}); err != nil {
 		t.Fatalf("CreateRun: %v", err)
@@ -1017,14 +1082,14 @@ func TestUpdateRunFields(t *testing.T) {
 	adjustedStart := now.Add(-500 * time.Millisecond)
 	if err := client.UpdateRun(&langsmithtracing.RunUpdate{
 		ID: runID, TraceID: runID,
-		Name:    "renamed-run",
-		RunType: "llm",
-		Inputs:  map[string]any{"replaced": true, "prompt": "hello"},
-		Outputs: map[string]any{"answer": "world"},
-		Extra:   map[string]any{"metadata": map[string]any{"version": "v2", "updated": true}},
-		Tags:    []string{"updated", "v2"},
-		StartTime: adjustedStart,
-		EndTime:   now.Add(100 * time.Millisecond),
+		Name:        "renamed-run",
+		RunType:     "llm",
+		Inputs:      map[string]any{"replaced": true, "prompt": "hello"},
+		Outputs:     map[string]any{"answer": "world"},
+		Extra:       map[string]any{"metadata": map[string]any{"version": "v2", "updated": true}},
+		Tags:        []string{"updated", "v2"},
+		StartTime:   adjustedStart,
+		EndTime:     now.Add(100 * time.Millisecond),
 		DottedOrder: dotted,
 	}); err != nil {
 		t.Fatalf("UpdateRun: %v", err)
@@ -1189,9 +1254,9 @@ func TestUpdateRunFieldsLive(t *testing.T) {
 			"metadata":          map[string]any{"source": "go-sdk-test", "stage": "update"},
 			"invocation_params": map[string]any{"model": "gpt-4", "temperature": 0.5},
 		},
-		Tags:      []string{"update-tag", "v2"},
-		StartTime: adjustedStart,
-		EndTime:   now.Add(200 * time.Millisecond),
+		Tags:        []string{"update-tag", "v2"},
+		StartTime:   adjustedStart,
+		EndTime:     now.Add(200 * time.Millisecond),
 		DottedOrder: dotted,
 	}); err != nil {
 		t.Fatalf("UpdateRun: %v", err)
@@ -1424,10 +1489,10 @@ func TestSingleShotCreateRun(t *testing.T) {
 	if err := client.CreateRun(&langsmithtracing.RunCreate{
 		ID: errID, TraceID: errID,
 		Name: "single-shot-error", RunType: "chain",
-		Inputs:    map[string]any{"q": "fail"},
-		Error:     "ValueError: something broke",
-		StartTime: now.Add(100 * time.Millisecond),
-		EndTime:   now.Add(150 * time.Millisecond),
+		Inputs:      map[string]any{"q": "fail"},
+		Error:       "ValueError: something broke",
+		StartTime:   now.Add(100 * time.Millisecond),
+		EndTime:     now.Add(150 * time.Millisecond),
 		DottedOrder: errDotted,
 	}); err != nil {
 		t.Fatalf("CreateRun (error): %v", err)
