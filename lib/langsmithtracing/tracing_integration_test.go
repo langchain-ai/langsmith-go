@@ -16,8 +16,8 @@ import (
 	"testing"
 	"time"
 
-	"github.com/google/uuid"
 	"github.com/klauspost/compress/zstd"
+	"github.com/google/uuid"
 
 	"github.com/langchain-ai/langsmith-go/lib/langsmithtracing"
 )
@@ -249,10 +249,10 @@ func TestMultipartTracing(t *testing.T) {
 	}
 
 	if err := client.UpdateRun(&langsmithtracing.RunUpdate{
-		ID:          updateAttachID,
-		TraceID:     updateAttachID,
-		Outputs:     map[string]any{"image_url": "data:image/png;base64,..."},
-		EndTime:     updateAttachStart.Add(100 * time.Millisecond),
+		ID:      updateAttachID,
+		TraceID: updateAttachID,
+		Outputs: map[string]any{"image_url": "data:image/png;base64,..."},
+		EndTime: updateAttachStart.Add(100 * time.Millisecond),
 		DottedOrder: updateAttachDotted,
 		Attachments: map[string]langsmithtracing.Attachment{
 			"generated_image": {
@@ -1021,11 +1021,11 @@ func TestUpdateRunFields(t *testing.T) {
 
 	if err := client.CreateRun(&langsmithtracing.RunCreate{
 		ID: runID, TraceID: runID,
-		Name:      "original-name",
-		RunType:   "chain",
-		Inputs:    map[string]any{"original": true},
-		Extra:     map[string]any{"metadata": map[string]any{"version": "v1"}},
-		Tags:      []string{"initial"},
+		Name:    "original-name",
+		RunType: "chain",
+		Inputs:  map[string]any{"original": true},
+		Extra:   map[string]any{"metadata": map[string]any{"version": "v1"}},
+		Tags:    []string{"initial"},
 		StartTime: now, DottedOrder: dotted,
 	}); err != nil {
 		t.Fatalf("CreateRun: %v", err)
@@ -1034,14 +1034,14 @@ func TestUpdateRunFields(t *testing.T) {
 	adjustedStart := now.Add(-500 * time.Millisecond)
 	if err := client.UpdateRun(&langsmithtracing.RunUpdate{
 		ID: runID, TraceID: runID,
-		Name:        "renamed-run",
-		RunType:     "llm",
-		Inputs:      map[string]any{"replaced": true, "prompt": "hello"},
-		Outputs:     map[string]any{"answer": "world"},
-		Extra:       map[string]any{"metadata": map[string]any{"version": "v2", "updated": true}},
-		Tags:        []string{"updated", "v2"},
-		StartTime:   adjustedStart,
-		EndTime:     now.Add(100 * time.Millisecond),
+		Name:    "renamed-run",
+		RunType: "llm",
+		Inputs:  map[string]any{"replaced": true, "prompt": "hello"},
+		Outputs: map[string]any{"answer": "world"},
+		Extra:   map[string]any{"metadata": map[string]any{"version": "v2", "updated": true}},
+		Tags:    []string{"updated", "v2"},
+		StartTime: adjustedStart,
+		EndTime:   now.Add(100 * time.Millisecond),
 		DottedOrder: dotted,
 	}); err != nil {
 		t.Fatalf("UpdateRun: %v", err)
@@ -1206,9 +1206,9 @@ func TestUpdateRunFieldsLive(t *testing.T) {
 			"metadata":          map[string]any{"source": "go-sdk-test", "stage": "update"},
 			"invocation_params": map[string]any{"model": "gpt-4", "temperature": 0.5},
 		},
-		Tags:        []string{"update-tag", "v2"},
-		StartTime:   adjustedStart,
-		EndTime:     now.Add(200 * time.Millisecond),
+		Tags:      []string{"update-tag", "v2"},
+		StartTime: adjustedStart,
+		EndTime:   now.Add(200 * time.Millisecond),
 		DottedOrder: dotted,
 	}); err != nil {
 		t.Fatalf("UpdateRun: %v", err)
@@ -1441,10 +1441,10 @@ func TestSingleShotCreateRun(t *testing.T) {
 	if err := client.CreateRun(&langsmithtracing.RunCreate{
 		ID: errID, TraceID: errID,
 		Name: "single-shot-error", RunType: "chain",
-		Inputs:      map[string]any{"q": "fail"},
-		Error:       "ValueError: something broke",
-		StartTime:   now.Add(100 * time.Millisecond),
-		EndTime:     now.Add(150 * time.Millisecond),
+		Inputs:    map[string]any{"q": "fail"},
+		Error:     "ValueError: something broke",
+		StartTime: now.Add(100 * time.Millisecond),
+		EndTime:   now.Add(150 * time.Millisecond),
 		DottedOrder: errDotted,
 	}); err != nil {
 		t.Fatalf("CreateRun (error): %v", err)
