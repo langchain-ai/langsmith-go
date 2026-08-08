@@ -70,7 +70,7 @@ func (r *ThreadService) ListTracesAutoPaging(ctx context.Context, threadID strin
 }
 
 // Query threads within a project (session), with cursor-based pagination. Returns
-// threads matching the given time range and optional filter.
+// threads matching the given time range and optional filters.
 //
 // Self-hosted deployments require LangSmith `v0.16` or later.
 func (r *ThreadService) Query(ctx context.Context, body ThreadQueryParams, opts ...option.RequestOption) (res *pagination.ItemsCursorPostPagination[Thread], err error) {
@@ -91,7 +91,7 @@ func (r *ThreadService) Query(ctx context.Context, body ThreadQueryParams, opts 
 }
 
 // Query threads within a project (session), with cursor-based pagination. Returns
-// threads matching the given time range and optional filter.
+// threads matching the given time range and optional filters.
 //
 // Self-hosted deployments require LangSmith `v0.16` or later.
 func (r *ThreadService) QueryAutoPaging(ctx context.Context, body ThreadQueryParams, opts ...option.RequestOption) *pagination.ItemsCursorPostPaginationAutoPager[Thread] {
@@ -841,6 +841,25 @@ type ThreadQueryParams struct {
 	PageSize param.Field[int64] `json:"page_size"`
 	// `project_id` is the tracing project UUID.
 	ProjectID param.Field[string] `json:"project_id" format:"uuid"`
+	// `thread_filter` narrows results using a LangSmith filter expression evaluated
+	// against each complete thread summary. Self-hosted deployments require LangSmith
+	// v0.17 or later; unsupported deployments return 501. See
+	// https://docs.langchain.com/langsmith/trace-query-syntax#filter-query-language
+	// for syntax.
+	ThreadFilter param.Field[string] `json:"thread_filter"`
+	// `trace_filter` narrows results to threads containing at least one trace whose
+	// root run matches this LangSmith filter expression. Trace-level aggregate fields
+	// are evaluated using the complete trace summary. Self-hosted deployments require
+	// LangSmith v0.17 or later; unsupported deployments return 501. See
+	// https://docs.langchain.com/langsmith/trace-query-syntax#filter-query-language
+	// for syntax.
+	TraceFilter param.Field[string] `json:"trace_filter"`
+	// `tree_filter` narrows results to threads containing at least one trace with a
+	// matching run anywhere in its run tree. Self-hosted deployments require LangSmith
+	// v0.17 or later; unsupported deployments return 501. See
+	// https://docs.langchain.com/langsmith/trace-query-syntax#filter-query-language
+	// for syntax.
+	TreeFilter param.Field[string] `json:"tree_filter"`
 }
 
 func (r ThreadQueryParams) MarshalJSON() (data []byte, err error) {
