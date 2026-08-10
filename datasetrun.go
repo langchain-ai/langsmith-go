@@ -75,6 +75,7 @@ type ExampleWithRunsCh struct {
 	SourceRunID        string                 `json:"source_run_id" api:"nullable" format:"uuid"`
 	SourceRunStartTime time.Time              `json:"source_run_start_time" api:"nullable" format:"date-time"`
 	SourceSessionID    string                 `json:"source_session_id" api:"nullable" format:"uuid"`
+	SourceThreadID     string                 `json:"source_thread_id" api:"nullable"`
 	SourceTraceID      string                 `json:"source_trace_id" api:"nullable" format:"uuid"`
 	JSON               exampleWithRunsChJSON  `json:"-"`
 }
@@ -95,6 +96,7 @@ type exampleWithRunsChJSON struct {
 	SourceRunID        apijson.Field
 	SourceRunStartTime apijson.Field
 	SourceSessionID    apijson.Field
+	SourceThreadID     apijson.Field
 	SourceTraceID      apijson.Field
 	raw                string
 	ExtraFields        map[string]apijson.Field
