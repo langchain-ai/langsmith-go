@@ -170,6 +170,7 @@ func TestSandboxBoxNewWithOptionalParams(t *testing.T) {
 			}}),
 		}),
 		RestoreMemory: langsmith.F(true),
+		Snapshot:      langsmith.F("snapshot"),
 		SnapshotID:    langsmith.F("snapshot_id"),
 		SnapshotName:  langsmith.F("snapshot_name"),
 		TagValueIDs:   langsmith.F([]string{"string"}),
@@ -383,6 +384,7 @@ func TestSandboxBoxNewSnapshotWithOptionalParams(t *testing.T) {
 			Labels: langsmith.F(map[string]string{
 				"foo": "string",
 			}),
+			Tag: langsmith.F("tag"),
 		},
 	)
 	if err != nil {

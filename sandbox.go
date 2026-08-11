@@ -1910,14 +1910,17 @@ type SnapshotResponse struct {
 	// MemorySnapshotSizeBytes is non-nil iff the snapshot was captured with VM memory
 	// state. A non-nil value is the canonical signal that this snapshot can
 	// warm-restore from memory; nil means rootfs only.
-	MemorySnapshotSizeBytes int64                `json:"memory_snapshot_size_bytes"`
-	Name                    string               `json:"name"`
-	RegistryID              string               `json:"registry_id"`
-	SourceSandboxID         string               `json:"source_sandbox_id"`
-	Status                  string               `json:"status"`
-	StatusMessage           string               `json:"status_message"`
-	UpdatedAt               string               `json:"updated_at"`
-	JSON                    snapshotResponseJSON `json:"-"`
+	MemorySnapshotSizeBytes int64  `json:"memory_snapshot_size_bytes"`
+	Name                    string `json:"name"`
+	RegistryID              string `json:"registry_id"`
+	SourceSandboxID         string `json:"source_sandbox_id"`
+	Status                  string `json:"status"`
+	StatusMessage           string `json:"status_message"`
+	// Tags currently resolving to this snapshot, under Name. A snapshot with no tags
+	// is dangling — addressable only by id.
+	Tags      []string             `json:"tags"`
+	UpdatedAt string               `json:"updated_at"`
+	JSON      snapshotResponseJSON `json:"-"`
 }
 
 // snapshotResponseJSON contains the JSON metadata for the struct
@@ -1937,6 +1940,7 @@ type snapshotResponseJSON struct {
 	SourceSandboxID         apijson.Field
 	Status                  apijson.Field
 	StatusMessage           apijson.Field
+	Tags                    apijson.Field
 	UpdatedAt               apijson.Field
 	raw                     string
 	ExtraFields             map[string]apijson.Field

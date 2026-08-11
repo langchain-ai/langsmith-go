@@ -38,6 +38,8 @@ func NewSandboxBoxService(opts ...option.RequestOption) (r *SandboxBoxService) {
 
 // Create a new sandbox from a snapshot. Provide at most one of `snapshot_id` or
 // `snapshot_name`; if neither is provided, the server uses the default snapshot.
+// `snapshot_name` accepts a Docker-style `name` or `name:tag` reference (a bare
+// name resolves to `name:latest`).
 func (r *SandboxBoxService) New(ctx context.Context, body SandboxBoxNewParams, opts ...option.RequestOption) (res *SandboxResponse, err error) {
 	opts = slices.Concat(r.Options, opts)
 	path := "api/v2/sandboxes/boxes"
@@ -191,11 +193,16 @@ type SandboxBoxNewParams struct {
 	// false → never: always cold-boot.
 	//
 	// Applies to this request only.
-	RestoreMemory param.Field[bool]     `json:"restore_memory"`
-	SnapshotID    param.Field[string]   `json:"snapshot_id"`
-	SnapshotName  param.Field[string]   `json:"snapshot_name"`
-	TagValueIDs   param.Field[[]string] `json:"tag_value_ids"`
-	Vcpus         param.Field[int64]    `json:"vcpus"`
+	RestoreMemory param.Field[bool] `json:"restore_memory"`
+	// Snapshot is a Docker-style name or name:tag reference to boot from. A bare name
+	// resolves to name:latest.
+	Snapshot   param.Field[string] `json:"snapshot"`
+	SnapshotID param.Field[string] `json:"snapshot_id"`
+	// SnapshotName is a synonym for Snapshot, accepted for compatibility with clients
+	// that predate it. Set one or the other.
+	SnapshotName param.Field[string]   `json:"snapshot_name"`
+	TagValueIDs  param.Field[[]string] `json:"tag_value_ids"`
+	Vcpus        param.Field[int64]    `json:"vcpus"`
 }
 
 func (r SandboxBoxNewParams) MarshalJSON() (data []byte, err error) {
@@ -1288,6 +1295,8 @@ type SandboxBoxNewSnapshotParams struct {
 	IncludeMemory param.Field[bool] `json:"include_memory"`
 	// Labels seed the captured snapshot's labels.
 	Labels param.Field[map[string]string] `json:"labels"`
+	// mutable Docker-style tag; defaults to "latest"
+	Tag param.Field[string] `json:"tag"`
 }
 
 func (r SandboxBoxNewSnapshotParams) MarshalJSON() (data []byte, err error) {
