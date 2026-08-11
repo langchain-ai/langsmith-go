@@ -120,8 +120,8 @@ func (r *OnlineEvaluatorService) BulkDelete(ctx context.Context, body OnlineEval
 
 // Returns per-day LLM evaluator spend for the requested 7-day period, grouped by
 // evaluator, resource, or run rule. Exactly one of group_by, evaluator_id,
-// session_id, or dataset_id is required. resource_id, type, and feedback_key may
-// be supplied with group_by to narrow listing aggregations.
+// session_id, or dataset_id is required. resource_id, type, feedback_key, and
+// tag_value_id may be supplied with group_by to narrow listing aggregations.
 func (r *OnlineEvaluatorService) Spend(ctx context.Context, query OnlineEvaluatorSpendParams, opts ...option.RequestOption) (res *GetOnlineEvaluatorSpendResponse, err error) {
 	opts = slices.Concat(r.Options, opts)
 	path := "api/v1/platform/evaluators/spend"
@@ -672,6 +672,9 @@ type OnlineEvaluatorSpendParams struct {
 	ResourceID param.Field[[]string] `query:"resource_id"`
 	// Filter to a specific project (UUID). Mutually exclusive with group_by.
 	SessionID param.Field[string] `query:"session_id"`
+	// Filter grouped results to evaluators, projects, or datasets tagged with all
+	// supplied tag value IDs. Only valid with group_by.
+	TagValueID param.Field[[]string] `query:"tag_value_id"`
 	// Filter grouped results by evaluator type: 'llm' or 'code'. Only valid with
 	// group_by.
 	Type param.Field[string] `query:"type"`

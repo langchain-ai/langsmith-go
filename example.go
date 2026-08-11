@@ -172,6 +172,7 @@ type Example struct {
 	SourceRunID        string                 `json:"source_run_id" api:"nullable" format:"uuid"`
 	SourceRunStartTime time.Time              `json:"source_run_start_time" api:"nullable" format:"date-time"`
 	SourceSessionID    string                 `json:"source_session_id" api:"nullable" format:"uuid"`
+	SourceThreadID     string                 `json:"source_thread_id" api:"nullable"`
 	SourceTraceID      string                 `json:"source_trace_id" api:"nullable" format:"uuid"`
 	JSON               exampleJSON            `json:"-"`
 }
@@ -190,6 +191,7 @@ type exampleJSON struct {
 	SourceRunID        apijson.Field
 	SourceRunStartTime apijson.Field
 	SourceSessionID    apijson.Field
+	SourceThreadID     apijson.Field
 	SourceTraceID      apijson.Field
 	raw                string
 	ExtraFields        map[string]apijson.Field
@@ -215,6 +217,7 @@ const (
 	ExampleSelectSourceSessionID    ExampleSelect = "source_session_id"
 	ExampleSelectSourceRunStartTime ExampleSelect = "source_run_start_time"
 	ExampleSelectSourceTraceID      ExampleSelect = "source_trace_id"
+	ExampleSelectSourceThreadID     ExampleSelect = "source_thread_id"
 	ExampleSelectMetadata           ExampleSelect = "metadata"
 	ExampleSelectInputs             ExampleSelect = "inputs"
 	ExampleSelectOutputs            ExampleSelect = "outputs"
@@ -223,7 +226,7 @@ const (
 
 func (r ExampleSelect) IsKnown() bool {
 	switch r {
-	case ExampleSelectID, ExampleSelectCreatedAt, ExampleSelectModifiedAt, ExampleSelectName, ExampleSelectDatasetID, ExampleSelectSourceRunID, ExampleSelectSourceSessionID, ExampleSelectSourceRunStartTime, ExampleSelectSourceTraceID, ExampleSelectMetadata, ExampleSelectInputs, ExampleSelectOutputs, ExampleSelectAttachmentURLs:
+	case ExampleSelectID, ExampleSelectCreatedAt, ExampleSelectModifiedAt, ExampleSelectName, ExampleSelectDatasetID, ExampleSelectSourceRunID, ExampleSelectSourceSessionID, ExampleSelectSourceRunStartTime, ExampleSelectSourceTraceID, ExampleSelectSourceThreadID, ExampleSelectMetadata, ExampleSelectInputs, ExampleSelectOutputs, ExampleSelectAttachmentURLs:
 		return true
 	}
 	return false

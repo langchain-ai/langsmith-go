@@ -233,6 +233,7 @@ func TestOnlineEvaluatorSpendWithOptionalParams(t *testing.T) {
 		GroupBy:     langsmith.F("group_by"),
 		ResourceID:  langsmith.F([]string{"string"}),
 		SessionID:   langsmith.F("session_id"),
+		TagValueID:  langsmith.F([]string{"string"}),
 		Type:        langsmith.F("type"),
 	})
 	if err != nil {

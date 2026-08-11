@@ -38,6 +38,8 @@ func NewSandboxBoxService(opts ...option.RequestOption) (r *SandboxBoxService) {
 
 // Create a new sandbox from a snapshot. Provide at most one of `snapshot_id` or
 // `snapshot_name`; if neither is provided, the server uses the default snapshot.
+// `snapshot_name` accepts a Docker-style `name` or `name:tag` reference (a bare
+// name resolves to `name:latest`).
 func (r *SandboxBoxService) New(ctx context.Context, body SandboxBoxNewParams, opts ...option.RequestOption) (res *SandboxResponse, err error) {
 	opts = slices.Concat(r.Options, opts)
 	path := "api/v2/sandboxes/boxes"
@@ -169,7 +171,11 @@ type SandboxBoxNewParams struct {
 	IdleTtlSeconds         param.Field[int64]             `json:"idle_ttl_seconds"`
 	// Labels are free-form key/value metadata persisted with the sandbox and returned
 	// on reads. Labels from the source snapshot are inherited unless overridden here.
-	Labels      param.Field[map[string]string]              `json:"labels"`
+	Labels param.Field[map[string]string] `json:"labels"`
+	// Memory for the sandbox, in bytes. Memory is tied to CPU at 4 GiB per vCPU: omit
+	// it and it follows that ratio; set it and it must stay within 50% of the ratio
+	// for the requested CPU, so a 1 vCPU sandbox accepts 2-6 GiB. Setting memory
+	// without CPU derives the CPU from the same ratio. Maximum 64 GiB.
 	MemBytes    param.Field[int64]                          `json:"mem_bytes"`
 	MountConfig param.Field[SandboxBoxNewParamsMountConfig] `json:"mount_config"`
 	Name        param.Field[string]                         `json:"name"`
@@ -187,11 +193,16 @@ type SandboxBoxNewParams struct {
 	// false → never: always cold-boot.
 	//
 	// Applies to this request only.
-	RestoreMemory param.Field[bool]     `json:"restore_memory"`
-	SnapshotID    param.Field[string]   `json:"snapshot_id"`
-	SnapshotName  param.Field[string]   `json:"snapshot_name"`
-	TagValueIDs   param.Field[[]string] `json:"tag_value_ids"`
-	Vcpus         param.Field[int64]    `json:"vcpus"`
+	RestoreMemory param.Field[bool] `json:"restore_memory"`
+	// Snapshot is a Docker-style name or name:tag reference to boot from. A bare name
+	// resolves to name:latest.
+	Snapshot   param.Field[string] `json:"snapshot"`
+	SnapshotID param.Field[string] `json:"snapshot_id"`
+	// SnapshotName is a synonym for Snapshot, accepted for compatibility with clients
+	// that predate it. Set one or the other.
+	SnapshotName param.Field[string]   `json:"snapshot_name"`
+	TagValueIDs  param.Field[[]string] `json:"tag_value_ids"`
+	Vcpus        param.Field[int64]    `json:"vcpus"`
 }
 
 func (r SandboxBoxNewParams) MarshalJSON() (data []byte, err error) {
@@ -1018,15 +1029,17 @@ func (r SandboxBoxNewParamsProxyConfigRulesHeadersType) IsKnown() bool {
 }
 
 type SandboxBoxUpdateParams struct {
-	CPUMillicores          param.Field[int64]                             `json:"cpu_millicores"`
-	DeleteAfterStopSeconds param.Field[int64]                             `json:"delete_after_stop_seconds"`
-	FsCapacityBytes        param.Field[int64]                             `json:"fs_capacity_bytes"`
-	IdleTtlSeconds         param.Field[int64]                             `json:"idle_ttl_seconds"`
-	MemBytes               param.Field[int64]                             `json:"mem_bytes"`
-	Name                   param.Field[string]                            `json:"name"`
-	ProxyConfig            param.Field[SandboxBoxUpdateParamsProxyConfig] `json:"proxy_config"`
-	TagValueIDs            param.Field[[]string]                          `json:"tag_value_ids"`
-	Vcpus                  param.Field[int64]                             `json:"vcpus"`
+	CPUMillicores          param.Field[int64] `json:"cpu_millicores"`
+	DeleteAfterStopSeconds param.Field[int64] `json:"delete_after_stop_seconds"`
+	FsCapacityBytes        param.Field[int64] `json:"fs_capacity_bytes"`
+	IdleTtlSeconds         param.Field[int64] `json:"idle_ttl_seconds"`
+	// New memory for the sandbox, in bytes. The 4 GiB per vCPU ratio applies when the
+	// sandbox is created; a resize enforces only the maximum of 64 GiB.
+	MemBytes    param.Field[int64]                             `json:"mem_bytes"`
+	Name        param.Field[string]                            `json:"name"`
+	ProxyConfig param.Field[SandboxBoxUpdateParamsProxyConfig] `json:"proxy_config"`
+	TagValueIDs param.Field[[]string]                          `json:"tag_value_ids"`
+	Vcpus       param.Field[int64]                             `json:"vcpus"`
 }
 
 func (r SandboxBoxUpdateParams) MarshalJSON() (data []byte, err error) {
@@ -1282,6 +1295,8 @@ type SandboxBoxNewSnapshotParams struct {
 	IncludeMemory param.Field[bool] `json:"include_memory"`
 	// Labels seed the captured snapshot's labels.
 	Labels param.Field[map[string]string] `json:"labels"`
+	// mutable Docker-style tag; defaults to "latest"
+	Tag param.Field[string] `json:"tag"`
 }
 
 func (r SandboxBoxNewSnapshotParams) MarshalJSON() (data []byte, err error) {

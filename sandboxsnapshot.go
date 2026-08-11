@@ -44,7 +44,9 @@ func (r *SandboxSnapshotService) New(ctx context.Context, body SandboxSnapshotNe
 	return res, err
 }
 
-// Get a sandbox snapshot by ID.
+// Get a sandbox snapshot by ID or by a Docker-style reference. A bare name means
+// name:latest, falling back to the newest ready untagged snapshot of that name. To
+// list the tags under a name, use /api/v2/sandboxes/snapshots-by-name/{name}.
 func (r *SandboxSnapshotService) Get(ctx context.Context, snapshotID string, opts ...option.RequestOption) (res *SnapshotResponse, err error) {
 	opts = slices.Concat(r.Options, opts)
 	if snapshotID == "" {
@@ -65,7 +67,8 @@ func (r *SandboxSnapshotService) List(ctx context.Context, query SandboxSnapshot
 	return res, err
 }
 
-// Delete a snapshot by ID. The underlying storage is reclaimed asynchronously.
+// Delete a snapshot by ID or by a Docker-style name[:tag] reference. The
+// underlying storage is reclaimed asynchronously.
 func (r *SandboxSnapshotService) Delete(ctx context.Context, snapshotID string, opts ...option.RequestOption) (err error) {
 	opts = slices.Concat(r.Options, opts)
 	opts = append([]option.RequestOption{option.WithHeader("Accept", "*/*")}, opts...)
@@ -78,6 +81,65 @@ func (r *SandboxSnapshotService) Delete(ctx context.Context, snapshotID string, 
 	return err
 }
 
+// Get a snapshot name and every tag under it, with the snapshot each tag resolves
+// to. To fetch one snapshot, use /api/v2/sandboxes/snapshots/{snapshot_id}.
+func (r *SandboxSnapshotService) GetByName(ctx context.Context, name string, opts ...option.RequestOption) (res *SandboxSnapshotGetByNameResponse, err error) {
+	opts = slices.Concat(r.Options, opts)
+	if name == "" {
+		err = errors.New("missing required name parameter")
+		return nil, err
+	}
+	path := fmt.Sprintf("api/v2/sandboxes/snapshots-by-name/%s", name)
+	err = requestconfig.ExecuteNewRequest(ctx, http.MethodGet, path, nil, &res, opts...)
+	return res, err
+}
+
+type SandboxSnapshotGetByNameResponse struct {
+	Name string                                `json:"name"`
+	Tags []SandboxSnapshotGetByNameResponseTag `json:"tags"`
+	JSON sandboxSnapshotGetByNameResponseJSON  `json:"-"`
+}
+
+// sandboxSnapshotGetByNameResponseJSON contains the JSON metadata for the struct
+// [SandboxSnapshotGetByNameResponse]
+type sandboxSnapshotGetByNameResponseJSON struct {
+	Name        apijson.Field
+	Tags        apijson.Field
+	raw         string
+	ExtraFields map[string]apijson.Field
+}
+
+func (r *SandboxSnapshotGetByNameResponse) UnmarshalJSON(data []byte) (err error) {
+	return apijson.UnmarshalRoot(data, r)
+}
+
+func (r sandboxSnapshotGetByNameResponseJSON) RawJSON() string {
+	return r.raw
+}
+
+type SandboxSnapshotGetByNameResponseTag struct {
+	SnapshotID string                                  `json:"snapshot_id"`
+	Tag        string                                  `json:"tag"`
+	JSON       sandboxSnapshotGetByNameResponseTagJSON `json:"-"`
+}
+
+// sandboxSnapshotGetByNameResponseTagJSON contains the JSON metadata for the
+// struct [SandboxSnapshotGetByNameResponseTag]
+type sandboxSnapshotGetByNameResponseTagJSON struct {
+	SnapshotID  apijson.Field
+	Tag         apijson.Field
+	raw         string
+	ExtraFields map[string]apijson.Field
+}
+
+func (r *SandboxSnapshotGetByNameResponseTag) UnmarshalJSON(data []byte) (err error) {
+	return apijson.UnmarshalRoot(data, r)
+}
+
+func (r sandboxSnapshotGetByNameResponseTagJSON) RawJSON() string {
+	return r.raw
+}
+
 type SandboxSnapshotNewParams struct {
 	DockerImage     param.Field[string] `json:"docker_image" api:"required"`
 	FsCapacityBytes param.Field[int64]  `json:"fs_capacity_bytes" api:"required"`
@@ -86,6 +148,8 @@ type SandboxSnapshotNewParams struct {
 	// from the Docker image.
 	Labels     param.Field[map[string]string] `json:"labels"`
 	RegistryID param.Field[string]            `json:"registry_id"`
+	// mutable Docker-style tag; defaults to "latest"
+	Tag param.Field[string] `json:"tag"`
 }
 
 func (r SandboxSnapshotNewParams) MarshalJSON() (data []byte, err error) {
