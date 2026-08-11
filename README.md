@@ -49,7 +49,7 @@ The client can be configured using environment variables or by passing options d
 
 This repository includes several examples demonstrating common use cases:
 
-- **[List Runs](./examples/list_runs)** - Query and filter runs from your LangSmith project
+- **[List Runs](./examples/list_runs)** - Query and filter runs from your LangSmith project with the V2 runs API
 - **[Dataset Management](./examples/dataset)** - Create datasets, add examples individually or in bulk, and manage dataset lifecycle
 - **[E2E Evaluation](./examples/e2e_eval)** - Run OpenAI experiments with automatic OpenTelemetry tracing linked to dataset examples
 - **[Record Experiment](./examples/record_experiment)** - Create datasets, examples, sessions, and batch ingest runs for experiments
