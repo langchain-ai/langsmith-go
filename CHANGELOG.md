@@ -1,5 +1,31 @@
 # Changelog
 
+## [0.25.5](https://github.com/langchain-ai/langsmith-go/compare/v0.25.4...v0.25.5) (2026-08-11)
+
+
+### Features
+
+* **dashboards:** attach v1→v2 chart conversion preview once per chart instead of per series ([6e727c0](https://github.com/langchain-ai/langsmith-go/commit/6e727c05d57159f7de347d6b3b7326cfac2923a5))
+* **datasets:** return source thread id on examples ([4b4d758](https://github.com/langchain-ai/langsmith-go/commit/4b4d758446525398cc11dfe66777dba696e7e131))
+* **examples:** migrate list_runs to the V2 runs API and add unit tests ([#95](https://github.com/langchain-ai/langsmith-go/issues/95)) ([c441aad](https://github.com/langchain-ai/langsmith-go/commit/c441aad22e39939d6552c1898c77f8363d06f711))
+* **obs:** add feedback count to CRUD pane ([238b5c5](https://github.com/langchain-ai/langsmith-go/commit/238b5c5275cf49aca6f890b988ce4bbb6e6e5c26))
+* **sandbox:** add ContextHubMount helper ([#96](https://github.com/langchain-ai/langsmith-go/issues/96)) ([6a423af](https://github.com/langchain-ai/langsmith-go/commit/6a423af55cc435b97f8bc481dc3f926b5fc0050c))
+* **sandboxes:** Docker-style tags, names, and permissions for snapshots ([a610f6a](https://github.com/langchain-ai/langsmith-go/commit/a610f6a2a36f7f3ec12c1f96a9ebe5ce790e30e7))
+* **threads:** add support for tree, trace, and thread filter in /v2/threads/query ([b50d074](https://github.com/langchain-ai/langsmith-go/commit/b50d0741116ebb5c042a5d2d7f1f5b4c4722d513))
+
+
+### Bug Fixes
+
+* **evaluators:** scope spend/traces/limits to the selected application [LSE-2754] ([1633e38](https://github.com/langchain-ai/langsmith-go/commit/1633e38125146a5b8f4ba22e529b7c5b777fa30c))
+* **oauth:** resolve the token endpoint from the deployment metadata ([#93](https://github.com/langchain-ai/langsmith-go/issues/93)) ([41ca97c](https://github.com/langchain-ai/langsmith-go/commit/41ca97c6ae33cc17067c5c56987cc4869bdf7075))
+* **sandboxes:** warn on memory-per-vCPU ratio violations and widen the tolerance ([f2d44b2](https://github.com/langchain-ai/langsmith-go/commit/f2d44b26d04df9c11861ccee8b318b02d22f6c27))
+
+
+### Build System
+
+* **deps:** bump google.golang.org/grpc ([4d43275](https://github.com/langchain-ai/langsmith-go/commit/4d432755a09a1cc51455bd28612853a14dfde092))
+* **deps:** bump google.golang.org/grpc from 1.81.1 to 1.82.1 in the go_modules group across 1 directory ([#194](https://github.com/langchain-ai/langsmith-go/issues/194)) ([f93f526](https://github.com/langchain-ai/langsmith-go/commit/f93f526fe76ff50a16d0d096f8d78408137917ca))
+
 ## [0.25.4](https://github.com/langchain-ai/langsmith-go/compare/v0.25.3...v0.25.4) (2026-07-31)
 
 
