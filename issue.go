@@ -81,8 +81,12 @@ func (r *IssueService) ListAutoPaging(ctx context.Context, query IssueListParams
 }
 
 type Issue struct {
-	ID                   string        `json:"id"`
-	Actions              interface{}   `json:"actions"`
+	ID                     string      `json:"id"`
+	Actions                interface{} `json:"actions"`
+	AutoResolutionEvidence interface{} `json:"auto_resolution_evidence"`
+	// Nil unless eligible: "auto_close" or "prompt". Evidence carries the deciding
+	// gate.
+	AutoResolutionState  string        `json:"auto_resolution_state"`
 	CreatedAt            string        `json:"created_at"`
 	Description          string        `json:"description"`
 	FirstSeenAt          string        `json:"first_seen_at"`
@@ -115,6 +119,8 @@ type Issue struct {
 type issueJSON struct {
 	ID                       apijson.Field
 	Actions                  apijson.Field
+	AutoResolutionEvidence   apijson.Field
+	AutoResolutionState      apijson.Field
 	CreatedAt                apijson.Field
 	Description              apijson.Field
 	FirstSeenAt              apijson.Field
