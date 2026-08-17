@@ -60,6 +60,7 @@ func TestIssueListWithOptionalParams(t *testing.T) {
 		SortBy:      langsmith.F(langsmith.IssueListParamsSortByCreatedAt),
 		Status:      langsmith.F(langsmith.IssueListParamsStatusOpen),
 		Tag:         langsmith.F("tag"),
+		TraceID:     langsmith.F("182bd5e5-6e1a-4fe4-a799-aa6d9a6ab26e"),
 		UpdatedAt:   langsmith.F("updated_at"),
 	})
 	if err != nil {

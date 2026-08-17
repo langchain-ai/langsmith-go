@@ -54,7 +54,7 @@ func (r *IssueService) Get(ctx context.Context, id string, opts ...option.Reques
 // **Beta:** This endpoint is in active development and may change without notice.
 //
 // Returns issues for the authenticated tenant, optionally filtered by session,
-// status, severity, tag, or last modified time.
+// status, severity, tag, linked trace, or last modified time.
 func (r *IssueService) List(ctx context.Context, query IssueListParams, opts ...option.RequestOption) (res *pagination.OffsetPaginationIssues[Issue], err error) {
 	var raw *http.Response
 	opts = slices.Concat(r.Options, opts)
@@ -75,7 +75,7 @@ func (r *IssueService) List(ctx context.Context, query IssueListParams, opts ...
 // **Beta:** This endpoint is in active development and may change without notice.
 //
 // Returns issues for the authenticated tenant, optionally filtered by session,
-// status, severity, tag, or last modified time.
+// status, severity, tag, linked trace, or last modified time.
 func (r *IssueService) ListAutoPaging(ctx context.Context, query IssueListParams, opts ...option.RequestOption) *pagination.OffsetPaginationIssuesAutoPager[Issue] {
 	return pagination.NewOffsetPaginationIssuesAutoPager(r.List(ctx, query, opts...))
 }
@@ -208,6 +208,8 @@ type IssueListParams struct {
 	Status param.Field[IssueListParamsStatus] `query:"status"`
 	// Filter by tag (exact match)
 	Tag param.Field[string] `query:"tag"`
+	// Return only issues with a linked run in this trace
+	TraceID param.Field[string] `query:"trace_id" format:"uuid"`
 	// Return only issues updated at or after this RFC3339 timestamp
 	UpdatedAt param.Field[string] `query:"updated_at"`
 }
