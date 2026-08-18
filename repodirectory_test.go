@@ -44,7 +44,7 @@ func TestRepoDirectoryListWithOptionalParams(t *testing.T) {
 	}
 }
 
-func TestRepoDirectoryDelete(t *testing.T) {
+func TestRepoDirectoryDeleteWithOptionalParams(t *testing.T) {
 	t.Skip("Mock server tests are disabled")
 	baseURL := "http://localhost:4010"
 	if envURL, ok := os.LookupEnv("TEST_API_BASE_URL"); ok {
@@ -62,6 +62,9 @@ func TestRepoDirectoryDelete(t *testing.T) {
 		context.TODO(),
 		"owner",
 		"repo",
+		langsmith.RepoDirectoryDeleteParams{
+			RepoType: langsmith.F(langsmith.RepoDirectoryDeleteParamsRepoTypeAgent),
+		},
 	)
 	if err != nil {
 		var apierr *langsmith.Error

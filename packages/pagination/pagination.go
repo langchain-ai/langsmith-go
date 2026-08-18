@@ -741,7 +741,7 @@ func (r *CursorPagination[T]) GetNextPage() (res *CursorPagination[T], err error
 		return nil, nil
 	}
 	cfg := r.cfg.Clone(r.cfg.Context)
-	err = cfg.Apply(option.WithQuery("cursor", next))
+	err = cfg.Apply(option.WithJSONSet("cursor", next))
 	if err != nil {
 		return nil, err
 	}
@@ -845,7 +845,7 @@ func (r *ItemsCursorPostPagination[T]) GetNextPage() (res *ItemsCursorPostPagina
 		return nil, nil
 	}
 	cfg := r.cfg.Clone(r.cfg.Context)
-	err = cfg.Apply(option.WithQuery("cursor", next))
+	err = cfg.Apply(option.WithJSONSet("cursor", next))
 	if err != nil {
 		return nil, err
 	}

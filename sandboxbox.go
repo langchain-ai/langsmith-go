@@ -107,6 +107,23 @@ func (r *SandboxBoxService) NewSnapshot(ctx context.Context, name string, body S
 	return res, err
 }
 
+// Generate a tokenized link that downloads a single file from a sandbox with no
+// further authentication. This mints a token rather than creating an addressable
+// resource, so it returns 200 with no Location header. The token pins the sandbox,
+// the file path, and the response content type and disposition, so a link cannot
+// be repointed at another file. Links never expire unless expires_in_seconds is
+// set. The link is served from the sandbox service domain, not the API host.
+func (r *SandboxBoxService) GenerateDownloadURL(ctx context.Context, name string, body SandboxBoxGenerateDownloadURLParams, opts ...option.RequestOption) (res *DownloadURLResponse, err error) {
+	opts = slices.Concat(r.Options, opts)
+	if name == "" {
+		err = errors.New("missing required name parameter")
+		return nil, err
+	}
+	path := fmt.Sprintf("api/v2/sandboxes/boxes/%s/download-url", name)
+	err = requestconfig.ExecuteNewRequest(ctx, http.MethodPost, path, body, &res, opts...)
+	return res, err
+}
+
 // Create a short-lived JWT for accessing an HTTP service running on a specific
 // port inside a sandbox. Returns a browser_url (sets auth cookie via redirect), a
 // service_url (for use with the X-Langsmith-Sandbox-Service-Token header), the raw
@@ -1300,6 +1317,18 @@ type SandboxBoxNewSnapshotParams struct {
 }
 
 func (r SandboxBoxNewSnapshotParams) MarshalJSON() (data []byte, err error) {
+	return apijson.MarshalRoot(r)
+}
+
+type SandboxBoxGenerateDownloadURLParams struct {
+	Path               param.Field[string] `json:"path" api:"required"`
+	ContentDisposition param.Field[string] `json:"content_disposition"`
+	ContentType        param.Field[string] `json:"content_type"`
+	// ExpiresInSeconds is optional; a link with no expiry never expires.
+	ExpiresInSeconds param.Field[int64] `json:"expires_in_seconds"`
+}
+
+func (r SandboxBoxGenerateDownloadURLParams) MarshalJSON() (data []byte, err error) {
 	return apijson.MarshalRoot(r)
 }
 

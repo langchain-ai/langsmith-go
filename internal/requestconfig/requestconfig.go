@@ -583,8 +583,15 @@ func (cfg *RequestConfig) Clone(ctx context.Context) *RequestConfig {
 		return nil
 	}
 	req := cfg.Request.Clone(ctx)
+	body := cfg.Body
+	if buffer, ok := body.(*bytes.Buffer); ok {
+		body = bytes.NewBuffer(bytes.Clone(buffer.Bytes()))
+	}
 	var err error
-	if req.Body != nil {
+	if body != nil {
+		req.Body = nil
+		req.GetBody = nil
+	} else if req.Body != nil {
 		req.Body, err = req.GetBody()
 	}
 	if err != nil {
@@ -598,6 +605,7 @@ func (cfg *RequestConfig) Clone(ctx context.Context) *RequestConfig {
 		BaseURL:          cfg.BaseURL,
 		HTTPClient:       cfg.HTTPClient,
 		Middlewares:      cfg.Middlewares,
+		Body:             body,
 		APIKey:           cfg.APIKey,
 		TenantID:         cfg.TenantID,
 		OAuthAccessToken: cfg.OAuthAccessToken,

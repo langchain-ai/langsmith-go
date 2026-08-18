@@ -54,7 +54,7 @@ func (r *RepoDirectoryService) List(ctx context.Context, owner string, repo stri
 }
 
 // Deletes an agent or skill repository and its owned child file repositories.
-func (r *RepoDirectoryService) Delete(ctx context.Context, owner string, repo string, opts ...option.RequestOption) (err error) {
+func (r *RepoDirectoryService) Delete(ctx context.Context, owner string, repo string, body RepoDirectoryDeleteParams, opts ...option.RequestOption) (err error) {
 	opts = slices.Concat(r.Options, opts)
 	opts = append([]option.RequestOption{option.WithHeader("Accept", "*/*")}, opts...)
 	if owner == "" {
@@ -66,7 +66,7 @@ func (r *RepoDirectoryService) Delete(ctx context.Context, owner string, repo st
 		return err
 	}
 	path := fmt.Sprintf("api/v1/platform/hub/repos/%s/%s/directories", owner, repo)
-	err = requestconfig.ExecuteNewRequest(ctx, http.MethodDelete, path, nil, nil, opts...)
+	err = requestconfig.ExecuteNewRequest(ctx, http.MethodDelete, path, body, nil, opts...)
 	return err
 }
 
@@ -170,6 +170,36 @@ func (r RepoDirectoryListParams) URLQuery() (v url.Values) {
 		ArrayFormat:  apiquery.ArrayQueryFormatRepeat,
 		NestedFormat: apiquery.NestedQueryFormatBrackets,
 	})
+}
+
+type RepoDirectoryDeleteParams struct {
+	// Repository type to delete; a different type is treated as not found
+	RepoType param.Field[RepoDirectoryDeleteParamsRepoType] `query:"repo_type"`
+}
+
+// URLQuery serializes [RepoDirectoryDeleteParams]'s query parameters as
+// `url.Values`.
+func (r RepoDirectoryDeleteParams) URLQuery() (v url.Values) {
+	return apiquery.MarshalWithSettings(r, apiquery.QuerySettings{
+		ArrayFormat:  apiquery.ArrayQueryFormatRepeat,
+		NestedFormat: apiquery.NestedQueryFormatBrackets,
+	})
+}
+
+// Repository type to delete; a different type is treated as not found
+type RepoDirectoryDeleteParamsRepoType string
+
+const (
+	RepoDirectoryDeleteParamsRepoTypeAgent RepoDirectoryDeleteParamsRepoType = "agent"
+	RepoDirectoryDeleteParamsRepoTypeSkill RepoDirectoryDeleteParamsRepoType = "skill"
+)
+
+func (r RepoDirectoryDeleteParamsRepoType) IsKnown() bool {
+	switch r {
+	case RepoDirectoryDeleteParamsRepoTypeAgent, RepoDirectoryDeleteParamsRepoTypeSkill:
+		return true
+	}
+	return false
 }
 
 type RepoDirectoryCommitParams struct {
