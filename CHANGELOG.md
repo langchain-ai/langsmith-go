@@ -1,5 +1,21 @@
 # Changelog
 
+## [0.25.6](https://github.com/langchain-ai/langsmith-go/compare/v0.25.5...v0.25.6) (2026-08-18)
+
+
+### Features
+
+* add trajectory_evaluators field to experiment config ([b4aa3e7](https://github.com/langchain-ai/langsmith-go/commit/b4aa3e795fa37c823f50176156c9253f3f665fe3))
+* **engine:** answerable auto-resolution prompts, and a task that closes on verdicts ([b43132a](https://github.com/langchain-ai/langsmith-go/commit/b43132aead44a371b10b81759c890ebf2b69d2c5))
+* **issues:** add trace_id filter to list issues endpoint ([06f395a](https://github.com/langchain-ai/langsmith-go/commit/06f395a9d22f8423f5abc5055cfd0a965bcfc507))
+* **sandboxes:** add generate_download_url method for sandbox files ([28f317f](https://github.com/langchain-ai/langsmith-go/commit/28f317f3c6ad6aaa4d699e687e3738cd397399be))
+
+
+### Bug Fixes
+
+* **fleet:** route agent delete through the platform directories route [AB-3257] ([1f8d383](https://github.com/langchain-ai/langsmith-go/commit/1f8d383445cc0b14e0a13c860dd4953ab72cfd1e))
+* send pagination cursors in POST bodies ([2617262](https://github.com/langchain-ai/langsmith-go/commit/261726220c6ce1efa1973e9f83ef010fcc28eebc))
+
 ## [0.25.5](https://github.com/langchain-ai/langsmith-go/compare/v0.25.4...v0.25.5) (2026-08-11)
 
 
