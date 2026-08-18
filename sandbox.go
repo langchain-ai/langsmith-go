@@ -35,6 +35,32 @@ func NewSandboxService(opts ...option.RequestOption) (r *SandboxService) {
 	return
 }
 
+type DownloadURLResponse struct {
+	Token       string `json:"token" api:"required"`
+	DownloadURL string `json:"download_url" api:"required"`
+	// ExpiresAt is null for a link that never expires.
+	ExpiresAt string                  `json:"expires_at" api:"nullable"`
+	JSON      downloadURLResponseJSON `json:"-"`
+}
+
+// downloadURLResponseJSON contains the JSON metadata for the struct
+// [DownloadURLResponse]
+type downloadURLResponseJSON struct {
+	Token       apijson.Field
+	DownloadURL apijson.Field
+	ExpiresAt   apijson.Field
+	raw         string
+	ExtraFields map[string]apijson.Field
+}
+
+func (r *DownloadURLResponse) UnmarshalJSON(data []byte) (err error) {
+	return apijson.UnmarshalRoot(data, r)
+}
+
+func (r downloadURLResponseJSON) RawJSON() string {
+	return r.raw
+}
+
 type SandboxListResponse struct {
 	Offset    int64                   `json:"offset"`
 	Sandboxes []SandboxResponse       `json:"sandboxes"`
