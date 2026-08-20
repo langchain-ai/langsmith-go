@@ -286,8 +286,8 @@ type OnlineEvaluator struct {
 	CreatedAt     string              `json:"created_at"`
 	CreatedBy     string              `json:"created_by"`
 	FeedbackKeys  []string            `json:"feedback_keys"`
-	// IsManaged marks a LangChain-managed evaluator (currently the managed Perceived
-	// Error judge). NULL in the DB is read as false via COALESCE.
+	// IsManaged marks a LangChain Tuned Evaluator (currently the tuned Perceived Error
+	// judge). NULL in the DB is read as false via COALESCE.
 	IsManaged bool `json:"is_managed"`
 	// Embedded child evaluator (populated based on type)
 	LlmEvaluator OnlineLlmEvaluator       `json:"llm_evaluator"`
