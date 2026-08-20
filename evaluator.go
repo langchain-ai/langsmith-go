@@ -129,7 +129,7 @@ type Evaluator struct {
 	SpendUsd                            float64                   `json:"spend_usd" api:"nullable"`
 	TraceCount                          int64                     `json:"trace_count" api:"nullable"`
 	TraceFilter                         string                    `json:"trace_filter" api:"nullable"`
-	TrajectoryEvaluators                []EvaluatorTopLevel       `json:"trajectory_evaluators" api:"nullable"`
+	TrajectoryEvaluators                []EvaluatorTopLevel       `json:"trajectory_evaluators"`
 	Transient                           bool                      `json:"transient"`
 	TreeFilter                          string                    `json:"tree_filter" api:"nullable"`
 	UseCorrectionsDataset               bool                      `json:"use_corrections_dataset"`
