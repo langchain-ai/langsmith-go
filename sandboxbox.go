@@ -59,7 +59,9 @@ func (r *SandboxBoxService) Get(ctx context.Context, name string, opts ...option
 	return res, err
 }
 
-// Update a sandbox's display name. The name must be unique within the tenant.
+// Update a sandbox's display name, retention, resources, tags, or proxy
+// configuration. The name must be unique within the tenant. Proxy configuration
+// sent to a sandbox that is not running is stored and applied when it next starts.
 func (r *SandboxBoxService) Update(ctx context.Context, name string, body SandboxBoxUpdateParams, opts ...option.RequestOption) (res *SandboxResponse, err error) {
 	opts = slices.Concat(r.Options, opts)
 	if name == "" {
