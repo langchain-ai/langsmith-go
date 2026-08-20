@@ -1902,7 +1902,15 @@ func (r serviceURLResponseJSON) RawJSON() string {
 }
 
 type SnapshotListResponse struct {
-	Offset    int64                    `json:"offset"`
+	// This page of snapshots.
+	Items []SnapshotResponse `json:"items"`
+	// Cursor for the next page, or null on the last page. A non-null value is the only
+	// signal that more pages exist. Treat it as opaque.
+	NextCursor string `json:"next_cursor"`
+	// Deprecated: use next_cursor. Offset to request for the next page, or 0 when no
+	// pages remain.
+	Offset int64 `json:"offset"`
+	// Deprecated: use items. Duplicates items.
 	Snapshots []SnapshotResponse       `json:"snapshots"`
 	JSON      snapshotListResponseJSON `json:"-"`
 }
@@ -1910,6 +1918,8 @@ type SnapshotListResponse struct {
 // snapshotListResponseJSON contains the JSON metadata for the struct
 // [SnapshotListResponse]
 type snapshotListResponseJSON struct {
+	Items       apijson.Field
+	NextCursor  apijson.Field
 	Offset      apijson.Field
 	Snapshots   apijson.Field
 	raw         string

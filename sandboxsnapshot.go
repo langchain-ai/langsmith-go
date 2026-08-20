@@ -15,6 +15,7 @@ import (
 	"github.com/langchain-ai/langsmith-go/internal/param"
 	"github.com/langchain-ai/langsmith-go/internal/requestconfig"
 	"github.com/langchain-ai/langsmith-go/option"
+	"github.com/langchain-ai/langsmith-go/packages/pagination"
 )
 
 // SandboxSnapshotService contains methods and other services that help with
@@ -59,12 +60,34 @@ func (r *SandboxSnapshotService) Get(ctx context.Context, snapshotID string, opt
 }
 
 // List sandbox snapshots for the authenticated tenant, with optional filtering,
-// sorting, and pagination.
-func (r *SandboxSnapshotService) List(ctx context.Context, query SandboxSnapshotListParams, opts ...option.RequestOption) (res *SnapshotListResponse, err error) {
+// sorting, and pagination. Page with page_size and cursor: replay the response's
+// next_cursor until it comes back null, which is the only signal that no pages
+// remain. Cursors are opaque and only valid on this endpoint; do not parse or
+// construct one.
+func (r *SandboxSnapshotService) List(ctx context.Context, query SandboxSnapshotListParams, opts ...option.RequestOption) (res *pagination.ItemsCursorGetPagination[SnapshotResponse], err error) {
+	var raw *http.Response
 	opts = slices.Concat(r.Options, opts)
+	opts = append([]option.RequestOption{option.WithResponseInto(&raw)}, opts...)
 	path := "api/v2/sandboxes/snapshots"
-	err = requestconfig.ExecuteNewRequest(ctx, http.MethodGet, path, query, &res, opts...)
-	return res, err
+	cfg, err := requestconfig.NewRequestConfig(ctx, http.MethodGet, path, query, &res, opts...)
+	if err != nil {
+		return nil, err
+	}
+	err = cfg.Execute()
+	if err != nil {
+		return nil, err
+	}
+	res.SetPageConfig(cfg, raw)
+	return res, nil
+}
+
+// List sandbox snapshots for the authenticated tenant, with optional filtering,
+// sorting, and pagination. Page with page_size and cursor: replay the response's
+// next_cursor until it comes back null, which is the only signal that no pages
+// remain. Cursors are opaque and only valid on this endpoint; do not parse or
+// construct one.
+func (r *SandboxSnapshotService) ListAutoPaging(ctx context.Context, query SandboxSnapshotListParams, opts ...option.RequestOption) *pagination.ItemsCursorGetPaginationAutoPager[SnapshotResponse] {
+	return pagination.NewItemsCursorGetPaginationAutoPager(r.List(ctx, query, opts...))
 }
 
 // Delete a snapshot by ID or by a Docker-style name[:tag] reference. The
@@ -159,19 +182,25 @@ func (r SandboxSnapshotNewParams) MarshalJSON() (data []byte, err error) {
 type SandboxSnapshotListParams struct {
 	// Filter by creator identity. Only 'me' is supported.
 	CreatedBy param.Field[string] `query:"created_by"`
+	// Opaque pagination cursor from a prior response's next_cursor
+	Cursor param.Field[string] `query:"cursor"`
 	// Filter by label. Repeatable; all must match. Use 'key' to match on key presence
 	// or 'key=value' for equality.
 	Label param.Field[[]string] `query:"label"`
-	// Maximum number of results
+	// Deprecated: use page_size. Maximum number of results
 	Limit param.Field[int64] `query:"limit"`
 	// Filter by name substring
 	NameContains param.Field[string] `query:"name_contains"`
-	// Pagination offset
+	// Deprecated: use cursor. Pagination offset
 	Offset param.Field[int64] `query:"offset"`
+	// Number of results per page
+	PageSize param.Field[int64] `query:"page_size"`
 	// Sort column (name, status, created_at)
 	SortBy param.Field[string] `query:"sort_by"`
-	// Sort direction (asc, desc)
+	// Deprecated: use sort_order. Sort direction (asc, desc)
 	SortDirection param.Field[string] `query:"sort_direction"`
+	// Sort direction (asc, desc)
+	SortOrder param.Field[string] `query:"sort_order"`
 	// Filter by status (building, ready, failed, deleting)
 	Status param.Field[string] `query:"status"`
 }
