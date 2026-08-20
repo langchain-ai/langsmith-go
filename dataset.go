@@ -362,6 +362,42 @@ func (r datasetVersionJSON) RawJSON() string {
 	return r.raw
 }
 
+type Missing struct {
+	Missing Missing_Missing `json:"__missing__" api:"required"`
+	JSON    missingJSON     `json:"-"`
+}
+
+// missingJSON contains the JSON metadata for the struct [Missing]
+type missingJSON struct {
+	Missing     apijson.Field
+	raw         string
+	ExtraFields map[string]apijson.Field
+}
+
+func (r *Missing) UnmarshalJSON(data []byte) (err error) {
+	return apijson.UnmarshalRoot(data, r)
+}
+
+func (r missingJSON) RawJSON() string {
+	return r.raw
+}
+
+func (r Missing) ImplementsAnnotationQueueRubricItemSchemaRegexValidatorUnion() {}
+
+type Missing_Missing string
+
+const (
+	Missing_Missing_Missing Missing_Missing = "__missing__"
+)
+
+func (r Missing_Missing) IsKnown() bool {
+	switch r {
+	case Missing_Missing_Missing:
+		return true
+	}
+	return false
+}
+
 type MissingParam struct {
 	Missing param.Field[Missing_Missing] `json:"__missing__" api:"required"`
 }
@@ -384,23 +420,11 @@ func (r MissingParam) implementsDatasetUpdateParamsOutputsSchemaDefinitionUnion(
 
 func (r MissingParam) implementsDatasetUpdateParamsTransformationsUnion() {}
 
+func (r MissingParam) ImplementsAnnotationQueueRubricItemSchemaRegexValidatorUnionParam() {}
+
 func (r MissingParam) implementsAnnotationQueueUpdateParamsMetadataUnion() {}
 
 func (r MissingParam) ImplementsAnnotationQueueUpdateParamsNumReviewersPerItemUnion() {}
-
-type Missing_Missing string
-
-const (
-	Missing_Missing_Missing Missing_Missing = "__missing__"
-)
-
-func (r Missing_Missing) IsKnown() bool {
-	switch r {
-	case Missing_Missing_Missing:
-		return true
-	}
-	return false
-}
 
 // Enum for available dataset columns to sort by.
 type SortByDatasetColumn string

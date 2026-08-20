@@ -8,6 +8,7 @@ import (
 	"fmt"
 	"net/http"
 	"net/url"
+	"reflect"
 	"slices"
 	"time"
 
@@ -17,6 +18,8 @@ import (
 	"github.com/langchain-ai/langsmith-go/internal/requestconfig"
 	"github.com/langchain-ai/langsmith-go/option"
 	"github.com/langchain-ai/langsmith-go/packages/pagination"
+	"github.com/langchain-ai/langsmith-go/shared"
+	"github.com/tidwall/gjson"
 )
 
 // AnnotationQueueService contains methods and other services that help with
@@ -224,13 +227,14 @@ func (r *AnnotationQueueService) GetTotalSize(ctx context.Context, queueID strin
 }
 
 type AnnotationQueueRubricItemSchema struct {
-	FeedbackKey       string                              `json:"feedback_key" api:"required"`
-	Description       string                              `json:"description" api:"nullable"`
-	IsAssertion       bool                                `json:"is_assertion" api:"nullable"`
-	IsRequired        bool                                `json:"is_required" api:"nullable"`
-	ScoreDescriptions map[string]string                   `json:"score_descriptions" api:"nullable"`
-	ValueDescriptions map[string]string                   `json:"value_descriptions" api:"nullable"`
-	JSON              annotationQueueRubricItemSchemaJSON `json:"-"`
+	FeedbackKey       string                                             `json:"feedback_key" api:"required"`
+	Description       string                                             `json:"description" api:"nullable"`
+	IsAssertion       bool                                               `json:"is_assertion" api:"nullable"`
+	IsRequired        bool                                               `json:"is_required" api:"nullable"`
+	RegexValidator    AnnotationQueueRubricItemSchemaRegexValidatorUnion `json:"regex_validator" api:"nullable"`
+	ScoreDescriptions map[string]string                                  `json:"score_descriptions" api:"nullable"`
+	ValueDescriptions map[string]string                                  `json:"value_descriptions" api:"nullable"`
+	JSON              annotationQueueRubricItemSchemaJSON                `json:"-"`
 }
 
 // annotationQueueRubricItemSchemaJSON contains the JSON metadata for the struct
@@ -240,6 +244,7 @@ type annotationQueueRubricItemSchemaJSON struct {
 	Description       apijson.Field
 	IsAssertion       apijson.Field
 	IsRequired        apijson.Field
+	RegexValidator    apijson.Field
 	ScoreDescriptions apijson.Field
 	ValueDescriptions apijson.Field
 	raw               string
@@ -254,17 +259,43 @@ func (r annotationQueueRubricItemSchemaJSON) RawJSON() string {
 	return r.raw
 }
 
+// Union satisfied by [shared.UnionString] or [Missing].
+type AnnotationQueueRubricItemSchemaRegexValidatorUnion interface {
+	ImplementsAnnotationQueueRubricItemSchemaRegexValidatorUnion()
+}
+
+func init() {
+	apijson.RegisterUnion(
+		reflect.TypeOf((*AnnotationQueueRubricItemSchemaRegexValidatorUnion)(nil)).Elem(),
+		"",
+		apijson.UnionVariant{
+			TypeFilter: gjson.String,
+			Type:       reflect.TypeOf(shared.UnionString("")),
+		},
+		apijson.UnionVariant{
+			TypeFilter: gjson.JSON,
+			Type:       reflect.TypeOf(Missing{}),
+		},
+	)
+}
+
 type AnnotationQueueRubricItemSchemaParam struct {
-	FeedbackKey       param.Field[string]            `json:"feedback_key" api:"required"`
-	Description       param.Field[string]            `json:"description"`
-	IsAssertion       param.Field[bool]              `json:"is_assertion"`
-	IsRequired        param.Field[bool]              `json:"is_required"`
-	ScoreDescriptions param.Field[map[string]string] `json:"score_descriptions"`
-	ValueDescriptions param.Field[map[string]string] `json:"value_descriptions"`
+	FeedbackKey       param.Field[string]                                                  `json:"feedback_key" api:"required"`
+	Description       param.Field[string]                                                  `json:"description"`
+	IsAssertion       param.Field[bool]                                                    `json:"is_assertion"`
+	IsRequired        param.Field[bool]                                                    `json:"is_required"`
+	RegexValidator    param.Field[AnnotationQueueRubricItemSchemaRegexValidatorUnionParam] `json:"regex_validator"`
+	ScoreDescriptions param.Field[map[string]string]                                       `json:"score_descriptions"`
+	ValueDescriptions param.Field[map[string]string]                                       `json:"value_descriptions"`
 }
 
 func (r AnnotationQueueRubricItemSchemaParam) MarshalJSON() (data []byte, err error) {
 	return apijson.MarshalRoot(r)
+}
+
+// Satisfied by [shared.UnionString], [MissingParam].
+type AnnotationQueueRubricItemSchemaRegexValidatorUnionParam interface {
+	ImplementsAnnotationQueueRubricItemSchemaRegexValidatorUnionParam()
 }
 
 // AnnotationQueue schema.
