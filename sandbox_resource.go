@@ -51,9 +51,9 @@ func (r *SandboxBoxService) ListSandboxes(ctx context.Context, query SandboxBoxL
 	if err != nil {
 		return nil, err
 	}
-	out := make([]*Sandbox, 0, len(res.Sandboxes))
-	for i := range res.Sandboxes {
-		out = append(out, sandboxFromListResponse(&res.Sandboxes[i], r))
+	out := make([]*Sandbox, 0, len(res.Items))
+	for i := range res.Items {
+		out = append(out, sandboxFromListResponse(&res.Items[i], r))
 	}
 	return out, nil
 }
