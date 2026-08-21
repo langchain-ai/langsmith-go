@@ -194,7 +194,7 @@ func (r IssueStatus) IsKnown() bool {
 type IssueListParams struct {
 	// Page size (positive integer; defaults to 50, capped at 500)
 	Limit param.Field[int64] `query:"limit"`
-	// Page offset (non-negative integer)
+	// Page offset (non-negative integer; at most 100000)
 	Offset param.Field[int64] `query:"offset"`
 	// Filter by session ID (UUID)
 	SessionID param.Field[string] `query:"session_id"`
