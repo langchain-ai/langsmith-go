@@ -317,12 +317,15 @@ func TestSandboxBoxListWithOptionalParams(t *testing.T) {
 	)
 	_, err := client.Sandboxes.Boxes.List(context.TODO(), langsmith.SandboxBoxListParams{
 		CreatedBy:     langsmith.F("created_by"),
+		Cursor:        langsmith.F("cursor"),
 		Label:         langsmith.F([]string{"string"}),
 		Limit:         langsmith.F(int64(0)),
 		NameContains:  langsmith.F("name_contains"),
 		Offset:        langsmith.F(int64(0)),
+		PageSize:      langsmith.F(int64(0)),
 		SortBy:        langsmith.F("sort_by"),
 		SortDirection: langsmith.F("sort_direction"),
+		SortOrder:     langsmith.F("sort_order"),
 		Status:        langsmith.F("status"),
 	})
 	if err != nil {
