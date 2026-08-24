@@ -1,5 +1,39 @@
 # Changelog
 
+## [0.26.0](https://github.com/langchain-ai/langsmith-go/compare/v0.25.6...v0.26.0) (2026-08-24)
+
+
+### ⚠ BREAKING CHANGES
+
+* **sessions:** add trajectory_evaluators field and make it non-nullable
+
+### Features
+
+* **feedback:** add optional regex_validator field to feedback schema ([aea7623](https://github.com/langchain-ai/langsmith-go/commit/aea762349def45263aacc82e9259ffd78bc0ab9e))
+* **issues:** add Linear integration fields to issue board responses ([14a6323](https://github.com/langchain-ai/langsmith-go/commit/14a6323b00e9a4d2553d83e67440bedc4751c7eb))
+* **sandboxes:** add cursor pagination and sort_order to sandbox list ([9311c11](https://github.com/langchain-ai/langsmith-go/commit/9311c11ca6a062c4e591816f72a7c219995920c6))
+* **sandboxes:** add cursor pagination and sort_order to snapshot list ([d4b44ca](https://github.com/langchain-ai/langsmith-go/commit/d4b44ca0a173ae6d6fa00440b9dbb79851aa5749))
+* **sandboxes:** add description field to snapshots and proxy config ([4fe498a](https://github.com/langchain-ai/langsmith-go/commit/4fe498ad5008ddb888d70de31b3c71acb2eb0941))
+* **sessions:** add trajectory_evaluators field and make it non-nullable ([e7ca103](https://github.com/langchain-ai/langsmith-go/commit/e7ca1035492245e2ee0caac75458bc94436c97af))
+
+
+### Bug Fixes
+
+* build, lint, and test failures (feat(sandboxes): add cursor pagination and sort_order to sandbox list) ([8607785](https://github.com/langchain-ai/langsmith-go/commit/8607785c6ca9e3bc75f43486b2a66f2b79058045))
+
+
+### Chores
+
+* regenerate from spec description updates ([140dc73](https://github.com/langchain-ai/langsmith-go/commit/140dc737d164510c91b24b90a329d9ab1ab9c742))
+* update evaluator description text to use "Tuned Evaluators ([018a539](https://github.com/langchain-ai/langsmith-go/commit/018a5391b6eb26774fcf41f2273a13805a21252f))
+* update offset parameter description to note 100000 limit ([d0e8552](https://github.com/langchain-ai/langsmith-go/commit/d0e8552f6bbf86b5ec7f9001b2cf0684e8fdf530))
+* upgrade to Go 1.26.7 ([#100](https://github.com/langchain-ai/langsmith-go/issues/100)) ([d614156](https://github.com/langchain-ai/langsmith-go/commit/d614156074194b80f771842e9ce714210be51b25))
+
+
+### Build System
+
+* **deps:** bump google.golang.org/grpc from 1.81.1 to 1.82.1 in the go_modules group across 1 directory ([#99](https://github.com/langchain-ai/langsmith-go/issues/99)) ([cc9f907](https://github.com/langchain-ai/langsmith-go/commit/cc9f90773b369b0f5551c0ce560201f3250e1915))
+
 ## [0.25.6](https://github.com/langchain-ai/langsmith-go/compare/v0.25.5...v0.25.6) (2026-08-18)
 
 
