@@ -867,8 +867,11 @@ func (r SandboxBoxNewParamsMountConfigMountsType) IsKnown() bool {
 type SandboxBoxNewParamsProxyConfig struct {
 	AccessControl param.Field[SandboxBoxNewParamsProxyConfigAccessControl] `json:"access_control"`
 	Callbacks     param.Field[[]SandboxBoxNewParamsProxyConfigCallback]    `json:"callbacks"`
-	NoProxy       param.Field[[]string]                                    `json:"no_proxy"`
-	Rules         param.Field[[]SandboxBoxNewParamsProxyConfigRule]        `json:"rules"`
+	// Description says what this configuration as a whole lets the sandbox reach,
+	// complementing the per-rule descriptions. At most 1024 characters.
+	Description param.Field[string]                               `json:"description"`
+	NoProxy     param.Field[[]string]                             `json:"no_proxy"`
+	Rules       param.Field[[]SandboxBoxNewParamsProxyConfigRule] `json:"rules"`
 }
 
 func (r SandboxBoxNewParamsProxyConfig) MarshalJSON() (data []byte, err error) {
@@ -924,9 +927,12 @@ func (r SandboxBoxNewParamsProxyConfigCallbacksRequestHeadersType) IsKnown() boo
 }
 
 type SandboxBoxNewParamsProxyConfigRule struct {
-	Name    param.Field[string]                                 `json:"name" api:"required"`
-	Aws     param.Field[SandboxBoxNewParamsProxyConfigRulesAws] `json:"aws"`
-	Enabled param.Field[bool]                                   `json:"enabled"`
+	Name param.Field[string]                                 `json:"name" api:"required"`
+	Aws  param.Field[SandboxBoxNewParamsProxyConfigRulesAws] `json:"aws"`
+	// Description says what this rule lets the sandbox reach, so an agent driving the
+	// sandbox can be told its capabilities. At most 1024 characters.
+	Description param.Field[string] `json:"description"`
+	Enabled     param.Field[bool]   `json:"enabled"`
 	// EnvVars are plaintext env vars set for every command in the sandbox while this
 	// rule is enabled. Use them for tools that refuse to run unless a credential env
 	// var is present (e.g. gh needs GH_TOKEN) even though this rule injects the real
@@ -1091,8 +1097,11 @@ func (r SandboxBoxUpdateParams) MarshalJSON() (data []byte, err error) {
 type SandboxBoxUpdateParamsProxyConfig struct {
 	AccessControl param.Field[SandboxBoxUpdateParamsProxyConfigAccessControl] `json:"access_control"`
 	Callbacks     param.Field[[]SandboxBoxUpdateParamsProxyConfigCallback]    `json:"callbacks"`
-	NoProxy       param.Field[[]string]                                       `json:"no_proxy"`
-	Rules         param.Field[[]SandboxBoxUpdateParamsProxyConfigRule]        `json:"rules"`
+	// Description says what this configuration as a whole lets the sandbox reach,
+	// complementing the per-rule descriptions. At most 1024 characters.
+	Description param.Field[string]                                  `json:"description"`
+	NoProxy     param.Field[[]string]                                `json:"no_proxy"`
+	Rules       param.Field[[]SandboxBoxUpdateParamsProxyConfigRule] `json:"rules"`
 }
 
 func (r SandboxBoxUpdateParamsProxyConfig) MarshalJSON() (data []byte, err error) {
@@ -1148,9 +1157,12 @@ func (r SandboxBoxUpdateParamsProxyConfigCallbacksRequestHeadersType) IsKnown() 
 }
 
 type SandboxBoxUpdateParamsProxyConfigRule struct {
-	Name    param.Field[string]                                    `json:"name" api:"required"`
-	Aws     param.Field[SandboxBoxUpdateParamsProxyConfigRulesAws] `json:"aws"`
-	Enabled param.Field[bool]                                      `json:"enabled"`
+	Name param.Field[string]                                    `json:"name" api:"required"`
+	Aws  param.Field[SandboxBoxUpdateParamsProxyConfigRulesAws] `json:"aws"`
+	// Description says what this rule lets the sandbox reach, so an agent driving the
+	// sandbox can be told its capabilities. At most 1024 characters.
+	Description param.Field[string] `json:"description"`
+	Enabled     param.Field[bool]   `json:"enabled"`
 	// EnvVars are plaintext env vars set for every command in the sandbox while this
 	// rule is enabled. Use them for tools that refuse to run unless a credential env
 	// var is present (e.g. gh needs GH_TOKEN) even though this rule injects the real
@@ -1333,6 +1345,9 @@ type SandboxBoxNewSnapshotParams struct {
 	Name param.Field[string] `json:"name" api:"required"`
 	// if omitted, creates a fresh checkpoint from the running VM
 	Checkpoint param.Field[string] `json:"checkpoint"`
+	// Description says what this snapshot's image can do, so a caller can hand it to
+	// an agent as a capability summary. At most 1024 characters.
+	Description param.Field[string] `json:"description"`
 	// sandbox-local Docker image to export
 	DockerImage param.Field[string] `json:"docker_image"`
 	// required for Docker image export unless the sandbox has a capacity

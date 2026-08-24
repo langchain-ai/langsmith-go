@@ -167,6 +167,9 @@ type SandboxSnapshotNewParams struct {
 	DockerImage     param.Field[string] `json:"docker_image" api:"required"`
 	FsCapacityBytes param.Field[int64]  `json:"fs_capacity_bytes" api:"required"`
 	Name            param.Field[string] `json:"name" api:"required"`
+	// Description says what this snapshot's image can do, so a caller can hand it to
+	// an agent as a capability summary. At most 1024 characters.
+	Description param.Field[string] `json:"description"`
 	// Labels seed the snapshot's labels, overriding any label of the same key derived
 	// from the Docker image.
 	Labels     param.Field[map[string]string] `json:"labels"`

@@ -31,6 +31,7 @@ func TestSandboxSnapshotNewWithOptionalParams(t *testing.T) {
 		DockerImage:     langsmith.F("docker_image"),
 		FsCapacityBytes: langsmith.F(int64(0)),
 		Name:            langsmith.F("name"),
+		Description:     langsmith.F("description"),
 		Labels: langsmith.F(map[string]string{
 			"foo": "string",
 		}),

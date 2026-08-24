@@ -1485,9 +1485,12 @@ func (r SandboxResponseMountConfigMountsType) IsKnown() bool {
 type SandboxResponseProxyConfig struct {
 	AccessControl SandboxResponseProxyConfigAccessControl `json:"access_control"`
 	Callbacks     []SandboxResponseProxyConfigCallback    `json:"callbacks"`
-	NoProxy       []string                                `json:"no_proxy"`
-	Rules         []SandboxResponseProxyConfigRule        `json:"rules"`
-	JSON          sandboxResponseProxyConfigJSON          `json:"-"`
+	// Description says what this configuration as a whole lets the sandbox reach,
+	// complementing the per-rule descriptions. At most 1024 characters.
+	Description string                           `json:"description"`
+	NoProxy     []string                         `json:"no_proxy"`
+	Rules       []SandboxResponseProxyConfigRule `json:"rules"`
+	JSON        sandboxResponseProxyConfigJSON   `json:"-"`
 }
 
 // sandboxResponseProxyConfigJSON contains the JSON metadata for the struct
@@ -1495,6 +1498,7 @@ type SandboxResponseProxyConfig struct {
 type sandboxResponseProxyConfigJSON struct {
 	AccessControl apijson.Field
 	Callbacks     apijson.Field
+	Description   apijson.Field
 	NoProxy       apijson.Field
 	Rules         apijson.Field
 	raw           string
@@ -1605,9 +1609,12 @@ func (r SandboxResponseProxyConfigCallbacksRequestHeadersType) IsKnown() bool {
 }
 
 type SandboxResponseProxyConfigRule struct {
-	Name    string                             `json:"name" api:"required"`
-	Aws     SandboxResponseProxyConfigRulesAws `json:"aws"`
-	Enabled bool                               `json:"enabled"`
+	Name string                             `json:"name" api:"required"`
+	Aws  SandboxResponseProxyConfigRulesAws `json:"aws"`
+	// Description says what this rule lets the sandbox reach, so an agent driving the
+	// sandbox can be told its capabilities. At most 1024 characters.
+	Description string `json:"description"`
+	Enabled     bool   `json:"enabled"`
 	// EnvVars are plaintext env vars set for every command in the sandbox while this
 	// rule is enabled. Use them for tools that refuse to run unless a credential env
 	// var is present (e.g. gh needs GH_TOKEN) even though this rule injects the real
@@ -1630,6 +1637,7 @@ type SandboxResponseProxyConfigRule struct {
 type sandboxResponseProxyConfigRuleJSON struct {
 	Name        apijson.Field
 	Aws         apijson.Field
+	Description apijson.Field
 	Enabled     apijson.Field
 	EnvVars     apijson.Field
 	Gcp         apijson.Field
@@ -1945,9 +1953,12 @@ func (r snapshotListResponseJSON) RawJSON() string {
 }
 
 type SnapshotResponse struct {
-	ID              string            `json:"id"`
-	CreatedAt       string            `json:"created_at"`
-	CreatedBy       string            `json:"created_by"`
+	ID        string `json:"id"`
+	CreatedAt string `json:"created_at"`
+	CreatedBy string `json:"created_by"`
+	// Description says what this snapshot's image can do, so a caller can hand it to
+	// an agent as a capability summary.
+	Description     string            `json:"description"`
 	DockerImage     string            `json:"docker_image"`
 	FsCapacityBytes int64             `json:"fs_capacity_bytes"`
 	FsUsedBytes     int64             `json:"fs_used_bytes"`
@@ -1975,6 +1986,7 @@ type snapshotResponseJSON struct {
 	ID                      apijson.Field
 	CreatedAt               apijson.Field
 	CreatedBy               apijson.Field
+	Description             apijson.Field
 	DockerImage             apijson.Field
 	FsCapacityBytes         apijson.Field
 	FsUsedBytes             apijson.Field

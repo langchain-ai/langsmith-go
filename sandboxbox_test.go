@@ -131,7 +131,8 @@ func TestSandboxBoxNewWithOptionalParams(t *testing.T) {
 					Value: langsmith.F("value"),
 				}}),
 			}}),
-			NoProxy: langsmith.F([]string{"string"}),
+			Description: langsmith.F("description"),
+			NoProxy:     langsmith.F([]string{"string"}),
 			Rules: langsmith.F([]langsmith.SandboxBoxNewParamsProxyConfigRule{{
 				Name: langsmith.F("name"),
 				Aws: langsmith.F(langsmith.SandboxBoxNewParamsProxyConfigRulesAws{
@@ -146,7 +147,8 @@ func TestSandboxBoxNewWithOptionalParams(t *testing.T) {
 						Value: langsmith.F("value"),
 					}),
 				}),
-				Enabled: langsmith.F(true),
+				Description: langsmith.F("description"),
+				Enabled:     langsmith.F(true),
 				EnvVars: langsmith.F(map[string]string{
 					"foo": "string",
 				}),
@@ -250,7 +252,8 @@ func TestSandboxBoxUpdateWithOptionalParams(t *testing.T) {
 						Value: langsmith.F("value"),
 					}}),
 				}}),
-				NoProxy: langsmith.F([]string{"string"}),
+				Description: langsmith.F("description"),
+				NoProxy:     langsmith.F([]string{"string"}),
 				Rules: langsmith.F([]langsmith.SandboxBoxUpdateParamsProxyConfigRule{{
 					Name: langsmith.F("name"),
 					Aws: langsmith.F(langsmith.SandboxBoxUpdateParamsProxyConfigRulesAws{
@@ -265,7 +268,8 @@ func TestSandboxBoxUpdateWithOptionalParams(t *testing.T) {
 							Value: langsmith.F("value"),
 						}),
 					}),
-					Enabled: langsmith.F(true),
+					Description: langsmith.F("description"),
+					Enabled:     langsmith.F(true),
 					EnvVars: langsmith.F(map[string]string{
 						"foo": "string",
 					}),
@@ -381,6 +385,7 @@ func TestSandboxBoxNewSnapshotWithOptionalParams(t *testing.T) {
 		langsmith.SandboxBoxNewSnapshotParams{
 			Name:            langsmith.F("name"),
 			Checkpoint:      langsmith.F("checkpoint"),
+			Description:     langsmith.F("description"),
 			DockerImage:     langsmith.F("docker_image"),
 			FsCapacityBytes: langsmith.F(int64(0)),
 			IncludeMemory:   langsmith.F(true),
