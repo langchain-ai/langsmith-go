@@ -131,7 +131,8 @@ func TestSandboxBoxNewWithOptionalParams(t *testing.T) {
 					Value: langsmith.F("value"),
 				}}),
 			}}),
-			NoProxy: langsmith.F([]string{"string"}),
+			Description: langsmith.F("description"),
+			NoProxy:     langsmith.F([]string{"string"}),
 			Rules: langsmith.F([]langsmith.SandboxBoxNewParamsProxyConfigRule{{
 				Name: langsmith.F("name"),
 				Aws: langsmith.F(langsmith.SandboxBoxNewParamsProxyConfigRulesAws{
@@ -146,7 +147,8 @@ func TestSandboxBoxNewWithOptionalParams(t *testing.T) {
 						Value: langsmith.F("value"),
 					}),
 				}),
-				Enabled: langsmith.F(true),
+				Description: langsmith.F("description"),
+				Enabled:     langsmith.F(true),
 				EnvVars: langsmith.F(map[string]string{
 					"foo": "string",
 				}),
@@ -250,7 +252,8 @@ func TestSandboxBoxUpdateWithOptionalParams(t *testing.T) {
 						Value: langsmith.F("value"),
 					}}),
 				}}),
-				NoProxy: langsmith.F([]string{"string"}),
+				Description: langsmith.F("description"),
+				NoProxy:     langsmith.F([]string{"string"}),
 				Rules: langsmith.F([]langsmith.SandboxBoxUpdateParamsProxyConfigRule{{
 					Name: langsmith.F("name"),
 					Aws: langsmith.F(langsmith.SandboxBoxUpdateParamsProxyConfigRulesAws{
@@ -265,7 +268,8 @@ func TestSandboxBoxUpdateWithOptionalParams(t *testing.T) {
 							Value: langsmith.F("value"),
 						}),
 					}),
-					Enabled: langsmith.F(true),
+					Description: langsmith.F("description"),
+					Enabled:     langsmith.F(true),
 					EnvVars: langsmith.F(map[string]string{
 						"foo": "string",
 					}),
@@ -317,12 +321,15 @@ func TestSandboxBoxListWithOptionalParams(t *testing.T) {
 	)
 	_, err := client.Sandboxes.Boxes.List(context.TODO(), langsmith.SandboxBoxListParams{
 		CreatedBy:     langsmith.F("created_by"),
+		Cursor:        langsmith.F("cursor"),
 		Label:         langsmith.F([]string{"string"}),
 		Limit:         langsmith.F(int64(0)),
 		NameContains:  langsmith.F("name_contains"),
 		Offset:        langsmith.F(int64(0)),
+		PageSize:      langsmith.F(int64(0)),
 		SortBy:        langsmith.F("sort_by"),
 		SortDirection: langsmith.F("sort_direction"),
+		SortOrder:     langsmith.F("sort_order"),
 		Status:        langsmith.F("status"),
 	})
 	if err != nil {
@@ -378,6 +385,7 @@ func TestSandboxBoxNewSnapshotWithOptionalParams(t *testing.T) {
 		langsmith.SandboxBoxNewSnapshotParams{
 			Name:            langsmith.F("name"),
 			Checkpoint:      langsmith.F("checkpoint"),
+			Description:     langsmith.F("description"),
 			DockerImage:     langsmith.F("docker_image"),
 			FsCapacityBytes: langsmith.F(int64(0)),
 			IncludeMemory:   langsmith.F(true),

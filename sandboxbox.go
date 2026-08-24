@@ -15,6 +15,7 @@ import (
 	"github.com/langchain-ai/langsmith-go/internal/param"
 	"github.com/langchain-ai/langsmith-go/internal/requestconfig"
 	"github.com/langchain-ai/langsmith-go/option"
+	"github.com/langchain-ai/langsmith-go/packages/pagination"
 )
 
 // SandboxBoxService contains methods and other services that help with interacting
@@ -59,7 +60,9 @@ func (r *SandboxBoxService) Get(ctx context.Context, name string, opts ...option
 	return res, err
 }
 
-// Update a sandbox's display name. The name must be unique within the tenant.
+// Update a sandbox's display name, retention, resources, tags, or proxy
+// configuration. The name must be unique within the tenant. Proxy configuration
+// sent to a sandbox that is not running is stored and applied when it next starts.
 func (r *SandboxBoxService) Update(ctx context.Context, name string, body SandboxBoxUpdateParams, opts ...option.RequestOption) (res *SandboxResponse, err error) {
 	opts = slices.Concat(r.Options, opts)
 	if name == "" {
@@ -72,12 +75,34 @@ func (r *SandboxBoxService) Update(ctx context.Context, name string, body Sandbo
 }
 
 // List sandboxes for the authenticated tenant, with optional filtering, sorting,
-// and pagination.
-func (r *SandboxBoxService) List(ctx context.Context, query SandboxBoxListParams, opts ...option.RequestOption) (res *SandboxListResponse, err error) {
+// and pagination. Page with page_size and cursor: replay the response's
+// next_cursor until it comes back null, which is the only signal that no pages
+// remain. Cursors are opaque and only valid on this endpoint; do not parse or
+// construct one.
+func (r *SandboxBoxService) List(ctx context.Context, query SandboxBoxListParams, opts ...option.RequestOption) (res *pagination.ItemsCursorGetPagination[SandboxResponse], err error) {
+	var raw *http.Response
 	opts = slices.Concat(r.Options, opts)
+	opts = append([]option.RequestOption{option.WithResponseInto(&raw)}, opts...)
 	path := "api/v2/sandboxes/boxes"
-	err = requestconfig.ExecuteNewRequest(ctx, http.MethodGet, path, query, &res, opts...)
-	return res, err
+	cfg, err := requestconfig.NewRequestConfig(ctx, http.MethodGet, path, query, &res, opts...)
+	if err != nil {
+		return nil, err
+	}
+	err = cfg.Execute()
+	if err != nil {
+		return nil, err
+	}
+	res.SetPageConfig(cfg, raw)
+	return res, nil
+}
+
+// List sandboxes for the authenticated tenant, with optional filtering, sorting,
+// and pagination. Page with page_size and cursor: replay the response's
+// next_cursor until it comes back null, which is the only signal that no pages
+// remain. Cursors are opaque and only valid on this endpoint; do not parse or
+// construct one.
+func (r *SandboxBoxService) ListAutoPaging(ctx context.Context, query SandboxBoxListParams, opts ...option.RequestOption) *pagination.ItemsCursorGetPaginationAutoPager[SandboxResponse] {
+	return pagination.NewItemsCursorGetPaginationAutoPager(r.List(ctx, query, opts...))
 }
 
 // Delete a sandbox by name or UUID. Tears down the sandbox runtime and removes the
@@ -842,8 +867,11 @@ func (r SandboxBoxNewParamsMountConfigMountsType) IsKnown() bool {
 type SandboxBoxNewParamsProxyConfig struct {
 	AccessControl param.Field[SandboxBoxNewParamsProxyConfigAccessControl] `json:"access_control"`
 	Callbacks     param.Field[[]SandboxBoxNewParamsProxyConfigCallback]    `json:"callbacks"`
-	NoProxy       param.Field[[]string]                                    `json:"no_proxy"`
-	Rules         param.Field[[]SandboxBoxNewParamsProxyConfigRule]        `json:"rules"`
+	// Description says what this configuration as a whole lets the sandbox reach,
+	// complementing the per-rule descriptions. At most 1024 characters.
+	Description param.Field[string]                               `json:"description"`
+	NoProxy     param.Field[[]string]                             `json:"no_proxy"`
+	Rules       param.Field[[]SandboxBoxNewParamsProxyConfigRule] `json:"rules"`
 }
 
 func (r SandboxBoxNewParamsProxyConfig) MarshalJSON() (data []byte, err error) {
@@ -899,9 +927,12 @@ func (r SandboxBoxNewParamsProxyConfigCallbacksRequestHeadersType) IsKnown() boo
 }
 
 type SandboxBoxNewParamsProxyConfigRule struct {
-	Name    param.Field[string]                                 `json:"name" api:"required"`
-	Aws     param.Field[SandboxBoxNewParamsProxyConfigRulesAws] `json:"aws"`
-	Enabled param.Field[bool]                                   `json:"enabled"`
+	Name param.Field[string]                                 `json:"name" api:"required"`
+	Aws  param.Field[SandboxBoxNewParamsProxyConfigRulesAws] `json:"aws"`
+	// Description says what this rule lets the sandbox reach, so an agent driving the
+	// sandbox can be told its capabilities. At most 1024 characters.
+	Description param.Field[string] `json:"description"`
+	Enabled     param.Field[bool]   `json:"enabled"`
 	// EnvVars are plaintext env vars set for every command in the sandbox while this
 	// rule is enabled. Use them for tools that refuse to run unless a credential env
 	// var is present (e.g. gh needs GH_TOKEN) even though this rule injects the real
@@ -1066,8 +1097,11 @@ func (r SandboxBoxUpdateParams) MarshalJSON() (data []byte, err error) {
 type SandboxBoxUpdateParamsProxyConfig struct {
 	AccessControl param.Field[SandboxBoxUpdateParamsProxyConfigAccessControl] `json:"access_control"`
 	Callbacks     param.Field[[]SandboxBoxUpdateParamsProxyConfigCallback]    `json:"callbacks"`
-	NoProxy       param.Field[[]string]                                       `json:"no_proxy"`
-	Rules         param.Field[[]SandboxBoxUpdateParamsProxyConfigRule]        `json:"rules"`
+	// Description says what this configuration as a whole lets the sandbox reach,
+	// complementing the per-rule descriptions. At most 1024 characters.
+	Description param.Field[string]                                  `json:"description"`
+	NoProxy     param.Field[[]string]                                `json:"no_proxy"`
+	Rules       param.Field[[]SandboxBoxUpdateParamsProxyConfigRule] `json:"rules"`
 }
 
 func (r SandboxBoxUpdateParamsProxyConfig) MarshalJSON() (data []byte, err error) {
@@ -1123,9 +1157,12 @@ func (r SandboxBoxUpdateParamsProxyConfigCallbacksRequestHeadersType) IsKnown() 
 }
 
 type SandboxBoxUpdateParamsProxyConfigRule struct {
-	Name    param.Field[string]                                    `json:"name" api:"required"`
-	Aws     param.Field[SandboxBoxUpdateParamsProxyConfigRulesAws] `json:"aws"`
-	Enabled param.Field[bool]                                      `json:"enabled"`
+	Name param.Field[string]                                    `json:"name" api:"required"`
+	Aws  param.Field[SandboxBoxUpdateParamsProxyConfigRulesAws] `json:"aws"`
+	// Description says what this rule lets the sandbox reach, so an agent driving the
+	// sandbox can be told its capabilities. At most 1024 characters.
+	Description param.Field[string] `json:"description"`
+	Enabled     param.Field[bool]   `json:"enabled"`
 	// EnvVars are plaintext env vars set for every command in the sandbox while this
 	// rule is enabled. Use them for tools that refuse to run unless a credential env
 	// var is present (e.g. gh needs GH_TOKEN) even though this rule injects the real
@@ -1272,19 +1309,26 @@ func (r SandboxBoxUpdateParamsProxyConfigRulesHeadersType) IsKnown() bool {
 type SandboxBoxListParams struct {
 	// Filter by creator identity. Only 'me' is supported.
 	CreatedBy param.Field[string] `query:"created_by"`
+	// Opaque pagination cursor from a prior response's next_cursor
+	Cursor param.Field[string] `query:"cursor"`
 	// Filter by label. Repeatable; all must match. Use 'key' to match on key presence
 	// or 'key=value' for equality.
 	Label param.Field[[]string] `query:"label"`
-	// Maximum number of results
+	// Deprecated: use page_size. Maximum number of results
 	Limit param.Field[int64] `query:"limit"`
 	// Filter by name substring
 	NameContains param.Field[string] `query:"name_contains"`
-	// Pagination offset
+	// Deprecated: use cursor. Pagination offset
 	Offset param.Field[int64] `query:"offset"`
-	// Sort column (name, status, created_at)
+	// Number of results per page
+	PageSize param.Field[int64] `query:"page_size"`
+	// Sort column (name, status, created_at, stopped_at, idle_ttl_seconds,
+	// delete_after_stop_seconds)
 	SortBy param.Field[string] `query:"sort_by"`
-	// Sort direction (asc, desc)
+	// Deprecated: use sort_order. Sort direction (asc, desc)
 	SortDirection param.Field[string] `query:"sort_direction"`
+	// Sort direction (asc, desc)
+	SortOrder param.Field[string] `query:"sort_order"`
 	// Filter by status (provisioning, ready, failed, stopped, deleting)
 	Status param.Field[string] `query:"status"`
 }
@@ -1301,6 +1345,9 @@ type SandboxBoxNewSnapshotParams struct {
 	Name param.Field[string] `json:"name" api:"required"`
 	// if omitted, creates a fresh checkpoint from the running VM
 	Checkpoint param.Field[string] `json:"checkpoint"`
+	// Description says what this snapshot's image can do, so a caller can hand it to
+	// an agent as a capability summary. At most 1024 characters.
+	Description param.Field[string] `json:"description"`
 	// sandbox-local Docker image to export
 	DockerImage param.Field[string] `json:"docker_image"`
 	// required for Docker image export unless the sandbox has a capacity

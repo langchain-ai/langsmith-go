@@ -9,6 +9,7 @@ import (
 	"net/http"
 	"net/url"
 	"slices"
+	"time"
 
 	"github.com/langchain-ai/langsmith-go/internal/apijson"
 	"github.com/langchain-ai/langsmith-go/internal/apiquery"
@@ -86,21 +87,22 @@ type Issue struct {
 	AutoResolutionEvidence interface{} `json:"auto_resolution_evidence"`
 	// Nil unless eligible: "auto_close" or "prompt". Evidence carries the deciding
 	// gate.
-	AutoResolutionState  string        `json:"auto_resolution_state"`
-	CreatedAt            string        `json:"created_at"`
-	Description          string        `json:"description"`
-	FirstSeenAt          string        `json:"first_seen_at"`
-	FixBranch            string        `json:"fix_branch"`
-	FixDispatchedAt      string        `json:"fix_dispatched_at"`
-	FixPrNumber          int64         `json:"fix_pr_number"`
-	FixPrompt            string        `json:"fix_prompt"`
-	FixVerification      interface{}   `json:"fix_verification"`
-	LastSeenAt           string        `json:"last_seen_at"`
-	Name                 string        `json:"name"`
-	ProposedContextFixes []interface{} `json:"proposed_context_fixes"`
-	ProposedExamples     []interface{} `json:"proposed_examples"`
-	ProposedFix          string        `json:"proposed_fix"`
-	ProposedPromptFixes  []interface{} `json:"proposed_prompt_fixes"`
+	AutoResolutionState  string          `json:"auto_resolution_state"`
+	CreatedAt            string          `json:"created_at"`
+	Description          string          `json:"description"`
+	FirstSeenAt          string          `json:"first_seen_at"`
+	FixBranch            string          `json:"fix_branch"`
+	FixDispatchedAt      string          `json:"fix_dispatched_at"`
+	FixPrNumber          int64           `json:"fix_pr_number"`
+	FixPrompt            string          `json:"fix_prompt"`
+	FixVerification      interface{}     `json:"fix_verification"`
+	LastSeenAt           string          `json:"last_seen_at"`
+	LinearSync           IssueLinearSync `json:"linear_sync"`
+	Name                 string          `json:"name"`
+	ProposedContextFixes []interface{}   `json:"proposed_context_fixes"`
+	ProposedExamples     []interface{}   `json:"proposed_examples"`
+	ProposedFix          string          `json:"proposed_fix"`
+	ProposedPromptFixes  []interface{}   `json:"proposed_prompt_fixes"`
 	// RecurrencesSinceWatching counts linked traces whose run start_time is after
 	// watching_since — i.e. recurrences observed during the current watch period.
 	RecurrencesSinceWatching int64         `json:"recurrences_since_watching"`
@@ -130,6 +132,7 @@ type issueJSON struct {
 	FixPrompt                apijson.Field
 	FixVerification          apijson.Field
 	LastSeenAt               apijson.Field
+	LinearSync               apijson.Field
 	Name                     apijson.Field
 	ProposedContextFixes     apijson.Field
 	ProposedExamples         apijson.Field
@@ -154,6 +157,58 @@ func (r *Issue) UnmarshalJSON(data []byte) (err error) {
 
 func (r issueJSON) RawJSON() string {
 	return r.raw
+}
+
+type IssueLinearSync struct {
+	Identifier      string               `json:"identifier"`
+	IssueID         string               `json:"issue_id"`
+	LastAttemptedAt time.Time            `json:"last_attempted_at" format:"date-time"`
+	LastError       string               `json:"last_error"`
+	LastSyncedAt    time.Time            `json:"last_synced_at" format:"date-time"`
+	LinearIssueID   string               `json:"linear_issue_id"`
+	State           IssueLinearSyncState `json:"state"`
+	URL             string               `json:"url"`
+	JSON            issueLinearSyncJSON  `json:"-"`
+}
+
+// issueLinearSyncJSON contains the JSON metadata for the struct [IssueLinearSync]
+type issueLinearSyncJSON struct {
+	Identifier      apijson.Field
+	IssueID         apijson.Field
+	LastAttemptedAt apijson.Field
+	LastError       apijson.Field
+	LastSyncedAt    apijson.Field
+	LinearIssueID   apijson.Field
+	State           apijson.Field
+	URL             apijson.Field
+	raw             string
+	ExtraFields     map[string]apijson.Field
+}
+
+func (r *IssueLinearSync) UnmarshalJSON(data []byte) (err error) {
+	return apijson.UnmarshalRoot(data, r)
+}
+
+func (r issueLinearSyncJSON) RawJSON() string {
+	return r.raw
+}
+
+type IssueLinearSyncState string
+
+const (
+	IssueLinearSyncStatePending      IssueLinearSyncState = "pending"
+	IssueLinearSyncStateSynced       IssueLinearSyncState = "synced"
+	IssueLinearSyncStateFailed       IssueLinearSyncState = "failed"
+	IssueLinearSyncStateAuthRequired IssueLinearSyncState = "auth_required"
+	IssueLinearSyncStatePaused       IssueLinearSyncState = "paused"
+)
+
+func (r IssueLinearSyncState) IsKnown() bool {
+	switch r {
+	case IssueLinearSyncStatePending, IssueLinearSyncStateSynced, IssueLinearSyncStateFailed, IssueLinearSyncStateAuthRequired, IssueLinearSyncStatePaused:
+		return true
+	}
+	return false
 }
 
 type IssueSeverity int64
@@ -194,7 +249,7 @@ func (r IssueStatus) IsKnown() bool {
 type IssueListParams struct {
 	// Page size (positive integer; defaults to 50, capped at 500)
 	Limit param.Field[int64] `query:"limit"`
-	// Page offset (non-negative integer)
+	// Page offset (non-negative integer; at most 100000)
 	Offset param.Field[int64] `query:"offset"`
 	// Filter by session ID (UUID)
 	SessionID param.Field[string] `query:"session_id"`

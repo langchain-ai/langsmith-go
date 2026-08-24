@@ -69,10 +69,11 @@ func TestAnnotationQueueUpdateWithOptionalParams(t *testing.T) {
 			ReviewerAccessMode:  langsmith.F(langsmith.AnnotationQueueUpdateParamsReviewerAccessModeAny),
 			RubricInstructions:  langsmith.F("rubric_instructions"),
 			RubricItems: langsmith.F([]langsmith.AnnotationQueueRubricItemSchemaParam{{
-				FeedbackKey: langsmith.F("feedback_key"),
-				Description: langsmith.F("description"),
-				IsAssertion: langsmith.F(true),
-				IsRequired:  langsmith.F(true),
+				FeedbackKey:    langsmith.F("feedback_key"),
+				Description:    langsmith.F("description"),
+				IsAssertion:    langsmith.F(true),
+				IsRequired:     langsmith.F(true),
+				RegexValidator: langsmith.F[langsmith.AnnotationQueueRubricItemSchemaRegexValidatorUnionParam](shared.UnionString("string")),
 				ScoreDescriptions: langsmith.F(map[string]string{
 					"foo": "string",
 				}),
@@ -144,10 +145,11 @@ func TestAnnotationQueueAnnotationQueuesWithOptionalParams(t *testing.T) {
 		ReviewerAccessMode:  langsmith.F("reviewer_access_mode"),
 		RubricInstructions:  langsmith.F("rubric_instructions"),
 		RubricItems: langsmith.F([]langsmith.AnnotationQueueRubricItemSchemaParam{{
-			FeedbackKey: langsmith.F("feedback_key"),
-			Description: langsmith.F("description"),
-			IsAssertion: langsmith.F(true),
-			IsRequired:  langsmith.F(true),
+			FeedbackKey:    langsmith.F("feedback_key"),
+			Description:    langsmith.F("description"),
+			IsAssertion:    langsmith.F(true),
+			IsRequired:     langsmith.F(true),
+			RegexValidator: langsmith.F[langsmith.AnnotationQueueRubricItemSchemaRegexValidatorUnionParam](shared.UnionString("string")),
 			ScoreDescriptions: langsmith.F(map[string]string{
 				"foo": "string",
 			}),

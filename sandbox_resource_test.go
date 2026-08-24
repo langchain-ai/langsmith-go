@@ -35,8 +35,7 @@ func TestSandboxResourceWrappers(t *testing.T) {
 			})
 		case r.Method == http.MethodGet && r.URL.Path == "/api/v2/sandboxes/boxes":
 			_ = json.NewEncoder(w).Encode(map[string]any{
-				"offset": 0,
-				"sandboxes": []map[string]any{
+				"items": []map[string]any{
 					{
 						"id":                "list-id",
 						"name":              "listed-box",
