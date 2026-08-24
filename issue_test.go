@@ -52,16 +52,19 @@ func TestIssueListWithOptionalParams(t *testing.T) {
 		option.WithTenantID("My Tenant ID"),
 	)
 	_, err := client.Issues.List(context.TODO(), langsmith.IssueListParams{
-		Limit:       langsmith.F(int64(0)),
-		Offset:      langsmith.F(int64(0)),
-		SessionID:   langsmith.F("session_id"),
-		SessionName: langsmith.F("session_name"),
-		Severity:    langsmith.F(langsmith.IssueListParamsSeverity0),
-		SortBy:      langsmith.F(langsmith.IssueListParamsSortByCreatedAt),
-		Status:      langsmith.F(langsmith.IssueListParamsStatusOpen),
-		Tag:         langsmith.F("tag"),
-		TraceID:     langsmith.F("182bd5e5-6e1a-4fe4-a799-aa6d9a6ab26e"),
-		UpdatedAt:   langsmith.F("updated_at"),
+		Activity:      langsmith.F([]langsmith.IssueListParamsActivity{langsmith.IssueListParamsActivityFixing}),
+		Limit:         langsmith.F(int64(0)),
+		Offset:        langsmith.F(int64(0)),
+		SessionID:     langsmith.F("session_id"),
+		SessionName:   langsmith.F("session_name"),
+		Severity:      langsmith.F(langsmith.IssueListParamsSeverity0),
+		SeverityExact: langsmith.F([]langsmith.IssueListParamsSeverityExact{langsmith.IssueListParamsSeverityExact0}),
+		SortBy:        langsmith.F(langsmith.IssueListParamsSortByDefault),
+		Status:        langsmith.F(langsmith.IssueListParamsStatusOpen),
+		StatusFirst:   langsmith.F(true),
+		Tag:           langsmith.F("tag"),
+		TraceID:       langsmith.F("182bd5e5-6e1a-4fe4-a799-aa6d9a6ab26e"),
+		UpdatedAt:     langsmith.F("updated_at"),
 	})
 	if err != nil {
 		var apierr *langsmith.Error

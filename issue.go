@@ -247,6 +247,8 @@ func (r IssueStatus) IsKnown() bool {
 }
 
 type IssueListParams struct {
+	// Filter by Engine activity (repeatable; OR semantics)
+	Activity param.Field[[]IssueListParamsActivity] `query:"activity"`
 	// Page size (positive integer; defaults to 50, capped at 500)
 	Limit param.Field[int64] `query:"limit"`
 	// Page offset (non-negative integer; at most 100000)
@@ -257,10 +259,14 @@ type IssueListParams struct {
 	SessionName param.Field[string] `query:"session_name"`
 	// Filter by severity
 	Severity param.Field[IssueListParamsSeverity] `query:"severity"`
+	// Filter by exact severity (repeatable; OR semantics)
+	SeverityExact param.Field[[]IssueListParamsSeverityExact] `query:"severity_exact"`
 	// Sort field
 	SortBy param.Field[IssueListParamsSortBy] `query:"sort_by"`
 	// Filter by status
 	Status param.Field[IssueListParamsStatus] `query:"status"`
+	// Group results by issue lifecycle status before applying sort_by
+	StatusFirst param.Field[bool] `query:"status_first"`
 	// Filter by tag (exact match)
 	Tag param.Field[string] `query:"tag"`
 	// Return only issues with a linked run in this trace
@@ -275,6 +281,22 @@ func (r IssueListParams) URLQuery() (v url.Values) {
 		ArrayFormat:  apiquery.ArrayQueryFormatRepeat,
 		NestedFormat: apiquery.NestedQueryFormatBrackets,
 	})
+}
+
+type IssueListParamsActivity string
+
+const (
+	IssueListParamsActivityFixing   IssueListParamsActivity = "fixing"
+	IssueListParamsActivityWatching IssueListParamsActivity = "watching"
+	IssueListParamsActivityRecurred IssueListParamsActivity = "recurred"
+)
+
+func (r IssueListParamsActivity) IsKnown() bool {
+	switch r {
+	case IssueListParamsActivityFixing, IssueListParamsActivityWatching, IssueListParamsActivityRecurred:
+		return true
+	}
+	return false
 }
 
 // Filter by severity
@@ -295,18 +317,39 @@ func (r IssueListParamsSeverity) IsKnown() bool {
 	return false
 }
 
+type IssueListParamsSeverityExact int64
+
+const (
+	IssueListParamsSeverityExact0 IssueListParamsSeverityExact = 0
+	IssueListParamsSeverityExact1 IssueListParamsSeverityExact = 1
+	IssueListParamsSeverityExact2 IssueListParamsSeverityExact = 2
+	IssueListParamsSeverityExact3 IssueListParamsSeverityExact = 3
+)
+
+func (r IssueListParamsSeverityExact) IsKnown() bool {
+	switch r {
+	case IssueListParamsSeverityExact0, IssueListParamsSeverityExact1, IssueListParamsSeverityExact2, IssueListParamsSeverityExact3:
+		return true
+	}
+	return false
+}
+
 // Sort field
 type IssueListParamsSortBy string
 
 const (
-	IssueListParamsSortByCreatedAt IssueListParamsSortBy = "created_at"
-	IssueListParamsSortByUpdatedAt IssueListParamsSortBy = "updated_at"
-	IssueListParamsSortBySeverity  IssueListParamsSortBy = "severity"
+	IssueListParamsSortByDefault     IssueListParamsSortBy = "default"
+	IssueListParamsSortByCreatedAt   IssueListParamsSortBy = "created_at"
+	IssueListParamsSortByUpdatedAt   IssueListParamsSortBy = "updated_at"
+	IssueListParamsSortByLastSeen    IssueListParamsSortBy = "last_seen"
+	IssueListParamsSortByLastUpdated IssueListParamsSortBy = "last_updated"
+	IssueListParamsSortByTraceCount  IssueListParamsSortBy = "trace_count"
+	IssueListParamsSortBySeverity    IssueListParamsSortBy = "severity"
 )
 
 func (r IssueListParamsSortBy) IsKnown() bool {
 	switch r {
-	case IssueListParamsSortByCreatedAt, IssueListParamsSortByUpdatedAt, IssueListParamsSortBySeverity:
+	case IssueListParamsSortByDefault, IssueListParamsSortByCreatedAt, IssueListParamsSortByUpdatedAt, IssueListParamsSortByLastSeen, IssueListParamsSortByLastUpdated, IssueListParamsSortByTraceCount, IssueListParamsSortBySeverity:
 		return true
 	}
 	return false
