@@ -41,14 +41,14 @@ func NewIssueService(opts ...option.RequestOption) (r *IssueService) {
 // **Beta:** This endpoint is in active development and may change without notice.
 //
 // Returns one issue for the authenticated tenant.
-func (r *IssueService) Get(ctx context.Context, id string, opts ...option.RequestOption) (res *Issue, err error) {
+func (r *IssueService) Get(ctx context.Context, id string, query IssueGetParams, opts ...option.RequestOption) (res *Issue, err error) {
 	opts = slices.Concat(r.Options, opts)
 	if id == "" {
 		err = errors.New("missing required id parameter")
 		return nil, err
 	}
 	path := fmt.Sprintf("api/v1/platform/issues/%s", id)
-	err = requestconfig.ExecuteNewRequest(ctx, http.MethodGet, path, nil, &res, opts...)
+	err = requestconfig.ExecuteNewRequest(ctx, http.MethodGet, path, query, &res, opts...)
 	return res, err
 }
 
@@ -87,22 +87,23 @@ type Issue struct {
 	AutoResolutionEvidence interface{} `json:"auto_resolution_evidence"`
 	// Nil unless eligible: "auto_close" or "prompt". Evidence carries the deciding
 	// gate.
-	AutoResolutionState  string          `json:"auto_resolution_state"`
-	CreatedAt            string          `json:"created_at"`
-	Description          string          `json:"description"`
-	FirstSeenAt          string          `json:"first_seen_at"`
-	FixBranch            string          `json:"fix_branch"`
-	FixDispatchedAt      string          `json:"fix_dispatched_at"`
-	FixPrNumber          int64           `json:"fix_pr_number"`
-	FixPrompt            string          `json:"fix_prompt"`
-	FixVerification      interface{}     `json:"fix_verification"`
-	LastSeenAt           string          `json:"last_seen_at"`
-	LinearSync           IssueLinearSync `json:"linear_sync"`
-	Name                 string          `json:"name"`
-	ProposedContextFixes []interface{}   `json:"proposed_context_fixes"`
-	ProposedExamples     []interface{}   `json:"proposed_examples"`
-	ProposedFix          string          `json:"proposed_fix"`
-	ProposedPromptFixes  []interface{}   `json:"proposed_prompt_fixes"`
+	AutoResolutionState  string             `json:"auto_resolution_state"`
+	CreatedAt            string             `json:"created_at"`
+	Description          string             `json:"description"`
+	FirstSeenAt          string             `json:"first_seen_at"`
+	FixBranch            string             `json:"fix_branch"`
+	FixDispatchedAt      string             `json:"fix_dispatched_at"`
+	FixPrNumber          int64              `json:"fix_pr_number"`
+	FixPrompt            string             `json:"fix_prompt"`
+	FixVerification      interface{}        `json:"fix_verification"`
+	LastSeenAt           string             `json:"last_seen_at"`
+	LinearContext        IssueLinearContext `json:"linear_context"`
+	LinearSync           IssueLinearSync    `json:"linear_sync"`
+	Name                 string             `json:"name"`
+	ProposedContextFixes []interface{}      `json:"proposed_context_fixes"`
+	ProposedExamples     []interface{}      `json:"proposed_examples"`
+	ProposedFix          string             `json:"proposed_fix"`
+	ProposedPromptFixes  []interface{}      `json:"proposed_prompt_fixes"`
 	// RecurrencesSinceWatching counts linked traces whose run start_time is after
 	// watching_since — i.e. recurrences observed during the current watch period.
 	RecurrencesSinceWatching int64         `json:"recurrences_since_watching"`
@@ -132,6 +133,7 @@ type issueJSON struct {
 	FixPrompt                apijson.Field
 	FixVerification          apijson.Field
 	LastSeenAt               apijson.Field
+	LinearContext            apijson.Field
 	LinearSync               apijson.Field
 	Name                     apijson.Field
 	ProposedContextFixes     apijson.Field
@@ -156,6 +158,29 @@ func (r *Issue) UnmarshalJSON(data []byte) (err error) {
 }
 
 func (r issueJSON) RawJSON() string {
+	return r.raw
+}
+
+type IssueLinearContext struct {
+	GitHubPrURLs  []string               `json:"github_pr_urls"`
+	WorkflowState string                 `json:"workflow_state"`
+	JSON          issueLinearContextJSON `json:"-"`
+}
+
+// issueLinearContextJSON contains the JSON metadata for the struct
+// [IssueLinearContext]
+type issueLinearContextJSON struct {
+	GitHubPrURLs  apijson.Field
+	WorkflowState apijson.Field
+	raw           string
+	ExtraFields   map[string]apijson.Field
+}
+
+func (r *IssueLinearContext) UnmarshalJSON(data []byte) (err error) {
+	return apijson.UnmarshalRoot(data, r)
+}
+
+func (r issueLinearContextJSON) RawJSON() string {
 	return r.raw
 }
 
@@ -244,6 +269,20 @@ func (r IssueStatus) IsKnown() bool {
 		return true
 	}
 	return false
+}
+
+type IssueGetParams struct {
+	// Include current Linear workflow state and validated linked GitHub pull request
+	// URLs
+	IncludeLinearContext param.Field[bool] `query:"include_linear_context"`
+}
+
+// URLQuery serializes [IssueGetParams]'s query parameters as `url.Values`.
+func (r IssueGetParams) URLQuery() (v url.Values) {
+	return apiquery.MarshalWithSettings(r, apiquery.QuerySettings{
+		ArrayFormat:  apiquery.ArrayQueryFormatRepeat,
+		NestedFormat: apiquery.NestedQueryFormatBrackets,
+	})
 }
 
 type IssueListParams struct {
