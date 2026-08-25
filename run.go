@@ -94,8 +94,8 @@ func (r *RunService) IngestBatch(ctx context.Context, body RunIngestBatchParams,
 // Query Runs
 //
 // Deprecated: Deprecated: use QueryV2 instead, which calls /api/v2/runs/query. See
-// https://docs.langchain.com/langsmith/smithdb-sdk-migration#runs-query for the
-// migration guide. Will be removed after Jan 31, 2027.
+// https://docs.langchain.com/langsmith/smithdb-sdk-migration-query-runs#runs-query
+// for the migration guide. Will be removed after Jan 31, 2027.
 func (r *RunService) QueryV1(ctx context.Context, body RunQueryV1Params, opts ...option.RequestOption) (res *pagination.CursorPagination[RunSchema], err error) {
 	var raw *http.Response
 	opts = slices.Concat(r.Options, opts)
@@ -116,8 +116,8 @@ func (r *RunService) QueryV1(ctx context.Context, body RunQueryV1Params, opts ..
 // Query Runs
 //
 // Deprecated: Deprecated: use QueryV2 instead, which calls /api/v2/runs/query. See
-// https://docs.langchain.com/langsmith/smithdb-sdk-migration#runs-query for the
-// migration guide. Will be removed after Jan 31, 2027.
+// https://docs.langchain.com/langsmith/smithdb-sdk-migration-query-runs#runs-query
+// for the migration guide. Will be removed after Jan 31, 2027.
 func (r *RunService) QueryV1AutoPaging(ctx context.Context, body RunQueryV1Params, opts ...option.RequestOption) *pagination.CursorPaginationAutoPager[RunSchema] {
 	return pagination.NewCursorPaginationAutoPager(r.QueryV1(ctx, body, opts...))
 }
@@ -160,8 +160,8 @@ func (r *RunService) QueryV2AutoPaging(ctx context.Context, params RunQueryV2Par
 //
 // Deprecated: Deprecated: use RetrieveV2 instead, which calls
 // /api/v2/runs/{run_id}. See
-// https://docs.langchain.com/langsmith/smithdb-sdk-migration#runs-retrieve for the
-// migration guide. Will be removed after Jan 31, 2027.
+// https://docs.langchain.com/langsmith/smithdb-sdk-migration-runs#runs-retrieve
+// for the migration guide. Will be removed after Jan 31, 2027.
 func (r *RunService) GetV1(ctx context.Context, runID string, query RunGetV1Params, opts ...option.RequestOption) (res *RunSchema, err error) {
 	opts = slices.Concat(r.Options, opts)
 	if runID == "" {

@@ -42,7 +42,7 @@ func NewDatasetRunService(opts ...option.RequestOption) (r *DatasetRunService) {
 //
 // Deprecated: Deprecated: use Datasets.ExperimentRuns.Query instead, which calls
 // POST /api/v2/datasets/{dataset_id}/experiment-runs. See
-// https://docs.langchain.com/langsmith/smithdb-sdk-migration#dataset-experiment-runs-query
+// https://docs.langchain.com/langsmith/smithdb-sdk-migration-experiments#dataset-experiment-runs-query
 // for the migration guide. Will be removed after Jan 31, 2027.
 func (r *DatasetRunService) Query(ctx context.Context, datasetID string, params DatasetRunQueryParams, opts ...option.RequestOption) (res *[]ExampleWithRunsCh, err error) {
 	opts = slices.Concat(r.Options, opts)
