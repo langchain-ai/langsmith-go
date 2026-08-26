@@ -27,6 +27,7 @@ import (
 // the [NewThreadService] method instead.
 type ThreadService struct {
 	Options []option.RequestOption
+	Share   *ThreadShareService
 }
 
 // NewThreadService generates a new service that applies the given options to each
@@ -35,6 +36,7 @@ type ThreadService struct {
 func NewThreadService(opts ...option.RequestOption) (r *ThreadService) {
 	r = &ThreadService{}
 	r.Options = opts
+	r.Share = NewThreadShareService(opts...)
 	return
 }
 
