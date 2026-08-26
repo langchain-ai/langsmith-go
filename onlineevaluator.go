@@ -176,9 +176,11 @@ func (r bulkDeleteEvaluatorsResponseJSON) RawJSON() string {
 }
 
 type CreateOnlineCodeEvaluatorRequestParam struct {
-	Code param.Field[string] `json:"code"`
+	Code         param.Field[string] `json:"code"`
+	Dependencies param.Field[string] `json:"dependencies"`
 	// Default: "python"
-	Language param.Field[string] `json:"language"`
+	Language             param.Field[string]   `json:"language"`
+	WorkspaceSecretsKeys param.Field[[]string] `json:"workspace_secrets_keys"`
 }
 
 func (r CreateOnlineCodeEvaluatorRequestParam) MarshalJSON() (data []byte, err error) {
@@ -255,21 +257,29 @@ func (r getOnlineEvaluatorSpendResponseJSON) RawJSON() string {
 }
 
 type OnlineCodeEvaluator struct {
-	Code        string `json:"code"`
-	EvaluatorID string `json:"evaluator_id"`
+	Code                 string                                  `json:"code"`
+	Dependencies         string                                  `json:"dependencies"`
+	EvaluatorBuildError  string                                  `json:"evaluator_build_error"`
+	EvaluatorBuildStatus OnlineCodeEvaluatorEvaluatorBuildStatus `json:"evaluator_build_status"`
+	EvaluatorID          string                                  `json:"evaluator_id"`
 	// Default: "python"
-	Language string                  `json:"language"`
-	JSON     onlineCodeEvaluatorJSON `json:"-"`
+	Language             string                  `json:"language"`
+	WorkspaceSecretsKeys []string                `json:"workspace_secrets_keys"`
+	JSON                 onlineCodeEvaluatorJSON `json:"-"`
 }
 
 // onlineCodeEvaluatorJSON contains the JSON metadata for the struct
 // [OnlineCodeEvaluator]
 type onlineCodeEvaluatorJSON struct {
-	Code        apijson.Field
-	EvaluatorID apijson.Field
-	Language    apijson.Field
-	raw         string
-	ExtraFields map[string]apijson.Field
+	Code                 apijson.Field
+	Dependencies         apijson.Field
+	EvaluatorBuildError  apijson.Field
+	EvaluatorBuildStatus apijson.Field
+	EvaluatorID          apijson.Field
+	Language             apijson.Field
+	WorkspaceSecretsKeys apijson.Field
+	raw                  string
+	ExtraFields          map[string]apijson.Field
 }
 
 func (r *OnlineCodeEvaluator) UnmarshalJSON(data []byte) (err error) {
@@ -278,6 +288,23 @@ func (r *OnlineCodeEvaluator) UnmarshalJSON(data []byte) (err error) {
 
 func (r onlineCodeEvaluatorJSON) RawJSON() string {
 	return r.raw
+}
+
+type OnlineCodeEvaluatorEvaluatorBuildStatus string
+
+const (
+	OnlineCodeEvaluatorEvaluatorBuildStatusEnqueued OnlineCodeEvaluatorEvaluatorBuildStatus = "ENQUEUED"
+	OnlineCodeEvaluatorEvaluatorBuildStatusBuilding OnlineCodeEvaluatorEvaluatorBuildStatus = "BUILDING"
+	OnlineCodeEvaluatorEvaluatorBuildStatusReady    OnlineCodeEvaluatorEvaluatorBuildStatus = "READY"
+	OnlineCodeEvaluatorEvaluatorBuildStatusFailed   OnlineCodeEvaluatorEvaluatorBuildStatus = "FAILED"
+)
+
+func (r OnlineCodeEvaluatorEvaluatorBuildStatus) IsKnown() bool {
+	switch r {
+	case OnlineCodeEvaluatorEvaluatorBuildStatusEnqueued, OnlineCodeEvaluatorEvaluatorBuildStatusBuilding, OnlineCodeEvaluatorEvaluatorBuildStatusReady, OnlineCodeEvaluatorEvaluatorBuildStatusFailed:
+		return true
+	}
+	return false
 }
 
 type OnlineEvaluator struct {
