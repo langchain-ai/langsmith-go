@@ -94,8 +94,24 @@ func TestRepoDirectoryCommitWithOptionalParams(t *testing.T) {
 		"owner",
 		"repo",
 		langsmith.RepoDirectoryCommitParams{
-			Files: langsmith.F(map[string]interface{}{
-				"foo": "bar",
+			Files: langsmith.F(map[string]langsmith.RepoDirectoryCommitParamsFilesUnion{
+				"agents/pinned": langsmith.RepoDirectoryCommitParamsFilesDirectoryAgentEntryInput{
+					RepoHandle: langsmith.F("review-agent"),
+					Type:       langsmith.F(langsmith.RepoDirectoryCommitParamsFilesDirectoryAgentEntryInputTypeAgent),
+					CommitID:   langsmith.F("182bd5e5-6e1a-4fe4-a799-aa6d9a6ab26e"),
+					Selector: langsmith.F[langsmith.DirectorySelectorUnionParam](langsmith.DirectorySelectorDirectoryCommitSelectorParam{
+						CommitID: langsmith.F("0198f3ab-7c2d-7def-8a91-23456789abcd"),
+						Type:     langsmith.F(langsmith.DirectorySelectorDirectoryCommitSelectorTypeCommit),
+					}),
+				},
+				"skills/current": langsmith.RepoDirectoryCommitParamsFilesDirectorySkillEntryInput{
+					RepoHandle: langsmith.F("shared-skill"),
+					Type:       langsmith.F(langsmith.RepoDirectoryCommitParamsFilesDirectorySkillEntryInputTypeSkill),
+					CommitID:   langsmith.F("182bd5e5-6e1a-4fe4-a799-aa6d9a6ab26e"),
+					Selector: langsmith.F[langsmith.DirectorySelectorUnionParam](langsmith.DirectorySelectorDirectoryLatestSelectorParam{
+						Type: langsmith.F(langsmith.DirectorySelectorDirectoryLatestSelectorTypeLatest),
+					}),
+				},
 			}),
 			ParentCommit: langsmith.F("parent_commit"),
 			SkipWebhooks: langsmith.F(true),
