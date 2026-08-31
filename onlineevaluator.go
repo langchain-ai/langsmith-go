@@ -553,8 +553,10 @@ func (r onlineSpendLimitJSON) RawJSON() string {
 }
 
 type UpdateOnlineCodeEvaluatorRequestParam struct {
-	Code     param.Field[string] `json:"code"`
-	Language param.Field[string] `json:"language"`
+	Code                 param.Field[string]   `json:"code"`
+	Dependencies         param.Field[string]   `json:"dependencies"`
+	Language             param.Field[string]   `json:"language"`
+	WorkspaceSecretsKeys param.Field[[]string] `json:"workspace_secrets_keys"`
 }
 
 func (r UpdateOnlineCodeEvaluatorRequestParam) MarshalJSON() (data []byte, err error) {
