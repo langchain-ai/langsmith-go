@@ -113,28 +113,32 @@ func (r registryListResponseJSON) RawJSON() string {
 }
 
 type RegistryResponse struct {
-	ID        string               `json:"id"`
-	CreatedAt string               `json:"created_at"`
-	CreatedBy string               `json:"created_by"`
-	Name      string               `json:"name"`
-	UpdatedAt string               `json:"updated_at"`
-	UpdatedBy string               `json:"updated_by"`
-	URL       string               `json:"url"`
-	JSON      registryResponseJSON `json:"-"`
+	ID                   string                               `json:"id"`
+	CreatedAt            string                               `json:"created_at"`
+	CreatedBy            string                               `json:"created_by"`
+	Name                 string                               `json:"name"`
+	Provider             RegistryResponseProvider             `json:"provider"`
+	RepositorySearchMode RegistryResponseRepositorySearchMode `json:"repository_search_mode"`
+	UpdatedAt            string                               `json:"updated_at"`
+	UpdatedBy            string                               `json:"updated_by"`
+	URL                  string                               `json:"url"`
+	JSON                 registryResponseJSON                 `json:"-"`
 }
 
 // registryResponseJSON contains the JSON metadata for the struct
 // [RegistryResponse]
 type registryResponseJSON struct {
-	ID          apijson.Field
-	CreatedAt   apijson.Field
-	CreatedBy   apijson.Field
-	Name        apijson.Field
-	UpdatedAt   apijson.Field
-	UpdatedBy   apijson.Field
-	URL         apijson.Field
-	raw         string
-	ExtraFields map[string]apijson.Field
+	ID                   apijson.Field
+	CreatedAt            apijson.Field
+	CreatedBy            apijson.Field
+	Name                 apijson.Field
+	Provider             apijson.Field
+	RepositorySearchMode apijson.Field
+	UpdatedAt            apijson.Field
+	UpdatedBy            apijson.Field
+	URL                  apijson.Field
+	raw                  string
+	ExtraFields          map[string]apijson.Field
 }
 
 func (r *RegistryResponse) UnmarshalJSON(data []byte) (err error) {
@@ -143,6 +147,41 @@ func (r *RegistryResponse) UnmarshalJSON(data []byte) (err error) {
 
 func (r registryResponseJSON) RawJSON() string {
 	return r.raw
+}
+
+type RegistryResponseProvider string
+
+const (
+	RegistryResponseProviderDockerRegistry RegistryResponseProvider = "DOCKER_REGISTRY"
+	RegistryResponseProviderHarbor         RegistryResponseProvider = "HARBOR"
+	RegistryResponseProviderGhcr           RegistryResponseProvider = "GHCR"
+	RegistryResponseProviderEcr            RegistryResponseProvider = "ECR"
+	RegistryResponseProviderGar            RegistryResponseProvider = "GAR"
+	RegistryResponseProviderDockerHub      RegistryResponseProvider = "DOCKER_HUB"
+)
+
+func (r RegistryResponseProvider) IsKnown() bool {
+	switch r {
+	case RegistryResponseProviderDockerRegistry, RegistryResponseProviderHarbor, RegistryResponseProviderGhcr, RegistryResponseProviderEcr, RegistryResponseProviderGar, RegistryResponseProviderDockerHub:
+		return true
+	}
+	return false
+}
+
+type RegistryResponseRepositorySearchMode string
+
+const (
+	RegistryResponseRepositorySearchModeGlobal RegistryResponseRepositorySearchMode = "GLOBAL"
+	RegistryResponseRepositorySearchModeScoped RegistryResponseRepositorySearchMode = "SCOPED"
+	RegistryResponseRepositorySearchModeNone   RegistryResponseRepositorySearchMode = "NONE"
+)
+
+func (r RegistryResponseRepositorySearchMode) IsKnown() bool {
+	switch r {
+	case RegistryResponseRepositorySearchModeGlobal, RegistryResponseRepositorySearchModeScoped, RegistryResponseRepositorySearchModeNone:
+		return true
+	}
+	return false
 }
 
 type SandboxRegistryNewParams struct {
