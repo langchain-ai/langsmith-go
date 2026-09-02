@@ -1,3 +1,15 @@
+# Fleet
+
+## Threads
+
+Response Types:
+
+- <a href="https://pkg.go.dev/github.com/langchain-ai/langsmith-go">langsmith</a>.<a href="https://pkg.go.dev/github.com/langchain-ai/langsmith-go#FleetThreadActivateSandboxResponse">FleetThreadActivateSandboxResponse</a>
+
+Methods:
+
+- <code title="post /v1/fleet/threads/{thread_id}/sandbox-activation">client.Fleet.Threads.<a href="https://pkg.go.dev/github.com/langchain-ai/langsmith-go#FleetThreadService.ActivateSandbox">ActivateSandbox</a>(ctx <a href="https://pkg.go.dev/context">context</a>.<a href="https://pkg.go.dev/context#Context">Context</a>, threadID <a href="https://pkg.go.dev/builtin#string">string</a>) (\*<a href="https://pkg.go.dev/github.com/langchain-ai/langsmith-go">langsmith</a>.<a href="https://pkg.go.dev/github.com/langchain-ai/langsmith-go#FleetThreadActivateSandboxResponse">FleetThreadActivateSandboxResponse</a>, <a href="https://pkg.go.dev/builtin#error">error</a>)</code>
+
 # Sessions
 
 Params Types:
