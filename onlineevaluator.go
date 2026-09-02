@@ -58,6 +58,7 @@ func (r *OnlineEvaluatorService) Get(ctx context.Context, evaluatorID string, op
 }
 
 // Update an existing evaluator's name, LLM configuration, or code configuration.
+// Returns 409 when a code evaluator build is ENQUEUED or BUILDING.
 func (r *OnlineEvaluatorService) Update(ctx context.Context, evaluatorID string, body OnlineEvaluatorUpdateParams, opts ...option.RequestOption) (res *UpdateOnlineEvaluatorResponse, err error) {
 	opts = slices.Concat(r.Options, opts)
 	if evaluatorID == "" {
@@ -94,10 +95,12 @@ func (r *OnlineEvaluatorService) ListAutoPaging(ctx context.Context, query Onlin
 	return pagination.NewOffsetPaginationOnlineEvaluatorsAutoPager(r.List(ctx, query, opts...))
 }
 
-// Delete an evaluator. When delete_run_rules is true, all run rules referencing
-// this evaluator are deleted first (same tenant). Associated llm_evaluators and
-// code_evaluators rows are removed by foreign-key cascade when the evaluator row
-// is deleted.
+// Delete an evaluator. Returns 409 when a code evaluator build is ENQUEUED or
+// BUILDING, or when run rules still reference the evaluator and delete_run_rules
+// is false. When delete_run_rules is true, all run rules referencing this
+// evaluator are deleted first (same tenant) if the build is not in flight.
+// Associated llm_evaluators and code_evaluators rows are removed by foreign-key
+// cascade when the evaluator row is deleted.
 func (r *OnlineEvaluatorService) Delete(ctx context.Context, evaluatorID string, body OnlineEvaluatorDeleteParams, opts ...option.RequestOption) (err error) {
 	opts = slices.Concat(r.Options, opts)
 	opts = append([]option.RequestOption{option.WithHeader("Accept", "*/*")}, opts...)
