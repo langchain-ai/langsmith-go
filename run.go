@@ -303,6 +303,10 @@ type Run struct {
 	LastQueuedAt time.Time `json:"last_queued_at" format:"date-time"`
 	// `latency_seconds` is wall-clock duration from start to end in seconds.
 	LatencySeconds float64 `json:"latency_seconds"`
+	// `ls_user_id` identifies the LangSmith user whose credential traced the run. It
+	// is absent for runs traced with a service-account API key, which has no
+	// associated user.
+	LsUserID string `json:"ls_user_id" format:"uuid"`
 	// `manifest` is the serialized configuration of the traced component (for example
 	// the model parameters, prompt template, or pipeline definition), when recorded.
 	Manifest map[string]interface{} `json:"manifest"`
@@ -395,6 +399,7 @@ type runJSON struct {
 	IsRoot                 apijson.Field
 	LastQueuedAt           apijson.Field
 	LatencySeconds         apijson.Field
+	LsUserID               apijson.Field
 	Manifest               apijson.Field
 	Metadata               apijson.Field
 	Name                   apijson.Field
@@ -892,11 +897,12 @@ const (
 	RunSelectFieldLastQueuedAt           RunSelectField = "LAST_QUEUED_AT"
 	RunSelectFieldShareURL               RunSelectField = "SHARE_URL"
 	RunSelectFieldFeedbackStats          RunSelectField = "FEEDBACK_STATS"
+	RunSelectFieldLsUserID               RunSelectField = "LS_USER_ID"
 )
 
 func (r RunSelectField) IsKnown() bool {
 	switch r {
-	case RunSelectFieldID, RunSelectFieldName, RunSelectFieldRunType, RunSelectFieldStatus, RunSelectFieldStartTime, RunSelectFieldEndTime, RunSelectFieldLatencySeconds, RunSelectFieldFirstTokenTime, RunSelectFieldError, RunSelectFieldErrorPreview, RunSelectFieldExtra, RunSelectFieldMetadata, RunSelectFieldEvents, RunSelectFieldInputs, RunSelectFieldInputsPreview, RunSelectFieldOutputs, RunSelectFieldOutputsPreview, RunSelectFieldManifest, RunSelectFieldParentRunIDs, RunSelectFieldProjectID, RunSelectFieldTraceID, RunSelectFieldThreadID, RunSelectFieldDottedOrder, RunSelectFieldIsRoot, RunSelectFieldReferenceExampleID, RunSelectFieldReferenceDatasetID, RunSelectFieldTotalTokens, RunSelectFieldPromptTokens, RunSelectFieldCompletionTokens, RunSelectFieldTotalCost, RunSelectFieldPromptCost, RunSelectFieldCompletionCost, RunSelectFieldPromptTokenDetails, RunSelectFieldCompletionTokenDetails, RunSelectFieldPromptCostDetails, RunSelectFieldCompletionCostDetails, RunSelectFieldPriceModelID, RunSelectFieldTags, RunSelectFieldAppPath, RunSelectFieldAttachments, RunSelectFieldThreadEvaluationTime, RunSelectFieldIsInDataset, RunSelectFieldLastQueuedAt, RunSelectFieldShareURL, RunSelectFieldFeedbackStats:
+	case RunSelectFieldID, RunSelectFieldName, RunSelectFieldRunType, RunSelectFieldStatus, RunSelectFieldStartTime, RunSelectFieldEndTime, RunSelectFieldLatencySeconds, RunSelectFieldFirstTokenTime, RunSelectFieldError, RunSelectFieldErrorPreview, RunSelectFieldExtra, RunSelectFieldMetadata, RunSelectFieldEvents, RunSelectFieldInputs, RunSelectFieldInputsPreview, RunSelectFieldOutputs, RunSelectFieldOutputsPreview, RunSelectFieldManifest, RunSelectFieldParentRunIDs, RunSelectFieldProjectID, RunSelectFieldTraceID, RunSelectFieldThreadID, RunSelectFieldDottedOrder, RunSelectFieldIsRoot, RunSelectFieldReferenceExampleID, RunSelectFieldReferenceDatasetID, RunSelectFieldTotalTokens, RunSelectFieldPromptTokens, RunSelectFieldCompletionTokens, RunSelectFieldTotalCost, RunSelectFieldPromptCost, RunSelectFieldCompletionCost, RunSelectFieldPromptTokenDetails, RunSelectFieldCompletionTokenDetails, RunSelectFieldPromptCostDetails, RunSelectFieldCompletionCostDetails, RunSelectFieldPriceModelID, RunSelectFieldTags, RunSelectFieldAppPath, RunSelectFieldAttachments, RunSelectFieldThreadEvaluationTime, RunSelectFieldIsInDataset, RunSelectFieldLastQueuedAt, RunSelectFieldShareURL, RunSelectFieldFeedbackStats, RunSelectFieldLsUserID:
 		return true
 	}
 	return false
@@ -1651,11 +1657,12 @@ const (
 	RunGetV2ParamsSelectLastQueuedAt           RunGetV2ParamsSelect = "LAST_QUEUED_AT"
 	RunGetV2ParamsSelectShareURL               RunGetV2ParamsSelect = "SHARE_URL"
 	RunGetV2ParamsSelectFeedbackStats          RunGetV2ParamsSelect = "FEEDBACK_STATS"
+	RunGetV2ParamsSelectLsUserID               RunGetV2ParamsSelect = "LS_USER_ID"
 )
 
 func (r RunGetV2ParamsSelect) IsKnown() bool {
 	switch r {
-	case RunGetV2ParamsSelectID, RunGetV2ParamsSelectName, RunGetV2ParamsSelectRunType, RunGetV2ParamsSelectStatus, RunGetV2ParamsSelectStartTime, RunGetV2ParamsSelectEndTime, RunGetV2ParamsSelectLatencySeconds, RunGetV2ParamsSelectFirstTokenTime, RunGetV2ParamsSelectError, RunGetV2ParamsSelectErrorPreview, RunGetV2ParamsSelectExtra, RunGetV2ParamsSelectMetadata, RunGetV2ParamsSelectEvents, RunGetV2ParamsSelectInputs, RunGetV2ParamsSelectInputsPreview, RunGetV2ParamsSelectOutputs, RunGetV2ParamsSelectOutputsPreview, RunGetV2ParamsSelectManifest, RunGetV2ParamsSelectParentRunIDs, RunGetV2ParamsSelectProjectID, RunGetV2ParamsSelectTraceID, RunGetV2ParamsSelectThreadID, RunGetV2ParamsSelectDottedOrder, RunGetV2ParamsSelectIsRoot, RunGetV2ParamsSelectReferenceExampleID, RunGetV2ParamsSelectReferenceDatasetID, RunGetV2ParamsSelectTotalTokens, RunGetV2ParamsSelectPromptTokens, RunGetV2ParamsSelectCompletionTokens, RunGetV2ParamsSelectTotalCost, RunGetV2ParamsSelectPromptCost, RunGetV2ParamsSelectCompletionCost, RunGetV2ParamsSelectPromptTokenDetails, RunGetV2ParamsSelectCompletionTokenDetails, RunGetV2ParamsSelectPromptCostDetails, RunGetV2ParamsSelectCompletionCostDetails, RunGetV2ParamsSelectPriceModelID, RunGetV2ParamsSelectTags, RunGetV2ParamsSelectAppPath, RunGetV2ParamsSelectAttachments, RunGetV2ParamsSelectThreadEvaluationTime, RunGetV2ParamsSelectIsInDataset, RunGetV2ParamsSelectLastQueuedAt, RunGetV2ParamsSelectShareURL, RunGetV2ParamsSelectFeedbackStats:
+	case RunGetV2ParamsSelectID, RunGetV2ParamsSelectName, RunGetV2ParamsSelectRunType, RunGetV2ParamsSelectStatus, RunGetV2ParamsSelectStartTime, RunGetV2ParamsSelectEndTime, RunGetV2ParamsSelectLatencySeconds, RunGetV2ParamsSelectFirstTokenTime, RunGetV2ParamsSelectError, RunGetV2ParamsSelectErrorPreview, RunGetV2ParamsSelectExtra, RunGetV2ParamsSelectMetadata, RunGetV2ParamsSelectEvents, RunGetV2ParamsSelectInputs, RunGetV2ParamsSelectInputsPreview, RunGetV2ParamsSelectOutputs, RunGetV2ParamsSelectOutputsPreview, RunGetV2ParamsSelectManifest, RunGetV2ParamsSelectParentRunIDs, RunGetV2ParamsSelectProjectID, RunGetV2ParamsSelectTraceID, RunGetV2ParamsSelectThreadID, RunGetV2ParamsSelectDottedOrder, RunGetV2ParamsSelectIsRoot, RunGetV2ParamsSelectReferenceExampleID, RunGetV2ParamsSelectReferenceDatasetID, RunGetV2ParamsSelectTotalTokens, RunGetV2ParamsSelectPromptTokens, RunGetV2ParamsSelectCompletionTokens, RunGetV2ParamsSelectTotalCost, RunGetV2ParamsSelectPromptCost, RunGetV2ParamsSelectCompletionCost, RunGetV2ParamsSelectPromptTokenDetails, RunGetV2ParamsSelectCompletionTokenDetails, RunGetV2ParamsSelectPromptCostDetails, RunGetV2ParamsSelectCompletionCostDetails, RunGetV2ParamsSelectPriceModelID, RunGetV2ParamsSelectTags, RunGetV2ParamsSelectAppPath, RunGetV2ParamsSelectAttachments, RunGetV2ParamsSelectThreadEvaluationTime, RunGetV2ParamsSelectIsInDataset, RunGetV2ParamsSelectLastQueuedAt, RunGetV2ParamsSelectShareURL, RunGetV2ParamsSelectFeedbackStats, RunGetV2ParamsSelectLsUserID:
 		return true
 	}
 	return false
