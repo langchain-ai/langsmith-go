@@ -310,7 +310,7 @@ func (r PublicDatasetListSessionsParams) URLQuery() (v url.Values) {
 }
 
 type PublicDatasetGetSessionsBulkParams struct {
-	ShareTokens param.Field[[]string] `query:"share_tokens" api:"required"`
+	ShareTokens param.Field[[]string] `query:"share_tokens" api:"required" format:"uuid"`
 }
 
 // URLQuery serializes [PublicDatasetGetSessionsBulkParams]'s query parameters as
