@@ -1,5 +1,13 @@
 # Changelog
 
+## [0.26.1](https://github.com/langchain-ai/langsmith-go/compare/v0.26.0...v0.26.1) (2026-09-02)
+
+
+### Build System
+
+* **deps:** bump google.golang.org/grpc ([681d9f3](https://github.com/langchain-ai/langsmith-go/commit/681d9f3cef9205438652d2ca623a99893206834b))
+* **deps:** bump google.golang.org/grpc from 1.82.1 to 1.83.1 in the go_modules group across 1 directory ([#204](https://github.com/langchain-ai/langsmith-go/issues/204)) ([b0149ab](https://github.com/langchain-ai/langsmith-go/commit/b0149abe62518136f00242c6678e2d77be74ba25))
+
 ## [0.26.0](https://github.com/langchain-ai/langsmith-go/compare/v0.25.6...v0.26.0) (2026-08-24)
 
 
