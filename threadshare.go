@@ -49,8 +49,9 @@ func (r *ThreadShareService) New(ctx context.Context, threadID string, body Thre
 	return res, err
 }
 
-// Returns the share token for a thread, or 404 when it is not shared. Gated on
-// runs:share so the control's state matches the control's permission.
+// Returns the share token for a thread. The token is omitted when the thread is
+// not shared. Gated on runs:share so the control's state matches the control's
+// permission.
 func (r *ThreadShareService) Get(ctx context.Context, threadID string, query ThreadShareGetParams, opts ...option.RequestOption) (res *ThreadShareGetResponse, err error) {
 	opts = slices.Concat(r.Options, opts)
 	if threadID == "" {
@@ -77,7 +78,7 @@ func (r *ThreadShareService) Delete(ctx context.Context, threadID string, body T
 }
 
 type ThreadShareNewResponse struct {
-	ShareToken string                     `json:"share_token" api:"required" format:"uuid"`
+	ShareToken string                     `json:"share_token" format:"uuid"`
 	JSON       threadShareNewResponseJSON `json:"-"`
 }
 
@@ -98,7 +99,7 @@ func (r threadShareNewResponseJSON) RawJSON() string {
 }
 
 type ThreadShareGetResponse struct {
-	ShareToken string                     `json:"share_token" api:"required" format:"uuid"`
+	ShareToken string                     `json:"share_token" format:"uuid"`
 	JSON       threadShareGetResponseJSON `json:"-"`
 }
 
