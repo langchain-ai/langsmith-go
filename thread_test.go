@@ -31,6 +31,7 @@ func TestThreadAggregateStatsWithOptionalParams(t *testing.T) {
 	_, err := client.Threads.AggregateStats(context.TODO(), langsmith.ThreadAggregateStatsParams{
 		ProjectID:    langsmith.F("0190a1b2-c3d4-7ef0-a5b6-6ea3a82e9328"),
 		Select:       langsmith.F([]langsmith.ThreadAggregateStatsParamsSelect{langsmith.ThreadAggregateStatsParamsSelectThreadCount, langsmith.ThreadAggregateStatsParamsSelectTraceCount, langsmith.ThreadAggregateStatsParamsSelectTotalTokens, langsmith.ThreadAggregateStatsParamsSelectTotalCost}),
+		Filter:       langsmith.F(`eq(status, "error")`),
 		MaxStartTime: langsmith.F(time.Now()),
 		MinStartTime: langsmith.F(time.Now()),
 		ThreadFilter: langsmith.F("gte(turn_count, 3)"),

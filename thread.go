@@ -932,6 +932,12 @@ type ThreadAggregateStatsParams struct {
 	// `select` lists the aggregate statistics to compute and return. At least one
 	// value is required.
 	Select param.Field[[]ThreadAggregateStatsParamsSelect] `json:"select" api:"required"`
+	// `filter` is a deprecated, unscoped LangSmith filter expression evaluated against
+	// trace root runs. Kept for compatibility with deployments that serve this
+	// endpoint via the legacy ClickHouse backend (no SmithDB query service
+	// configured); prefer `trace_filter`, `tree_filter`, or `thread_filter` otherwise,
+	// since those require SmithDB.
+	Filter param.Field[string] `json:"filter"`
 	// `max_start_time` is the exclusive upper bound on thread activity (RFC3339
 	// date-time). Defaults to now (UTC) when omitted.
 	MaxStartTime param.Field[time.Time] `json:"max_start_time" format:"date-time"`
