@@ -72,6 +72,7 @@ func TestThreadQueryWithOptionalParams(t *testing.T) {
 		ThreadFilter: langsmith.F("gte(turn_count, 3)"),
 		TraceFilter:  langsmith.F(`eq(status, "error")`),
 		TreeFilter:   langsmith.F(`has(tags, "production")`),
+		Accept:       langsmith.F("Accept"),
 	})
 	if err != nil {
 		var apierr *langsmith.Error

@@ -75,12 +75,15 @@ func (r *ThreadService) ListTracesAutoPaging(ctx context.Context, threadID strin
 // threads matching the given time range and optional filters.
 //
 // Self-hosted deployments require LangSmith `v0.16` or later.
-func (r *ThreadService) Query(ctx context.Context, body ThreadQueryParams, opts ...option.RequestOption) (res *pagination.ItemsCursorPostPagination[Thread], err error) {
+func (r *ThreadService) Query(ctx context.Context, params ThreadQueryParams, opts ...option.RequestOption) (res *pagination.ItemsCursorPostPagination[Thread], err error) {
 	var raw *http.Response
+	if params.Accept.Present {
+		opts = append(opts, option.WithHeader("Accept", fmt.Sprintf("%v", params.Accept)))
+	}
 	opts = slices.Concat(r.Options, opts)
 	opts = append([]option.RequestOption{option.WithResponseInto(&raw)}, opts...)
 	path := "api/v2/threads/query"
-	cfg, err := requestconfig.NewRequestConfig(ctx, http.MethodPost, path, body, &res, opts...)
+	cfg, err := requestconfig.NewRequestConfig(ctx, http.MethodPost, path, params, &res, opts...)
 	if err != nil {
 		return nil, err
 	}
@@ -96,8 +99,8 @@ func (r *ThreadService) Query(ctx context.Context, body ThreadQueryParams, opts 
 // threads matching the given time range and optional filters.
 //
 // Self-hosted deployments require LangSmith `v0.16` or later.
-func (r *ThreadService) QueryAutoPaging(ctx context.Context, body ThreadQueryParams, opts ...option.RequestOption) *pagination.ItemsCursorPostPaginationAutoPager[Thread] {
-	return pagination.NewItemsCursorPostPaginationAutoPager(r.Query(ctx, body, opts...))
+func (r *ThreadService) QueryAutoPaging(ctx context.Context, params ThreadQueryParams, opts ...option.RequestOption) *pagination.ItemsCursorPostPaginationAutoPager[Thread] {
+	return pagination.NewItemsCursorPostPaginationAutoPager(r.Query(ctx, params, opts...))
 }
 
 // Compute aggregate stats for a single thread (turn count, latency percentiles,
@@ -862,6 +865,7 @@ type ThreadQueryParams struct {
 	// https://docs.langchain.com/langsmith/trace-query-syntax#filter-query-language
 	// for syntax.
 	TreeFilter param.Field[string] `json:"tree_filter"`
+	Accept     param.Field[string] `header:"Accept"`
 }
 
 func (r ThreadQueryParams) MarshalJSON() (data []byte, err error) {
