@@ -40,6 +40,19 @@ func NewThreadService(opts ...option.RequestOption) (r *ThreadService) {
 	return
 }
 
+// GET with body payload — no resources created. Returns aggregate statistics for
+// threads in a tracing project. The response includes the thread counts, run
+// counts, latency percentiles, rates, token totals, and cost totals requested in
+// `select`.
+//
+// Self-hosted deployments require LangSmith `v0.17` or later.
+func (r *ThreadService) AggregateStats(ctx context.Context, body ThreadAggregateStatsParams, opts ...option.RequestOption) (res *ThreadAggregateStatsResponse, err error) {
+	opts = slices.Concat(r.Options, opts)
+	path := "api/v2/threads/stats"
+	err = requestconfig.ExecuteNewRequest(ctx, http.MethodPost, path, body, &res, opts...)
+	return res, err
+}
+
 // Retrieve all traces belonging to a specific thread within a project.
 //
 // Self-hosted deployments require LangSmith `v0.16` or later.
@@ -754,6 +767,223 @@ func (r *ThreadTracePromptTokenDetails) UnmarshalJSON(data []byte) (err error) {
 
 func (r threadTracePromptTokenDetailsJSON) RawJSON() string {
 	return r.raw
+}
+
+type ThreadAggregateStatsResponse struct {
+	// `completion_cost` is the completion cost across matching traces in USD.
+	CompletionCost float64 `json:"completion_cost"`
+	// `completion_cost_details` contains completion-cost totals by category.
+	CompletionCostDetails map[string]float64 `json:"completion_cost_details"`
+	// `completion_token_details` contains completion-token totals by category.
+	CompletionTokenDetails map[string]int64 `json:"completion_token_details"`
+	// `completion_tokens` is the sum of completion tokens across matching traces.
+	CompletionTokens int64 `json:"completion_tokens"`
+	// `error_rate` is the fraction of matching traces that contain an error.
+	ErrorRate float64 `json:"error_rate"`
+	// `first_token_p50_seconds` is the approximate median time to first token in
+	// seconds. Populated when `FIRST_TOKEN_P50` is selected.
+	FirstTokenP50Seconds float64 `json:"first_token_p50_seconds"`
+	// `first_token_p99_seconds` is the approximate p99 time to first token in seconds.
+	// Populated when `FIRST_TOKEN_P99` is selected.
+	FirstTokenP99Seconds float64 `json:"first_token_p99_seconds"`
+	// `latency_p50_seconds` is the approximate median trace latency in seconds.
+	// Populated when `LATENCY_P50` is selected.
+	LatencyP50Seconds float64 `json:"latency_p50_seconds"`
+	// `latency_p99_seconds` is the approximate p99 trace latency in seconds. Populated
+	// when `LATENCY_P99` is selected.
+	LatencyP99Seconds float64 `json:"latency_p99_seconds"`
+	// `median_tokens` is the approximate median of total tokens across matching
+	// traces. Populated when `MEDIAN_TOKENS` is selected.
+	MedianTokens int64 `json:"median_tokens"`
+	// `prompt_cost` is the prompt cost across matching traces in USD.
+	PromptCost float64 `json:"prompt_cost"`
+	// `prompt_cost_details` contains prompt-cost totals by category.
+	PromptCostDetails map[string]float64 `json:"prompt_cost_details"`
+	// `prompt_token_details` contains prompt-token totals by category.
+	PromptTokenDetails map[string]int64 `json:"prompt_token_details"`
+	// `prompt_tokens` is the sum of prompt tokens across matching traces.
+	PromptTokens int64 `json:"prompt_tokens"`
+	// `streaming_rate` is the fraction of completed matching traces that streamed
+	// tokens.
+	StreamingRate float64 `json:"streaming_rate"`
+	// `thread_count` is the number of distinct threads matching the query. Populated
+	// when `THREAD_COUNT` is selected.
+	ThreadCount int64 `json:"thread_count"`
+	// `thread_feedback_stats` contains aggregate thread-level feedback statistics
+	// keyed by feedback key. Populated when `THREAD_FEEDBACK_STATS` is selected.
+	ThreadFeedbackStats map[string]ThreadAggregateStatsResponseThreadFeedbackStat `json:"thread_feedback_stats"`
+	// `total_cost` is the total cost across matching traces in USD.
+	TotalCost float64 `json:"total_cost"`
+	// `total_tokens` is the sum of all tokens across matching traces.
+	TotalTokens int64 `json:"total_tokens"`
+	// `trace_count` is the number of traces in the matching threads. Populated when
+	// `TRACE_COUNT` is selected.
+	TraceCount int64                            `json:"trace_count"`
+	JSON       threadAggregateStatsResponseJSON `json:"-"`
+}
+
+// threadAggregateStatsResponseJSON contains the JSON metadata for the struct
+// [ThreadAggregateStatsResponse]
+type threadAggregateStatsResponseJSON struct {
+	CompletionCost         apijson.Field
+	CompletionCostDetails  apijson.Field
+	CompletionTokenDetails apijson.Field
+	CompletionTokens       apijson.Field
+	ErrorRate              apijson.Field
+	FirstTokenP50Seconds   apijson.Field
+	FirstTokenP99Seconds   apijson.Field
+	LatencyP50Seconds      apijson.Field
+	LatencyP99Seconds      apijson.Field
+	MedianTokens           apijson.Field
+	PromptCost             apijson.Field
+	PromptCostDetails      apijson.Field
+	PromptTokenDetails     apijson.Field
+	PromptTokens           apijson.Field
+	StreamingRate          apijson.Field
+	ThreadCount            apijson.Field
+	ThreadFeedbackStats    apijson.Field
+	TotalCost              apijson.Field
+	TotalTokens            apijson.Field
+	TraceCount             apijson.Field
+	raw                    string
+	ExtraFields            map[string]apijson.Field
+}
+
+func (r *ThreadAggregateStatsResponse) UnmarshalJSON(data []byte) (err error) {
+	return apijson.UnmarshalRoot(data, r)
+}
+
+func (r threadAggregateStatsResponseJSON) RawJSON() string {
+	return r.raw
+}
+
+type ThreadAggregateStatsResponseThreadFeedbackStat struct {
+	// `avg` is the arithmetic mean of numeric feedback scores for this key on the run,
+	// or `null` when no numeric score has been recorded (for example purely
+	// categorical feedback).
+	Avg float64 `json:"avg"`
+	// `comments` is a sample of human-readable comments attached to feedback points
+	// for this key, in no particular order. May be empty; is not exhaustive when many
+	// comments exist.
+	Comments []string `json:"comments"`
+	// `contains_thread_feedback` is true when at least one feedback point for this key
+	// was submitted at the thread level (rather than at an individual run). Always
+	// false on responses that already describe a single run in isolation.
+	ContainsThreadFeedback bool `json:"contains_thread_feedback"`
+	// `errors` is the number of feedback points recorded as errors rather than
+	// successful scores (for example an automated evaluator that raised an exception).
+	// Defaults to 0 when no errors occurred.
+	Errors int64 `json:"errors"`
+	// `max` is the largest numeric feedback score recorded for this key on the run, or
+	// `null` when no numeric score has been recorded.
+	Max float64 `json:"max"`
+	// `min` is the smallest numeric feedback score recorded for this key on the run,
+	// or `null` when no numeric score has been recorded.
+	Min float64 `json:"min"`
+	// `n` is the number of feedback points recorded for this key on the run. For
+	// numeric feedback this is the sample size behind `avg`, `min`, `max`, and
+	// `stdev`; for categorical feedback it is the sum of the `values` counts.
+	N int64 `json:"n"`
+	// `sources` is a sample of feedback sources for this key. Each entry is either a
+	// plain string identifier (for example `"api"`, `"app"`, `"model"`) or a JSON
+	// object describing a synthetic source (for example
+	// `{"type": "__ls_composite_feedback"}` for a computed aggregate). Clients must
+	// tolerate both shapes.
+	Sources []interface{} `json:"sources"`
+	// `stdev` is the sample standard deviation of numeric feedback scores for this key
+	// on the run, or `null` when it cannot be computed (for example fewer than two
+	// numeric scores, or purely categorical feedback).
+	Stdev float64 `json:"stdev"`
+	// `values` is the distribution of categorical feedback labels for this key,
+	// mapping each label to its occurrence count. Empty (`{}`) for purely numeric
+	// feedback.
+	Values map[string]int64                                   `json:"values"`
+	JSON   threadAggregateStatsResponseThreadFeedbackStatJSON `json:"-"`
+}
+
+// threadAggregateStatsResponseThreadFeedbackStatJSON contains the JSON metadata
+// for the struct [ThreadAggregateStatsResponseThreadFeedbackStat]
+type threadAggregateStatsResponseThreadFeedbackStatJSON struct {
+	Avg                    apijson.Field
+	Comments               apijson.Field
+	ContainsThreadFeedback apijson.Field
+	Errors                 apijson.Field
+	Max                    apijson.Field
+	Min                    apijson.Field
+	N                      apijson.Field
+	Sources                apijson.Field
+	Stdev                  apijson.Field
+	Values                 apijson.Field
+	raw                    string
+	ExtraFields            map[string]apijson.Field
+}
+
+func (r *ThreadAggregateStatsResponseThreadFeedbackStat) UnmarshalJSON(data []byte) (err error) {
+	return apijson.UnmarshalRoot(data, r)
+}
+
+func (r threadAggregateStatsResponseThreadFeedbackStatJSON) RawJSON() string {
+	return r.raw
+}
+
+type ThreadAggregateStatsParams struct {
+	// `project_id` is the tracing project UUID.
+	ProjectID param.Field[string] `json:"project_id" api:"required" format:"uuid"`
+	// `select` lists the aggregate statistics to compute and return. At least one
+	// value is required.
+	Select param.Field[[]ThreadAggregateStatsParamsSelect] `json:"select" api:"required"`
+	// `max_start_time` is the exclusive upper bound on thread activity (RFC3339
+	// date-time). Defaults to now (UTC) when omitted.
+	MaxStartTime param.Field[time.Time] `json:"max_start_time" format:"date-time"`
+	// `min_start_time` is the inclusive lower bound on thread activity (RFC3339
+	// date-time). Defaults to 1 day before now (UTC) when omitted.
+	MinStartTime param.Field[time.Time] `json:"min_start_time" format:"date-time"`
+	// `thread_filter` narrows eligible threads using a LangSmith filter expression
+	// evaluated against the complete thread summary.
+	ThreadFilter param.Field[string] `json:"thread_filter"`
+	// `trace_filter` narrows eligible threads to those containing a trace whose root
+	// run matches this LangSmith filter expression.
+	TraceFilter param.Field[string] `json:"trace_filter"`
+	// `tree_filter` narrows eligible threads to those containing a matching run
+	// anywhere in a trace tree.
+	TreeFilter param.Field[string] `json:"tree_filter"`
+}
+
+func (r ThreadAggregateStatsParams) MarshalJSON() (data []byte, err error) {
+	return apijson.MarshalRoot(r)
+}
+
+type ThreadAggregateStatsParamsSelect string
+
+const (
+	ThreadAggregateStatsParamsSelectThreadCount            ThreadAggregateStatsParamsSelect = "THREAD_COUNT"
+	ThreadAggregateStatsParamsSelectTraceCount             ThreadAggregateStatsParamsSelect = "TRACE_COUNT"
+	ThreadAggregateStatsParamsSelectTotalTokens            ThreadAggregateStatsParamsSelect = "TOTAL_TOKENS"
+	ThreadAggregateStatsParamsSelectTotalCost              ThreadAggregateStatsParamsSelect = "TOTAL_COST"
+	ThreadAggregateStatsParamsSelectErrorRate              ThreadAggregateStatsParamsSelect = "ERROR_RATE"
+	ThreadAggregateStatsParamsSelectStreamingRate          ThreadAggregateStatsParamsSelect = "STREAMING_RATE"
+	ThreadAggregateStatsParamsSelectLatencyP50             ThreadAggregateStatsParamsSelect = "LATENCY_P50"
+	ThreadAggregateStatsParamsSelectLatencyP99             ThreadAggregateStatsParamsSelect = "LATENCY_P99"
+	ThreadAggregateStatsParamsSelectMedianTokens           ThreadAggregateStatsParamsSelect = "MEDIAN_TOKENS"
+	ThreadAggregateStatsParamsSelectFirstTokenP50          ThreadAggregateStatsParamsSelect = "FIRST_TOKEN_P50"
+	ThreadAggregateStatsParamsSelectFirstTokenP99          ThreadAggregateStatsParamsSelect = "FIRST_TOKEN_P99"
+	ThreadAggregateStatsParamsSelectPromptTokens           ThreadAggregateStatsParamsSelect = "PROMPT_TOKENS"
+	ThreadAggregateStatsParamsSelectCompletionTokens       ThreadAggregateStatsParamsSelect = "COMPLETION_TOKENS"
+	ThreadAggregateStatsParamsSelectPromptCost             ThreadAggregateStatsParamsSelect = "PROMPT_COST"
+	ThreadAggregateStatsParamsSelectCompletionCost         ThreadAggregateStatsParamsSelect = "COMPLETION_COST"
+	ThreadAggregateStatsParamsSelectPromptTokenDetails     ThreadAggregateStatsParamsSelect = "PROMPT_TOKEN_DETAILS"
+	ThreadAggregateStatsParamsSelectCompletionTokenDetails ThreadAggregateStatsParamsSelect = "COMPLETION_TOKEN_DETAILS"
+	ThreadAggregateStatsParamsSelectPromptCostDetails      ThreadAggregateStatsParamsSelect = "PROMPT_COST_DETAILS"
+	ThreadAggregateStatsParamsSelectCompletionCostDetails  ThreadAggregateStatsParamsSelect = "COMPLETION_COST_DETAILS"
+	ThreadAggregateStatsParamsSelectThreadFeedbackStats    ThreadAggregateStatsParamsSelect = "THREAD_FEEDBACK_STATS"
+)
+
+func (r ThreadAggregateStatsParamsSelect) IsKnown() bool {
+	switch r {
+	case ThreadAggregateStatsParamsSelectThreadCount, ThreadAggregateStatsParamsSelectTraceCount, ThreadAggregateStatsParamsSelectTotalTokens, ThreadAggregateStatsParamsSelectTotalCost, ThreadAggregateStatsParamsSelectErrorRate, ThreadAggregateStatsParamsSelectStreamingRate, ThreadAggregateStatsParamsSelectLatencyP50, ThreadAggregateStatsParamsSelectLatencyP99, ThreadAggregateStatsParamsSelectMedianTokens, ThreadAggregateStatsParamsSelectFirstTokenP50, ThreadAggregateStatsParamsSelectFirstTokenP99, ThreadAggregateStatsParamsSelectPromptTokens, ThreadAggregateStatsParamsSelectCompletionTokens, ThreadAggregateStatsParamsSelectPromptCost, ThreadAggregateStatsParamsSelectCompletionCost, ThreadAggregateStatsParamsSelectPromptTokenDetails, ThreadAggregateStatsParamsSelectCompletionTokenDetails, ThreadAggregateStatsParamsSelectPromptCostDetails, ThreadAggregateStatsParamsSelectCompletionCostDetails, ThreadAggregateStatsParamsSelectThreadFeedbackStats:
+		return true
+	}
+	return false
 }
 
 type ThreadListTracesParams struct {
