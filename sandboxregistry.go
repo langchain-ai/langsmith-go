@@ -114,6 +114,8 @@ func (r registryListResponseJSON) RawJSON() string {
 
 type RegistryResponse struct {
 	ID                   string                               `json:"id"`
+	AuthType             RegistryResponseAuthType             `json:"auth_type"`
+	AwsRoleArn           string                               `json:"aws_role_arn"`
 	CreatedAt            string                               `json:"created_at"`
 	CreatedBy            string                               `json:"created_by"`
 	Name                 string                               `json:"name"`
@@ -129,6 +131,8 @@ type RegistryResponse struct {
 // [RegistryResponse]
 type registryResponseJSON struct {
 	ID                   apijson.Field
+	AuthType             apijson.Field
+	AwsRoleArn           apijson.Field
 	CreatedAt            apijson.Field
 	CreatedBy            apijson.Field
 	Name                 apijson.Field
@@ -147,6 +151,21 @@ func (r *RegistryResponse) UnmarshalJSON(data []byte) (err error) {
 
 func (r registryResponseJSON) RawJSON() string {
 	return r.raw
+}
+
+type RegistryResponseAuthType string
+
+const (
+	RegistryResponseAuthTypeDockerConfig RegistryResponseAuthType = "DOCKER_CONFIG"
+	RegistryResponseAuthTypeAwsRole      RegistryResponseAuthType = "AWS_ROLE"
+)
+
+func (r RegistryResponseAuthType) IsKnown() bool {
+	switch r {
+	case RegistryResponseAuthTypeDockerConfig, RegistryResponseAuthTypeAwsRole:
+		return true
+	}
+	return false
 }
 
 type RegistryResponseProvider string
@@ -185,25 +204,59 @@ func (r RegistryResponseRepositorySearchMode) IsKnown() bool {
 }
 
 type SandboxRegistryNewParams struct {
-	Name     param.Field[string] `json:"name" api:"required"`
-	Password param.Field[string] `json:"password" api:"required"`
-	URL      param.Field[string] `json:"url" api:"required"`
-	Username param.Field[string] `json:"username" api:"required"`
+	Name       param.Field[string]                           `json:"name" api:"required"`
+	URL        param.Field[string]                           `json:"url" api:"required"`
+	AuthType   param.Field[SandboxRegistryNewParamsAuthType] `json:"auth_type"`
+	AwsRoleArn param.Field[string]                           `json:"aws_role_arn"`
+	Password   param.Field[string]                           `json:"password"`
+	Username   param.Field[string]                           `json:"username"`
 }
 
 func (r SandboxRegistryNewParams) MarshalJSON() (data []byte, err error) {
 	return apijson.MarshalRoot(r)
 }
 
+type SandboxRegistryNewParamsAuthType string
+
+const (
+	SandboxRegistryNewParamsAuthTypeDockerConfig SandboxRegistryNewParamsAuthType = "DOCKER_CONFIG"
+	SandboxRegistryNewParamsAuthTypeAwsRole      SandboxRegistryNewParamsAuthType = "AWS_ROLE"
+)
+
+func (r SandboxRegistryNewParamsAuthType) IsKnown() bool {
+	switch r {
+	case SandboxRegistryNewParamsAuthTypeDockerConfig, SandboxRegistryNewParamsAuthTypeAwsRole:
+		return true
+	}
+	return false
+}
+
 type SandboxRegistryUpdateParams struct {
-	Name     param.Field[string] `json:"name"`
-	Password param.Field[string] `json:"password"`
-	URL      param.Field[string] `json:"url"`
-	Username param.Field[string] `json:"username"`
+	AuthType   param.Field[SandboxRegistryUpdateParamsAuthType] `json:"auth_type"`
+	AwsRoleArn param.Field[string]                              `json:"aws_role_arn"`
+	Name       param.Field[string]                              `json:"name"`
+	Password   param.Field[string]                              `json:"password"`
+	URL        param.Field[string]                              `json:"url"`
+	Username   param.Field[string]                              `json:"username"`
 }
 
 func (r SandboxRegistryUpdateParams) MarshalJSON() (data []byte, err error) {
 	return apijson.MarshalRoot(r)
+}
+
+type SandboxRegistryUpdateParamsAuthType string
+
+const (
+	SandboxRegistryUpdateParamsAuthTypeDockerConfig SandboxRegistryUpdateParamsAuthType = "DOCKER_CONFIG"
+	SandboxRegistryUpdateParamsAuthTypeAwsRole      SandboxRegistryUpdateParamsAuthType = "AWS_ROLE"
+)
+
+func (r SandboxRegistryUpdateParamsAuthType) IsKnown() bool {
+	switch r {
+	case SandboxRegistryUpdateParamsAuthTypeDockerConfig, SandboxRegistryUpdateParamsAuthTypeAwsRole:
+		return true
+	}
+	return false
 }
 
 type SandboxRegistryListParams struct {
