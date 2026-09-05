@@ -865,6 +865,9 @@ func openAIUsagePricingBucket(serviceTier string, inputTokens int) string {
 	if tier == "" || tier == "default" {
 		tier = ""
 	}
+	if tier == "fast" {
+		tier = "priority"
+	}
 	if inputTokens > openAILongContextInputThreshold {
 		return openAIUsageDetailKey(tier, "long_context")
 	}
@@ -952,7 +955,12 @@ func buildOpenAIUsage(usageMap map[string]any, serviceTier string) usageInfo {
 
 	bucket := openAIUsagePricingBucket(serviceTier, input)
 	cacheReadKey := openAIUsageDetailKey(bucket, "cache_read")
-	cacheWriteKey := openAIUsageDetailKey(bucket, "cache_creation")
+	cacheWriteKey := "cache_creation"
+	if bucket != "" {
+		// LangSmith's tiered price maps use cache_write, while the base
+		// cache_creation key remains compatible with existing consumers.
+		cacheWriteKey = openAIUsageDetailKey(bucket, "cache_write")
+	}
 	reasoningKey := openAIUsageDetailKey(bucket, "reasoning")
 
 	// Detail keys mirror langchain-openai's _create_usage_metadata so cost is

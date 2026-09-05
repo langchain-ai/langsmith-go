@@ -94,7 +94,7 @@ func TestWebSocketResponses(t *testing.T) {
 	require.Equal(t, "new_token", span.Events[0].Name)
 	var usage map[string]any
 	require.NoError(t, json.Unmarshal([]byte(spanString(span, string(usageMetadataKey))), &usage))
-	require.Equal(t, map[string]any{"flex_cache_read": float64(100), "flex_cache_creation": float64(200), "flex": float64(700)}, usage["input_token_details"])
+	require.Equal(t, map[string]any{"flex_cache_read": float64(100), "flex_cache_write": float64(200), "flex": float64(700)}, usage["input_token_details"])
 	require.Empty(t, conn.active)
 	require.Empty(t, conn.lanes)
 	// Duplicate terminal events must not emit a second span.

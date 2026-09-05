@@ -46,5 +46,6 @@ errors end outstanding spans. As with HTTP tracing, prompts and outputs are
 exported to the configured tracer provider.
 
 Both transports preserve `configuration_update` reasoning details and map
-`cache_write_tokens` to LangSmith's `cache_creation` usage detail, with service
-tier and long-context prefixes where applicable.
+`cache_write_tokens` to LangSmith's base `cache_creation` detail or tiered
+`*_cache_write` detail. Fast-mode usage uses the `priority` pricing buckets
+while retaining the original response tier in metadata.
