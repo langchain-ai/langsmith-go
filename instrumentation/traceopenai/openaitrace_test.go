@@ -1916,7 +1916,7 @@ func TestResponsesFailure(t *testing.T) {
 	tests := []struct {
 		name    string
 		body    string
-		wantErr error
+		wantMsg string
 	}{
 		{
 			name: "completed",
@@ -1925,12 +1925,12 @@ func TestResponsesFailure(t *testing.T) {
 		{
 			name:    "failed carries null usage and an error message",
 			body:    `{"status":"failed","error":{"code":"server_error","message":"upstream exploded"},"usage":null}`,
-			wantErr: fmt.Errorf("%w: upstream exploded", errResponsesFailed),
+			wantMsg: "response failed: upstream exploded",
 		},
 		{
 			name:    "failed with no error message",
 			body:    `{"status":"failed","error":{"code":"server_error"},"usage":null}`,
-			wantErr: errResponsesFailed,
+			wantMsg: "response failed",
 		},
 		{
 			name: "incomplete is not a failure",
@@ -1948,7 +1948,7 @@ func TestResponsesFailure(t *testing.T) {
 	for _, tt := range tests {
 		t.Run(tt.name, func(t *testing.T) {
 			_, _, failure := extractResponsesCompletion([]byte(tt.body))
-			if tt.wantErr == nil {
+			if tt.wantMsg == "" {
 				if failure != nil {
 					t.Fatalf("failure = %v, want nil", failure)
 				}
@@ -1957,8 +1957,8 @@ func TestResponsesFailure(t *testing.T) {
 			if !errors.Is(failure, errResponsesFailed) {
 				t.Fatalf("failure = %v, want errResponsesFailed", failure)
 			}
-			if failure.Error() != tt.wantErr.Error() {
-				t.Errorf("message = %q, want %q", failure.Error(), tt.wantErr.Error())
+			if failure.Error() != tt.wantMsg {
+				t.Errorf("message = %q, want %q", failure.Error(), tt.wantMsg)
 			}
 		})
 	}

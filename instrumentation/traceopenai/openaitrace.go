@@ -273,6 +273,10 @@ func MiddlewareWithTracerProvider(req *http.Request, next MiddlewareNext, tp tra
 			}
 		}
 		if responseFailure != nil {
+			// A truncated JSON event is a symptom of the read failure.
+			if errors.Is(responseFailure, errResponsesUnreadableStream) && readErr != nil && readErr != io.EOF {
+				responseFailure = readErr
+			}
 			span.RecordError(responseFailure)
 			span.SetStatus(codes.Error, responseFailure.Error())
 		}
