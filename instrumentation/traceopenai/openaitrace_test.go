@@ -4,6 +4,8 @@ import (
 	"bytes"
 	"context"
 	"encoding/json"
+	"errors"
+	"fmt"
 	"io"
 	"net/http"
 	"reflect"
@@ -602,7 +604,7 @@ func TestExtractResponsesCompletion(t *testing.T) {
 		"output": [{"type": "message", "content": [{"type": "output_text", "text": "Hi there"}]}],
 		"usage": {"input_tokens": 3, "output_tokens": 2}
 	}`
-	completion, usage := extractResponsesCompletion([]byte(body))
+	completion, usage, _ := extractResponsesCompletion([]byte(body))
 
 	if !strings.Contains(completion, "Hi there") {
 		t.Errorf("completion should contain 'Hi there': %s", completion)
@@ -620,7 +622,7 @@ func TestExtractResponsesCompletion_FunctionCall(t *testing.T) {
 		"output": [{"type": "function_call", "name": "search", "arguments": "{\"q\":\"Go\"}", "call_id": "fc_1"}],
 		"usage": {"input_tokens": 1, "output_tokens": 1}
 	}`
-	completion, _ := extractResponsesCompletion([]byte(body))
+	completion, _, _ := extractResponsesCompletion([]byte(body))
 
 	if !strings.Contains(completion, "search") {
 		t.Errorf("completion should contain function name: %s", completion)
@@ -645,7 +647,7 @@ func TestExtractResponsesCompletion_Compaction(t *testing.T) {
 			"total_tokens": 577
 		}
 	}`
-	completion, usage := extractResponsesCompletion([]byte(body))
+	completion, usage, _ := extractResponsesCompletion([]byte(body))
 
 	wantCompletion := `{"messages":[{"content":"Create a simple landing page for a dog petting cafe.","role":"user"}]}`
 	if completion != wantCompletion {
@@ -670,7 +672,7 @@ func TestExtractStreamingResponsesCompletion(t *testing.T) {
 	// response.completed event and the connection closes.
 	sse := "data: {\"type\":\"response.created\"}\n" +
 		"data: {\"type\":\"response.completed\",\"response\":{\"output\":[{\"type\":\"message\",\"content\":[{\"type\":\"output_text\",\"text\":\"done\"}]}],\"usage\":{\"input_tokens\":7,\"output_tokens\":3}}}\n"
-	completion, usage := extractStreamingResponsesCompletion([]byte(sse))
+	completion, usage, _ := extractStreamingResponsesCompletion([]byte(sse))
 
 	if !strings.Contains(completion, "done") {
 		t.Errorf("completion should contain 'done': %s", completion)
@@ -685,7 +687,7 @@ func TestExtractStreamingResponsesCompletion_LargeCompletedEvent(t *testing.T) {
 		strings.Repeat("x", 70*1024) +
 		`"}],"usage":{"input_tokens":7,"output_tokens":3}}}
 `
-	completion, usage := extractStreamingResponsesCompletion([]byte(sse))
+	completion, usage, _ := extractStreamingResponsesCompletion([]byte(sse))
 
 	if !strings.Contains(completion, "done") {
 		t.Errorf("completion should contain 'done': %s", completion)
@@ -697,7 +699,7 @@ func TestExtractStreamingResponsesCompletion_LargeCompletedEvent(t *testing.T) {
 
 func TestExtractStreamingResponsesCompletion_NoCompletedEvent(t *testing.T) {
 	sse := "data: {\"type\":\"response.created\"}\n"
-	completion, usage := extractStreamingResponsesCompletion([]byte(sse))
+	completion, usage, _ := extractStreamingResponsesCompletion([]byte(sse))
 	if completion != "" {
 		t.Errorf("expected empty completion, got %q", completion)
 	}
@@ -708,7 +710,7 @@ func TestExtractStreamingResponsesCompletion_NoCompletedEvent(t *testing.T) {
 
 func TestExtractStreamingResponsesCompletion_IncompleteEvent(t *testing.T) {
 	sse := "data: {\"type\":\"response.incomplete\",\"response\":{\"output\":[{\"type\":\"message\",\"content\":[{\"type\":\"output_text\",\"text\":\"Hi\"}]}],\"usage\":{\"input_tokens\":10,\"output_tokens\":3},\"incomplete_details\":{\"reason\":\"max_output_tokens\"}}}\n"
-	completion, usage := extractStreamingResponsesCompletion([]byte(sse))
+	completion, usage, _ := extractStreamingResponsesCompletion([]byte(sse))
 	if !strings.Contains(completion, "Hi") {
 		t.Errorf("completion should contain 'Hi': %s", completion)
 	}
@@ -722,7 +724,11 @@ func TestExtractStreamingResponsesCompletion_IncompleteEvent(t *testing.T) {
 
 func TestExtractStreamingResponsesCompletion_FailedEvent(t *testing.T) {
 	sse := "data: {\"type\":\"response.failed\",\"response\":{\"output\":[],\"usage\":{\"input_tokens\":5,\"output_tokens\":0}}}\n"
-	_, usage := extractStreamingResponsesCompletion([]byte(sse))
+	_, usage, failure := extractStreamingResponsesCompletion([]byte(sse))
+	// The response object omits status, so the event type has to supply it.
+	if !errors.Is(failure, errResponsesFailed) {
+		t.Errorf("failure = %v, want errResponsesFailed", failure)
+	}
 	if usage.InputTokens != 5 || usage.OutputTokens != 0 {
 		t.Errorf("got %+v, want {5, 0}", usage)
 	}
@@ -1903,5 +1909,198 @@ func TestExtractStreamingCompletion_UsageMetadataAndServiceTier(t *testing.T) {
 	}
 	if !reflect.DeepEqual(got, want) {
 		t.Errorf("usage mismatch:\n got: %#v\nwant: %#v", got, want)
+	}
+}
+
+func TestResponsesFailure(t *testing.T) {
+	tests := []struct {
+		name    string
+		body    string
+		wantErr error
+	}{
+		{
+			name: "completed",
+			body: `{"status":"completed","usage":{"input_tokens":3,"output_tokens":2}}`,
+		},
+		{
+			name:    "failed carries null usage and an error message",
+			body:    `{"status":"failed","error":{"code":"server_error","message":"upstream exploded"},"usage":null}`,
+			wantErr: fmt.Errorf("%w: upstream exploded", errResponsesFailed),
+		},
+		{
+			name:    "failed with no error message",
+			body:    `{"status":"failed","error":{"code":"server_error"},"usage":null}`,
+			wantErr: errResponsesFailed,
+		},
+		{
+			name: "incomplete is not a failure",
+			body: `{"status":"incomplete","incomplete_details":{"reason":"max_tokens"},"usage":null}`,
+		},
+		{
+			name: "queued background create is not a failure",
+			body: `{"status":"queued","usage":null}`,
+		},
+		{
+			name: "status absent",
+			body: `{"usage":{"input_tokens":1,"output_tokens":1}}`,
+		},
+	}
+	for _, tt := range tests {
+		t.Run(tt.name, func(t *testing.T) {
+			_, _, failure := extractResponsesCompletion([]byte(tt.body))
+			if tt.wantErr == nil {
+				if failure != nil {
+					t.Fatalf("failure = %v, want nil", failure)
+				}
+				return
+			}
+			if !errors.Is(failure, errResponsesFailed) {
+				t.Fatalf("failure = %v, want errResponsesFailed", failure)
+			}
+			if failure.Error() != tt.wantErr.Error() {
+				t.Errorf("message = %q, want %q", failure.Error(), tt.wantErr.Error())
+			}
+		})
+	}
+}
+
+// A single unparseable SSE line used to discard the whole stream, losing the
+// usage and status of a terminal event that had already been read.
+func TestExtractStreamingResponsesCompletion_MalformedLine(t *testing.T) {
+	const (
+		failed    = "data: {\"type\":\"response.failed\",\"response\":{\"status\":\"failed\",\"error\":{\"message\":\"boom\"},\"usage\":null}}\n"
+		completed = "data: {\"type\":\"response.completed\",\"response\":{\"status\":\"completed\",\"usage\":{\"input_tokens\":7,\"output_tokens\":3}}}\n"
+		malformed = "data: {oops not json}\n"
+	)
+	tests := []struct {
+		name            string
+		sse             string
+		wantErr         error
+		wantInputTokens int
+	}{
+		{
+			name:    "failed then malformed still reports the failure",
+			sse:     failed + malformed,
+			wantErr: errResponsesFailed,
+		},
+		{
+			name:            "completed then malformed still reports usage",
+			sse:             completed + malformed,
+			wantInputTokens: 7,
+		},
+		{
+			name:    "malformed before the terminal event is unreadable",
+			sse:     malformed + failed,
+			wantErr: errResponsesUnreadableStream,
+		},
+	}
+	for _, tt := range tests {
+		t.Run(tt.name, func(t *testing.T) {
+			_, usage, err := extractStreamingResponsesCompletion([]byte(tt.sse))
+			if tt.wantErr == nil && err != nil {
+				t.Fatalf("err = %v, want nil", err)
+			}
+			if tt.wantErr != nil && !errors.Is(err, tt.wantErr) {
+				t.Fatalf("err = %v, want %v", err, tt.wantErr)
+			}
+			if usage.InputTokens != tt.wantInputTokens {
+				t.Errorf("InputTokens = %d, want %d", usage.InputTokens, tt.wantInputTokens)
+			}
+		})
+	}
+}
+
+// doResponses sends a Responses API request through client and drains the body
+// so the wrapper sees the full response.
+func doResponses(t *testing.T, client *http.Client, stream bool) {
+	t.Helper()
+	body := fmt.Sprintf(`{"model":"gpt-5.1","input":"hi","stream":%t}`, stream)
+	req, err := http.NewRequestWithContext(context.Background(), http.MethodPost,
+		"https://api.openai.com/v1/responses", strings.NewReader(body))
+	if err != nil {
+		t.Fatal(err)
+	}
+	resp, err := client.Do(req)
+	if err != nil {
+		t.Fatal(err)
+	}
+	if _, err := io.ReadAll(resp.Body); err != nil {
+		t.Fatal(err)
+	}
+	resp.Body.Close()
+}
+
+// The span status has to reflect the response, not just the HTTP code: a call
+// can return 200 and still report a failure with usage: null, which otherwise
+// reads downstream as a success that priced to nothing.
+func TestRoundTrip_ResponsesSpanStatus(t *testing.T) {
+	tests := []struct {
+		name      string
+		stream    bool
+		body      string
+		wantError bool
+		// wantMsg, when set, is the expected span status description.
+		wantMsg string
+	}{
+		{
+			name: "non-streaming completed",
+			body: `{"status":"completed","output":[{"type":"message","content":[{"type":"output_text","text":"hi"}]}],"usage":{"input_tokens":3,"output_tokens":2}}`,
+		},
+		{
+			name:      "non-streaming failed",
+			body:      `{"status":"failed","error":{"code":"server_error","message":"upstream exploded"},"output":[],"usage":null}`,
+			wantError: true,
+			wantMsg:   "response failed: upstream exploded",
+		},
+		{
+			name: "non-streaming incomplete is not a fault",
+			body: `{"status":"incomplete","incomplete_details":{"reason":"max_tokens"},"output":[],"usage":null}`,
+		},
+		{
+			name: "non-streaming queued background create is not a fault",
+			body: `{"status":"queued","output":[],"usage":null}`,
+		},
+		{
+			name:   "streaming completed",
+			stream: true,
+			body:   "data: {\"type\":\"response.completed\",\"response\":{\"status\":\"completed\",\"output\":[],\"usage\":{\"input_tokens\":3,\"output_tokens\":2}}}\n",
+		},
+		{
+			name:      "streaming failed",
+			stream:    true,
+			body:      "data: {\"type\":\"response.failed\",\"response\":{\"status\":\"failed\",\"error\":{\"code\":\"server_error\",\"message\":\"upstream exploded\"},\"output\":[],\"usage\":null}}\n",
+			wantError: true,
+			wantMsg:   "response failed: upstream exploded",
+		},
+		{
+			// The raw bytes still contain a terminal marker, so the truncation
+			// check alone leaves this codes.Ok.
+			name:   "streaming unreadable SSE",
+			stream: true,
+			body: "data: {oops not json}\n" +
+				"data: {\"type\":\"response.completed\",\"response\":{\"status\":\"completed\",\"usage\":{\"input_tokens\":7,\"output_tokens\":3}}}\n",
+			wantError: true,
+		},
+	}
+	for _, tt := range tests {
+		t.Run(tt.name, func(t *testing.T) {
+			client, exporter := newTracedClient(t, []byte(tt.body))
+			doResponses(t, client, tt.stream)
+
+			spans := exporter.GetSpans()
+			if len(spans) != 1 {
+				t.Fatalf("expected 1 span, got %d", len(spans))
+			}
+			span := spans[0]
+			if gotError := span.Status.Code == codes.Error; gotError != tt.wantError {
+				t.Errorf("status = %v, want error=%v", span.Status, tt.wantError)
+			}
+			if tt.wantError && !hasEvent(spans, "exception") {
+				t.Error("expected a recorded exception event")
+			}
+			if tt.wantMsg != "" && span.Status.Description != tt.wantMsg {
+				t.Errorf("description = %q, want %q", span.Status.Description, tt.wantMsg)
+			}
+		})
 	}
 }
