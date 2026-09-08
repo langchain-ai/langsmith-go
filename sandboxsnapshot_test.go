@@ -36,7 +36,14 @@ func TestSandboxSnapshotNewWithOptionalParams(t *testing.T) {
 			"foo": "string",
 		}),
 		RegistryID: langsmith.F("registry_id"),
-		Tag:        langsmith.F("tag"),
+		RunConfig: langsmith.F(langsmith.SandboxSnapshotNewParamsRunConfig{
+			EnvVars: langsmith.F(map[string]string{
+				"foo": "string",
+			}),
+			User:    langsmith.F("user"),
+			WorkDir: langsmith.F("work_dir"),
+		}),
+		Tag: langsmith.F("tag"),
 	})
 	if err != nil {
 		var apierr *langsmith.Error

@@ -174,11 +174,30 @@ type SandboxSnapshotNewParams struct {
 	// from the Docker image.
 	Labels     param.Field[map[string]string] `json:"labels"`
 	RegistryID param.Field[string]            `json:"registry_id"`
+	// RunConfig overrides the runtime configuration taken from the Docker image. Every
+	// sandbox created from the snapshot runs as the image's USER, in its WORKDIR, with
+	// its ENV beneath the sandbox's own env_vars; user and work_dir given here replace
+	// the image's, and env_vars merge over it.
+	RunConfig param.Field[SandboxSnapshotNewParamsRunConfig] `json:"run_config"`
 	// mutable Docker-style tag; defaults to "latest"
 	Tag param.Field[string] `json:"tag"`
 }
 
 func (r SandboxSnapshotNewParams) MarshalJSON() (data []byte, err error) {
+	return apijson.MarshalRoot(r)
+}
+
+// RunConfig overrides the runtime configuration taken from the Docker image. Every
+// sandbox created from the snapshot runs as the image's USER, in its WORKDIR, with
+// its ENV beneath the sandbox's own env_vars; user and work_dir given here replace
+// the image's, and env_vars merge over it.
+type SandboxSnapshotNewParamsRunConfig struct {
+	EnvVars param.Field[map[string]string] `json:"env_vars"`
+	User    param.Field[string]            `json:"user"`
+	WorkDir param.Field[string]            `json:"work_dir"`
+}
+
+func (r SandboxSnapshotNewParamsRunConfig) MarshalJSON() (data []byte, err error) {
 	return apijson.MarshalRoot(r)
 }
 

@@ -236,6 +236,10 @@ type SandboxBoxNewParams struct {
 	//
 	// Applies to this request only.
 	RestoreMemory param.Field[bool] `json:"restore_memory"`
+	// RunConfig overrides the snapshot's run config for this sandbox: user and
+	// work_dir replace the snapshot's, env_vars merge over it. The result is what the
+	// sandbox boots with, and what a snapshot captured from it carries.
+	RunConfig param.Field[SandboxBoxNewParamsRunConfig] `json:"run_config"`
 	// Snapshot is a Docker-style name or name:tag reference to boot from. A bare name
 	// resolves to name:latest.
 	Snapshot   param.Field[string] `json:"snapshot"`
@@ -1076,6 +1080,19 @@ func (r SandboxBoxNewParamsProxyConfigRulesHeadersType) IsKnown() bool {
 	return false
 }
 
+// RunConfig overrides the snapshot's run config for this sandbox: user and
+// work_dir replace the snapshot's, env_vars merge over it. The result is what the
+// sandbox boots with, and what a snapshot captured from it carries.
+type SandboxBoxNewParamsRunConfig struct {
+	EnvVars param.Field[map[string]string] `json:"env_vars"`
+	User    param.Field[string]            `json:"user"`
+	WorkDir param.Field[string]            `json:"work_dir"`
+}
+
+func (r SandboxBoxNewParamsRunConfig) MarshalJSON() (data []byte, err error) {
+	return apijson.MarshalRoot(r)
+}
+
 type SandboxBoxUpdateParams struct {
 	CPUMillicores          param.Field[int64] `json:"cpu_millicores"`
 	DeleteAfterStopSeconds param.Field[int64] `json:"delete_after_stop_seconds"`
@@ -1086,8 +1103,12 @@ type SandboxBoxUpdateParams struct {
 	MemBytes    param.Field[int64]                             `json:"mem_bytes"`
 	Name        param.Field[string]                            `json:"name"`
 	ProxyConfig param.Field[SandboxBoxUpdateParamsProxyConfig] `json:"proxy_config"`
-	TagValueIDs param.Field[[]string]                          `json:"tag_value_ids"`
-	Vcpus       param.Field[int64]                             `json:"vcpus"`
+	// RunConfig changes what subsequent commands run with: user and work_dir replace
+	// the current values, env_vars merge over them. Commands already running are
+	// unaffected.
+	RunConfig   param.Field[SandboxBoxUpdateParamsRunConfig] `json:"run_config"`
+	TagValueIDs param.Field[[]string]                        `json:"tag_value_ids"`
+	Vcpus       param.Field[int64]                           `json:"vcpus"`
 }
 
 func (r SandboxBoxUpdateParams) MarshalJSON() (data []byte, err error) {
@@ -1306,6 +1327,19 @@ func (r SandboxBoxUpdateParamsProxyConfigRulesHeadersType) IsKnown() bool {
 	return false
 }
 
+// RunConfig changes what subsequent commands run with: user and work_dir replace
+// the current values, env_vars merge over them. Commands already running are
+// unaffected.
+type SandboxBoxUpdateParamsRunConfig struct {
+	EnvVars param.Field[map[string]string] `json:"env_vars"`
+	User    param.Field[string]            `json:"user"`
+	WorkDir param.Field[string]            `json:"work_dir"`
+}
+
+func (r SandboxBoxUpdateParamsRunConfig) MarshalJSON() (data []byte, err error) {
+	return apijson.MarshalRoot(r)
+}
+
 type SandboxBoxListParams struct {
 	// Filter by creator identity. Only 'me' is supported.
 	CreatedBy param.Field[string] `query:"created_by"`
@@ -1359,11 +1393,28 @@ type SandboxBoxNewSnapshotParams struct {
 	IncludeMemory param.Field[bool] `json:"include_memory"`
 	// Labels seed the captured snapshot's labels.
 	Labels param.Field[map[string]string] `json:"labels"`
+	// RunConfig overrides the runtime configuration the snapshot carries: for a
+	// docker_image export, the image's USER, WORKDIR and ENV; for a capture of the
+	// running VM, the sandbox's own. user and work_dir replace, env_vars merge.
+	RunConfig param.Field[SandboxBoxNewSnapshotParamsRunConfig] `json:"run_config"`
 	// mutable Docker-style tag; defaults to "latest"
 	Tag param.Field[string] `json:"tag"`
 }
 
 func (r SandboxBoxNewSnapshotParams) MarshalJSON() (data []byte, err error) {
+	return apijson.MarshalRoot(r)
+}
+
+// RunConfig overrides the runtime configuration the snapshot carries: for a
+// docker_image export, the image's USER, WORKDIR and ENV; for a capture of the
+// running VM, the sandbox's own. user and work_dir replace, env_vars merge.
+type SandboxBoxNewSnapshotParamsRunConfig struct {
+	EnvVars param.Field[map[string]string] `json:"env_vars"`
+	User    param.Field[string]            `json:"user"`
+	WorkDir param.Field[string]            `json:"work_dir"`
+}
+
+func (r SandboxBoxNewSnapshotParamsRunConfig) MarshalJSON() (data []byte, err error) {
 	return apijson.MarshalRoot(r)
 }
 

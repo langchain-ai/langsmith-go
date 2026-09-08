@@ -109,15 +109,18 @@ type SandboxResponse struct {
 	Name                   string                     `json:"name"`
 	PreserveMemoryOnStop   bool                       `json:"preserve_memory_on_stop"`
 	ProxyConfig            SandboxResponseProxyConfig `json:"proxy_config"`
-	SizeClass              string                     `json:"size_class"`
-	SnapshotID             string                     `json:"snapshot_id"`
-	Status                 string                     `json:"status"`
-	StatusMessage          string                     `json:"status_message"`
-	StoppedAt              string                     `json:"stopped_at"`
-	UpdatedAt              string                     `json:"updated_at"`
-	UpdatedBy              string                     `json:"updated_by"`
-	Vcpus                  int64                      `json:"vcpus"`
-	JSON                   sandboxResponseJSON        `json:"-"`
+	// RunConfig is what the sandbox's commands run with: the user, working directory
+	// and base env beneath env_vars.
+	RunConfig     SandboxResponseRunConfig `json:"run_config"`
+	SizeClass     string                   `json:"size_class"`
+	SnapshotID    string                   `json:"snapshot_id"`
+	Status        string                   `json:"status"`
+	StatusMessage string                   `json:"status_message"`
+	StoppedAt     string                   `json:"stopped_at"`
+	UpdatedAt     string                   `json:"updated_at"`
+	UpdatedBy     string                   `json:"updated_by"`
+	Vcpus         int64                    `json:"vcpus"`
+	JSON          sandboxResponseJSON      `json:"-"`
 }
 
 // sandboxResponseJSON contains the JSON metadata for the struct [SandboxResponse]
@@ -136,6 +139,7 @@ type sandboxResponseJSON struct {
 	Name                   apijson.Field
 	PreserveMemoryOnStop   apijson.Field
 	ProxyConfig            apijson.Field
+	RunConfig              apijson.Field
 	SizeClass              apijson.Field
 	SnapshotID             apijson.Field
 	Status                 apijson.Field
@@ -1869,6 +1873,33 @@ func (r SandboxResponseProxyConfigRulesHeadersType) IsKnown() bool {
 	return false
 }
 
+// RunConfig is what the sandbox's commands run with: the user, working directory
+// and base env beneath env_vars.
+type SandboxResponseRunConfig struct {
+	EnvVars map[string]string            `json:"env_vars"`
+	User    string                       `json:"user"`
+	WorkDir string                       `json:"work_dir"`
+	JSON    sandboxResponseRunConfigJSON `json:"-"`
+}
+
+// sandboxResponseRunConfigJSON contains the JSON metadata for the struct
+// [SandboxResponseRunConfig]
+type sandboxResponseRunConfigJSON struct {
+	EnvVars     apijson.Field
+	User        apijson.Field
+	WorkDir     apijson.Field
+	raw         string
+	ExtraFields map[string]apijson.Field
+}
+
+func (r *SandboxResponseRunConfig) UnmarshalJSON(data []byte) (err error) {
+	return apijson.UnmarshalRoot(data, r)
+}
+
+func (r sandboxResponseRunConfigJSON) RawJSON() string {
+	return r.raw
+}
+
 type SandboxStatusResponse struct {
 	Status        string                    `json:"status"`
 	StatusMessage string                    `json:"status_message"`
@@ -1970,9 +2001,12 @@ type SnapshotResponse struct {
 	MemorySnapshotSizeBytes int64  `json:"memory_snapshot_size_bytes"`
 	Name                    string `json:"name"`
 	RegistryID              string `json:"registry_id"`
-	SourceSandboxID         string `json:"source_sandbox_id"`
-	Status                  string `json:"status"`
-	StatusMessage           string `json:"status_message"`
+	// RunConfig is what sandboxes from this snapshot boot with. Absent on snapshots
+	// built before it was recorded, which run as root with their own env.
+	RunConfig       SnapshotResponseRunConfig `json:"run_config"`
+	SourceSandboxID string                    `json:"source_sandbox_id"`
+	Status          string                    `json:"status"`
+	StatusMessage   string                    `json:"status_message"`
 	// Tags currently resolving to this snapshot, under Name. A snapshot with no tags
 	// is dangling — addressable only by id.
 	Tags      []string             `json:"tags"`
@@ -1995,6 +2029,7 @@ type snapshotResponseJSON struct {
 	MemorySnapshotSizeBytes apijson.Field
 	Name                    apijson.Field
 	RegistryID              apijson.Field
+	RunConfig               apijson.Field
 	SourceSandboxID         apijson.Field
 	Status                  apijson.Field
 	StatusMessage           apijson.Field
@@ -2009,5 +2044,32 @@ func (r *SnapshotResponse) UnmarshalJSON(data []byte) (err error) {
 }
 
 func (r snapshotResponseJSON) RawJSON() string {
+	return r.raw
+}
+
+// RunConfig is what sandboxes from this snapshot boot with. Absent on snapshots
+// built before it was recorded, which run as root with their own env.
+type SnapshotResponseRunConfig struct {
+	EnvVars map[string]string             `json:"env_vars"`
+	User    string                        `json:"user"`
+	WorkDir string                        `json:"work_dir"`
+	JSON    snapshotResponseRunConfigJSON `json:"-"`
+}
+
+// snapshotResponseRunConfigJSON contains the JSON metadata for the struct
+// [SnapshotResponseRunConfig]
+type snapshotResponseRunConfigJSON struct {
+	EnvVars     apijson.Field
+	User        apijson.Field
+	WorkDir     apijson.Field
+	raw         string
+	ExtraFields map[string]apijson.Field
+}
+
+func (r *SnapshotResponseRunConfig) UnmarshalJSON(data []byte) (err error) {
+	return apijson.UnmarshalRoot(data, r)
+}
+
+func (r snapshotResponseRunConfigJSON) RawJSON() string {
 	return r.raw
 }
