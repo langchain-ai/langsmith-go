@@ -4,6 +4,7 @@ package traceopenai
 import (
 	"bytes"
 	"encoding/json"
+	"errors"
 	"fmt"
 	"io"
 	"net/http"
@@ -227,11 +228,12 @@ func MiddlewareWithTracerProvider(req *http.Request, next MiddlewareNext, tp tra
 
 		var completion string
 		var usage usageInfo
+		var responseFailure error
 		if responsesAPI {
 			if streaming {
-				completion, usage = extractStreamingResponsesCompletion(data)
+				completion, usage, responseFailure = extractStreamingResponsesCompletion(data)
 			} else {
-				completion, usage = extractResponsesCompletion(data)
+				completion, usage, responseFailure = extractResponsesCompletion(data)
 			}
 		} else if streaming {
 			completion, usage = extractStreamingCompletion(data)
@@ -270,7 +272,15 @@ func MiddlewareWithTracerProvider(req *http.Request, next MiddlewareNext, tp tra
 				span.SetAttributes(serviceTierKey.String(usage.ServiceTier))
 			}
 		}
-		if resp.StatusCode < 400 && !incompleteStream {
+		if responseFailure != nil {
+			// A truncated JSON event is a symptom of the read failure.
+			if errors.Is(responseFailure, errResponsesUnreadableStream) && readErr != nil && readErr != io.EOF {
+				responseFailure = readErr
+			}
+			span.RecordError(responseFailure)
+			span.SetStatus(codes.Error, responseFailure.Error())
+		}
+		if resp.StatusCode < 400 && !incompleteStream && responseFailure == nil {
 			span.SetStatus(codes.Ok, "")
 		}
 		span.End()
@@ -1031,17 +1041,17 @@ func extractCompletionFromResponse(body []byte) (string, usageInfo) {
 
 // --- Responses API (/v1/responses) ---
 
-// extractResponsesCompletion extracts completion and usage from a non-streaming
-// Responses API response.
-func extractResponsesCompletion(body []byte) (string, usageInfo) {
+// extractResponsesCompletion extracts completion, usage, and any response-level
+// failure from a non-streaming Responses API response.
+func extractResponsesCompletion(body []byte) (string, usageInfo, error) {
 	var resp map[string]any
 	if err := json.Unmarshal(body, &resp); err != nil {
-		return "", usageInfo{}
+		return "", usageInfo{}, nil
 	}
 	if object, _ := resp["object"].(string); object == "response.compaction" {
-		return extractResponsesCompactOutput(resp), extractResponsesUsage(resp)
+		return extractResponsesCompactOutput(resp), extractResponsesUsage(resp), responsesFailure(resp, "")
 	}
-	return extractResponsesOutput(resp), extractResponsesUsage(resp)
+	return extractResponsesOutput(resp), extractResponsesUsage(resp), responsesFailure(resp, "")
 }
 
 // extractStreamingResponsesCompletion extracts completion and usage from a
@@ -1049,21 +1059,57 @@ func extractResponsesCompletion(body []byte) (string, usageInfo) {
 // events that carry the full response object (including usage):
 // response.completed, response.incomplete, and response.failed.
 // See https://platform.openai.com/docs/api-reference/responses-streaming
-func extractStreamingResponsesCompletion(data []byte) (string, usageInfo) {
-	chunks, err := traceutil.ParseSSEChunks(bytes.NewReader(data))
-	if err != nil || len(chunks) == 0 {
-		return "", usageInfo{}
-	}
+func extractStreamingResponsesCompletion(data []byte) (string, usageInfo, error) {
+	// ParseSSEChunks returns the chunks it read alongside any error; a terminal
+	// event among them still carries the usage and status for the whole call.
+	chunks, parseErr := traceutil.ParseSSEChunks(bytes.NewReader(data))
 
 	for _, chunk := range chunks {
 		switch msgType, _ := chunk["type"].(string); msgType {
 		case "response.completed", "response.incomplete", "response.failed":
-			if response, ok := chunk["response"].(map[string]any); ok {
-				return extractResponsesOutput(response), extractResponsesUsage(response)
+			response, ok := chunk["response"].(map[string]any)
+			if !ok {
+				continue
 			}
+			// Terminal events are named response.<status>, so the event type
+			// supplies the status when the response object omits it.
+			failure := responsesFailure(response, strings.TrimPrefix(msgType, "response."))
+			return extractResponsesOutput(response), extractResponsesUsage(response), failure
 		}
 	}
-	return "", usageInfo{}
+	if parseErr != nil {
+		return "", usageInfo{}, fmt.Errorf("%w: %w", errResponsesUnreadableStream, parseErr)
+	}
+	return "", usageInfo{}, nil
+}
+
+// errResponsesFailed is a Responses API response the API accepted (HTTP 2xx)
+// but did not fulfil: status "failed", which OpenAI reports with usage: null.
+// See https://platform.openai.com/docs/api-reference/responses/object
+var errResponsesFailed = errors.New("response failed")
+
+// errResponsesUnreadableStream is a stream whose SSE would not parse, so no
+// terminal event or usage was recovered. Its bytes may still contain a terminal
+// marker, which is why the caller's truncation check cannot catch it.
+var errResponsesUnreadableStream = errors.New("unreadable response stream")
+
+// responsesFailure returns a non-nil error for a Responses API response object
+// whose status is "failed", falling back to eventStatus when the object omits
+// the field. Other statuses are not faults: "incomplete" is a truncated but
+// successful generation, and "queued"/"in_progress" are pending.
+func responsesFailure(resp map[string]any, eventStatus string) error {
+	status, ok := resp["status"].(string)
+	if !ok {
+		status = eventStatus
+	}
+	if status != "failed" {
+		return nil
+	}
+	respErr, _ := resp["error"].(map[string]any)
+	if msg, _ := respErr["message"].(string); msg != "" {
+		return fmt.Errorf("%w: %s", errResponsesFailed, msg)
+	}
+	return errResponsesFailed
 }
 
 // extractResponsesUsage extracts usage from a Responses API response object.
