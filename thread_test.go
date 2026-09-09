@@ -14,6 +14,39 @@ import (
 	"github.com/langchain-ai/langsmith-go/option"
 )
 
+func TestThreadAggregateStatsWithOptionalParams(t *testing.T) {
+	t.Skip("Mock server tests are disabled")
+	baseURL := "http://localhost:4010"
+	if envURL, ok := os.LookupEnv("TEST_API_BASE_URL"); ok {
+		baseURL = envURL
+	}
+	if !testutil.CheckTestServer(t, baseURL) {
+		return
+	}
+	client := langsmith.NewClient(
+		option.WithBaseURL(baseURL),
+		option.WithAPIKey("My API Key"),
+		option.WithTenantID("My Tenant ID"),
+	)
+	_, err := client.Threads.AggregateStats(context.TODO(), langsmith.ThreadAggregateStatsParams{
+		ProjectID:    langsmith.F("0190a1b2-c3d4-7ef0-a5b6-6ea3a82e9328"),
+		Select:       langsmith.F([]langsmith.ThreadAggregateStatsParamsSelect{langsmith.ThreadAggregateStatsParamsSelectThreadCount, langsmith.ThreadAggregateStatsParamsSelectTraceCount, langsmith.ThreadAggregateStatsParamsSelectTotalTokens, langsmith.ThreadAggregateStatsParamsSelectTotalCost}),
+		Filter:       langsmith.F(`eq(status, "error")`),
+		MaxStartTime: langsmith.F(time.Now()),
+		MinStartTime: langsmith.F(time.Now()),
+		ThreadFilter: langsmith.F("gte(turn_count, 3)"),
+		TraceFilter:  langsmith.F(`eq(status, "error")`),
+		TreeFilter:   langsmith.F(`has(tags, "production")`),
+	})
+	if err != nil {
+		var apierr *langsmith.Error
+		if errors.As(err, &apierr) {
+			t.Log(string(apierr.DumpRequest(true)))
+		}
+		t.Fatalf("err should be nil: %s", err.Error())
+	}
+}
+
 func TestThreadListTracesWithOptionalParams(t *testing.T) {
 	t.Skip("Mock server tests are disabled")
 	baseURL := "http://localhost:4010"
@@ -72,6 +105,7 @@ func TestThreadQueryWithOptionalParams(t *testing.T) {
 		ThreadFilter: langsmith.F("gte(turn_count, 3)"),
 		TraceFilter:  langsmith.F(`eq(status, "error")`),
 		TreeFilter:   langsmith.F(`has(tags, "production")`),
+		Accept:       langsmith.F("Accept"),
 	})
 	if err != nil {
 		var apierr *langsmith.Error

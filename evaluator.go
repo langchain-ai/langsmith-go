@@ -203,12 +203,13 @@ func (r evaluatorJSON) RawJSON() string {
 type EvaluatorGroupBy string
 
 const (
-	EvaluatorGroupByThreadID EvaluatorGroupBy = "thread_id"
+	EvaluatorGroupByThreadID     EvaluatorGroupBy = "thread_id"
+	EvaluatorGroupByTrajectoryID EvaluatorGroupBy = "trajectory_id"
 )
 
 func (r EvaluatorGroupBy) IsKnown() bool {
 	switch r {
-	case EvaluatorGroupByThreadID:
+	case EvaluatorGroupByThreadID, EvaluatorGroupByTrajectoryID:
 		return true
 	}
 	return false

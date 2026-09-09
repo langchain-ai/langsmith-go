@@ -181,7 +181,7 @@ func TestPublicDatasetGetSessionsBulk(t *testing.T) {
 		option.WithTenantID("My Tenant ID"),
 	)
 	_, err := client.Public.Datasets.GetSessionsBulk(context.TODO(), langsmith.PublicDatasetGetSessionsBulkParams{
-		ShareTokens: langsmith.F([]string{"string"}),
+		ShareTokens: langsmith.F([]string{"182bd5e5-6e1a-4fe4-a799-aa6d9a6ab26e"}),
 	})
 	if err != nil {
 		var apierr *langsmith.Error

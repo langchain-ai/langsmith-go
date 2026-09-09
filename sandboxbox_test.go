@@ -172,11 +172,18 @@ func TestSandboxBoxNewWithOptionalParams(t *testing.T) {
 			}}),
 		}),
 		RestoreMemory: langsmith.F(true),
-		Snapshot:      langsmith.F("snapshot"),
-		SnapshotID:    langsmith.F("snapshot_id"),
-		SnapshotName:  langsmith.F("snapshot_name"),
-		TagValueIDs:   langsmith.F([]string{"string"}),
-		Vcpus:         langsmith.F(int64(0)),
+		RunConfig: langsmith.F(langsmith.SandboxBoxNewParamsRunConfig{
+			EnvVars: langsmith.F(map[string]string{
+				"foo": "string",
+			}),
+			User:    langsmith.F("user"),
+			WorkDir: langsmith.F("work_dir"),
+		}),
+		Snapshot:     langsmith.F("snapshot"),
+		SnapshotID:   langsmith.F("snapshot_id"),
+		SnapshotName: langsmith.F("snapshot_name"),
+		TagValueIDs:  langsmith.F([]string{"string"}),
+		Vcpus:        langsmith.F(int64(0)),
 	})
 	if err != nil {
 		var apierr *langsmith.Error
@@ -292,6 +299,13 @@ func TestSandboxBoxUpdateWithOptionalParams(t *testing.T) {
 					Type:       langsmith.F("type"),
 				}}),
 			}),
+			RunConfig: langsmith.F(langsmith.SandboxBoxUpdateParamsRunConfig{
+				EnvVars: langsmith.F(map[string]string{
+					"foo": "string",
+				}),
+				User:    langsmith.F("user"),
+				WorkDir: langsmith.F("work_dir"),
+			}),
 			TagValueIDs: langsmith.F([]string{"string"}),
 			Vcpus:       langsmith.F(int64(0)),
 		},
@@ -391,6 +405,13 @@ func TestSandboxBoxNewSnapshotWithOptionalParams(t *testing.T) {
 			IncludeMemory:   langsmith.F(true),
 			Labels: langsmith.F(map[string]string{
 				"foo": "string",
+			}),
+			RunConfig: langsmith.F(langsmith.SandboxBoxNewSnapshotParamsRunConfig{
+				EnvVars: langsmith.F(map[string]string{
+					"foo": "string",
+				}),
+				User:    langsmith.F("user"),
+				WorkDir: langsmith.F("work_dir"),
 			}),
 			Tag: langsmith.F("tag"),
 		},
