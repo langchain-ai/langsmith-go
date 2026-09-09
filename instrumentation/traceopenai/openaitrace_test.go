@@ -4,8 +4,10 @@ import (
 	"bytes"
 	"context"
 	"encoding/json"
+	"fmt"
 	"io"
 	"net/http"
+	"os"
 	"reflect"
 	"strings"
 	"testing"
@@ -1903,5 +1905,158 @@ func TestExtractStreamingCompletion_UsageMetadataAndServiceTier(t *testing.T) {
 	}
 	if !reflect.DeepEqual(got, want) {
 		t.Errorf("usage mismatch:\n got: %#v\nwant: %#v", got, want)
+	}
+}
+
+func TestBuildOpenAIUsageCacheWrites(t *testing.T) {
+	for _, shape := range []string{"responses", "chat"} {
+		for _, tc := range []struct {
+			name, tier, prefix string
+			input, remainder   int
+		}{
+			{"standard", "", "", 1000, 0},
+			{"default", "default", "", 1000, 0},
+			{"flex", "flex", "flex_", 1000, 700},
+			{"priority", "priority", "priority_", 1000, 700},
+			{"fast", "fast", "priority_", 1000, 700},
+			{"long context", "", "long_context_", 300000, 299700},
+			{"flex long context", "flex", "flex_long_context_", 300000, 299700},
+			{"all cached", "flex", "flex_", 300, 0},
+		} {
+			t.Run(shape+"/"+tc.name, func(t *testing.T) {
+				inputKey, outputKey, detailKey := "input_tokens", "output_tokens", "input_tokens_details"
+				if shape == "chat" {
+					inputKey, outputKey, detailKey = "prompt_tokens", "completion_tokens", "prompt_tokens_details"
+				}
+				usage := buildOpenAIUsage(map[string]any{
+					inputKey: float64(tc.input), outputKey: float64(50),
+					detailKey: map[string]any{"cached_tokens": float64(100), "cache_write_tokens": float64(200)},
+				}, tc.tier)
+				writeKey := "cache_creation"
+				if tc.prefix != "" {
+					writeKey = tc.prefix + "cache_write"
+				}
+				want := map[string]any{tc.prefix + "cache_read": 100, writeKey: 200}
+				if tc.remainder > 0 {
+					want[strings.TrimSuffix(tc.prefix, "_")] = tc.remainder
+				}
+				if got := usage.UsageMetadata["input_token_details"]; !reflect.DeepEqual(got, want) {
+					t.Fatalf("input details = %#v, want %#v", got, want)
+				}
+				if usage.InputTokens != tc.input || usage.TotalTokens != tc.input+50 {
+					t.Fatalf("cache writes changed token totals: %+v", usage)
+				}
+			})
+		}
+	}
+}
+
+func TestCacheWritesReachHTTPSpans(t *testing.T) {
+	for _, endpoint := range []string{"responses", "chat/completions"} {
+		for _, streaming := range []bool{false, true} {
+			t.Run(fmt.Sprintf("%s/stream=%v", endpoint, streaming), func(t *testing.T) {
+				body := `{"service_tier":"flex","usage":{"input_tokens":1000,"output_tokens":50,"input_tokens_details":{"cached_tokens":100,"cache_write_tokens":200}}}`
+				if endpoint == "chat/completions" {
+					body = strings.NewReplacer("input_tokens_details", "prompt_tokens_details", "input_tokens", "prompt_tokens", "output_tokens", "completion_tokens").Replace(body)
+				}
+				if streaming {
+					if endpoint == "responses" {
+						body = "data: {\"type\":\"response.completed\",\"response\":" + body + "}\n\n"
+					} else {
+						body = "data: " + body + "\n\ndata: [DONE]\n\n"
+					}
+				}
+				client, exporter := newTracedClient(t, []byte(body))
+				requestBody := fmt.Sprintf(`{"model":"gpt-6-astra","input":"hi","stream":%v}`, streaming)
+				req, err := http.NewRequest(http.MethodPost, "https://api.openai.com/v1/"+endpoint, strings.NewReader(requestBody))
+				if err != nil {
+					t.Fatal(err)
+				}
+				resp, err := client.Do(req)
+				if err != nil {
+					t.Fatal(err)
+				}
+				defer resp.Body.Close()
+				if _, err := io.Copy(io.Discard, resp.Body); err != nil {
+					t.Fatal(err)
+				}
+				spans := exporter.GetSpans()
+				if len(spans) != 1 {
+					t.Fatalf("got %d spans", len(spans))
+				}
+				var usage map[string]any
+				if err := json.Unmarshal([]byte(spanString(spans[0], string(usageMetadataKey))), &usage); err != nil {
+					t.Fatal(err)
+				}
+				want := map[string]any{"flex_cache_read": float64(100), "flex_cache_write": float64(200), "flex": float64(700)}
+				if !reflect.DeepEqual(usage["input_token_details"], want) {
+					t.Fatalf("usage = %#v", usage)
+				}
+			})
+		}
+	}
+}
+
+func TestConfigurationUpdatePreserved(t *testing.T) {
+	fields := parseRequestBody([]byte(`{"model":"gpt-6-astra","input":[{"role":"user","content":"first"},{"type":"configuration_update","reasoning":{"effort":"high"}},{"role":"user","content":"second"}]}`))
+	var result struct {
+		Messages []map[string]any `json:"messages"`
+	}
+	if err := json.Unmarshal([]byte(fields.inputMessages), &result); err != nil {
+		t.Fatal(err)
+	}
+	if len(result.Messages) != 3 || result.Messages[0]["content"] != "first" || result.Messages[2]["content"] != "second" {
+		t.Fatalf("message order changed: %#v", result.Messages)
+	}
+	update := result.Messages[1]
+	var content map[string]any
+	if err := json.Unmarshal([]byte(update["content"].(string)), &content); err != nil {
+		t.Fatal(err)
+	}
+	if update["role"] != "system" || content["type"] != "configuration_update" || content["reasoning"].(map[string]any)["effort"] != "high" {
+		t.Fatalf("configuration update lost: %#v", update)
+	}
+}
+
+// Prices are taken from langchainplus migration 51be5022ec17. Unknown detail
+// keys fall back to base pricing downstream, so totals alone cannot catch a
+// misspelled cache-write bucket.
+func TestOpenAIUsageMatchesLangSmithPriceMap(t *testing.T) {
+	data, err := os.ReadFile("testdata/langsmith_astra_prices.json")
+	if err != nil {
+		t.Fatal(err)
+	}
+	var prices struct {
+		Input  map[string]string `json:"prompt_cost_details"`
+		Output map[string]string `json:"completion_cost_details"`
+	}
+	if err := json.Unmarshal(data, &prices); err != nil {
+		t.Fatal(err)
+	}
+	for _, tier := range []string{"", "default", "flex", "priority", "fast", "batch"} {
+		for _, input := range []int{1000, 300000} {
+			t.Run(fmt.Sprintf("%s/%d", tier, input), func(t *testing.T) {
+				usage := buildOpenAIUsage(map[string]any{
+					"input_tokens": float64(input), "output_tokens": float64(50),
+					"input_tokens_details":  map[string]any{"cached_tokens": float64(100), "cache_write_tokens": float64(200)},
+					"output_tokens_details": map[string]any{"reasoning_tokens": float64(10)},
+				}, tier)
+				for _, dimension := range []struct {
+					name   string
+					prices map[string]string
+				}{
+					{"input_token_details", prices.Input}, {"output_token_details", prices.Output},
+				} {
+					for key := range usage.UsageMetadata[dimension.name].(map[string]any) {
+						if _, ok := dimension.prices[key]; !ok {
+							t.Errorf("%s key %q has no downstream price", dimension.name, key)
+						}
+					}
+				}
+				if usage.ServiceTier != tier {
+					t.Errorf("response tier metadata changed: %q", usage.ServiceTier)
+				}
+			})
+		}
 	}
 }

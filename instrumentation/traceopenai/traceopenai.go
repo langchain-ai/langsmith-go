@@ -38,7 +38,7 @@ func WithRunNameContext(ctx context.Context, name string) context.Context {
 	return context.WithValue(ctx, ctxKeyRunName, name)
 }
 
-// Option configures a traced HTTP client.
+// Option configures HTTP or WebSocket tracing.
 type Option func(*clientOptions)
 
 type clientOptions struct {

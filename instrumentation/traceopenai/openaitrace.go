@@ -242,34 +242,7 @@ func MiddlewareWithTracerProvider(req *http.Request, next MiddlewareNext, tp tra
 		if completion != "" {
 			span.SetAttributes(attribute.String("gen_ai.completion", completion))
 		}
-		if usage.HasUsage {
-			// langsmith.usage_metadata is the converter's preferred,
-			// cost-driving path (token-detail breakdown for cache/reasoning/audio).
-			if len(usage.UsageMetadata) > 0 {
-				if out, err := json.Marshal(usage.UsageMetadata); err == nil {
-					span.SetAttributes(usageMetadataKey.String(string(out)))
-				}
-			}
-			// Flat gen_ai.usage.* attributes drive Thread-list aggregation, which
-			// reads token counts from root spans; input/output propagate to the parent.
-			inputTokens := int64(usage.InputTokens)
-			span.SetAttributes(usageInputTokensKey.Int64(inputTokens))
-			outputTokens := int64(usage.OutputTokens)
-			span.SetAttributes(usageOutputTokensKey.Int64(outputTokens))
-			if usage.TotalTokens > 0 {
-				span.SetAttributes(usageTotalTokensKey.Int64(int64(usage.TotalTokens)))
-			}
-			if parentSpan.SpanContext().IsValid() && parentSpan.IsRecording() {
-				parentSpan.SetAttributes(
-					usageInputTokensKey.Int64(inputTokens),
-					usageOutputTokensKey.Int64(outputTokens),
-				)
-			}
-			// service_tier is a price modifier, not a token count, so it goes in metadata.
-			if usage.ServiceTier != "" {
-				span.SetAttributes(serviceTierKey.String(usage.ServiceTier))
-			}
-		}
+		setOpenAIUsageAttributes(span, parentSpan, usage)
 		if resp.StatusCode < 400 && !incompleteStream {
 			span.SetStatus(codes.Ok, "")
 		}
@@ -287,6 +260,37 @@ func MiddlewareWithTracerProvider(req *http.Request, next MiddlewareNext, tp tra
 	resp.Body = br
 
 	return resp, nil
+}
+
+func setOpenAIUsageAttributes(span, parentSpan trace.Span, usage usageInfo) {
+	if usage.HasUsage {
+		// langsmith.usage_metadata is the converter's preferred,
+		// cost-driving path (token-detail breakdown for cache/reasoning/audio).
+		if len(usage.UsageMetadata) > 0 {
+			if out, err := json.Marshal(usage.UsageMetadata); err == nil {
+				span.SetAttributes(usageMetadataKey.String(string(out)))
+			}
+		}
+		// Flat gen_ai.usage.* attributes drive Thread-list aggregation, which
+		// reads token counts from root spans; input/output propagate to the parent.
+		inputTokens := int64(usage.InputTokens)
+		span.SetAttributes(usageInputTokensKey.Int64(inputTokens))
+		outputTokens := int64(usage.OutputTokens)
+		span.SetAttributes(usageOutputTokensKey.Int64(outputTokens))
+		if usage.TotalTokens > 0 {
+			span.SetAttributes(usageTotalTokensKey.Int64(int64(usage.TotalTokens)))
+		}
+		if parentSpan.SpanContext().IsValid() && parentSpan.IsRecording() {
+			parentSpan.SetAttributes(
+				usageInputTokensKey.Int64(inputTokens),
+				usageOutputTokensKey.Int64(outputTokens),
+			)
+		}
+		// service_tier is a price modifier, not a token count, so it goes in metadata.
+		if usage.ServiceTier != "" {
+			span.SetAttributes(serviceTierKey.String(usage.ServiceTier))
+		}
+	}
 }
 
 // Chat streams open with a delta.role-only preamble; with n>1, content can
@@ -508,6 +512,9 @@ func normalizeResponsesInput(items []any) []any {
 					"content": "[reasoning] " + text,
 				})
 			}
+		case "configuration_update":
+			content, _ := json.Marshal(m)
+			out = append(out, map[string]any{"role": "system", "content": string(content)})
 		case "item_reference", "compaction":
 			continue
 		default:
@@ -858,6 +865,9 @@ func openAIUsagePricingBucket(serviceTier string, inputTokens int) string {
 	if tier == "" || tier == "default" {
 		tier = ""
 	}
+	if tier == "fast" {
+		tier = "priority"
+	}
 	if inputTokens > openAILongContextInputThreshold {
 		return openAIUsageDetailKey(tier, "long_context")
 	}
@@ -945,6 +955,12 @@ func buildOpenAIUsage(usageMap map[string]any, serviceTier string) usageInfo {
 
 	bucket := openAIUsagePricingBucket(serviceTier, input)
 	cacheReadKey := openAIUsageDetailKey(bucket, "cache_read")
+	cacheWriteKey := "cache_creation"
+	if bucket != "" {
+		// LangSmith's tiered price maps use cache_write, while the base
+		// cache_creation key remains compatible with existing consumers.
+		cacheWriteKey = openAIUsageDetailKey(bucket, "cache_write")
+	}
 	reasoningKey := openAIUsageDetailKey(bucket, "reasoning")
 
 	// Detail keys mirror langchain-openai's _create_usage_metadata so cost is
@@ -953,11 +969,15 @@ func buildOpenAIUsage(usageMap map[string]any, serviceTier string) usageInfo {
 	// completion_tokens and have no distinct price dimension, so the cost engine
 	// charges them at the default output rate via the remainder.
 	inputTokenDetails := map[string]any{}
-	var cacheRead, reasoning int
+	var cacheRead, cacheWrite, reasoning int
 	if d := getNested(inDetailsKey); d != nil {
 		if v := getInt(d, "cached_tokens"); v > 0 {
 			cacheRead = v
 			inputTokenDetails[cacheReadKey] = v
+		}
+		if v := getInt(d, "cache_write_tokens"); v > 0 {
+			cacheWrite = v
+			inputTokenDetails[cacheWriteKey] = v
 		}
 		if v := getInt(d, "audio_tokens"); v > 0 {
 			inputTokenDetails["audio"] = v
@@ -973,7 +993,7 @@ func buildOpenAIUsage(usageMap map[string]any, serviceTier string) usageInfo {
 			outputTokenDetails["audio"] = v
 		}
 	}
-	setOpenAIUsageRemainder(inputTokenDetails, bucket, input, cacheRead)
+	setOpenAIUsageRemainder(inputTokenDetails, bucket, input, cacheRead+cacheWrite)
 	setOpenAIUsageRemainder(outputTokenDetails, bucket, output, reasoning)
 
 	um := map[string]any{}
