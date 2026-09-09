@@ -1,5 +1,12 @@
 # Changelog
 
+## [0.26.3](https://github.com/langchain-ai/langsmith-go/compare/v0.26.2...v0.26.3) (2026-09-09)
+
+
+### Bug Fixes
+
+* **traceopenai:** error the span when a Responses call fails ([#207](https://github.com/langchain-ai/langsmith-go/issues/207)) ([9a8f0fb](https://github.com/langchain-ai/langsmith-go/commit/9a8f0fb4ca7ea5effd706502980f6700bbbd037f))
+
 ## [0.26.2](https://github.com/langchain-ai/langsmith-go/compare/v0.26.1...v0.26.2) (2026-09-09)
 
 
