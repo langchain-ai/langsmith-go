@@ -1,5 +1,19 @@
 # Changelog
 
+## [0.26.2](https://github.com/langchain-ai/langsmith-go/compare/v0.26.1...v0.26.2) (2026-09-09)
+
+
+### Bug Fixes
+
+* bump golang.org/x/crypto to v0.56.0 ([2c5c3cd](https://github.com/langchain-ai/langsmith-go/commit/2c5c3cdc67b9bd5288f93f41b96b71d1b945ea52))
+* bump golang.org/x/crypto to v0.56.0 ([#210](https://github.com/langchain-ai/langsmith-go/issues/210)) ([715c693](https://github.com/langchain-ai/langsmith-go/commit/715c6939bb7d3998aebe4e8aec3aca5f2e62ae04))
+
+
+### Build System
+
+* **deps:** bump google.golang.org/grpc ([a046caf](https://github.com/langchain-ai/langsmith-go/commit/a046cafdba409ab2820acb480e8e6dd99a999e54))
+* **deps:** bump google.golang.org/grpc from 1.83.1 to 1.83.2 in the go_modules group across 1 directory ([#208](https://github.com/langchain-ai/langsmith-go/issues/208)) ([ce11118](https://github.com/langchain-ai/langsmith-go/commit/ce11118553a2aa65968d7cd1b0639178d3ca3cfc))
+
 ## [0.26.1](https://github.com/langchain-ai/langsmith-go/compare/v0.26.0...v0.26.1) (2026-09-02)
 
 
