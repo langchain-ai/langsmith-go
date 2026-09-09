@@ -1,0 +1,4 @@
+[[IgnoredVulns]]
+id = "GO-2026-5932"
+ignoreUntil = 2026-12-08T00:00:00Z
+reason = "Only affects golang.org/x/crypto/openpgp and its subpackages, which are not imported. Verified 2026-09-09 with go list -mod=readonly -tags=integration -deps -test ./... on linux/amd64, darwin/arm64, and windows/amd64. x/crypto is needed transitively by google.golang.org/genai via github.com/google/s2a-go for other crypto packages. Reassess if OpenPGP imports are introduced."
