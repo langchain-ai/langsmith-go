@@ -1,3 +1,15 @@
+# ProductFeedback
+
+Response Types:
+
+- <a href="https://pkg.go.dev/github.com/langchain-ai/langsmith-go">langsmith</a>.<a href="https://pkg.go.dev/github.com/langchain-ai/langsmith-go#ProductFeedbackNewResponse">ProductFeedbackNewResponse</a>
+- <a href="https://pkg.go.dev/github.com/langchain-ai/langsmith-go">langsmith</a>.<a href="https://pkg.go.dev/github.com/langchain-ai/langsmith-go#ProductFeedbackGetResponse">ProductFeedbackGetResponse</a>
+
+Methods:
+
+- <code title="post /api/v1/platform/product-feedbacks">client.ProductFeedback.<a href="https://pkg.go.dev/github.com/langchain-ai/langsmith-go#ProductFeedbackService.New">New</a>(ctx <a href="https://pkg.go.dev/context">context</a>.<a href="https://pkg.go.dev/context#Context">Context</a>, params <a href="https://pkg.go.dev/github.com/langchain-ai/langsmith-go">langsmith</a>.<a href="https://pkg.go.dev/github.com/langchain-ai/langsmith-go#ProductFeedbackNewParams">ProductFeedbackNewParams</a>) (\*<a href="https://pkg.go.dev/github.com/langchain-ai/langsmith-go">langsmith</a>.<a href="https://pkg.go.dev/github.com/langchain-ai/langsmith-go#ProductFeedbackNewResponse">ProductFeedbackNewResponse</a>, <a href="https://pkg.go.dev/builtin#error">error</a>)</code>
+- <code title="get /api/v1/platform/product-feedbacks/{id}">client.ProductFeedback.<a href="https://pkg.go.dev/github.com/langchain-ai/langsmith-go#ProductFeedbackService.Get">Get</a>(ctx <a href="https://pkg.go.dev/context">context</a>.<a href="https://pkg.go.dev/context#Context">Context</a>, id <a href="https://pkg.go.dev/builtin#string">string</a>) (\*<a href="https://pkg.go.dev/github.com/langchain-ai/langsmith-go">langsmith</a>.<a href="https://pkg.go.dev/github.com/langchain-ai/langsmith-go#ProductFeedbackGetResponse">ProductFeedbackGetResponse</a>, <a href="https://pkg.go.dev/builtin#error">error</a>)</code>
+
 # Fleet
 
 ## Threads
