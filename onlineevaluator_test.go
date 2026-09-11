@@ -30,10 +30,10 @@ func TestOnlineEvaluatorNewWithOptionalParams(t *testing.T) {
 	_, err := client.OnlineEvaluators.New(context.TODO(), langsmith.OnlineEvaluatorNewParams{
 		CreateOnlineEvaluatorRequest: langsmith.CreateOnlineEvaluatorRequestParam{
 			CodeEvaluator: langsmith.F(langsmith.CreateOnlineCodeEvaluatorRequestParam{
-				Code:                 langsmith.F("code"),
-				Dependencies:         langsmith.F("dependencies"),
-				Language:             langsmith.F("language"),
-				WorkspaceSecretsKeys: langsmith.F([]string{"string"}),
+				AdvancedFeaturesEnabled: langsmith.F(true),
+				Code:                    langsmith.F("code"),
+				Dependencies:            langsmith.F("dependencies"),
+				Language:                langsmith.F("language"),
 			}),
 			LlmEvaluator: langsmith.F(langsmith.CreateOnlineLlmEvaluatorRequestParam{
 				CommitHashOrTag:      langsmith.F("commit_hash_or_tag"),
@@ -98,10 +98,10 @@ func TestOnlineEvaluatorUpdateWithOptionalParams(t *testing.T) {
 		langsmith.OnlineEvaluatorUpdateParams{
 			UpdateOnlineEvaluatorRequest: langsmith.UpdateOnlineEvaluatorRequestParam{
 				CodeEvaluator: langsmith.F(langsmith.UpdateOnlineCodeEvaluatorRequestParam{
-					Code:                 langsmith.F("code"),
-					Dependencies:         langsmith.F("dependencies"),
-					Language:             langsmith.F("language"),
-					WorkspaceSecretsKeys: langsmith.F([]string{"string"}),
+					AdvancedFeaturesEnabled: langsmith.F(true),
+					Code:                    langsmith.F("code"),
+					Dependencies:            langsmith.F("dependencies"),
+					Language:                langsmith.F("language"),
 				}),
 				LlmEvaluator: langsmith.F(langsmith.UpdateOnlineLlmEvaluatorRequestParam{
 					CommitHashOrTag:       langsmith.F("commit_hash_or_tag"),
