@@ -87,35 +87,36 @@ type Issue struct {
 	AutoResolutionEvidence interface{} `json:"auto_resolution_evidence"`
 	// Nil unless eligible: "auto_close" or "prompt". Evidence carries the deciding
 	// gate.
-	AutoResolutionState  string             `json:"auto_resolution_state"`
-	CreatedAt            string             `json:"created_at"`
-	Description          string             `json:"description"`
-	FirstSeenAt          string             `json:"first_seen_at"`
-	FixBranch            string             `json:"fix_branch"`
-	FixDispatchedAt      string             `json:"fix_dispatched_at"`
-	FixPrNumber          int64              `json:"fix_pr_number"`
-	FixPrompt            string             `json:"fix_prompt"`
-	FixVerification      interface{}        `json:"fix_verification"`
-	LastSeenAt           string             `json:"last_seen_at"`
-	LinearContext        IssueLinearContext `json:"linear_context"`
-	LinearSync           IssueLinearSync    `json:"linear_sync"`
-	Name                 string             `json:"name"`
-	ProposedContextFixes []interface{}      `json:"proposed_context_fixes"`
-	ProposedExamples     []interface{}      `json:"proposed_examples"`
-	ProposedFix          string             `json:"proposed_fix"`
-	ProposedPromptFixes  []interface{}      `json:"proposed_prompt_fixes"`
+	AutoResolutionState  string               `json:"auto_resolution_state"`
+	CreatedAt            string               `json:"created_at"`
+	Description          string               `json:"description"`
+	FirstSeenAt          string               `json:"first_seen_at"`
+	FixBranch            string               `json:"fix_branch"`
+	FixDispatchedAt      string               `json:"fix_dispatched_at"`
+	FixPrNumber          int64                `json:"fix_pr_number"`
+	FixPrompt            string               `json:"fix_prompt"`
+	FixVerification      IssueFixVerification `json:"fix_verification"`
+	LastSeenAt           string               `json:"last_seen_at"`
+	LinearContext        IssueLinearContext   `json:"linear_context"`
+	LinearSync           IssueLinearSync      `json:"linear_sync"`
+	Name                 string               `json:"name"`
+	ProposedContextFixes []interface{}        `json:"proposed_context_fixes"`
+	ProposedExamples     []interface{}        `json:"proposed_examples"`
+	ProposedFix          string               `json:"proposed_fix"`
+	ProposedPromptFixes  []interface{}        `json:"proposed_prompt_fixes"`
 	// RecurrencesSinceWatching counts linked traces whose run start_time is after
 	// watching_since — i.e. recurrences observed during the current watch period.
-	RecurrencesSinceWatching int64         `json:"recurrences_since_watching"`
-	SessionID                string        `json:"session_id"`
-	Severity                 IssueSeverity `json:"severity"`
-	Status                   IssueStatus   `json:"status"`
-	Tags                     []string      `json:"tags"`
-	TenantID                 string        `json:"tenant_id"`
-	Traces                   interface{}   `json:"traces"`
-	UpdatedAt                string        `json:"updated_at"`
-	WatchingSince            string        `json:"watching_since"`
-	JSON                     issueJSON     `json:"-"`
+	RecurrencesSinceWatching int64                 `json:"recurrences_since_watching"`
+	SessionID                string                `json:"session_id"`
+	Severity                 IssueSeverity         `json:"severity"`
+	Status                   IssueStatus           `json:"status"`
+	Tags                     []string              `json:"tags"`
+	TenantID                 string                `json:"tenant_id"`
+	Traces                   interface{}           `json:"traces"`
+	UpdatedAt                string                `json:"updated_at"`
+	ValidationResult         IssueValidationResult `json:"validation_result"`
+	WatchingSince            string                `json:"watching_since"`
+	JSON                     issueJSON             `json:"-"`
 }
 
 // issueJSON contains the JSON metadata for the struct [Issue]
@@ -148,6 +149,7 @@ type issueJSON struct {
 	TenantID                 apijson.Field
 	Traces                   apijson.Field
 	UpdatedAt                apijson.Field
+	ValidationResult         apijson.Field
 	WatchingSince            apijson.Field
 	raw                      string
 	ExtraFields              map[string]apijson.Field
@@ -159,6 +161,59 @@ func (r *Issue) UnmarshalJSON(data []byte) (err error) {
 
 func (r issueJSON) RawJSON() string {
 	return r.raw
+}
+
+type IssueFixVerification struct {
+	Attempt             int64                      `json:"attempt"`
+	ParentDeploymentID  string                     `json:"parent_deployment_id" format:"uuid"`
+	PreviewDeploymentID string                     `json:"preview_deployment_id" format:"uuid"`
+	Reason              string                     `json:"reason"`
+	RootTraceIDs        []string                   `json:"root_trace_ids"`
+	Status              IssueFixVerificationStatus `json:"status"`
+	UpdatedAt           time.Time                  `json:"updated_at" format:"date-time"`
+	JSON                issueFixVerificationJSON   `json:"-"`
+}
+
+// issueFixVerificationJSON contains the JSON metadata for the struct
+// [IssueFixVerification]
+type issueFixVerificationJSON struct {
+	Attempt             apijson.Field
+	ParentDeploymentID  apijson.Field
+	PreviewDeploymentID apijson.Field
+	Reason              apijson.Field
+	RootTraceIDs        apijson.Field
+	Status              apijson.Field
+	UpdatedAt           apijson.Field
+	raw                 string
+	ExtraFields         map[string]apijson.Field
+}
+
+func (r *IssueFixVerification) UnmarshalJSON(data []byte) (err error) {
+	return apijson.UnmarshalRoot(data, r)
+}
+
+func (r issueFixVerificationJSON) RawJSON() string {
+	return r.raw
+}
+
+type IssueFixVerificationStatus string
+
+const (
+	IssueFixVerificationStatusAwaitingPreview IssueFixVerificationStatus = "awaiting_preview"
+	IssueFixVerificationStatusVerifying       IssueFixVerificationStatus = "verifying"
+	IssueFixVerificationStatusPassed          IssueFixVerificationStatus = "passed"
+	IssueFixVerificationStatusFailed          IssueFixVerificationStatus = "failed"
+	IssueFixVerificationStatusInconclusive    IssueFixVerificationStatus = "inconclusive"
+	IssueFixVerificationStatusTimeout         IssueFixVerificationStatus = "timeout"
+	IssueFixVerificationStatusError           IssueFixVerificationStatus = "error"
+)
+
+func (r IssueFixVerificationStatus) IsKnown() bool {
+	switch r {
+	case IssueFixVerificationStatusAwaitingPreview, IssueFixVerificationStatusVerifying, IssueFixVerificationStatusPassed, IssueFixVerificationStatusFailed, IssueFixVerificationStatusInconclusive, IssueFixVerificationStatusTimeout, IssueFixVerificationStatusError:
+		return true
+	}
+	return false
 }
 
 type IssueLinearContext struct {
@@ -266,6 +321,54 @@ const (
 func (r IssueStatus) IsKnown() bool {
 	switch r {
 	case IssueStatusOpen, IssueStatusFixing, IssueStatusWatching, IssueStatusCompleted, IssueStatusIgnored:
+		return true
+	}
+	return false
+}
+
+type IssueValidationResult struct {
+	ActiveRevisionID string                       `json:"active_revision_id" format:"uuid"`
+	CompletedAt      time.Time                    `json:"completed_at" format:"date-time"`
+	DeploymentID     string                       `json:"deployment_id" format:"uuid"`
+	Outcome          IssueValidationResultOutcome `json:"outcome"`
+	Reason           string                       `json:"reason"`
+	RootTraceIDs     []string                     `json:"root_trace_ids"`
+	JSON             issueValidationResultJSON    `json:"-"`
+}
+
+// issueValidationResultJSON contains the JSON metadata for the struct
+// [IssueValidationResult]
+type issueValidationResultJSON struct {
+	ActiveRevisionID apijson.Field
+	CompletedAt      apijson.Field
+	DeploymentID     apijson.Field
+	Outcome          apijson.Field
+	Reason           apijson.Field
+	RootTraceIDs     apijson.Field
+	raw              string
+	ExtraFields      map[string]apijson.Field
+}
+
+func (r *IssueValidationResult) UnmarshalJSON(data []byte) (err error) {
+	return apijson.UnmarshalRoot(data, r)
+}
+
+func (r issueValidationResultJSON) RawJSON() string {
+	return r.raw
+}
+
+type IssueValidationResultOutcome string
+
+const (
+	IssueValidationResultOutcomeReproduced    IssueValidationResultOutcome = "reproduced"
+	IssueValidationResultOutcomeNotReproduced IssueValidationResultOutcome = "not_reproduced"
+	IssueValidationResultOutcomeInconclusive  IssueValidationResultOutcome = "inconclusive"
+	IssueValidationResultOutcomeError         IssueValidationResultOutcome = "error"
+)
+
+func (r IssueValidationResultOutcome) IsKnown() bool {
+	switch r {
+	case IssueValidationResultOutcomeReproduced, IssueValidationResultOutcomeNotReproduced, IssueValidationResultOutcomeInconclusive, IssueValidationResultOutcomeError:
 		return true
 	}
 	return false
