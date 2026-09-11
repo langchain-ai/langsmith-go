@@ -446,6 +446,8 @@ func TestSandboxBoxGenerateDownloadURLWithOptionalParams(t *testing.T) {
 			Path:               langsmith.F("path"),
 			ContentDisposition: langsmith.F("content_disposition"),
 			ContentType:        langsmith.F("content_type"),
+			CspSandboxFlags:    langsmith.F([]langsmith.SandboxBoxGenerateDownloadURLParamsCspSandboxFlag{langsmith.SandboxBoxGenerateDownloadURLParamsCspSandboxFlagAllowDownloads}),
+			CspSourceBundles:   langsmith.F([]langsmith.SandboxBoxGenerateDownloadURLParamsCspSourceBundle{langsmith.SandboxBoxGenerateDownloadURLParamsCspSourceBundleCdnjs}),
 			ExpiresInSeconds:   langsmith.F(int64(0)),
 		},
 	)

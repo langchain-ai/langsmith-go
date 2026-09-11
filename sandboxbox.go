@@ -135,9 +135,21 @@ func (r *SandboxBoxService) NewSnapshot(ctx context.Context, name string, body S
 // Generate a tokenized link that downloads a single file from a sandbox with no
 // further authentication. This mints a token rather than creating an addressable
 // resource, so it returns 200 with no Location header. The token pins the sandbox,
-// the file path, and the response content type and disposition, so a link cannot
-// be repointed at another file. Links never expire unless expires_in_seconds is
-// set. The link is served from the sandbox service domain, not the API host.
+// the file path, the response content type and disposition, and the sandbox flags,
+// so a link cannot be repointed at another file or served under a weaker policy.
+// The file is always served with a Content-Security-Policy: a sandbox directive,
+// plus a default-src holding every fetch to the sandbox's own download host and a
+// set of pre-approved third-party origins. csp_sandbox_flags may loosen the
+// sandbox with allow-downloads, allow-forms, allow-modals, allow-orientation-lock,
+// allow-pointer-lock, allow-popups, allow-presentation, allow-scripts, or
+// allow-top-navigation-by-user-activation. allow-same-origin is not accepted, so a
+// served file never shares an origin with anything. csp_source_bundles selects the
+// third-party origins: cdnjs, google-fonts, jsdelivr, and unpkg are all allowed
+// when the field is omitted, and 'none' holds the file to the sandbox alone.
+// Because every file of one sandbox is served from the same host, a page can load
+// sibling files it has links for, but only by their own link URLs. Links never
+// expire unless expires_in_seconds is set. The link is served from the sandbox
+// service domain, not the API host.
 func (r *SandboxBoxService) GenerateDownloadURL(ctx context.Context, name string, body SandboxBoxGenerateDownloadURLParams, opts ...option.RequestOption) (res *DownloadURLResponse, err error) {
 	opts = slices.Concat(r.Options, opts)
 	if name == "" {
@@ -1422,12 +1434,58 @@ type SandboxBoxGenerateDownloadURLParams struct {
 	Path               param.Field[string] `json:"path" api:"required"`
 	ContentDisposition param.Field[string] `json:"content_disposition"`
 	ContentType        param.Field[string] `json:"content_type"`
+	// CSPSandboxFlags loosen the CSP sandbox the file is served under; omit for the
+	// most restrictive policy.
+	CspSandboxFlags param.Field[[]SandboxBoxGenerateDownloadURLParamsCspSandboxFlag] `json:"csp_sandbox_flags"`
+	// CSPSourceBundles allow the served file to fetch from named third-party origins;
+	// omit to send no fetch directive.
+	CspSourceBundles param.Field[[]SandboxBoxGenerateDownloadURLParamsCspSourceBundle] `json:"csp_source_bundles"`
 	// ExpiresInSeconds is optional; a link with no expiry never expires.
 	ExpiresInSeconds param.Field[int64] `json:"expires_in_seconds"`
 }
 
 func (r SandboxBoxGenerateDownloadURLParams) MarshalJSON() (data []byte, err error) {
 	return apijson.MarshalRoot(r)
+}
+
+type SandboxBoxGenerateDownloadURLParamsCspSandboxFlag string
+
+const (
+	SandboxBoxGenerateDownloadURLParamsCspSandboxFlagAllowDownloads                     SandboxBoxGenerateDownloadURLParamsCspSandboxFlag = "allow-downloads"
+	SandboxBoxGenerateDownloadURLParamsCspSandboxFlagAllowForms                         SandboxBoxGenerateDownloadURLParamsCspSandboxFlag = "allow-forms"
+	SandboxBoxGenerateDownloadURLParamsCspSandboxFlagAllowModals                        SandboxBoxGenerateDownloadURLParamsCspSandboxFlag = "allow-modals"
+	SandboxBoxGenerateDownloadURLParamsCspSandboxFlagAllowOrientationLock               SandboxBoxGenerateDownloadURLParamsCspSandboxFlag = "allow-orientation-lock"
+	SandboxBoxGenerateDownloadURLParamsCspSandboxFlagAllowPointerLock                   SandboxBoxGenerateDownloadURLParamsCspSandboxFlag = "allow-pointer-lock"
+	SandboxBoxGenerateDownloadURLParamsCspSandboxFlagAllowPopups                        SandboxBoxGenerateDownloadURLParamsCspSandboxFlag = "allow-popups"
+	SandboxBoxGenerateDownloadURLParamsCspSandboxFlagAllowPresentation                  SandboxBoxGenerateDownloadURLParamsCspSandboxFlag = "allow-presentation"
+	SandboxBoxGenerateDownloadURLParamsCspSandboxFlagAllowScripts                       SandboxBoxGenerateDownloadURLParamsCspSandboxFlag = "allow-scripts"
+	SandboxBoxGenerateDownloadURLParamsCspSandboxFlagAllowTopNavigationByUserActivation SandboxBoxGenerateDownloadURLParamsCspSandboxFlag = "allow-top-navigation-by-user-activation"
+)
+
+func (r SandboxBoxGenerateDownloadURLParamsCspSandboxFlag) IsKnown() bool {
+	switch r {
+	case SandboxBoxGenerateDownloadURLParamsCspSandboxFlagAllowDownloads, SandboxBoxGenerateDownloadURLParamsCspSandboxFlagAllowForms, SandboxBoxGenerateDownloadURLParamsCspSandboxFlagAllowModals, SandboxBoxGenerateDownloadURLParamsCspSandboxFlagAllowOrientationLock, SandboxBoxGenerateDownloadURLParamsCspSandboxFlagAllowPointerLock, SandboxBoxGenerateDownloadURLParamsCspSandboxFlagAllowPopups, SandboxBoxGenerateDownloadURLParamsCspSandboxFlagAllowPresentation, SandboxBoxGenerateDownloadURLParamsCspSandboxFlagAllowScripts, SandboxBoxGenerateDownloadURLParamsCspSandboxFlagAllowTopNavigationByUserActivation:
+		return true
+	}
+	return false
+}
+
+type SandboxBoxGenerateDownloadURLParamsCspSourceBundle string
+
+const (
+	SandboxBoxGenerateDownloadURLParamsCspSourceBundleCdnjs       SandboxBoxGenerateDownloadURLParamsCspSourceBundle = "cdnjs"
+	SandboxBoxGenerateDownloadURLParamsCspSourceBundleGoogleFonts SandboxBoxGenerateDownloadURLParamsCspSourceBundle = "google-fonts"
+	SandboxBoxGenerateDownloadURLParamsCspSourceBundleJsdelivr    SandboxBoxGenerateDownloadURLParamsCspSourceBundle = "jsdelivr"
+	SandboxBoxGenerateDownloadURLParamsCspSourceBundleUnpkg       SandboxBoxGenerateDownloadURLParamsCspSourceBundle = "unpkg"
+	SandboxBoxGenerateDownloadURLParamsCspSourceBundleNone        SandboxBoxGenerateDownloadURLParamsCspSourceBundle = "none"
+)
+
+func (r SandboxBoxGenerateDownloadURLParamsCspSourceBundle) IsKnown() bool {
+	switch r {
+	case SandboxBoxGenerateDownloadURLParamsCspSourceBundleCdnjs, SandboxBoxGenerateDownloadURLParamsCspSourceBundleGoogleFonts, SandboxBoxGenerateDownloadURLParamsCspSourceBundleJsdelivr, SandboxBoxGenerateDownloadURLParamsCspSourceBundleUnpkg, SandboxBoxGenerateDownloadURLParamsCspSourceBundleNone:
+		return true
+	}
+	return false
 }
 
 type SandboxBoxGenerateServiceURLParams struct {
