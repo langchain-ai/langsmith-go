@@ -72,8 +72,10 @@ func (r *AnnotationQueueItemService) Update(ctx context.Context, queueID string,
 
 // List RUN and THREAD items in a single annotation queue for one review status
 // section, with opaque cursor pagination. Optional item_type=RUN|THREAD filters
-// the page. direction=backward returns items before the supplied cursor. The
-// response contains item metadata only, not expanded run or thread payloads.
+// the page. Optional min_start_time/max_start_time bound the item's trace start
+// time; items with no start time are excluded when either bound is set.
+// direction=backward returns items before the supplied cursor. The response
+// contains item metadata only, not expanded run or thread payloads.
 // status=archived returns items whose queue review requirements have been
 // satisfied, not merely items the caller personally marked completed.
 func (r *AnnotationQueueItemService) List(ctx context.Context, queueID string, query AnnotationQueueItemListParams, opts ...option.RequestOption) (res *pagination.ItemsCursorGetPagination[AnnotationQueueItemListResponse], err error) {
@@ -99,8 +101,10 @@ func (r *AnnotationQueueItemService) List(ctx context.Context, queueID string, q
 
 // List RUN and THREAD items in a single annotation queue for one review status
 // section, with opaque cursor pagination. Optional item_type=RUN|THREAD filters
-// the page. direction=backward returns items before the supplied cursor. The
-// response contains item metadata only, not expanded run or thread payloads.
+// the page. Optional min_start_time/max_start_time bound the item's trace start
+// time; items with no start time are excluded when either bound is set.
+// direction=backward returns items before the supplied cursor. The response
+// contains item metadata only, not expanded run or thread payloads.
 // status=archived returns items whose queue review requirements have been
 // satisfied, not merely items the caller personally marked completed.
 func (r *AnnotationQueueItemService) ListAutoPaging(ctx context.Context, queueID string, query AnnotationQueueItemListParams, opts ...option.RequestOption) *pagination.ItemsCursorGetPaginationAutoPager[AnnotationQueueItemListResponse] {
@@ -146,7 +150,9 @@ func (r *AnnotationQueueItemService) GetCount(ctx context.Context, queueID strin
 }
 
 // Resolve a RUN or THREAD item to its current review section and zero-based
-// position for deep linking.
+// position for deep linking. The returned cursor counts RUN and THREAD items
+// together, so it is only valid for a list request with no item_type or start-time
+// filter.
 func (r *AnnotationQueueItemService) GetPlacement(ctx context.Context, queueID string, itemID string, opts ...option.RequestOption) (res *AnnotationQueueItemGetPlacementResponse, err error) {
 	opts = slices.Concat(r.Options, opts)
 	if queueID == "" {
@@ -547,6 +553,12 @@ type AnnotationQueueItemListParams struct {
 	Direction param.Field[AnnotationQueueItemListParamsDirection] `query:"direction"`
 	// Filter to RUN or THREAD
 	ItemType param.Field[AnnotationQueueItemListParamsItemType] `query:"item_type"`
+	// Only items whose trace start time is at or before this timestamp. Omit or send
+	// the zero time for no bound
+	MaxStartTime param.Field[time.Time] `query:"max_start_time" format:"date-time"`
+	// Only items whose trace start time is at or after this timestamp. Omit or send
+	// the zero time for no bound
+	MinStartTime param.Field[time.Time] `query:"min_start_time" format:"date-time"`
 	// Page size (max 100)
 	PageSize param.Field[int64] `query:"page_size"`
 }

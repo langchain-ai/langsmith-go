@@ -103,11 +103,13 @@ func TestAnnotationQueueItemListWithOptionalParams(t *testing.T) {
 		context.TODO(),
 		"queue_id",
 		langsmith.AnnotationQueueItemListParams{
-			Status:    langsmith.F(langsmith.AnnotationQueueItemListParamsStatusNeedsMyReview),
-			Cursor:    langsmith.F("cursor"),
-			Direction: langsmith.F(langsmith.AnnotationQueueItemListParamsDirectionForward),
-			ItemType:  langsmith.F(langsmith.AnnotationQueueItemListParamsItemTypeRun),
-			PageSize:  langsmith.F(int64(0)),
+			Status:       langsmith.F(langsmith.AnnotationQueueItemListParamsStatusNeedsMyReview),
+			Cursor:       langsmith.F("cursor"),
+			Direction:    langsmith.F(langsmith.AnnotationQueueItemListParamsDirectionForward),
+			ItemType:     langsmith.F(langsmith.AnnotationQueueItemListParamsItemTypeRun),
+			MaxStartTime: langsmith.F(time.Now()),
+			MinStartTime: langsmith.F(time.Now()),
+			PageSize:     langsmith.F(int64(0)),
 		},
 	)
 	if err != nil {
