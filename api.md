@@ -644,6 +644,11 @@ Response Types:
 - <a href="https://pkg.go.dev/github.com/langchain-ai/langsmith-go">langsmith</a>.<a href="https://pkg.go.dev/github.com/langchain-ai/langsmith-go#ServiceURLResponse">ServiceURLResponse</a>
 - <a href="https://pkg.go.dev/github.com/langchain-ai/langsmith-go">langsmith</a>.<a href="https://pkg.go.dev/github.com/langchain-ai/langsmith-go#SnapshotListResponse">SnapshotListResponse</a>
 - <a href="https://pkg.go.dev/github.com/langchain-ai/langsmith-go">langsmith</a>.<a href="https://pkg.go.dev/github.com/langchain-ai/langsmith-go#SnapshotResponse">SnapshotResponse</a>
+- <a href="https://pkg.go.dev/github.com/langchain-ai/langsmith-go">langsmith</a>.<a href="https://pkg.go.dev/github.com/langchain-ai/langsmith-go#SandboxListUsageCostsResponse">SandboxListUsageCostsResponse</a>
+
+Methods:
+
+- <code title="get /api/v2/sandboxes/usage/costs">client.Sandboxes.<a href="https://pkg.go.dev/github.com/langchain-ai/langsmith-go#SandboxService.ListUsageCosts">ListUsageCosts</a>(ctx <a href="https://pkg.go.dev/context">context</a>.<a href="https://pkg.go.dev/context#Context">Context</a>, query <a href="https://pkg.go.dev/github.com/langchain-ai/langsmith-go">langsmith</a>.<a href="https://pkg.go.dev/github.com/langchain-ai/langsmith-go#SandboxListUsageCostsParams">SandboxListUsageCostsParams</a>) (\*<a href="https://pkg.go.dev/github.com/langchain-ai/langsmith-go/packages/pagination">pagination</a>.<a href="https://pkg.go.dev/github.com/langchain-ai/langsmith-go/packages/pagination#ItemsCursorGetPagination">ItemsCursorGetPagination</a>[<a href="https://pkg.go.dev/github.com/langchain-ai/langsmith-go">langsmith</a>.<a href="https://pkg.go.dev/github.com/langchain-ai/langsmith-go#SandboxListUsageCostsResponse">SandboxListUsageCostsResponse</a>], <a href="https://pkg.go.dev/builtin#error">error</a>)</code>
 
 ## Boxes
 

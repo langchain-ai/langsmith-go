@@ -3,10 +3,19 @@
 package langsmith
 
 import (
+	"context"
+	"net/http"
+	"net/url"
 	"reflect"
+	"slices"
+	"time"
 
 	"github.com/langchain-ai/langsmith-go/internal/apijson"
+	"github.com/langchain-ai/langsmith-go/internal/apiquery"
+	"github.com/langchain-ai/langsmith-go/internal/param"
+	"github.com/langchain-ai/langsmith-go/internal/requestconfig"
 	"github.com/langchain-ai/langsmith-go/option"
+	"github.com/langchain-ai/langsmith-go/packages/pagination"
 	"github.com/tidwall/gjson"
 )
 
@@ -33,6 +42,41 @@ func NewSandboxService(opts ...option.RequestOption) (r *SandboxService) {
 	r.Registries = NewSandboxRegistryService(opts...)
 	r.Snapshots = NewSandboxSnapshotService(opts...)
 	return
+}
+
+// Returns priced usage per sandbox or snapshot and UTC hour in the half-open
+// requested interval. LCU uses the recorded compute amount for sandboxes;
+// snapshots have zero LCU. LSU allocates the recorded workspace storage amount
+// proportionally to attributed bytes, including checkpoints on their sandbox and
+// snapshots as separate resources. Resource filters preserve each resource's
+// share. Rate changes do not reprice recorded amounts. An access-filtered page can
+// have no items and a non-null next_cursor; continue until next_cursor is null.
+func (r *SandboxService) ListUsageCosts(ctx context.Context, query SandboxListUsageCostsParams, opts ...option.RequestOption) (res *pagination.ItemsCursorGetPagination[SandboxListUsageCostsResponse], err error) {
+	var raw *http.Response
+	opts = slices.Concat(r.Options, opts)
+	opts = append([]option.RequestOption{option.WithResponseInto(&raw)}, opts...)
+	path := "api/v2/sandboxes/usage/costs"
+	cfg, err := requestconfig.NewRequestConfig(ctx, http.MethodGet, path, query, &res, opts...)
+	if err != nil {
+		return nil, err
+	}
+	err = cfg.Execute()
+	if err != nil {
+		return nil, err
+	}
+	res.SetPageConfig(cfg, raw)
+	return res, nil
+}
+
+// Returns priced usage per sandbox or snapshot and UTC hour in the half-open
+// requested interval. LCU uses the recorded compute amount for sandboxes;
+// snapshots have zero LCU. LSU allocates the recorded workspace storage amount
+// proportionally to attributed bytes, including checkpoints on their sandbox and
+// snapshots as separate resources. Resource filters preserve each resource's
+// share. Rate changes do not reprice recorded amounts. An access-filtered page can
+// have no items and a non-null next_cursor; continue until next_cursor is null.
+func (r *SandboxService) ListUsageCostsAutoPaging(ctx context.Context, query SandboxListUsageCostsParams, opts ...option.RequestOption) *pagination.ItemsCursorGetPaginationAutoPager[SandboxListUsageCostsResponse] {
+	return pagination.NewItemsCursorGetPaginationAutoPager(r.ListUsageCosts(ctx, query, opts...))
 }
 
 type DownloadURLResponse struct {
@@ -2342,4 +2386,93 @@ func (r *SnapshotResponseRunConfig) UnmarshalJSON(data []byte) (err error) {
 
 func (r snapshotResponseRunConfigJSON) RawJSON() string {
 	return r.raw
+}
+
+type SandboxListUsageCostsResponse struct {
+	// Recorded compute usage in LangSmith Compute Units (LCU), as a decimal string
+	// with up to six fractional digits and trailing zeros omitted. Snapshots return
+	// "0".
+	Lcu string `json:"lcu" api:"required" format:"decimal"`
+	// Allocated storage usage in LangSmith Storage Units (LSU), as a decimal string
+	// with up to six fractional digits and trailing zeros omitted.
+	Lsu          string                                    `json:"lsu" api:"required" format:"decimal"`
+	PeriodStart  time.Time                                 `json:"period_start" api:"required" format:"date-time"`
+	ResourceID   string                                    `json:"resource_id" api:"required" format:"uuid"`
+	ResourceType SandboxListUsageCostsResponseResourceType `json:"resource_type" api:"required"`
+	JSON         sandboxListUsageCostsResponseJSON         `json:"-"`
+}
+
+// sandboxListUsageCostsResponseJSON contains the JSON metadata for the struct
+// [SandboxListUsageCostsResponse]
+type sandboxListUsageCostsResponseJSON struct {
+	Lcu          apijson.Field
+	Lsu          apijson.Field
+	PeriodStart  apijson.Field
+	ResourceID   apijson.Field
+	ResourceType apijson.Field
+	raw          string
+	ExtraFields  map[string]apijson.Field
+}
+
+func (r *SandboxListUsageCostsResponse) UnmarshalJSON(data []byte) (err error) {
+	return apijson.UnmarshalRoot(data, r)
+}
+
+func (r sandboxListUsageCostsResponseJSON) RawJSON() string {
+	return r.raw
+}
+
+type SandboxListUsageCostsResponseResourceType string
+
+const (
+	SandboxListUsageCostsResponseResourceTypeSandbox  SandboxListUsageCostsResponseResourceType = "SANDBOX"
+	SandboxListUsageCostsResponseResourceTypeSnapshot SandboxListUsageCostsResponseResourceType = "SNAPSHOT"
+)
+
+func (r SandboxListUsageCostsResponseResourceType) IsKnown() bool {
+	switch r {
+	case SandboxListUsageCostsResponseResourceTypeSandbox, SandboxListUsageCostsResponseResourceTypeSnapshot:
+		return true
+	}
+	return false
+}
+
+type SandboxListUsageCostsParams struct {
+	// Exclusive RFC3339 end time; the range must not exceed 31 days
+	EndTime param.Field[time.Time] `query:"end_time" api:"required" format:"date-time"`
+	// Inclusive RFC3339 start time
+	StartTime param.Field[time.Time] `query:"start_time" api:"required" format:"date-time"`
+	// Opaque pagination cursor
+	Cursor param.Field[string] `query:"cursor"`
+	// Maximum rows to return
+	PageSize param.Field[int64] `query:"page_size"`
+	// Resource UUID filter; repeat this parameter up to 100 times
+	ResourceIDs param.Field[[]string] `query:"resource_ids"`
+	// Resource type filter
+	ResourceType param.Field[SandboxListUsageCostsParamsResourceType] `query:"resource_type"`
+}
+
+// URLQuery serializes [SandboxListUsageCostsParams]'s query parameters as
+// `url.Values`.
+func (r SandboxListUsageCostsParams) URLQuery() (v url.Values) {
+	return apiquery.MarshalWithSettings(r, apiquery.QuerySettings{
+		ArrayFormat:  apiquery.ArrayQueryFormatRepeat,
+		NestedFormat: apiquery.NestedQueryFormatBrackets,
+	})
+}
+
+// Resource type filter
+type SandboxListUsageCostsParamsResourceType string
+
+const (
+	SandboxListUsageCostsParamsResourceTypeSandbox  SandboxListUsageCostsParamsResourceType = "SANDBOX"
+	SandboxListUsageCostsParamsResourceTypeSnapshot SandboxListUsageCostsParamsResourceType = "SNAPSHOT"
+)
+
+func (r SandboxListUsageCostsParamsResourceType) IsKnown() bool {
+	switch r {
+	case SandboxListUsageCostsParamsResourceTypeSandbox, SandboxListUsageCostsParamsResourceTypeSnapshot:
+		return true
+	}
+	return false
 }
