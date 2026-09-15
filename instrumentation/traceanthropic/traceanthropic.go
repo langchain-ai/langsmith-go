@@ -340,11 +340,6 @@ func extractRequestAttributes(span trace.Span, body []byte) (streaming bool) {
 // Usage fields from message_start and message_delta are merged into a single
 // map and handed to setUsageAttributes, which captures every token type.
 func extractStreamingResponseAttributes(span trace.Span, data []byte, parentSpan trace.Span) {
-	chunks, err := traceutil.ParseSSEChunks(bytes.NewReader(data))
-	if err != nil || len(chunks) == 0 {
-		return
-	}
-
 	usage := make(map[string]interface{})
 
 	// Track content blocks by index for proper multi-block reconstruction
@@ -356,7 +351,7 @@ func extractStreamingResponseAttributes(span trace.Span, data []byte, parentSpan
 	}
 	var blocks []*contentBlock
 
-	for _, chunk := range chunks {
+	err := traceutil.ParseSSEChunksFunc(bytes.NewReader(data), func(chunk map[string]any) {
 		eventType, _ := chunk["type"].(string)
 
 		switch eventType {
@@ -375,7 +370,7 @@ func extractStreamingResponseAttributes(span trace.Span, data []byte, parentSpan
 		case "content_block_start":
 			idxF, ok := chunk["index"].(float64)
 			if !ok {
-				continue
+				return
 			}
 			idx := int(idxF)
 			for len(blocks) <= idx {
@@ -392,7 +387,7 @@ func extractStreamingResponseAttributes(span trace.Span, data []byte, parentSpan
 		case "content_block_delta":
 			idxF, ok := chunk["index"].(float64)
 			if !ok {
-				continue
+				return
 			}
 			idx := int(idxF)
 			for len(blocks) <= idx {
@@ -432,6 +427,9 @@ func extractStreamingResponseAttributes(span trace.Span, data []byte, parentSpan
 				}
 			}
 		}
+	})
+	if err != nil {
+		return
 	}
 
 	// Reconstruct content blocks into an assistant message

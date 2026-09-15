@@ -735,11 +735,6 @@ func flattenContentParts(parts []any) string {
 // delta.content and delta.tool_calls across chunks, and extracts usage from
 // the chunk that contains it (last chunk when stream_options.include_usage is set).
 func extractStreamingCompletion(data []byte) (string, usageInfo) {
-	chunks, err := traceutil.ParseSSEChunks(bytes.NewReader(data))
-	if err != nil || len(chunks) == 0 {
-		return "", usageInfo{}
-	}
-
 	var content strings.Builder
 	var usage usageInfo
 
@@ -753,7 +748,7 @@ func extractStreamingCompletion(data []byte) (string, usageInfo) {
 	}
 	var toolCalls []*toolCallAcc
 
-	for _, chunk := range chunks {
+	err := traceutil.ParseSSEChunksFunc(bytes.NewReader(data), func(chunk map[string]any) {
 		if choices, ok := chunk["choices"].([]any); ok && len(choices) > 0 {
 			if choice, ok := choices[0].(map[string]any); ok {
 				if delta, ok := choice["delta"].(map[string]any); ok {
@@ -803,6 +798,9 @@ func extractStreamingCompletion(data []byte) (string, usageInfo) {
 		if usageMap, ok := chunk["usage"].(map[string]any); ok {
 			usage = buildOpenAIUsage(usageMap, usage.ServiceTier)
 		}
+	})
+	if err != nil {
+		return "", usageInfo{}
 	}
 
 	text := content.String()
@@ -1051,20 +1049,26 @@ func extractResponsesCompletion(body []byte) (string, usageInfo, error) {
 func extractStreamingResponsesCompletion(data []byte) (string, usageInfo, error) {
 	// ParseSSEChunks returns the chunks it read alongside any error; a terminal
 	// event among them still carries the usage and status for the whole call.
-	chunks, parseErr := traceutil.ParseSSEChunks(bytes.NewReader(data))
-
-	for _, chunk := range chunks {
+	var terminal map[string]any
+	var status string
+	parseErr := traceutil.ParseSSEChunksFunc(bytes.NewReader(data), func(chunk map[string]any) {
+		if terminal != nil {
+			return
+		}
 		switch msgType, _ := chunk["type"].(string); msgType {
 		case "response.completed", "response.incomplete", "response.failed":
 			response, ok := chunk["response"].(map[string]any)
 			if !ok {
-				continue
+				return
 			}
 			// Terminal events are named response.<status>, so the event type
 			// supplies the status when the response object omits it.
-			failure := responsesFailure(response, strings.TrimPrefix(msgType, "response."))
-			return extractResponsesOutput(response), extractResponsesUsage(response), failure
+			terminal = response
+			status = strings.TrimPrefix(msgType, "response.")
 		}
+	})
+	if terminal != nil {
+		return extractResponsesOutput(terminal), extractResponsesUsage(terminal), responsesFailure(terminal, status)
 	}
 	if parseErr != nil {
 		return "", usageInfo{}, fmt.Errorf("%w: %w", errResponsesUnreadableStream, parseErr)

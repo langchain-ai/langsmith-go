@@ -490,22 +490,22 @@ func extractResponseAttributes(span trace.Span, body []byte, parentSpan trace.Sp
 // extractStreamingResponseAttributes merges SSE chunks into a single
 // synthetic response and processes it through the same path as non-streaming.
 func extractStreamingResponseAttributes(span trace.Span, data []byte, parentSpan trace.Span) {
-	chunks, err := traceutil.ParseSSEChunks(bytes.NewReader(data))
-	if err != nil || len(chunks) == 0 {
+	resp, err := mergeStreamingChunks(bytes.NewReader(data))
+	if err != nil {
 		return
 	}
-	processResponse(span, mergeStreamingChunks(chunks), parentSpan)
+	processResponse(span, resp, parentSpan)
 }
 
 // mergeStreamingChunks folds SSE chunks (each a GenerateContentResponse)
 // into one synthetic response by accumulating content parts and keeping the
 // last-seen metadata/usage.
-func mergeStreamingChunks(chunks []map[string]any) map[string]any {
+func mergeStreamingChunks(r io.Reader) (map[string]any, error) {
 	resp := map[string]any{}
 	var allParts []any
 	var finishReason string
 
-	for _, chunk := range chunks {
+	err := traceutil.ParseSSEChunksFunc(r, func(chunk map[string]any) {
 		if mv, ok := chunk["modelVersion"].(string); ok {
 			resp["modelVersion"] = mv
 		}
@@ -517,22 +517,25 @@ func mergeStreamingChunks(chunks []map[string]any) map[string]any {
 		}
 		candidates, ok := chunk["candidates"].([]any)
 		if !ok || len(candidates) == 0 {
-			continue
+			return
 		}
 		candidate, ok := candidates[0].(map[string]any)
 		if !ok {
-			continue
+			return
 		}
 		if r, ok := candidate["finishReason"].(string); ok && r != "" {
 			finishReason = r
 		}
 		content, ok := candidate["content"].(map[string]any)
 		if !ok {
-			continue
+			return
 		}
 		if parts, ok := content["parts"].([]any); ok {
 			allParts = append(allParts, parts...)
 		}
+	})
+	if err != nil {
+		return nil, err
 	}
 
 	candidate := map[string]any{
@@ -542,7 +545,7 @@ func mergeStreamingChunks(chunks []map[string]any) map[string]any {
 		candidate["finishReason"] = finishReason
 	}
 	resp["candidates"] = []any{candidate}
-	return resp
+	return resp, nil
 }
 
 // processResponse sets span attributes from a (possibly merged) Gemini response.
