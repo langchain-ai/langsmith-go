@@ -207,38 +207,143 @@ func (r sandboxResponseMountConfigAuthJSON) RawJSON() string {
 }
 
 type SandboxResponseMountConfigAuthAws struct {
-	AccessKeyID     SandboxResponseMountConfigAuthAwsAccessKeyID     `json:"access_key_id" api:"required"`
-	SecretAccessKey SandboxResponseMountConfigAuthAwsSecretAccessKey `json:"secret_access_key" api:"required"`
-	JSON            sandboxResponseMountConfigAuthAwsJSON            `json:"-"`
+	// This field can have the runtime type of
+	// [SandboxResponseMountConfigAuthAwsSandboxesSandboxAwsMountStaticAuthConfigAccessKeyID].
+	AccessKeyID interface{} `json:"access_key_id"`
+	// IAM role to assume with permissions scoped to the configured S3 mounts. Mutually
+	// exclusive with static credentials. Configure only at creation.
+	RoleArn string `json:"role_arn"`
+	// This field can have the runtime type of
+	// [SandboxResponseMountConfigAuthAwsSandboxesSandboxAwsMountStaticAuthConfigSecretAccessKey].
+	SecretAccessKey interface{}                           `json:"secret_access_key"`
+	JSON            sandboxResponseMountConfigAuthAwsJSON `json:"-"`
+	union           SandboxResponseMountConfigAuthAwsUnion
 }
 
 // sandboxResponseMountConfigAuthAwsJSON contains the JSON metadata for the struct
 // [SandboxResponseMountConfigAuthAws]
 type sandboxResponseMountConfigAuthAwsJSON struct {
 	AccessKeyID     apijson.Field
+	RoleArn         apijson.Field
 	SecretAccessKey apijson.Field
 	raw             string
 	ExtraFields     map[string]apijson.Field
-}
-
-func (r *SandboxResponseMountConfigAuthAws) UnmarshalJSON(data []byte) (err error) {
-	return apijson.UnmarshalRoot(data, r)
 }
 
 func (r sandboxResponseMountConfigAuthAwsJSON) RawJSON() string {
 	return r.raw
 }
 
-type SandboxResponseMountConfigAuthAwsAccessKeyID struct {
-	Type  SandboxResponseMountConfigAuthAwsAccessKeyIDType `json:"type" api:"required"`
-	IsSet bool                                             `json:"is_set"`
-	Value string                                           `json:"value"`
-	JSON  sandboxResponseMountConfigAuthAwsAccessKeyIDJSON `json:"-"`
+func (r *SandboxResponseMountConfigAuthAws) UnmarshalJSON(data []byte) (err error) {
+	*r = SandboxResponseMountConfigAuthAws{}
+	err = apijson.UnmarshalRoot(data, &r.union)
+	if err != nil {
+		return err
+	}
+	return apijson.Port(r.union, &r)
 }
 
-// sandboxResponseMountConfigAuthAwsAccessKeyIDJSON contains the JSON metadata for
-// the struct [SandboxResponseMountConfigAuthAwsAccessKeyID]
-type sandboxResponseMountConfigAuthAwsAccessKeyIDJSON struct {
+// AsUnion returns a [SandboxResponseMountConfigAuthAwsUnion] interface which you
+// can cast to the specific types for more type safety.
+//
+// Possible runtime types of the union are
+// [SandboxResponseMountConfigAuthAwsSandboxesSandboxAwsMountRoleAuthConfig],
+// [SandboxResponseMountConfigAuthAwsSandboxesSandboxAwsMountStaticAuthConfig].
+func (r SandboxResponseMountConfigAuthAws) AsUnion() SandboxResponseMountConfigAuthAwsUnion {
+	return r.union
+}
+
+// Union satisfied by
+// [SandboxResponseMountConfigAuthAwsSandboxesSandboxAwsMountRoleAuthConfig] or
+// [SandboxResponseMountConfigAuthAwsSandboxesSandboxAwsMountStaticAuthConfig].
+type SandboxResponseMountConfigAuthAwsUnion interface {
+	implementsSandboxResponseMountConfigAuthAws()
+}
+
+func init() {
+	apijson.RegisterUnion(
+		reflect.TypeOf((*SandboxResponseMountConfigAuthAwsUnion)(nil)).Elem(),
+		"",
+		apijson.UnionVariant{
+			TypeFilter: gjson.JSON,
+			Type:       reflect.TypeOf(SandboxResponseMountConfigAuthAwsSandboxesSandboxAwsMountRoleAuthConfig{}),
+		},
+		apijson.UnionVariant{
+			TypeFilter: gjson.JSON,
+			Type:       reflect.TypeOf(SandboxResponseMountConfigAuthAwsSandboxesSandboxAwsMountStaticAuthConfig{}),
+		},
+	)
+}
+
+type SandboxResponseMountConfigAuthAwsSandboxesSandboxAwsMountRoleAuthConfig struct {
+	// IAM role to assume with permissions scoped to the configured S3 mounts. Mutually
+	// exclusive with static credentials. Configure only at creation.
+	RoleArn string                                                                      `json:"role_arn" api:"required"`
+	JSON    sandboxResponseMountConfigAuthAwsSandboxesSandboxAwsMountRoleAuthConfigJSON `json:"-"`
+}
+
+// sandboxResponseMountConfigAuthAwsSandboxesSandboxAwsMountRoleAuthConfigJSON
+// contains the JSON metadata for the struct
+// [SandboxResponseMountConfigAuthAwsSandboxesSandboxAwsMountRoleAuthConfig]
+type sandboxResponseMountConfigAuthAwsSandboxesSandboxAwsMountRoleAuthConfigJSON struct {
+	RoleArn     apijson.Field
+	raw         string
+	ExtraFields map[string]apijson.Field
+}
+
+func (r *SandboxResponseMountConfigAuthAwsSandboxesSandboxAwsMountRoleAuthConfig) UnmarshalJSON(data []byte) (err error) {
+	return apijson.UnmarshalRoot(data, r)
+}
+
+func (r sandboxResponseMountConfigAuthAwsSandboxesSandboxAwsMountRoleAuthConfigJSON) RawJSON() string {
+	return r.raw
+}
+
+func (r SandboxResponseMountConfigAuthAwsSandboxesSandboxAwsMountRoleAuthConfig) implementsSandboxResponseMountConfigAuthAws() {
+}
+
+type SandboxResponseMountConfigAuthAwsSandboxesSandboxAwsMountStaticAuthConfig struct {
+	AccessKeyID     SandboxResponseMountConfigAuthAwsSandboxesSandboxAwsMountStaticAuthConfigAccessKeyID     `json:"access_key_id" api:"required"`
+	SecretAccessKey SandboxResponseMountConfigAuthAwsSandboxesSandboxAwsMountStaticAuthConfigSecretAccessKey `json:"secret_access_key" api:"required"`
+	// IAM role to assume with permissions scoped to the configured S3 mounts. Mutually
+	// exclusive with static credentials. Configure only at creation.
+	RoleArn SandboxResponseMountConfigAuthAwsSandboxesSandboxAwsMountStaticAuthConfigRoleArn `json:"role_arn"`
+	JSON    sandboxResponseMountConfigAuthAwsSandboxesSandboxAwsMountStaticAuthConfigJSON    `json:"-"`
+}
+
+// sandboxResponseMountConfigAuthAwsSandboxesSandboxAwsMountStaticAuthConfigJSON
+// contains the JSON metadata for the struct
+// [SandboxResponseMountConfigAuthAwsSandboxesSandboxAwsMountStaticAuthConfig]
+type sandboxResponseMountConfigAuthAwsSandboxesSandboxAwsMountStaticAuthConfigJSON struct {
+	AccessKeyID     apijson.Field
+	SecretAccessKey apijson.Field
+	RoleArn         apijson.Field
+	raw             string
+	ExtraFields     map[string]apijson.Field
+}
+
+func (r *SandboxResponseMountConfigAuthAwsSandboxesSandboxAwsMountStaticAuthConfig) UnmarshalJSON(data []byte) (err error) {
+	return apijson.UnmarshalRoot(data, r)
+}
+
+func (r sandboxResponseMountConfigAuthAwsSandboxesSandboxAwsMountStaticAuthConfigJSON) RawJSON() string {
+	return r.raw
+}
+
+func (r SandboxResponseMountConfigAuthAwsSandboxesSandboxAwsMountStaticAuthConfig) implementsSandboxResponseMountConfigAuthAws() {
+}
+
+type SandboxResponseMountConfigAuthAwsSandboxesSandboxAwsMountStaticAuthConfigAccessKeyID struct {
+	Type  SandboxResponseMountConfigAuthAwsSandboxesSandboxAwsMountStaticAuthConfigAccessKeyIDType `json:"type" api:"required"`
+	IsSet bool                                                                                     `json:"is_set"`
+	Value string                                                                                   `json:"value"`
+	JSON  sandboxResponseMountConfigAuthAwsSandboxesSandboxAwsMountStaticAuthConfigAccessKeyIDJSON `json:"-"`
+}
+
+// sandboxResponseMountConfigAuthAwsSandboxesSandboxAwsMountStaticAuthConfigAccessKeyIDJSON
+// contains the JSON metadata for the struct
+// [SandboxResponseMountConfigAuthAwsSandboxesSandboxAwsMountStaticAuthConfigAccessKeyID]
+type sandboxResponseMountConfigAuthAwsSandboxesSandboxAwsMountStaticAuthConfigAccessKeyIDJSON struct {
 	Type        apijson.Field
 	IsSet       apijson.Field
 	Value       apijson.Field
@@ -246,40 +351,41 @@ type sandboxResponseMountConfigAuthAwsAccessKeyIDJSON struct {
 	ExtraFields map[string]apijson.Field
 }
 
-func (r *SandboxResponseMountConfigAuthAwsAccessKeyID) UnmarshalJSON(data []byte) (err error) {
+func (r *SandboxResponseMountConfigAuthAwsSandboxesSandboxAwsMountStaticAuthConfigAccessKeyID) UnmarshalJSON(data []byte) (err error) {
 	return apijson.UnmarshalRoot(data, r)
 }
 
-func (r sandboxResponseMountConfigAuthAwsAccessKeyIDJSON) RawJSON() string {
+func (r sandboxResponseMountConfigAuthAwsSandboxesSandboxAwsMountStaticAuthConfigAccessKeyIDJSON) RawJSON() string {
 	return r.raw
 }
 
-type SandboxResponseMountConfigAuthAwsAccessKeyIDType string
+type SandboxResponseMountConfigAuthAwsSandboxesSandboxAwsMountStaticAuthConfigAccessKeyIDType string
 
 const (
-	SandboxResponseMountConfigAuthAwsAccessKeyIDTypePlaintext       SandboxResponseMountConfigAuthAwsAccessKeyIDType = "plaintext"
-	SandboxResponseMountConfigAuthAwsAccessKeyIDTypeOpaque          SandboxResponseMountConfigAuthAwsAccessKeyIDType = "opaque"
-	SandboxResponseMountConfigAuthAwsAccessKeyIDTypeWorkspaceSecret SandboxResponseMountConfigAuthAwsAccessKeyIDType = "workspace_secret"
+	SandboxResponseMountConfigAuthAwsSandboxesSandboxAwsMountStaticAuthConfigAccessKeyIDTypePlaintext       SandboxResponseMountConfigAuthAwsSandboxesSandboxAwsMountStaticAuthConfigAccessKeyIDType = "plaintext"
+	SandboxResponseMountConfigAuthAwsSandboxesSandboxAwsMountStaticAuthConfigAccessKeyIDTypeOpaque          SandboxResponseMountConfigAuthAwsSandboxesSandboxAwsMountStaticAuthConfigAccessKeyIDType = "opaque"
+	SandboxResponseMountConfigAuthAwsSandboxesSandboxAwsMountStaticAuthConfigAccessKeyIDTypeWorkspaceSecret SandboxResponseMountConfigAuthAwsSandboxesSandboxAwsMountStaticAuthConfigAccessKeyIDType = "workspace_secret"
 )
 
-func (r SandboxResponseMountConfigAuthAwsAccessKeyIDType) IsKnown() bool {
+func (r SandboxResponseMountConfigAuthAwsSandboxesSandboxAwsMountStaticAuthConfigAccessKeyIDType) IsKnown() bool {
 	switch r {
-	case SandboxResponseMountConfigAuthAwsAccessKeyIDTypePlaintext, SandboxResponseMountConfigAuthAwsAccessKeyIDTypeOpaque, SandboxResponseMountConfigAuthAwsAccessKeyIDTypeWorkspaceSecret:
+	case SandboxResponseMountConfigAuthAwsSandboxesSandboxAwsMountStaticAuthConfigAccessKeyIDTypePlaintext, SandboxResponseMountConfigAuthAwsSandboxesSandboxAwsMountStaticAuthConfigAccessKeyIDTypeOpaque, SandboxResponseMountConfigAuthAwsSandboxesSandboxAwsMountStaticAuthConfigAccessKeyIDTypeWorkspaceSecret:
 		return true
 	}
 	return false
 }
 
-type SandboxResponseMountConfigAuthAwsSecretAccessKey struct {
-	Type  SandboxResponseMountConfigAuthAwsSecretAccessKeyType `json:"type" api:"required"`
-	IsSet bool                                                 `json:"is_set"`
-	Value string                                               `json:"value"`
-	JSON  sandboxResponseMountConfigAuthAwsSecretAccessKeyJSON `json:"-"`
+type SandboxResponseMountConfigAuthAwsSandboxesSandboxAwsMountStaticAuthConfigSecretAccessKey struct {
+	Type  SandboxResponseMountConfigAuthAwsSandboxesSandboxAwsMountStaticAuthConfigSecretAccessKeyType `json:"type" api:"required"`
+	IsSet bool                                                                                         `json:"is_set"`
+	Value string                                                                                       `json:"value"`
+	JSON  sandboxResponseMountConfigAuthAwsSandboxesSandboxAwsMountStaticAuthConfigSecretAccessKeyJSON `json:"-"`
 }
 
-// sandboxResponseMountConfigAuthAwsSecretAccessKeyJSON contains the JSON metadata
-// for the struct [SandboxResponseMountConfigAuthAwsSecretAccessKey]
-type sandboxResponseMountConfigAuthAwsSecretAccessKeyJSON struct {
+// sandboxResponseMountConfigAuthAwsSandboxesSandboxAwsMountStaticAuthConfigSecretAccessKeyJSON
+// contains the JSON metadata for the struct
+// [SandboxResponseMountConfigAuthAwsSandboxesSandboxAwsMountStaticAuthConfigSecretAccessKey]
+type sandboxResponseMountConfigAuthAwsSandboxesSandboxAwsMountStaticAuthConfigSecretAccessKeyJSON struct {
 	Type        apijson.Field
 	IsSet       apijson.Field
 	Value       apijson.Field
@@ -287,25 +393,41 @@ type sandboxResponseMountConfigAuthAwsSecretAccessKeyJSON struct {
 	ExtraFields map[string]apijson.Field
 }
 
-func (r *SandboxResponseMountConfigAuthAwsSecretAccessKey) UnmarshalJSON(data []byte) (err error) {
+func (r *SandboxResponseMountConfigAuthAwsSandboxesSandboxAwsMountStaticAuthConfigSecretAccessKey) UnmarshalJSON(data []byte) (err error) {
 	return apijson.UnmarshalRoot(data, r)
 }
 
-func (r sandboxResponseMountConfigAuthAwsSecretAccessKeyJSON) RawJSON() string {
+func (r sandboxResponseMountConfigAuthAwsSandboxesSandboxAwsMountStaticAuthConfigSecretAccessKeyJSON) RawJSON() string {
 	return r.raw
 }
 
-type SandboxResponseMountConfigAuthAwsSecretAccessKeyType string
+type SandboxResponseMountConfigAuthAwsSandboxesSandboxAwsMountStaticAuthConfigSecretAccessKeyType string
 
 const (
-	SandboxResponseMountConfigAuthAwsSecretAccessKeyTypePlaintext       SandboxResponseMountConfigAuthAwsSecretAccessKeyType = "plaintext"
-	SandboxResponseMountConfigAuthAwsSecretAccessKeyTypeOpaque          SandboxResponseMountConfigAuthAwsSecretAccessKeyType = "opaque"
-	SandboxResponseMountConfigAuthAwsSecretAccessKeyTypeWorkspaceSecret SandboxResponseMountConfigAuthAwsSecretAccessKeyType = "workspace_secret"
+	SandboxResponseMountConfigAuthAwsSandboxesSandboxAwsMountStaticAuthConfigSecretAccessKeyTypePlaintext       SandboxResponseMountConfigAuthAwsSandboxesSandboxAwsMountStaticAuthConfigSecretAccessKeyType = "plaintext"
+	SandboxResponseMountConfigAuthAwsSandboxesSandboxAwsMountStaticAuthConfigSecretAccessKeyTypeOpaque          SandboxResponseMountConfigAuthAwsSandboxesSandboxAwsMountStaticAuthConfigSecretAccessKeyType = "opaque"
+	SandboxResponseMountConfigAuthAwsSandboxesSandboxAwsMountStaticAuthConfigSecretAccessKeyTypeWorkspaceSecret SandboxResponseMountConfigAuthAwsSandboxesSandboxAwsMountStaticAuthConfigSecretAccessKeyType = "workspace_secret"
 )
 
-func (r SandboxResponseMountConfigAuthAwsSecretAccessKeyType) IsKnown() bool {
+func (r SandboxResponseMountConfigAuthAwsSandboxesSandboxAwsMountStaticAuthConfigSecretAccessKeyType) IsKnown() bool {
 	switch r {
-	case SandboxResponseMountConfigAuthAwsSecretAccessKeyTypePlaintext, SandboxResponseMountConfigAuthAwsSecretAccessKeyTypeOpaque, SandboxResponseMountConfigAuthAwsSecretAccessKeyTypeWorkspaceSecret:
+	case SandboxResponseMountConfigAuthAwsSandboxesSandboxAwsMountStaticAuthConfigSecretAccessKeyTypePlaintext, SandboxResponseMountConfigAuthAwsSandboxesSandboxAwsMountStaticAuthConfigSecretAccessKeyTypeOpaque, SandboxResponseMountConfigAuthAwsSandboxesSandboxAwsMountStaticAuthConfigSecretAccessKeyTypeWorkspaceSecret:
+		return true
+	}
+	return false
+}
+
+// IAM role to assume with permissions scoped to the configured S3 mounts. Mutually
+// exclusive with static credentials. Configure only at creation.
+type SandboxResponseMountConfigAuthAwsSandboxesSandboxAwsMountStaticAuthConfigRoleArn string
+
+const (
+	SandboxResponseMountConfigAuthAwsSandboxesSandboxAwsMountStaticAuthConfigRoleArnEmpty SandboxResponseMountConfigAuthAwsSandboxesSandboxAwsMountStaticAuthConfigRoleArn = ""
+)
+
+func (r SandboxResponseMountConfigAuthAwsSandboxesSandboxAwsMountStaticAuthConfigRoleArn) IsKnown() bool {
+	switch r {
+	case SandboxResponseMountConfigAuthAwsSandboxesSandboxAwsMountStaticAuthConfigRoleArnEmpty:
 		return true
 	}
 	return false
@@ -1662,38 +1784,146 @@ func (r sandboxResponseProxyConfigRuleJSON) RawJSON() string {
 }
 
 type SandboxResponseProxyConfigRulesAws struct {
-	AccessKeyID     SandboxResponseProxyConfigRulesAwsAccessKeyID     `json:"access_key_id" api:"required"`
-	SecretAccessKey SandboxResponseProxyConfigRulesAwsSecretAccessKey `json:"secret_access_key" api:"required"`
-	JSON            sandboxResponseProxyConfigRulesAwsJSON            `json:"-"`
+	// This field can have the runtime type of
+	// [SandboxResponseProxyConfigRulesAwsSandboxesProxyAwsStaticConfigAccessKeyID].
+	AccessKeyID interface{} `json:"access_key_id"`
+	// RoleARN selects automatically renewed IAM-role credentials instead of static
+	// keys. Access follows the role's effective AWS permissions, not the sandbox's
+	// mount scope. Configure at creation; the role cannot be changed afterward.
+	RoleArn string `json:"role_arn"`
+	// This field can have the runtime type of
+	// [SandboxResponseProxyConfigRulesAwsSandboxesProxyAwsStaticConfigSecretAccessKey].
+	SecretAccessKey interface{}                            `json:"secret_access_key"`
+	JSON            sandboxResponseProxyConfigRulesAwsJSON `json:"-"`
+	union           SandboxResponseProxyConfigRulesAwsUnion
 }
 
 // sandboxResponseProxyConfigRulesAwsJSON contains the JSON metadata for the struct
 // [SandboxResponseProxyConfigRulesAws]
 type sandboxResponseProxyConfigRulesAwsJSON struct {
 	AccessKeyID     apijson.Field
+	RoleArn         apijson.Field
 	SecretAccessKey apijson.Field
 	raw             string
 	ExtraFields     map[string]apijson.Field
-}
-
-func (r *SandboxResponseProxyConfigRulesAws) UnmarshalJSON(data []byte) (err error) {
-	return apijson.UnmarshalRoot(data, r)
 }
 
 func (r sandboxResponseProxyConfigRulesAwsJSON) RawJSON() string {
 	return r.raw
 }
 
-type SandboxResponseProxyConfigRulesAwsAccessKeyID struct {
-	Type  SandboxResponseProxyConfigRulesAwsAccessKeyIDType `json:"type" api:"required"`
-	IsSet bool                                              `json:"is_set"`
-	Value string                                            `json:"value"`
-	JSON  sandboxResponseProxyConfigRulesAwsAccessKeyIDJSON `json:"-"`
+func (r *SandboxResponseProxyConfigRulesAws) UnmarshalJSON(data []byte) (err error) {
+	*r = SandboxResponseProxyConfigRulesAws{}
+	err = apijson.UnmarshalRoot(data, &r.union)
+	if err != nil {
+		return err
+	}
+	return apijson.Port(r.union, &r)
 }
 
-// sandboxResponseProxyConfigRulesAwsAccessKeyIDJSON contains the JSON metadata for
-// the struct [SandboxResponseProxyConfigRulesAwsAccessKeyID]
-type sandboxResponseProxyConfigRulesAwsAccessKeyIDJSON struct {
+// AsUnion returns a [SandboxResponseProxyConfigRulesAwsUnion] interface which you
+// can cast to the specific types for more type safety.
+//
+// Possible runtime types of the union are
+// [SandboxResponseProxyConfigRulesAwsSandboxesProxyAwsRoleConfig],
+// [SandboxResponseProxyConfigRulesAwsSandboxesProxyAwsStaticConfig].
+func (r SandboxResponseProxyConfigRulesAws) AsUnion() SandboxResponseProxyConfigRulesAwsUnion {
+	return r.union
+}
+
+// Union satisfied by
+// [SandboxResponseProxyConfigRulesAwsSandboxesProxyAwsRoleConfig] or
+// [SandboxResponseProxyConfigRulesAwsSandboxesProxyAwsStaticConfig].
+type SandboxResponseProxyConfigRulesAwsUnion interface {
+	implementsSandboxResponseProxyConfigRulesAws()
+}
+
+func init() {
+	apijson.RegisterUnion(
+		reflect.TypeOf((*SandboxResponseProxyConfigRulesAwsUnion)(nil)).Elem(),
+		"",
+		apijson.UnionVariant{
+			TypeFilter: gjson.JSON,
+			Type:       reflect.TypeOf(SandboxResponseProxyConfigRulesAwsSandboxesProxyAwsRoleConfig{}),
+		},
+		apijson.UnionVariant{
+			TypeFilter: gjson.JSON,
+			Type:       reflect.TypeOf(SandboxResponseProxyConfigRulesAwsSandboxesProxyAwsStaticConfig{}),
+		},
+	)
+}
+
+type SandboxResponseProxyConfigRulesAwsSandboxesProxyAwsRoleConfig struct {
+	// RoleARN selects automatically renewed IAM-role credentials instead of static
+	// keys. Access follows the role's effective AWS permissions, not the sandbox's
+	// mount scope. Configure at creation; the role cannot be changed afterward.
+	RoleArn string                                                            `json:"role_arn" api:"required"`
+	JSON    sandboxResponseProxyConfigRulesAwsSandboxesProxyAwsRoleConfigJSON `json:"-"`
+}
+
+// sandboxResponseProxyConfigRulesAwsSandboxesProxyAwsRoleConfigJSON contains the
+// JSON metadata for the struct
+// [SandboxResponseProxyConfigRulesAwsSandboxesProxyAwsRoleConfig]
+type sandboxResponseProxyConfigRulesAwsSandboxesProxyAwsRoleConfigJSON struct {
+	RoleArn     apijson.Field
+	raw         string
+	ExtraFields map[string]apijson.Field
+}
+
+func (r *SandboxResponseProxyConfigRulesAwsSandboxesProxyAwsRoleConfig) UnmarshalJSON(data []byte) (err error) {
+	return apijson.UnmarshalRoot(data, r)
+}
+
+func (r sandboxResponseProxyConfigRulesAwsSandboxesProxyAwsRoleConfigJSON) RawJSON() string {
+	return r.raw
+}
+
+func (r SandboxResponseProxyConfigRulesAwsSandboxesProxyAwsRoleConfig) implementsSandboxResponseProxyConfigRulesAws() {
+}
+
+type SandboxResponseProxyConfigRulesAwsSandboxesProxyAwsStaticConfig struct {
+	AccessKeyID     SandboxResponseProxyConfigRulesAwsSandboxesProxyAwsStaticConfigAccessKeyID     `json:"access_key_id" api:"required"`
+	SecretAccessKey SandboxResponseProxyConfigRulesAwsSandboxesProxyAwsStaticConfigSecretAccessKey `json:"secret_access_key" api:"required"`
+	// RoleARN selects automatically renewed IAM-role credentials instead of static
+	// keys. Access follows the role's effective AWS permissions, not the sandbox's
+	// mount scope. Configure at creation; the role cannot be changed afterward.
+	RoleArn SandboxResponseProxyConfigRulesAwsSandboxesProxyAwsStaticConfigRoleArn `json:"role_arn"`
+	JSON    sandboxResponseProxyConfigRulesAwsSandboxesProxyAwsStaticConfigJSON    `json:"-"`
+}
+
+// sandboxResponseProxyConfigRulesAwsSandboxesProxyAwsStaticConfigJSON contains the
+// JSON metadata for the struct
+// [SandboxResponseProxyConfigRulesAwsSandboxesProxyAwsStaticConfig]
+type sandboxResponseProxyConfigRulesAwsSandboxesProxyAwsStaticConfigJSON struct {
+	AccessKeyID     apijson.Field
+	SecretAccessKey apijson.Field
+	RoleArn         apijson.Field
+	raw             string
+	ExtraFields     map[string]apijson.Field
+}
+
+func (r *SandboxResponseProxyConfigRulesAwsSandboxesProxyAwsStaticConfig) UnmarshalJSON(data []byte) (err error) {
+	return apijson.UnmarshalRoot(data, r)
+}
+
+func (r sandboxResponseProxyConfigRulesAwsSandboxesProxyAwsStaticConfigJSON) RawJSON() string {
+	return r.raw
+}
+
+func (r SandboxResponseProxyConfigRulesAwsSandboxesProxyAwsStaticConfig) implementsSandboxResponseProxyConfigRulesAws() {
+}
+
+type SandboxResponseProxyConfigRulesAwsSandboxesProxyAwsStaticConfigAccessKeyID struct {
+	Type  SandboxResponseProxyConfigRulesAwsSandboxesProxyAwsStaticConfigAccessKeyIDType `json:"type" api:"required"`
+	IsSet bool                                                                           `json:"is_set"`
+	Value string                                                                         `json:"value"`
+	JSON  sandboxResponseProxyConfigRulesAwsSandboxesProxyAwsStaticConfigAccessKeyIDJSON `json:"-"`
+}
+
+// sandboxResponseProxyConfigRulesAwsSandboxesProxyAwsStaticConfigAccessKeyIDJSON
+// contains the JSON metadata for the struct
+// [SandboxResponseProxyConfigRulesAwsSandboxesProxyAwsStaticConfigAccessKeyID]
+type sandboxResponseProxyConfigRulesAwsSandboxesProxyAwsStaticConfigAccessKeyIDJSON struct {
 	Type        apijson.Field
 	IsSet       apijson.Field
 	Value       apijson.Field
@@ -1701,40 +1931,41 @@ type sandboxResponseProxyConfigRulesAwsAccessKeyIDJSON struct {
 	ExtraFields map[string]apijson.Field
 }
 
-func (r *SandboxResponseProxyConfigRulesAwsAccessKeyID) UnmarshalJSON(data []byte) (err error) {
+func (r *SandboxResponseProxyConfigRulesAwsSandboxesProxyAwsStaticConfigAccessKeyID) UnmarshalJSON(data []byte) (err error) {
 	return apijson.UnmarshalRoot(data, r)
 }
 
-func (r sandboxResponseProxyConfigRulesAwsAccessKeyIDJSON) RawJSON() string {
+func (r sandboxResponseProxyConfigRulesAwsSandboxesProxyAwsStaticConfigAccessKeyIDJSON) RawJSON() string {
 	return r.raw
 }
 
-type SandboxResponseProxyConfigRulesAwsAccessKeyIDType string
+type SandboxResponseProxyConfigRulesAwsSandboxesProxyAwsStaticConfigAccessKeyIDType string
 
 const (
-	SandboxResponseProxyConfigRulesAwsAccessKeyIDTypePlaintext       SandboxResponseProxyConfigRulesAwsAccessKeyIDType = "plaintext"
-	SandboxResponseProxyConfigRulesAwsAccessKeyIDTypeOpaque          SandboxResponseProxyConfigRulesAwsAccessKeyIDType = "opaque"
-	SandboxResponseProxyConfigRulesAwsAccessKeyIDTypeWorkspaceSecret SandboxResponseProxyConfigRulesAwsAccessKeyIDType = "workspace_secret"
+	SandboxResponseProxyConfigRulesAwsSandboxesProxyAwsStaticConfigAccessKeyIDTypePlaintext       SandboxResponseProxyConfigRulesAwsSandboxesProxyAwsStaticConfigAccessKeyIDType = "plaintext"
+	SandboxResponseProxyConfigRulesAwsSandboxesProxyAwsStaticConfigAccessKeyIDTypeOpaque          SandboxResponseProxyConfigRulesAwsSandboxesProxyAwsStaticConfigAccessKeyIDType = "opaque"
+	SandboxResponseProxyConfigRulesAwsSandboxesProxyAwsStaticConfigAccessKeyIDTypeWorkspaceSecret SandboxResponseProxyConfigRulesAwsSandboxesProxyAwsStaticConfigAccessKeyIDType = "workspace_secret"
 )
 
-func (r SandboxResponseProxyConfigRulesAwsAccessKeyIDType) IsKnown() bool {
+func (r SandboxResponseProxyConfigRulesAwsSandboxesProxyAwsStaticConfigAccessKeyIDType) IsKnown() bool {
 	switch r {
-	case SandboxResponseProxyConfigRulesAwsAccessKeyIDTypePlaintext, SandboxResponseProxyConfigRulesAwsAccessKeyIDTypeOpaque, SandboxResponseProxyConfigRulesAwsAccessKeyIDTypeWorkspaceSecret:
+	case SandboxResponseProxyConfigRulesAwsSandboxesProxyAwsStaticConfigAccessKeyIDTypePlaintext, SandboxResponseProxyConfigRulesAwsSandboxesProxyAwsStaticConfigAccessKeyIDTypeOpaque, SandboxResponseProxyConfigRulesAwsSandboxesProxyAwsStaticConfigAccessKeyIDTypeWorkspaceSecret:
 		return true
 	}
 	return false
 }
 
-type SandboxResponseProxyConfigRulesAwsSecretAccessKey struct {
-	Type  SandboxResponseProxyConfigRulesAwsSecretAccessKeyType `json:"type" api:"required"`
-	IsSet bool                                                  `json:"is_set"`
-	Value string                                                `json:"value"`
-	JSON  sandboxResponseProxyConfigRulesAwsSecretAccessKeyJSON `json:"-"`
+type SandboxResponseProxyConfigRulesAwsSandboxesProxyAwsStaticConfigSecretAccessKey struct {
+	Type  SandboxResponseProxyConfigRulesAwsSandboxesProxyAwsStaticConfigSecretAccessKeyType `json:"type" api:"required"`
+	IsSet bool                                                                               `json:"is_set"`
+	Value string                                                                             `json:"value"`
+	JSON  sandboxResponseProxyConfigRulesAwsSandboxesProxyAwsStaticConfigSecretAccessKeyJSON `json:"-"`
 }
 
-// sandboxResponseProxyConfigRulesAwsSecretAccessKeyJSON contains the JSON metadata
-// for the struct [SandboxResponseProxyConfigRulesAwsSecretAccessKey]
-type sandboxResponseProxyConfigRulesAwsSecretAccessKeyJSON struct {
+// sandboxResponseProxyConfigRulesAwsSandboxesProxyAwsStaticConfigSecretAccessKeyJSON
+// contains the JSON metadata for the struct
+// [SandboxResponseProxyConfigRulesAwsSandboxesProxyAwsStaticConfigSecretAccessKey]
+type sandboxResponseProxyConfigRulesAwsSandboxesProxyAwsStaticConfigSecretAccessKeyJSON struct {
 	Type        apijson.Field
 	IsSet       apijson.Field
 	Value       apijson.Field
@@ -1742,25 +1973,42 @@ type sandboxResponseProxyConfigRulesAwsSecretAccessKeyJSON struct {
 	ExtraFields map[string]apijson.Field
 }
 
-func (r *SandboxResponseProxyConfigRulesAwsSecretAccessKey) UnmarshalJSON(data []byte) (err error) {
+func (r *SandboxResponseProxyConfigRulesAwsSandboxesProxyAwsStaticConfigSecretAccessKey) UnmarshalJSON(data []byte) (err error) {
 	return apijson.UnmarshalRoot(data, r)
 }
 
-func (r sandboxResponseProxyConfigRulesAwsSecretAccessKeyJSON) RawJSON() string {
+func (r sandboxResponseProxyConfigRulesAwsSandboxesProxyAwsStaticConfigSecretAccessKeyJSON) RawJSON() string {
 	return r.raw
 }
 
-type SandboxResponseProxyConfigRulesAwsSecretAccessKeyType string
+type SandboxResponseProxyConfigRulesAwsSandboxesProxyAwsStaticConfigSecretAccessKeyType string
 
 const (
-	SandboxResponseProxyConfigRulesAwsSecretAccessKeyTypePlaintext       SandboxResponseProxyConfigRulesAwsSecretAccessKeyType = "plaintext"
-	SandboxResponseProxyConfigRulesAwsSecretAccessKeyTypeOpaque          SandboxResponseProxyConfigRulesAwsSecretAccessKeyType = "opaque"
-	SandboxResponseProxyConfigRulesAwsSecretAccessKeyTypeWorkspaceSecret SandboxResponseProxyConfigRulesAwsSecretAccessKeyType = "workspace_secret"
+	SandboxResponseProxyConfigRulesAwsSandboxesProxyAwsStaticConfigSecretAccessKeyTypePlaintext       SandboxResponseProxyConfigRulesAwsSandboxesProxyAwsStaticConfigSecretAccessKeyType = "plaintext"
+	SandboxResponseProxyConfigRulesAwsSandboxesProxyAwsStaticConfigSecretAccessKeyTypeOpaque          SandboxResponseProxyConfigRulesAwsSandboxesProxyAwsStaticConfigSecretAccessKeyType = "opaque"
+	SandboxResponseProxyConfigRulesAwsSandboxesProxyAwsStaticConfigSecretAccessKeyTypeWorkspaceSecret SandboxResponseProxyConfigRulesAwsSandboxesProxyAwsStaticConfigSecretAccessKeyType = "workspace_secret"
 )
 
-func (r SandboxResponseProxyConfigRulesAwsSecretAccessKeyType) IsKnown() bool {
+func (r SandboxResponseProxyConfigRulesAwsSandboxesProxyAwsStaticConfigSecretAccessKeyType) IsKnown() bool {
 	switch r {
-	case SandboxResponseProxyConfigRulesAwsSecretAccessKeyTypePlaintext, SandboxResponseProxyConfigRulesAwsSecretAccessKeyTypeOpaque, SandboxResponseProxyConfigRulesAwsSecretAccessKeyTypeWorkspaceSecret:
+	case SandboxResponseProxyConfigRulesAwsSandboxesProxyAwsStaticConfigSecretAccessKeyTypePlaintext, SandboxResponseProxyConfigRulesAwsSandboxesProxyAwsStaticConfigSecretAccessKeyTypeOpaque, SandboxResponseProxyConfigRulesAwsSandboxesProxyAwsStaticConfigSecretAccessKeyTypeWorkspaceSecret:
+		return true
+	}
+	return false
+}
+
+// RoleARN selects automatically renewed IAM-role credentials instead of static
+// keys. Access follows the role's effective AWS permissions, not the sandbox's
+// mount scope. Configure at creation; the role cannot be changed afterward.
+type SandboxResponseProxyConfigRulesAwsSandboxesProxyAwsStaticConfigRoleArn string
+
+const (
+	SandboxResponseProxyConfigRulesAwsSandboxesProxyAwsStaticConfigRoleArnEmpty SandboxResponseProxyConfigRulesAwsSandboxesProxyAwsStaticConfigRoleArn = ""
+)
+
+func (r SandboxResponseProxyConfigRulesAwsSandboxesProxyAwsStaticConfigRoleArn) IsKnown() bool {
+	switch r {
+	case SandboxResponseProxyConfigRulesAwsSandboxesProxyAwsStaticConfigRoleArnEmpty:
 		return true
 	}
 	return false
