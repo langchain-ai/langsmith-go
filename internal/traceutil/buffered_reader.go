@@ -13,7 +13,7 @@ import (
 type BufferedReader struct {
 	src     io.ReadCloser
 	buf     *bytes.Buffer
-	onDone  func(io.Reader, error)
+	onDone  func(*bytes.Buffer, error)
 	onBytes func([]byte)
 	once    sync.Once
 }
@@ -21,7 +21,7 @@ type BufferedReader struct {
 // NewBufferedReader creates a BufferedReader that calls onDone with the
 // buffered content when the source reaches EOF, is closed, or Read returns an error.
 // The second argument to onDone is the error that ended the read, or nil for EOF/Close.
-func NewBufferedReader(src io.ReadCloser, onDone func(io.Reader, error)) *BufferedReader {
+func NewBufferedReader(src io.ReadCloser, onDone func(*bytes.Buffer, error)) *BufferedReader {
 	return &BufferedReader{
 		src:    src,
 		buf:    &bytes.Buffer{},
@@ -54,4 +54,13 @@ func (r *BufferedReader) trigger(readErr error) {
 			r.onDone(r.buf, readErr)
 		}
 	})
+}
+
+// TruncateString converts at most the first limit bytes of data to a string,
+// appending "..." if data was longer.
+func TruncateString(data []byte, limit int) string {
+	if len(data) <= limit {
+		return string(data)
+	}
+	return string(data[:limit]) + "..."
 }

@@ -168,14 +168,8 @@ func MiddlewareWithTracerProvider(req *http.Request, next MiddlewareNext, tp tra
 		return resp, err
 	}
 
-	br := traceutil.NewBufferedReader(resp.Body, func(r io.Reader, readErr error) {
-		data, err := io.ReadAll(r)
-		if err != nil {
-			span.RecordError(err)
-			span.SetStatus(codes.Error, err.Error())
-			span.End()
-			return
-		}
+	br := traceutil.NewBufferedReader(resp.Body, func(buf *bytes.Buffer, readErr error) {
+		data := buf.Bytes()
 		if len(data) == 0 {
 			if resp.StatusCode >= 400 {
 				apiErr := fmt.Errorf("HTTP %d", resp.StatusCode)
@@ -191,14 +185,9 @@ func MiddlewareWithTracerProvider(req *http.Request, next MiddlewareNext, tp tra
 			return
 		}
 
-		bodyText := string(data)
 		if resp.StatusCode >= 400 {
 			// Record an error so backends (e.g. LangSmith) show the trace as failed and populate run.error
-			msg := bodyText
-			if len(msg) > 500 {
-				msg = msg[:500] + "..."
-			}
-			apiErr := fmt.Errorf("HTTP %d: %s", resp.StatusCode, msg)
+			apiErr := fmt.Errorf("HTTP %d: %s", resp.StatusCode, traceutil.TruncateString(data, 500))
 			span.RecordError(apiErr)
 			span.SetStatus(codes.Error, apiErr.Error())
 		}
@@ -210,11 +199,11 @@ func MiddlewareWithTracerProvider(req *http.Request, next MiddlewareNext, tp tra
 		var incompleteStream bool
 		if resp.StatusCode < 400 && streaming {
 			if responsesAPI {
-				incompleteStream = !strings.Contains(bodyText, `"response.completed"`) &&
-					!strings.Contains(bodyText, `"response.incomplete"`) &&
-					!strings.Contains(bodyText, `"response.failed"`)
+				incompleteStream = !bytes.Contains(data, []byte(`"response.completed"`)) &&
+					!bytes.Contains(data, []byte(`"response.incomplete"`)) &&
+					!bytes.Contains(data, []byte(`"response.failed"`))
 			} else {
-				incompleteStream = !strings.Contains(bodyText, "[DONE]")
+				incompleteStream = !bytes.Contains(data, []byte("[DONE]"))
 			}
 		}
 		if incompleteStream {

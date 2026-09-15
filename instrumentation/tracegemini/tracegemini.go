@@ -213,14 +213,8 @@ func (rt *roundTripper) RoundTrip(req *http.Request) (*http.Response, error) {
 		return resp, err
 	}
 
-	br := traceutil.NewBufferedReader(resp.Body, func(r io.Reader, readErr error) {
-		data, err := io.ReadAll(r)
-		if err != nil {
-			span.RecordError(err)
-			span.SetStatus(codes.Error, err.Error())
-			span.End()
-			return
-		}
+	br := traceutil.NewBufferedReader(resp.Body, func(buf *bytes.Buffer, readErr error) {
+		data := buf.Bytes()
 		if len(data) == 0 {
 			if resp.StatusCode >= 400 {
 				apiErr := fmt.Errorf("HTTP %d", resp.StatusCode)
@@ -235,13 +229,8 @@ func (rt *roundTripper) RoundTrip(req *http.Request) (*http.Response, error) {
 			return
 		}
 
-		bodyText := string(data)
 		if resp.StatusCode >= 400 {
-			msg := bodyText
-			if len(msg) > 500 {
-				msg = msg[:500] + "..."
-			}
-			apiErr := fmt.Errorf("HTTP %d: %s", resp.StatusCode, msg)
+			apiErr := fmt.Errorf("HTTP %d: %s", resp.StatusCode, traceutil.TruncateString(data, 500))
 			span.RecordError(apiErr)
 			span.SetStatus(codes.Error, apiErr.Error())
 		}
