@@ -214,8 +214,8 @@ func (rt *roundTripper) RoundTrip(req *http.Request) (*http.Response, error) {
 	}
 
 	// Streaming bodies are folded in as they arrive (wired below) so the raw
-	// bytes need not be retained; only a short prefix is kept for the >=400
-	// error preview. Non-streaming still buffers in full.
+	// bytes need not be retained. A short prefix preserves the empty-body check.
+	// Non-streaming and HTTP error responses still buffer in full.
 	var geminiAcc geminiStreamAccumulator
 	var streamErr error
 
@@ -266,15 +266,9 @@ func (rt *roundTripper) RoundTrip(req *http.Request) (*http.Response, error) {
 		span.End()
 	})
 	if streaming && resp.StatusCode < 400 {
-		var sentNewToken bool
-		scanner := traceutil.NewSSEScanner(func(chunk map[string]any) {
-			geminiAcc.feed(chunk)
-			if !sentNewToken && isFirstContent(chunk) {
-				sentNewToken = true
-				span.AddEvent("new_token")
-			}
-		})
-		scanner.OnDone = func() {}
+		scanner := traceutil.NewSSEScanner(traceutil.OnFirstMatch(
+			geminiAcc.feed, isFirstContent, func() { span.AddEvent("new_token") },
+		))
 		scanner.OnError = func(err error) { streamErr = err }
 		traceutil.ScanSSE(br, scanner)
 		br.LimitBuffer(500)

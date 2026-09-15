@@ -169,8 +169,8 @@ func MiddlewareWithTracerProvider(req *http.Request, next MiddlewareNext, tp tra
 	}
 
 	// Streaming bodies are folded in as they arrive (wired below) so the raw
-	// bytes need not be retained; only a short prefix is kept for the >=400
-	// error preview. Non-streaming still buffers in full.
+	// bytes need not be retained. A short prefix preserves the empty-body check.
+	// Non-streaming and HTTP error responses still buffer in full.
 	var chatAcc chatCompletionAccumulator
 	var respTerminal responsesTerminal
 	var chatSawDone bool
@@ -299,14 +299,9 @@ func MiddlewareWithTracerProvider(req *http.Request, next MiddlewareNext, tp tra
 		if responsesAPI {
 			isMatch, feed = isFirstContentResponses, respTerminal.feed
 		}
-		var sentNewToken bool
-		scanner := traceutil.NewSSEScanner(func(chunk map[string]any) {
-			feed(chunk)
-			if !sentNewToken && isMatch(chunk) {
-				sentNewToken = true
-				span.AddEvent("new_token")
-			}
-		})
+		scanner := traceutil.NewSSEScanner(traceutil.OnFirstMatch(
+			feed, isMatch, func() { span.AddEvent("new_token") },
+		))
 		// Only Chat sends [DONE]; Responses signals with a terminal event.
 		scanner.OnDone = func() { chatSawDone = true }
 		scanner.OnError = func(err error) { streamErr = err }
@@ -772,9 +767,6 @@ func extractStreamingCompletion(data []byte) (string, usageInfo) {
 	return acc.spanContent()
 }
 
-// newChatCompletionAccumulator returns a chunk feeder and a finalizer sharing
-// one set of state, so deltas can be folded in as they arrive rather than
-// retaining the body. Both the streaming and whole-body paths drive this pair.
 // chatCompletionAccumulator folds Chat Completions SSE deltas into a single
 // assistant message. Both the streaming path and the whole-body form feed it
 // chunk by chunk, so neither has to retain the response.
@@ -798,7 +790,7 @@ func (a *chatCompletionAccumulator) feed(chunk map[string]any) {
 	if choices, ok := chunk["choices"].([]any); ok && len(choices) > 0 {
 		if choice, ok := choices[0].(map[string]any); ok {
 			if delta, ok := choice["delta"].(map[string]any); ok {
-				// Aggregate text a.content
+				// Aggregate text content
 				if text, ok := delta["content"].(string); ok {
 					a.content.WriteString(text)
 				}
@@ -840,7 +832,7 @@ func (a *chatCompletionAccumulator) feed(chunk map[string]any) {
 	if st, ok := chunk["service_tier"].(string); ok && st != "" {
 		a.usage.ServiceTier = st
 	}
-	// Extract a.usage (present in the last chunk when include_usage is set)
+	// Extract usage (present in the last chunk when include_usage is set)
 	if usageMap, ok := chunk["usage"].(map[string]any); ok {
 		a.usage = buildOpenAIUsage(usageMap, a.usage.ServiceTier)
 	}
@@ -872,7 +864,7 @@ func (a *chatCompletionAccumulator) spanContent() (string, usageInfo) {
 	}
 
 	if len(msg) == 1 {
-		// Only "role" — no a.content or tool calls
+		// Only "role" — no content or tool calls
 		return "", a.usage
 	}
 	return marshalMessages([]any{msg}), a.usage

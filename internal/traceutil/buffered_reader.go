@@ -38,7 +38,11 @@ func (r *BufferedReader) Read(p []byte) (int, error) {
 			r.onBytes(p[:n])
 		}
 		if r.bufLimit == 0 || r.buf.Len() < r.bufLimit {
-			r.buf.Write(p[:n])
+			keep := n
+			if r.bufLimit > 0 {
+				keep = min(keep, r.bufLimit-r.buf.Len())
+			}
+			r.buf.Write(p[:keep])
 		}
 	}
 	if err != nil {
@@ -54,7 +58,7 @@ func (r *BufferedReader) Close() error {
 
 // LimitBuffer caps how much of the source is retained for onDone. Use it when
 // the content is consumed incrementally via ScanSSE and only a short prefix is
-// still needed (an error body preview). 0, the default, retains everything.
+// still needed by onDone. 0, the default, retains everything.
 func (r *BufferedReader) LimitBuffer(n int) {
 	r.bufLimit = n
 }

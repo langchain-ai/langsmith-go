@@ -1,11 +1,6 @@
 package traceutil
 
-import (
-	"bufio"
-	"encoding/json"
-	"io"
-	"strings"
-)
+import "io"
 
 const maxSSELineBytes = 16 << 20
 
@@ -25,28 +20,25 @@ func ParseSSEChunks(r io.Reader) ([]map[string]any, error) {
 // the length of the stream. Parsing stops at the first malformed line, which is
 // returned as an error; objects before it have already been passed to onChunk.
 func ParseSSEChunksFunc(r io.Reader, onChunk func(map[string]any)) error {
-	scanner := bufio.NewScanner(r)
-	scanner.Buffer(make([]byte, 0, 64*1024), maxSSELineBytes)
-
-	for scanner.Scan() {
-		line := scanner.Text()
-
-		if !strings.HasPrefix(line, "data: ") {
-			continue
+	scanner := NewSSEScanner(onChunk)
+	var parseErr error
+	scanner.OnError = func(err error) { parseErr = err }
+	buf := make([]byte, 32*1024)
+	for {
+		n, err := r.Read(buf)
+		scanner.Feed(buf[:n])
+		if scanner.stopped {
+			return parseErr
 		}
-
-		line = strings.TrimPrefix(line, "data: ")
-		if line == "[DONE]" {
-			break
-		}
-
-		var chunk map[string]any
-		if err := json.Unmarshal([]byte(line), &chunk); err != nil {
+		if err != nil {
+			scanner.Finish()
+			if parseErr != nil {
+				return parseErr
+			}
+			if err == io.EOF {
+				return nil
+			}
 			return err
 		}
-
-		onChunk(chunk)
 	}
-
-	return scanner.Err()
 }

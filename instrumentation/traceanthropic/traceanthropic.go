@@ -189,8 +189,8 @@ func (rt *roundTripper) RoundTrip(req *http.Request) (*http.Response, error) {
 	}
 
 	// Streaming bodies are folded in as they arrive (wired below) so the raw
-	// bytes need not be retained; only a short prefix is kept for the >=400
-	// error preview. Non-streaming still buffers in full.
+	// bytes need not be retained. A short prefix preserves the empty-body check.
+	// Non-streaming and HTTP error responses still buffer in full.
 	var anthropicAcc anthropicStreamAccumulator
 	var streamErr error
 
@@ -245,15 +245,9 @@ func (rt *roundTripper) RoundTrip(req *http.Request) (*http.Response, error) {
 	// LangSmith ingest reads new_token to derive first_token_time; skip on
 	// HTTP errors so an error body doesn't inflate it.
 	if streaming && resp.StatusCode < 400 {
-		var sentNewToken bool
-		scanner := traceutil.NewSSEScanner(func(chunk map[string]any) {
-			anthropicAcc.feed(chunk)
-			if !sentNewToken && isFirstContent(chunk) {
-				sentNewToken = true
-				span.AddEvent("new_token")
-			}
-		})
-		scanner.OnDone = func() {}
+		scanner := traceutil.NewSSEScanner(traceutil.OnFirstMatch(
+			anthropicAcc.feed, isFirstContent, func() { span.AddEvent("new_token") },
+		))
 		scanner.OnError = func(err error) { streamErr = err }
 		traceutil.ScanSSE(br, scanner)
 		br.LimitBuffer(500)
@@ -470,7 +464,7 @@ func (a *anthropicStreamAccumulator) apply(span trace.Span, parentSpan trace.Spa
 		span.SetAttributes(attribute.String("langsmith.metadata.stop_reason", a.stopReason))
 	}
 
-	// Reconstruct content a.blocks into an assistant message
+	// Reconstruct content blocks into an assistant message
 	var contentBlocks []map[string]any
 	for _, b := range a.blocks {
 		if b == nil {
