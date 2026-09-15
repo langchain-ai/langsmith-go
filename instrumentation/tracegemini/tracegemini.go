@@ -213,6 +213,12 @@ func (rt *roundTripper) RoundTrip(req *http.Request) (*http.Response, error) {
 		return resp, err
 	}
 
+	// Streaming bodies are folded in as they arrive (wired below) so the raw
+	// bytes need not be retained; only a short prefix is kept for the >=400
+	// error preview. Non-streaming still buffers in full.
+	var geminiAcc geminiStreamAccumulator
+	var streamErr error
+
 	br := traceutil.NewBufferedReader(resp.Body, func(buf *bytes.Buffer, readErr error) {
 		data := buf.Bytes()
 		if len(data) == 0 {
@@ -244,9 +250,14 @@ func (rt *roundTripper) RoundTrip(req *http.Request) (*http.Response, error) {
 			span.SetStatus(codes.Error, endErr.Error())
 		}
 
-		if streaming {
+		switch {
+		case streaming && resp.StatusCode < 400:
+			if streamErr == nil {
+				processResponse(span, geminiAcc.merged(), parentSpan)
+			}
+		case streaming:
 			extractStreamingResponseAttributes(span, data, parentSpan)
-		} else {
+		default:
 			extractResponseAttributes(span, data, parentSpan)
 		}
 		if resp.StatusCode < 400 && !incompleteStream {
@@ -255,7 +266,18 @@ func (rt *roundTripper) RoundTrip(req *http.Request) (*http.Response, error) {
 		span.End()
 	})
 	if streaming && resp.StatusCode < 400 {
-		traceutil.OnFirstSSEMatch(br, isFirstContent, func() { span.AddEvent("new_token") })
+		var sentNewToken bool
+		scanner := traceutil.NewSSEScanner(func(chunk map[string]any) {
+			geminiAcc.feed(chunk)
+			if !sentNewToken && isFirstContent(chunk) {
+				sentNewToken = true
+				span.AddEvent("new_token")
+			}
+		})
+		scanner.OnDone = func() {}
+		scanner.OnError = func(err error) { streamErr = err }
+		traceutil.ScanSSE(br, scanner)
+		br.LimitBuffer(500)
 	}
 	resp.Body = br
 
@@ -490,62 +512,98 @@ func extractResponseAttributes(span trace.Span, body []byte, parentSpan trace.Sp
 // extractStreamingResponseAttributes merges SSE chunks into a single
 // synthetic response and processes it through the same path as non-streaming.
 func extractStreamingResponseAttributes(span trace.Span, data []byte, parentSpan trace.Span) {
-	resp, err := mergeStreamingChunks(bytes.NewReader(data))
-	if err != nil {
+	var acc geminiStreamAccumulator
+	if err := traceutil.ParseSSEChunksFunc(bytes.NewReader(data), acc.feed); err != nil {
 		return
 	}
-	processResponse(span, resp, parentSpan)
+	processResponse(span, acc.merged(), parentSpan)
 }
 
-// mergeStreamingChunks folds SSE chunks (each a GenerateContentResponse)
-// into one synthetic response by accumulating content parts and keeping the
-// last-seen metadata/usage.
-func mergeStreamingChunks(r io.Reader) (map[string]any, error) {
-	resp := map[string]any{}
-	var allParts []any
-	var finishReason string
+// geminiStreamAccumulator folds SSE chunks (each a GenerateContentResponse)
+// into one synthetic response, keeping the last-seen metadata/usage. The
+// streaming path feeds it as chunks arrive, so the body need not be retained.
+//
+// Text parts are concatenated on arrival rather than kept: they are the bulk of
+// a long stream, and parseParts joins text parts with "" anyway, so a single
+// concatenated part is equivalent. Parts carrying a functionCall or
+// functionResponse are few, so they are kept intact for parseParts to number.
+type geminiStreamAccumulator struct {
+	resp         map[string]any
+	text         strings.Builder
+	otherParts   []any
+	finishReason string
+}
 
-	err := traceutil.ParseSSEChunksFunc(r, func(chunk map[string]any) {
-		if mv, ok := chunk["modelVersion"].(string); ok {
-			resp["modelVersion"] = mv
-		}
-		if rid, ok := chunk["responseId"].(string); ok {
-			resp["responseId"] = rid
-		}
-		if u, ok := chunk["usageMetadata"].(map[string]any); ok {
-			resp["usageMetadata"] = u
-		}
-		candidates, ok := chunk["candidates"].([]any)
-		if !ok || len(candidates) == 0 {
-			return
-		}
-		candidate, ok := candidates[0].(map[string]any)
-		if !ok {
-			return
-		}
-		if r, ok := candidate["finishReason"].(string); ok && r != "" {
-			finishReason = r
-		}
-		content, ok := candidate["content"].(map[string]any)
-		if !ok {
-			return
-		}
-		if parts, ok := content["parts"].([]any); ok {
-			allParts = append(allParts, parts...)
-		}
-	})
-	if err != nil {
-		return nil, err
+// feed merges one decoded chunk into the running response.
+func (a *geminiStreamAccumulator) feed(chunk map[string]any) {
+	if a.resp == nil {
+		a.resp = map[string]any{}
 	}
+	if mv, ok := chunk["modelVersion"].(string); ok {
+		a.resp["modelVersion"] = mv
+	}
+	if rid, ok := chunk["responseId"].(string); ok {
+		a.resp["responseId"] = rid
+	}
+	if u, ok := chunk["usageMetadata"].(map[string]any); ok {
+		a.resp["usageMetadata"] = u
+	}
+	candidates, ok := chunk["candidates"].([]any)
+	if !ok || len(candidates) == 0 {
+		return
+	}
+	candidate, ok := candidates[0].(map[string]any)
+	if !ok {
+		return
+	}
+	if r, ok := candidate["finishReason"].(string); ok && r != "" {
+		a.finishReason = r
+	}
+	content, ok := candidate["content"].(map[string]any)
+	if !ok {
+		return
+	}
+	parts, ok := content["parts"].([]any)
+	if !ok {
+		return
+	}
+	for _, raw := range parts {
+		part, ok := raw.(map[string]any)
+		if !ok {
+			continue
+		}
+		// A Part is a union, so a tool part carries no text; keep it whole.
+		_, isCall := part["functionCall"]
+		_, isResponse := part["functionResponse"]
+		if isCall || isResponse {
+			a.otherParts = append(a.otherParts, part)
+			continue
+		}
+		if text, ok := part["text"].(string); ok && text != "" {
+			a.text.WriteString(text)
+		}
+	}
+}
+
+// merged returns the synthetic response assembled from every fed chunk.
+func (a *geminiStreamAccumulator) merged() map[string]any {
+	if a.resp == nil {
+		a.resp = map[string]any{}
+	}
+	parts := make([]any, 0, len(a.otherParts)+1)
+	if a.text.Len() > 0 {
+		parts = append(parts, map[string]any{"text": a.text.String()})
+	}
+	parts = append(parts, a.otherParts...)
 
 	candidate := map[string]any{
-		"content": map[string]any{"parts": allParts},
+		"content": map[string]any{"parts": parts},
 	}
-	if finishReason != "" {
-		candidate["finishReason"] = finishReason
+	if a.finishReason != "" {
+		candidate["finishReason"] = a.finishReason
 	}
-	resp["candidates"] = []any{candidate}
-	return resp, nil
+	a.resp["candidates"] = []any{candidate}
+	return a.resp
 }
 
 // processResponse sets span attributes from a (possibly merged) Gemini response.
