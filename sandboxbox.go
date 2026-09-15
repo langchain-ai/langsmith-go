@@ -164,7 +164,10 @@ func (r *SandboxBoxService) GenerateDownloadURL(ctx context.Context, name string
 // Create a short-lived JWT for accessing an HTTP service running on a specific
 // port inside a sandbox. Returns a browser_url (sets auth cookie via redirect), a
 // service_url (for use with the X-Langsmith-Sandbox-Service-Token header), the raw
-// token, and its expiry.
+// token, and its expiry. Set access=restricted|workspace to instead enable durable
+// LangSmith login (no token; users authenticate with their normal LangSmith
+// session), or access=off to disable it. LangSmith login and token access are
+// mutually exclusive per service URL.
 func (r *SandboxBoxService) GenerateServiceURL(ctx context.Context, name string, body SandboxBoxGenerateServiceURLParams, opts ...option.RequestOption) (res *ServiceURLResponse, err error) {
 	opts = slices.Concat(r.Options, opts)
 	if name == "" {
@@ -1489,10 +1492,39 @@ func (r SandboxBoxGenerateDownloadURLParamsCspSourceBundle) IsKnown() bool {
 }
 
 type SandboxBoxGenerateServiceURLParams struct {
-	ExpiresInSeconds param.Field[int64] `json:"expires_in_seconds"`
-	Port             param.Field[int64] `json:"port"`
+	// Access selects the login mode, mutually exclusive with the minted token. Omit
+	// the field for token mode: mint a short-lived service token (default).
+	// "restricted" — LangSmith login: any user with SandboxesRead on the sandbox.
+	// "workspace" — LangSmith login: any member of the owning workspace. "off" —
+	// remove an existing LangSmith login grant and mint a token. A LangSmith login
+	// grant is durable; token mode is refused (409) while one exists.
+	Access           param.Field[SandboxBoxGenerateServiceURLParamsAccess] `json:"access"`
+	ExpiresInSeconds param.Field[int64]                                    `json:"expires_in_seconds"`
+	Port             param.Field[int64]                                    `json:"port"`
 }
 
 func (r SandboxBoxGenerateServiceURLParams) MarshalJSON() (data []byte, err error) {
 	return apijson.MarshalRoot(r)
+}
+
+// Access selects the login mode, mutually exclusive with the minted token. Omit
+// the field for token mode: mint a short-lived service token (default).
+// "restricted" — LangSmith login: any user with SandboxesRead on the sandbox.
+// "workspace" — LangSmith login: any member of the owning workspace. "off" —
+// remove an existing LangSmith login grant and mint a token. A LangSmith login
+// grant is durable; token mode is refused (409) while one exists.
+type SandboxBoxGenerateServiceURLParamsAccess string
+
+const (
+	SandboxBoxGenerateServiceURLParamsAccessRestricted SandboxBoxGenerateServiceURLParamsAccess = "restricted"
+	SandboxBoxGenerateServiceURLParamsAccessWorkspace  SandboxBoxGenerateServiceURLParamsAccess = "workspace"
+	SandboxBoxGenerateServiceURLParamsAccessOff        SandboxBoxGenerateServiceURLParamsAccess = "off"
+)
+
+func (r SandboxBoxGenerateServiceURLParamsAccess) IsKnown() bool {
+	switch r {
+	case SandboxBoxGenerateServiceURLParamsAccessRestricted, SandboxBoxGenerateServiceURLParamsAccessWorkspace, SandboxBoxGenerateServiceURLParamsAccessOff:
+		return true
+	}
+	return false
 }

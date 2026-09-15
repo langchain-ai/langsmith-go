@@ -1924,17 +1924,22 @@ func (r sandboxStatusResponseJSON) RawJSON() string {
 }
 
 type ServiceURLResponse struct {
-	Token      string                 `json:"token"`
-	BrowserURL string                 `json:"browser_url"`
-	ExpiresAt  string                 `json:"expires_at"`
-	ServiceURL string                 `json:"service_url"`
-	JSON       serviceURLResponseJSON `json:"-"`
+	// Token and ExpiresAt are empty in LangSmith login mode (no token is minted).
+	Token string `json:"token"`
+	// Access echoes the enabled LangSmith login level ("restricted"/"workspace");
+	// omitted in token mode.
+	Access     ServiceURLResponseAccess `json:"access"`
+	BrowserURL string                   `json:"browser_url"`
+	ExpiresAt  string                   `json:"expires_at"`
+	ServiceURL string                   `json:"service_url"`
+	JSON       serviceURLResponseJSON   `json:"-"`
 }
 
 // serviceURLResponseJSON contains the JSON metadata for the struct
 // [ServiceURLResponse]
 type serviceURLResponseJSON struct {
 	Token       apijson.Field
+	Access      apijson.Field
 	BrowserURL  apijson.Field
 	ExpiresAt   apijson.Field
 	ServiceURL  apijson.Field
@@ -1948,6 +1953,23 @@ func (r *ServiceURLResponse) UnmarshalJSON(data []byte) (err error) {
 
 func (r serviceURLResponseJSON) RawJSON() string {
 	return r.raw
+}
+
+// Access echoes the enabled LangSmith login level ("restricted"/"workspace");
+// omitted in token mode.
+type ServiceURLResponseAccess string
+
+const (
+	ServiceURLResponseAccessRestricted ServiceURLResponseAccess = "restricted"
+	ServiceURLResponseAccessWorkspace  ServiceURLResponseAccess = "workspace"
+)
+
+func (r ServiceURLResponseAccess) IsKnown() bool {
+	switch r {
+	case ServiceURLResponseAccessRestricted, ServiceURLResponseAccessWorkspace:
+		return true
+	}
+	return false
 }
 
 type SnapshotListResponse struct {
