@@ -1,5 +1,12 @@
 # Changelog
 
+## [0.26.4](https://github.com/langchain-ai/langsmith-go/compare/v0.26.3...v0.26.4) (2026-09-15)
+
+
+### Chores
+
+* remove one `ReadAll()` for memory savings ([#214](https://github.com/langchain-ai/langsmith-go/issues/214)) ([bbf384e](https://github.com/langchain-ai/langsmith-go/commit/bbf384ef30e1229747f419f88a62f5b4d445f9cb))
+
 ## [0.26.3](https://github.com/langchain-ai/langsmith-go/compare/v0.26.2...v0.26.3) (2026-09-09)
 
 
