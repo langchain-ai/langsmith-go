@@ -27,6 +27,7 @@ import (
 // the [NewSessionInsightService] method instead.
 type SessionInsightService struct {
 	Options []option.RequestOption
+	Configs *SessionInsightConfigService
 }
 
 // NewSessionInsightService generates a new service that applies the given options
@@ -35,6 +36,7 @@ type SessionInsightService struct {
 func NewSessionInsightService(opts ...option.RequestOption) (r *SessionInsightService) {
 	r = &SessionInsightService{}
 	r.Options = opts
+	r.Configs = NewSessionInsightConfigService(opts...)
 	return
 }
 
