@@ -168,9 +168,6 @@ func MiddlewareWithTracerProvider(req *http.Request, next MiddlewareNext, tp tra
 		return resp, err
 	}
 
-	// Streaming bodies are folded in as they arrive (wired below) so the raw
-	// bytes need not be retained; only a short prefix is kept for the >=400
-	// error preview. Non-streaming still buffers in full.
 	var chatAcc chatCompletionAccumulator
 	var respTerminal responsesTerminal
 	var chatSawDone bool

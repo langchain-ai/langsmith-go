@@ -188,9 +188,6 @@ func (rt *roundTripper) RoundTrip(req *http.Request) (*http.Response, error) {
 		return resp, err
 	}
 
-	// Streaming bodies are folded in as they arrive (wired below) so the raw
-	// bytes need not be retained; only a short prefix is kept for the >=400
-	// error preview. Non-streaming still buffers in full.
 	var anthropicAcc anthropicStreamAccumulator
 	var streamErr error
 
