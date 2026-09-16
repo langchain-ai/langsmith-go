@@ -102,7 +102,7 @@ func (r *SandboxBoxService) Run(ctx context.Context, name string, body SandboxBo
 	if err != nil {
 		return nil, err
 	}
-	dataplaneURL, err := requireSandboxDataplaneURL(box.Name, box.Status, box.DataplaneURL)
+	dataplaneURL, err := requireSandboxDataplaneURL(box.Name, box.DataplaneURL)
 	if err != nil {
 		return nil, err
 	}
@@ -135,7 +135,7 @@ func (r *SandboxBoxService) StartCommand(ctx context.Context, name string, body 
 	if err != nil {
 		return nil, err
 	}
-	dataplaneURL, err := requireSandboxDataplaneURL(box.Name, box.Status, box.DataplaneURL)
+	dataplaneURL, err := requireSandboxDataplaneURL(box.Name, box.DataplaneURL)
 	if err != nil {
 		return nil, err
 	}
@@ -175,7 +175,7 @@ func (r *SandboxBoxService) StartCommandWithCallbacks(ctx context.Context, name 
 	if err != nil {
 		return nil, err
 	}
-	dataplaneURL, err := requireSandboxDataplaneURL(box.Name, box.Status, box.DataplaneURL)
+	dataplaneURL, err := requireSandboxDataplaneURL(box.Name, box.DataplaneURL)
 	if err != nil {
 		return nil, err
 	}
@@ -237,7 +237,7 @@ func (r *SandboxBoxService) ReconnectCommand(ctx context.Context, name string, c
 	if err != nil {
 		return nil, err
 	}
-	dataplaneURL, err := requireSandboxDataplaneURL(box.Name, box.Status, box.DataplaneURL)
+	dataplaneURL, err := requireSandboxDataplaneURL(box.Name, box.DataplaneURL)
 	if err != nil {
 		return nil, err
 	}

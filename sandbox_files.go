@@ -18,7 +18,7 @@ func (r *SandboxBoxService) ReadFile(ctx context.Context, name string, path stri
 	if err != nil {
 		return nil, err
 	}
-	dataplaneURL, err := requireSandboxDataplaneURL(box.Name, box.Status, box.DataplaneURL)
+	dataplaneURL, err := requireSandboxDataplaneURL(box.Name, box.DataplaneURL)
 	if err != nil {
 		return nil, err
 	}
@@ -51,7 +51,7 @@ func (r *SandboxBoxService) WriteFile(ctx context.Context, name string, path str
 	if err != nil {
 		return err
 	}
-	dataplaneURL, err := requireSandboxDataplaneURL(box.Name, box.Status, box.DataplaneURL)
+	dataplaneURL, err := requireSandboxDataplaneURL(box.Name, box.DataplaneURL)
 	if err != nil {
 		return err
 	}
@@ -94,7 +94,7 @@ func (r *SandboxBoxService) WriteFileWithDataplaneURL(ctx context.Context, datap
 
 // ReadFile reads a file from this sandbox.
 func (s *Sandbox) ReadFile(ctx context.Context, path string, opts ...option.RequestOption) ([]byte, error) {
-	dataplaneURL, err := requireSandboxDataplaneURL(s.Name, s.Status, s.DataplaneURL)
+	dataplaneURL, err := requireSandboxDataplaneURL(s.Name, s.DataplaneURL)
 	if err != nil {
 		return nil, err
 	}
@@ -103,7 +103,7 @@ func (s *Sandbox) ReadFile(ctx context.Context, path string, opts ...option.Requ
 
 // WriteFile writes bytes to a file in this sandbox.
 func (s *Sandbox) WriteFile(ctx context.Context, path string, content []byte, opts ...option.RequestOption) error {
-	dataplaneURL, err := requireSandboxDataplaneURL(s.Name, s.Status, s.DataplaneURL)
+	dataplaneURL, err := requireSandboxDataplaneURL(s.Name, s.DataplaneURL)
 	if err != nil {
 		return err
 	}
