@@ -71,6 +71,16 @@ Methods:
 - <code title="get /api/v1/sessions/{session_id}/insights/{job_id}">client.Sessions.Insights.<a href="https://pkg.go.dev/github.com/langchain-ai/langsmith-go#SessionInsightService.GetJob">GetJob</a>(ctx <a href="https://pkg.go.dev/context">context</a>.<a href="https://pkg.go.dev/context#Context">Context</a>, sessionID <a href="https://pkg.go.dev/builtin#string">string</a>, jobID <a href="https://pkg.go.dev/builtin#string">string</a>) (\*<a href="https://pkg.go.dev/github.com/langchain-ai/langsmith-go">langsmith</a>.<a href="https://pkg.go.dev/github.com/langchain-ai/langsmith-go#SessionInsightGetJobResponse">SessionInsightGetJobResponse</a>, <a href="https://pkg.go.dev/builtin#error">error</a>)</code>
 - <code title="get /api/v1/sessions/{session_id}/insights/{job_id}/runs">client.Sessions.Insights.<a href="https://pkg.go.dev/github.com/langchain-ai/langsmith-go#SessionInsightService.GetRuns">GetRuns</a>(ctx <a href="https://pkg.go.dev/context">context</a>.<a href="https://pkg.go.dev/context#Context">Context</a>, sessionID <a href="https://pkg.go.dev/builtin#string">string</a>, jobID <a href="https://pkg.go.dev/builtin#string">string</a>, query <a href="https://pkg.go.dev/github.com/langchain-ai/langsmith-go">langsmith</a>.<a href="https://pkg.go.dev/github.com/langchain-ai/langsmith-go#SessionInsightGetRunsParams">SessionInsightGetRunsParams</a>) (\*<a href="https://pkg.go.dev/github.com/langchain-ai/langsmith-go">langsmith</a>.<a href="https://pkg.go.dev/github.com/langchain-ai/langsmith-go#SessionInsightGetRunsResponse">SessionInsightGetRunsResponse</a>, <a href="https://pkg.go.dev/builtin#error">error</a>)</code>
 
+### Configs
+
+Response Types:
+
+- <a href="https://pkg.go.dev/github.com/langchain-ai/langsmith-go">langsmith</a>.<a href="https://pkg.go.dev/github.com/langchain-ai/langsmith-go#SessionInsightConfigNewResponse">SessionInsightConfigNewResponse</a>
+
+Methods:
+
+- <code title="post /api/v1/sessions/{session_id}/insights/configs">client.Sessions.Insights.Configs.<a href="https://pkg.go.dev/github.com/langchain-ai/langsmith-go#SessionInsightConfigService.New">New</a>(ctx <a href="https://pkg.go.dev/context">context</a>.<a href="https://pkg.go.dev/context#Context">Context</a>, sessionID <a href="https://pkg.go.dev/builtin#string">string</a>, body <a href="https://pkg.go.dev/github.com/langchain-ai/langsmith-go">langsmith</a>.<a href="https://pkg.go.dev/github.com/langchain-ai/langsmith-go#SessionInsightConfigNewParams">SessionInsightConfigNewParams</a>) (\*<a href="https://pkg.go.dev/github.com/langchain-ai/langsmith-go">langsmith</a>.<a href="https://pkg.go.dev/github.com/langchain-ai/langsmith-go#SessionInsightConfigNewResponse">SessionInsightConfigNewResponse</a>, <a href="https://pkg.go.dev/builtin#error">error</a>)</code>
+
 # Examples
 
 Params Types:
