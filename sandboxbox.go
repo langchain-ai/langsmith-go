@@ -135,9 +135,21 @@ func (r *SandboxBoxService) NewSnapshot(ctx context.Context, name string, body S
 // Generate a tokenized link that downloads a single file from a sandbox with no
 // further authentication. This mints a token rather than creating an addressable
 // resource, so it returns 200 with no Location header. The token pins the sandbox,
-// the file path, and the response content type and disposition, so a link cannot
-// be repointed at another file. Links never expire unless expires_in_seconds is
-// set. The link is served from the sandbox service domain, not the API host.
+// the file path, the response content type and disposition, and the sandbox flags,
+// so a link cannot be repointed at another file or served under a weaker policy.
+// The file is always served with a Content-Security-Policy: a sandbox directive,
+// plus a default-src holding every fetch to the sandbox's own download host and a
+// set of pre-approved third-party origins. csp_sandbox_flags may loosen the
+// sandbox with allow-downloads, allow-forms, allow-modals, allow-orientation-lock,
+// allow-pointer-lock, allow-popups, allow-presentation, allow-scripts, or
+// allow-top-navigation-by-user-activation. allow-same-origin is not accepted, so a
+// served file never shares an origin with anything. csp_source_bundles selects the
+// third-party origins: cdnjs, google-fonts, jsdelivr, and unpkg are all allowed
+// when the field is omitted, and 'none' holds the file to the sandbox alone.
+// Because every file of one sandbox is served from the same host, a page can load
+// sibling files it has links for, but only by their own link URLs. Links never
+// expire unless expires_in_seconds is set. The link is served from the sandbox
+// service domain, not the API host.
 func (r *SandboxBoxService) GenerateDownloadURL(ctx context.Context, name string, body SandboxBoxGenerateDownloadURLParams, opts ...option.RequestOption) (res *DownloadURLResponse, err error) {
 	opts = slices.Concat(r.Options, opts)
 	if name == "" {
@@ -152,7 +164,10 @@ func (r *SandboxBoxService) GenerateDownloadURL(ctx context.Context, name string
 // Create a short-lived JWT for accessing an HTTP service running on a specific
 // port inside a sandbox. Returns a browser_url (sets auth cookie via redirect), a
 // service_url (for use with the X-Langsmith-Sandbox-Service-Token header), the raw
-// token, and its expiry.
+// token, and its expiry. Set access=restricted|workspace to instead enable durable
+// LangSmith login (no token; users authenticate with their normal LangSmith
+// session), or access=off to disable it. LangSmith login and token access are
+// mutually exclusive per service URL.
 func (r *SandboxBoxService) GenerateServiceURL(ctx context.Context, name string, body SandboxBoxGenerateServiceURLParams, opts ...option.RequestOption) (res *ServiceURLResponse, err error) {
 	opts = slices.Concat(r.Options, opts)
 	if name == "" {
@@ -236,6 +251,10 @@ type SandboxBoxNewParams struct {
 	//
 	// Applies to this request only.
 	RestoreMemory param.Field[bool] `json:"restore_memory"`
+	// RunConfig overrides the snapshot's run config for this sandbox: user and
+	// work_dir replace the snapshot's, env_vars merge over it. The result is what the
+	// sandbox boots with, and what a snapshot captured from it carries.
+	RunConfig param.Field[SandboxBoxNewParamsRunConfig] `json:"run_config"`
 	// Snapshot is a Docker-style name or name:tag reference to boot from. A bare name
 	// resolves to name:latest.
 	Snapshot   param.Field[string] `json:"snapshot"`
@@ -261,8 +280,8 @@ func (r SandboxBoxNewParamsMountConfig) MarshalJSON() (data []byte, err error) {
 }
 
 type SandboxBoxNewParamsMountConfigAuth struct {
-	Aws param.Field[SandboxBoxNewParamsMountConfigAuthAws] `json:"aws"`
-	Gcp param.Field[SandboxBoxNewParamsMountConfigAuthGcp] `json:"gcp"`
+	Aws param.Field[SandboxBoxNewParamsMountConfigAuthAwsUnion] `json:"aws"`
+	Gcp param.Field[SandboxBoxNewParamsMountConfigAuthGcp]      `json:"gcp"`
 }
 
 func (r SandboxBoxNewParamsMountConfigAuth) MarshalJSON() (data []byte, err error) {
@@ -270,61 +289,119 @@ func (r SandboxBoxNewParamsMountConfigAuth) MarshalJSON() (data []byte, err erro
 }
 
 type SandboxBoxNewParamsMountConfigAuthAws struct {
-	AccessKeyID     param.Field[SandboxBoxNewParamsMountConfigAuthAwsAccessKeyID]     `json:"access_key_id" api:"required"`
-	SecretAccessKey param.Field[SandboxBoxNewParamsMountConfigAuthAwsSecretAccessKey] `json:"secret_access_key" api:"required"`
+	AccessKeyID param.Field[interface{}] `json:"access_key_id"`
+	// IAM role to assume with permissions scoped to the configured S3 mounts. Mutually
+	// exclusive with static credentials. Configure only at creation.
+	RoleArn         param.Field[string]      `json:"role_arn"`
+	SecretAccessKey param.Field[interface{}] `json:"secret_access_key"`
 }
 
 func (r SandboxBoxNewParamsMountConfigAuthAws) MarshalJSON() (data []byte, err error) {
 	return apijson.MarshalRoot(r)
 }
 
-type SandboxBoxNewParamsMountConfigAuthAwsAccessKeyID struct {
-	Type  param.Field[SandboxBoxNewParamsMountConfigAuthAwsAccessKeyIDType] `json:"type" api:"required"`
-	IsSet param.Field[bool]                                                 `json:"is_set"`
-	Value param.Field[string]                                               `json:"value"`
+func (r SandboxBoxNewParamsMountConfigAuthAws) implementsSandboxBoxNewParamsMountConfigAuthAwsUnion() {
 }
 
-func (r SandboxBoxNewParamsMountConfigAuthAwsAccessKeyID) MarshalJSON() (data []byte, err error) {
+// Satisfied by
+// [SandboxBoxNewParamsMountConfigAuthAwsSandboxesSandboxAwsMountRoleAuthConfig],
+// [SandboxBoxNewParamsMountConfigAuthAwsSandboxesSandboxAwsMountStaticAuthConfig],
+// [SandboxBoxNewParamsMountConfigAuthAws].
+type SandboxBoxNewParamsMountConfigAuthAwsUnion interface {
+	implementsSandboxBoxNewParamsMountConfigAuthAwsUnion()
+}
+
+type SandboxBoxNewParamsMountConfigAuthAwsSandboxesSandboxAwsMountRoleAuthConfig struct {
+	// IAM role to assume with permissions scoped to the configured S3 mounts. Mutually
+	// exclusive with static credentials. Configure only at creation.
+	RoleArn param.Field[string] `json:"role_arn" api:"required"`
+}
+
+func (r SandboxBoxNewParamsMountConfigAuthAwsSandboxesSandboxAwsMountRoleAuthConfig) MarshalJSON() (data []byte, err error) {
 	return apijson.MarshalRoot(r)
 }
 
-type SandboxBoxNewParamsMountConfigAuthAwsAccessKeyIDType string
+func (r SandboxBoxNewParamsMountConfigAuthAwsSandboxesSandboxAwsMountRoleAuthConfig) implementsSandboxBoxNewParamsMountConfigAuthAwsUnion() {
+}
+
+type SandboxBoxNewParamsMountConfigAuthAwsSandboxesSandboxAwsMountStaticAuthConfig struct {
+	AccessKeyID     param.Field[SandboxBoxNewParamsMountConfigAuthAwsSandboxesSandboxAwsMountStaticAuthConfigAccessKeyID]     `json:"access_key_id" api:"required"`
+	SecretAccessKey param.Field[SandboxBoxNewParamsMountConfigAuthAwsSandboxesSandboxAwsMountStaticAuthConfigSecretAccessKey] `json:"secret_access_key" api:"required"`
+	// IAM role to assume with permissions scoped to the configured S3 mounts. Mutually
+	// exclusive with static credentials. Configure only at creation.
+	RoleArn param.Field[SandboxBoxNewParamsMountConfigAuthAwsSandboxesSandboxAwsMountStaticAuthConfigRoleArn] `json:"role_arn"`
+}
+
+func (r SandboxBoxNewParamsMountConfigAuthAwsSandboxesSandboxAwsMountStaticAuthConfig) MarshalJSON() (data []byte, err error) {
+	return apijson.MarshalRoot(r)
+}
+
+func (r SandboxBoxNewParamsMountConfigAuthAwsSandboxesSandboxAwsMountStaticAuthConfig) implementsSandboxBoxNewParamsMountConfigAuthAwsUnion() {
+}
+
+type SandboxBoxNewParamsMountConfigAuthAwsSandboxesSandboxAwsMountStaticAuthConfigAccessKeyID struct {
+	Type  param.Field[SandboxBoxNewParamsMountConfigAuthAwsSandboxesSandboxAwsMountStaticAuthConfigAccessKeyIDType] `json:"type" api:"required"`
+	IsSet param.Field[bool]                                                                                         `json:"is_set"`
+	Value param.Field[string]                                                                                       `json:"value"`
+}
+
+func (r SandboxBoxNewParamsMountConfigAuthAwsSandboxesSandboxAwsMountStaticAuthConfigAccessKeyID) MarshalJSON() (data []byte, err error) {
+	return apijson.MarshalRoot(r)
+}
+
+type SandboxBoxNewParamsMountConfigAuthAwsSandboxesSandboxAwsMountStaticAuthConfigAccessKeyIDType string
 
 const (
-	SandboxBoxNewParamsMountConfigAuthAwsAccessKeyIDTypePlaintext       SandboxBoxNewParamsMountConfigAuthAwsAccessKeyIDType = "plaintext"
-	SandboxBoxNewParamsMountConfigAuthAwsAccessKeyIDTypeOpaque          SandboxBoxNewParamsMountConfigAuthAwsAccessKeyIDType = "opaque"
-	SandboxBoxNewParamsMountConfigAuthAwsAccessKeyIDTypeWorkspaceSecret SandboxBoxNewParamsMountConfigAuthAwsAccessKeyIDType = "workspace_secret"
+	SandboxBoxNewParamsMountConfigAuthAwsSandboxesSandboxAwsMountStaticAuthConfigAccessKeyIDTypePlaintext       SandboxBoxNewParamsMountConfigAuthAwsSandboxesSandboxAwsMountStaticAuthConfigAccessKeyIDType = "plaintext"
+	SandboxBoxNewParamsMountConfigAuthAwsSandboxesSandboxAwsMountStaticAuthConfigAccessKeyIDTypeOpaque          SandboxBoxNewParamsMountConfigAuthAwsSandboxesSandboxAwsMountStaticAuthConfigAccessKeyIDType = "opaque"
+	SandboxBoxNewParamsMountConfigAuthAwsSandboxesSandboxAwsMountStaticAuthConfigAccessKeyIDTypeWorkspaceSecret SandboxBoxNewParamsMountConfigAuthAwsSandboxesSandboxAwsMountStaticAuthConfigAccessKeyIDType = "workspace_secret"
 )
 
-func (r SandboxBoxNewParamsMountConfigAuthAwsAccessKeyIDType) IsKnown() bool {
+func (r SandboxBoxNewParamsMountConfigAuthAwsSandboxesSandboxAwsMountStaticAuthConfigAccessKeyIDType) IsKnown() bool {
 	switch r {
-	case SandboxBoxNewParamsMountConfigAuthAwsAccessKeyIDTypePlaintext, SandboxBoxNewParamsMountConfigAuthAwsAccessKeyIDTypeOpaque, SandboxBoxNewParamsMountConfigAuthAwsAccessKeyIDTypeWorkspaceSecret:
+	case SandboxBoxNewParamsMountConfigAuthAwsSandboxesSandboxAwsMountStaticAuthConfigAccessKeyIDTypePlaintext, SandboxBoxNewParamsMountConfigAuthAwsSandboxesSandboxAwsMountStaticAuthConfigAccessKeyIDTypeOpaque, SandboxBoxNewParamsMountConfigAuthAwsSandboxesSandboxAwsMountStaticAuthConfigAccessKeyIDTypeWorkspaceSecret:
 		return true
 	}
 	return false
 }
 
-type SandboxBoxNewParamsMountConfigAuthAwsSecretAccessKey struct {
-	Type  param.Field[SandboxBoxNewParamsMountConfigAuthAwsSecretAccessKeyType] `json:"type" api:"required"`
-	IsSet param.Field[bool]                                                     `json:"is_set"`
-	Value param.Field[string]                                                   `json:"value"`
+type SandboxBoxNewParamsMountConfigAuthAwsSandboxesSandboxAwsMountStaticAuthConfigSecretAccessKey struct {
+	Type  param.Field[SandboxBoxNewParamsMountConfigAuthAwsSandboxesSandboxAwsMountStaticAuthConfigSecretAccessKeyType] `json:"type" api:"required"`
+	IsSet param.Field[bool]                                                                                             `json:"is_set"`
+	Value param.Field[string]                                                                                           `json:"value"`
 }
 
-func (r SandboxBoxNewParamsMountConfigAuthAwsSecretAccessKey) MarshalJSON() (data []byte, err error) {
+func (r SandboxBoxNewParamsMountConfigAuthAwsSandboxesSandboxAwsMountStaticAuthConfigSecretAccessKey) MarshalJSON() (data []byte, err error) {
 	return apijson.MarshalRoot(r)
 }
 
-type SandboxBoxNewParamsMountConfigAuthAwsSecretAccessKeyType string
+type SandboxBoxNewParamsMountConfigAuthAwsSandboxesSandboxAwsMountStaticAuthConfigSecretAccessKeyType string
 
 const (
-	SandboxBoxNewParamsMountConfigAuthAwsSecretAccessKeyTypePlaintext       SandboxBoxNewParamsMountConfigAuthAwsSecretAccessKeyType = "plaintext"
-	SandboxBoxNewParamsMountConfigAuthAwsSecretAccessKeyTypeOpaque          SandboxBoxNewParamsMountConfigAuthAwsSecretAccessKeyType = "opaque"
-	SandboxBoxNewParamsMountConfigAuthAwsSecretAccessKeyTypeWorkspaceSecret SandboxBoxNewParamsMountConfigAuthAwsSecretAccessKeyType = "workspace_secret"
+	SandboxBoxNewParamsMountConfigAuthAwsSandboxesSandboxAwsMountStaticAuthConfigSecretAccessKeyTypePlaintext       SandboxBoxNewParamsMountConfigAuthAwsSandboxesSandboxAwsMountStaticAuthConfigSecretAccessKeyType = "plaintext"
+	SandboxBoxNewParamsMountConfigAuthAwsSandboxesSandboxAwsMountStaticAuthConfigSecretAccessKeyTypeOpaque          SandboxBoxNewParamsMountConfigAuthAwsSandboxesSandboxAwsMountStaticAuthConfigSecretAccessKeyType = "opaque"
+	SandboxBoxNewParamsMountConfigAuthAwsSandboxesSandboxAwsMountStaticAuthConfigSecretAccessKeyTypeWorkspaceSecret SandboxBoxNewParamsMountConfigAuthAwsSandboxesSandboxAwsMountStaticAuthConfigSecretAccessKeyType = "workspace_secret"
 )
 
-func (r SandboxBoxNewParamsMountConfigAuthAwsSecretAccessKeyType) IsKnown() bool {
+func (r SandboxBoxNewParamsMountConfigAuthAwsSandboxesSandboxAwsMountStaticAuthConfigSecretAccessKeyType) IsKnown() bool {
 	switch r {
-	case SandboxBoxNewParamsMountConfigAuthAwsSecretAccessKeyTypePlaintext, SandboxBoxNewParamsMountConfigAuthAwsSecretAccessKeyTypeOpaque, SandboxBoxNewParamsMountConfigAuthAwsSecretAccessKeyTypeWorkspaceSecret:
+	case SandboxBoxNewParamsMountConfigAuthAwsSandboxesSandboxAwsMountStaticAuthConfigSecretAccessKeyTypePlaintext, SandboxBoxNewParamsMountConfigAuthAwsSandboxesSandboxAwsMountStaticAuthConfigSecretAccessKeyTypeOpaque, SandboxBoxNewParamsMountConfigAuthAwsSandboxesSandboxAwsMountStaticAuthConfigSecretAccessKeyTypeWorkspaceSecret:
+		return true
+	}
+	return false
+}
+
+// IAM role to assume with permissions scoped to the configured S3 mounts. Mutually
+// exclusive with static credentials. Configure only at creation.
+type SandboxBoxNewParamsMountConfigAuthAwsSandboxesSandboxAwsMountStaticAuthConfigRoleArn string
+
+const (
+	SandboxBoxNewParamsMountConfigAuthAwsSandboxesSandboxAwsMountStaticAuthConfigRoleArnEmpty SandboxBoxNewParamsMountConfigAuthAwsSandboxesSandboxAwsMountStaticAuthConfigRoleArn = ""
+)
+
+func (r SandboxBoxNewParamsMountConfigAuthAwsSandboxesSandboxAwsMountStaticAuthConfigRoleArn) IsKnown() bool {
+	switch r {
+	case SandboxBoxNewParamsMountConfigAuthAwsSandboxesSandboxAwsMountStaticAuthConfigRoleArnEmpty:
 		return true
 	}
 	return false
@@ -927,8 +1004,8 @@ func (r SandboxBoxNewParamsProxyConfigCallbacksRequestHeadersType) IsKnown() boo
 }
 
 type SandboxBoxNewParamsProxyConfigRule struct {
-	Name param.Field[string]                                 `json:"name" api:"required"`
-	Aws  param.Field[SandboxBoxNewParamsProxyConfigRulesAws] `json:"aws"`
+	Name param.Field[string]                                      `json:"name" api:"required"`
+	Aws  param.Field[SandboxBoxNewParamsProxyConfigRulesAwsUnion] `json:"aws"`
 	// Description says what this rule lets the sandbox reach, so an agent driving the
 	// sandbox can be told its capabilities. At most 1024 characters.
 	Description param.Field[string] `json:"description"`
@@ -954,61 +1031,123 @@ func (r SandboxBoxNewParamsProxyConfigRule) MarshalJSON() (data []byte, err erro
 }
 
 type SandboxBoxNewParamsProxyConfigRulesAws struct {
-	AccessKeyID     param.Field[SandboxBoxNewParamsProxyConfigRulesAwsAccessKeyID]     `json:"access_key_id" api:"required"`
-	SecretAccessKey param.Field[SandboxBoxNewParamsProxyConfigRulesAwsSecretAccessKey] `json:"secret_access_key" api:"required"`
+	AccessKeyID param.Field[interface{}] `json:"access_key_id"`
+	// RoleARN selects automatically renewed IAM-role credentials instead of static
+	// keys. Access follows the role's effective AWS permissions, not the sandbox's
+	// mount scope. Configure at creation; the role cannot be changed afterward.
+	RoleArn         param.Field[string]      `json:"role_arn"`
+	SecretAccessKey param.Field[interface{}] `json:"secret_access_key"`
 }
 
 func (r SandboxBoxNewParamsProxyConfigRulesAws) MarshalJSON() (data []byte, err error) {
 	return apijson.MarshalRoot(r)
 }
 
-type SandboxBoxNewParamsProxyConfigRulesAwsAccessKeyID struct {
-	Type  param.Field[SandboxBoxNewParamsProxyConfigRulesAwsAccessKeyIDType] `json:"type" api:"required"`
-	IsSet param.Field[bool]                                                  `json:"is_set"`
-	Value param.Field[string]                                                `json:"value"`
+func (r SandboxBoxNewParamsProxyConfigRulesAws) implementsSandboxBoxNewParamsProxyConfigRulesAwsUnion() {
 }
 
-func (r SandboxBoxNewParamsProxyConfigRulesAwsAccessKeyID) MarshalJSON() (data []byte, err error) {
+// Satisfied by
+// [SandboxBoxNewParamsProxyConfigRulesAwsSandboxesProxyAwsRoleConfig],
+// [SandboxBoxNewParamsProxyConfigRulesAwsSandboxesProxyAwsStaticConfig],
+// [SandboxBoxNewParamsProxyConfigRulesAws].
+type SandboxBoxNewParamsProxyConfigRulesAwsUnion interface {
+	implementsSandboxBoxNewParamsProxyConfigRulesAwsUnion()
+}
+
+type SandboxBoxNewParamsProxyConfigRulesAwsSandboxesProxyAwsRoleConfig struct {
+	// RoleARN selects automatically renewed IAM-role credentials instead of static
+	// keys. Access follows the role's effective AWS permissions, not the sandbox's
+	// mount scope. Configure at creation; the role cannot be changed afterward.
+	RoleArn param.Field[string] `json:"role_arn" api:"required"`
+}
+
+func (r SandboxBoxNewParamsProxyConfigRulesAwsSandboxesProxyAwsRoleConfig) MarshalJSON() (data []byte, err error) {
 	return apijson.MarshalRoot(r)
 }
 
-type SandboxBoxNewParamsProxyConfigRulesAwsAccessKeyIDType string
+func (r SandboxBoxNewParamsProxyConfigRulesAwsSandboxesProxyAwsRoleConfig) implementsSandboxBoxNewParamsProxyConfigRulesAwsUnion() {
+}
+
+type SandboxBoxNewParamsProxyConfigRulesAwsSandboxesProxyAwsStaticConfig struct {
+	AccessKeyID     param.Field[SandboxBoxNewParamsProxyConfigRulesAwsSandboxesProxyAwsStaticConfigAccessKeyID]     `json:"access_key_id" api:"required"`
+	SecretAccessKey param.Field[SandboxBoxNewParamsProxyConfigRulesAwsSandboxesProxyAwsStaticConfigSecretAccessKey] `json:"secret_access_key" api:"required"`
+	// RoleARN selects automatically renewed IAM-role credentials instead of static
+	// keys. Access follows the role's effective AWS permissions, not the sandbox's
+	// mount scope. Configure at creation; the role cannot be changed afterward.
+	RoleArn param.Field[SandboxBoxNewParamsProxyConfigRulesAwsSandboxesProxyAwsStaticConfigRoleArn] `json:"role_arn"`
+}
+
+func (r SandboxBoxNewParamsProxyConfigRulesAwsSandboxesProxyAwsStaticConfig) MarshalJSON() (data []byte, err error) {
+	return apijson.MarshalRoot(r)
+}
+
+func (r SandboxBoxNewParamsProxyConfigRulesAwsSandboxesProxyAwsStaticConfig) implementsSandboxBoxNewParamsProxyConfigRulesAwsUnion() {
+}
+
+type SandboxBoxNewParamsProxyConfigRulesAwsSandboxesProxyAwsStaticConfigAccessKeyID struct {
+	Type  param.Field[SandboxBoxNewParamsProxyConfigRulesAwsSandboxesProxyAwsStaticConfigAccessKeyIDType] `json:"type" api:"required"`
+	IsSet param.Field[bool]                                                                               `json:"is_set"`
+	Value param.Field[string]                                                                             `json:"value"`
+}
+
+func (r SandboxBoxNewParamsProxyConfigRulesAwsSandboxesProxyAwsStaticConfigAccessKeyID) MarshalJSON() (data []byte, err error) {
+	return apijson.MarshalRoot(r)
+}
+
+type SandboxBoxNewParamsProxyConfigRulesAwsSandboxesProxyAwsStaticConfigAccessKeyIDType string
 
 const (
-	SandboxBoxNewParamsProxyConfigRulesAwsAccessKeyIDTypePlaintext       SandboxBoxNewParamsProxyConfigRulesAwsAccessKeyIDType = "plaintext"
-	SandboxBoxNewParamsProxyConfigRulesAwsAccessKeyIDTypeOpaque          SandboxBoxNewParamsProxyConfigRulesAwsAccessKeyIDType = "opaque"
-	SandboxBoxNewParamsProxyConfigRulesAwsAccessKeyIDTypeWorkspaceSecret SandboxBoxNewParamsProxyConfigRulesAwsAccessKeyIDType = "workspace_secret"
+	SandboxBoxNewParamsProxyConfigRulesAwsSandboxesProxyAwsStaticConfigAccessKeyIDTypePlaintext       SandboxBoxNewParamsProxyConfigRulesAwsSandboxesProxyAwsStaticConfigAccessKeyIDType = "plaintext"
+	SandboxBoxNewParamsProxyConfigRulesAwsSandboxesProxyAwsStaticConfigAccessKeyIDTypeOpaque          SandboxBoxNewParamsProxyConfigRulesAwsSandboxesProxyAwsStaticConfigAccessKeyIDType = "opaque"
+	SandboxBoxNewParamsProxyConfigRulesAwsSandboxesProxyAwsStaticConfigAccessKeyIDTypeWorkspaceSecret SandboxBoxNewParamsProxyConfigRulesAwsSandboxesProxyAwsStaticConfigAccessKeyIDType = "workspace_secret"
 )
 
-func (r SandboxBoxNewParamsProxyConfigRulesAwsAccessKeyIDType) IsKnown() bool {
+func (r SandboxBoxNewParamsProxyConfigRulesAwsSandboxesProxyAwsStaticConfigAccessKeyIDType) IsKnown() bool {
 	switch r {
-	case SandboxBoxNewParamsProxyConfigRulesAwsAccessKeyIDTypePlaintext, SandboxBoxNewParamsProxyConfigRulesAwsAccessKeyIDTypeOpaque, SandboxBoxNewParamsProxyConfigRulesAwsAccessKeyIDTypeWorkspaceSecret:
+	case SandboxBoxNewParamsProxyConfigRulesAwsSandboxesProxyAwsStaticConfigAccessKeyIDTypePlaintext, SandboxBoxNewParamsProxyConfigRulesAwsSandboxesProxyAwsStaticConfigAccessKeyIDTypeOpaque, SandboxBoxNewParamsProxyConfigRulesAwsSandboxesProxyAwsStaticConfigAccessKeyIDTypeWorkspaceSecret:
 		return true
 	}
 	return false
 }
 
-type SandboxBoxNewParamsProxyConfigRulesAwsSecretAccessKey struct {
-	Type  param.Field[SandboxBoxNewParamsProxyConfigRulesAwsSecretAccessKeyType] `json:"type" api:"required"`
-	IsSet param.Field[bool]                                                      `json:"is_set"`
-	Value param.Field[string]                                                    `json:"value"`
+type SandboxBoxNewParamsProxyConfigRulesAwsSandboxesProxyAwsStaticConfigSecretAccessKey struct {
+	Type  param.Field[SandboxBoxNewParamsProxyConfigRulesAwsSandboxesProxyAwsStaticConfigSecretAccessKeyType] `json:"type" api:"required"`
+	IsSet param.Field[bool]                                                                                   `json:"is_set"`
+	Value param.Field[string]                                                                                 `json:"value"`
 }
 
-func (r SandboxBoxNewParamsProxyConfigRulesAwsSecretAccessKey) MarshalJSON() (data []byte, err error) {
+func (r SandboxBoxNewParamsProxyConfigRulesAwsSandboxesProxyAwsStaticConfigSecretAccessKey) MarshalJSON() (data []byte, err error) {
 	return apijson.MarshalRoot(r)
 }
 
-type SandboxBoxNewParamsProxyConfigRulesAwsSecretAccessKeyType string
+type SandboxBoxNewParamsProxyConfigRulesAwsSandboxesProxyAwsStaticConfigSecretAccessKeyType string
 
 const (
-	SandboxBoxNewParamsProxyConfigRulesAwsSecretAccessKeyTypePlaintext       SandboxBoxNewParamsProxyConfigRulesAwsSecretAccessKeyType = "plaintext"
-	SandboxBoxNewParamsProxyConfigRulesAwsSecretAccessKeyTypeOpaque          SandboxBoxNewParamsProxyConfigRulesAwsSecretAccessKeyType = "opaque"
-	SandboxBoxNewParamsProxyConfigRulesAwsSecretAccessKeyTypeWorkspaceSecret SandboxBoxNewParamsProxyConfigRulesAwsSecretAccessKeyType = "workspace_secret"
+	SandboxBoxNewParamsProxyConfigRulesAwsSandboxesProxyAwsStaticConfigSecretAccessKeyTypePlaintext       SandboxBoxNewParamsProxyConfigRulesAwsSandboxesProxyAwsStaticConfigSecretAccessKeyType = "plaintext"
+	SandboxBoxNewParamsProxyConfigRulesAwsSandboxesProxyAwsStaticConfigSecretAccessKeyTypeOpaque          SandboxBoxNewParamsProxyConfigRulesAwsSandboxesProxyAwsStaticConfigSecretAccessKeyType = "opaque"
+	SandboxBoxNewParamsProxyConfigRulesAwsSandboxesProxyAwsStaticConfigSecretAccessKeyTypeWorkspaceSecret SandboxBoxNewParamsProxyConfigRulesAwsSandboxesProxyAwsStaticConfigSecretAccessKeyType = "workspace_secret"
 )
 
-func (r SandboxBoxNewParamsProxyConfigRulesAwsSecretAccessKeyType) IsKnown() bool {
+func (r SandboxBoxNewParamsProxyConfigRulesAwsSandboxesProxyAwsStaticConfigSecretAccessKeyType) IsKnown() bool {
 	switch r {
-	case SandboxBoxNewParamsProxyConfigRulesAwsSecretAccessKeyTypePlaintext, SandboxBoxNewParamsProxyConfigRulesAwsSecretAccessKeyTypeOpaque, SandboxBoxNewParamsProxyConfigRulesAwsSecretAccessKeyTypeWorkspaceSecret:
+	case SandboxBoxNewParamsProxyConfigRulesAwsSandboxesProxyAwsStaticConfigSecretAccessKeyTypePlaintext, SandboxBoxNewParamsProxyConfigRulesAwsSandboxesProxyAwsStaticConfigSecretAccessKeyTypeOpaque, SandboxBoxNewParamsProxyConfigRulesAwsSandboxesProxyAwsStaticConfigSecretAccessKeyTypeWorkspaceSecret:
+		return true
+	}
+	return false
+}
+
+// RoleARN selects automatically renewed IAM-role credentials instead of static
+// keys. Access follows the role's effective AWS permissions, not the sandbox's
+// mount scope. Configure at creation; the role cannot be changed afterward.
+type SandboxBoxNewParamsProxyConfigRulesAwsSandboxesProxyAwsStaticConfigRoleArn string
+
+const (
+	SandboxBoxNewParamsProxyConfigRulesAwsSandboxesProxyAwsStaticConfigRoleArnEmpty SandboxBoxNewParamsProxyConfigRulesAwsSandboxesProxyAwsStaticConfigRoleArn = ""
+)
+
+func (r SandboxBoxNewParamsProxyConfigRulesAwsSandboxesProxyAwsStaticConfigRoleArn) IsKnown() bool {
+	switch r {
+	case SandboxBoxNewParamsProxyConfigRulesAwsSandboxesProxyAwsStaticConfigRoleArnEmpty:
 		return true
 	}
 	return false
@@ -1076,6 +1215,19 @@ func (r SandboxBoxNewParamsProxyConfigRulesHeadersType) IsKnown() bool {
 	return false
 }
 
+// RunConfig overrides the snapshot's run config for this sandbox: user and
+// work_dir replace the snapshot's, env_vars merge over it. The result is what the
+// sandbox boots with, and what a snapshot captured from it carries.
+type SandboxBoxNewParamsRunConfig struct {
+	EnvVars param.Field[map[string]string] `json:"env_vars"`
+	User    param.Field[string]            `json:"user"`
+	WorkDir param.Field[string]            `json:"work_dir"`
+}
+
+func (r SandboxBoxNewParamsRunConfig) MarshalJSON() (data []byte, err error) {
+	return apijson.MarshalRoot(r)
+}
+
 type SandboxBoxUpdateParams struct {
 	CPUMillicores          param.Field[int64] `json:"cpu_millicores"`
 	DeleteAfterStopSeconds param.Field[int64] `json:"delete_after_stop_seconds"`
@@ -1086,8 +1238,12 @@ type SandboxBoxUpdateParams struct {
 	MemBytes    param.Field[int64]                             `json:"mem_bytes"`
 	Name        param.Field[string]                            `json:"name"`
 	ProxyConfig param.Field[SandboxBoxUpdateParamsProxyConfig] `json:"proxy_config"`
-	TagValueIDs param.Field[[]string]                          `json:"tag_value_ids"`
-	Vcpus       param.Field[int64]                             `json:"vcpus"`
+	// RunConfig changes what subsequent commands run with: user and work_dir replace
+	// the current values, env_vars merge over them. Commands already running are
+	// unaffected.
+	RunConfig   param.Field[SandboxBoxUpdateParamsRunConfig] `json:"run_config"`
+	TagValueIDs param.Field[[]string]                        `json:"tag_value_ids"`
+	Vcpus       param.Field[int64]                           `json:"vcpus"`
 }
 
 func (r SandboxBoxUpdateParams) MarshalJSON() (data []byte, err error) {
@@ -1157,8 +1313,8 @@ func (r SandboxBoxUpdateParamsProxyConfigCallbacksRequestHeadersType) IsKnown() 
 }
 
 type SandboxBoxUpdateParamsProxyConfigRule struct {
-	Name param.Field[string]                                    `json:"name" api:"required"`
-	Aws  param.Field[SandboxBoxUpdateParamsProxyConfigRulesAws] `json:"aws"`
+	Name param.Field[string]                                         `json:"name" api:"required"`
+	Aws  param.Field[SandboxBoxUpdateParamsProxyConfigRulesAwsUnion] `json:"aws"`
 	// Description says what this rule lets the sandbox reach, so an agent driving the
 	// sandbox can be told its capabilities. At most 1024 characters.
 	Description param.Field[string] `json:"description"`
@@ -1184,61 +1340,123 @@ func (r SandboxBoxUpdateParamsProxyConfigRule) MarshalJSON() (data []byte, err e
 }
 
 type SandboxBoxUpdateParamsProxyConfigRulesAws struct {
-	AccessKeyID     param.Field[SandboxBoxUpdateParamsProxyConfigRulesAwsAccessKeyID]     `json:"access_key_id" api:"required"`
-	SecretAccessKey param.Field[SandboxBoxUpdateParamsProxyConfigRulesAwsSecretAccessKey] `json:"secret_access_key" api:"required"`
+	AccessKeyID param.Field[interface{}] `json:"access_key_id"`
+	// RoleARN selects automatically renewed IAM-role credentials instead of static
+	// keys. Access follows the role's effective AWS permissions, not the sandbox's
+	// mount scope. Configure at creation; the role cannot be changed afterward.
+	RoleArn         param.Field[string]      `json:"role_arn"`
+	SecretAccessKey param.Field[interface{}] `json:"secret_access_key"`
 }
 
 func (r SandboxBoxUpdateParamsProxyConfigRulesAws) MarshalJSON() (data []byte, err error) {
 	return apijson.MarshalRoot(r)
 }
 
-type SandboxBoxUpdateParamsProxyConfigRulesAwsAccessKeyID struct {
-	Type  param.Field[SandboxBoxUpdateParamsProxyConfigRulesAwsAccessKeyIDType] `json:"type" api:"required"`
-	IsSet param.Field[bool]                                                     `json:"is_set"`
-	Value param.Field[string]                                                   `json:"value"`
+func (r SandboxBoxUpdateParamsProxyConfigRulesAws) implementsSandboxBoxUpdateParamsProxyConfigRulesAwsUnion() {
 }
 
-func (r SandboxBoxUpdateParamsProxyConfigRulesAwsAccessKeyID) MarshalJSON() (data []byte, err error) {
+// Satisfied by
+// [SandboxBoxUpdateParamsProxyConfigRulesAwsSandboxesProxyAwsRoleConfig],
+// [SandboxBoxUpdateParamsProxyConfigRulesAwsSandboxesProxyAwsStaticConfig],
+// [SandboxBoxUpdateParamsProxyConfigRulesAws].
+type SandboxBoxUpdateParamsProxyConfigRulesAwsUnion interface {
+	implementsSandboxBoxUpdateParamsProxyConfigRulesAwsUnion()
+}
+
+type SandboxBoxUpdateParamsProxyConfigRulesAwsSandboxesProxyAwsRoleConfig struct {
+	// RoleARN selects automatically renewed IAM-role credentials instead of static
+	// keys. Access follows the role's effective AWS permissions, not the sandbox's
+	// mount scope. Configure at creation; the role cannot be changed afterward.
+	RoleArn param.Field[string] `json:"role_arn" api:"required"`
+}
+
+func (r SandboxBoxUpdateParamsProxyConfigRulesAwsSandboxesProxyAwsRoleConfig) MarshalJSON() (data []byte, err error) {
 	return apijson.MarshalRoot(r)
 }
 
-type SandboxBoxUpdateParamsProxyConfigRulesAwsAccessKeyIDType string
+func (r SandboxBoxUpdateParamsProxyConfigRulesAwsSandboxesProxyAwsRoleConfig) implementsSandboxBoxUpdateParamsProxyConfigRulesAwsUnion() {
+}
+
+type SandboxBoxUpdateParamsProxyConfigRulesAwsSandboxesProxyAwsStaticConfig struct {
+	AccessKeyID     param.Field[SandboxBoxUpdateParamsProxyConfigRulesAwsSandboxesProxyAwsStaticConfigAccessKeyID]     `json:"access_key_id" api:"required"`
+	SecretAccessKey param.Field[SandboxBoxUpdateParamsProxyConfigRulesAwsSandboxesProxyAwsStaticConfigSecretAccessKey] `json:"secret_access_key" api:"required"`
+	// RoleARN selects automatically renewed IAM-role credentials instead of static
+	// keys. Access follows the role's effective AWS permissions, not the sandbox's
+	// mount scope. Configure at creation; the role cannot be changed afterward.
+	RoleArn param.Field[SandboxBoxUpdateParamsProxyConfigRulesAwsSandboxesProxyAwsStaticConfigRoleArn] `json:"role_arn"`
+}
+
+func (r SandboxBoxUpdateParamsProxyConfigRulesAwsSandboxesProxyAwsStaticConfig) MarshalJSON() (data []byte, err error) {
+	return apijson.MarshalRoot(r)
+}
+
+func (r SandboxBoxUpdateParamsProxyConfigRulesAwsSandboxesProxyAwsStaticConfig) implementsSandboxBoxUpdateParamsProxyConfigRulesAwsUnion() {
+}
+
+type SandboxBoxUpdateParamsProxyConfigRulesAwsSandboxesProxyAwsStaticConfigAccessKeyID struct {
+	Type  param.Field[SandboxBoxUpdateParamsProxyConfigRulesAwsSandboxesProxyAwsStaticConfigAccessKeyIDType] `json:"type" api:"required"`
+	IsSet param.Field[bool]                                                                                  `json:"is_set"`
+	Value param.Field[string]                                                                                `json:"value"`
+}
+
+func (r SandboxBoxUpdateParamsProxyConfigRulesAwsSandboxesProxyAwsStaticConfigAccessKeyID) MarshalJSON() (data []byte, err error) {
+	return apijson.MarshalRoot(r)
+}
+
+type SandboxBoxUpdateParamsProxyConfigRulesAwsSandboxesProxyAwsStaticConfigAccessKeyIDType string
 
 const (
-	SandboxBoxUpdateParamsProxyConfigRulesAwsAccessKeyIDTypePlaintext       SandboxBoxUpdateParamsProxyConfigRulesAwsAccessKeyIDType = "plaintext"
-	SandboxBoxUpdateParamsProxyConfigRulesAwsAccessKeyIDTypeOpaque          SandboxBoxUpdateParamsProxyConfigRulesAwsAccessKeyIDType = "opaque"
-	SandboxBoxUpdateParamsProxyConfigRulesAwsAccessKeyIDTypeWorkspaceSecret SandboxBoxUpdateParamsProxyConfigRulesAwsAccessKeyIDType = "workspace_secret"
+	SandboxBoxUpdateParamsProxyConfigRulesAwsSandboxesProxyAwsStaticConfigAccessKeyIDTypePlaintext       SandboxBoxUpdateParamsProxyConfigRulesAwsSandboxesProxyAwsStaticConfigAccessKeyIDType = "plaintext"
+	SandboxBoxUpdateParamsProxyConfigRulesAwsSandboxesProxyAwsStaticConfigAccessKeyIDTypeOpaque          SandboxBoxUpdateParamsProxyConfigRulesAwsSandboxesProxyAwsStaticConfigAccessKeyIDType = "opaque"
+	SandboxBoxUpdateParamsProxyConfigRulesAwsSandboxesProxyAwsStaticConfigAccessKeyIDTypeWorkspaceSecret SandboxBoxUpdateParamsProxyConfigRulesAwsSandboxesProxyAwsStaticConfigAccessKeyIDType = "workspace_secret"
 )
 
-func (r SandboxBoxUpdateParamsProxyConfigRulesAwsAccessKeyIDType) IsKnown() bool {
+func (r SandboxBoxUpdateParamsProxyConfigRulesAwsSandboxesProxyAwsStaticConfigAccessKeyIDType) IsKnown() bool {
 	switch r {
-	case SandboxBoxUpdateParamsProxyConfigRulesAwsAccessKeyIDTypePlaintext, SandboxBoxUpdateParamsProxyConfigRulesAwsAccessKeyIDTypeOpaque, SandboxBoxUpdateParamsProxyConfigRulesAwsAccessKeyIDTypeWorkspaceSecret:
+	case SandboxBoxUpdateParamsProxyConfigRulesAwsSandboxesProxyAwsStaticConfigAccessKeyIDTypePlaintext, SandboxBoxUpdateParamsProxyConfigRulesAwsSandboxesProxyAwsStaticConfigAccessKeyIDTypeOpaque, SandboxBoxUpdateParamsProxyConfigRulesAwsSandboxesProxyAwsStaticConfigAccessKeyIDTypeWorkspaceSecret:
 		return true
 	}
 	return false
 }
 
-type SandboxBoxUpdateParamsProxyConfigRulesAwsSecretAccessKey struct {
-	Type  param.Field[SandboxBoxUpdateParamsProxyConfigRulesAwsSecretAccessKeyType] `json:"type" api:"required"`
-	IsSet param.Field[bool]                                                         `json:"is_set"`
-	Value param.Field[string]                                                       `json:"value"`
+type SandboxBoxUpdateParamsProxyConfigRulesAwsSandboxesProxyAwsStaticConfigSecretAccessKey struct {
+	Type  param.Field[SandboxBoxUpdateParamsProxyConfigRulesAwsSandboxesProxyAwsStaticConfigSecretAccessKeyType] `json:"type" api:"required"`
+	IsSet param.Field[bool]                                                                                      `json:"is_set"`
+	Value param.Field[string]                                                                                    `json:"value"`
 }
 
-func (r SandboxBoxUpdateParamsProxyConfigRulesAwsSecretAccessKey) MarshalJSON() (data []byte, err error) {
+func (r SandboxBoxUpdateParamsProxyConfigRulesAwsSandboxesProxyAwsStaticConfigSecretAccessKey) MarshalJSON() (data []byte, err error) {
 	return apijson.MarshalRoot(r)
 }
 
-type SandboxBoxUpdateParamsProxyConfigRulesAwsSecretAccessKeyType string
+type SandboxBoxUpdateParamsProxyConfigRulesAwsSandboxesProxyAwsStaticConfigSecretAccessKeyType string
 
 const (
-	SandboxBoxUpdateParamsProxyConfigRulesAwsSecretAccessKeyTypePlaintext       SandboxBoxUpdateParamsProxyConfigRulesAwsSecretAccessKeyType = "plaintext"
-	SandboxBoxUpdateParamsProxyConfigRulesAwsSecretAccessKeyTypeOpaque          SandboxBoxUpdateParamsProxyConfigRulesAwsSecretAccessKeyType = "opaque"
-	SandboxBoxUpdateParamsProxyConfigRulesAwsSecretAccessKeyTypeWorkspaceSecret SandboxBoxUpdateParamsProxyConfigRulesAwsSecretAccessKeyType = "workspace_secret"
+	SandboxBoxUpdateParamsProxyConfigRulesAwsSandboxesProxyAwsStaticConfigSecretAccessKeyTypePlaintext       SandboxBoxUpdateParamsProxyConfigRulesAwsSandboxesProxyAwsStaticConfigSecretAccessKeyType = "plaintext"
+	SandboxBoxUpdateParamsProxyConfigRulesAwsSandboxesProxyAwsStaticConfigSecretAccessKeyTypeOpaque          SandboxBoxUpdateParamsProxyConfigRulesAwsSandboxesProxyAwsStaticConfigSecretAccessKeyType = "opaque"
+	SandboxBoxUpdateParamsProxyConfigRulesAwsSandboxesProxyAwsStaticConfigSecretAccessKeyTypeWorkspaceSecret SandboxBoxUpdateParamsProxyConfigRulesAwsSandboxesProxyAwsStaticConfigSecretAccessKeyType = "workspace_secret"
 )
 
-func (r SandboxBoxUpdateParamsProxyConfigRulesAwsSecretAccessKeyType) IsKnown() bool {
+func (r SandboxBoxUpdateParamsProxyConfigRulesAwsSandboxesProxyAwsStaticConfigSecretAccessKeyType) IsKnown() bool {
 	switch r {
-	case SandboxBoxUpdateParamsProxyConfigRulesAwsSecretAccessKeyTypePlaintext, SandboxBoxUpdateParamsProxyConfigRulesAwsSecretAccessKeyTypeOpaque, SandboxBoxUpdateParamsProxyConfigRulesAwsSecretAccessKeyTypeWorkspaceSecret:
+	case SandboxBoxUpdateParamsProxyConfigRulesAwsSandboxesProxyAwsStaticConfigSecretAccessKeyTypePlaintext, SandboxBoxUpdateParamsProxyConfigRulesAwsSandboxesProxyAwsStaticConfigSecretAccessKeyTypeOpaque, SandboxBoxUpdateParamsProxyConfigRulesAwsSandboxesProxyAwsStaticConfigSecretAccessKeyTypeWorkspaceSecret:
+		return true
+	}
+	return false
+}
+
+// RoleARN selects automatically renewed IAM-role credentials instead of static
+// keys. Access follows the role's effective AWS permissions, not the sandbox's
+// mount scope. Configure at creation; the role cannot be changed afterward.
+type SandboxBoxUpdateParamsProxyConfigRulesAwsSandboxesProxyAwsStaticConfigRoleArn string
+
+const (
+	SandboxBoxUpdateParamsProxyConfigRulesAwsSandboxesProxyAwsStaticConfigRoleArnEmpty SandboxBoxUpdateParamsProxyConfigRulesAwsSandboxesProxyAwsStaticConfigRoleArn = ""
+)
+
+func (r SandboxBoxUpdateParamsProxyConfigRulesAwsSandboxesProxyAwsStaticConfigRoleArn) IsKnown() bool {
+	switch r {
+	case SandboxBoxUpdateParamsProxyConfigRulesAwsSandboxesProxyAwsStaticConfigRoleArnEmpty:
 		return true
 	}
 	return false
@@ -1306,6 +1524,19 @@ func (r SandboxBoxUpdateParamsProxyConfigRulesHeadersType) IsKnown() bool {
 	return false
 }
 
+// RunConfig changes what subsequent commands run with: user and work_dir replace
+// the current values, env_vars merge over them. Commands already running are
+// unaffected.
+type SandboxBoxUpdateParamsRunConfig struct {
+	EnvVars param.Field[map[string]string] `json:"env_vars"`
+	User    param.Field[string]            `json:"user"`
+	WorkDir param.Field[string]            `json:"work_dir"`
+}
+
+func (r SandboxBoxUpdateParamsRunConfig) MarshalJSON() (data []byte, err error) {
+	return apijson.MarshalRoot(r)
+}
+
 type SandboxBoxListParams struct {
 	// Filter by creator identity. Only 'me' is supported.
 	CreatedBy param.Field[string] `query:"created_by"`
@@ -1359,6 +1590,10 @@ type SandboxBoxNewSnapshotParams struct {
 	IncludeMemory param.Field[bool] `json:"include_memory"`
 	// Labels seed the captured snapshot's labels.
 	Labels param.Field[map[string]string] `json:"labels"`
+	// RunConfig overrides the runtime configuration the snapshot carries: for a
+	// docker_image export, the image's USER, WORKDIR and ENV; for a capture of the
+	// running VM, the sandbox's own. user and work_dir replace, env_vars merge.
+	RunConfig param.Field[SandboxBoxNewSnapshotParamsRunConfig] `json:"run_config"`
 	// mutable Docker-style tag; defaults to "latest"
 	Tag param.Field[string] `json:"tag"`
 }
@@ -1367,10 +1602,29 @@ func (r SandboxBoxNewSnapshotParams) MarshalJSON() (data []byte, err error) {
 	return apijson.MarshalRoot(r)
 }
 
+// RunConfig overrides the runtime configuration the snapshot carries: for a
+// docker_image export, the image's USER, WORKDIR and ENV; for a capture of the
+// running VM, the sandbox's own. user and work_dir replace, env_vars merge.
+type SandboxBoxNewSnapshotParamsRunConfig struct {
+	EnvVars param.Field[map[string]string] `json:"env_vars"`
+	User    param.Field[string]            `json:"user"`
+	WorkDir param.Field[string]            `json:"work_dir"`
+}
+
+func (r SandboxBoxNewSnapshotParamsRunConfig) MarshalJSON() (data []byte, err error) {
+	return apijson.MarshalRoot(r)
+}
+
 type SandboxBoxGenerateDownloadURLParams struct {
 	Path               param.Field[string] `json:"path" api:"required"`
 	ContentDisposition param.Field[string] `json:"content_disposition"`
 	ContentType        param.Field[string] `json:"content_type"`
+	// CSPSandboxFlags loosen the CSP sandbox the file is served under; omit for the
+	// most restrictive policy.
+	CspSandboxFlags param.Field[[]SandboxBoxGenerateDownloadURLParamsCspSandboxFlag] `json:"csp_sandbox_flags"`
+	// CSPSourceBundles allow the served file to fetch from named third-party origins;
+	// omit to send no fetch directive.
+	CspSourceBundles param.Field[[]SandboxBoxGenerateDownloadURLParamsCspSourceBundle] `json:"csp_source_bundles"`
 	// ExpiresInSeconds is optional; a link with no expiry never expires.
 	ExpiresInSeconds param.Field[int64] `json:"expires_in_seconds"`
 }
@@ -1379,11 +1633,80 @@ func (r SandboxBoxGenerateDownloadURLParams) MarshalJSON() (data []byte, err err
 	return apijson.MarshalRoot(r)
 }
 
+type SandboxBoxGenerateDownloadURLParamsCspSandboxFlag string
+
+const (
+	SandboxBoxGenerateDownloadURLParamsCspSandboxFlagAllowDownloads                     SandboxBoxGenerateDownloadURLParamsCspSandboxFlag = "allow-downloads"
+	SandboxBoxGenerateDownloadURLParamsCspSandboxFlagAllowForms                         SandboxBoxGenerateDownloadURLParamsCspSandboxFlag = "allow-forms"
+	SandboxBoxGenerateDownloadURLParamsCspSandboxFlagAllowModals                        SandboxBoxGenerateDownloadURLParamsCspSandboxFlag = "allow-modals"
+	SandboxBoxGenerateDownloadURLParamsCspSandboxFlagAllowOrientationLock               SandboxBoxGenerateDownloadURLParamsCspSandboxFlag = "allow-orientation-lock"
+	SandboxBoxGenerateDownloadURLParamsCspSandboxFlagAllowPointerLock                   SandboxBoxGenerateDownloadURLParamsCspSandboxFlag = "allow-pointer-lock"
+	SandboxBoxGenerateDownloadURLParamsCspSandboxFlagAllowPopups                        SandboxBoxGenerateDownloadURLParamsCspSandboxFlag = "allow-popups"
+	SandboxBoxGenerateDownloadURLParamsCspSandboxFlagAllowPresentation                  SandboxBoxGenerateDownloadURLParamsCspSandboxFlag = "allow-presentation"
+	SandboxBoxGenerateDownloadURLParamsCspSandboxFlagAllowScripts                       SandboxBoxGenerateDownloadURLParamsCspSandboxFlag = "allow-scripts"
+	SandboxBoxGenerateDownloadURLParamsCspSandboxFlagAllowTopNavigationByUserActivation SandboxBoxGenerateDownloadURLParamsCspSandboxFlag = "allow-top-navigation-by-user-activation"
+)
+
+func (r SandboxBoxGenerateDownloadURLParamsCspSandboxFlag) IsKnown() bool {
+	switch r {
+	case SandboxBoxGenerateDownloadURLParamsCspSandboxFlagAllowDownloads, SandboxBoxGenerateDownloadURLParamsCspSandboxFlagAllowForms, SandboxBoxGenerateDownloadURLParamsCspSandboxFlagAllowModals, SandboxBoxGenerateDownloadURLParamsCspSandboxFlagAllowOrientationLock, SandboxBoxGenerateDownloadURLParamsCspSandboxFlagAllowPointerLock, SandboxBoxGenerateDownloadURLParamsCspSandboxFlagAllowPopups, SandboxBoxGenerateDownloadURLParamsCspSandboxFlagAllowPresentation, SandboxBoxGenerateDownloadURLParamsCspSandboxFlagAllowScripts, SandboxBoxGenerateDownloadURLParamsCspSandboxFlagAllowTopNavigationByUserActivation:
+		return true
+	}
+	return false
+}
+
+type SandboxBoxGenerateDownloadURLParamsCspSourceBundle string
+
+const (
+	SandboxBoxGenerateDownloadURLParamsCspSourceBundleCdnjs       SandboxBoxGenerateDownloadURLParamsCspSourceBundle = "cdnjs"
+	SandboxBoxGenerateDownloadURLParamsCspSourceBundleGoogleFonts SandboxBoxGenerateDownloadURLParamsCspSourceBundle = "google-fonts"
+	SandboxBoxGenerateDownloadURLParamsCspSourceBundleJsdelivr    SandboxBoxGenerateDownloadURLParamsCspSourceBundle = "jsdelivr"
+	SandboxBoxGenerateDownloadURLParamsCspSourceBundleUnpkg       SandboxBoxGenerateDownloadURLParamsCspSourceBundle = "unpkg"
+	SandboxBoxGenerateDownloadURLParamsCspSourceBundleNone        SandboxBoxGenerateDownloadURLParamsCspSourceBundle = "none"
+)
+
+func (r SandboxBoxGenerateDownloadURLParamsCspSourceBundle) IsKnown() bool {
+	switch r {
+	case SandboxBoxGenerateDownloadURLParamsCspSourceBundleCdnjs, SandboxBoxGenerateDownloadURLParamsCspSourceBundleGoogleFonts, SandboxBoxGenerateDownloadURLParamsCspSourceBundleJsdelivr, SandboxBoxGenerateDownloadURLParamsCspSourceBundleUnpkg, SandboxBoxGenerateDownloadURLParamsCspSourceBundleNone:
+		return true
+	}
+	return false
+}
+
 type SandboxBoxGenerateServiceURLParams struct {
-	ExpiresInSeconds param.Field[int64] `json:"expires_in_seconds"`
-	Port             param.Field[int64] `json:"port"`
+	// Access selects the login mode, mutually exclusive with the minted token. Omit
+	// the field for token mode: mint a short-lived service token (default).
+	// "restricted" — LangSmith login: any user with SandboxesRead on the sandbox.
+	// "workspace" — LangSmith login: any member of the owning workspace. "off" —
+	// remove an existing LangSmith login grant and mint a token. A LangSmith login
+	// grant is durable; token mode is refused (409) while one exists.
+	Access           param.Field[SandboxBoxGenerateServiceURLParamsAccess] `json:"access"`
+	ExpiresInSeconds param.Field[int64]                                    `json:"expires_in_seconds"`
+	Port             param.Field[int64]                                    `json:"port"`
 }
 
 func (r SandboxBoxGenerateServiceURLParams) MarshalJSON() (data []byte, err error) {
 	return apijson.MarshalRoot(r)
+}
+
+// Access selects the login mode, mutually exclusive with the minted token. Omit
+// the field for token mode: mint a short-lived service token (default).
+// "restricted" — LangSmith login: any user with SandboxesRead on the sandbox.
+// "workspace" — LangSmith login: any member of the owning workspace. "off" —
+// remove an existing LangSmith login grant and mint a token. A LangSmith login
+// grant is durable; token mode is refused (409) while one exists.
+type SandboxBoxGenerateServiceURLParamsAccess string
+
+const (
+	SandboxBoxGenerateServiceURLParamsAccessRestricted SandboxBoxGenerateServiceURLParamsAccess = "restricted"
+	SandboxBoxGenerateServiceURLParamsAccessWorkspace  SandboxBoxGenerateServiceURLParamsAccess = "workspace"
+	SandboxBoxGenerateServiceURLParamsAccessOff        SandboxBoxGenerateServiceURLParamsAccess = "off"
+)
+
+func (r SandboxBoxGenerateServiceURLParamsAccess) IsKnown() bool {
+	switch r {
+	case SandboxBoxGenerateServiceURLParamsAccessRestricted, SandboxBoxGenerateServiceURLParamsAccessWorkspace, SandboxBoxGenerateServiceURLParamsAccessOff:
+		return true
+	}
+	return false
 }

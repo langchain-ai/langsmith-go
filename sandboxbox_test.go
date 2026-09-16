@@ -58,17 +58,8 @@ func TestSandboxBoxNewWithOptionalParams(t *testing.T) {
 		MemBytes: langsmith.F(int64(0)),
 		MountConfig: langsmith.F(langsmith.SandboxBoxNewParamsMountConfig{
 			Auth: langsmith.F(langsmith.SandboxBoxNewParamsMountConfigAuth{
-				Aws: langsmith.F(langsmith.SandboxBoxNewParamsMountConfigAuthAws{
-					AccessKeyID: langsmith.F(langsmith.SandboxBoxNewParamsMountConfigAuthAwsAccessKeyID{
-						Type:  langsmith.F(langsmith.SandboxBoxNewParamsMountConfigAuthAwsAccessKeyIDTypePlaintext),
-						IsSet: langsmith.F(true),
-						Value: langsmith.F("value"),
-					}),
-					SecretAccessKey: langsmith.F(langsmith.SandboxBoxNewParamsMountConfigAuthAwsSecretAccessKey{
-						Type:  langsmith.F(langsmith.SandboxBoxNewParamsMountConfigAuthAwsSecretAccessKeyTypePlaintext),
-						IsSet: langsmith.F(true),
-						Value: langsmith.F("value"),
-					}),
+				Aws: langsmith.F[langsmith.SandboxBoxNewParamsMountConfigAuthAwsUnion](langsmith.SandboxBoxNewParamsMountConfigAuthAwsSandboxesSandboxAwsMountRoleAuthConfig{
+					RoleArn: langsmith.F("x"),
 				}),
 				Gcp: langsmith.F(langsmith.SandboxBoxNewParamsMountConfigAuthGcp{
 					ServiceAccountJson: langsmith.F(langsmith.SandboxBoxNewParamsMountConfigAuthGcpServiceAccountJson{
@@ -135,17 +126,8 @@ func TestSandboxBoxNewWithOptionalParams(t *testing.T) {
 			NoProxy:     langsmith.F([]string{"string"}),
 			Rules: langsmith.F([]langsmith.SandboxBoxNewParamsProxyConfigRule{{
 				Name: langsmith.F("name"),
-				Aws: langsmith.F(langsmith.SandboxBoxNewParamsProxyConfigRulesAws{
-					AccessKeyID: langsmith.F(langsmith.SandboxBoxNewParamsProxyConfigRulesAwsAccessKeyID{
-						Type:  langsmith.F(langsmith.SandboxBoxNewParamsProxyConfigRulesAwsAccessKeyIDTypePlaintext),
-						IsSet: langsmith.F(true),
-						Value: langsmith.F("value"),
-					}),
-					SecretAccessKey: langsmith.F(langsmith.SandboxBoxNewParamsProxyConfigRulesAwsSecretAccessKey{
-						Type:  langsmith.F(langsmith.SandboxBoxNewParamsProxyConfigRulesAwsSecretAccessKeyTypePlaintext),
-						IsSet: langsmith.F(true),
-						Value: langsmith.F("value"),
-					}),
+				Aws: langsmith.F[langsmith.SandboxBoxNewParamsProxyConfigRulesAwsUnion](langsmith.SandboxBoxNewParamsProxyConfigRulesAwsSandboxesProxyAwsRoleConfig{
+					RoleArn: langsmith.F("x"),
 				}),
 				Description: langsmith.F("description"),
 				Enabled:     langsmith.F(true),
@@ -172,11 +154,18 @@ func TestSandboxBoxNewWithOptionalParams(t *testing.T) {
 			}}),
 		}),
 		RestoreMemory: langsmith.F(true),
-		Snapshot:      langsmith.F("snapshot"),
-		SnapshotID:    langsmith.F("snapshot_id"),
-		SnapshotName:  langsmith.F("snapshot_name"),
-		TagValueIDs:   langsmith.F([]string{"string"}),
-		Vcpus:         langsmith.F(int64(0)),
+		RunConfig: langsmith.F(langsmith.SandboxBoxNewParamsRunConfig{
+			EnvVars: langsmith.F(map[string]string{
+				"foo": "string",
+			}),
+			User:    langsmith.F("user"),
+			WorkDir: langsmith.F("work_dir"),
+		}),
+		Snapshot:     langsmith.F("snapshot"),
+		SnapshotID:   langsmith.F("snapshot_id"),
+		SnapshotName: langsmith.F("snapshot_name"),
+		TagValueIDs:  langsmith.F([]string{"string"}),
+		Vcpus:        langsmith.F(int64(0)),
 	})
 	if err != nil {
 		var apierr *langsmith.Error
@@ -256,17 +245,8 @@ func TestSandboxBoxUpdateWithOptionalParams(t *testing.T) {
 				NoProxy:     langsmith.F([]string{"string"}),
 				Rules: langsmith.F([]langsmith.SandboxBoxUpdateParamsProxyConfigRule{{
 					Name: langsmith.F("name"),
-					Aws: langsmith.F(langsmith.SandboxBoxUpdateParamsProxyConfigRulesAws{
-						AccessKeyID: langsmith.F(langsmith.SandboxBoxUpdateParamsProxyConfigRulesAwsAccessKeyID{
-							Type:  langsmith.F(langsmith.SandboxBoxUpdateParamsProxyConfigRulesAwsAccessKeyIDTypePlaintext),
-							IsSet: langsmith.F(true),
-							Value: langsmith.F("value"),
-						}),
-						SecretAccessKey: langsmith.F(langsmith.SandboxBoxUpdateParamsProxyConfigRulesAwsSecretAccessKey{
-							Type:  langsmith.F(langsmith.SandboxBoxUpdateParamsProxyConfigRulesAwsSecretAccessKeyTypePlaintext),
-							IsSet: langsmith.F(true),
-							Value: langsmith.F("value"),
-						}),
+					Aws: langsmith.F[langsmith.SandboxBoxUpdateParamsProxyConfigRulesAwsUnion](langsmith.SandboxBoxUpdateParamsProxyConfigRulesAwsSandboxesProxyAwsRoleConfig{
+						RoleArn: langsmith.F("x"),
 					}),
 					Description: langsmith.F("description"),
 					Enabled:     langsmith.F(true),
@@ -291,6 +271,13 @@ func TestSandboxBoxUpdateWithOptionalParams(t *testing.T) {
 					MatchPaths: langsmith.F([]string{"string"}),
 					Type:       langsmith.F("type"),
 				}}),
+			}),
+			RunConfig: langsmith.F(langsmith.SandboxBoxUpdateParamsRunConfig{
+				EnvVars: langsmith.F(map[string]string{
+					"foo": "string",
+				}),
+				User:    langsmith.F("user"),
+				WorkDir: langsmith.F("work_dir"),
 			}),
 			TagValueIDs: langsmith.F([]string{"string"}),
 			Vcpus:       langsmith.F(int64(0)),
@@ -392,6 +379,13 @@ func TestSandboxBoxNewSnapshotWithOptionalParams(t *testing.T) {
 			Labels: langsmith.F(map[string]string{
 				"foo": "string",
 			}),
+			RunConfig: langsmith.F(langsmith.SandboxBoxNewSnapshotParamsRunConfig{
+				EnvVars: langsmith.F(map[string]string{
+					"foo": "string",
+				}),
+				User:    langsmith.F("user"),
+				WorkDir: langsmith.F("work_dir"),
+			}),
 			Tag: langsmith.F("tag"),
 		},
 	)
@@ -425,6 +419,8 @@ func TestSandboxBoxGenerateDownloadURLWithOptionalParams(t *testing.T) {
 			Path:               langsmith.F("path"),
 			ContentDisposition: langsmith.F("content_disposition"),
 			ContentType:        langsmith.F("content_type"),
+			CspSandboxFlags:    langsmith.F([]langsmith.SandboxBoxGenerateDownloadURLParamsCspSandboxFlag{langsmith.SandboxBoxGenerateDownloadURLParamsCspSandboxFlagAllowDownloads}),
+			CspSourceBundles:   langsmith.F([]langsmith.SandboxBoxGenerateDownloadURLParamsCspSourceBundle{langsmith.SandboxBoxGenerateDownloadURLParamsCspSourceBundleCdnjs}),
 			ExpiresInSeconds:   langsmith.F(int64(0)),
 		},
 	)
@@ -455,6 +451,7 @@ func TestSandboxBoxGenerateServiceURLWithOptionalParams(t *testing.T) {
 		context.TODO(),
 		"name",
 		langsmith.SandboxBoxGenerateServiceURLParams{
+			Access:           langsmith.F(langsmith.SandboxBoxGenerateServiceURLParamsAccessRestricted),
 			ExpiresInSeconds: langsmith.F(int64(0)),
 			Port:             langsmith.F(int64(0)),
 		},

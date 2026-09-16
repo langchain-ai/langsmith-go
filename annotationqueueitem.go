@@ -72,8 +72,10 @@ func (r *AnnotationQueueItemService) Update(ctx context.Context, queueID string,
 
 // List RUN and THREAD items in a single annotation queue for one review status
 // section, with opaque cursor pagination. Optional item_type=RUN|THREAD filters
-// the page. direction=backward returns items before the supplied cursor. The
-// response contains item metadata only, not expanded run or thread payloads.
+// the page. Optional min_start_time/max_start_time bound the item's trace start
+// time; items with no start time are excluded when either bound is set.
+// direction=backward returns items before the supplied cursor. The response
+// contains item metadata only, not expanded run or thread payloads.
 // status=archived returns items whose queue review requirements have been
 // satisfied, not merely items the caller personally marked completed.
 func (r *AnnotationQueueItemService) List(ctx context.Context, queueID string, query AnnotationQueueItemListParams, opts ...option.RequestOption) (res *pagination.ItemsCursorGetPagination[AnnotationQueueItemListResponse], err error) {
@@ -99,8 +101,10 @@ func (r *AnnotationQueueItemService) List(ctx context.Context, queueID string, q
 
 // List RUN and THREAD items in a single annotation queue for one review status
 // section, with opaque cursor pagination. Optional item_type=RUN|THREAD filters
-// the page. direction=backward returns items before the supplied cursor. The
-// response contains item metadata only, not expanded run or thread payloads.
+// the page. Optional min_start_time/max_start_time bound the item's trace start
+// time; items with no start time are excluded when either bound is set.
+// direction=backward returns items before the supplied cursor. The response
+// contains item metadata only, not expanded run or thread payloads.
 // status=archived returns items whose queue review requirements have been
 // satisfied, not merely items the caller personally marked completed.
 func (r *AnnotationQueueItemService) ListAutoPaging(ctx context.Context, queueID string, query AnnotationQueueItemListParams, opts ...option.RequestOption) *pagination.ItemsCursorGetPaginationAutoPager[AnnotationQueueItemListResponse] {
@@ -132,8 +136,10 @@ func (r *AnnotationQueueItemService) DeleteAll(ctx context.Context, queueID stri
 	return res, err
 }
 
-// Returns the number of annotation queue items for the requested reviewer-specific
-// or archived bucket.
+// Returns the number of annotation queue items in one status bucket. The two time
+// windows are independent: start_time/end_time bound when an item was archived,
+// min_start_time/max_start_time bound when its trace ran. Items with no trace
+// start time are excluded when either of the latter is set.
 func (r *AnnotationQueueItemService) GetCount(ctx context.Context, queueID string, query AnnotationQueueItemGetCountParams, opts ...option.RequestOption) (res *AnnotationQueueItemGetCountResponse, err error) {
 	opts = slices.Concat(r.Options, opts)
 	if queueID == "" {
@@ -146,7 +152,9 @@ func (r *AnnotationQueueItemService) GetCount(ctx context.Context, queueID strin
 }
 
 // Resolve a RUN or THREAD item to its current review section and zero-based
-// position for deep linking.
+// position for deep linking. The returned cursor counts RUN and THREAD items
+// together, so it is only valid for a list request with no item_type or start-time
+// filter.
 func (r *AnnotationQueueItemService) GetPlacement(ctx context.Context, queueID string, itemID string, opts ...option.RequestOption) (res *AnnotationQueueItemGetPlacementResponse, err error) {
 	opts = slices.Concat(r.Options, opts)
 	if queueID == "" {
@@ -547,6 +555,12 @@ type AnnotationQueueItemListParams struct {
 	Direction param.Field[AnnotationQueueItemListParamsDirection] `query:"direction"`
 	// Filter to RUN or THREAD
 	ItemType param.Field[AnnotationQueueItemListParamsItemType] `query:"item_type"`
+	// Only items whose trace start time is at or before this timestamp. Omit or send
+	// the zero time for no bound
+	MaxStartTime param.Field[time.Time] `query:"max_start_time" format:"date-time"`
+	// Only items whose trace start time is at or after this timestamp. Omit or send
+	// the zero time for no bound
+	MinStartTime param.Field[time.Time] `query:"min_start_time" format:"date-time"`
 	// Page size (max 100)
 	PageSize param.Field[int64] `query:"page_size"`
 }
@@ -644,9 +658,13 @@ func (r AnnotationQueueItemDeleteAllParams) MarshalJSON() (data []byte, err erro
 type AnnotationQueueItemGetCountParams struct {
 	// Count bucket: all, needs_my_review, needs_others_review, or archived.
 	Status param.Field[string] `query:"status" api:"required"`
-	// Exclusive upper bound for archived item timestamp
+	// Archived strictly before this time. Only used when status=archived
 	EndTime param.Field[string] `query:"end_time"`
-	// Exclusive lower bound for archived item timestamp
+	// Trace started at or before this time
+	MaxStartTime param.Field[time.Time] `query:"max_start_time" format:"date-time"`
+	// Trace started at or after this time
+	MinStartTime param.Field[time.Time] `query:"min_start_time" format:"date-time"`
+	// Archived strictly after this time. Only used when status=archived
 	StartTime param.Field[string] `query:"start_time"`
 }
 

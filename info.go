@@ -42,20 +42,24 @@ func (r *InfoService) List(ctx context.Context, opts ...option.RequestOption) (r
 }
 
 type InfoListResponse struct {
-	BatchIngestConfig     InfoListResponseBatchIngestConfig `json:"batch_ingest_config"`
-	CustomerInfo          InfoListResponseCustomerInfo      `json:"customer_info"`
-	GitSha                string                            `json:"git_sha"`
-	InstanceFlags         map[string]interface{}            `json:"instance_flags"`
-	LicenseExpirationTime string                            `json:"license_expiration_time"`
-	SDKVersions           InfoListResponseSDKVersions       `json:"sdk_versions"`
-	Version               string                            `json:"version"`
-	JSON                  infoListResponseJSON              `json:"-"`
+	BatchIngestConfig InfoListResponseBatchIngestConfig `json:"batch_ingest_config"`
+	// BillingInstallationID is the persistent per-installation identity for
+	// self-hosted deployments.
+	BillingInstallationID string                       `json:"billing_installation_id"`
+	CustomerInfo          InfoListResponseCustomerInfo `json:"customer_info"`
+	GitSha                string                       `json:"git_sha"`
+	InstanceFlags         map[string]interface{}       `json:"instance_flags"`
+	LicenseExpirationTime string                       `json:"license_expiration_time"`
+	SDKVersions           InfoListResponseSDKVersions  `json:"sdk_versions"`
+	Version               string                       `json:"version"`
+	JSON                  infoListResponseJSON         `json:"-"`
 }
 
 // infoListResponseJSON contains the JSON metadata for the struct
 // [InfoListResponse]
 type infoListResponseJSON struct {
 	BatchIngestConfig     apijson.Field
+	BillingInstallationID apijson.Field
 	CustomerInfo          apijson.Field
 	GitSha                apijson.Field
 	InstanceFlags         apijson.Field

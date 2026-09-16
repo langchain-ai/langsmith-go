@@ -58,6 +58,7 @@ func (r *OnlineEvaluatorService) Get(ctx context.Context, evaluatorID string, op
 }
 
 // Update an existing evaluator's name, LLM configuration, or code configuration.
+// Returns 409 when a code evaluator build is ENQUEUED or BUILDING.
 func (r *OnlineEvaluatorService) Update(ctx context.Context, evaluatorID string, body OnlineEvaluatorUpdateParams, opts ...option.RequestOption) (res *UpdateOnlineEvaluatorResponse, err error) {
 	opts = slices.Concat(r.Options, opts)
 	if evaluatorID == "" {
@@ -94,10 +95,12 @@ func (r *OnlineEvaluatorService) ListAutoPaging(ctx context.Context, query Onlin
 	return pagination.NewOffsetPaginationOnlineEvaluatorsAutoPager(r.List(ctx, query, opts...))
 }
 
-// Delete an evaluator. When delete_run_rules is true, all run rules referencing
-// this evaluator are deleted first (same tenant). Associated llm_evaluators and
-// code_evaluators rows are removed by foreign-key cascade when the evaluator row
-// is deleted.
+// Delete an evaluator. Returns 409 when a code evaluator build is ENQUEUED or
+// BUILDING, or when run rules still reference the evaluator and delete_run_rules
+// is false. When delete_run_rules is true, all run rules referencing this
+// evaluator are deleted first (same tenant) if the build is not in flight.
+// Associated llm_evaluators and code_evaluators rows are removed by foreign-key
+// cascade when the evaluator row is deleted.
 func (r *OnlineEvaluatorService) Delete(ctx context.Context, evaluatorID string, body OnlineEvaluatorDeleteParams, opts ...option.RequestOption) (err error) {
 	opts = slices.Concat(r.Options, opts)
 	opts = append([]option.RequestOption{option.WithHeader("Accept", "*/*")}, opts...)
@@ -176,7 +179,9 @@ func (r bulkDeleteEvaluatorsResponseJSON) RawJSON() string {
 }
 
 type CreateOnlineCodeEvaluatorRequestParam struct {
-	Code param.Field[string] `json:"code"`
+	AdvancedFeaturesEnabled param.Field[bool]   `json:"advanced_features_enabled"`
+	Code                    param.Field[string] `json:"code"`
+	Dependencies            param.Field[string] `json:"dependencies"`
 	// Default: "python"
 	Language param.Field[string] `json:"language"`
 }
@@ -255,8 +260,12 @@ func (r getOnlineEvaluatorSpendResponseJSON) RawJSON() string {
 }
 
 type OnlineCodeEvaluator struct {
-	Code        string `json:"code"`
-	EvaluatorID string `json:"evaluator_id"`
+	AdvancedFeaturesEnabled bool                                    `json:"advanced_features_enabled"`
+	Code                    string                                  `json:"code"`
+	Dependencies            string                                  `json:"dependencies"`
+	EvaluatorBuildError     string                                  `json:"evaluator_build_error"`
+	EvaluatorBuildStatus    OnlineCodeEvaluatorEvaluatorBuildStatus `json:"evaluator_build_status"`
+	EvaluatorID             string                                  `json:"evaluator_id"`
 	// Default: "python"
 	Language string                  `json:"language"`
 	JSON     onlineCodeEvaluatorJSON `json:"-"`
@@ -265,11 +274,15 @@ type OnlineCodeEvaluator struct {
 // onlineCodeEvaluatorJSON contains the JSON metadata for the struct
 // [OnlineCodeEvaluator]
 type onlineCodeEvaluatorJSON struct {
-	Code        apijson.Field
-	EvaluatorID apijson.Field
-	Language    apijson.Field
-	raw         string
-	ExtraFields map[string]apijson.Field
+	AdvancedFeaturesEnabled apijson.Field
+	Code                    apijson.Field
+	Dependencies            apijson.Field
+	EvaluatorBuildError     apijson.Field
+	EvaluatorBuildStatus    apijson.Field
+	EvaluatorID             apijson.Field
+	Language                apijson.Field
+	raw                     string
+	ExtraFields             map[string]apijson.Field
 }
 
 func (r *OnlineCodeEvaluator) UnmarshalJSON(data []byte) (err error) {
@@ -278,6 +291,23 @@ func (r *OnlineCodeEvaluator) UnmarshalJSON(data []byte) (err error) {
 
 func (r onlineCodeEvaluatorJSON) RawJSON() string {
 	return r.raw
+}
+
+type OnlineCodeEvaluatorEvaluatorBuildStatus string
+
+const (
+	OnlineCodeEvaluatorEvaluatorBuildStatusEnqueued OnlineCodeEvaluatorEvaluatorBuildStatus = "ENQUEUED"
+	OnlineCodeEvaluatorEvaluatorBuildStatusBuilding OnlineCodeEvaluatorEvaluatorBuildStatus = "BUILDING"
+	OnlineCodeEvaluatorEvaluatorBuildStatusReady    OnlineCodeEvaluatorEvaluatorBuildStatus = "READY"
+	OnlineCodeEvaluatorEvaluatorBuildStatusFailed   OnlineCodeEvaluatorEvaluatorBuildStatus = "FAILED"
+)
+
+func (r OnlineCodeEvaluatorEvaluatorBuildStatus) IsKnown() bool {
+	switch r {
+	case OnlineCodeEvaluatorEvaluatorBuildStatusEnqueued, OnlineCodeEvaluatorEvaluatorBuildStatusBuilding, OnlineCodeEvaluatorEvaluatorBuildStatusReady, OnlineCodeEvaluatorEvaluatorBuildStatusFailed:
+		return true
+	}
+	return false
 }
 
 type OnlineEvaluator struct {
@@ -526,8 +556,10 @@ func (r onlineSpendLimitJSON) RawJSON() string {
 }
 
 type UpdateOnlineCodeEvaluatorRequestParam struct {
-	Code     param.Field[string] `json:"code"`
-	Language param.Field[string] `json:"language"`
+	AdvancedFeaturesEnabled param.Field[bool]   `json:"advanced_features_enabled"`
+	Code                    param.Field[string] `json:"code"`
+	Dependencies            param.Field[string] `json:"dependencies"`
+	Language                param.Field[string] `json:"language"`
 }
 
 func (r UpdateOnlineCodeEvaluatorRequestParam) MarshalJSON() (data []byte, err error) {

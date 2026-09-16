@@ -129,7 +129,6 @@ type Evaluator struct {
 	SpendUsd                            float64                   `json:"spend_usd" api:"nullable"`
 	TraceCount                          int64                     `json:"trace_count" api:"nullable"`
 	TraceFilter                         string                    `json:"trace_filter" api:"nullable"`
-	TrajectoryEvaluators                []EvaluatorTopLevel       `json:"trajectory_evaluators"`
 	Transient                           bool                      `json:"transient"`
 	TreeFilter                          string                    `json:"tree_filter" api:"nullable"`
 	UseCorrectionsDataset               bool                      `json:"use_corrections_dataset"`
@@ -184,7 +183,6 @@ type evaluatorJSON struct {
 	SpendUsd                            apijson.Field
 	TraceCount                          apijson.Field
 	TraceFilter                         apijson.Field
-	TrajectoryEvaluators                apijson.Field
 	Transient                           apijson.Field
 	TreeFilter                          apijson.Field
 	UseCorrectionsDataset               apijson.Field
@@ -203,12 +201,13 @@ func (r evaluatorJSON) RawJSON() string {
 type EvaluatorGroupBy string
 
 const (
-	EvaluatorGroupByThreadID EvaluatorGroupBy = "thread_id"
+	EvaluatorGroupByThreadID     EvaluatorGroupBy = "thread_id"
+	EvaluatorGroupByTrajectoryID EvaluatorGroupBy = "trajectory_id"
 )
 
 func (r EvaluatorGroupBy) IsKnown() bool {
 	switch r {
-	case EvaluatorGroupByThreadID:
+	case EvaluatorGroupByThreadID, EvaluatorGroupByTrajectoryID:
 		return true
 	}
 	return false

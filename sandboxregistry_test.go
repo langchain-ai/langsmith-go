@@ -13,7 +13,7 @@ import (
 	"github.com/langchain-ai/langsmith-go/option"
 )
 
-func TestSandboxRegistryNew(t *testing.T) {
+func TestSandboxRegistryNewWithOptionalParams(t *testing.T) {
 	t.Skip("Mock server tests are disabled")
 	baseURL := "http://localhost:4010"
 	if envURL, ok := os.LookupEnv("TEST_API_BASE_URL"); ok {
@@ -28,10 +28,12 @@ func TestSandboxRegistryNew(t *testing.T) {
 		option.WithTenantID("My Tenant ID"),
 	)
 	_, err := client.Sandboxes.Registries.New(context.TODO(), langsmith.SandboxRegistryNewParams{
-		Name:     langsmith.F("name"),
-		Password: langsmith.F("password"),
-		URL:      langsmith.F("url"),
-		Username: langsmith.F("username"),
+		Name:       langsmith.F("name"),
+		URL:        langsmith.F("url"),
+		AuthType:   langsmith.F(langsmith.SandboxRegistryNewParamsAuthTypeDockerConfig),
+		AwsRoleArn: langsmith.F("aws_role_arn"),
+		Password:   langsmith.F("password"),
+		Username:   langsmith.F("username"),
 	})
 	if err != nil {
 		var apierr *langsmith.Error
@@ -84,10 +86,12 @@ func TestSandboxRegistryUpdateWithOptionalParams(t *testing.T) {
 		context.TODO(),
 		"name",
 		langsmith.SandboxRegistryUpdateParams{
-			Name:     langsmith.F("name"),
-			Password: langsmith.F("password"),
-			URL:      langsmith.F("url"),
-			Username: langsmith.F("username"),
+			AuthType:   langsmith.F(langsmith.SandboxRegistryUpdateParamsAuthTypeDockerConfig),
+			AwsRoleArn: langsmith.F("aws_role_arn"),
+			Name:       langsmith.F("name"),
+			Password:   langsmith.F("password"),
+			URL:        langsmith.F("url"),
+			Username:   langsmith.F("username"),
 		},
 	)
 	if err != nil {

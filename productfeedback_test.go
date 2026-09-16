@@ -13,7 +13,7 @@ import (
 	"github.com/langchain-ai/langsmith-go/option"
 )
 
-func TestIssueGetWithOptionalParams(t *testing.T) {
+func TestProductFeedbackNewWithOptionalParams(t *testing.T) {
 	t.Skip("Mock server tests are disabled")
 	baseURL := "http://localhost:4010"
 	if envURL, ok := os.LookupEnv("TEST_API_BASE_URL"); ok {
@@ -27,13 +27,17 @@ func TestIssueGetWithOptionalParams(t *testing.T) {
 		option.WithAPIKey("My API Key"),
 		option.WithTenantID("My Tenant ID"),
 	)
-	_, err := client.Issues.Get(
-		context.TODO(),
-		"id",
-		langsmith.IssueGetParams{
-			IncludeLinearContext: langsmith.F(true),
-		},
-	)
+	_, err := client.ProductFeedback.New(context.TODO(), langsmith.ProductFeedbackNewParams{
+		Category: langsmith.F(langsmith.ProductFeedbackNewParamsCategoryBug),
+		Message:  langsmith.F("x"),
+		Source:   langsmith.F(langsmith.ProductFeedbackNewParamsSourceLangsmithCli),
+		Client: langsmith.F(langsmith.ProductFeedbackNewParamsClient{
+			Architecture: langsmith.F("architecture"),
+			Os:           langsmith.F("os"),
+			Version:      langsmith.F("version"),
+		}),
+		IdempotencyKey: langsmith.F("Idempotency-Key"),
+	})
 	if err != nil {
 		var apierr *langsmith.Error
 		if errors.As(err, &apierr) {
@@ -43,7 +47,7 @@ func TestIssueGetWithOptionalParams(t *testing.T) {
 	}
 }
 
-func TestIssueListWithOptionalParams(t *testing.T) {
+func TestProductFeedbackGet(t *testing.T) {
 	t.Skip("Mock server tests are disabled")
 	baseURL := "http://localhost:4010"
 	if envURL, ok := os.LookupEnv("TEST_API_BASE_URL"); ok {
@@ -57,21 +61,7 @@ func TestIssueListWithOptionalParams(t *testing.T) {
 		option.WithAPIKey("My API Key"),
 		option.WithTenantID("My Tenant ID"),
 	)
-	_, err := client.Issues.List(context.TODO(), langsmith.IssueListParams{
-		Activity:      langsmith.F([]langsmith.IssueListParamsActivity{langsmith.IssueListParamsActivityFixing}),
-		Limit:         langsmith.F(int64(0)),
-		Offset:        langsmith.F(int64(0)),
-		SessionID:     langsmith.F("session_id"),
-		SessionName:   langsmith.F("session_name"),
-		Severity:      langsmith.F(langsmith.IssueListParamsSeverity0),
-		SeverityExact: langsmith.F([]langsmith.IssueListParamsSeverityExact{langsmith.IssueListParamsSeverityExact0}),
-		SortBy:        langsmith.F(langsmith.IssueListParamsSortByDefault),
-		Status:        langsmith.F(langsmith.IssueListParamsStatusOpen),
-		StatusFirst:   langsmith.F(true),
-		Tag:           langsmith.F("tag"),
-		TraceID:       langsmith.F("182bd5e5-6e1a-4fe4-a799-aa6d9a6ab26e"),
-		UpdatedAt:     langsmith.F("updated_at"),
-	})
+	_, err := client.ProductFeedback.Get(context.TODO(), "182bd5e5-6e1a-4fe4-a799-aa6d9a6ab26e")
 	if err != nil {
 		var apierr *langsmith.Error
 		if errors.As(err, &apierr) {
