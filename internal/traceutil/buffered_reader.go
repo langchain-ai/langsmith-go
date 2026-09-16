@@ -11,11 +11,13 @@ import (
 // onDone receives the buffered content and the error that ended the read (nil for EOF/Close).
 // This allows response bodies to stream through while capturing content and real errors for span tagging.
 type BufferedReader struct {
-	src     io.ReadCloser
-	buf     *bytes.Buffer
-	onDone  func(*bytes.Buffer, error)
-	onBytes func([]byte)
-	once    sync.Once
+	src      io.ReadCloser
+	buf      *bytes.Buffer
+	bufLimit int
+	onDone   func(*bytes.Buffer, error)
+	onBytes  func([]byte)
+	onFlush  func()
+	once     sync.Once
 }
 
 // NewBufferedReader creates a BufferedReader that calls onDone with the
@@ -35,7 +37,11 @@ func (r *BufferedReader) Read(p []byte) (int, error) {
 		if r.onBytes != nil {
 			r.onBytes(p[:n])
 		}
-		r.buf.Write(p[:n])
+		if r.bufLimit == 0 {
+			r.buf.Write(p[:n])
+		} else if remaining := r.bufLimit - r.buf.Len(); remaining > 0 {
+			r.buf.Write(p[:min(n, remaining)])
+		}
 	}
 	if err != nil {
 		r.trigger(err)
@@ -48,8 +54,16 @@ func (r *BufferedReader) Close() error {
 	return r.src.Close()
 }
 
+// LimitBuffer caps how much of the source is retained for onDone.
+func (r *BufferedReader) LimitBuffer(n int) {
+	r.bufLimit = n
+}
+
 func (r *BufferedReader) trigger(readErr error) {
 	r.once.Do(func() {
+		if r.onFlush != nil {
+			r.onFlush()
+		}
 		if r.onDone != nil {
 			r.onDone(r.buf, readErr)
 		}
