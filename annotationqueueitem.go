@@ -136,8 +136,10 @@ func (r *AnnotationQueueItemService) DeleteAll(ctx context.Context, queueID stri
 	return res, err
 }
 
-// Returns the number of annotation queue items for the requested reviewer-specific
-// or archived bucket.
+// Returns the number of annotation queue items in one status bucket. The two time
+// windows are independent: start_time/end_time bound when an item was archived,
+// min_start_time/max_start_time bound when its trace ran. Items with no trace
+// start time are excluded when either of the latter is set.
 func (r *AnnotationQueueItemService) GetCount(ctx context.Context, queueID string, query AnnotationQueueItemGetCountParams, opts ...option.RequestOption) (res *AnnotationQueueItemGetCountResponse, err error) {
 	opts = slices.Concat(r.Options, opts)
 	if queueID == "" {
@@ -656,9 +658,13 @@ func (r AnnotationQueueItemDeleteAllParams) MarshalJSON() (data []byte, err erro
 type AnnotationQueueItemGetCountParams struct {
 	// Count bucket: all, needs_my_review, needs_others_review, or archived.
 	Status param.Field[string] `query:"status" api:"required"`
-	// Exclusive upper bound for archived item timestamp
+	// Archived strictly before this time. Only used when status=archived
 	EndTime param.Field[string] `query:"end_time"`
-	// Exclusive lower bound for archived item timestamp
+	// Trace started at or before this time
+	MaxStartTime param.Field[time.Time] `query:"max_start_time" format:"date-time"`
+	// Trace started at or after this time
+	MinStartTime param.Field[time.Time] `query:"min_start_time" format:"date-time"`
+	// Archived strictly after this time. Only used when status=archived
 	StartTime param.Field[string] `query:"start_time"`
 }
 

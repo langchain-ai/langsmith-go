@@ -200,9 +200,11 @@ func TestAnnotationQueueItemGetCountWithOptionalParams(t *testing.T) {
 		context.TODO(),
 		"queue_id",
 		langsmith.AnnotationQueueItemGetCountParams{
-			Status:    langsmith.F("status"),
-			EndTime:   langsmith.F("end_time"),
-			StartTime: langsmith.F("start_time"),
+			Status:       langsmith.F("status"),
+			EndTime:      langsmith.F("end_time"),
+			MaxStartTime: langsmith.F(time.Now()),
+			MinStartTime: langsmith.F(time.Now()),
+			StartTime:    langsmith.F("start_time"),
 		},
 	)
 	if err != nil {
