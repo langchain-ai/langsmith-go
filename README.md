@@ -50,6 +50,7 @@ The client can be configured using environment variables or by passing options d
 This repository includes several examples demonstrating common use cases:
 
 - **[List Runs](./examples/list_runs)** - Query and filter runs from your LangSmith project with the V2 runs API
+- **[Insights](./examples/insights)** - Create a one-time Insights report for a LangSmith project
 - **[Dataset Management](./examples/dataset)** - Create datasets, add examples individually or in bulk, and manage dataset lifecycle
 - **[E2E Evaluation](./examples/e2e_eval)** - Run OpenAI experiments with automatic OpenTelemetry tracing linked to dataset examples
 - **[Record Experiment](./examples/record_experiment)** - Create datasets, examples, sessions, and batch ingest runs for experiments
@@ -96,25 +97,6 @@ func main() {
 	fmt.Printf("%+v\n", page)
 }
 
-```
-
-### Create an Insights report
-
-```go
-report, err := client.Sessions.Insights.Configs.New(ctx, projectID, langsmith.SessionInsightConfigNewParams{
-	Name: langsmith.F("Support issue analysis"),
-	Config: langsmith.F(langsmith.CreateRunClusteringJobRequestParam{
-		Name:          langsmith.F("Support issue analysis"),
-		Model:         langsmith.F(langsmith.CreateRunClusteringJobRequestModelOpenAI),
-		LastNHours:    langsmith.Int(24),
-		Filter:        langsmith.F("eq(is_root, true)"),
-		SummaryPrompt: langsmith.F("Summarize the user's intent and any failures."),
-	}),
-})
-if err != nil {
-	panic(err)
-}
-fmt.Println(report.ID)
 ```
 
 ### Request fields
