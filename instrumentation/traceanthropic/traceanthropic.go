@@ -188,14 +188,11 @@ func (rt *roundTripper) RoundTrip(req *http.Request) (*http.Response, error) {
 		return resp, err
 	}
 
-	br := traceutil.NewBufferedReader(resp.Body, func(r io.Reader, readErr error) {
-		data, err := io.ReadAll(r)
-		if err != nil {
-			span.RecordError(err)
-			span.SetStatus(codes.Error, err.Error())
-			span.End()
-			return
-		}
+	var anthropicAcc anthropicStreamAccumulator
+	var streamErr error
+
+	br := traceutil.NewBufferedReader(resp.Body, func(buf *bytes.Buffer, readErr error) {
+		data := buf.Bytes()
 		if len(data) == 0 {
 			if resp.StatusCode >= 400 {
 				apiErr := fmt.Errorf("HTTP %d", resp.StatusCode)
@@ -210,17 +207,13 @@ func (rt *roundTripper) RoundTrip(req *http.Request) (*http.Response, error) {
 			return
 		}
 
-		bodyText := string(data)
 		if resp.StatusCode >= 400 {
-			msg := bodyText
-			if len(msg) > 500 {
-				msg = msg[:500] + "..."
-			}
-			apiErr := fmt.Errorf("HTTP %d: %s", resp.StatusCode, msg)
+			apiErr := fmt.Errorf("HTTP %d: %s", resp.StatusCode, traceutil.TruncateString(data, 500))
 			span.RecordError(apiErr)
 			span.SetStatus(codes.Error, apiErr.Error())
 		}
-		incompleteStream := resp.StatusCode < 400 && streaming && !strings.Contains(bodyText, "message_stop")
+		streamingLive := streaming && resp.StatusCode < 400
+		incompleteStream := streamingLive && !anthropicAcc.sawStop
 		if incompleteStream {
 			endErr := readErr
 			if endErr == nil || endErr == io.EOF {
@@ -230,9 +223,15 @@ func (rt *roundTripper) RoundTrip(req *http.Request) (*http.Response, error) {
 			span.SetStatus(codes.Error, endErr.Error())
 		}
 
-		if streaming {
+		switch {
+		case streamingLive:
+			// A malformed line invalidates the body, as in the whole-body form.
+			if streamErr == nil {
+				anthropicAcc.apply(span, parentSpan)
+			}
+		case streaming:
 			extractStreamingResponseAttributes(span, data, parentSpan)
-		} else {
+		default:
 			extractResponseAttributes(span, data, parentSpan)
 		}
 		if resp.StatusCode < 400 && !incompleteStream {
@@ -243,7 +242,18 @@ func (rt *roundTripper) RoundTrip(req *http.Request) (*http.Response, error) {
 	// LangSmith ingest reads new_token to derive first_token_time; skip on
 	// HTTP errors so an error body doesn't inflate it.
 	if streaming && resp.StatusCode < 400 {
-		traceutil.OnFirstSSEMatch(br, isFirstContent, func() { span.AddEvent("new_token") })
+		var sentNewToken bool
+		scanner := traceutil.NewSSEScanner(func(chunk map[string]any) {
+			anthropicAcc.feed(chunk)
+			if !sentNewToken && isFirstContent(chunk) {
+				sentNewToken = true
+				span.AddEvent("new_token")
+			}
+		})
+		scanner.OnDone = func() {}
+		scanner.OnError = func(err error) { streamErr = err }
+		traceutil.ScanSSE(br, scanner)
+		br.LimitBuffer(500)
 	}
 	resp.Body = br
 
@@ -336,118 +346,130 @@ func extractRequestAttributes(span trace.Span, body []byte) (streaming bool) {
 	return streaming
 }
 
-// extractStreamingResponseAttributes parses an SSE response body and sets
-// the same span attributes as the non-streaming path: gen_ai.completion,
-// usage tokens, and cache breakdown.
+// contentBlock tracks one streamed content block by index, so a multi-block
+// message can be reconstructed. blockType is "text" or "tool_use".
+type contentBlock struct {
+	blockType string
+	id        string // tool_use id
+	name      string // tool_use function name
+	buf       strings.Builder
+}
+
+// anthropicStreamAccumulator folds Anthropic SSE events into one assistant
+// message plus usage. The streaming path feeds it as events arrive, so the
+// response body need not be retained.
 //
-// Anthropic SSE events of interest:
-//   - message_start       — contains message.usage (input_tokens, cache tokens,
-//     cache_creation breakdown)
-//   - content_block_start — initialises a content block (text or tool_use)
-//   - content_block_delta — text_delta or input_json_delta carries incremental data
-//   - message_delta       — contains usage.output_tokens (plus output_tokens_details,
-//     server_tool_use) and stop_reason
-//
-// Usage fields from message_start and message_delta are merged into a single
-// map and handed to setUsageAttributes, which captures every token type.
-func extractStreamingResponseAttributes(span trace.Span, data []byte, parentSpan trace.Span) {
-	chunks, err := traceutil.ParseSSEChunks(bytes.NewReader(data))
-	if err != nil || len(chunks) == 0 {
-		return
+// Events of interest:
+//   - message_start       — message.usage (input, cache tokens, cache_creation)
+//   - content_block_start — initialises a block (text or tool_use)
+//   - content_block_delta — text_delta or input_json_delta carries the data
+//   - message_delta       — usage.output_tokens plus stop_reason
+//   - message_stop        — the stream ended cleanly
+type anthropicStreamAccumulator struct {
+	usage      map[string]any
+	blocks     []*contentBlock
+	model      string
+	stopReason string
+	sawStop    bool
+}
+
+// feed merges one decoded event into the running message.
+func (a *anthropicStreamAccumulator) feed(chunk map[string]any) {
+	if a.usage == nil {
+		a.usage = make(map[string]any)
 	}
+	eventType, _ := chunk["type"].(string)
 
-	usage := make(map[string]interface{})
-
-	// Track content blocks by index for proper multi-block reconstruction
-	type contentBlock struct {
-		blockType string // "text" or "tool_use"
-		id        string // tool_use id
-		name      string // tool_use function name
-		buf       strings.Builder
-	}
-	var blocks []*contentBlock
-
-	for _, chunk := range chunks {
-		eventType, _ := chunk["type"].(string)
-
-		switch eventType {
-		case "message_start":
-			if message, ok := chunk["message"].(map[string]any); ok {
-				if curUsage, ok := message["usage"].(map[string]any); ok {
-					for k, v := range curUsage {
-						usage[k] = v
-					}
-				}
-				if model, ok := message["model"].(string); ok {
-					span.SetAttributes(attribute.String("gen_ai.response.model", model))
-				}
-			}
-
-		case "content_block_start":
-			idxF, ok := chunk["index"].(float64)
-			if !ok {
-				continue
-			}
-			idx := int(idxF)
-			for len(blocks) <= idx {
-				blocks = append(blocks, nil)
-			}
-			block := &contentBlock{}
-			if cb, ok := chunk["content_block"].(map[string]any); ok {
-				block.blockType, _ = cb["type"].(string)
-				block.id, _ = cb["id"].(string)
-				block.name, _ = cb["name"].(string)
-			}
-			blocks[idx] = block
-
-		case "content_block_delta":
-			idxF, ok := chunk["index"].(float64)
-			if !ok {
-				continue
-			}
-			idx := int(idxF)
-			for len(blocks) <= idx {
-				blocks = append(blocks, nil)
-			}
-			if blocks[idx] == nil {
-				blocks[idx] = &contentBlock{}
-			}
-			if delta, ok := chunk["delta"].(map[string]any); ok {
-				switch deltaType, _ := delta["type"].(string); deltaType {
-				case "text_delta":
-					if text, ok := delta["text"].(string); ok {
-						blocks[idx].buf.WriteString(text)
-						if blocks[idx].blockType == "" {
-							blocks[idx].blockType = "text"
-						}
-					}
-				case "input_json_delta":
-					if partialJSON, ok := delta["partial_json"].(string); ok {
-						blocks[idx].buf.WriteString(partialJSON)
-						if blocks[idx].blockType == "" {
-							blocks[idx].blockType = "tool_use"
-						}
-					}
-				}
-			}
-
-		case "message_delta":
-			if curUsage, ok := chunk["usage"].(map[string]any); ok {
+	switch eventType {
+	case "message_start":
+		if message, ok := chunk["message"].(map[string]any); ok {
+			if curUsage, ok := message["usage"].(map[string]any); ok {
 				for k, v := range curUsage {
-					usage[k] = v
+					a.usage[k] = v
 				}
 			}
-			if delta, ok := chunk["delta"].(map[string]any); ok {
-				if stopReason, ok := delta["stop_reason"].(string); ok && stopReason != "" {
-					span.SetAttributes(attribute.String("langsmith.metadata.stop_reason", stopReason))
+			if model, ok := message["model"].(string); ok {
+				a.model = model
+			}
+		}
+
+	case "content_block_start":
+		idxF, ok := chunk["index"].(float64)
+		if !ok {
+			return
+		}
+		idx := int(idxF)
+		for len(a.blocks) <= idx {
+			a.blocks = append(a.blocks, nil)
+		}
+		block := &contentBlock{}
+		if cb, ok := chunk["content_block"].(map[string]any); ok {
+			block.blockType, _ = cb["type"].(string)
+			block.id, _ = cb["id"].(string)
+			block.name, _ = cb["name"].(string)
+		}
+		a.blocks[idx] = block
+
+	case "content_block_delta":
+		idxF, ok := chunk["index"].(float64)
+		if !ok {
+			return
+		}
+		idx := int(idxF)
+		for len(a.blocks) <= idx {
+			a.blocks = append(a.blocks, nil)
+		}
+		if a.blocks[idx] == nil {
+			a.blocks[idx] = &contentBlock{}
+		}
+		if delta, ok := chunk["delta"].(map[string]any); ok {
+			switch deltaType, _ := delta["type"].(string); deltaType {
+			case "text_delta":
+				if text, ok := delta["text"].(string); ok {
+					a.blocks[idx].buf.WriteString(text)
+					if a.blocks[idx].blockType == "" {
+						a.blocks[idx].blockType = "text"
+					}
+				}
+			case "input_json_delta":
+				if partialJSON, ok := delta["partial_json"].(string); ok {
+					a.blocks[idx].buf.WriteString(partialJSON)
+					if a.blocks[idx].blockType == "" {
+						a.blocks[idx].blockType = "tool_use"
+					}
 				}
 			}
 		}
+
+	case "message_stop":
+		a.sawStop = true
+
+	case "message_delta":
+		if curUsage, ok := chunk["usage"].(map[string]any); ok {
+			for k, v := range curUsage {
+				a.usage[k] = v
+			}
+		}
+		if delta, ok := chunk["delta"].(map[string]any); ok {
+			if stopReason, ok := delta["stop_reason"].(string); ok && stopReason != "" {
+				a.stopReason = stopReason
+			}
+		}
+	}
+}
+
+// apply writes the accumulated message, model, stop reason and usage onto span.
+func (a *anthropicStreamAccumulator) apply(span trace.Span, parentSpan trace.Span) {
+	if a.model != "" {
+		span.SetAttributes(attribute.String("gen_ai.response.model", a.model))
+	}
+	if a.stopReason != "" {
+		span.SetAttributes(attribute.String("langsmith.metadata.stop_reason", a.stopReason))
 	}
 
-	// Reconstruct content blocks into an assistant message
+	// Reconstruct content a.blocks into an assistant message
 	var contentBlocks []map[string]any
-	for _, b := range blocks {
+	for _, b := range a.blocks {
 		if b == nil {
 			continue
 		}
@@ -482,9 +504,19 @@ func extractStreamingResponseAttributes(span trace.Span, data []byte, parentSpan
 		}
 	}
 
-	if len(usage) > 0 {
-		setUsageAttributes(span, usage, parentSpan)
+	if len(a.usage) > 0 {
+		setUsageAttributes(span, a.usage, parentSpan)
 	}
+}
+
+// extractStreamingResponseAttributes parses a whole SSE response body through
+// the same accumulator the streaming path feeds incrementally.
+func extractStreamingResponseAttributes(span trace.Span, data []byte, parentSpan trace.Span) {
+	var acc anthropicStreamAccumulator
+	if err := traceutil.ParseSSEChunksFunc(bytes.NewReader(data), acc.feed); err != nil {
+		return
+	}
+	acc.apply(span, parentSpan)
 }
 
 // extractResponseAttributes extracts attributes from Anthropic response body.

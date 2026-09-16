@@ -4,6 +4,7 @@ package traceopenai
 import (
 	"bytes"
 	"encoding/json"
+	"errors"
 	"fmt"
 	"io"
 	"net/http"
@@ -167,14 +168,13 @@ func MiddlewareWithTracerProvider(req *http.Request, next MiddlewareNext, tp tra
 		return resp, err
 	}
 
-	br := traceutil.NewBufferedReader(resp.Body, func(r io.Reader, readErr error) {
-		data, err := io.ReadAll(r)
-		if err != nil {
-			span.RecordError(err)
-			span.SetStatus(codes.Error, err.Error())
-			span.End()
-			return
-		}
+	var chatAcc chatCompletionAccumulator
+	var respTerminal responsesTerminal
+	var chatSawDone bool
+	var streamErr error
+
+	br := traceutil.NewBufferedReader(resp.Body, func(buf *bytes.Buffer, readErr error) {
+		data := buf.Bytes()
 		if len(data) == 0 {
 			if resp.StatusCode >= 400 {
 				apiErr := fmt.Errorf("HTTP %d", resp.StatusCode)
@@ -190,14 +190,9 @@ func MiddlewareWithTracerProvider(req *http.Request, next MiddlewareNext, tp tra
 			return
 		}
 
-		bodyText := string(data)
 		if resp.StatusCode >= 400 {
 			// Record an error so backends (e.g. LangSmith) show the trace as failed and populate run.error
-			msg := bodyText
-			if len(msg) > 500 {
-				msg = msg[:500] + "..."
-			}
-			apiErr := fmt.Errorf("HTTP %d: %s", resp.StatusCode, msg)
+			apiErr := fmt.Errorf("HTTP %d: %s", resp.StatusCode, traceutil.TruncateString(data, 500))
 			span.RecordError(apiErr)
 			span.SetStatus(codes.Error, apiErr.Error())
 		}
@@ -209,11 +204,9 @@ func MiddlewareWithTracerProvider(req *http.Request, next MiddlewareNext, tp tra
 		var incompleteStream bool
 		if resp.StatusCode < 400 && streaming {
 			if responsesAPI {
-				incompleteStream = !strings.Contains(bodyText, `"response.completed"`) &&
-					!strings.Contains(bodyText, `"response.incomplete"`) &&
-					!strings.Contains(bodyText, `"response.failed"`)
+				incompleteStream = respTerminal.response == nil
 			} else {
-				incompleteStream = !strings.Contains(bodyText, "[DONE]")
+				incompleteStream = !chatSawDone
 			}
 		}
 		if incompleteStream {
@@ -227,11 +220,24 @@ func MiddlewareWithTracerProvider(req *http.Request, next MiddlewareNext, tp tra
 
 		var completion string
 		var usage usageInfo
+		var responseFailure error
+		streamingLive := streaming && resp.StatusCode < 400
 		if responsesAPI {
-			if streaming {
-				completion, usage = extractStreamingResponsesCompletion(data)
-			} else {
-				completion, usage = extractResponsesCompletion(data)
+			switch {
+			case streamingLive:
+				completion, usage, responseFailure = respTerminal.spanContent()
+				if respTerminal.response == nil && streamErr != nil {
+					responseFailure = fmt.Errorf("%w: %w", errResponsesUnreadableStream, streamErr)
+				}
+			case streaming:
+				completion, usage, responseFailure = extractStreamingResponsesCompletion(data)
+			default:
+				completion, usage, responseFailure = extractResponsesCompletion(data)
+			}
+		} else if streamingLive {
+			// A malformed line invalidates the whole body, as in the batch form.
+			if streamErr == nil {
+				completion, usage = chatAcc.spanContent()
 			}
 		} else if streaming {
 			completion, usage = extractStreamingCompletion(data)
@@ -270,7 +276,15 @@ func MiddlewareWithTracerProvider(req *http.Request, next MiddlewareNext, tp tra
 				span.SetAttributes(serviceTierKey.String(usage.ServiceTier))
 			}
 		}
-		if resp.StatusCode < 400 && !incompleteStream {
+		if responseFailure != nil {
+			// A truncated JSON event is a symptom of the read failure.
+			if errors.Is(responseFailure, errResponsesUnreadableStream) && readErr != nil && readErr != io.EOF {
+				responseFailure = readErr
+			}
+			span.RecordError(responseFailure)
+			span.SetStatus(codes.Error, responseFailure.Error())
+		}
+		if resp.StatusCode < 400 && !incompleteStream && responseFailure == nil {
 			span.SetStatus(codes.Ok, "")
 		}
 		span.End()
@@ -278,11 +292,23 @@ func MiddlewareWithTracerProvider(req *http.Request, next MiddlewareNext, tp tra
 	// LangSmith ingest reads new_token to derive first_token_time; skip on
 	// HTTP errors so an error body doesn't inflate it.
 	if streaming && resp.StatusCode < 400 {
-		isMatch := isFirstContentChat
+		isMatch, feed := isFirstContentChat, chatAcc.feed
 		if responsesAPI {
-			isMatch = isFirstContentResponses
+			isMatch, feed = isFirstContentResponses, respTerminal.feed
 		}
-		traceutil.OnFirstSSEMatch(br, isMatch, func() { span.AddEvent("new_token") })
+		var sentNewToken bool
+		scanner := traceutil.NewSSEScanner(func(chunk map[string]any) {
+			feed(chunk)
+			if !sentNewToken && isMatch(chunk) {
+				sentNewToken = true
+				span.AddEvent("new_token")
+			}
+		})
+		// Only Chat sends [DONE]; Responses signals with a terminal event.
+		scanner.OnDone = func() { chatSawDone = true }
+		scanner.OnError = func(err error) { streamErr = err }
+		traceutil.ScanSSE(br, scanner)
+		br.LimitBuffer(500)
 	}
 	resp.Body = br
 
@@ -736,86 +762,100 @@ func flattenContentParts(parts []any) string {
 // delta.content and delta.tool_calls across chunks, and extracts usage from
 // the chunk that contains it (last chunk when stream_options.include_usage is set).
 func extractStreamingCompletion(data []byte) (string, usageInfo) {
-	chunks, err := traceutil.ParseSSEChunks(bytes.NewReader(data))
-	if err != nil || len(chunks) == 0 {
+	var acc chatCompletionAccumulator
+	if err := traceutil.ParseSSEChunksFunc(bytes.NewReader(data), acc.feed); err != nil {
 		return "", usageInfo{}
 	}
+	return acc.spanContent()
+}
 
-	var content strings.Builder
-	var usage usageInfo
+// newChatCompletionAccumulator returns a chunk feeder and a finalizer sharing
+// one set of state, so deltas can be folded in as they arrive rather than
+// retaining the body. Both the streaming and whole-body paths drive this pair.
+// chatCompletionAccumulator folds Chat Completions SSE deltas into a single
+// assistant message. Both the streaming path and the whole-body form feed it
+// chunk by chunk, so neither has to retain the response.
+type chatCompletionAccumulator struct {
+	content   strings.Builder
+	toolCalls []*chatToolCallAcc
+	usage     usageInfo
+}
 
-	// Track tool calls by index. Each entry holds id, type, function name,
-	// and a builder that accumulates the streamed function arguments.
-	type toolCallAcc struct {
-		ID   string
-		Type string
-		Name string
-		Args strings.Builder
-	}
-	var toolCalls []*toolCallAcc
+// chatToolCallAcc accumulates one tool call across deltas: id, type and
+// function name arrive once, arguments in fragments.
+type chatToolCallAcc struct {
+	ID   string
+	Type string
+	Name string
+	Args strings.Builder
+}
 
-	for _, chunk := range chunks {
-		if choices, ok := chunk["choices"].([]any); ok && len(choices) > 0 {
-			if choice, ok := choices[0].(map[string]any); ok {
-				if delta, ok := choice["delta"].(map[string]any); ok {
-					// Aggregate text content
-					if text, ok := delta["content"].(string); ok {
-						content.WriteString(text)
-					}
-					// Aggregate tool call deltas
-					if tcs, ok := delta["tool_calls"].([]any); ok {
-						for _, tc := range tcs {
-							tcMap, ok := tc.(map[string]any)
-							if !ok {
-								continue
+// feed merges one decoded chunk into the running message.
+func (a *chatCompletionAccumulator) feed(chunk map[string]any) {
+	if choices, ok := chunk["choices"].([]any); ok && len(choices) > 0 {
+		if choice, ok := choices[0].(map[string]any); ok {
+			if delta, ok := choice["delta"].(map[string]any); ok {
+				// Aggregate text a.content
+				if text, ok := delta["content"].(string); ok {
+					a.content.WriteString(text)
+				}
+				// Aggregate tool call deltas
+				if tcs, ok := delta["tool_calls"].([]any); ok {
+					for _, tc := range tcs {
+						tcMap, ok := tc.(map[string]any)
+						if !ok {
+							continue
+						}
+						idx := 0
+						if idxF, ok := tcMap["index"].(float64); ok {
+							idx = int(idxF)
+						}
+						for len(a.toolCalls) <= idx {
+							a.toolCalls = append(a.toolCalls, &chatToolCallAcc{})
+						}
+						if id, ok := tcMap["id"].(string); ok {
+							a.toolCalls[idx].ID = id
+						}
+						if typ, ok := tcMap["type"].(string); ok {
+							a.toolCalls[idx].Type = typ
+						}
+						if fn, ok := tcMap["function"].(map[string]any); ok {
+							if name, ok := fn["name"].(string); ok {
+								a.toolCalls[idx].Name = name
 							}
-							idx := 0
-							if idxF, ok := tcMap["index"].(float64); ok {
-								idx = int(idxF)
-							}
-							for len(toolCalls) <= idx {
-								toolCalls = append(toolCalls, &toolCallAcc{})
-							}
-							if id, ok := tcMap["id"].(string); ok {
-								toolCalls[idx].ID = id
-							}
-							if typ, ok := tcMap["type"].(string); ok {
-								toolCalls[idx].Type = typ
-							}
-							if fn, ok := tcMap["function"].(map[string]any); ok {
-								if name, ok := fn["name"].(string); ok {
-									toolCalls[idx].Name = name
-								}
-								if args, ok := fn["arguments"].(string); ok {
-									toolCalls[idx].Args.WriteString(args)
-								}
+							if args, ok := fn["arguments"].(string); ok {
+								a.toolCalls[idx].Args.WriteString(args)
 							}
 						}
 					}
 				}
 			}
 		}
-
-		// service_tier rides at the top level of each chunk.
-		if st, ok := chunk["service_tier"].(string); ok && st != "" {
-			usage.ServiceTier = st
-		}
-		// Extract usage (present in the last chunk when include_usage is set)
-		if usageMap, ok := chunk["usage"].(map[string]any); ok {
-			usage = buildOpenAIUsage(usageMap, usage.ServiceTier)
-		}
 	}
 
-	text := content.String()
+	// service_tier rides at the top level of each chunk.
+	if st, ok := chunk["service_tier"].(string); ok && st != "" {
+		a.usage.ServiceTier = st
+	}
+	// Extract a.usage (present in the last chunk when include_usage is set)
+	if usageMap, ok := chunk["usage"].(map[string]any); ok {
+		a.usage = buildOpenAIUsage(usageMap, a.usage.ServiceTier)
+	}
+}
+
+// spanContent renders the accumulated deltas as the {"messages":[...]} span
+// attribute value and its usage.
+func (a *chatCompletionAccumulator) spanContent() (string, usageInfo) {
+	text := a.content.String()
 
 	// Build assistant message
 	msg := map[string]any{"role": "assistant"}
 	if text != "" {
 		msg["content"] = text
 	}
-	if len(toolCalls) > 0 {
-		tcOut := make([]map[string]any, len(toolCalls))
-		for i, tc := range toolCalls {
+	if len(a.toolCalls) > 0 {
+		tcOut := make([]map[string]any, len(a.toolCalls))
+		for i, tc := range a.toolCalls {
 			tcOut[i] = map[string]any{
 				"id":   tc.ID,
 				"type": tc.Type,
@@ -829,10 +869,10 @@ func extractStreamingCompletion(data []byte) (string, usageInfo) {
 	}
 
 	if len(msg) == 1 {
-		// Only "role" — no content or tool calls
-		return "", usage
+		// Only "role" — no a.content or tool calls
+		return "", a.usage
 	}
-	return marshalMessages([]any{msg}), usage
+	return marshalMessages([]any{msg}), a.usage
 }
 
 // usageInfo holds token usage information.
@@ -1031,17 +1071,17 @@ func extractCompletionFromResponse(body []byte) (string, usageInfo) {
 
 // --- Responses API (/v1/responses) ---
 
-// extractResponsesCompletion extracts completion and usage from a non-streaming
-// Responses API response.
-func extractResponsesCompletion(body []byte) (string, usageInfo) {
+// extractResponsesCompletion extracts completion, usage, and any response-level
+// failure from a non-streaming Responses API response.
+func extractResponsesCompletion(body []byte) (string, usageInfo, error) {
 	var resp map[string]any
 	if err := json.Unmarshal(body, &resp); err != nil {
-		return "", usageInfo{}
+		return "", usageInfo{}, nil
 	}
 	if object, _ := resp["object"].(string); object == "response.compaction" {
-		return extractResponsesCompactOutput(resp), extractResponsesUsage(resp)
+		return extractResponsesCompactOutput(resp), extractResponsesUsage(resp), responsesFailure(resp, "")
 	}
-	return extractResponsesOutput(resp), extractResponsesUsage(resp)
+	return extractResponsesOutput(resp), extractResponsesUsage(resp), responsesFailure(resp, "")
 }
 
 // extractStreamingResponsesCompletion extracts completion and usage from a
@@ -1049,21 +1089,68 @@ func extractResponsesCompletion(body []byte) (string, usageInfo) {
 // events that carry the full response object (including usage):
 // response.completed, response.incomplete, and response.failed.
 // See https://platform.openai.com/docs/api-reference/responses-streaming
-func extractStreamingResponsesCompletion(data []byte) (string, usageInfo) {
-	chunks, err := traceutil.ParseSSEChunks(bytes.NewReader(data))
-	if err != nil || len(chunks) == 0 {
-		return "", usageInfo{}
+func extractStreamingResponsesCompletion(data []byte) (string, usageInfo, error) {
+	var terminal responsesTerminal
+	parseErr := traceutil.ParseSSEChunksFunc(bytes.NewReader(data), terminal.feed)
+	if terminal.response == nil && parseErr != nil {
+		return "", usageInfo{}, fmt.Errorf("%w: %w", errResponsesUnreadableStream, parseErr)
 	}
+	return terminal.spanContent()
+}
 
-	for _, chunk := range chunks {
-		switch msgType, _ := chunk["type"].(string); msgType {
-		case "response.completed", "response.incomplete", "response.failed":
-			if response, ok := chunk["response"].(map[string]any); ok {
-				return extractResponsesOutput(response), extractResponsesUsage(response)
-			}
-		}
+// responsesTerminal holds a Responses API terminal event: the response object
+// it carries plus the status its event type implies. A nil response means no
+// terminal event arrived, which is how a truncated stream is detected.
+type responsesTerminal struct {
+	response map[string]any
+	status   string
+}
+
+// feed keeps the first terminal event and ignores later ones.
+func (t *responsesTerminal) feed(chunk map[string]any) {
+	if t.response != nil {
+		return
 	}
-	return "", usageInfo{}
+	switch msgType, _ := chunk["type"].(string); msgType {
+	case "response.completed", "response.incomplete", "response.failed":
+		response, ok := chunk["response"].(map[string]any)
+		if !ok {
+			return
+		}
+		// Terminal events are named response.<status>, so the event type
+		// supplies the status when the response object omits it.
+		t.response = response
+		t.status = strings.TrimPrefix(msgType, "response.")
+	}
+}
+
+// errResponsesFailed is a Responses API response the API accepted (HTTP 2xx)
+// but did not fulfil: status "failed", which OpenAI reports with usage: null.
+// See https://platform.openai.com/docs/api-reference/responses/object
+var errResponsesFailed = errors.New("response failed")
+
+// errResponsesUnreadableStream is a stream whose SSE would not parse, so no
+// terminal event or usage was recovered. Its bytes may still contain a terminal
+// marker, which is why the caller's truncation check cannot catch it.
+var errResponsesUnreadableStream = errors.New("unreadable response stream")
+
+// responsesFailure returns a non-nil error for a Responses API response object
+// whose status is "failed", falling back to eventStatus when the object omits
+// the field. Other statuses are not faults: "incomplete" is a truncated but
+// successful generation, and "queued"/"in_progress" are pending.
+func responsesFailure(resp map[string]any, eventStatus string) error {
+	status, ok := resp["status"].(string)
+	if !ok {
+		status = eventStatus
+	}
+	if status != "failed" {
+		return nil
+	}
+	respErr, _ := resp["error"].(map[string]any)
+	if msg, _ := respErr["message"].(string); msg != "" {
+		return fmt.Errorf("%w: %s", errResponsesFailed, msg)
+	}
+	return errResponsesFailed
 }
 
 // extractResponsesUsage extracts usage from a Responses API response object.
@@ -1189,6 +1276,15 @@ func extractResponsesCompactOutput(resp map[string]any) string {
 		return ""
 	}
 	return marshalMessages(messages)
+}
+
+// spanContent renders the terminal response as span content. A stream that
+// produced no terminal event yields empty content and no failure.
+func (t *responsesTerminal) spanContent() (string, usageInfo, error) {
+	if t.response == nil {
+		return "", usageInfo{}, nil
+	}
+	return extractResponsesOutput(t.response), extractResponsesUsage(t.response), responsesFailure(t.response, t.status)
 }
 
 // chatToolCall builds a tool_call in the chat-completions format.

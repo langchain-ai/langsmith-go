@@ -1,0 +1,60 @@
+name: "CI: OSV Scanner"
+
+on:
+  push:
+    branches: [main]
+  schedule:
+    - cron: "0 13 * * *"
+  workflow_dispatch:
+
+concurrency:
+  group: ${{ github.workflow }}-${{ github.event_name }}-${{ github.ref }}
+  cancel-in-progress: false
+
+permissions:
+  contents: read
+  actions: read
+  security-events: write
+
+jobs:
+  scan:
+    runs-on: ubuntu-latest
+    timeout-minutes: 15
+    steps:
+      - name: Checkout main
+        uses: actions/checkout@9c091bb21b7c1c1d1991bb908d89e4e9dddfe3e0 # v7.0.0
+        with:
+          ref: ${{ github.event_name == 'push' && github.sha || 'main' }}
+
+      - name: Record scanned commit
+        id: revision
+        run: echo "sha=$(git rev-parse HEAD)" >> "$GITHUB_OUTPUT"
+
+      - name: Install OSV-Scanner
+        run: |
+          curl -fsSLo "$RUNNER_TEMP/osv-scanner" https://github.com/google/osv-scanner/releases/download/v2.3.8/osv-scanner_linux_amd64
+          echo "bc98e15319ed0d515e3f9235287ba53cdc5535d576d24fd573978ecfe9ab92dc  $RUNNER_TEMP/osv-scanner" | sha256sum --check
+          sudo install "$RUNNER_TEMP/osv-scanner" /usr/local/bin/osv-scanner
+
+      - name: Scan dependencies
+        run: |
+          set +e
+          osv-scanner scan source -r \
+            --no-call-analysis=go \
+            --format sarif \
+            --output-file "$RUNNER_TEMP/osv-main.sarif" \
+            .
+          rc=$?
+          set -e
+          if [ "$rc" -ne 0 ] && [ "$rc" -ne 1 ]; then
+            echo "::error::OSV-Scanner failed with exit code $rc"
+            exit "$rc"
+          fi
+
+      - name: Upload OSV SARIF to GitHub Security
+        uses: github/codeql-action/upload-sarif@411bbbe57033eedfc1a82d68c01345aa96c737d7 # v4
+        with:
+          sarif_file: ${{ runner.temp }}/osv-main.sarif
+          category: osv-scanner/main
+          ref: refs/heads/main
+          sha: ${{ steps.revision.outputs.sha }}

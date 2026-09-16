@@ -1,5 +1,227 @@
 # Changelog
 
+## [0.26.4](https://github.com/langchain-ai/langsmith-go/compare/v0.26.3...v0.26.4) (2026-09-16)
+
+
+### Bug Fixes
+
+* sse: parse in chunks ([#215](https://github.com/langchain-ai/langsmith-go/issues/215)) ([2abea41](https://github.com/langchain-ai/langsmith-go/commit/2abea41e0fb128e3b9ff56710bd04717bc353105))
+
+
+### Chores
+
+* remove one `ReadAll()` for memory savings ([#214](https://github.com/langchain-ai/langsmith-go/issues/214)) ([bbf384e](https://github.com/langchain-ai/langsmith-go/commit/bbf384ef30e1229747f419f88a62f5b4d445f9cb))
+
+
+### Refactors
+
+* unify SSE parsing and simplify stream callbacks ([fe35369](https://github.com/langchain-ai/langsmith-go/commit/fe353695b708fb5eca9f5acb79e5f3fb4a43dbc7))
+
+## [0.26.3](https://github.com/langchain-ai/langsmith-go/compare/v0.26.2...v0.26.3) (2026-09-09)
+
+
+### Bug Fixes
+
+* **traceopenai:** error the span when a Responses call fails ([#207](https://github.com/langchain-ai/langsmith-go/issues/207)) ([9a8f0fb](https://github.com/langchain-ai/langsmith-go/commit/9a8f0fb4ca7ea5effd706502980f6700bbbd037f))
+
+## [0.26.2](https://github.com/langchain-ai/langsmith-go/compare/v0.26.1...v0.26.2) (2026-09-09)
+
+
+### Bug Fixes
+
+* bump golang.org/x/crypto to v0.56.0 ([2c5c3cd](https://github.com/langchain-ai/langsmith-go/commit/2c5c3cdc67b9bd5288f93f41b96b71d1b945ea52))
+* bump golang.org/x/crypto to v0.56.0 ([#210](https://github.com/langchain-ai/langsmith-go/issues/210)) ([715c693](https://github.com/langchain-ai/langsmith-go/commit/715c6939bb7d3998aebe4e8aec3aca5f2e62ae04))
+
+
+### Build System
+
+* **deps:** bump google.golang.org/grpc ([a046caf](https://github.com/langchain-ai/langsmith-go/commit/a046cafdba409ab2820acb480e8e6dd99a999e54))
+* **deps:** bump google.golang.org/grpc from 1.83.1 to 1.83.2 in the go_modules group across 1 directory ([#208](https://github.com/langchain-ai/langsmith-go/issues/208)) ([ce11118](https://github.com/langchain-ai/langsmith-go/commit/ce11118553a2aa65968d7cd1b0639178d3ca3cfc))
+
+## [0.26.1](https://github.com/langchain-ai/langsmith-go/compare/v0.26.0...v0.26.1) (2026-09-02)
+
+
+### Build System
+
+* **deps:** bump google.golang.org/grpc ([681d9f3](https://github.com/langchain-ai/langsmith-go/commit/681d9f3cef9205438652d2ca623a99893206834b))
+* **deps:** bump google.golang.org/grpc from 1.82.1 to 1.83.1 in the go_modules group across 1 directory ([#204](https://github.com/langchain-ai/langsmith-go/issues/204)) ([b0149ab](https://github.com/langchain-ai/langsmith-go/commit/b0149abe62518136f00242c6678e2d77be74ba25))
+
+## [0.26.0](https://github.com/langchain-ai/langsmith-go/compare/v0.25.6...v0.26.0) (2026-08-24)
+
+
+### ⚠ BREAKING CHANGES
+
+* **sessions:** add trajectory_evaluators field and make it non-nullable
+
+### Features
+
+* **feedback:** add optional regex_validator field to feedback schema ([aea7623](https://github.com/langchain-ai/langsmith-go/commit/aea762349def45263aacc82e9259ffd78bc0ab9e))
+* **issues:** add Linear integration fields to issue board responses ([14a6323](https://github.com/langchain-ai/langsmith-go/commit/14a6323b00e9a4d2553d83e67440bedc4751c7eb))
+* **sandboxes:** add cursor pagination and sort_order to sandbox list ([9311c11](https://github.com/langchain-ai/langsmith-go/commit/9311c11ca6a062c4e591816f72a7c219995920c6))
+* **sandboxes:** add cursor pagination and sort_order to snapshot list ([d4b44ca](https://github.com/langchain-ai/langsmith-go/commit/d4b44ca0a173ae6d6fa00440b9dbb79851aa5749))
+* **sandboxes:** add description field to snapshots and proxy config ([4fe498a](https://github.com/langchain-ai/langsmith-go/commit/4fe498ad5008ddb888d70de31b3c71acb2eb0941))
+* **sessions:** add trajectory_evaluators field and make it non-nullable ([e7ca103](https://github.com/langchain-ai/langsmith-go/commit/e7ca1035492245e2ee0caac75458bc94436c97af))
+
+
+### Bug Fixes
+
+* build, lint, and test failures (feat(sandboxes): add cursor pagination and sort_order to sandbox list) ([8607785](https://github.com/langchain-ai/langsmith-go/commit/8607785c6ca9e3bc75f43486b2a66f2b79058045))
+
+
+### Chores
+
+* regenerate from spec description updates ([140dc73](https://github.com/langchain-ai/langsmith-go/commit/140dc737d164510c91b24b90a329d9ab1ab9c742))
+* update evaluator description text to use "Tuned Evaluators ([018a539](https://github.com/langchain-ai/langsmith-go/commit/018a5391b6eb26774fcf41f2273a13805a21252f))
+* update offset parameter description to note 100000 limit ([d0e8552](https://github.com/langchain-ai/langsmith-go/commit/d0e8552f6bbf86b5ec7f9001b2cf0684e8fdf530))
+* upgrade to Go 1.26.7 ([#100](https://github.com/langchain-ai/langsmith-go/issues/100)) ([d614156](https://github.com/langchain-ai/langsmith-go/commit/d614156074194b80f771842e9ce714210be51b25))
+
+
+### Build System
+
+* **deps:** bump google.golang.org/grpc from 1.81.1 to 1.82.1 in the go_modules group across 1 directory ([#99](https://github.com/langchain-ai/langsmith-go/issues/99)) ([cc9f907](https://github.com/langchain-ai/langsmith-go/commit/cc9f90773b369b0f5551c0ce560201f3250e1915))
+
+## [0.25.6](https://github.com/langchain-ai/langsmith-go/compare/v0.25.5...v0.25.6) (2026-08-18)
+
+
+### Features
+
+* add trajectory_evaluators field to experiment config ([b4aa3e7](https://github.com/langchain-ai/langsmith-go/commit/b4aa3e795fa37c823f50176156c9253f3f665fe3))
+* **engine:** answerable auto-resolution prompts, and a task that closes on verdicts ([b43132a](https://github.com/langchain-ai/langsmith-go/commit/b43132aead44a371b10b81759c890ebf2b69d2c5))
+* **issues:** add trace_id filter to list issues endpoint ([06f395a](https://github.com/langchain-ai/langsmith-go/commit/06f395a9d22f8423f5abc5055cfd0a965bcfc507))
+* **sandboxes:** add generate_download_url method for sandbox files ([28f317f](https://github.com/langchain-ai/langsmith-go/commit/28f317f3c6ad6aaa4d699e687e3738cd397399be))
+
+
+### Bug Fixes
+
+* **fleet:** route agent delete through the platform directories route [AB-3257] ([1f8d383](https://github.com/langchain-ai/langsmith-go/commit/1f8d383445cc0b14e0a13c860dd4953ab72cfd1e))
+* send pagination cursors in POST bodies ([2617262](https://github.com/langchain-ai/langsmith-go/commit/261726220c6ce1efa1973e9f83ef010fcc28eebc))
+
+## [0.25.5](https://github.com/langchain-ai/langsmith-go/compare/v0.25.4...v0.25.5) (2026-08-11)
+
+
+### Features
+
+* **dashboards:** attach v1→v2 chart conversion preview once per chart instead of per series ([6e727c0](https://github.com/langchain-ai/langsmith-go/commit/6e727c05d57159f7de347d6b3b7326cfac2923a5))
+* **datasets:** return source thread id on examples ([4b4d758](https://github.com/langchain-ai/langsmith-go/commit/4b4d758446525398cc11dfe66777dba696e7e131))
+* **examples:** migrate list_runs to the V2 runs API and add unit tests ([#95](https://github.com/langchain-ai/langsmith-go/issues/95)) ([c441aad](https://github.com/langchain-ai/langsmith-go/commit/c441aad22e39939d6552c1898c77f8363d06f711))
+* **obs:** add feedback count to CRUD pane ([238b5c5](https://github.com/langchain-ai/langsmith-go/commit/238b5c5275cf49aca6f890b988ce4bbb6e6e5c26))
+* **sandbox:** add ContextHubMount helper ([#96](https://github.com/langchain-ai/langsmith-go/issues/96)) ([6a423af](https://github.com/langchain-ai/langsmith-go/commit/6a423af55cc435b97f8bc481dc3f926b5fc0050c))
+* **sandboxes:** Docker-style tags, names, and permissions for snapshots ([a610f6a](https://github.com/langchain-ai/langsmith-go/commit/a610f6a2a36f7f3ec12c1f96a9ebe5ce790e30e7))
+* **threads:** add support for tree, trace, and thread filter in /v2/threads/query ([b50d074](https://github.com/langchain-ai/langsmith-go/commit/b50d0741116ebb5c042a5d2d7f1f5b4c4722d513))
+
+
+### Bug Fixes
+
+* **evaluators:** scope spend/traces/limits to the selected application [LSE-2754] ([1633e38](https://github.com/langchain-ai/langsmith-go/commit/1633e38125146a5b8f4ba22e529b7c5b777fa30c))
+* **oauth:** resolve the token endpoint from the deployment metadata ([#93](https://github.com/langchain-ai/langsmith-go/issues/93)) ([41ca97c](https://github.com/langchain-ai/langsmith-go/commit/41ca97c6ae33cc17067c5c56987cc4869bdf7075))
+* **sandboxes:** warn on memory-per-vCPU ratio violations and widen the tolerance ([f2d44b2](https://github.com/langchain-ai/langsmith-go/commit/f2d44b26d04df9c11861ccee8b318b02d22f6c27))
+
+
+### Build System
+
+* **deps:** bump google.golang.org/grpc ([4d43275](https://github.com/langchain-ai/langsmith-go/commit/4d432755a09a1cc51455bd28612853a14dfde092))
+* **deps:** bump google.golang.org/grpc from 1.81.1 to 1.82.1 in the go_modules group across 1 directory ([#194](https://github.com/langchain-ai/langsmith-go/issues/194)) ([f93f526](https://github.com/langchain-ai/langsmith-go/commit/f93f526fe76ff50a16d0d096f8d78408137917ca))
+
+## [0.25.4](https://github.com/langchain-ai/langsmith-go/compare/v0.25.3...v0.25.4) (2026-07-31)
+
+
+### Bug Fixes
+
+* **api:** document all five issue statuses on GET /v1/platform/issues ([eb622b5](https://github.com/langchain-ai/langsmith-go/commit/eb622b5fa207333e842d9c9e1765b30e7d905037))
+* **runs:** drop the duplicated /v2 from the public shared runs query path ([8210437](https://github.com/langchain-ai/langsmith-go/commit/8210437a2f09865e50786298ebe08de5b84560dd))
+
+
+### Chores
+
+* deprecate legacy SmithDB-migration API endpoints and SDK methods ([aaf66aa](https://github.com/langchain-ai/langsmith-go/commit/aaf66aa03ddf216c4ea1a46b90ebaaee2f71af6d))
+* note light-review expectation on generated SDK release PRs ([#92](https://github.com/langchain-ai/langsmith-go/issues/92)) ([39a0623](https://github.com/langchain-ai/langsmith-go/commit/39a0623dcb4f260e95be21f7a46884f6a911f6a6))
+
+## [0.25.3](https://github.com/langchain-ai/langsmith-go/compare/v0.25.2...v0.25.3) (2026-07-30)
+
+
+### Bug Fixes
+
+* **sandbox:** count an acknowledged reattachment as progress ([#91](https://github.com/langchain-ai/langsmith-go/issues/91)) ([083d97c](https://github.com/langchain-ai/langsmith-go/commit/083d97c32009022e7c51c66c47eced3ecef42434))
+
+## [0.25.2](https://github.com/langchain-ai/langsmith-go/compare/v0.25.1...v0.25.2) (2026-07-30)
+
+
+### Documentation
+
+* **feedback:** document session_id as required on feedback creation ([1bd2df3](https://github.com/langchain-ai/langsmith-go/commit/1bd2df3ca7ace5ac52b7f8e422cff502f0d2c792))
+
+## [0.25.1](https://github.com/langchain-ai/langsmith-go/compare/v0.25.0...v0.25.1) (2026-07-30)
+
+
+### Bug Fixes
+
+* **annotation-queues:** document item endpoints at their served path ([ddd4e6a](https://github.com/langchain-ai/langsmith-go/commit/ddd4e6a8c6b929c1f372fa4b913a03ed73fdd79d))
+* strip a trailing /api or /api/v1 from the configured base URL ([#89](https://github.com/langchain-ai/langsmith-go/issues/89)) ([368d234](https://github.com/langchain-ai/langsmith-go/commit/368d23465fdd9b9926114dd2cb910cab64ac5464))
+
+## [0.25.0](https://github.com/langchain-ai/langsmith-go/compare/v0.24.0...v0.25.0) (2026-07-30)
+
+
+### Features
+
+* **annotation-queues:** rename items wire field session_id to project_id ([6b1d691](https://github.com/langchain-ai/langsmith-go/commit/6b1d691717f80d82eb30b261699b36c97cc49adb))
+* expose annotation queue item APIs publicly [LSE-2550] ([1ba4eb3](https://github.com/langchain-ai/langsmith-go/commit/1ba4eb3a117b46e810cee6ba4b470810c4d22baf))
+* **smith-go:** declare v2 endpoints under /api/v2 in the OpenAPI spec ([990c80a](https://github.com/langchain-ai/langsmith-go/commit/990c80a5756bc9f8564f823922a18b013c16cd81))
+
+
+### Bug Fixes
+
+* build, lint, and test failures (feat(smith-go): declare v2 endpoints under /api/v2 in the OpenAPI spec) ([377e1fa](https://github.com/langchain-ai/langsmith-go/commit/377e1fa94677f9f8a2e98e680f0d2212419106ee))
+* **evaluators:** show an evaluator's current name wherever it's attached [LSE-2687] ([828ee4b](https://github.com/langchain-ai/langsmith-go/commit/828ee4b0ae4d4e2717858b19113827a78463ece1))
+* remove internal annotation queue API docs ([41c4659](https://github.com/langchain-ai/langsmith-go/commit/41c4659deacff052d78d83a1bf0be71e0f55f810))
+* **runs:** restore optional session on public dataset stats endpoint ([eca1f04](https://github.com/langchain-ai/langsmith-go/commit/eca1f040ff91133a2112cbac631d74b79ffd1803))
+* **sandbox:** don't gate dataplane operations on lifecycle status ([#85](https://github.com/langchain-ai/langsmith-go/issues/85)) ([a72eda9](https://github.com/langchain-ai/langsmith-go/commit/a72eda9cc20f2f967dccd9d3e5de79b7e8806bbd))
+* **sandbox:** retry WebSocket connect failures when starting a command ([#88](https://github.com/langchain-ai/langsmith-go/issues/88)) ([cb5e08c](https://github.com/langchain-ai/langsmith-go/commit/cb5e08cbebc198254258fd1b88acdd906678e814))
+
+## [0.24.0](https://github.com/langchain-ai/langsmith-go/compare/v0.23.0...v0.24.0) (2026-07-27)
+
+
+### Features
+
+* **backend:** allow storing markdown / text blocks as charts in /v1/charts/{...} endpoints ([cecbd3f](https://github.com/langchain-ai/langsmith-go/commit/cecbd3fbffb6fd669944efdb757e75ec10249202))
+
+
+### Bug Fixes
+
+* **threads:** make trace_id in list_traces respect the selects contract ([3b596d2](https://github.com/langchain-ai/langsmith-go/commit/3b596d2fa16f2e1e969f45e7b3a1e6112c32de17))
+
+
+### Chores
+
+* **info:** remove legacy Python /info endpoint, serve from smith-go ([080c862](https://github.com/langchain-ai/langsmith-go/commit/080c862c30698b608327dfe4650d7e6b72f88282))
+
+## [0.23.0](https://github.com/langchain-ai/langsmith-go/compare/v0.22.0...v0.23.0) (2026-07-23)
+
+
+### Features
+
+* **backend:** Allow storing grid layout to custom dashboards ([6cd7821](https://github.com/langchain-ai/langsmith-go/commit/6cd78210828a320fd22d2220006fd3518ad8a5b3))
+* **backend:** update CRUD endpoint to allow retrieving / storing chart series metadata ([6d960a4](https://github.com/langchain-ai/langsmith-go/commit/6d960a4208323ce8c221177e3d307f52ec446de0))
+* **host:** p50/p99 run queue wait-time chart in project monitoring [LSD-1547] ([986d99d](https://github.com/langchain-ai/langsmith-go/commit/986d99dde7f441bf7a85f1a7f8aa35137832e52e))
+* **sandboxes:** free-form labels on sandboxes and snapshots ([65a3bc8](https://github.com/langchain-ai/langsmith-go/commit/65a3bc8d5df8e432eec9fce6f561c2cddbc48164))
+* **sandboxes:** let proxy rules contribute sandbox env vars ([bbc4a24](https://github.com/langchain-ai/langsmith-go/commit/bbc4a24839a95049789dca37971a7ba23c9ba1ae))
+
+
+### Bug Fixes
+
+* **evaluators:** persist and wire through playground_settings_id for llm-as-judge oauth models [part of ENT-1402] ([9085eb7](https://github.com/langchain-ai/langsmith-go/commit/9085eb798ae6ec52537c909ae713ecfc3a42a777))
+* **runs:** require session in POST /runs/stats ([beaef39](https://github.com/langchain-ai/langsmith-go/commit/beaef392cb387fc31e3ccf461e315c4872cd2f19))
+* support last_queued_at in v2 runs query ([38917cb](https://github.com/langchain-ai/langsmith-go/commit/38917cbb47f616a5646095d22274aea8b4967b47))
+
+
+### Reverts
+
+* **runs:** require session in POST /runs/stats ([ec94123](https://github.com/langchain-ai/langsmith-go/commit/ec94123c1540af5cba9fb30ed7b069e6e94208ad))
+
+
+### Refactors
+
+* **runs:** remove SmithDB v2 endpoint flag [LSO-3391] ([94df746](https://github.com/langchain-ai/langsmith-go/commit/94df746124337d369cad60ef0e69121d6484512a))
+
 ## [0.22.0](https://github.com/langchain-ai/langsmith-go/compare/v0.21.1...v0.22.0) (2026-07-20)
 
 
