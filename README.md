@@ -71,6 +71,25 @@ Make sure to set the required environment variables `LANGSMITH_API_KEY` before r
 
 The full API of this library can be found in [api.md](api.md).
 
+### Create an Insights report
+
+```go
+report, err := client.Sessions.Insights.Configs.New(ctx, projectID, langsmith.SessionInsightConfigNewParams{
+	Name: langsmith.F("Support issue analysis"),
+	Config: langsmith.F(langsmith.CreateRunClusteringJobRequestParam{
+		Name:          langsmith.F("Support issue analysis"),
+		Model:         langsmith.F(langsmith.CreateRunClusteringJobRequestModelOpenAI),
+		LastNHours:    langsmith.Int(24),
+		Filter:        langsmith.F("eq(is_root, true)"),
+		SummaryPrompt: langsmith.F("Summarize the user's intent and any failures."),
+	}),
+})
+if err != nil {
+	panic(err)
+}
+fmt.Println(report.ID)
+```
+
 ```go
 package main
 
