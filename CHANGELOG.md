@@ -1,5 +1,22 @@
 # Changelog
 
+## [0.26.4](https://github.com/langchain-ai/langsmith-go/compare/v0.26.3...v0.26.4) (2026-09-16)
+
+
+### Bug Fixes
+
+* sse: parse in chunks ([#215](https://github.com/langchain-ai/langsmith-go/issues/215)) ([2abea41](https://github.com/langchain-ai/langsmith-go/commit/2abea41e0fb128e3b9ff56710bd04717bc353105))
+
+
+### Chores
+
+* remove one `ReadAll()` for memory savings ([#214](https://github.com/langchain-ai/langsmith-go/issues/214)) ([bbf384e](https://github.com/langchain-ai/langsmith-go/commit/bbf384ef30e1229747f419f88a62f5b4d445f9cb))
+
+
+### Refactors
+
+* unify SSE parsing and simplify stream callbacks ([fe35369](https://github.com/langchain-ai/langsmith-go/commit/fe353695b708fb5eca9f5acb79e5f3fb4a43dbc7))
+
 ## [0.26.3](https://github.com/langchain-ai/langsmith-go/compare/v0.26.2...v0.26.3) (2026-09-09)
 
 
