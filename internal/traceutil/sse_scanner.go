@@ -3,7 +3,6 @@ package traceutil
 import (
 	"bytes"
 	"encoding/json"
-	"strings"
 )
 
 // SSEScanner incrementally parses Server-Sent Events. Not safe for concurrent use.
@@ -29,29 +28,37 @@ func (s *SSEScanner) Feed(p []byte) {
 	if s.stopped {
 		return
 	}
-	s.buf.Write(p)
+	// Search p directly and buffer only an unterminated trailing line, so a
+	// long line is not rescanned once per Feed.
 	for {
 		if s.stopped {
 			return
 		}
-		idx := bytes.IndexByte(s.buf.Bytes(), '\n')
+		idx := bytes.IndexByte(p, '\n')
 		if idx < 0 {
+			s.buf.Write(p) // incomplete; the rest arrives in a later Feed
 			return
 		}
-		line := strings.TrimRight(string(s.buf.Next(idx+1)), "\r\n")
+		line := bytes.TrimRight(p[:idx], "\r\n")
+		if s.buf.Len() > 0 { // this line began in an earlier Feed
+			s.buf.Write(line)
+			line = s.buf.Bytes()
+		}
 		s.handle(line)
+		s.buf.Reset()
+		p = p[idx+1:]
 	}
 }
 
-func (s *SSEScanner) handle(line string) {
-	if !strings.HasPrefix(line, "data:") {
+func (s *SSEScanner) handle(line []byte) {
+	if !bytes.HasPrefix(line, []byte("data:")) {
 		return
 	}
-	payload := strings.TrimSpace(strings.TrimPrefix(line, "data:"))
-	if payload == "" {
+	payload := bytes.TrimSpace(bytes.TrimPrefix(line, []byte("data:")))
+	if len(payload) == 0 {
 		return
 	}
-	if payload == "[DONE]" {
+	if bytes.Equal(payload, []byte("[DONE]")) {
 		if s.OnDone != nil {
 			s.stopped = true
 			s.OnDone()
@@ -59,7 +66,7 @@ func (s *SSEScanner) handle(line string) {
 		return
 	}
 	var chunk map[string]any
-	if err := json.Unmarshal([]byte(payload), &chunk); err != nil {
+	if err := json.Unmarshal(payload, &chunk); err != nil {
 		if s.OnError != nil {
 			s.stopped = true
 			s.OnError(err)
@@ -78,9 +85,8 @@ func (s *SSEScanner) Finish() {
 	if s.stopped || s.buf.Len() == 0 {
 		return
 	}
-	line := strings.TrimRight(s.buf.String(), "\r\n")
+	s.handle(bytes.TrimRight(s.buf.Bytes(), "\r\n"))
 	s.buf.Reset()
-	s.handle(line)
 }
 
 // ScanSSE feeds everything read from br to scanner, and flushes it when the
