@@ -629,8 +629,12 @@ type ThreadTrace struct {
 	TotalTokens int64 `json:"total_tokens"`
 	// `trace_id` is the UUID of this trace (the root run). Returned when `TRACE_ID` is
 	// in `selects`, or when `selects` is omitted entirely (sole fallback field).
-	TraceID string          `json:"trace_id" format:"uuid"`
-	JSON    threadTraceJSON `json:"-"`
+	TraceID string `json:"trace_id" format:"uuid"`
+	// `turn_number` is the 1-based position in the whole thread, ordered by start_time
+	// then trace_id ascending, before filtering or pagination. Updates and deletions
+	// can change this position. Omitted unless TURN_NUMBER is included in `selects`.
+	TurnNumber int64           `json:"turn_number"`
+	JSON       threadTraceJSON `json:"-"`
 }
 
 // threadTraceJSON contains the JSON metadata for the struct [ThreadTrace]
@@ -659,6 +663,7 @@ type threadTraceJSON struct {
 	TotalCost              apijson.Field
 	TotalTokens            apijson.Field
 	TraceID                apijson.Field
+	TurnNumber             apijson.Field
 	raw                    string
 	ExtraFields            map[string]apijson.Field
 }
@@ -1049,11 +1054,12 @@ const (
 	ThreadListTracesParamsSelectCompletionCostDetails  ThreadListTracesParamsSelect = "COMPLETION_COST_DETAILS"
 	ThreadListTracesParamsSelectName                   ThreadListTracesParamsSelect = "NAME"
 	ThreadListTracesParamsSelectErrorPreview           ThreadListTracesParamsSelect = "ERROR_PREVIEW"
+	ThreadListTracesParamsSelectTurnNumber             ThreadListTracesParamsSelect = "TURN_NUMBER"
 )
 
 func (r ThreadListTracesParamsSelect) IsKnown() bool {
 	switch r {
-	case ThreadListTracesParamsSelectThreadID, ThreadListTracesParamsSelectTraceID, ThreadListTracesParamsSelectOp, ThreadListTracesParamsSelectPromptTokens, ThreadListTracesParamsSelectCompletionTokens, ThreadListTracesParamsSelectTotalTokens, ThreadListTracesParamsSelectStartTime, ThreadListTracesParamsSelectEndTime, ThreadListTracesParamsSelectLatency, ThreadListTracesParamsSelectFirstTokenTime, ThreadListTracesParamsSelectInputsPreview, ThreadListTracesParamsSelectOutputsPreview, ThreadListTracesParamsSelectInputs, ThreadListTracesParamsSelectOutputs, ThreadListTracesParamsSelectError, ThreadListTracesParamsSelectPromptCost, ThreadListTracesParamsSelectCompletionCost, ThreadListTracesParamsSelectTotalCost, ThreadListTracesParamsSelectPromptTokenDetails, ThreadListTracesParamsSelectCompletionTokenDetails, ThreadListTracesParamsSelectPromptCostDetails, ThreadListTracesParamsSelectCompletionCostDetails, ThreadListTracesParamsSelectName, ThreadListTracesParamsSelectErrorPreview:
+	case ThreadListTracesParamsSelectThreadID, ThreadListTracesParamsSelectTraceID, ThreadListTracesParamsSelectOp, ThreadListTracesParamsSelectPromptTokens, ThreadListTracesParamsSelectCompletionTokens, ThreadListTracesParamsSelectTotalTokens, ThreadListTracesParamsSelectStartTime, ThreadListTracesParamsSelectEndTime, ThreadListTracesParamsSelectLatency, ThreadListTracesParamsSelectFirstTokenTime, ThreadListTracesParamsSelectInputsPreview, ThreadListTracesParamsSelectOutputsPreview, ThreadListTracesParamsSelectInputs, ThreadListTracesParamsSelectOutputs, ThreadListTracesParamsSelectError, ThreadListTracesParamsSelectPromptCost, ThreadListTracesParamsSelectCompletionCost, ThreadListTracesParamsSelectTotalCost, ThreadListTracesParamsSelectPromptTokenDetails, ThreadListTracesParamsSelectCompletionTokenDetails, ThreadListTracesParamsSelectPromptCostDetails, ThreadListTracesParamsSelectCompletionCostDetails, ThreadListTracesParamsSelectName, ThreadListTracesParamsSelectErrorPreview, ThreadListTracesParamsSelectTurnNumber:
 		return true
 	}
 	return false
