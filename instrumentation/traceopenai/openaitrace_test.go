@@ -436,7 +436,7 @@ func TestGetOperationName(t *testing.T) {
 
 func TestParseRequestBody_ChatCompletion(t *testing.T) {
 	body := `{"model":"gpt-4","messages":[{"role":"user","content":"hello"}],"stream":true}`
-	fields := parseRequestBody([]byte(body))
+	fields := parseRequestBody([]byte(body), true)
 
 	if fields.model != "gpt-4" {
 		t.Errorf("model = %q, want gpt-4", fields.model)
@@ -454,7 +454,7 @@ func TestParseRequestBody_ChatCompletion(t *testing.T) {
 
 func TestParseRequestBody_ResponsesAPI(t *testing.T) {
 	body := `{"model":"gpt-4","input":"What is Go?"}`
-	fields := parseRequestBody([]byte(body))
+	fields := parseRequestBody([]byte(body), true)
 
 	if fields.model != "gpt-4" {
 		t.Errorf("model = %q, want gpt-4", fields.model)
@@ -469,7 +469,7 @@ func TestParseRequestBody_ResponsesAPI(t *testing.T) {
 
 func TestParseRequestBody_LegacyCompletion(t *testing.T) {
 	body := `{"model":"text-davinci-003","prompt":"Once upon a time"}`
-	fields := parseRequestBody([]byte(body))
+	fields := parseRequestBody([]byte(body), true)
 
 	if fields.model != "text-davinci-003" {
 		t.Errorf("model = %q, want text-davinci-003", fields.model)
@@ -480,7 +480,7 @@ func TestParseRequestBody_LegacyCompletion(t *testing.T) {
 }
 
 func TestParseRequestBody_InvalidJSON(t *testing.T) {
-	fields := parseRequestBody([]byte("not json"))
+	fields := parseRequestBody([]byte("not json"), true)
 	if fields.model != "" || fields.streaming || fields.inputMessages != "" {
 		t.Errorf("expected empty fields for invalid JSON, got %+v", fields)
 	}
@@ -1099,7 +1099,7 @@ func TestParseRequestBody_ResponsesAPI_ArrayInput(t *testing.T) {
 			{"role": "user", "content": "What is 2+2?"}
 		]
 	}`)
-	fields := parseRequestBody(body)
+	fields := parseRequestBody(body, true)
 	if fields.model != "gpt-4o" {
 		t.Errorf("model = %q, want gpt-4o", fields.model)
 	}
@@ -1128,7 +1128,7 @@ func TestParseRequestBody_ResponsesAPI_MultiTurnWithToolCalls(t *testing.T) {
 			{"role": "user", "content": "Thanks!"}
 		]
 	}`)
-	fields := parseRequestBody(body)
+	fields := parseRequestBody(body, true)
 
 	if !strings.Contains(fields.inputMessages, "What is the weather in SF?") {
 		t.Errorf("should contain user message: %s", fields.inputMessages)
@@ -1486,7 +1486,7 @@ func TestResponsesAPI_RoundTrip(t *testing.T) {
 		]
 	}`)
 
-	fields := parseRequestBody(reqBody)
+	fields := parseRequestBody(reqBody, true)
 	if fields.model != "gpt-5.5" {
 		t.Errorf("model = %q, want gpt-5.5", fields.model)
 	}
