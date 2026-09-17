@@ -32,6 +32,7 @@ func TestSandboxListUsageCostsWithOptionalParams(t *testing.T) {
 		EndTime:      langsmith.F(time.Now()),
 		StartTime:    langsmith.F(time.Now()),
 		Cursor:       langsmith.F("cursor"),
+		Granularity:  langsmith.F(langsmith.SandboxListUsageCostsParamsGranularityHour),
 		PageSize:     langsmith.F(int64(1)),
 		ResourceIDs:  langsmith.F([]string{"string"}),
 		ResourceType: langsmith.F(langsmith.SandboxListUsageCostsParamsResourceTypeSandbox),
