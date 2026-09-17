@@ -1,5 +1,19 @@
 # Changelog
 
+## [0.26.5](https://github.com/langchain-ai/langsmith-go/compare/v0.26.4...v0.26.5) (2026-09-16)
+
+
+### Features
+
+* **insights:** document config creation ([3541f0a](https://github.com/langchain-ai/langsmith-go/commit/3541f0a730b97f55ce761b9ca46819ef5e8a81f2))
+* **insights:** expose insights config creation ([#219](https://github.com/langchain-ai/langsmith-go/issues/219)) ([3dad3cf](https://github.com/langchain-ai/langsmith-go/commit/3dad3cfa6667f14c5eab5fe975d7e623378e434e))
+
+
+### Documentation
+
+* **insights:** add runnable creation example ([6e80a42](https://github.com/langchain-ai/langsmith-go/commit/6e80a42cbc9b5324521b4721c649d1d134b2d793))
+* place insights example after setup ([18b27da](https://github.com/langchain-ai/langsmith-go/commit/18b27da0b8a592ec7b28e22b8c6b7bcebf998aa4))
+
 ## [0.26.4](https://github.com/langchain-ai/langsmith-go/compare/v0.26.3...v0.26.4) (2026-09-16)
 
 
