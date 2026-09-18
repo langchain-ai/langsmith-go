@@ -37,7 +37,9 @@ func NewSandboxSnapshotService(opts ...option.RequestOption) (r *SandboxSnapshot
 	return
 }
 
-// Create a snapshot from a Docker image (async build).
+// Create a snapshot from a Docker image (async build). Names use lowercase
+// registry-style components separated by slashes, up to 255 characters. The
+// system/ namespace is read-only.
 func (r *SandboxSnapshotService) New(ctx context.Context, body SandboxSnapshotNewParams, opts ...option.RequestOption) (res *SnapshotResponse, err error) {
 	opts = slices.Concat(r.Options, opts)
 	path := "api/v2/sandboxes/snapshots"
@@ -45,9 +47,11 @@ func (r *SandboxSnapshotService) New(ctx context.Context, body SandboxSnapshotNe
 	return res, err
 }
 
-// Get a sandbox snapshot by ID or by a Docker-style reference. A bare name means
-// name:latest, falling back to the newest ready untagged snapshot of that name. To
-// list the tags under a name, use /api/v2/sandboxes/snapshots-by-name/{name}.
+// Get a sandbox snapshot by ID or a registry-style reference, including
+// system/default:latest. URL-encode references containing slashes. A bare name
+// means name:latest, falling back to the newest ready untagged snapshot of that
+// name. To list the tags under a name, use
+// /api/v2/sandboxes/snapshots-by-name/{name}.
 func (r *SandboxSnapshotService) Get(ctx context.Context, snapshotID string, opts ...option.RequestOption) (res *SnapshotResponse, err error) {
 	opts = slices.Concat(r.Options, opts)
 	if snapshotID == "" {
@@ -59,8 +63,8 @@ func (r *SandboxSnapshotService) Get(ctx context.Context, snapshotID string, opt
 	return res, err
 }
 
-// List sandbox snapshots for the authenticated tenant, with optional filtering,
-// sorting, and pagination. Page with page_size and cursor: replay the response's
+// List workspace and published system snapshots, with optional filtering, sorting,
+// and pagination. Page with page_size and cursor: replay the response's
 // next_cursor until it comes back null, which is the only signal that no pages
 // remain. Cursors are opaque and only valid on this endpoint; do not parse or
 // construct one.
@@ -81,8 +85,8 @@ func (r *SandboxSnapshotService) List(ctx context.Context, query SandboxSnapshot
 	return res, nil
 }
 
-// List sandbox snapshots for the authenticated tenant, with optional filtering,
-// sorting, and pagination. Page with page_size and cursor: replay the response's
+// List workspace and published system snapshots, with optional filtering, sorting,
+// and pagination. Page with page_size and cursor: replay the response's
 // next_cursor until it comes back null, which is the only signal that no pages
 // remain. Cursors are opaque and only valid on this endpoint; do not parse or
 // construct one.

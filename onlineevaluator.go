@@ -628,6 +628,8 @@ func (r OnlineEvaluatorUpdateParams) MarshalJSON() (data []byte, err error) {
 }
 
 type OnlineEvaluatorListParams struct {
+	// Filter to evaluators attached to the agent's environments or tagged datasets
+	AgentID param.Field[string] `query:"agent_id"`
 	// Filter by feedback key
 	FeedbackKey param.Field[string] `query:"feedback_key"`
 	// Maximum number of results (1-100)
