@@ -139,20 +139,26 @@ func (r sandboxListResponseJSON) RawJSON() string {
 }
 
 type SandboxResponse struct {
-	ID                     string                     `json:"id"`
-	CPUMillicores          int64                      `json:"cpu_millicores"`
-	CreatedAt              string                     `json:"created_at"`
-	CreatedBy              string                     `json:"created_by"`
-	DataplaneURL           string                     `json:"dataplane_url"`
-	DeleteAfterStopSeconds int64                      `json:"delete_after_stop_seconds"`
-	FsCapacityBytes        int64                      `json:"fs_capacity_bytes"`
-	IdleTtlSeconds         int64                      `json:"idle_ttl_seconds"`
-	Labels                 map[string]string          `json:"labels"`
-	MemBytes               int64                      `json:"mem_bytes"`
-	MountConfig            SandboxResponseMountConfig `json:"mount_config"`
-	Name                   string                     `json:"name"`
-	PreserveMemoryOnStop   bool                       `json:"preserve_memory_on_stop"`
-	ProxyConfig            SandboxResponseProxyConfig `json:"proxy_config"`
+	ID string `json:"id"`
+	// AccessDelegation is the LangSmith access this sandbox was granted, absent when
+	// it has none. Either mode can appear: a grant is reported as requested, except
+	// that INHERIT requested by a creator who is itself delegated is stored as
+	// EXPLICIT carrying that creator's own ceiling, so the value always describes what
+	// this sandbox can reach rather than what was asked for.
+	AccessDelegation       SandboxResponseAccessDelegation `json:"access_delegation"`
+	CPUMillicores          int64                           `json:"cpu_millicores"`
+	CreatedAt              string                          `json:"created_at"`
+	CreatedBy              string                          `json:"created_by"`
+	DataplaneURL           string                          `json:"dataplane_url"`
+	DeleteAfterStopSeconds int64                           `json:"delete_after_stop_seconds"`
+	FsCapacityBytes        int64                           `json:"fs_capacity_bytes"`
+	IdleTtlSeconds         int64                           `json:"idle_ttl_seconds"`
+	Labels                 map[string]string               `json:"labels"`
+	MemBytes               int64                           `json:"mem_bytes"`
+	MountConfig            SandboxResponseMountConfig      `json:"mount_config"`
+	Name                   string                          `json:"name"`
+	PreserveMemoryOnStop   bool                            `json:"preserve_memory_on_stop"`
+	ProxyConfig            SandboxResponseProxyConfig      `json:"proxy_config"`
 	// RunConfig is what the sandbox's commands run with: the user, working directory
 	// and base env beneath env_vars.
 	RunConfig     SandboxResponseRunConfig `json:"run_config"`
@@ -170,6 +176,7 @@ type SandboxResponse struct {
 // sandboxResponseJSON contains the JSON metadata for the struct [SandboxResponse]
 type sandboxResponseJSON struct {
 	ID                     apijson.Field
+	AccessDelegation       apijson.Field
 	CPUMillicores          apijson.Field
 	CreatedAt              apijson.Field
 	CreatedBy              apijson.Field
@@ -202,6 +209,49 @@ func (r *SandboxResponse) UnmarshalJSON(data []byte) (err error) {
 
 func (r sandboxResponseJSON) RawJSON() string {
 	return r.raw
+}
+
+// AccessDelegation is the LangSmith access this sandbox was granted, absent when
+// it has none. Either mode can appear: a grant is reported as requested, except
+// that INHERIT requested by a creator who is itself delegated is stored as
+// EXPLICIT carrying that creator's own ceiling, so the value always describes what
+// this sandbox can reach rather than what was asked for.
+type SandboxResponseAccessDelegation struct {
+	Mode        SandboxResponseAccessDelegationMode `json:"mode" api:"required"`
+	Permissions []string                            `json:"permissions"`
+	JSON        sandboxResponseAccessDelegationJSON `json:"-"`
+}
+
+// sandboxResponseAccessDelegationJSON contains the JSON metadata for the struct
+// [SandboxResponseAccessDelegation]
+type sandboxResponseAccessDelegationJSON struct {
+	Mode        apijson.Field
+	Permissions apijson.Field
+	raw         string
+	ExtraFields map[string]apijson.Field
+}
+
+func (r *SandboxResponseAccessDelegation) UnmarshalJSON(data []byte) (err error) {
+	return apijson.UnmarshalRoot(data, r)
+}
+
+func (r sandboxResponseAccessDelegationJSON) RawJSON() string {
+	return r.raw
+}
+
+type SandboxResponseAccessDelegationMode string
+
+const (
+	SandboxResponseAccessDelegationModeInherit  SandboxResponseAccessDelegationMode = "INHERIT"
+	SandboxResponseAccessDelegationModeExplicit SandboxResponseAccessDelegationMode = "EXPLICIT"
+)
+
+func (r SandboxResponseAccessDelegationMode) IsKnown() bool {
+	switch r {
+	case SandboxResponseAccessDelegationModeInherit, SandboxResponseAccessDelegationModeExplicit:
+		return true
+	}
+	return false
 }
 
 type SandboxResponseMountConfig struct {

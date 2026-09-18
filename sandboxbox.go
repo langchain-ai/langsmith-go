@@ -218,6 +218,9 @@ func (r *SandboxBoxService) Stop(ctx context.Context, name string, opts ...optio
 }
 
 type SandboxBoxNewParams struct {
+	// AccessDelegation lets code inside the sandbox call the LangSmith API as you,
+	// with at most the permissions granted here. Omit for no access.
+	AccessDelegation param.Field[SandboxBoxNewParamsAccessDelegation] `json:"access_delegation"`
 	// CPUMillicores optionally requests CPU at millicore granularity (e.g. 500 = 0.5
 	// vCPU); takes precedence over VCPUs. Fractional (sub-vCPU) values are not
 	// available for every sandbox.
@@ -268,6 +271,32 @@ type SandboxBoxNewParams struct {
 
 func (r SandboxBoxNewParams) MarshalJSON() (data []byte, err error) {
 	return apijson.MarshalRoot(r)
+}
+
+// AccessDelegation lets code inside the sandbox call the LangSmith API as you,
+// with at most the permissions granted here. Omit for no access.
+type SandboxBoxNewParamsAccessDelegation struct {
+	Mode        param.Field[SandboxBoxNewParamsAccessDelegationMode] `json:"mode" api:"required"`
+	Permissions param.Field[[]string]                                `json:"permissions"`
+}
+
+func (r SandboxBoxNewParamsAccessDelegation) MarshalJSON() (data []byte, err error) {
+	return apijson.MarshalRoot(r)
+}
+
+type SandboxBoxNewParamsAccessDelegationMode string
+
+const (
+	SandboxBoxNewParamsAccessDelegationModeInherit  SandboxBoxNewParamsAccessDelegationMode = "INHERIT"
+	SandboxBoxNewParamsAccessDelegationModeExplicit SandboxBoxNewParamsAccessDelegationMode = "EXPLICIT"
+)
+
+func (r SandboxBoxNewParamsAccessDelegationMode) IsKnown() bool {
+	switch r {
+	case SandboxBoxNewParamsAccessDelegationModeInherit, SandboxBoxNewParamsAccessDelegationModeExplicit:
+		return true
+	}
+	return false
 }
 
 type SandboxBoxNewParamsMountConfig struct {

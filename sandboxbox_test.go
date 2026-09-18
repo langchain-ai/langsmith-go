@@ -45,6 +45,10 @@ func TestSandboxBoxNewWithOptionalParams(t *testing.T) {
 		option.WithTenantID("My Tenant ID"),
 	)
 	_, err := client.Sandboxes.Boxes.New(context.TODO(), langsmith.SandboxBoxNewParams{
+		AccessDelegation: langsmith.F(langsmith.SandboxBoxNewParamsAccessDelegation{
+			Mode:        langsmith.F(langsmith.SandboxBoxNewParamsAccessDelegationModeInherit),
+			Permissions: langsmith.F([]string{"string"}),
+		}),
 		CPUMillicores:          langsmith.F(int64(0)),
 		DeleteAfterStopSeconds: langsmith.F(int64(0)),
 		EnvVars: langsmith.F(map[string]string{
