@@ -1,5 +1,29 @@
 # Changelog
 
+## [0.26.6](https://github.com/langchain-ai/langsmith-go/compare/v0.26.5...v0.26.6) (2026-09-18)
+
+
+### Features
+
+* add granularity query parameter to usage metrics endpoint ([d2d4236](https://github.com/langchain-ai/langsmith-go/commit/d2d42363e214bbd4be9354c52204ca4536f6ccc0))
+* **evaluators:** add agent_id filter parameter to list endpoint ([8c18031](https://github.com/langchain-ai/langsmith-go/commit/8c180310777dd8210e183de8a5ed2e3e3bd0a3f3))
+* **insights:** add list, update, and delete methods for job configs ([372d153](https://github.com/langchain-ai/langsmith-go/commit/372d1532c692270c0fa34213f89545e772bd58e0))
+* **runs:** add trace_filter and tree_filter query parameters ([08d9992](https://github.com/langchain-ai/langsmith-go/commit/08d9992219cf7af53320b6b38746e72ef438bb07))
+* **sandboxes:** add access_delegation field to sandbox create and response ([6184a75](https://github.com/langchain-ai/langsmith-go/commit/6184a75e05e52869a351bdc75cf8866dda6acdd0))
+* **threads:** add turn_number field and TURN_NUMBER select option to thread traces ([17aad6a](https://github.com/langchain-ai/langsmith-go/commit/17aad6a447f4a77b7fc76e43ddc822537bd98f18))
+
+
+### Chores
+
+* **sandboxes:** update snapshot endpoint descriptions ([8421f76](https://github.com/langchain-ai/langsmith-go/commit/8421f7641dbcfd59835f4b2043cd9db40201be2f))
+
+
+### Build System
+
+* **deps:** bump go.opentelemetry.io/otel/exporters/otlp/otlptrace/otlptracehttp ([68d82d8](https://github.com/langchain-ai/langsmith-go/commit/68d82d8e385ce87d121d88334e964f480f157900))
+* **deps:** bump go.opentelemetry.io/otel/exporters/otlp/otlptrace/otlptracehttp from 1.44.0 to 1.45.0 in the go_modules group across 1 directory ([#223](https://github.com/langchain-ai/langsmith-go/issues/223)) ([d2859c9](https://github.com/langchain-ai/langsmith-go/commit/d2859c92f1863174843b9c5419e340f0e7360d9d))
+* **deps:** bump go.opentelemetry.io/otel/sdk from 1.44.0 to 1.46.0 in the go_modules group across 1 directory ([#105](https://github.com/langchain-ai/langsmith-go/issues/105)) ([a991745](https://github.com/langchain-ai/langsmith-go/commit/a991745b2dadba7f7aabf224375314c0f59c8d44))
+
 ## [0.26.5](https://github.com/langchain-ai/langsmith-go/compare/v0.26.4...v0.26.5) (2026-09-16)
 
 
