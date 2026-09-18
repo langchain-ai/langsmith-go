@@ -186,6 +186,9 @@ type CreateOnlineCodeEvaluatorRequestParam struct {
 	Language                     param.Field[string]                                                                      `json:"language"`
 	ManagedCodeEvaluatorKey      param.Field[string]                                                                      `json:"managed_code_evaluator_key"`
 	ManagedCodeEvaluatorSettings param.Field[map[string]CreateOnlineCodeEvaluatorRequestManagedCodeEvaluatorSettingParam] `json:"managed_code_evaluator_settings"`
+	// RequireAttachments opts the evaluator into selecting/presigning run attachments
+	// (s3_urls) at evaluation time. Default false.
+	RequireAttachments param.Field[bool] `json:"require_attachments"`
 }
 
 func (r CreateOnlineCodeEvaluatorRequestParam) MarshalJSON() (data []byte, err error) {
@@ -281,7 +284,10 @@ type OnlineCodeEvaluator struct {
 	Language                     string                                                    `json:"language"`
 	ManagedCodeEvaluatorKey      string                                                    `json:"managed_code_evaluator_key"`
 	ManagedCodeEvaluatorSettings map[string]OnlineCodeEvaluatorManagedCodeEvaluatorSetting `json:"managed_code_evaluator_settings"`
-	JSON                         onlineCodeEvaluatorJSON                                   `json:"-"`
+	// RequireAttachments opts the evaluator into selecting/presigning run attachments
+	// (s3_urls) at evaluation time. Default false.
+	RequireAttachments bool                    `json:"require_attachments"`
+	JSON               onlineCodeEvaluatorJSON `json:"-"`
 }
 
 // onlineCodeEvaluatorJSON contains the JSON metadata for the struct
@@ -296,6 +302,7 @@ type onlineCodeEvaluatorJSON struct {
 	Language                     apijson.Field
 	ManagedCodeEvaluatorKey      apijson.Field
 	ManagedCodeEvaluatorSettings apijson.Field
+	RequireAttachments           apijson.Field
 	raw                          string
 	ExtraFields                  map[string]apijson.Field
 }
@@ -599,6 +606,9 @@ type UpdateOnlineCodeEvaluatorRequestParam struct {
 	Dependencies                 param.Field[string]                                                                      `json:"dependencies"`
 	Language                     param.Field[string]                                                                      `json:"language"`
 	ManagedCodeEvaluatorSettings param.Field[map[string]UpdateOnlineCodeEvaluatorRequestManagedCodeEvaluatorSettingParam] `json:"managed_code_evaluator_settings"`
+	// RequireAttachments is fetch-time config: updating it does not rebuild the
+	// sandbox snapshot.
+	RequireAttachments param.Field[bool] `json:"require_attachments"`
 }
 
 func (r UpdateOnlineCodeEvaluatorRequestParam) MarshalJSON() (data []byte, err error) {
