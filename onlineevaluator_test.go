@@ -139,6 +139,7 @@ func TestOnlineEvaluatorListWithOptionalParams(t *testing.T) {
 		option.WithTenantID("My Tenant ID"),
 	)
 	_, err := client.OnlineEvaluators.List(context.TODO(), langsmith.OnlineEvaluatorListParams{
+		AgentID:      langsmith.F("agent_id"),
 		FeedbackKey:  langsmith.F("feedback_key"),
 		Limit:        langsmith.F(int64(0)),
 		NameContains: langsmith.F("name_contains"),

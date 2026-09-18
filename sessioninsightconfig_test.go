@@ -70,3 +70,119 @@ func TestSessionInsightConfigNewWithOptionalParams(t *testing.T) {
 		t.Fatalf("err should be nil: %s", err.Error())
 	}
 }
+
+func TestSessionInsightConfigUpdateWithOptionalParams(t *testing.T) {
+	t.Skip("Mock server tests are disabled")
+	baseURL := "http://localhost:4010"
+	if envURL, ok := os.LookupEnv("TEST_API_BASE_URL"); ok {
+		baseURL = envURL
+	}
+	if !testutil.CheckTestServer(t, baseURL) {
+		return
+	}
+	client := langsmith.NewClient(
+		option.WithBaseURL(baseURL),
+		option.WithAPIKey("My API Key"),
+		option.WithTenantID("My Tenant ID"),
+	)
+	_, err := client.Sessions.Insights.Configs.Update(
+		context.TODO(),
+		"182bd5e5-6e1a-4fe4-a799-aa6d9a6ab26e",
+		"182bd5e5-6e1a-4fe4-a799-aa6d9a6ab26e",
+		langsmith.SessionInsightConfigUpdateParams{
+			Config: langsmith.F(langsmith.CreateRunClusteringJobRequestParam{
+				AttributeSchemas: langsmith.F(map[string]interface{}{
+					"foo": "bar",
+				}),
+				ClusterModel: langsmith.F("cluster_model"),
+				ConfigID:     langsmith.F("182bd5e5-6e1a-4fe4-a799-aa6d9a6ab26e"),
+				EndTime:      langsmith.F(time.Now()),
+				Filter:       langsmith.F("filter"),
+				Hierarchy:    langsmith.F([]int64{int64(0)}),
+				IsScheduled:  langsmith.F(true),
+				LastNHours:   langsmith.F(int64(0)),
+				Model:        langsmith.F(langsmith.CreateRunClusteringJobRequestModelOpenAI),
+				Name:         langsmith.F("name"),
+				Partitions: langsmith.F(map[string]string{
+					"foo": "string",
+				}),
+				Sample:        langsmith.F(0.000000),
+				StartTime:     langsmith.F(time.Now()),
+				SummaryModel:  langsmith.F("summary_model"),
+				SummaryPrompt: langsmith.F("summary_prompt"),
+				UserContext: langsmith.F(map[string]string{
+					"foo": "string",
+				}),
+				ValidateModelSecrets: langsmith.F(true),
+			}),
+			Description:  langsmith.F("description"),
+			Name:         langsmith.F("name"),
+			ScheduleCron: langsmith.F("schedule_cron"),
+		},
+	)
+	if err != nil {
+		var apierr *langsmith.Error
+		if errors.As(err, &apierr) {
+			t.Log(string(apierr.DumpRequest(true)))
+		}
+		t.Fatalf("err should be nil: %s", err.Error())
+	}
+}
+
+func TestSessionInsightConfigListWithOptionalParams(t *testing.T) {
+	t.Skip("Mock server tests are disabled")
+	baseURL := "http://localhost:4010"
+	if envURL, ok := os.LookupEnv("TEST_API_BASE_URL"); ok {
+		baseURL = envURL
+	}
+	if !testutil.CheckTestServer(t, baseURL) {
+		return
+	}
+	client := langsmith.NewClient(
+		option.WithBaseURL(baseURL),
+		option.WithAPIKey("My API Key"),
+		option.WithTenantID("My Tenant ID"),
+	)
+	_, err := client.Sessions.Insights.Configs.List(
+		context.TODO(),
+		"182bd5e5-6e1a-4fe4-a799-aa6d9a6ab26e",
+		langsmith.SessionInsightConfigListParams{
+			IncludePrebuilts: langsmith.F(true),
+		},
+	)
+	if err != nil {
+		var apierr *langsmith.Error
+		if errors.As(err, &apierr) {
+			t.Log(string(apierr.DumpRequest(true)))
+		}
+		t.Fatalf("err should be nil: %s", err.Error())
+	}
+}
+
+func TestSessionInsightConfigDelete(t *testing.T) {
+	t.Skip("Mock server tests are disabled")
+	baseURL := "http://localhost:4010"
+	if envURL, ok := os.LookupEnv("TEST_API_BASE_URL"); ok {
+		baseURL = envURL
+	}
+	if !testutil.CheckTestServer(t, baseURL) {
+		return
+	}
+	client := langsmith.NewClient(
+		option.WithBaseURL(baseURL),
+		option.WithAPIKey("My API Key"),
+		option.WithTenantID("My Tenant ID"),
+	)
+	_, err := client.Sessions.Insights.Configs.Delete(
+		context.TODO(),
+		"182bd5e5-6e1a-4fe4-a799-aa6d9a6ab26e",
+		"182bd5e5-6e1a-4fe4-a799-aa6d9a6ab26e",
+	)
+	if err != nil {
+		var apierr *langsmith.Error
+		if errors.As(err, &apierr) {
+			t.Log(string(apierr.DumpRequest(true)))
+		}
+		t.Fatalf("err should be nil: %s", err.Error())
+	}
+}

@@ -2444,6 +2444,9 @@ type SandboxListUsageCostsParams struct {
 	StartTime param.Field[time.Time] `query:"start_time" api:"required" format:"date-time"`
 	// Opaque pagination cursor
 	Cursor param.Field[string] `query:"cursor"`
+	// HOUR returns hourly buckets. RESOURCE sums each resource over the requested
+	// interval and sets period_start to start_time.
+	Granularity param.Field[SandboxListUsageCostsParamsGranularity] `query:"granularity"`
 	// Maximum rows to return
 	PageSize param.Field[int64] `query:"page_size"`
 	// Resource UUID filter; repeat this parameter up to 100 times
@@ -2459,6 +2462,23 @@ func (r SandboxListUsageCostsParams) URLQuery() (v url.Values) {
 		ArrayFormat:  apiquery.ArrayQueryFormatRepeat,
 		NestedFormat: apiquery.NestedQueryFormatBrackets,
 	})
+}
+
+// HOUR returns hourly buckets. RESOURCE sums each resource over the requested
+// interval and sets period_start to start_time.
+type SandboxListUsageCostsParamsGranularity string
+
+const (
+	SandboxListUsageCostsParamsGranularityHour     SandboxListUsageCostsParamsGranularity = "HOUR"
+	SandboxListUsageCostsParamsGranularityResource SandboxListUsageCostsParamsGranularity = "RESOURCE"
+)
+
+func (r SandboxListUsageCostsParamsGranularity) IsKnown() bool {
+	switch r {
+	case SandboxListUsageCostsParamsGranularityHour, SandboxListUsageCostsParamsGranularityResource:
+		return true
+	}
+	return false
 }
 
 // Resource type filter

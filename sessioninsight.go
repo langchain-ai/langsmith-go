@@ -40,7 +40,7 @@ func NewSessionInsightService(opts ...option.RequestOption) (r *SessionInsightSe
 	return
 }
 
-// Create an insights job.
+// Create an Insights job for a project.
 func (r *SessionInsightService) New(ctx context.Context, sessionID string, body SessionInsightNewParams, opts ...option.RequestOption) (res *SessionInsightNewResponse, err error) {
 	opts = slices.Concat(r.Options, opts)
 	if sessionID == "" {
@@ -52,7 +52,7 @@ func (r *SessionInsightService) New(ctx context.Context, sessionID string, body 
 	return res, err
 }
 
-// Update a session cluster job.
+// Update an Insights job for a project.
 func (r *SessionInsightService) Update(ctx context.Context, sessionID string, jobID string, body SessionInsightUpdateParams, opts ...option.RequestOption) (res *SessionInsightUpdateResponse, err error) {
 	opts = slices.Concat(r.Options, opts)
 	if sessionID == "" {
@@ -68,7 +68,7 @@ func (r *SessionInsightService) Update(ctx context.Context, sessionID string, jo
 	return res, err
 }
 
-// Get all clusters for a session.
+// List Insights jobs for a project.
 func (r *SessionInsightService) List(ctx context.Context, sessionID string, query SessionInsightListParams, opts ...option.RequestOption) (res *pagination.OffsetPaginationInsightsClusteringJobs[SessionInsightListResponse], err error) {
 	var raw *http.Response
 	opts = slices.Concat(r.Options, opts)
@@ -90,12 +90,12 @@ func (r *SessionInsightService) List(ctx context.Context, sessionID string, quer
 	return res, nil
 }
 
-// Get all clusters for a session.
+// List Insights jobs for a project.
 func (r *SessionInsightService) ListAutoPaging(ctx context.Context, sessionID string, query SessionInsightListParams, opts ...option.RequestOption) *pagination.OffsetPaginationInsightsClusteringJobsAutoPager[SessionInsightListResponse] {
 	return pagination.NewOffsetPaginationInsightsClusteringJobsAutoPager(r.List(ctx, sessionID, query, opts...))
 }
 
-// Delete a session cluster job.
+// Delete an Insights job for a project.
 func (r *SessionInsightService) Delete(ctx context.Context, sessionID string, jobID string, opts ...option.RequestOption) (res *SessionInsightDeleteResponse, err error) {
 	opts = slices.Concat(r.Options, opts)
 	if sessionID == "" {
@@ -111,7 +111,7 @@ func (r *SessionInsightService) Delete(ctx context.Context, sessionID string, jo
 	return res, err
 }
 
-// Get a specific cluster job for a session.
+// Get an Insights job for a project.
 func (r *SessionInsightService) GetJob(ctx context.Context, sessionID string, jobID string, opts ...option.RequestOption) (res *SessionInsightGetJobResponse, err error) {
 	opts = slices.Concat(r.Options, opts)
 	if sessionID == "" {
@@ -127,7 +127,7 @@ func (r *SessionInsightService) GetJob(ctx context.Context, sessionID string, jo
 	return res, err
 }
 
-// Get all runs for a cluster job, optionally filtered by cluster.
+// List runs analyzed by an Insights job, optionally filtered by report cluster.
 func (r *SessionInsightService) GetRuns(ctx context.Context, sessionID string, jobID string, query SessionInsightGetRunsParams, opts ...option.RequestOption) (res *SessionInsightGetRunsResponse, err error) {
 	opts = slices.Concat(r.Options, opts)
 	if sessionID == "" {
@@ -143,7 +143,7 @@ func (r *SessionInsightService) GetRuns(ctx context.Context, sessionID string, j
 	return res, err
 }
 
-// Request to create a run clustering job.
+// Configuration for an Insights job.
 type CreateRunClusteringJobRequestParam struct {
 	AttributeSchemas     param.Field[map[string]interface{}]             `json:"attribute_schemas"`
 	ClusterModel         param.Field[string]                             `json:"cluster_model"`
@@ -183,7 +183,7 @@ func (r CreateRunClusteringJobRequestModel) IsKnown() bool {
 	return false
 }
 
-// Response to creating a run clustering job.
+// An Insights job queued for execution.
 type SessionInsightNewResponse struct {
 	ID     string                        `json:"id" api:"required" format:"uuid"`
 	Name   string                        `json:"name" api:"required"`
@@ -211,7 +211,7 @@ func (r sessionInsightNewResponseJSON) RawJSON() string {
 	return r.raw
 }
 
-// Response to update a session cluster job.
+// Response to updating an Insights job.
 type SessionInsightUpdateResponse struct {
 	Name   string                           `json:"name" api:"required"`
 	Status string                           `json:"status" api:"required"`
@@ -235,7 +235,7 @@ func (r sessionInsightUpdateResponseJSON) RawJSON() string {
 	return r.raw
 }
 
-// Session cluster job
+// An Insights job.
 type SessionInsightListResponse struct {
 	ID        string                         `json:"id" api:"required" format:"uuid"`
 	CreatedAt time.Time                      `json:"created_at" api:"required" format:"date-time"`
@@ -275,7 +275,7 @@ func (r sessionInsightListResponseJSON) RawJSON() string {
 	return r.raw
 }
 
-// Response to delete a session cluster job.
+// Confirmation that an Insights job was deleted.
 type SessionInsightDeleteResponse struct {
 	ID      string                           `json:"id" api:"required" format:"uuid"`
 	Message string                           `json:"message" api:"required"`
@@ -299,7 +299,7 @@ func (r sessionInsightDeleteResponseJSON) RawJSON() string {
 	return r.raw
 }
 
-// Response to get a specific cluster job for a session.
+// An Insights job and the report it produced.
 type SessionInsightGetJobResponse struct {
 	ID        string                                `json:"id" api:"required" format:"uuid"`
 	Clusters  []SessionInsightGetJobResponseCluster `json:"clusters" api:"required"`
@@ -310,8 +310,7 @@ type SessionInsightGetJobResponse struct {
 	EndTime   time.Time                             `json:"end_time" api:"nullable" format:"date-time"`
 	Error     string                                `json:"error" api:"nullable"`
 	Metadata  map[string]interface{}                `json:"metadata" api:"nullable"`
-	// High level summary of an insights job that pulls out patterns and specific
-	// traces.
+	// High-level summary of an Insights report with patterns and specific traces.
 	Report    SessionInsightGetJobResponseReport `json:"report" api:"nullable"`
 	Shape     map[string]int64                   `json:"shape" api:"nullable"`
 	StartTime time.Time                          `json:"start_time" api:"nullable" format:"date-time"`
@@ -381,8 +380,7 @@ func (r sessionInsightGetJobResponseClusterJSON) RawJSON() string {
 	return r.raw
 }
 
-// High level summary of an insights job that pulls out patterns and specific
-// traces.
+// High-level summary of an Insights report with patterns and specific traces.
 type SessionInsightGetJobResponseReport struct {
 	CreatedAt         time.Time                                            `json:"created_at" api:"nullable" format:"date-time"`
 	HighlightedTraces []SessionInsightGetJobResponseReportHighlightedTrace `json:"highlighted_traces"`
@@ -410,7 +408,7 @@ func (r sessionInsightGetJobResponseReportJSON) RawJSON() string {
 	return r.raw
 }
 
-// A trace highlighted in an insights report summary. Up to 10 per insights job.
+// A trace highlighted in an Insights report summary. Up to 10 per report.
 type SessionInsightGetJobResponseReportHighlightedTrace struct {
 	HighlightReason string                                                 `json:"highlight_reason" api:"required"`
 	Rank            int64                                                  `json:"rank" api:"required"`
@@ -466,7 +464,7 @@ func (r sessionInsightGetRunsResponseJSON) RawJSON() string {
 }
 
 type SessionInsightNewParams struct {
-	// Request to create a run clustering job.
+	// Configuration for an Insights job.
 	CreateRunClusteringJobRequest CreateRunClusteringJobRequestParam `json:"create_run_clustering_job_request" api:"required"`
 }
 

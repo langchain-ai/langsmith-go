@@ -65,11 +65,13 @@ func TestThreadListTracesWithOptionalParams(t *testing.T) {
 		context.TODO(),
 		"thread_id",
 		langsmith.ThreadListTracesParams{
-			ProjectID: langsmith.F("182bd5e5-6e1a-4fe4-a799-aa6d9a6ab26e"),
-			Cursor:    langsmith.F("cursor"),
-			Filter:    langsmith.F("filter"),
-			PageSize:  langsmith.F(int64(1)),
-			Selects:   langsmith.F([]langsmith.ThreadListTracesParamsSelect{langsmith.ThreadListTracesParamsSelectThreadID}),
+			ProjectID:   langsmith.F("182bd5e5-6e1a-4fe4-a799-aa6d9a6ab26e"),
+			Cursor:      langsmith.F("cursor"),
+			Filter:      langsmith.F("filter"),
+			PageSize:    langsmith.F(int64(1)),
+			Selects:     langsmith.F([]langsmith.ThreadListTracesParamsSelect{langsmith.ThreadListTracesParamsSelectThreadID}),
+			TraceFilter: langsmith.F("trace_filter"),
+			TreeFilter:  langsmith.F("tree_filter"),
 		},
 	)
 	if err != nil {
