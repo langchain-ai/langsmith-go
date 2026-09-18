@@ -183,10 +183,21 @@ type CreateOnlineCodeEvaluatorRequestParam struct {
 	Code                    param.Field[string] `json:"code"`
 	Dependencies            param.Field[string] `json:"dependencies"`
 	// Default: "python"
-	Language param.Field[string] `json:"language"`
+	Language                     param.Field[string]                                                                      `json:"language"`
+	ManagedCodeEvaluatorKey      param.Field[string]                                                                      `json:"managed_code_evaluator_key"`
+	ManagedCodeEvaluatorSettings param.Field[map[string]CreateOnlineCodeEvaluatorRequestManagedCodeEvaluatorSettingParam] `json:"managed_code_evaluator_settings"`
 }
 
 func (r CreateOnlineCodeEvaluatorRequestParam) MarshalJSON() (data []byte, err error) {
+	return apijson.MarshalRoot(r)
+}
+
+type CreateOnlineCodeEvaluatorRequestManagedCodeEvaluatorSettingParam struct {
+	IsEnabled param.Field[bool]   `json:"is_enabled"`
+	KeyName   param.Field[string] `json:"key_name"`
+}
+
+func (r CreateOnlineCodeEvaluatorRequestManagedCodeEvaluatorSettingParam) MarshalJSON() (data []byte, err error) {
 	return apijson.MarshalRoot(r)
 }
 
@@ -267,22 +278,26 @@ type OnlineCodeEvaluator struct {
 	EvaluatorBuildStatus    OnlineCodeEvaluatorEvaluatorBuildStatus `json:"evaluator_build_status"`
 	EvaluatorID             string                                  `json:"evaluator_id"`
 	// Default: "python"
-	Language string                  `json:"language"`
-	JSON     onlineCodeEvaluatorJSON `json:"-"`
+	Language                     string                                                    `json:"language"`
+	ManagedCodeEvaluatorKey      string                                                    `json:"managed_code_evaluator_key"`
+	ManagedCodeEvaluatorSettings map[string]OnlineCodeEvaluatorManagedCodeEvaluatorSetting `json:"managed_code_evaluator_settings"`
+	JSON                         onlineCodeEvaluatorJSON                                   `json:"-"`
 }
 
 // onlineCodeEvaluatorJSON contains the JSON metadata for the struct
 // [OnlineCodeEvaluator]
 type onlineCodeEvaluatorJSON struct {
-	AdvancedFeaturesEnabled apijson.Field
-	Code                    apijson.Field
-	Dependencies            apijson.Field
-	EvaluatorBuildError     apijson.Field
-	EvaluatorBuildStatus    apijson.Field
-	EvaluatorID             apijson.Field
-	Language                apijson.Field
-	raw                     string
-	ExtraFields             map[string]apijson.Field
+	AdvancedFeaturesEnabled      apijson.Field
+	Code                         apijson.Field
+	Dependencies                 apijson.Field
+	EvaluatorBuildError          apijson.Field
+	EvaluatorBuildStatus         apijson.Field
+	EvaluatorID                  apijson.Field
+	Language                     apijson.Field
+	ManagedCodeEvaluatorKey      apijson.Field
+	ManagedCodeEvaluatorSettings apijson.Field
+	raw                          string
+	ExtraFields                  map[string]apijson.Field
 }
 
 func (r *OnlineCodeEvaluator) UnmarshalJSON(data []byte) (err error) {
@@ -308,6 +323,29 @@ func (r OnlineCodeEvaluatorEvaluatorBuildStatus) IsKnown() bool {
 		return true
 	}
 	return false
+}
+
+type OnlineCodeEvaluatorManagedCodeEvaluatorSetting struct {
+	IsEnabled bool                                               `json:"is_enabled"`
+	KeyName   string                                             `json:"key_name"`
+	JSON      onlineCodeEvaluatorManagedCodeEvaluatorSettingJSON `json:"-"`
+}
+
+// onlineCodeEvaluatorManagedCodeEvaluatorSettingJSON contains the JSON metadata
+// for the struct [OnlineCodeEvaluatorManagedCodeEvaluatorSetting]
+type onlineCodeEvaluatorManagedCodeEvaluatorSettingJSON struct {
+	IsEnabled   apijson.Field
+	KeyName     apijson.Field
+	raw         string
+	ExtraFields map[string]apijson.Field
+}
+
+func (r *OnlineCodeEvaluatorManagedCodeEvaluatorSetting) UnmarshalJSON(data []byte) (err error) {
+	return apijson.UnmarshalRoot(data, r)
+}
+
+func (r onlineCodeEvaluatorManagedCodeEvaluatorSettingJSON) RawJSON() string {
+	return r.raw
 }
 
 type OnlineEvaluator struct {
@@ -556,13 +594,23 @@ func (r onlineSpendLimitJSON) RawJSON() string {
 }
 
 type UpdateOnlineCodeEvaluatorRequestParam struct {
-	AdvancedFeaturesEnabled param.Field[bool]   `json:"advanced_features_enabled"`
-	Code                    param.Field[string] `json:"code"`
-	Dependencies            param.Field[string] `json:"dependencies"`
-	Language                param.Field[string] `json:"language"`
+	AdvancedFeaturesEnabled      param.Field[bool]                                                                        `json:"advanced_features_enabled"`
+	Code                         param.Field[string]                                                                      `json:"code"`
+	Dependencies                 param.Field[string]                                                                      `json:"dependencies"`
+	Language                     param.Field[string]                                                                      `json:"language"`
+	ManagedCodeEvaluatorSettings param.Field[map[string]UpdateOnlineCodeEvaluatorRequestManagedCodeEvaluatorSettingParam] `json:"managed_code_evaluator_settings"`
 }
 
 func (r UpdateOnlineCodeEvaluatorRequestParam) MarshalJSON() (data []byte, err error) {
+	return apijson.MarshalRoot(r)
+}
+
+type UpdateOnlineCodeEvaluatorRequestManagedCodeEvaluatorSettingParam struct {
+	IsEnabled param.Field[bool]   `json:"is_enabled"`
+	KeyName   param.Field[string] `json:"key_name"`
+}
+
+func (r UpdateOnlineCodeEvaluatorRequestManagedCodeEvaluatorSettingParam) MarshalJSON() (data []byte, err error) {
 	return apijson.MarshalRoot(r)
 }
 

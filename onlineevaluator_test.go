@@ -34,6 +34,13 @@ func TestOnlineEvaluatorNewWithOptionalParams(t *testing.T) {
 				Code:                    langsmith.F("code"),
 				Dependencies:            langsmith.F("dependencies"),
 				Language:                langsmith.F("language"),
+				ManagedCodeEvaluatorKey: langsmith.F("managed_code_evaluator_key"),
+				ManagedCodeEvaluatorSettings: langsmith.F(map[string]langsmith.CreateOnlineCodeEvaluatorRequestManagedCodeEvaluatorSettingParam{
+					"foo": {
+						IsEnabled: langsmith.F(true),
+						KeyName:   langsmith.F("key_name"),
+					},
+				}),
 			}),
 			LlmEvaluator: langsmith.F(langsmith.CreateOnlineLlmEvaluatorRequestParam{
 				CommitHashOrTag:      langsmith.F("commit_hash_or_tag"),
@@ -102,6 +109,12 @@ func TestOnlineEvaluatorUpdateWithOptionalParams(t *testing.T) {
 					Code:                    langsmith.F("code"),
 					Dependencies:            langsmith.F("dependencies"),
 					Language:                langsmith.F("language"),
+					ManagedCodeEvaluatorSettings: langsmith.F(map[string]langsmith.UpdateOnlineCodeEvaluatorRequestManagedCodeEvaluatorSettingParam{
+						"foo": {
+							IsEnabled: langsmith.F(true),
+							KeyName:   langsmith.F("key_name"),
+						},
+					}),
 				}),
 				LlmEvaluator: langsmith.F(langsmith.UpdateOnlineLlmEvaluatorRequestParam{
 					CommitHashOrTag:       langsmith.F("commit_hash_or_tag"),
