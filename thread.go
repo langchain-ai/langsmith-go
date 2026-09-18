@@ -1017,6 +1017,12 @@ type ThreadListTracesParams struct {
 	// Properties not listed are omitted from each trace object; `trace_id` is always
 	// returned.
 	Selects param.Field[[]ThreadListTracesParamsSelect] `query:"selects"`
+	// `trace_filter` narrows traces by applying a LangSmith filter expression to each
+	// trace's root run.
+	TraceFilter param.Field[string] `query:"trace_filter"`
+	// `tree_filter` narrows traces to those containing at least one run that matches
+	// the LangSmith filter expression.
+	TreeFilter param.Field[string] `query:"tree_filter"`
 }
 
 // URLQuery serializes [ThreadListTracesParams]'s query parameters as `url.Values`.
