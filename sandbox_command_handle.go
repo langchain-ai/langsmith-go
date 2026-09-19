@@ -32,6 +32,8 @@ type SandboxCommandHandle struct {
 	err       error
 	killed    bool
 	closed    bool
+	stdinDone bool
+	pty       bool
 	callbacks SandboxCommandCallbacks
 	stdout    strings.Builder
 	stderr    strings.Builder
@@ -131,11 +133,41 @@ func (h *SandboxCommandHandle) LastStderrOffset() int64 {
 	return h.stderrOf
 }
 
-// SendInput writes data to the running command's stdin.
+// SendInput writes data to the running command's stdin. It fails once stdin is
+// closed, either by CloseInput or by the default a non-PTY StartCommand applies.
 func (h *SandboxCommandHandle) SendInput(data string) error {
 	h.sendMu.Lock()
 	defer h.sendMu.Unlock()
+	h.stateMu.Lock()
+	stdinDone := h.stdinDone
+	h.stateMu.Unlock()
+	if stdinDone {
+		return &SandboxOperationError{
+			Operation: "send_input",
+			Message:   "stdin is closed for this command. Non-PTY commands close stdin by default so a command that reads it sees EOF instead of hanging; set CloseStdin to param.Field[bool]{Present: true} with a false value to stream input into it",
+		}
+	}
 	return websocket.JSON.Send(h.ws, map[string]string{"type": "input", "data": data})
+}
+
+// CloseInput half-closes stdin so the command reads EOF.
+//
+// Idempotent, and a no-op under a PTY, where input and output share one
+// terminal file descriptor and there is no write end to close -- send an EOT
+// byte (0x04) with SendInput instead.
+func (h *SandboxCommandHandle) CloseInput() error {
+	h.sendMu.Lock()
+	defer h.sendMu.Unlock()
+	h.stateMu.Lock()
+	skip := h.pty || h.stdinDone
+	if !skip {
+		h.stdinDone = true
+	}
+	h.stateMu.Unlock()
+	if skip {
+		return nil
+	}
+	return websocket.JSON.Send(h.ws, map[string]string{"type": "close_stdin"})
 }
 
 // Resize updates the command PTY size.
@@ -202,6 +234,10 @@ func (h *SandboxCommandHandle) Reconnect(ctx context.Context) (*SandboxCommandHa
 		return nil, &SandboxConnectionError{Message: fmt.Sprintf("langsmith: failed to send sandbox command reconnect request: %v", err)}
 	}
 	reconnected := newSandboxCommandHandle(ws, h.dataplaneURL, h.opts, h.CommandID, h.PID, payload.StdoutOffset, payload.StderrOffset)
+	h.stateMu.Lock()
+	reconnected.stdinDone = h.stdinDone
+	reconnected.pty = h.pty
+	h.stateMu.Unlock()
 	reconnected.callbacks = h.callbacks
 	reconnected.start()
 	return reconnected, nil
