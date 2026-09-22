@@ -41,13 +41,29 @@ func (r SandboxExecutionResult) Success() bool {
 	return r.ExitCode == 0
 }
 
+// SandboxRunConfig is the user, working directory and environment a command
+// runs with, layered over the sandbox's own. Mirrors docker run -u / -w / -e:
+// User and WorkDir replace, EnvVars merge.
+type SandboxRunConfig struct {
+	User    param.Field[string]            `json:"user"`
+	WorkDir param.Field[string]            `json:"work_dir"`
+	EnvVars param.Field[map[string]string] `json:"env_vars"`
+}
+
+func (r SandboxRunConfig) MarshalJSON() (data []byte, err error) {
+	return apijson.MarshalRoot(r)
+}
+
 // SandboxBoxRunParams configures a blocking sandbox command execution.
 type SandboxBoxRunParams struct {
-	Command param.Field[string]            `json:"command" api:"required"`
-	Timeout param.Field[int64]             `json:"timeout"`
-	Env     param.Field[map[string]string] `json:"env"`
-	CWD     param.Field[string]            `json:"cwd"`
-	Shell   param.Field[string]            `json:"shell"`
+	Command param.Field[string] `json:"command" api:"required"`
+	Timeout param.Field[int64]  `json:"timeout"`
+	// Deprecated: use RunConfig.EnvVars. Combining the two is rejected.
+	Env param.Field[map[string]string] `json:"env"`
+	// Deprecated: use RunConfig.WorkDir. Combining the two is rejected.
+	CWD       param.Field[string]           `json:"cwd"`
+	RunConfig param.Field[SandboxRunConfig] `json:"run_config"`
+	Shell     param.Field[string]           `json:"shell"`
 }
 
 func (r SandboxBoxRunParams) MarshalJSON() (data []byte, err error) {
@@ -58,16 +74,22 @@ func (r SandboxBoxRunParams) MarshalJSON() (data []byte, err error) {
 // Command is optional when Pty is true, in which case the sandbox starts the
 // selected shell directly.
 type SandboxCommandStartParams struct {
-	Command            param.Field[string]            `json:"command" api:"required"`
-	TimeoutSeconds     param.Field[int64]             `json:"timeout_seconds"`
-	Env                param.Field[map[string]string] `json:"env"`
-	CWD                param.Field[string]            `json:"cwd"`
-	Shell              param.Field[string]            `json:"shell"`
-	IdleTimeoutSeconds param.Field[int64]             `json:"idle_timeout_seconds"`
-	KillOnDisconnect   param.Field[bool]              `json:"kill_on_disconnect"`
-	TTLSeconds         param.Field[int64]             `json:"ttl_seconds"`
-	Pty                param.Field[bool]              `json:"pty"`
-	SSHAgentForward    param.Field[bool]              `json:"ssh_agent_forward"`
+	Command        param.Field[string] `json:"command" api:"required"`
+	TimeoutSeconds param.Field[int64]  `json:"timeout_seconds"`
+	// Deprecated: use RunConfig.EnvVars. Combining the two is rejected.
+	Env param.Field[map[string]string] `json:"env"`
+	// Deprecated: use RunConfig.WorkDir. Combining the two is rejected.
+	CWD       param.Field[string]           `json:"cwd"`
+	RunConfig param.Field[SandboxRunConfig] `json:"run_config"`
+	// CloseStdin half-closes the spawned process's stdin so it reads EOF.
+	// Start sets it by default for a non-PTY command; see SandboxCommandStart.
+	CloseStdin         param.Field[bool]   `json:"close_stdin"`
+	Shell              param.Field[string] `json:"shell"`
+	IdleTimeoutSeconds param.Field[int64]  `json:"idle_timeout_seconds"`
+	KillOnDisconnect   param.Field[bool]   `json:"kill_on_disconnect"`
+	TTLSeconds         param.Field[int64]  `json:"ttl_seconds"`
+	Pty                param.Field[bool]   `json:"pty"`
+	SSHAgentForward    param.Field[bool]   `json:"ssh_agent_forward"`
 }
 
 func (r SandboxCommandStartParams) MarshalJSON() (data []byte, err error) {
@@ -292,7 +314,10 @@ func startSandboxCommandAttempt(ctx context.Context, dataplaneURL string, payloa
 		}
 	}
 
-	return newSandboxCommandHandle(ws, dataplaneURL, opts, started.CommandID, started.PID, 0, 0), nil
+	handle := newSandboxCommandHandle(ws, dataplaneURL, opts, started.CommandID, started.PID, 0, 0)
+	handle.stdinDone = payload.CloseStdin.Value
+	handle.pty = payload.Pty.Value
+	return handle, nil
 }
 
 // ReconnectCommand reconnects to a running or recently-finished command in the
@@ -349,6 +374,8 @@ type sandboxCommandStartRequest struct {
 	TimeoutSeconds     param.Field[int64]             `json:"timeout_seconds"`
 	Env                param.Field[map[string]string] `json:"env"`
 	CWD                param.Field[string]            `json:"cwd"`
+	RunConfig          param.Field[SandboxRunConfig]  `json:"run_config"`
+	CloseStdin         param.Field[bool]              `json:"close_stdin"`
 	Shell              param.Field[string]            `json:"shell"`
 	IdleTimeoutSeconds param.Field[int64]             `json:"idle_timeout_seconds"`
 	KillOnDisconnect   param.Field[bool]              `json:"kill_on_disconnect"`
@@ -386,6 +413,9 @@ func normalizeSandboxRunParams(body SandboxBoxRunParams) (SandboxBoxRunParams, i
 	if !ok {
 		return SandboxBoxRunParams{}, 0, errors.New("missing required command parameter")
 	}
+	if err := checkSandboxRunConfigNotCombined(body.RunConfig, body.Env, body.CWD); err != nil {
+		return SandboxBoxRunParams{}, 0, err
+	}
 	timeout := sandboxFieldValue(body.Timeout, defaultSandboxCommandTimeoutSeconds)
 	shell := sandboxFieldValue(body.Shell, defaultSandboxCommandShell)
 	body.Command = F(command)
@@ -400,11 +430,15 @@ func normalizeSandboxCommandStartParams(body SandboxCommandStartParams) (sandbox
 	if !ok && !pty {
 		return sandboxCommandStartRequest{}, errors.New("missing required command parameter")
 	}
+	if err := checkSandboxRunConfigNotCombined(body.RunConfig, body.Env, body.CWD); err != nil {
+		return sandboxCommandStartRequest{}, err
+	}
 	out := sandboxCommandStartRequest{
 		Type:               F("execute"),
 		TimeoutSeconds:     F(sandboxFieldValue(body.TimeoutSeconds, defaultSandboxCommandTimeoutSeconds)),
 		Env:                body.Env,
 		CWD:                body.CWD,
+		RunConfig:          body.RunConfig,
 		Shell:              F(sandboxFieldValue(body.Shell, defaultSandboxCommandShell)),
 		IdleTimeoutSeconds: F(sandboxFieldValue(body.IdleTimeoutSeconds, defaultSandboxCommandIdleTimeout)),
 		KillOnDisconnect:   F(sandboxFieldValue(body.KillOnDisconnect, false)),
@@ -412,8 +446,39 @@ func normalizeSandboxCommandStartParams(body SandboxCommandStartParams) (sandbox
 		Pty:                body.Pty,
 		SSHAgentForward:    body.SSHAgentForward,
 	}
+	if closeStdin := resolveSandboxCloseStdin(body.CloseStdin, pty); closeStdin {
+		out.CloseStdin = F(true)
+	}
 	if ok {
 		out.Command = F(command)
 	}
 	return out, nil
+}
+
+// checkSandboxRunConfigNotCombined rejects a run_config alongside the
+// deprecated env/cwd. The server answers 400 rather than letting one spelling
+// silently win, so refuse it here where the message can name the replacement.
+func checkSandboxRunConfigNotCombined(runConfig param.Field[SandboxRunConfig], env param.Field[map[string]string], cwd param.Field[string]) error {
+	if !runConfig.Present {
+		return nil
+	}
+	if env.Present || cwd.Present {
+		return errors.New("langsmith: cannot combine RunConfig with the deprecated Env/CWD fields; use RunConfig.EnvVars and RunConfig.WorkDir")
+	}
+	return nil
+}
+
+// resolveSandboxCloseStdin reports whether to half-close stdin at spawn.
+//
+// Defaults on for a non-PTY command: a command that reads stdin otherwise
+// blocks on a pipe nobody writes to until the timeout kills it. A PTY has no
+// separate write end to close, so the server ignores the flag there.
+func resolveSandboxCloseStdin(closeStdin param.Field[bool], pty bool) bool {
+	if pty {
+		return false
+	}
+	if !closeStdin.Present {
+		return true
+	}
+	return closeStdin.Value
 }

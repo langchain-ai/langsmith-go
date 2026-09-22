@@ -9,6 +9,7 @@ import (
 	"net/http"
 	"net/url"
 	"slices"
+	"time"
 
 	"github.com/langchain-ai/langsmith-go/internal/apijson"
 	"github.com/langchain-ai/langsmith-go/internal/apiquery"
@@ -132,6 +133,22 @@ func (r *SandboxBoxService) NewSnapshot(ctx context.Context, name string, body S
 	return res, err
 }
 
+// Removes the sharing grant for one port, or for every port when port is omitted.
+// A LangSmith login URL stops working immediately. A previously minted service
+// token is not revoked and stays valid until it expires, but no new one can be
+// issued from the removed grant.
+func (r *SandboxBoxService) DeleteServiceURL(ctx context.Context, name string, body SandboxBoxDeleteServiceURLParams, opts ...option.RequestOption) (err error) {
+	opts = slices.Concat(r.Options, opts)
+	opts = append([]option.RequestOption{option.WithHeader("Accept", "*/*")}, opts...)
+	if name == "" {
+		err = errors.New("missing required name parameter")
+		return err
+	}
+	path := fmt.Sprintf("api/v2/sandboxes/boxes/%s/service-urls", name)
+	err = requestconfig.ExecuteNewRequest(ctx, http.MethodDelete, path, body, nil, opts...)
+	return err
+}
+
 // Generate a tokenized link that downloads a single file from a sandbox with no
 // further authentication. This mints a token rather than creating an addressable
 // resource, so it returns 200 with no Location header. The token pins the sandbox,
@@ -191,6 +208,39 @@ func (r *SandboxBoxService) GetStatus(ctx context.Context, name string, opts ...
 	return res, err
 }
 
+// Returns one entry per port the sandbox is currently reachable on, so a caller
+// can see what is shared before turning it off. Expired token grants are omitted.
+// Cursors are opaque and only valid on this endpoint; do not parse or construct
+// one.
+func (r *SandboxBoxService) ListServiceURLs(ctx context.Context, name string, query SandboxBoxListServiceURLsParams, opts ...option.RequestOption) (res *pagination.ItemsCursorGetPagination[SandboxBoxListServiceURLsResponse], err error) {
+	var raw *http.Response
+	opts = slices.Concat(r.Options, opts)
+	opts = append([]option.RequestOption{option.WithResponseInto(&raw)}, opts...)
+	if name == "" {
+		err = errors.New("missing required name parameter")
+		return nil, err
+	}
+	path := fmt.Sprintf("api/v2/sandboxes/boxes/%s/service-urls", name)
+	cfg, err := requestconfig.NewRequestConfig(ctx, http.MethodGet, path, query, &res, opts...)
+	if err != nil {
+		return nil, err
+	}
+	err = cfg.Execute()
+	if err != nil {
+		return nil, err
+	}
+	res.SetPageConfig(cfg, raw)
+	return res, nil
+}
+
+// Returns one entry per port the sandbox is currently reachable on, so a caller
+// can see what is shared before turning it off. Expired token grants are omitted.
+// Cursors are opaque and only valid on this endpoint; do not parse or construct
+// one.
+func (r *SandboxBoxService) ListServiceURLsAutoPaging(ctx context.Context, name string, query SandboxBoxListServiceURLsParams, opts ...option.RequestOption) *pagination.ItemsCursorGetPaginationAutoPager[SandboxBoxListServiceURLsResponse] {
+	return pagination.NewItemsCursorGetPaginationAutoPager(r.ListServiceURLs(ctx, name, query, opts...))
+}
+
 // Start a stopped or failed sandbox. This endpoint is not idempotent.
 func (r *SandboxBoxService) Start(ctx context.Context, name string, opts ...option.RequestOption) (res *SandboxResponse, err error) {
 	opts = slices.Concat(r.Options, opts)
@@ -215,6 +265,57 @@ func (r *SandboxBoxService) Stop(ctx context.Context, name string, opts ...optio
 	path := fmt.Sprintf("api/v2/sandboxes/boxes/%s/stop", name)
 	err = requestconfig.ExecuteNewRequest(ctx, http.MethodPost, path, nil, nil, opts...)
 	return err
+}
+
+type SandboxBoxListServiceURLsResponse struct {
+	// How the port is shared: "token" for a minted service token, or
+	// "restricted"/"workspace" for LangSmith login.
+	Access    SandboxBoxListServiceURLsResponseAccess `json:"access" api:"required"`
+	CreatedAt time.Time                               `json:"created_at" api:"required" format:"date-time"`
+	Port      int64                                   `json:"port" api:"required"`
+	// The LangSmith user who first shared this port, when known.
+	CreatedBy string `json:"created_by" format:"uuid"`
+	// When the share expires. Set only for "token"; a login grant does not expire.
+	ExpiresAt time.Time                             `json:"expires_at" format:"date-time"`
+	JSON      sandboxBoxListServiceURLsResponseJSON `json:"-"`
+}
+
+// sandboxBoxListServiceURLsResponseJSON contains the JSON metadata for the struct
+// [SandboxBoxListServiceURLsResponse]
+type sandboxBoxListServiceURLsResponseJSON struct {
+	Access      apijson.Field
+	CreatedAt   apijson.Field
+	Port        apijson.Field
+	CreatedBy   apijson.Field
+	ExpiresAt   apijson.Field
+	raw         string
+	ExtraFields map[string]apijson.Field
+}
+
+func (r *SandboxBoxListServiceURLsResponse) UnmarshalJSON(data []byte) (err error) {
+	return apijson.UnmarshalRoot(data, r)
+}
+
+func (r sandboxBoxListServiceURLsResponseJSON) RawJSON() string {
+	return r.raw
+}
+
+// How the port is shared: "token" for a minted service token, or
+// "restricted"/"workspace" for LangSmith login.
+type SandboxBoxListServiceURLsResponseAccess string
+
+const (
+	SandboxBoxListServiceURLsResponseAccessToken      SandboxBoxListServiceURLsResponseAccess = "token"
+	SandboxBoxListServiceURLsResponseAccessRestricted SandboxBoxListServiceURLsResponseAccess = "restricted"
+	SandboxBoxListServiceURLsResponseAccessWorkspace  SandboxBoxListServiceURLsResponseAccess = "workspace"
+)
+
+func (r SandboxBoxListServiceURLsResponseAccess) IsKnown() bool {
+	switch r {
+	case SandboxBoxListServiceURLsResponseAccessToken, SandboxBoxListServiceURLsResponseAccessRestricted, SandboxBoxListServiceURLsResponseAccessWorkspace:
+		return true
+	}
+	return false
 }
 
 type SandboxBoxNewParams struct {
@@ -1644,6 +1745,20 @@ func (r SandboxBoxNewSnapshotParamsRunConfig) MarshalJSON() (data []byte, err er
 	return apijson.MarshalRoot(r)
 }
 
+type SandboxBoxDeleteServiceURLParams struct {
+	// Port to stop sharing. Omit to stop sharing every port.
+	Port param.Field[int64] `query:"port"`
+}
+
+// URLQuery serializes [SandboxBoxDeleteServiceURLParams]'s query parameters as
+// `url.Values`.
+func (r SandboxBoxDeleteServiceURLParams) URLQuery() (v url.Values) {
+	return apiquery.MarshalWithSettings(r, apiquery.QuerySettings{
+		ArrayFormat:  apiquery.ArrayQueryFormatRepeat,
+		NestedFormat: apiquery.NestedQueryFormatBrackets,
+	})
+}
+
 type SandboxBoxGenerateDownloadURLParams struct {
 	Path               param.Field[string] `json:"path" api:"required"`
 	ContentDisposition param.Field[string] `json:"content_disposition"`
@@ -1738,4 +1853,20 @@ func (r SandboxBoxGenerateServiceURLParamsAccess) IsKnown() bool {
 		return true
 	}
 	return false
+}
+
+type SandboxBoxListServiceURLsParams struct {
+	// Opaque pagination cursor from a prior response's next_cursor
+	Cursor param.Field[string] `query:"cursor"`
+	// Number of results per page
+	PageSize param.Field[int64] `query:"page_size"`
+}
+
+// URLQuery serializes [SandboxBoxListServiceURLsParams]'s query parameters as
+// `url.Values`.
+func (r SandboxBoxListServiceURLsParams) URLQuery() (v url.Values) {
+	return apiquery.MarshalWithSettings(r, apiquery.QuerySettings{
+		ArrayFormat:  apiquery.ArrayQueryFormatRepeat,
+		NestedFormat: apiquery.NestedQueryFormatBrackets,
+	})
 }

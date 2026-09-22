@@ -44,18 +44,20 @@ func (r *EvaluatorService) List(ctx context.Context, query EvaluatorListParams, 
 }
 
 type CodeEvaluatorTopLevel struct {
-	Code     string                        `json:"code" api:"required"`
-	Language CodeEvaluatorTopLevelLanguage `json:"language" api:"nullable"`
-	JSON     codeEvaluatorTopLevelJSON     `json:"-"`
+	Code               string                        `json:"code" api:"required"`
+	Language           CodeEvaluatorTopLevelLanguage `json:"language" api:"nullable"`
+	RequireAttachments bool                          `json:"require_attachments"`
+	JSON               codeEvaluatorTopLevelJSON     `json:"-"`
 }
 
 // codeEvaluatorTopLevelJSON contains the JSON metadata for the struct
 // [CodeEvaluatorTopLevel]
 type codeEvaluatorTopLevelJSON struct {
-	Code        apijson.Field
-	Language    apijson.Field
-	raw         string
-	ExtraFields map[string]apijson.Field
+	Code               apijson.Field
+	Language           apijson.Field
+	RequireAttachments apijson.Field
+	raw                string
+	ExtraFields        map[string]apijson.Field
 }
 
 func (r *CodeEvaluatorTopLevel) UnmarshalJSON(data []byte) (err error) {

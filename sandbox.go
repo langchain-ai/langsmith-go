@@ -141,10 +141,7 @@ func (r sandboxListResponseJSON) RawJSON() string {
 type SandboxResponse struct {
 	ID string `json:"id"`
 	// AccessDelegation is the LangSmith access this sandbox was granted, absent when
-	// it has none. Either mode can appear: a grant is reported as requested, except
-	// that INHERIT requested by a creator who is itself delegated is stored as
-	// EXPLICIT carrying that creator's own ceiling, so the value always describes what
-	// this sandbox can reach rather than what was asked for.
+	// it has none. It is reported exactly as it was requested at create.
 	AccessDelegation       SandboxResponseAccessDelegation `json:"access_delegation"`
 	CPUMillicores          int64                           `json:"cpu_millicores"`
 	CreatedAt              string                          `json:"created_at"`
@@ -212,10 +209,7 @@ func (r sandboxResponseJSON) RawJSON() string {
 }
 
 // AccessDelegation is the LangSmith access this sandbox was granted, absent when
-// it has none. Either mode can appear: a grant is reported as requested, except
-// that INHERIT requested by a creator who is itself delegated is stored as
-// EXPLICIT carrying that creator's own ceiling, so the value always describes what
-// this sandbox can reach rather than what was asked for.
+// it has none. It is reported exactly as it was requested at create.
 type SandboxResponseAccessDelegation struct {
 	Mode        SandboxResponseAccessDelegationMode `json:"mode" api:"required"`
 	Permissions []string                            `json:"permissions"`
