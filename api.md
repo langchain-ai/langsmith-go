@@ -323,6 +323,16 @@ Methods:
 - <code title="get /api/v2/threads/{thread_id}/share">client.Threads.Share.<a href="https://pkg.go.dev/github.com/langchain-ai/langsmith-go#ThreadShareService.Get">Get</a>(ctx <a href="https://pkg.go.dev/context">context</a>.<a href="https://pkg.go.dev/context#Context">Context</a>, threadID <a href="https://pkg.go.dev/builtin#string">string</a>, query <a href="https://pkg.go.dev/github.com/langchain-ai/langsmith-go">langsmith</a>.<a href="https://pkg.go.dev/github.com/langchain-ai/langsmith-go#ThreadShareGetParams">ThreadShareGetParams</a>) (\*<a href="https://pkg.go.dev/github.com/langchain-ai/langsmith-go">langsmith</a>.<a href="https://pkg.go.dev/github.com/langchain-ai/langsmith-go#ThreadShareGetResponse">ThreadShareGetResponse</a>, <a href="https://pkg.go.dev/builtin#error">error</a>)</code>
 - <code title="delete /api/v2/threads/{thread_id}/share">client.Threads.Share.<a href="https://pkg.go.dev/github.com/langchain-ai/langsmith-go#ThreadShareService.Delete">Delete</a>(ctx <a href="https://pkg.go.dev/context">context</a>.<a href="https://pkg.go.dev/context#Context">Context</a>, threadID <a href="https://pkg.go.dev/builtin#string">string</a>, body <a href="https://pkg.go.dev/github.com/langchain-ai/langsmith-go">langsmith</a>.<a href="https://pkg.go.dev/github.com/langchain-ai/langsmith-go#ThreadShareDeleteParams">ThreadShareDeleteParams</a>) <a href="https://pkg.go.dev/builtin#error">error</a></code>
 
+# Charts
+
+Response Types:
+
+- <a href="https://pkg.go.dev/github.com/langchain-ai/langsmith-go">langsmith</a>.<a href="https://pkg.go.dev/github.com/langchain-ai/langsmith-go#ChartPreviewResponse">ChartPreviewResponse</a>
+
+Methods:
+
+- <code title="post /api/v1/charts/preview">client.Charts.<a href="https://pkg.go.dev/github.com/langchain-ai/langsmith-go#ChartService.Preview">Preview</a>(ctx <a href="https://pkg.go.dev/context">context</a>.<a href="https://pkg.go.dev/context#Context">Context</a>, body <a href="https://pkg.go.dev/github.com/langchain-ai/langsmith-go">langsmith</a>.<a href="https://pkg.go.dev/github.com/langchain-ai/langsmith-go#ChartPreviewParams">ChartPreviewParams</a>) (\*<a href="https://pkg.go.dev/github.com/langchain-ai/langsmith-go">langsmith</a>.<a href="https://pkg.go.dev/github.com/langchain-ai/langsmith-go#ChartPreviewResponse">ChartPreviewResponse</a>, <a href="https://pkg.go.dev/builtin#error">error</a>)</code>
+
 # Traces
 
 Response Types:

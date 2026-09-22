@@ -73,6 +73,7 @@ type UnionFloat float64
 func (UnionFloat) ImplementsCustomChartsSectionChartsSingleCustomChartResponseSerializedDataValueUnion() {
 }
 func (UnionFloat) ImplementsCustomChartsSectionSubSectionsChartsDataValueUnion() {}
+func (UnionFloat) ImplementsChartPreviewResponseDataValueUnion()                 {}
 func (UnionFloat) ImplementsFeedbackCreateSchemaScoreUnionParam()                {}
 func (UnionFloat) ImplementsFeedbackCreateSchemaValueUnionParam()                {}
 func (UnionFloat) ImplementsFeedbackSchemaScoreUnion()                           {}
