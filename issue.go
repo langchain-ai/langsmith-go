@@ -164,28 +164,34 @@ func (r issueJSON) RawJSON() string {
 }
 
 type IssueFixVerification struct {
-	Attempt             int64                      `json:"attempt"`
-	ParentDeploymentID  string                     `json:"parent_deployment_id" format:"uuid"`
-	PreviewDeploymentID string                     `json:"preview_deployment_id" format:"uuid"`
-	Reason              string                     `json:"reason"`
-	RootTraceIDs        []string                   `json:"root_trace_ids"`
-	Status              IssueFixVerificationStatus `json:"status"`
-	UpdatedAt           time.Time                  `json:"updated_at" format:"date-time"`
-	JSON                issueFixVerificationJSON   `json:"-"`
+	Attempt              int64                      `json:"attempt"`
+	BaselineExperimentID string                     `json:"baseline_experiment_id" format:"uuid"`
+	DatasetID            string                     `json:"dataset_id" format:"uuid"`
+	ParentDeploymentID   string                     `json:"parent_deployment_id" format:"uuid"`
+	PreviewDeploymentID  string                     `json:"preview_deployment_id" format:"uuid"`
+	PreviewExperimentID  string                     `json:"preview_experiment_id" format:"uuid"`
+	Reason               string                     `json:"reason"`
+	RootTraceIDs         []string                   `json:"root_trace_ids"`
+	Status               IssueFixVerificationStatus `json:"status"`
+	UpdatedAt            time.Time                  `json:"updated_at" format:"date-time"`
+	JSON                 issueFixVerificationJSON   `json:"-"`
 }
 
 // issueFixVerificationJSON contains the JSON metadata for the struct
 // [IssueFixVerification]
 type issueFixVerificationJSON struct {
-	Attempt             apijson.Field
-	ParentDeploymentID  apijson.Field
-	PreviewDeploymentID apijson.Field
-	Reason              apijson.Field
-	RootTraceIDs        apijson.Field
-	Status              apijson.Field
-	UpdatedAt           apijson.Field
-	raw                 string
-	ExtraFields         map[string]apijson.Field
+	Attempt              apijson.Field
+	BaselineExperimentID apijson.Field
+	DatasetID            apijson.Field
+	ParentDeploymentID   apijson.Field
+	PreviewDeploymentID  apijson.Field
+	PreviewExperimentID  apijson.Field
+	Reason               apijson.Field
+	RootTraceIDs         apijson.Field
+	Status               apijson.Field
+	UpdatedAt            apijson.Field
+	raw                  string
+	ExtraFields          map[string]apijson.Field
 }
 
 func (r *IssueFixVerification) UnmarshalJSON(data []byte) (err error) {
@@ -327,26 +333,30 @@ func (r IssueStatus) IsKnown() bool {
 }
 
 type IssueValidationResult struct {
-	ActiveRevisionID string                       `json:"active_revision_id" format:"uuid"`
-	CompletedAt      time.Time                    `json:"completed_at" format:"date-time"`
-	DeploymentID     string                       `json:"deployment_id" format:"uuid"`
-	Outcome          IssueValidationResultOutcome `json:"outcome"`
-	Reason           string                       `json:"reason"`
-	RootTraceIDs     []string                     `json:"root_trace_ids"`
-	JSON             issueValidationResultJSON    `json:"-"`
+	ActiveRevisionID     string                       `json:"active_revision_id" format:"uuid"`
+	BaselineExperimentID string                       `json:"baseline_experiment_id" format:"uuid"`
+	CompletedAt          time.Time                    `json:"completed_at" format:"date-time"`
+	DatasetID            string                       `json:"dataset_id" format:"uuid"`
+	DeploymentID         string                       `json:"deployment_id" format:"uuid"`
+	Outcome              IssueValidationResultOutcome `json:"outcome"`
+	Reason               string                       `json:"reason"`
+	RootTraceIDs         []string                     `json:"root_trace_ids"`
+	JSON                 issueValidationResultJSON    `json:"-"`
 }
 
 // issueValidationResultJSON contains the JSON metadata for the struct
 // [IssueValidationResult]
 type issueValidationResultJSON struct {
-	ActiveRevisionID apijson.Field
-	CompletedAt      apijson.Field
-	DeploymentID     apijson.Field
-	Outcome          apijson.Field
-	Reason           apijson.Field
-	RootTraceIDs     apijson.Field
-	raw              string
-	ExtraFields      map[string]apijson.Field
+	ActiveRevisionID     apijson.Field
+	BaselineExperimentID apijson.Field
+	CompletedAt          apijson.Field
+	DatasetID            apijson.Field
+	DeploymentID         apijson.Field
+	Outcome              apijson.Field
+	Reason               apijson.Field
+	RootTraceIDs         apijson.Field
+	raw                  string
+	ExtraFields          map[string]apijson.Field
 }
 
 func (r *IssueValidationResult) UnmarshalJSON(data []byte) (err error) {
