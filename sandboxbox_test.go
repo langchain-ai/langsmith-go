@@ -322,6 +322,7 @@ func TestSandboxBoxListWithOptionalParams(t *testing.T) {
 		SortDirection: langsmith.F("sort_direction"),
 		SortOrder:     langsmith.F("sort_order"),
 		Status:        langsmith.F("status"),
+		TagValueID:    langsmith.F([]string{"string"}),
 	})
 	if err != nil {
 		var apierr *langsmith.Error

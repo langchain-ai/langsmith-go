@@ -1692,6 +1692,8 @@ type SandboxBoxListParams struct {
 	SortOrder param.Field[string] `query:"sort_order"`
 	// Filter by status (provisioning, ready, failed, stopped, deleting)
 	Status param.Field[string] `query:"status"`
+	// Filter by workspace resource tag value IDs; all must match
+	TagValueID param.Field[[]string] `query:"tag_value_id"`
 }
 
 // URLQuery serializes [SandboxBoxListParams]'s query parameters as `url.Values`.
