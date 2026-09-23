@@ -91,21 +91,26 @@ type Issue struct {
 	CreatedAt           string `json:"created_at"`
 	Description         string `json:"description"`
 	// Nil for the trace-list issues that are the norm.
-	Evidence             IssueEvidence        `json:"evidence" api:"nullable"`
-	FirstSeenAt          string               `json:"first_seen_at"`
-	FixBranch            string               `json:"fix_branch"`
-	FixDispatchedAt      string               `json:"fix_dispatched_at"`
-	FixPrNumber          int64                `json:"fix_pr_number"`
-	FixPrompt            string               `json:"fix_prompt"`
-	FixVerification      IssueFixVerification `json:"fix_verification"`
-	LastSeenAt           string               `json:"last_seen_at"`
-	LinearContext        IssueLinearContext   `json:"linear_context"`
-	LinearSync           IssueLinearSync      `json:"linear_sync"`
-	Name                 string               `json:"name"`
-	ProposedContextFixes []interface{}        `json:"proposed_context_fixes"`
-	ProposedExamples     []interface{}        `json:"proposed_examples"`
-	ProposedFix          string               `json:"proposed_fix"`
-	ProposedPromptFixes  []interface{}        `json:"proposed_prompt_fixes"`
+	Evidence    IssueEvidence `json:"evidence" api:"nullable"`
+	FirstSeenAt string        `json:"first_seen_at"`
+	// Legacy: branch of the oldest fix in the board's oldest connected repository.
+	FixBranch       string `json:"fix_branch"`
+	FixDispatchedAt string `json:"fix_dispatched_at"`
+	FixPrNumber     int64  `json:"fix_pr_number"`
+	// Issue-level: the problem every fix shares, and the last time a fix run was
+	// dispatched for this issue — one run works several fixes.
+	FixPrompt       string               `json:"fix_prompt"`
+	FixVerification IssueFixVerification `json:"fix_verification"`
+	// Newest first.
+	Fixes                []IssueFix         `json:"fixes"`
+	LastSeenAt           string             `json:"last_seen_at"`
+	LinearContext        IssueLinearContext `json:"linear_context"`
+	LinearSync           IssueLinearSync    `json:"linear_sync"`
+	Name                 string             `json:"name"`
+	ProposedContextFixes []interface{}      `json:"proposed_context_fixes"`
+	ProposedExamples     []interface{}      `json:"proposed_examples"`
+	ProposedFix          string             `json:"proposed_fix"`
+	ProposedPromptFixes  []interface{}      `json:"proposed_prompt_fixes"`
 	// RecurrencesSinceWatching counts linked traces whose run start_time is after
 	// watching_since — i.e. recurrences observed during the current watch period.
 	RecurrencesSinceWatching int64                 `json:"recurrences_since_watching"`
@@ -136,6 +141,7 @@ type issueJSON struct {
 	FixPrNumber              apijson.Field
 	FixPrompt                apijson.Field
 	FixVerification          apijson.Field
+	Fixes                    apijson.Field
 	LastSeenAt               apijson.Field
 	LinearContext            apijson.Field
 	LinearSync               apijson.Field
@@ -659,6 +665,36 @@ func (r IssueFixVerificationStatus) IsKnown() bool {
 		return true
 	}
 	return false
+}
+
+type IssueFix struct {
+	ID        string       `json:"id" api:"required"`
+	Branch    string       `json:"branch" api:"required,nullable"`
+	CreatedAt time.Time    `json:"created_at" api:"required" format:"date-time"`
+	PrNumber  int64        `json:"pr_number" api:"required,nullable"`
+	RepoURL   string       `json:"repo_url" api:"required"`
+	UpdatedAt time.Time    `json:"updated_at" api:"required" format:"date-time"`
+	JSON      issueFixJSON `json:"-"`
+}
+
+// issueFixJSON contains the JSON metadata for the struct [IssueFix]
+type issueFixJSON struct {
+	ID          apijson.Field
+	Branch      apijson.Field
+	CreatedAt   apijson.Field
+	PrNumber    apijson.Field
+	RepoURL     apijson.Field
+	UpdatedAt   apijson.Field
+	raw         string
+	ExtraFields map[string]apijson.Field
+}
+
+func (r *IssueFix) UnmarshalJSON(data []byte) (err error) {
+	return apijson.UnmarshalRoot(data, r)
+}
+
+func (r issueFixJSON) RawJSON() string {
+	return r.raw
 }
 
 type IssueLinearContext struct {
