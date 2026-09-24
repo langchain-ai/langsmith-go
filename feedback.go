@@ -203,6 +203,7 @@ type FeedbackCreateSchemaParam struct {
 	CreatedAt               param.Field[time.Time]                                `json:"created_at" format:"date-time"`
 	Error                   param.Field[bool]                                     `json:"error"`
 	ExtendTraceRetention    param.Field[bool]                                     `json:"extend_trace_retention"`
+	Extra                   param.Field[map[string]interface{}]                   `json:"extra"`
 	FeedbackConfig          param.Field[FeedbackCreateSchemaFeedbackConfigParam]  `json:"feedback_config"`
 	FeedbackGroupID         param.Field[string]                                   `json:"feedback_group_id" format:"uuid"`
 	// Feedback from the LangChainPlus App.
