@@ -201,10 +201,15 @@ type FeedbackCreateSchemaParam struct {
 	ComparativeExperimentID param.Field[string]                                   `json:"comparative_experiment_id" format:"uuid"`
 	Correction              param.Field[FeedbackCreateSchemaCorrectionUnionParam] `json:"correction"`
 	CreatedAt               param.Field[time.Time]                                `json:"created_at" format:"date-time"`
-	Error                   param.Field[bool]                                     `json:"error"`
-	ExtendTraceRetention    param.Field[bool]                                     `json:"extend_trace_retention"`
-	FeedbackConfig          param.Field[FeedbackCreateSchemaFeedbackConfigParam]  `json:"feedback_config"`
-	FeedbackGroupID         param.Field[string]                                   `json:"feedback_group_id" format:"uuid"`
+	// Deprecated. Use `extra.error` instead. If both values are provided, `error`
+	// takes precedence.
+	//
+	// Deprecated: deprecated
+	Error                param.Field[bool]                                    `json:"error"`
+	ExtendTraceRetention param.Field[bool]                                    `json:"extend_trace_retention"`
+	Extra                param.Field[map[string]interface{}]                  `json:"extra"`
+	FeedbackConfig       param.Field[FeedbackCreateSchemaFeedbackConfigParam] `json:"feedback_config"`
+	FeedbackGroupID      param.Field[string]                                  `json:"feedback_group_id" format:"uuid"`
 	// Feedback from the LangChainPlus App.
 	FeedbackSource   param.Field[FeedbackCreateSchemaFeedbackSourceUnionParam] `json:"feedback_source"`
 	FeedbackThreadID param.Field[string]                                       `json:"feedback_thread_id"`

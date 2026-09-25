@@ -124,7 +124,8 @@ func (r *AnnotationQueueItemService) NewStatus(ctx context.Context, queueItemID 
 	return res, err
 }
 
-// Remove RUN or THREAD items from a single annotation queue by item ID.
+// Remove RUN or THREAD items from a single annotation queue by item ID. Both
+// active and completed items can be removed.
 func (r *AnnotationQueueItemService) DeleteAll(ctx context.Context, queueID string, body AnnotationQueueItemDeleteAllParams, opts ...option.RequestOption) (res *AnnotationQueueItemDeleteAllResponse, err error) {
 	opts = slices.Concat(r.Options, opts)
 	if queueID == "" {

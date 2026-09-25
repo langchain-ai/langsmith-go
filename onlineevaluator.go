@@ -184,7 +184,7 @@ type CreateOnlineCodeEvaluatorRequestParam struct {
 	Dependencies            param.Field[string] `json:"dependencies"`
 	// Default: "python"
 	Language                     param.Field[string]                                                                      `json:"language"`
-	ManagedCodeEvaluatorKey      param.Field[string]                                                                      `json:"managed_code_evaluator_key"`
+	ManagedCodeEvaluatorKey      param.Field[CreateOnlineCodeEvaluatorRequestManagedCodeEvaluatorKey]                     `json:"managed_code_evaluator_key"`
 	ManagedCodeEvaluatorSettings param.Field[map[string]CreateOnlineCodeEvaluatorRequestManagedCodeEvaluatorSettingParam] `json:"managed_code_evaluator_settings"`
 	// RequireAttachments opts the evaluator into selecting/presigning run attachments
 	// (s3_urls) at evaluation time. Default false.
@@ -193,6 +193,20 @@ type CreateOnlineCodeEvaluatorRequestParam struct {
 
 func (r CreateOnlineCodeEvaluatorRequestParam) MarshalJSON() (data []byte, err error) {
 	return apijson.MarshalRoot(r)
+}
+
+type CreateOnlineCodeEvaluatorRequestManagedCodeEvaluatorKey string
+
+const (
+	CreateOnlineCodeEvaluatorRequestManagedCodeEvaluatorKeyVoiceMetrics CreateOnlineCodeEvaluatorRequestManagedCodeEvaluatorKey = "voice_metrics"
+)
+
+func (r CreateOnlineCodeEvaluatorRequestManagedCodeEvaluatorKey) IsKnown() bool {
+	switch r {
+	case CreateOnlineCodeEvaluatorRequestManagedCodeEvaluatorKeyVoiceMetrics:
+		return true
+	}
+	return false
 }
 
 type CreateOnlineCodeEvaluatorRequestManagedCodeEvaluatorSettingParam struct {
@@ -282,7 +296,7 @@ type OnlineCodeEvaluator struct {
 	EvaluatorID             string                                  `json:"evaluator_id"`
 	// Default: "python"
 	Language                     string                                                    `json:"language"`
-	ManagedCodeEvaluatorKey      string                                                    `json:"managed_code_evaluator_key"`
+	ManagedCodeEvaluatorKey      OnlineCodeEvaluatorManagedCodeEvaluatorKey                `json:"managed_code_evaluator_key"`
 	ManagedCodeEvaluatorSettings map[string]OnlineCodeEvaluatorManagedCodeEvaluatorSetting `json:"managed_code_evaluator_settings"`
 	// RequireAttachments opts the evaluator into selecting/presigning run attachments
 	// (s3_urls) at evaluation time. Default false.
@@ -327,6 +341,20 @@ const (
 func (r OnlineCodeEvaluatorEvaluatorBuildStatus) IsKnown() bool {
 	switch r {
 	case OnlineCodeEvaluatorEvaluatorBuildStatusEnqueued, OnlineCodeEvaluatorEvaluatorBuildStatusBuilding, OnlineCodeEvaluatorEvaluatorBuildStatusReady, OnlineCodeEvaluatorEvaluatorBuildStatusFailed:
+		return true
+	}
+	return false
+}
+
+type OnlineCodeEvaluatorManagedCodeEvaluatorKey string
+
+const (
+	OnlineCodeEvaluatorManagedCodeEvaluatorKeyVoiceMetrics OnlineCodeEvaluatorManagedCodeEvaluatorKey = "voice_metrics"
+)
+
+func (r OnlineCodeEvaluatorManagedCodeEvaluatorKey) IsKnown() bool {
+	switch r {
+	case OnlineCodeEvaluatorManagedCodeEvaluatorKeyVoiceMetrics:
 		return true
 	}
 	return false
