@@ -1822,10 +1822,11 @@ func (r SandboxBoxGenerateDownloadURLParamsCspSourceBundle) IsKnown() bool {
 type SandboxBoxGenerateServiceURLParams struct {
 	// Access selects the login mode, mutually exclusive with the minted token. Omit
 	// the field for token mode: mint a short-lived service token (default).
-	// "restricted" — LangSmith login: any user with SandboxesRead on the sandbox.
-	// "workspace" — LangSmith login: any member of the owning workspace. "off" —
-	// remove an existing LangSmith login grant and mint a token. A LangSmith login
-	// grant is durable; token mode is refused (409) while one exists.
+	// "restricted" — LangSmith login: the sandbox's creator, or any user with
+	// SandboxesExec on it (admins by default). "workspace" — LangSmith login: any
+	// member of the owning workspace. "off" — remove an existing LangSmith login grant
+	// and mint a token. A LangSmith login grant is durable; token mode is refused
+	// (409) while one exists.
 	Access           param.Field[SandboxBoxGenerateServiceURLParamsAccess] `json:"access"`
 	ExpiresInSeconds param.Field[int64]                                    `json:"expires_in_seconds"`
 	Port             param.Field[int64]                                    `json:"port"`
@@ -1837,10 +1838,11 @@ func (r SandboxBoxGenerateServiceURLParams) MarshalJSON() (data []byte, err erro
 
 // Access selects the login mode, mutually exclusive with the minted token. Omit
 // the field for token mode: mint a short-lived service token (default).
-// "restricted" — LangSmith login: any user with SandboxesRead on the sandbox.
-// "workspace" — LangSmith login: any member of the owning workspace. "off" —
-// remove an existing LangSmith login grant and mint a token. A LangSmith login
-// grant is durable; token mode is refused (409) while one exists.
+// "restricted" — LangSmith login: the sandbox's creator, or any user with
+// SandboxesExec on it (admins by default). "workspace" — LangSmith login: any
+// member of the owning workspace. "off" — remove an existing LangSmith login grant
+// and mint a token. A LangSmith login grant is durable; token mode is refused
+// (409) while one exists.
 type SandboxBoxGenerateServiceURLParamsAccess string
 
 const (
