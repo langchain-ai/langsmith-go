@@ -4,6 +4,7 @@ import (
 	"bytes"
 	"context"
 	"encoding/json"
+	"errors"
 	"fmt"
 	"io"
 	"net/http"
@@ -40,6 +41,10 @@ type configOAuth struct {
 	AccessToken  string `json:"access_token,omitempty"`
 	RefreshToken string `json:"refresh_token,omitempty"`
 	ExpiresAt    string `json:"expires_at,omitempty"`
+	// Issuer is the authorization server that issued the tokens, recorded by
+	// `langsmith auth login`. It can differ from APIURL on BYOC deployments
+	// that delegate OAuth to another host, and refreshes must go there.
+	Issuer string `json:"issuer,omitempty"`
 }
 
 type configFile struct {
@@ -57,6 +62,9 @@ type profileAuth struct {
 	state    *profileState
 	override bool
 	mu       sync.Mutex
+	// rejected is the last refresh token the server refused, so SDK retries do
+	// not replay it. A new login writes a different token and clears the block.
+	rejected string
 }
 
 type oauthTokenResponse struct {
@@ -229,7 +237,10 @@ func withProfileAuth(auth *profileAuth) option.RequestOption {
 				req.Header.Del("X-User-Id")
 				return next(req)
 			}
-			name, value, token := auth.authHeader(req.Context())
+			name, value, token, err := auth.authHeader(req.Context())
+			if err != nil {
+				return nil, err
+			}
 			if name != "" {
 				if auth.override && !strings.EqualFold(name, "X-API-Key") {
 					req.Header.Del("X-API-Key")
@@ -248,6 +259,51 @@ func withProfileAuth(auth *profileAuth) option.RequestOption {
 	})
 }
 
+// ProfileAuthError reports that a profile's OAuth access token has expired and
+// could not be refreshed. When the server rejected the refresh token, the user
+// has to log in again.
+type ProfileAuthError struct {
+	Profile string
+	Err     error
+}
+
+func (e *ProfileAuthError) Error() string {
+	return fmt.Sprintf(
+		"refreshing OAuth token for LangSmith profile %q: %v; run 'langsmith auth login --profile %s' to reauthenticate",
+		e.Profile, e.Err, e.Profile,
+	)
+}
+
+func (e *ProfileAuthError) Unwrap() error { return e.Err }
+
+// ProfileAccessToken returns a current OAuth access token for a profile in the
+// LangSmith config file, refreshing and saving it first when it is missing or
+// about to expire. An empty profileName selects the active profile
+// (LANGSMITH_PROFILE, then current_profile, then "default").
+//
+// Clients built with [WithProfile] or the default profile already refresh on
+// their own; use this only when a bearer token is needed outside the client.
+// Refreshes are serialized across processes, so concurrent callers share one
+// rotation of the single-use refresh token.
+func ProfileAccessToken(ctx context.Context, profileName string) (string, error) {
+	state, err := loadProfileState(profileName, true)
+	if err != nil {
+		return "", err
+	}
+	if state == nil {
+		return "", fmt.Errorf("no LangSmith profile selected")
+	}
+	p := state.cfg.Profiles[state.profileName]
+	if p.OAuth.AccessToken == "" && p.OAuth.RefreshToken == "" {
+		return "", fmt.Errorf("LangSmith profile %q has no OAuth credentials; run 'langsmith auth login --profile %s'", state.profileName, state.profileName)
+	}
+	p, err = (&profileAuth{state: state}).currentProfile(ctx)
+	if err != nil {
+		return "", err
+	}
+	return p.OAuth.AccessToken, nil
+}
+
 func (a *profileAuth) currentAuthHeader() (name string, value string, token string) {
 	a.mu.Lock()
 	defer a.mu.Unlock()
@@ -258,46 +314,94 @@ func (a *profileAuth) currentAuthHeader() (name string, value string, token stri
 	return currentAuthHeaderFromProfile(p)
 }
 
-func (a *profileAuth) authHeader(ctx context.Context) (name string, value string, token string) {
+func (a *profileAuth) authHeader(ctx context.Context) (name string, value string, token string, err error) {
+	p, err := a.currentProfile(ctx)
+	if err != nil {
+		return "", "", "", err
+	}
+	name, value, token = authHeaderFromProfile(p)
+	return name, value, token, nil
+}
+
+// currentProfile returns the profile with a usable access token, refreshing it
+// first when it is missing or about to expire.
+func (a *profileAuth) currentProfile(ctx context.Context) (configProfile, error) {
 	a.mu.Lock()
 	defer a.mu.Unlock()
 	p, ok := a.state.cfg.Profiles[a.state.profileName]
 	if !ok {
-		return "", "", ""
+		return configProfile{}, fmt.Errorf("LangSmith profile not found: %s", a.state.profileName)
 	}
-	if shouldRefreshProfileToken(p) {
-		p = a.refreshProfileToken(ctx, p)
+	if !shouldRefreshProfileToken(p) {
+		return p, nil
 	}
-	return authHeaderFromProfile(p)
+
+	cfg, fresh, err := refreshProfileLocked(ctx, a.state.path, a.state.profileName, a.rejected)
+	if cfg.Profiles != nil {
+		a.state.cfg = cfg
+	}
+	if err == nil {
+		return fresh, nil
+	}
+	var oauthErr oauthErrorResponse
+	if errors.As(err, &oauthErr) && oauthErr.Code == "invalid_grant" {
+		a.rejected = fresh.OAuth.RefreshToken
+	}
+	if fresh.OAuth.RefreshToken != "" {
+		p = fresh
+	}
+	// A token inside the refresh leeway still works, so a failed refresh only
+	// matters once it has actually expired.
+	if accessTokenUsable(p, time.Now()) {
+		return p, nil
+	}
+	return p, &ProfileAuthError{Profile: a.state.profileName, Err: err}
 }
 
-func (a *profileAuth) refreshProfileToken(ctx context.Context, p configProfile) configProfile {
-	refreshCtx, cancel := context.WithTimeout(ctx, tokenRefreshTimeout)
+var errRefreshTokenRejected = oauthErrorResponse{Code: "invalid_grant", ErrorDescription: "refresh token was already rejected"}
+
+// refreshProfileLocked refreshes profileName's OAuth token while holding a lock
+// file next to the config. Refresh tokens are single use: the server rotates
+// them, and replaying a rotated one is treated as theft and revokes every token
+// for the identity. Re-reading the config after taking the lock lets a caller
+// that waited reuse the rotation another process just saved.
+//
+// The returned profile is the one read under the lock, even on error.
+func refreshProfileLocked(ctx context.Context, path, profileName, rejected string) (configFile, configProfile, error) {
+	ctx, cancel := context.WithTimeout(ctx, tokenRefreshTimeout)
 	defer cancel()
 
-	lock, err := acquireOAuthRefreshLock(refreshCtx, a.state.path+".oauth.lock")
+	lock, err := acquireOAuthRefreshLock(ctx, path+".oauth.lock")
 	if err != nil {
-		return p
+		return configFile{}, configProfile{}, err
 	}
 	defer lock.Unlock()
 
-	cfg, fresh, err := loadProfileConfigFromPath(a.state.path, a.state.profileName)
-	if err == nil {
-		a.state.cfg = cfg
-		p = fresh
-		if !shouldRefreshProfileToken(p) {
-			return p
-		}
+	cfg, p, err := loadProfileConfigFromPath(path, profileName)
+	if err != nil {
+		return configFile{}, configProfile{}, err
+	}
+	if !shouldRefreshProfileToken(p) {
+		return cfg, p, nil
+	}
+	if rejected != "" && p.OAuth.RefreshToken == rejected {
+		return cfg, p, errRefreshTokenRejected
 	}
 
-	token, err := refreshOAuthToken(refreshCtx, p.APIURL, p.OAuth.RefreshToken)
+	tokenURL := p.APIURL
+	if p.OAuth.Issuer != "" {
+		tokenURL = p.OAuth.Issuer
+	}
+	token, err := refreshOAuthToken(ctx, tokenURL, p.OAuth.RefreshToken)
 	if err != nil {
-		return p
+		return cfg, p, err
 	}
 	applyTokenResponse(&p, token, time.Now())
-	a.state.cfg.Profiles[a.state.profileName] = p
-	_ = saveConfig(a.state.path, a.state.cfg)
-	return p
+	if err := saveProfileOAuth(path, profileName, p.OAuth); err != nil {
+		return cfg, p, fmt.Errorf("saving refreshed OAuth token: %w", err)
+	}
+	cfg.Profiles[profileName] = p
+	return cfg, p, nil
 }
 
 func loadProfileConfigFromPath(path, profileName string) (configFile, configProfile, error) {
@@ -380,6 +484,16 @@ func shouldRefreshProfileToken(p configProfile) bool {
 	return !expiresAt.After(time.Now().Add(tokenRefreshLeeway))
 }
 
+// accessTokenUsable reports whether p has an access token that has not expired.
+// A token without a parseable expiry is assumed usable.
+func accessTokenUsable(p configProfile, now time.Time) bool {
+	if p.OAuth.AccessToken == "" {
+		return false
+	}
+	expiresAt, err := time.Parse(time.RFC3339, p.OAuth.ExpiresAt)
+	return err != nil || expiresAt.After(now)
+}
+
 func refreshOAuthToken(ctx context.Context, apiURL, refreshToken string) (*oauthTokenResponse, error) {
 	if apiURL == "" {
 		apiURL = "https://api.smith.langchain.com"
@@ -437,19 +551,85 @@ func applyTokenResponse(p *configProfile, token *oauthTokenResponse, now time.Ti
 	}
 }
 
-func saveConfig(path string, cfg configFile) error {
-	data, err := json.MarshalIndent(cfg, "", "  ")
+// saveProfileOAuth writes a profile's rotated tokens back to the config file.
+// It patches the raw JSON rather than re-encoding configFile so fields the SDK
+// does not model survive, and replaces the file atomically so a concurrent
+// reader never sees it truncated.
+func saveProfileOAuth(path, profileName string, oauth configOAuth) error {
+	data, err := os.ReadFile(path)
 	if err != nil {
 		return err
 	}
-	data = append(data, '\n')
-	if err := os.MkdirAll(filepath.Dir(path), 0700); err != nil {
+	var root map[string]json.RawMessage
+	if err := json.Unmarshal(data, &root); err != nil {
 		return err
 	}
-	if err := os.WriteFile(path, data, 0600); err != nil {
+	var profiles map[string]map[string]json.RawMessage
+	if err := json.Unmarshal(root["profiles"], &profiles); err != nil {
 		return err
 	}
-	return os.Chmod(path, 0600)
+	profile, ok := profiles[profileName]
+	if !ok {
+		return fmt.Errorf("LangSmith profile not found: %s", profileName)
+	}
+	fields := map[string]json.RawMessage{}
+	if raw, ok := profile["oauth"]; ok {
+		if err := json.Unmarshal(raw, &fields); err != nil {
+			return err
+		}
+	}
+	for key, value := range map[string]string{
+		"access_token":  oauth.AccessToken,
+		"refresh_token": oauth.RefreshToken,
+		"expires_at":    oauth.ExpiresAt,
+	} {
+		if value == "" {
+			delete(fields, key)
+			continue
+		}
+		encoded, err := json.Marshal(value)
+		if err != nil {
+			return err
+		}
+		fields[key] = encoded
+	}
+
+	if profile["oauth"], err = json.Marshal(fields); err != nil {
+		return err
+	}
+	if root["profiles"], err = json.Marshal(profiles); err != nil {
+		return err
+	}
+	out, err := json.MarshalIndent(root, "", "  ")
+	if err != nil {
+		return err
+	}
+	return writeFileAtomic(path, append(out, '\n'), 0600)
+}
+
+func writeFileAtomic(path string, data []byte, perm os.FileMode) error {
+	f, err := os.CreateTemp(filepath.Dir(path), ".langsmith-config-*")
+	if err != nil {
+		return err
+	}
+	tmp := f.Name()
+	defer os.Remove(tmp)
+	if _, err := f.Write(data); err != nil {
+		_ = f.Close()
+		return err
+	}
+	if err := f.Chmod(perm); err != nil {
+		_ = f.Close()
+		return err
+	}
+	if err := f.Sync(); err != nil {
+		_ = f.Close()
+		return err
+	}
+	if err := f.Close(); err != nil {
+		return err
+	}
+	return os.Rename(tmp, path)
 }
 
 func normalizeConfigURL(apiURL string) string {
