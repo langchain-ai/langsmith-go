@@ -299,3 +299,33 @@ func TestUnexpiredTokenIsUsedWhenRefreshFails(t *testing.T) {
 		t.Fatalf("expected still-valid token to be used, got %q", out["auth"])
 	}
 }
+
+func TestExplicitBearerBeatsDefaultProfile(t *testing.T) {
+	clearAuthEnv(t)
+	var tokenRequests atomic.Int32
+	ts := tokenServer(t, &tokenRequests, rotateTo("profile-access-token", "profile-refresh-token"))
+	writeOAuthProfileConfig(t, ts.URL, "")
+
+	explicit := jwtWithSubject(t, "explicit-user")
+	var gotUserID string
+	opts := append(loadProfileOptions(),
+		option.WithHeader("Authorization", "Bearer "+explicit),
+		option.WithMiddleware(func(req *http.Request, next option.MiddlewareNext) (*http.Response, error) {
+			gotUserID = req.Header.Get("X-User-Id")
+			return next(req)
+		}),
+	)
+	var out map[string]string
+	if err := requestconfig.ExecuteNewRequest(context.Background(), http.MethodGet, "/info", nil, &out, opts...); err != nil {
+		t.Fatal(err)
+	}
+	if out["auth"] != "Bearer "+explicit {
+		t.Fatalf("expected explicit bearer, got %q", out["auth"])
+	}
+	if gotUserID != "explicit-user" {
+		t.Fatalf("expected X-User-Id from explicit bearer, got %q", gotUserID)
+	}
+	if got := tokenRequests.Load(); got != 0 {
+		t.Fatalf("expected no refresh of the unused default profile, got %d", got)
+	}
+}

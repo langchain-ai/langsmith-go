@@ -231,10 +231,19 @@ func withProfileAuth(auth *profileAuth) option.RequestOption {
 			}
 			r.Request.Header.Set(name, value)
 		}
+		profileAuthorization := r.Request.Header.Get("Authorization")
 		return r.Apply(option.WithMiddleware(func(req *http.Request, next option.MiddlewareNext) (*http.Response, error) {
 			if req.Header.Get("X-API-Key") != "" && !auth.override {
 				req.Header.Del("Authorization")
 				req.Header.Del("X-User-Id")
+				return next(req)
+			}
+			// A bearer the caller set after this option beats the default
+			// profile, like an explicit API key does, and must not trigger a
+			// refresh of a profile the request does not use.
+			if bearer := req.Header.Get("Authorization"); bearer != "" && bearer != profileAuthorization && !auth.override {
+				req.Header.Del("X-User-Id")
+				authpkg.SetUserIDHeaderFromAccessToken(req.Header, strings.TrimPrefix(bearer, "Bearer "))
 				return next(req)
 			}
 			name, value, token, err := auth.authHeader(req.Context())
