@@ -77,6 +77,9 @@ func tokenServer(t *testing.T, tokenRequests *atomic.Int32, respond func(w http.
 			if err := r.ParseForm(); err != nil {
 				t.Error(err)
 			}
+			if got, want := r.FormValue("resource"), "http://"+r.Host; got != want {
+				t.Errorf("expected resource %q, got %q", want, got)
+			}
 			respond(w, r)
 		case "/info":
 			w.Header().Set("Content-Type", "application/json")

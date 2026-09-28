@@ -498,15 +498,17 @@ func refreshOAuthToken(ctx context.Context, apiURL, refreshToken string) (*oauth
 	if apiURL == "" {
 		apiURL = "https://api.smith.langchain.com"
 	}
+	endpoint, resource := resolveTokenTarget(ctx, apiURL)
 	values := url.Values{
 		"grant_type":    {"refresh_token"},
 		"client_id":     {oauthClientID},
+		"resource":      {resource},
 		"refresh_token": {refreshToken},
 	}
 	req, err := http.NewRequestWithContext(
 		ctx,
 		http.MethodPost,
-		resolveTokenEndpoint(ctx, apiURL),
+		endpoint,
 		bytes.NewBufferString(values.Encode()),
 	)
 	if err != nil {
