@@ -5,7 +5,6 @@ package integration
 import (
 	"context"
 	"fmt"
-	"strings"
 	"testing"
 	"time"
 
@@ -739,10 +738,9 @@ func TestSessionCRUD(t *testing.T) {
 		t.Error("expected at least one session in list")
 	}
 
-	// Delete session — the API returns an empty body, which the SDK cannot
-	// deserialize into interface{}. Tolerate that specific error.
-	_, err = client.Sessions.Delete(ctx, session.ID)
-	if err != nil && !strings.Contains(err.Error(), "expected destination type") {
+	// Delete session
+	err = client.Sessions.Delete(ctx, session.ID)
+	if err != nil {
 		t.Fatalf("delete session: %v", err)
 	}
 }
