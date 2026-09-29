@@ -1,5 +1,17 @@
 # Changelog
 
+## [0.26.7](https://github.com/langchain-ai/langsmith-go/compare/v0.26.6...v0.26.7) (2026-09-22)
+
+
+### Features
+
+* add require_attachments optional boolean field to request ([bf9dbff](https://github.com/langchain-ai/langsmith-go/commit/bf9dbff76ec957bbedd9cab8ff9b78fa785d74d8))
+* **charts:** add preview method endpoint ([9106def](https://github.com/langchain-ai/langsmith-go/commit/9106defb63ba52e2a481d9bcdaefc1e58cd5f048))
+* **evaluators:** add managed code evaluator key and settings fields ([da3b47c](https://github.com/langchain-ai/langsmith-go/commit/da3b47c867c2a486dd51e72bc31eb2a008bb38e3))
+* **evaluators:** add require_attachments field to evaluator schemas ([cee82d0](https://github.com/langchain-ai/langsmith-go/commit/cee82d040bab3ffb7810ff2e7892cecba5d56de3))
+* **sandboxes:** add delegated_from_sandbox_id field to audit log context ([c5d7a19](https://github.com/langchain-ai/langsmith-go/commit/c5d7a19f5bbff7958c3fb07d1c4b1cde3c0c55a3))
+* **sandboxes:** add list and delete service URL sharing endpoints ([2e486ef](https://github.com/langchain-ai/langsmith-go/commit/2e486ef7ae69e3d7b8d4136456d2673c1bc5f633))
+
 ## [0.26.6](https://github.com/langchain-ai/langsmith-go/compare/v0.26.5...v0.26.6) (2026-09-18)
 
 
