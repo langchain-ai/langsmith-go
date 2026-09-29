@@ -55,18 +55,6 @@ func writeOAuthProfileConfig(t *testing.T, apiURL, issuer string) string {
 	return path
 }
 
-// unsetAuthEnv unsets, rather than empties, the variables NewClient reads with
-// os.LookupEnv, where an empty LANGSMITH_ENDPOINT would clear the base URL.
-func unsetAuthEnv(t *testing.T) {
-	t.Helper()
-	for _, key := range []string{"LANGSMITH_API_KEY", "LANGSMITH_ENDPOINT", "LANGSMITH_TENANT_ID", "LANGSMITH_WORKSPACE_ID"} {
-		t.Setenv(key, "")
-		if err := os.Unsetenv(key); err != nil {
-			t.Fatal(err)
-		}
-	}
-}
-
 func readConfigMap(t *testing.T, path string) map[string]any {
 	t.Helper()
 	data, err := os.ReadFile(path)
@@ -383,69 +371,5 @@ func TestSandboxWebSocketHeadersRefreshExpiredToken(t *testing.T) {
 	}
 	if got := tokenRequests.Load(); got != 1 {
 		t.Fatalf("expected one refresh, got %d", got)
-	}
-}
-
-func TestHTTPClientAuthenticatesAPIOriginOnly(t *testing.T) {
-	unsetAuthEnv(t)
-	var tokenRequests atomic.Int32
-	api := tokenServer(t, &tokenRequests, rotateTo("new-access-token", "new-refresh-token"))
-	var otherAuth, otherKey string
-	other := httptest.NewServer(http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
-		otherAuth, otherKey = r.Header.Get("Authorization"), r.Header.Get("X-API-Key")
-	}))
-	t.Cleanup(other.Close)
-	writeOAuthProfileConfig(t, api.URL, "")
-
-	hc := NewClient(option.WithTenantID("tenant-1")).HTTPClient()
-	var out map[string]string
-	res, err := hc.Get(api.URL + "/info")
-	if err != nil {
-		t.Fatal(err)
-	}
-	if err := json.NewDecoder(res.Body).Decode(&out); err != nil {
-		t.Fatal(err)
-	}
-	_ = res.Body.Close()
-	if out["auth"] != "Bearer new-access-token" {
-		t.Fatalf("expected refreshed bearer on API request, got %q", out["auth"])
-	}
-
-	// Non-2xx responses come back as responses, not errors.
-	res, err = hc.Get(api.URL + "/missing")
-	if err != nil {
-		t.Fatal(err)
-	}
-	_ = res.Body.Close()
-	if res.StatusCode != http.StatusNotFound {
-		t.Fatalf("expected raw 404, got %d", res.StatusCode)
-	}
-
-	res, err = hc.Get(other.URL + "/elsewhere")
-	if err != nil {
-		t.Fatal(err)
-	}
-	_ = res.Body.Close()
-	if otherAuth != "" || otherKey != "" {
-		t.Fatalf("credentials leaked to another origin: auth=%q key=%q", otherAuth, otherKey)
-	}
-	if got := tokenRequests.Load(); got != 1 {
-		t.Fatalf("expected one refresh, got %d", got)
-	}
-}
-
-func TestHTTPClientReturnsReauthError(t *testing.T) {
-	unsetAuthEnv(t)
-	var tokenRequests atomic.Int32
-	ts := tokenServer(t, &tokenRequests, func(w http.ResponseWriter, r *http.Request) {
-		w.WriteHeader(http.StatusBadRequest)
-		_ = json.NewEncoder(w).Encode(oauthErrorResponse{Code: "invalid_grant", ErrorDescription: "refresh token has been revoked"})
-	})
-	writeOAuthProfileConfig(t, ts.URL, "")
-
-	_, err := NewClient().HTTPClient().Get(ts.URL + "/info")
-	var authErr *ProfileAuthError
-	if !errors.As(err, &authErr) {
-		t.Fatalf("expected ProfileAuthError, got %v", err)
 	}
 }

@@ -309,57 +309,6 @@ func (r *Client) AuthHeaders(ctx context.Context, opts ...option.RequestOption) 
 	return out, nil
 }
 
-// HTTPClient returns an [*http.Client] that authenticates requests to this
-// client's API origin the way the client's own methods do: the same option and
-// environment precedence, the same tenant, and a refresh of an expiring OAuth
-// profile token shared with other processes. Requests to any other origin,
-// including redirects, carry no LangSmith credentials. Headers already set on
-// a request are kept. Use it for endpoints the SDK has no method for, or when
-// the raw [*http.Response] is needed.
-func (r *Client) HTTPClient() *http.Client {
-	return &http.Client{Transport: &authTransport{client: r}}
-}
-
-type authTransport struct {
-	client *Client
-}
-
-func (t *authTransport) RoundTrip(req *http.Request) (*http.Response, error) {
-	cfg, err := requestconfig.NewRequestConfig(req.Context(), http.MethodGet, "", nil, nil, t.client.Options...)
-	if err != nil {
-		closeRequestBody(req)
-		return nil, err
-	}
-	base := http.DefaultTransport
-	if cfg.HTTPClient != nil && cfg.HTTPClient.Transport != nil {
-		base = cfg.HTTPClient.Transport
-	}
-	if cfg.BaseURL == nil || req.URL.Scheme != cfg.BaseURL.Scheme || req.URL.Host != cfg.BaseURL.Host {
-		return base.RoundTrip(req)
-	}
-
-	headers, err := t.client.AuthHeaders(req.Context())
-	if err != nil {
-		closeRequestBody(req)
-		return nil, err
-	}
-	req = req.Clone(req.Context())
-	for name, values := range headers {
-		if req.Header.Get(name) == "" {
-			req.Header[name] = values
-		}
-	}
-	return base.RoundTrip(req)
-}
-
-// closeRequestBody honours the RoundTripper contract of closing the body even
-// when the request is never sent.
-func closeRequestBody(req *http.Request) {
-	if req.Body != nil {
-		_ = req.Body.Close()
-	}
-}
-
 // resolveRequestHeaders runs a request through the full option and middleware
 // pipeline and returns the headers it would have sent, without sending it.
 // Applying the options alone is not enough: profile auth refreshes OAuth
