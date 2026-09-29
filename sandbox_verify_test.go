@@ -253,8 +253,18 @@ func TestSandboxVerifyCallback(t *testing.T) {
 	assert.Equal(t, 443, cb.Port)
 
 	otherAud := key.sign(t, callbackTestClaims(body, map[string]any{"aud": []string{"https://other.example.com/cb"}}))
-	_, err = v.VerifyCallback(t.Context(), body, otherAud, SandboxCallbackOptions{})
-	require.NoError(t, err)
+	_, err = v.VerifyCallback(t.Context(), body, otherAud, SandboxCallbackOptions{Audience: ExactAudience(verifyTestCallbackURL)})
+	requireVerificationError(t, err, "wrong audience")
+}
+
+// A callback signed for one endpoint must not verify at another, so the
+// audience cannot be left out.
+func TestSandboxVerifyCallbackRequiresAudience(t *testing.T) {
+	key := newVerifyTestKey(t, verifyTestKID)
+	v := newJWKSTestServer(t, key).verifier(t)
+	body := callbackTestBody(t, nil)
+	_, err := v.VerifyCallback(t.Context(), body, key.sign(t, callbackTestClaims(body, nil)), SandboxCallbackOptions{})
+	require.ErrorContains(t, err, "Audience is required")
 }
 
 func TestSandboxVerifyCallbackFullRequest(t *testing.T) {
@@ -267,7 +277,9 @@ func TestSandboxVerifyCallbackFullRequest(t *testing.T) {
 		"body_base64": base64.StdEncoding.EncodeToString([]byte("hello")), "body_truncated": false,
 	}})
 
-	cb, err := v.VerifyCallback(t.Context(), body, key.sign(t, callbackTestClaims(body, nil)), SandboxCallbackOptions{})
+	cb, err := v.VerifyCallback(t.Context(), body, key.sign(t, callbackTestClaims(body, nil)), SandboxCallbackOptions{
+		Audience: ExactAudience(verifyTestCallbackURL),
+	})
 	require.NoError(t, err)
 	require.NotNil(t, cb.Request)
 	assert.Equal(t, []byte("hello"), cb.Request.Body)
@@ -294,11 +306,16 @@ func TestSandboxVerifyCallbackRejects(t *testing.T) {
 		{"expired", body, key.sign(t, callbackTestClaims(body, map[string]any{"exp": now - 120})), nil, "expired"},
 		{"future nbf", body, key.sign(t, callbackTestClaims(body, map[string]any{"nbf": now + 600})), nil, "not yet valid"},
 		{"missing body hash", body, key.sign(t, callbackTestClaims(body, map[string]any{"body_sha256": nil})), nil, "no body hash"},
-		{"user token", body, key.sign(t, userTestClaims(nil)), nil, "not a callback signature"},
+		// Accept any audience so the subject check, not the audience, rejects it.
+		{"user token", body, key.sign(t, userTestClaims(nil)), func(string) bool { return true }, "not a callback signature"},
 	}
 	for _, tt := range tests {
 		t.Run(tt.name, func(t *testing.T) {
-			_, err := v.VerifyCallback(t.Context(), tt.body, tt.sig, SandboxCallbackOptions{Audience: tt.audience})
+			audience := tt.audience
+			if audience == nil {
+				audience = ExactAudience(verifyTestCallbackURL)
+			}
+			_, err := v.VerifyCallback(t.Context(), tt.body, tt.sig, SandboxCallbackOptions{Audience: audience})
 			requireVerificationError(t, err, tt.wantErr)
 		})
 	}

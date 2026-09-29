@@ -123,9 +123,10 @@ type SandboxUserTokenOptions struct {
 
 // SandboxCallbackOptions configures [SandboxTokenVerifier.VerifyCallback].
 type SandboxCallbackOptions struct {
-	// Audience, if set, is called with each audience in the signature, which is
-	// the callback URL as configured in the proxy config, and must return true
-	// for at least one. Use [ExactAudience] to match one URL exactly.
+	// Audience is called with each audience in the signature, which is the
+	// callback URL as configured in the proxy config, and must return true for
+	// at least one. Use [ExactAudience] to match one URL exactly. Required:
+	// without it, a callback signed for another endpoint would verify here too.
 	Audience func(aud string) bool
 	// Issuer, if set, is the LangSmith OAuth issuer the signature must be
 	// issued by.
@@ -236,6 +237,9 @@ func (v *SandboxTokenVerifier) VerifyUserToken(ctx context.Context, token string
 // payload. body must be the raw request body, exactly as received, and
 // signature the X-LangSmith-Signature-JWT header value.
 func (v *SandboxTokenVerifier) VerifyCallback(ctx context.Context, body []byte, signature string, opts SandboxCallbackOptions) (*SandboxCallback, error) {
+	if opts.Audience == nil {
+		return nil, errors.New("sandbox token verifier: SandboxCallbackOptions.Audience is required")
+	}
 	claims, err := v.verify(ctx, signature, opts.Audience, opts.Issuer)
 	if err != nil {
 		return nil, err
