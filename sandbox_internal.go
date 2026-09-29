@@ -11,7 +11,6 @@ import (
 	"time"
 
 	"github.com/langchain-ai/langsmith-go/internal/param"
-	"github.com/langchain-ai/langsmith-go/internal/requestconfig"
 	"github.com/langchain-ai/langsmith-go/option"
 	"golang.org/x/net/websocket"
 )
@@ -156,11 +155,7 @@ func sandboxWebSocketOrigin(wsURL string) (string, error) {
 }
 
 func sandboxHeaders(ctx context.Context, requestURL string, opts ...option.RequestOption) (http.Header, error) {
-	cfg, err := requestconfig.NewRequestConfig(ctx, http.MethodGet, requestURL, nil, nil, opts...)
-	if err != nil {
-		return nil, err
-	}
-	return cfg.Request.Header.Clone(), nil
+	return resolveRequestHeaders(ctx, requestURL, opts...)
 }
 
 func minDuration(a time.Duration, b time.Duration) time.Duration {
