@@ -34,7 +34,7 @@ func TestOnlineEvaluatorNewWithOptionalParams(t *testing.T) {
 				Code:                    langsmith.F("code"),
 				Dependencies:            langsmith.F("dependencies"),
 				Language:                langsmith.F("language"),
-				ManagedCodeEvaluatorKey: langsmith.F("managed_code_evaluator_key"),
+				ManagedCodeEvaluatorKey: langsmith.F(langsmith.CreateOnlineCodeEvaluatorRequestManagedCodeEvaluatorKeyVoiceMetrics),
 				ManagedCodeEvaluatorSettings: langsmith.F(map[string]langsmith.CreateOnlineCodeEvaluatorRequestManagedCodeEvaluatorSettingParam{
 					"foo": {
 						IsEnabled: langsmith.F(true),

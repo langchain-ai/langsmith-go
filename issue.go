@@ -87,23 +87,30 @@ type Issue struct {
 	AutoResolutionEvidence interface{} `json:"auto_resolution_evidence"`
 	// Nil unless eligible: "auto_close" or "prompt". Evidence carries the deciding
 	// gate.
-	AutoResolutionState  string               `json:"auto_resolution_state"`
-	CreatedAt            string               `json:"created_at"`
-	Description          string               `json:"description"`
-	FirstSeenAt          string               `json:"first_seen_at"`
-	FixBranch            string               `json:"fix_branch"`
-	FixDispatchedAt      string               `json:"fix_dispatched_at"`
-	FixPrNumber          int64                `json:"fix_pr_number"`
-	FixPrompt            string               `json:"fix_prompt"`
-	FixVerification      IssueFixVerification `json:"fix_verification"`
-	LastSeenAt           string               `json:"last_seen_at"`
-	LinearContext        IssueLinearContext   `json:"linear_context"`
-	LinearSync           IssueLinearSync      `json:"linear_sync"`
-	Name                 string               `json:"name"`
-	ProposedContextFixes []interface{}        `json:"proposed_context_fixes"`
-	ProposedExamples     []interface{}        `json:"proposed_examples"`
-	ProposedFix          string               `json:"proposed_fix"`
-	ProposedPromptFixes  []interface{}        `json:"proposed_prompt_fixes"`
+	AutoResolutionState string `json:"auto_resolution_state"`
+	CreatedAt           string `json:"created_at"`
+	Description         string `json:"description"`
+	// Nil for the trace-list issues that are the norm.
+	Evidence    IssueEvidence `json:"evidence" api:"nullable"`
+	FirstSeenAt string        `json:"first_seen_at"`
+	// Legacy: branch of the oldest fix in the board's oldest connected repository.
+	FixBranch       string `json:"fix_branch"`
+	FixDispatchedAt string `json:"fix_dispatched_at"`
+	FixPrNumber     int64  `json:"fix_pr_number"`
+	// Issue-level: the problem every fix shares, and the last time a fix run was
+	// dispatched for this issue — one run works several fixes.
+	FixPrompt       string               `json:"fix_prompt"`
+	FixVerification IssueFixVerification `json:"fix_verification"`
+	// Newest first.
+	Fixes                []IssueFix         `json:"fixes"`
+	LastSeenAt           string             `json:"last_seen_at"`
+	LinearContext        IssueLinearContext `json:"linear_context"`
+	LinearSync           IssueLinearSync    `json:"linear_sync"`
+	Name                 string             `json:"name"`
+	ProposedContextFixes []interface{}      `json:"proposed_context_fixes"`
+	ProposedExamples     []interface{}      `json:"proposed_examples"`
+	ProposedFix          string             `json:"proposed_fix"`
+	ProposedPromptFixes  []interface{}      `json:"proposed_prompt_fixes"`
 	// RecurrencesSinceWatching counts linked traces whose run start_time is after
 	// watching_since — i.e. recurrences observed during the current watch period.
 	RecurrencesSinceWatching int64                 `json:"recurrences_since_watching"`
@@ -127,12 +134,14 @@ type issueJSON struct {
 	AutoResolutionState      apijson.Field
 	CreatedAt                apijson.Field
 	Description              apijson.Field
+	Evidence                 apijson.Field
 	FirstSeenAt              apijson.Field
 	FixBranch                apijson.Field
 	FixDispatchedAt          apijson.Field
 	FixPrNumber              apijson.Field
 	FixPrompt                apijson.Field
 	FixVerification          apijson.Field
+	Fixes                    apijson.Field
 	LastSeenAt               apijson.Field
 	LinearContext            apijson.Field
 	LinearSync               apijson.Field
@@ -163,29 +172,471 @@ func (r issueJSON) RawJSON() string {
 	return r.raw
 }
 
+// Nil for the trace-list issues that are the norm.
+type IssueEvidence struct {
+	Type   IssueEvidenceType   `json:"type" api:"required"`
+	Series IssueEvidenceSeries `json:"series"`
+	JSON   issueEvidenceJSON   `json:"-"`
+}
+
+// issueEvidenceJSON contains the JSON metadata for the struct [IssueEvidence]
+type issueEvidenceJSON struct {
+	Type        apijson.Field
+	Series      apijson.Field
+	raw         string
+	ExtraFields map[string]apijson.Field
+}
+
+func (r *IssueEvidence) UnmarshalJSON(data []byte) (err error) {
+	return apijson.UnmarshalRoot(data, r)
+}
+
+func (r issueEvidenceJSON) RawJSON() string {
+	return r.raw
+}
+
+type IssueEvidenceType string
+
+const (
+	IssueEvidenceTypeSeries IssueEvidenceType = "series"
+)
+
+func (r IssueEvidenceType) IsKnown() bool {
+	switch r {
+	case IssueEvidenceTypeSeries:
+		return true
+	}
+	return false
+}
+
+type IssueEvidenceSeries struct {
+	MetricDefinition IssueEvidenceSeriesMetricDefinition `json:"metric_definition" api:"required"`
+	// Narrows what is measured; the renderer ANDs its root scope over it.
+	RunFilter string    `json:"run_filter"`
+	WindowEnd time.Time `json:"window_end" format:"date-time"`
+	// The view the chart opens at, not a clamp. Start alone renders start -> now.
+	WindowStart time.Time               `json:"window_start" format:"date-time"`
+	JSON        issueEvidenceSeriesJSON `json:"-"`
+}
+
+// issueEvidenceSeriesJSON contains the JSON metadata for the struct
+// [IssueEvidenceSeries]
+type issueEvidenceSeriesJSON struct {
+	MetricDefinition apijson.Field
+	RunFilter        apijson.Field
+	WindowEnd        apijson.Field
+	WindowStart      apijson.Field
+	raw              string
+	ExtraFields      map[string]apijson.Field
+}
+
+func (r *IssueEvidenceSeries) UnmarshalJSON(data []byte) (err error) {
+	return apijson.UnmarshalRoot(data, r)
+}
+
+func (r issueEvidenceSeriesJSON) RawJSON() string {
+	return r.raw
+}
+
+type IssueEvidenceSeriesMetricDefinition struct {
+	// histogram is reserved and rejected; the tag publishes what is accepted.
+	Type        IssueEvidenceSeriesMetricDefinitionType        `json:"type" api:"required"`
+	Denominator IssueEvidenceSeriesMetricDefinitionDenominator `json:"denominator"`
+	// Entity selects what a type=count metric counts. Only valid when type=count;
+	// defaults to MetricEntityRun. entity=feedback requires params.feedback_key and
+	// counts individual feedback records rather than runs.
+	Entity IssueEvidenceSeriesMetricDefinitionEntity `json:"entity"`
+	Field  IssueEvidenceSeriesMetricDefinitionField  `json:"field"`
+	// Numerator and Denominator are required when type=ratio.
+	Numerator IssueEvidenceSeriesMetricDefinitionNumerator `json:"numerator"`
+	// percentile p or histogram bucket_count
+	Params IssueEvidenceSeriesMetricDefinitionParams `json:"params"`
+	JSON   issueEvidenceSeriesMetricDefinitionJSON   `json:"-"`
+}
+
+// issueEvidenceSeriesMetricDefinitionJSON contains the JSON metadata for the
+// struct [IssueEvidenceSeriesMetricDefinition]
+type issueEvidenceSeriesMetricDefinitionJSON struct {
+	Type        apijson.Field
+	Denominator apijson.Field
+	Entity      apijson.Field
+	Field       apijson.Field
+	Numerator   apijson.Field
+	Params      apijson.Field
+	raw         string
+	ExtraFields map[string]apijson.Field
+}
+
+func (r *IssueEvidenceSeriesMetricDefinition) UnmarshalJSON(data []byte) (err error) {
+	return apijson.UnmarshalRoot(data, r)
+}
+
+func (r issueEvidenceSeriesMetricDefinitionJSON) RawJSON() string {
+	return r.raw
+}
+
+// histogram is reserved and rejected; the tag publishes what is accepted.
+type IssueEvidenceSeriesMetricDefinitionType string
+
+const (
+	IssueEvidenceSeriesMetricDefinitionTypeCount      IssueEvidenceSeriesMetricDefinitionType = "count"
+	IssueEvidenceSeriesMetricDefinitionTypeSum        IssueEvidenceSeriesMetricDefinitionType = "sum"
+	IssueEvidenceSeriesMetricDefinitionTypeAvg        IssueEvidenceSeriesMetricDefinitionType = "avg"
+	IssueEvidenceSeriesMetricDefinitionTypeMin        IssueEvidenceSeriesMetricDefinitionType = "min"
+	IssueEvidenceSeriesMetricDefinitionTypeMax        IssueEvidenceSeriesMetricDefinitionType = "max"
+	IssueEvidenceSeriesMetricDefinitionTypePercentile IssueEvidenceSeriesMetricDefinitionType = "percentile"
+	IssueEvidenceSeriesMetricDefinitionTypeRatio      IssueEvidenceSeriesMetricDefinitionType = "ratio"
+	IssueEvidenceSeriesMetricDefinitionTypeHistogram  IssueEvidenceSeriesMetricDefinitionType = "histogram"
+)
+
+func (r IssueEvidenceSeriesMetricDefinitionType) IsKnown() bool {
+	switch r {
+	case IssueEvidenceSeriesMetricDefinitionTypeCount, IssueEvidenceSeriesMetricDefinitionTypeSum, IssueEvidenceSeriesMetricDefinitionTypeAvg, IssueEvidenceSeriesMetricDefinitionTypeMin, IssueEvidenceSeriesMetricDefinitionTypeMax, IssueEvidenceSeriesMetricDefinitionTypePercentile, IssueEvidenceSeriesMetricDefinitionTypeRatio, IssueEvidenceSeriesMetricDefinitionTypeHistogram:
+		return true
+	}
+	return false
+}
+
+type IssueEvidenceSeriesMetricDefinitionDenominator struct {
+	// An operand is non-composite, so ratio is rejected here too.
+	Type IssueEvidenceSeriesMetricDefinitionDenominatorType `json:"type" api:"required"`
+	// Entity selects what a type=count metric counts. Only valid when type=count;
+	// defaults to MetricEntityRun. entity=feedback requires params.feedback_key and
+	// counts individual feedback records rather than runs.
+	Entity IssueEvidenceSeriesMetricDefinitionDenominatorEntity `json:"entity"`
+	Field  IssueEvidenceSeriesMetricDefinitionDenominatorField  `json:"field"`
+	Filter string                                               `json:"filter"`
+	// required when type=percentile
+	Params IssueEvidenceSeriesMetricDefinitionDenominatorParams `json:"params"`
+	JSON   issueEvidenceSeriesMetricDefinitionDenominatorJSON   `json:"-"`
+}
+
+// issueEvidenceSeriesMetricDefinitionDenominatorJSON contains the JSON metadata
+// for the struct [IssueEvidenceSeriesMetricDefinitionDenominator]
+type issueEvidenceSeriesMetricDefinitionDenominatorJSON struct {
+	Type        apijson.Field
+	Entity      apijson.Field
+	Field       apijson.Field
+	Filter      apijson.Field
+	Params      apijson.Field
+	raw         string
+	ExtraFields map[string]apijson.Field
+}
+
+func (r *IssueEvidenceSeriesMetricDefinitionDenominator) UnmarshalJSON(data []byte) (err error) {
+	return apijson.UnmarshalRoot(data, r)
+}
+
+func (r issueEvidenceSeriesMetricDefinitionDenominatorJSON) RawJSON() string {
+	return r.raw
+}
+
+// An operand is non-composite, so ratio is rejected here too.
+type IssueEvidenceSeriesMetricDefinitionDenominatorType string
+
+const (
+	IssueEvidenceSeriesMetricDefinitionDenominatorTypeCount      IssueEvidenceSeriesMetricDefinitionDenominatorType = "count"
+	IssueEvidenceSeriesMetricDefinitionDenominatorTypeSum        IssueEvidenceSeriesMetricDefinitionDenominatorType = "sum"
+	IssueEvidenceSeriesMetricDefinitionDenominatorTypeAvg        IssueEvidenceSeriesMetricDefinitionDenominatorType = "avg"
+	IssueEvidenceSeriesMetricDefinitionDenominatorTypeMin        IssueEvidenceSeriesMetricDefinitionDenominatorType = "min"
+	IssueEvidenceSeriesMetricDefinitionDenominatorTypeMax        IssueEvidenceSeriesMetricDefinitionDenominatorType = "max"
+	IssueEvidenceSeriesMetricDefinitionDenominatorTypePercentile IssueEvidenceSeriesMetricDefinitionDenominatorType = "percentile"
+	IssueEvidenceSeriesMetricDefinitionDenominatorTypeRatio      IssueEvidenceSeriesMetricDefinitionDenominatorType = "ratio"
+	IssueEvidenceSeriesMetricDefinitionDenominatorTypeHistogram  IssueEvidenceSeriesMetricDefinitionDenominatorType = "histogram"
+)
+
+func (r IssueEvidenceSeriesMetricDefinitionDenominatorType) IsKnown() bool {
+	switch r {
+	case IssueEvidenceSeriesMetricDefinitionDenominatorTypeCount, IssueEvidenceSeriesMetricDefinitionDenominatorTypeSum, IssueEvidenceSeriesMetricDefinitionDenominatorTypeAvg, IssueEvidenceSeriesMetricDefinitionDenominatorTypeMin, IssueEvidenceSeriesMetricDefinitionDenominatorTypeMax, IssueEvidenceSeriesMetricDefinitionDenominatorTypePercentile, IssueEvidenceSeriesMetricDefinitionDenominatorTypeRatio, IssueEvidenceSeriesMetricDefinitionDenominatorTypeHistogram:
+		return true
+	}
+	return false
+}
+
+// Entity selects what a type=count metric counts. Only valid when type=count;
+// defaults to MetricEntityRun. entity=feedback requires params.feedback_key and
+// counts individual feedback records rather than runs.
+type IssueEvidenceSeriesMetricDefinitionDenominatorEntity string
+
+const (
+	IssueEvidenceSeriesMetricDefinitionDenominatorEntityRun      IssueEvidenceSeriesMetricDefinitionDenominatorEntity = "run"
+	IssueEvidenceSeriesMetricDefinitionDenominatorEntityFeedback IssueEvidenceSeriesMetricDefinitionDenominatorEntity = "feedback"
+)
+
+func (r IssueEvidenceSeriesMetricDefinitionDenominatorEntity) IsKnown() bool {
+	switch r {
+	case IssueEvidenceSeriesMetricDefinitionDenominatorEntityRun, IssueEvidenceSeriesMetricDefinitionDenominatorEntityFeedback:
+		return true
+	}
+	return false
+}
+
+type IssueEvidenceSeriesMetricDefinitionDenominatorField string
+
+const (
+	IssueEvidenceSeriesMetricDefinitionDenominatorFieldLatencySeconds    IssueEvidenceSeriesMetricDefinitionDenominatorField = "latency_seconds"
+	IssueEvidenceSeriesMetricDefinitionDenominatorFieldFirstTokenSeconds IssueEvidenceSeriesMetricDefinitionDenominatorField = "first_token_seconds"
+	IssueEvidenceSeriesMetricDefinitionDenominatorFieldTotalTokens       IssueEvidenceSeriesMetricDefinitionDenominatorField = "total_tokens"
+	IssueEvidenceSeriesMetricDefinitionDenominatorFieldPromptTokens      IssueEvidenceSeriesMetricDefinitionDenominatorField = "prompt_tokens"
+	IssueEvidenceSeriesMetricDefinitionDenominatorFieldCompletionTokens  IssueEvidenceSeriesMetricDefinitionDenominatorField = "completion_tokens"
+	IssueEvidenceSeriesMetricDefinitionDenominatorFieldTotalCost         IssueEvidenceSeriesMetricDefinitionDenominatorField = "total_cost"
+	IssueEvidenceSeriesMetricDefinitionDenominatorFieldPromptCost        IssueEvidenceSeriesMetricDefinitionDenominatorField = "prompt_cost"
+	IssueEvidenceSeriesMetricDefinitionDenominatorFieldCompletionCost    IssueEvidenceSeriesMetricDefinitionDenominatorField = "completion_cost"
+	IssueEvidenceSeriesMetricDefinitionDenominatorFieldFeedbackScore     IssueEvidenceSeriesMetricDefinitionDenominatorField = "feedback_score"
+)
+
+func (r IssueEvidenceSeriesMetricDefinitionDenominatorField) IsKnown() bool {
+	switch r {
+	case IssueEvidenceSeriesMetricDefinitionDenominatorFieldLatencySeconds, IssueEvidenceSeriesMetricDefinitionDenominatorFieldFirstTokenSeconds, IssueEvidenceSeriesMetricDefinitionDenominatorFieldTotalTokens, IssueEvidenceSeriesMetricDefinitionDenominatorFieldPromptTokens, IssueEvidenceSeriesMetricDefinitionDenominatorFieldCompletionTokens, IssueEvidenceSeriesMetricDefinitionDenominatorFieldTotalCost, IssueEvidenceSeriesMetricDefinitionDenominatorFieldPromptCost, IssueEvidenceSeriesMetricDefinitionDenominatorFieldCompletionCost, IssueEvidenceSeriesMetricDefinitionDenominatorFieldFeedbackScore:
+		return true
+	}
+	return false
+}
+
+// required when type=percentile
+type IssueEvidenceSeriesMetricDefinitionDenominatorParams struct {
+	BucketCount int64                                                    `json:"bucket_count"`
+	FeedbackKey string                                                   `json:"feedback_key"`
+	P           float64                                                  `json:"p"`
+	JSON        issueEvidenceSeriesMetricDefinitionDenominatorParamsJSON `json:"-"`
+}
+
+// issueEvidenceSeriesMetricDefinitionDenominatorParamsJSON contains the JSON
+// metadata for the struct [IssueEvidenceSeriesMetricDefinitionDenominatorParams]
+type issueEvidenceSeriesMetricDefinitionDenominatorParamsJSON struct {
+	BucketCount apijson.Field
+	FeedbackKey apijson.Field
+	P           apijson.Field
+	raw         string
+	ExtraFields map[string]apijson.Field
+}
+
+func (r *IssueEvidenceSeriesMetricDefinitionDenominatorParams) UnmarshalJSON(data []byte) (err error) {
+	return apijson.UnmarshalRoot(data, r)
+}
+
+func (r issueEvidenceSeriesMetricDefinitionDenominatorParamsJSON) RawJSON() string {
+	return r.raw
+}
+
+// Entity selects what a type=count metric counts. Only valid when type=count;
+// defaults to MetricEntityRun. entity=feedback requires params.feedback_key and
+// counts individual feedback records rather than runs.
+type IssueEvidenceSeriesMetricDefinitionEntity string
+
+const (
+	IssueEvidenceSeriesMetricDefinitionEntityRun      IssueEvidenceSeriesMetricDefinitionEntity = "run"
+	IssueEvidenceSeriesMetricDefinitionEntityFeedback IssueEvidenceSeriesMetricDefinitionEntity = "feedback"
+)
+
+func (r IssueEvidenceSeriesMetricDefinitionEntity) IsKnown() bool {
+	switch r {
+	case IssueEvidenceSeriesMetricDefinitionEntityRun, IssueEvidenceSeriesMetricDefinitionEntityFeedback:
+		return true
+	}
+	return false
+}
+
+type IssueEvidenceSeriesMetricDefinitionField string
+
+const (
+	IssueEvidenceSeriesMetricDefinitionFieldLatencySeconds    IssueEvidenceSeriesMetricDefinitionField = "latency_seconds"
+	IssueEvidenceSeriesMetricDefinitionFieldFirstTokenSeconds IssueEvidenceSeriesMetricDefinitionField = "first_token_seconds"
+	IssueEvidenceSeriesMetricDefinitionFieldTotalTokens       IssueEvidenceSeriesMetricDefinitionField = "total_tokens"
+	IssueEvidenceSeriesMetricDefinitionFieldPromptTokens      IssueEvidenceSeriesMetricDefinitionField = "prompt_tokens"
+	IssueEvidenceSeriesMetricDefinitionFieldCompletionTokens  IssueEvidenceSeriesMetricDefinitionField = "completion_tokens"
+	IssueEvidenceSeriesMetricDefinitionFieldTotalCost         IssueEvidenceSeriesMetricDefinitionField = "total_cost"
+	IssueEvidenceSeriesMetricDefinitionFieldPromptCost        IssueEvidenceSeriesMetricDefinitionField = "prompt_cost"
+	IssueEvidenceSeriesMetricDefinitionFieldCompletionCost    IssueEvidenceSeriesMetricDefinitionField = "completion_cost"
+	IssueEvidenceSeriesMetricDefinitionFieldFeedbackScore     IssueEvidenceSeriesMetricDefinitionField = "feedback_score"
+)
+
+func (r IssueEvidenceSeriesMetricDefinitionField) IsKnown() bool {
+	switch r {
+	case IssueEvidenceSeriesMetricDefinitionFieldLatencySeconds, IssueEvidenceSeriesMetricDefinitionFieldFirstTokenSeconds, IssueEvidenceSeriesMetricDefinitionFieldTotalTokens, IssueEvidenceSeriesMetricDefinitionFieldPromptTokens, IssueEvidenceSeriesMetricDefinitionFieldCompletionTokens, IssueEvidenceSeriesMetricDefinitionFieldTotalCost, IssueEvidenceSeriesMetricDefinitionFieldPromptCost, IssueEvidenceSeriesMetricDefinitionFieldCompletionCost, IssueEvidenceSeriesMetricDefinitionFieldFeedbackScore:
+		return true
+	}
+	return false
+}
+
+// Numerator and Denominator are required when type=ratio.
+type IssueEvidenceSeriesMetricDefinitionNumerator struct {
+	// An operand is non-composite, so ratio is rejected here too.
+	Type IssueEvidenceSeriesMetricDefinitionNumeratorType `json:"type" api:"required"`
+	// Entity selects what a type=count metric counts. Only valid when type=count;
+	// defaults to MetricEntityRun. entity=feedback requires params.feedback_key and
+	// counts individual feedback records rather than runs.
+	Entity IssueEvidenceSeriesMetricDefinitionNumeratorEntity `json:"entity"`
+	Field  IssueEvidenceSeriesMetricDefinitionNumeratorField  `json:"field"`
+	Filter string                                             `json:"filter"`
+	// required when type=percentile
+	Params IssueEvidenceSeriesMetricDefinitionNumeratorParams `json:"params"`
+	JSON   issueEvidenceSeriesMetricDefinitionNumeratorJSON   `json:"-"`
+}
+
+// issueEvidenceSeriesMetricDefinitionNumeratorJSON contains the JSON metadata for
+// the struct [IssueEvidenceSeriesMetricDefinitionNumerator]
+type issueEvidenceSeriesMetricDefinitionNumeratorJSON struct {
+	Type        apijson.Field
+	Entity      apijson.Field
+	Field       apijson.Field
+	Filter      apijson.Field
+	Params      apijson.Field
+	raw         string
+	ExtraFields map[string]apijson.Field
+}
+
+func (r *IssueEvidenceSeriesMetricDefinitionNumerator) UnmarshalJSON(data []byte) (err error) {
+	return apijson.UnmarshalRoot(data, r)
+}
+
+func (r issueEvidenceSeriesMetricDefinitionNumeratorJSON) RawJSON() string {
+	return r.raw
+}
+
+// An operand is non-composite, so ratio is rejected here too.
+type IssueEvidenceSeriesMetricDefinitionNumeratorType string
+
+const (
+	IssueEvidenceSeriesMetricDefinitionNumeratorTypeCount      IssueEvidenceSeriesMetricDefinitionNumeratorType = "count"
+	IssueEvidenceSeriesMetricDefinitionNumeratorTypeSum        IssueEvidenceSeriesMetricDefinitionNumeratorType = "sum"
+	IssueEvidenceSeriesMetricDefinitionNumeratorTypeAvg        IssueEvidenceSeriesMetricDefinitionNumeratorType = "avg"
+	IssueEvidenceSeriesMetricDefinitionNumeratorTypeMin        IssueEvidenceSeriesMetricDefinitionNumeratorType = "min"
+	IssueEvidenceSeriesMetricDefinitionNumeratorTypeMax        IssueEvidenceSeriesMetricDefinitionNumeratorType = "max"
+	IssueEvidenceSeriesMetricDefinitionNumeratorTypePercentile IssueEvidenceSeriesMetricDefinitionNumeratorType = "percentile"
+	IssueEvidenceSeriesMetricDefinitionNumeratorTypeRatio      IssueEvidenceSeriesMetricDefinitionNumeratorType = "ratio"
+	IssueEvidenceSeriesMetricDefinitionNumeratorTypeHistogram  IssueEvidenceSeriesMetricDefinitionNumeratorType = "histogram"
+)
+
+func (r IssueEvidenceSeriesMetricDefinitionNumeratorType) IsKnown() bool {
+	switch r {
+	case IssueEvidenceSeriesMetricDefinitionNumeratorTypeCount, IssueEvidenceSeriesMetricDefinitionNumeratorTypeSum, IssueEvidenceSeriesMetricDefinitionNumeratorTypeAvg, IssueEvidenceSeriesMetricDefinitionNumeratorTypeMin, IssueEvidenceSeriesMetricDefinitionNumeratorTypeMax, IssueEvidenceSeriesMetricDefinitionNumeratorTypePercentile, IssueEvidenceSeriesMetricDefinitionNumeratorTypeRatio, IssueEvidenceSeriesMetricDefinitionNumeratorTypeHistogram:
+		return true
+	}
+	return false
+}
+
+// Entity selects what a type=count metric counts. Only valid when type=count;
+// defaults to MetricEntityRun. entity=feedback requires params.feedback_key and
+// counts individual feedback records rather than runs.
+type IssueEvidenceSeriesMetricDefinitionNumeratorEntity string
+
+const (
+	IssueEvidenceSeriesMetricDefinitionNumeratorEntityRun      IssueEvidenceSeriesMetricDefinitionNumeratorEntity = "run"
+	IssueEvidenceSeriesMetricDefinitionNumeratorEntityFeedback IssueEvidenceSeriesMetricDefinitionNumeratorEntity = "feedback"
+)
+
+func (r IssueEvidenceSeriesMetricDefinitionNumeratorEntity) IsKnown() bool {
+	switch r {
+	case IssueEvidenceSeriesMetricDefinitionNumeratorEntityRun, IssueEvidenceSeriesMetricDefinitionNumeratorEntityFeedback:
+		return true
+	}
+	return false
+}
+
+type IssueEvidenceSeriesMetricDefinitionNumeratorField string
+
+const (
+	IssueEvidenceSeriesMetricDefinitionNumeratorFieldLatencySeconds    IssueEvidenceSeriesMetricDefinitionNumeratorField = "latency_seconds"
+	IssueEvidenceSeriesMetricDefinitionNumeratorFieldFirstTokenSeconds IssueEvidenceSeriesMetricDefinitionNumeratorField = "first_token_seconds"
+	IssueEvidenceSeriesMetricDefinitionNumeratorFieldTotalTokens       IssueEvidenceSeriesMetricDefinitionNumeratorField = "total_tokens"
+	IssueEvidenceSeriesMetricDefinitionNumeratorFieldPromptTokens      IssueEvidenceSeriesMetricDefinitionNumeratorField = "prompt_tokens"
+	IssueEvidenceSeriesMetricDefinitionNumeratorFieldCompletionTokens  IssueEvidenceSeriesMetricDefinitionNumeratorField = "completion_tokens"
+	IssueEvidenceSeriesMetricDefinitionNumeratorFieldTotalCost         IssueEvidenceSeriesMetricDefinitionNumeratorField = "total_cost"
+	IssueEvidenceSeriesMetricDefinitionNumeratorFieldPromptCost        IssueEvidenceSeriesMetricDefinitionNumeratorField = "prompt_cost"
+	IssueEvidenceSeriesMetricDefinitionNumeratorFieldCompletionCost    IssueEvidenceSeriesMetricDefinitionNumeratorField = "completion_cost"
+	IssueEvidenceSeriesMetricDefinitionNumeratorFieldFeedbackScore     IssueEvidenceSeriesMetricDefinitionNumeratorField = "feedback_score"
+)
+
+func (r IssueEvidenceSeriesMetricDefinitionNumeratorField) IsKnown() bool {
+	switch r {
+	case IssueEvidenceSeriesMetricDefinitionNumeratorFieldLatencySeconds, IssueEvidenceSeriesMetricDefinitionNumeratorFieldFirstTokenSeconds, IssueEvidenceSeriesMetricDefinitionNumeratorFieldTotalTokens, IssueEvidenceSeriesMetricDefinitionNumeratorFieldPromptTokens, IssueEvidenceSeriesMetricDefinitionNumeratorFieldCompletionTokens, IssueEvidenceSeriesMetricDefinitionNumeratorFieldTotalCost, IssueEvidenceSeriesMetricDefinitionNumeratorFieldPromptCost, IssueEvidenceSeriesMetricDefinitionNumeratorFieldCompletionCost, IssueEvidenceSeriesMetricDefinitionNumeratorFieldFeedbackScore:
+		return true
+	}
+	return false
+}
+
+// required when type=percentile
+type IssueEvidenceSeriesMetricDefinitionNumeratorParams struct {
+	BucketCount int64                                                  `json:"bucket_count"`
+	FeedbackKey string                                                 `json:"feedback_key"`
+	P           float64                                                `json:"p"`
+	JSON        issueEvidenceSeriesMetricDefinitionNumeratorParamsJSON `json:"-"`
+}
+
+// issueEvidenceSeriesMetricDefinitionNumeratorParamsJSON contains the JSON
+// metadata for the struct [IssueEvidenceSeriesMetricDefinitionNumeratorParams]
+type issueEvidenceSeriesMetricDefinitionNumeratorParamsJSON struct {
+	BucketCount apijson.Field
+	FeedbackKey apijson.Field
+	P           apijson.Field
+	raw         string
+	ExtraFields map[string]apijson.Field
+}
+
+func (r *IssueEvidenceSeriesMetricDefinitionNumeratorParams) UnmarshalJSON(data []byte) (err error) {
+	return apijson.UnmarshalRoot(data, r)
+}
+
+func (r issueEvidenceSeriesMetricDefinitionNumeratorParamsJSON) RawJSON() string {
+	return r.raw
+}
+
+// percentile p or histogram bucket_count
+type IssueEvidenceSeriesMetricDefinitionParams struct {
+	BucketCount int64                                         `json:"bucket_count"`
+	FeedbackKey string                                        `json:"feedback_key"`
+	P           float64                                       `json:"p"`
+	JSON        issueEvidenceSeriesMetricDefinitionParamsJSON `json:"-"`
+}
+
+// issueEvidenceSeriesMetricDefinitionParamsJSON contains the JSON metadata for the
+// struct [IssueEvidenceSeriesMetricDefinitionParams]
+type issueEvidenceSeriesMetricDefinitionParamsJSON struct {
+	BucketCount apijson.Field
+	FeedbackKey apijson.Field
+	P           apijson.Field
+	raw         string
+	ExtraFields map[string]apijson.Field
+}
+
+func (r *IssueEvidenceSeriesMetricDefinitionParams) UnmarshalJSON(data []byte) (err error) {
+	return apijson.UnmarshalRoot(data, r)
+}
+
+func (r issueEvidenceSeriesMetricDefinitionParamsJSON) RawJSON() string {
+	return r.raw
+}
+
 type IssueFixVerification struct {
-	Attempt             int64                      `json:"attempt"`
-	ParentDeploymentID  string                     `json:"parent_deployment_id" format:"uuid"`
-	PreviewDeploymentID string                     `json:"preview_deployment_id" format:"uuid"`
-	Reason              string                     `json:"reason"`
-	RootTraceIDs        []string                   `json:"root_trace_ids"`
-	Status              IssueFixVerificationStatus `json:"status"`
-	UpdatedAt           time.Time                  `json:"updated_at" format:"date-time"`
-	JSON                issueFixVerificationJSON   `json:"-"`
+	Attempt              int64                      `json:"attempt"`
+	BaselineExperimentID string                     `json:"baseline_experiment_id" format:"uuid"`
+	DatasetID            string                     `json:"dataset_id" format:"uuid"`
+	ParentDeploymentID   string                     `json:"parent_deployment_id" format:"uuid"`
+	PreviewDeploymentID  string                     `json:"preview_deployment_id" format:"uuid"`
+	PreviewExperimentID  string                     `json:"preview_experiment_id" format:"uuid"`
+	Reason               string                     `json:"reason"`
+	RootTraceIDs         []string                   `json:"root_trace_ids"`
+	Status               IssueFixVerificationStatus `json:"status"`
+	UpdatedAt            time.Time                  `json:"updated_at" format:"date-time"`
+	JSON                 issueFixVerificationJSON   `json:"-"`
 }
 
 // issueFixVerificationJSON contains the JSON metadata for the struct
 // [IssueFixVerification]
 type issueFixVerificationJSON struct {
-	Attempt             apijson.Field
-	ParentDeploymentID  apijson.Field
-	PreviewDeploymentID apijson.Field
-	Reason              apijson.Field
-	RootTraceIDs        apijson.Field
-	Status              apijson.Field
-	UpdatedAt           apijson.Field
-	raw                 string
-	ExtraFields         map[string]apijson.Field
+	Attempt              apijson.Field
+	BaselineExperimentID apijson.Field
+	DatasetID            apijson.Field
+	ParentDeploymentID   apijson.Field
+	PreviewDeploymentID  apijson.Field
+	PreviewExperimentID  apijson.Field
+	Reason               apijson.Field
+	RootTraceIDs         apijson.Field
+	Status               apijson.Field
+	UpdatedAt            apijson.Field
+	raw                  string
+	ExtraFields          map[string]apijson.Field
 }
 
 func (r *IssueFixVerification) UnmarshalJSON(data []byte) (err error) {
@@ -214,6 +665,36 @@ func (r IssueFixVerificationStatus) IsKnown() bool {
 		return true
 	}
 	return false
+}
+
+type IssueFix struct {
+	ID        string       `json:"id" api:"required"`
+	Branch    string       `json:"branch" api:"required,nullable"`
+	CreatedAt time.Time    `json:"created_at" api:"required" format:"date-time"`
+	PrNumber  int64        `json:"pr_number" api:"required,nullable"`
+	RepoURL   string       `json:"repo_url" api:"required"`
+	UpdatedAt time.Time    `json:"updated_at" api:"required" format:"date-time"`
+	JSON      issueFixJSON `json:"-"`
+}
+
+// issueFixJSON contains the JSON metadata for the struct [IssueFix]
+type issueFixJSON struct {
+	ID          apijson.Field
+	Branch      apijson.Field
+	CreatedAt   apijson.Field
+	PrNumber    apijson.Field
+	RepoURL     apijson.Field
+	UpdatedAt   apijson.Field
+	raw         string
+	ExtraFields map[string]apijson.Field
+}
+
+func (r *IssueFix) UnmarshalJSON(data []byte) (err error) {
+	return apijson.UnmarshalRoot(data, r)
+}
+
+func (r issueFixJSON) RawJSON() string {
+	return r.raw
 }
 
 type IssueLinearContext struct {
@@ -327,26 +808,30 @@ func (r IssueStatus) IsKnown() bool {
 }
 
 type IssueValidationResult struct {
-	ActiveRevisionID string                       `json:"active_revision_id" format:"uuid"`
-	CompletedAt      time.Time                    `json:"completed_at" format:"date-time"`
-	DeploymentID     string                       `json:"deployment_id" format:"uuid"`
-	Outcome          IssueValidationResultOutcome `json:"outcome"`
-	Reason           string                       `json:"reason"`
-	RootTraceIDs     []string                     `json:"root_trace_ids"`
-	JSON             issueValidationResultJSON    `json:"-"`
+	ActiveRevisionID     string                       `json:"active_revision_id" format:"uuid"`
+	BaselineExperimentID string                       `json:"baseline_experiment_id" format:"uuid"`
+	CompletedAt          time.Time                    `json:"completed_at" format:"date-time"`
+	DatasetID            string                       `json:"dataset_id" format:"uuid"`
+	DeploymentID         string                       `json:"deployment_id" format:"uuid"`
+	Outcome              IssueValidationResultOutcome `json:"outcome"`
+	Reason               string                       `json:"reason"`
+	RootTraceIDs         []string                     `json:"root_trace_ids"`
+	JSON                 issueValidationResultJSON    `json:"-"`
 }
 
 // issueValidationResultJSON contains the JSON metadata for the struct
 // [IssueValidationResult]
 type issueValidationResultJSON struct {
-	ActiveRevisionID apijson.Field
-	CompletedAt      apijson.Field
-	DeploymentID     apijson.Field
-	Outcome          apijson.Field
-	Reason           apijson.Field
-	RootTraceIDs     apijson.Field
-	raw              string
-	ExtraFields      map[string]apijson.Field
+	ActiveRevisionID     apijson.Field
+	BaselineExperimentID apijson.Field
+	CompletedAt          apijson.Field
+	DatasetID            apijson.Field
+	DeploymentID         apijson.Field
+	Outcome              apijson.Field
+	Reason               apijson.Field
+	RootTraceIDs         apijson.Field
+	raw                  string
+	ExtraFields          map[string]apijson.Field
 }
 
 func (r *IssueValidationResult) UnmarshalJSON(data []byte) (err error) {

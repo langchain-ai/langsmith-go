@@ -33,6 +33,8 @@ func TestFeedbackNewWithOptionalParams(t *testing.T) {
 		FeedbackCreateSchema: langsmith.FeedbackCreateSchemaParam{
 			Key:                     langsmith.F("key"),
 			ID:                      langsmith.F("182bd5e5-6e1a-4fe4-a799-aa6d9a6ab26e"),
+			AgentEnvironment:        langsmith.F(langsmith.FeedbackCreateSchemaAgentEnvironmentLocal),
+			AgentID:                 langsmith.F("agent_id"),
 			Comment:                 langsmith.F("comment"),
 			ComparativeExperimentID: langsmith.F("182bd5e5-6e1a-4fe4-a799-aa6d9a6ab26e"),
 			Correction: langsmith.F[langsmith.FeedbackCreateSchemaCorrectionUnionParam](langsmith.FeedbackCreateSchemaCorrectionMapParam(map[string]interface{}{
@@ -41,6 +43,9 @@ func TestFeedbackNewWithOptionalParams(t *testing.T) {
 			CreatedAt:            langsmith.F(time.Now()),
 			Error:                langsmith.F(true),
 			ExtendTraceRetention: langsmith.F(true),
+			Extra: langsmith.F(map[string]interface{}{
+				"foo": "bar",
+			}),
 			FeedbackConfig: langsmith.F(langsmith.FeedbackCreateSchemaFeedbackConfigParam{
 				Type: langsmith.F(langsmith.FeedbackCreateSchemaFeedbackConfigTypeContinuous),
 				Categories: langsmith.F([]langsmith.FeedbackCreateSchemaFeedbackConfigCategoryParam{{

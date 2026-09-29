@@ -322,6 +322,7 @@ func TestSandboxBoxListWithOptionalParams(t *testing.T) {
 		SortDirection: langsmith.F("sort_direction"),
 		SortOrder:     langsmith.F("sort_order"),
 		Status:        langsmith.F("status"),
+		TagValueID:    langsmith.F([]string{"string"}),
 	})
 	if err != nil {
 		var apierr *langsmith.Error
@@ -453,6 +454,7 @@ func TestSandboxBoxGenerateDownloadURLWithOptionalParams(t *testing.T) {
 			Path:               langsmith.F("path"),
 			ContentDisposition: langsmith.F("content_disposition"),
 			ContentType:        langsmith.F("content_type"),
+			CspSandbox:         langsmith.F(true),
 			CspSandboxFlags:    langsmith.F([]langsmith.SandboxBoxGenerateDownloadURLParamsCspSandboxFlag{langsmith.SandboxBoxGenerateDownloadURLParamsCspSandboxFlagAllowDownloads}),
 			CspSourceBundles:   langsmith.F([]langsmith.SandboxBoxGenerateDownloadURLParamsCspSourceBundle{langsmith.SandboxBoxGenerateDownloadURLParamsCspSourceBundleCdnjs}),
 			ExpiresInSeconds:   langsmith.F(int64(0)),

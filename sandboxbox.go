@@ -155,18 +155,20 @@ func (r *SandboxBoxService) DeleteServiceURL(ctx context.Context, name string, b
 // the file path, the response content type and disposition, and the sandbox flags,
 // so a link cannot be repointed at another file or served under a weaker policy.
 // The file is always served with a Content-Security-Policy: a sandbox directive,
-// plus a default-src holding every fetch to the sandbox's own download host and a
-// set of pre-approved third-party origins. csp_sandbox_flags may loosen the
-// sandbox with allow-downloads, allow-forms, allow-modals, allow-orientation-lock,
-// allow-pointer-lock, allow-popups, allow-presentation, allow-scripts, or
-// allow-top-navigation-by-user-activation. allow-same-origin is not accepted, so a
-// served file never shares an origin with anything. csp_source_bundles selects the
-// third-party origins: cdnjs, google-fonts, jsdelivr, and unpkg are all allowed
-// when the field is omitted, and 'none' holds the file to the sandbox alone.
-// Because every file of one sandbox is served from the same host, a page can load
-// sibling files it has links for, but only by their own link URLs. Links never
-// expire unless expires_in_seconds is set. The link is served from the sandbox
-// service domain, not the API host.
+// plus a default-src holding every fetch to the file's own download host and a set
+// of pre-approved third-party origins. csp_sandbox_flags may loosen the sandbox
+// with allow-downloads, allow-forms, allow-modals, allow-orientation-lock,
+// allow-pointer-lock, allow-popups, allow-presentation, allow-same-origin,
+// allow-scripts, or allow-top-navigation-by-user-activation. Every file is served
+// from its own host, derived from the sandbox and the path, so allow-same-origin
+// gives a page localStorage and IndexedDB that no other file can read, and
+// re-minting a link for the same file keeps them. csp_sandbox set to false drops
+// the sandbox directive altogether, and csp_sandbox_flags must then be omitted.
+// csp_source_bundles selects the third-party origins: cdnjs, google-fonts,
+// jsdelivr, and unpkg are all allowed when the field is omitted, 'none' holds the
+// file to its own host, and 'any' sends no default-src at all. Links never expire
+// unless expires_in_seconds is set. The link is served from the sandbox service
+// domain, not the API host.
 func (r *SandboxBoxService) GenerateDownloadURL(ctx context.Context, name string, body SandboxBoxGenerateDownloadURLParams, opts ...option.RequestOption) (res *DownloadURLResponse, err error) {
 	opts = slices.Concat(r.Options, opts)
 	if name == "" {
@@ -1692,6 +1694,8 @@ type SandboxBoxListParams struct {
 	SortOrder param.Field[string] `query:"sort_order"`
 	// Filter by status (provisioning, ready, failed, stopped, deleting)
 	Status param.Field[string] `query:"status"`
+	// Filter by workspace resource tag value IDs; all must match
+	TagValueID param.Field[[]string] `query:"tag_value_id"`
 }
 
 // URLQuery serializes [SandboxBoxListParams]'s query parameters as `url.Values`.
@@ -1763,6 +1767,8 @@ type SandboxBoxGenerateDownloadURLParams struct {
 	Path               param.Field[string] `json:"path" api:"required"`
 	ContentDisposition param.Field[string] `json:"content_disposition"`
 	ContentType        param.Field[string] `json:"content_type"`
+	// CSPSandbox false serves the file with no CSP sandbox directive; omit to keep it.
+	CspSandbox param.Field[bool] `json:"csp_sandbox"`
 	// CSPSandboxFlags loosen the CSP sandbox the file is served under; omit for the
 	// most restrictive policy.
 	CspSandboxFlags param.Field[[]SandboxBoxGenerateDownloadURLParamsCspSandboxFlag] `json:"csp_sandbox_flags"`
@@ -1789,11 +1795,12 @@ const (
 	SandboxBoxGenerateDownloadURLParamsCspSandboxFlagAllowPresentation                  SandboxBoxGenerateDownloadURLParamsCspSandboxFlag = "allow-presentation"
 	SandboxBoxGenerateDownloadURLParamsCspSandboxFlagAllowScripts                       SandboxBoxGenerateDownloadURLParamsCspSandboxFlag = "allow-scripts"
 	SandboxBoxGenerateDownloadURLParamsCspSandboxFlagAllowTopNavigationByUserActivation SandboxBoxGenerateDownloadURLParamsCspSandboxFlag = "allow-top-navigation-by-user-activation"
+	SandboxBoxGenerateDownloadURLParamsCspSandboxFlagAllowSameOrigin                    SandboxBoxGenerateDownloadURLParamsCspSandboxFlag = "allow-same-origin"
 )
 
 func (r SandboxBoxGenerateDownloadURLParamsCspSandboxFlag) IsKnown() bool {
 	switch r {
-	case SandboxBoxGenerateDownloadURLParamsCspSandboxFlagAllowDownloads, SandboxBoxGenerateDownloadURLParamsCspSandboxFlagAllowForms, SandboxBoxGenerateDownloadURLParamsCspSandboxFlagAllowModals, SandboxBoxGenerateDownloadURLParamsCspSandboxFlagAllowOrientationLock, SandboxBoxGenerateDownloadURLParamsCspSandboxFlagAllowPointerLock, SandboxBoxGenerateDownloadURLParamsCspSandboxFlagAllowPopups, SandboxBoxGenerateDownloadURLParamsCspSandboxFlagAllowPresentation, SandboxBoxGenerateDownloadURLParamsCspSandboxFlagAllowScripts, SandboxBoxGenerateDownloadURLParamsCspSandboxFlagAllowTopNavigationByUserActivation:
+	case SandboxBoxGenerateDownloadURLParamsCspSandboxFlagAllowDownloads, SandboxBoxGenerateDownloadURLParamsCspSandboxFlagAllowForms, SandboxBoxGenerateDownloadURLParamsCspSandboxFlagAllowModals, SandboxBoxGenerateDownloadURLParamsCspSandboxFlagAllowOrientationLock, SandboxBoxGenerateDownloadURLParamsCspSandboxFlagAllowPointerLock, SandboxBoxGenerateDownloadURLParamsCspSandboxFlagAllowPopups, SandboxBoxGenerateDownloadURLParamsCspSandboxFlagAllowPresentation, SandboxBoxGenerateDownloadURLParamsCspSandboxFlagAllowScripts, SandboxBoxGenerateDownloadURLParamsCspSandboxFlagAllowTopNavigationByUserActivation, SandboxBoxGenerateDownloadURLParamsCspSandboxFlagAllowSameOrigin:
 		return true
 	}
 	return false
@@ -1807,11 +1814,12 @@ const (
 	SandboxBoxGenerateDownloadURLParamsCspSourceBundleJsdelivr    SandboxBoxGenerateDownloadURLParamsCspSourceBundle = "jsdelivr"
 	SandboxBoxGenerateDownloadURLParamsCspSourceBundleUnpkg       SandboxBoxGenerateDownloadURLParamsCspSourceBundle = "unpkg"
 	SandboxBoxGenerateDownloadURLParamsCspSourceBundleNone        SandboxBoxGenerateDownloadURLParamsCspSourceBundle = "none"
+	SandboxBoxGenerateDownloadURLParamsCspSourceBundleAny         SandboxBoxGenerateDownloadURLParamsCspSourceBundle = "any"
 )
 
 func (r SandboxBoxGenerateDownloadURLParamsCspSourceBundle) IsKnown() bool {
 	switch r {
-	case SandboxBoxGenerateDownloadURLParamsCspSourceBundleCdnjs, SandboxBoxGenerateDownloadURLParamsCspSourceBundleGoogleFonts, SandboxBoxGenerateDownloadURLParamsCspSourceBundleJsdelivr, SandboxBoxGenerateDownloadURLParamsCspSourceBundleUnpkg, SandboxBoxGenerateDownloadURLParamsCspSourceBundleNone:
+	case SandboxBoxGenerateDownloadURLParamsCspSourceBundleCdnjs, SandboxBoxGenerateDownloadURLParamsCspSourceBundleGoogleFonts, SandboxBoxGenerateDownloadURLParamsCspSourceBundleJsdelivr, SandboxBoxGenerateDownloadURLParamsCspSourceBundleUnpkg, SandboxBoxGenerateDownloadURLParamsCspSourceBundleNone, SandboxBoxGenerateDownloadURLParamsCspSourceBundleAny:
 		return true
 	}
 	return false
@@ -1820,10 +1828,11 @@ func (r SandboxBoxGenerateDownloadURLParamsCspSourceBundle) IsKnown() bool {
 type SandboxBoxGenerateServiceURLParams struct {
 	// Access selects the login mode, mutually exclusive with the minted token. Omit
 	// the field for token mode: mint a short-lived service token (default).
-	// "restricted" — LangSmith login: any user with SandboxesRead on the sandbox.
-	// "workspace" — LangSmith login: any member of the owning workspace. "off" —
-	// remove an existing LangSmith login grant and mint a token. A LangSmith login
-	// grant is durable; token mode is refused (409) while one exists.
+	// "restricted" — LangSmith login: the sandbox's creator, or any user with
+	// SandboxesExec on it (admins by default). "workspace" — LangSmith login: any
+	// member of the owning workspace. "off" — remove an existing LangSmith login grant
+	// and mint a token. A LangSmith login grant is durable; token mode is refused
+	// (409) while one exists.
 	Access           param.Field[SandboxBoxGenerateServiceURLParamsAccess] `json:"access"`
 	ExpiresInSeconds param.Field[int64]                                    `json:"expires_in_seconds"`
 	Port             param.Field[int64]                                    `json:"port"`
@@ -1835,10 +1844,11 @@ func (r SandboxBoxGenerateServiceURLParams) MarshalJSON() (data []byte, err erro
 
 // Access selects the login mode, mutually exclusive with the minted token. Omit
 // the field for token mode: mint a short-lived service token (default).
-// "restricted" — LangSmith login: any user with SandboxesRead on the sandbox.
-// "workspace" — LangSmith login: any member of the owning workspace. "off" —
-// remove an existing LangSmith login grant and mint a token. A LangSmith login
-// grant is durable; token mode is refused (409) while one exists.
+// "restricted" — LangSmith login: the sandbox's creator, or any user with
+// SandboxesExec on it (admins by default). "workspace" — LangSmith login: any
+// member of the owning workspace. "off" — remove an existing LangSmith login grant
+// and mint a token. A LangSmith login grant is durable; token mode is refused
+// (409) while one exists.
 type SandboxBoxGenerateServiceURLParamsAccess string
 
 const (

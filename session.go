@@ -105,15 +105,23 @@ func (r *SessionService) ListAutoPaging(ctx context.Context, params SessionListP
 }
 
 // Delete a specific project.
-func (r *SessionService) Delete(ctx context.Context, sessionID string, opts ...option.RequestOption) (res *SessionDeleteResponse, err error) {
+//
+// Returns 202 when deletion is accepted. Cleanup runs asynchronously. Location
+// identifies the affected project, not a cleanup-status endpoint. For a caller
+// with read access, GET at that URL returns 200 with the project while it is still
+// available, or 404 after the project is removed. A 404 does not confirm that
+// background trace cleanup has finished. Polling for cleanup completion is not
+// supported.
+func (r *SessionService) Delete(ctx context.Context, sessionID string, opts ...option.RequestOption) (err error) {
 	opts = slices.Concat(r.Options, opts)
+	opts = append([]option.RequestOption{option.WithHeader("Accept", "*/*")}, opts...)
 	if sessionID == "" {
 		err = errors.New("missing required session_id parameter")
-		return nil, err
+		return err
 	}
 	path := fmt.Sprintf("api/v1/sessions/%s", sessionID)
-	err = requestconfig.ExecuteNewRequest(ctx, http.MethodDelete, path, nil, &res, opts...)
-	return res, err
+	err = requestconfig.ExecuteNewRequest(ctx, http.MethodDelete, path, nil, nil, opts...)
+	return err
 }
 
 // Get a prebuilt dashboard for a tracing project.
@@ -5901,8 +5909,6 @@ func (r TracerSessionWithoutVirtualFieldsTraceTier) IsKnown() bool {
 	}
 	return false
 }
-
-type SessionDeleteResponse = interface{}
 
 type SessionNewParams struct {
 	Upsert             param.Field[bool]                      `query:"upsert"`

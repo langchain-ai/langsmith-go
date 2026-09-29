@@ -657,7 +657,15 @@ func (r RunStatus) IsKnown() bool {
 }
 
 type RunIngestParam struct {
-	ID                 param.Field[string]                   `json:"id"`
+	ID param.Field[string] `json:"id"`
+	// Experimental. The Agent environment the run belongs to, case-insensitive;
+	// requires agent_id. Only workspaces enabled for Agent addressing accept it;
+	// others get a 403.
+	AgentEnvironment param.Field[RunIngestAgentEnvironment] `json:"agent_environment"`
+	// Experimental. Addresses the run to an Agent, with agent_environment, in place of
+	// session_id or session_name. Only workspaces enabled for Agent addressing accept
+	// it; others get a 403.
+	AgentID            param.Field[string]                   `json:"agent_id"`
 	DottedOrder        param.Field[string]                   `json:"dotted_order"`
 	EndTime            param.Field[string]                   `json:"end_time"`
 	Error              param.Field[string]                   `json:"error"`
@@ -682,6 +690,26 @@ type RunIngestParam struct {
 
 func (r RunIngestParam) MarshalJSON() (data []byte, err error) {
 	return apijson.MarshalRoot(r)
+}
+
+// Experimental. The Agent environment the run belongs to, case-insensitive;
+// requires agent_id. Only workspaces enabled for Agent addressing accept it;
+// others get a 403.
+type RunIngestAgentEnvironment string
+
+const (
+	RunIngestAgentEnvironmentLocal       RunIngestAgentEnvironment = "LOCAL"
+	RunIngestAgentEnvironmentDevelopment RunIngestAgentEnvironment = "DEVELOPMENT"
+	RunIngestAgentEnvironmentStaging     RunIngestAgentEnvironment = "STAGING"
+	RunIngestAgentEnvironmentProduction  RunIngestAgentEnvironment = "PRODUCTION"
+)
+
+func (r RunIngestAgentEnvironment) IsKnown() bool {
+	switch r {
+	case RunIngestAgentEnvironmentLocal, RunIngestAgentEnvironmentDevelopment, RunIngestAgentEnvironmentStaging, RunIngestAgentEnvironmentProduction:
+		return true
+	}
+	return false
 }
 
 type RunIngestRunType string

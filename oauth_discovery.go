@@ -37,14 +37,22 @@ func oauthConfigURL(apiURL string) string {
 // <mount>/oauth/token when none is available. It never fails: callers treat an
 // unreachable endpoint as a failed refresh.
 func resolveTokenEndpoint(ctx context.Context, apiURL string) string {
+	endpoint, _ := resolveTokenTarget(ctx, apiURL)
+	return endpoint
+}
+
+// resolveTokenTarget returns the token endpoint and the RFC 8707 resource
+// indicator to send with it, which is the authorization server's issuer.
+func resolveTokenTarget(ctx context.Context, apiURL string) (endpoint, resource string) {
 	for _, base := range oauthDiscoveryCandidates(apiURL) {
 		for _, metadataURL := range oauthMetadataURLs(base) {
 			if meta := fetchOAuthMetadata(ctx, metadataURL, base); meta != nil {
-				return meta.TokenEndpoint
+				return meta.TokenEndpoint, meta.Issuer
 			}
 		}
 	}
-	return strings.TrimRight(oauthConfigURL(apiURL), "/") + "/oauth/token"
+	base := strings.TrimRight(oauthConfigURL(apiURL), "/")
+	return base + "/oauth/token", base
 }
 
 // oauthDiscoveryCandidates lists metadata base URLs to probe, most specific
