@@ -55,6 +55,18 @@ func writeOAuthProfileConfig(t *testing.T, apiURL, issuer string) string {
 	return path
 }
 
+// unsetAuthEnv unsets, rather than empties, the variables NewClient reads with
+// os.LookupEnv, where an empty LANGSMITH_ENDPOINT would clear the base URL.
+func unsetAuthEnv(t *testing.T) {
+	t.Helper()
+	for _, key := range []string{"LANGSMITH_API_KEY", "LANGSMITH_ENDPOINT", "LANGSMITH_TENANT_ID", "LANGSMITH_WORKSPACE_ID"} {
+		t.Setenv(key, "")
+		if err := os.Unsetenv(key); err != nil {
+			t.Fatal(err)
+		}
+	}
+}
+
 func readConfigMap(t *testing.T, path string) map[string]any {
 	t.Helper()
 	data, err := os.ReadFile(path)
@@ -151,19 +163,19 @@ func TestRefreshUsesProfileIssuer(t *testing.T) {
 	api := tokenServer(t, &apiHostTokenRequests, rotateTo("wrong", "wrong"))
 	writeOAuthProfileConfig(t, api.URL, issuer.URL)
 
-	token, err := ProfileAccessToken(context.Background(), "")
+	headers, err := NewClient().AuthHeaders(context.Background())
 	if err != nil {
 		t.Fatal(err)
 	}
-	if token != "issuer-access-token" {
-		t.Fatalf("expected token from issuer, got %q", token)
+	if got := headers.Get("Authorization"); got != "Bearer issuer-access-token" {
+		t.Fatalf("expected token from issuer, got %q", got)
 	}
 	if issuerRequests.Load() != 1 || apiHostTokenRequests.Load() != 0 {
 		t.Fatalf("expected refresh against issuer only; issuer=%d api=%d", issuerRequests.Load(), apiHostTokenRequests.Load())
 	}
 }
 
-func TestProfileAccessTokenReturnsCurrentTokenWithoutRefreshing(t *testing.T) {
+func TestAuthHeadersReturnsCurrentTokenWithoutRefreshing(t *testing.T) {
 	clearAuthEnv(t)
 	var tokenRequests atomic.Int32
 	ts := tokenServer(t, &tokenRequests, rotateTo("new-access-token", "new-refresh-token"))
@@ -176,33 +188,59 @@ func TestProfileAccessTokenReturnsCurrentTokenWithoutRefreshing(t *testing.T) {
 		t.Fatal(err)
 	}
 
-	token, err := ProfileAccessToken(context.Background(), "default")
+	headers, err := NewClient(WithProfile("default")).AuthHeaders(context.Background())
 	if err != nil {
 		t.Fatal(err)
 	}
-	if token != "old-access-token" || tokenRequests.Load() != 0 {
-		t.Fatalf("expected current token without refresh, got %q after %d refreshes", token, tokenRequests.Load())
+	if got := headers.Get("Authorization"); got != "Bearer old-access-token" || tokenRequests.Load() != 0 {
+		t.Fatalf("expected current token without refresh, got %q after %d refreshes", got, tokenRequests.Load())
 	}
 }
 
-func TestProfileAccessTokenErrors(t *testing.T) {
+func TestAuthHeadersFollowClientPrecedence(t *testing.T) {
 	clearAuthEnv(t)
 	var tokenRequests atomic.Int32
-	ts := tokenServer(t, &tokenRequests, rotateTo("unused", "unused"))
+	ts := tokenServer(t, &tokenRequests, rotateTo("new-access-token", "new-refresh-token"))
 	writeOAuthProfileConfig(t, ts.URL, "")
+	ctx := context.Background()
 
-	if _, err := ProfileAccessToken(context.Background(), "missing"); err == nil {
+	if _, err := NewClient(WithProfile("missing")).AuthHeaders(ctx); err == nil {
 		t.Fatal("expected error for missing profile")
 	}
-	if _, err := ProfileAccessToken(context.Background(), "other"); err == nil || !strings.Contains(err.Error(), "OAuth") {
-		t.Fatalf("expected no-OAuth error for API key profile, got %v", err)
+
+	headers, err := NewClient(WithProfile("other")).AuthHeaders(ctx)
+	if err != nil {
+		t.Fatal(err)
+	}
+	if headers.Get("X-API-Key") != "other-key" || headers.Get("Authorization") != "" {
+		t.Fatalf("expected the selected API key profile's key, got %v", headers)
+	}
+
+	headers, err = NewClient(option.WithAPIKey("explicit-key")).AuthHeaders(ctx)
+	if err != nil {
+		t.Fatal(err)
+	}
+	if headers.Get("X-API-Key") != "explicit-key" || headers.Get("Authorization") != "" {
+		t.Fatalf("expected explicit API key over the default OAuth profile, got %v", headers)
+	}
+
+	t.Setenv("LANGSMITH_API_KEY", "env-key")
+	headers, err = NewClient().AuthHeaders(ctx)
+	if err != nil {
+		t.Fatal(err)
+	}
+	if headers.Get("X-API-Key") != "env-key" || headers.Get("Authorization") != "" {
+		t.Fatalf("expected LANGSMITH_API_KEY over the default OAuth profile, got %v", headers)
+	}
+	if got := tokenRequests.Load(); got != 0 {
+		t.Fatalf("expected no refresh when API key auth wins, got %d", got)
 	}
 }
 
 // Many processes that start after the access token expires must share one
 // rotation. Replaying the rotated refresh token makes the server revoke every
 // token for the identity, which forces the user to log in again.
-func TestProfileAccessTokenConcurrentCallersRotateOnce(t *testing.T) {
+func TestAuthHeadersConcurrentClientsRotateOnce(t *testing.T) {
 	clearAuthEnv(t)
 	var tokenRequests atomic.Int32
 	var mu sync.Mutex
@@ -228,9 +266,9 @@ func TestProfileAccessTokenConcurrentCallersRotateOnce(t *testing.T) {
 		wg.Add(1)
 		go func() {
 			defer wg.Done()
-			token, err := ProfileAccessToken(context.Background(), "")
-			if err == nil && token != "new-access-token" {
-				err = errors.New("unexpected token " + token)
+			headers, err := NewClient().AuthHeaders(context.Background())
+			if got := headers.Get("Authorization"); err == nil && got != "Bearer new-access-token" {
+				err = errors.New("unexpected authorization " + got)
 			}
 			errs <- err
 		}()
@@ -270,8 +308,8 @@ func TestExpiredTokenWithRejectedRefreshReturnsReauthError(t *testing.T) {
 	if got := tokenRequests.Load(); got != 1 {
 		t.Fatalf("expected one refresh attempt across retries, got %d", got)
 	}
-	if _, err := ProfileAccessToken(context.Background(), ""); !errors.As(err, &authErr) {
-		t.Fatalf("expected ProfileAuthError from ProfileAccessToken, got %v", err)
+	if _, err := NewClient().AuthHeaders(context.Background()); !errors.As(err, &authErr) {
+		t.Fatalf("expected ProfileAuthError from AuthHeaders, got %v", err)
 	}
 }
 
@@ -327,5 +365,87 @@ func TestExplicitBearerBeatsDefaultProfile(t *testing.T) {
 	}
 	if got := tokenRequests.Load(); got != 0 {
 		t.Fatalf("expected no refresh of the unused default profile, got %d", got)
+	}
+}
+
+func TestSandboxWebSocketHeadersRefreshExpiredToken(t *testing.T) {
+	clearAuthEnv(t)
+	var tokenRequests atomic.Int32
+	ts := tokenServer(t, &tokenRequests, rotateTo("new-access-token", "new-refresh-token"))
+	writeOAuthProfileConfig(t, ts.URL, "")
+
+	headers, err := sandboxHeaders(context.Background(), "wss://sandbox.example.com/connect", NewClient().Options...)
+	if err != nil {
+		t.Fatal(err)
+	}
+	if got := headers.Get("Authorization"); got != "Bearer new-access-token" {
+		t.Fatalf("expected refreshed token on WebSocket headers, got %q", got)
+	}
+	if got := tokenRequests.Load(); got != 1 {
+		t.Fatalf("expected one refresh, got %d", got)
+	}
+}
+
+func TestHTTPClientAuthenticatesAPIOriginOnly(t *testing.T) {
+	unsetAuthEnv(t)
+	var tokenRequests atomic.Int32
+	api := tokenServer(t, &tokenRequests, rotateTo("new-access-token", "new-refresh-token"))
+	var otherAuth, otherKey string
+	other := httptest.NewServer(http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
+		otherAuth, otherKey = r.Header.Get("Authorization"), r.Header.Get("X-API-Key")
+	}))
+	t.Cleanup(other.Close)
+	writeOAuthProfileConfig(t, api.URL, "")
+
+	hc := NewClient(option.WithTenantID("tenant-1")).HTTPClient()
+	var out map[string]string
+	res, err := hc.Get(api.URL + "/info")
+	if err != nil {
+		t.Fatal(err)
+	}
+	if err := json.NewDecoder(res.Body).Decode(&out); err != nil {
+		t.Fatal(err)
+	}
+	_ = res.Body.Close()
+	if out["auth"] != "Bearer new-access-token" {
+		t.Fatalf("expected refreshed bearer on API request, got %q", out["auth"])
+	}
+
+	// Non-2xx responses come back as responses, not errors.
+	res, err = hc.Get(api.URL + "/missing")
+	if err != nil {
+		t.Fatal(err)
+	}
+	_ = res.Body.Close()
+	if res.StatusCode != http.StatusNotFound {
+		t.Fatalf("expected raw 404, got %d", res.StatusCode)
+	}
+
+	res, err = hc.Get(other.URL + "/elsewhere")
+	if err != nil {
+		t.Fatal(err)
+	}
+	_ = res.Body.Close()
+	if otherAuth != "" || otherKey != "" {
+		t.Fatalf("credentials leaked to another origin: auth=%q key=%q", otherAuth, otherKey)
+	}
+	if got := tokenRequests.Load(); got != 1 {
+		t.Fatalf("expected one refresh, got %d", got)
+	}
+}
+
+func TestHTTPClientReturnsReauthError(t *testing.T) {
+	unsetAuthEnv(t)
+	var tokenRequests atomic.Int32
+	ts := tokenServer(t, &tokenRequests, func(w http.ResponseWriter, r *http.Request) {
+		w.WriteHeader(http.StatusBadRequest)
+		_ = json.NewEncoder(w).Encode(oauthErrorResponse{Code: "invalid_grant", ErrorDescription: "refresh token has been revoked"})
+	})
+	writeOAuthProfileConfig(t, ts.URL, "")
+
+	_, err := NewClient().HTTPClient().Get(ts.URL + "/info")
+	var authErr *ProfileAuthError
+	if !errors.As(err, &authErr) {
+		t.Fatalf("expected ProfileAuthError, got %v", err)
 	}
 }

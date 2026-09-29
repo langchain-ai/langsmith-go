@@ -11,6 +11,7 @@ import (
 	"net/url"
 	"os"
 	"path/filepath"
+	"slices"
 	"strings"
 	"sync"
 	"time"
@@ -285,32 +286,102 @@ func (e *ProfileAuthError) Error() string {
 
 func (e *ProfileAuthError) Unwrap() error { return e.Err }
 
-// ProfileAccessToken returns a current OAuth access token for a profile in the
-// LangSmith config file, refreshing and saving it first when it is missing or
-// about to expire. An empty profileName selects the active profile
-// (LANGSMITH_PROFILE, then current_profile, then "default").
-//
-// Clients built with [WithProfile] or the default profile already refresh on
-// their own; use this only when a bearer token is needed outside the client.
-// Refreshes are serialized across processes, so concurrent callers share one
-// rotation of the single-use refresh token.
-func ProfileAccessToken(ctx context.Context, profileName string) (string, error) {
-	state, err := loadProfileState(profileName, true)
+// authHeaderNames are the headers AuthHeaders reports.
+var authHeaderNames = []string{"Authorization", "X-API-Key", "X-Tenant-Id", "X-User-Id"}
+
+// AuthHeaders returns the headers that authenticate this client's requests:
+// Authorization or X-API-Key, plus X-Tenant-Id and X-User-Id when set. They
+// are resolved exactly as for a real request, with the same option and
+// environment precedence and a refresh of an expiring OAuth profile token, but
+// no request is sent. Use it for transports the client does not drive or to
+// hand credentials to another process.
+func (r *Client) AuthHeaders(ctx context.Context, opts ...option.RequestOption) (http.Header, error) {
+	headers, err := resolveRequestHeaders(ctx, "", slices.Concat(r.Options, opts)...)
 	if err != nil {
-		return "", err
+		return nil, err
 	}
-	if state == nil {
-		return "", fmt.Errorf("no LangSmith profile selected")
+	out := http.Header{}
+	for _, name := range authHeaderNames {
+		if values := headers.Values(name); len(values) > 0 {
+			out[http.CanonicalHeaderKey(name)] = slices.Clone(values)
+		}
 	}
-	p := state.cfg.Profiles[state.profileName]
-	if p.OAuth.AccessToken == "" && p.OAuth.RefreshToken == "" {
-		return "", fmt.Errorf("LangSmith profile %q has no OAuth credentials; run 'langsmith auth login --profile %s'", state.profileName, state.profileName)
-	}
-	p, err = (&profileAuth{state: state}).currentProfile(ctx)
+	return out, nil
+}
+
+// HTTPClient returns an [*http.Client] that authenticates requests to this
+// client's API origin the way the client's own methods do: the same option and
+// environment precedence, the same tenant, and a refresh of an expiring OAuth
+// profile token shared with other processes. Requests to any other origin,
+// including redirects, carry no LangSmith credentials. Headers already set on
+// a request are kept. Use it for endpoints the SDK has no method for, or when
+// the raw [*http.Response] is needed.
+func (r *Client) HTTPClient() *http.Client {
+	return &http.Client{Transport: &authTransport{client: r}}
+}
+
+type authTransport struct {
+	client *Client
+}
+
+func (t *authTransport) RoundTrip(req *http.Request) (*http.Response, error) {
+	cfg, err := requestconfig.NewRequestConfig(req.Context(), http.MethodGet, "", nil, nil, t.client.Options...)
 	if err != nil {
-		return "", err
+		closeRequestBody(req)
+		return nil, err
 	}
-	return p.OAuth.AccessToken, nil
+	base := http.DefaultTransport
+	if cfg.HTTPClient != nil && cfg.HTTPClient.Transport != nil {
+		base = cfg.HTTPClient.Transport
+	}
+	if cfg.BaseURL == nil || req.URL.Scheme != cfg.BaseURL.Scheme || req.URL.Host != cfg.BaseURL.Host {
+		return base.RoundTrip(req)
+	}
+
+	headers, err := t.client.AuthHeaders(req.Context())
+	if err != nil {
+		closeRequestBody(req)
+		return nil, err
+	}
+	req = req.Clone(req.Context())
+	for name, values := range headers {
+		if req.Header.Get(name) == "" {
+			req.Header[name] = values
+		}
+	}
+	return base.RoundTrip(req)
+}
+
+// closeRequestBody honours the RoundTripper contract of closing the body even
+// when the request is never sent.
+func closeRequestBody(req *http.Request) {
+	if req.Body != nil {
+		_ = req.Body.Close()
+	}
+}
+
+// resolveRequestHeaders runs a request through the full option and middleware
+// pipeline and returns the headers it would have sent, without sending it.
+// Applying the options alone is not enough: profile auth refreshes OAuth
+// tokens in middleware, so skipping it yields an expired token.
+func resolveRequestHeaders(ctx context.Context, requestURL string, opts ...option.RequestOption) (http.Header, error) {
+	var headers http.Header
+	var base []option.RequestOption
+	if u, err := url.Parse(requestURL); err == nil && u.IsAbs() {
+		// The URL is used as-is, but a request still needs some base URL.
+		base = append(base, option.WithBaseURL(u.Scheme+"://"+u.Host))
+	}
+	opts = append(slices.Concat(base, opts),
+		option.WithMaxRetries(0),
+		option.WithMiddleware(func(req *http.Request, _ option.MiddlewareNext) (*http.Response, error) {
+			headers = req.Header.Clone()
+			return &http.Response{StatusCode: http.StatusNoContent, Header: http.Header{}, Body: http.NoBody, Request: req}, nil
+		}),
+	)
+	if err := requestconfig.ExecuteNewRequest(ctx, http.MethodGet, requestURL, nil, nil, opts...); err != nil {
+		return nil, err
+	}
+	return headers, nil
 }
 
 func (a *profileAuth) currentAuthHeader() (name string, value string, token string) {
