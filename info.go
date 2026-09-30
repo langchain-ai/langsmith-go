@@ -45,29 +45,31 @@ type InfoListResponse struct {
 	BatchIngestConfig InfoListResponseBatchIngestConfig `json:"batch_ingest_config"`
 	// BillingInstallationID is the persistent per-installation identity for
 	// self-hosted deployments.
-	BillingInstallationID string                       `json:"billing_installation_id"`
-	CustomerInfo          InfoListResponseCustomerInfo `json:"customer_info"`
-	GitSha                string                       `json:"git_sha"`
-	InstanceFlags         map[string]interface{}       `json:"instance_flags"`
-	LicenseExpirationTime string                       `json:"license_expiration_time"`
-	SDKVersions           InfoListResponseSDKVersions  `json:"sdk_versions"`
-	Version               string                       `json:"version"`
-	JSON                  infoListResponseJSON         `json:"-"`
+	BillingInstallationID  string                       `json:"billing_installation_id"`
+	CustomerInfo           InfoListResponseCustomerInfo `json:"customer_info"`
+	EngineGitHubWebBaseURL string                       `json:"engine_github_web_base_url" format:"uri"`
+	GitSha                 string                       `json:"git_sha"`
+	InstanceFlags          map[string]interface{}       `json:"instance_flags"`
+	LicenseExpirationTime  string                       `json:"license_expiration_time"`
+	SDKVersions            InfoListResponseSDKVersions  `json:"sdk_versions"`
+	Version                string                       `json:"version"`
+	JSON                   infoListResponseJSON         `json:"-"`
 }
 
 // infoListResponseJSON contains the JSON metadata for the struct
 // [InfoListResponse]
 type infoListResponseJSON struct {
-	BatchIngestConfig     apijson.Field
-	BillingInstallationID apijson.Field
-	CustomerInfo          apijson.Field
-	GitSha                apijson.Field
-	InstanceFlags         apijson.Field
-	LicenseExpirationTime apijson.Field
-	SDKVersions           apijson.Field
-	Version               apijson.Field
-	raw                   string
-	ExtraFields           map[string]apijson.Field
+	BatchIngestConfig      apijson.Field
+	BillingInstallationID  apijson.Field
+	CustomerInfo           apijson.Field
+	EngineGitHubWebBaseURL apijson.Field
+	GitSha                 apijson.Field
+	InstanceFlags          apijson.Field
+	LicenseExpirationTime  apijson.Field
+	SDKVersions            apijson.Field
+	Version                apijson.Field
+	raw                    string
+	ExtraFields            map[string]apijson.Field
 }
 
 func (r *InfoListResponse) UnmarshalJSON(data []byte) (err error) {
