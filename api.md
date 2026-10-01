@@ -1,3 +1,7 @@
+# Shared Params Types
+
+- <a href="https://pkg.go.dev/github.com/langchain-ai/langsmith-go/shared">shared</a>.<a href="https://pkg.go.dev/github.com/langchain-ai/langsmith-go/shared#AgentAddressParam">AgentAddressParam</a>
+
 # ProductFeedback
 
 Response Types:

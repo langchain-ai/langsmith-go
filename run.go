@@ -18,6 +18,7 @@ import (
 	"github.com/langchain-ai/langsmith-go/internal/requestconfig"
 	"github.com/langchain-ai/langsmith-go/option"
 	"github.com/langchain-ai/langsmith-go/packages/pagination"
+	"github.com/langchain-ai/langsmith-go/shared"
 	"github.com/tidwall/gjson"
 )
 
@@ -658,13 +659,17 @@ func (r RunStatus) IsKnown() bool {
 
 type RunIngestParam struct {
 	ID param.Field[string] `json:"id"`
-	// Experimental. The Agent environment the run belongs to, case-insensitive;
-	// requires agent_id. Only workspaces enabled for Agent addressing accept it;
-	// others get a 403.
+	// Beta. Addresses the run to an Agent environment in place of session_id or
+	// session_name. Cannot be combined with agent_id or agent_environment. Only
+	// workspaces enabled for Agent addressing accept it; others get a 403.
+	Address param.Field[shared.AgentAddressParam] `json:"address"`
+	// Beta. The Agent environment the run belongs to, case-insensitive; requires
+	// agent_id. Only workspaces enabled for Agent addressing accept it; others get
+	// a 403.
 	AgentEnvironment param.Field[RunIngestAgentEnvironment] `json:"agent_environment"`
-	// Experimental. Addresses the run to an Agent, with agent_environment, in place of
-	// session_id or session_name. Only workspaces enabled for Agent addressing accept
-	// it; others get a 403.
+	// Beta, superseded by address. Addresses the run to an Agent, with
+	// agent_environment, in place of session_id or session_name. Only workspaces
+	// enabled for Agent addressing accept it; others get a 403.
 	AgentID            param.Field[string]                   `json:"agent_id"`
 	DottedOrder        param.Field[string]                   `json:"dotted_order"`
 	EndTime            param.Field[string]                   `json:"end_time"`
@@ -692,9 +697,9 @@ func (r RunIngestParam) MarshalJSON() (data []byte, err error) {
 	return apijson.MarshalRoot(r)
 }
 
-// Experimental. The Agent environment the run belongs to, case-insensitive;
-// requires agent_id. Only workspaces enabled for Agent addressing accept it;
-// others get a 403.
+// Beta. The Agent environment the run belongs to, case-insensitive; requires
+// agent_id. Only workspaces enabled for Agent addressing accept it; others get
+// a 403.
 type RunIngestAgentEnvironment string
 
 const (
