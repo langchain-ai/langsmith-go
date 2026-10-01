@@ -124,10 +124,12 @@ type SandboxCommandCallbacks struct {
 // Run executes a command in the named sandbox and waits for completion. The
 // sandbox is fetched first so the current dataplane URL can be used.
 func (r *SandboxBoxService) Run(ctx context.Context, name string, body SandboxBoxRunParams, opts ...option.RequestOption) (res *SandboxExecutionResult, err error) {
+	ctx = traceSandboxReference(ctx, name)
 	box, err := r.Get(ctx, name, opts...)
 	if err != nil {
 		return nil, err
 	}
+	ctx = traceSandbox(ctx, box.ID)
 	dataplaneURL, err := requireSandboxDataplaneURL(box.Name, box.DataplaneURL)
 	if err != nil {
 		return nil, err
@@ -157,10 +159,12 @@ func (r *SandboxBoxService) RunWithDataplaneURL(ctx context.Context, dataplaneUR
 // StartCommand starts a streaming command in the named sandbox. The returned
 // handle can stream output, send stdin, kill the command, and reconnect.
 func (r *SandboxBoxService) StartCommand(ctx context.Context, name string, body SandboxCommandStartParams, opts ...option.RequestOption) (*SandboxCommandHandle, error) {
+	ctx = traceSandboxReference(ctx, name)
 	box, err := r.Get(ctx, name, opts...)
 	if err != nil {
 		return nil, err
 	}
+	ctx = traceSandbox(ctx, box.ID)
 	dataplaneURL, err := requireSandboxDataplaneURL(box.Name, box.DataplaneURL)
 	if err != nil {
 		return nil, err
@@ -177,6 +181,7 @@ func (r *SandboxBoxService) StartCommandWithDataplaneURL(ctx context.Context, da
 // RunWithCallbacks starts a command in the named sandbox over WebSocket, invokes
 // callbacks for streamed output, and waits for completion.
 func (r *SandboxBoxService) RunWithCallbacks(ctx context.Context, name string, body SandboxCommandStartParams, callbacks SandboxCommandCallbacks, opts ...option.RequestOption) (*SandboxExecutionResult, error) {
+	ctx = traceSandboxReference(ctx, name)
 	handle, err := r.StartCommandWithCallbacks(ctx, name, body, callbacks, opts...)
 	if err != nil {
 		return nil, err
@@ -197,10 +202,12 @@ func (r *SandboxBoxService) RunWithDataplaneURLAndCallbacks(ctx context.Context,
 // StartCommandWithCallbacks starts a streaming command in the named sandbox and
 // invokes callbacks for stdout/stderr chunks as they arrive.
 func (r *SandboxBoxService) StartCommandWithCallbacks(ctx context.Context, name string, body SandboxCommandStartParams, callbacks SandboxCommandCallbacks, opts ...option.RequestOption) (*SandboxCommandHandle, error) {
+	ctx = traceSandboxReference(ctx, name)
 	box, err := r.Get(ctx, name, opts...)
 	if err != nil {
 		return nil, err
 	}
+	ctx = traceSandbox(ctx, box.ID)
 	dataplaneURL, err := requireSandboxDataplaneURL(box.Name, box.DataplaneURL)
 	if err != nil {
 		return nil, err
@@ -315,6 +322,7 @@ func startSandboxCommandAttempt(ctx context.Context, dataplaneURL string, payloa
 	}
 
 	handle := newSandboxCommandHandle(ws, dataplaneURL, opts, started.CommandID, started.PID, 0, 0)
+	handle.sandboxID = sandboxIDFromContext(ctx)
 	handle.stdinDone = payload.CloseStdin.Value
 	handle.pty = payload.Pty.Value
 	return handle, nil
@@ -323,6 +331,7 @@ func startSandboxCommandAttempt(ctx context.Context, dataplaneURL string, payloa
 // ReconnectCommand reconnects to a running or recently-finished command in the
 // named sandbox.
 func (r *SandboxBoxService) ReconnectCommand(ctx context.Context, name string, commandID string, body SandboxCommandReconnectParams, opts ...option.RequestOption) (*SandboxCommandHandle, error) {
+	ctx = traceSandboxReference(ctx, name)
 	if commandID == "" {
 		return nil, errors.New("missing required commandID parameter")
 	}
@@ -330,6 +339,7 @@ func (r *SandboxBoxService) ReconnectCommand(ctx context.Context, name string, c
 	if err != nil {
 		return nil, err
 	}
+	ctx = traceSandbox(ctx, box.ID)
 	dataplaneURL, err := requireSandboxDataplaneURL(box.Name, box.DataplaneURL)
 	if err != nil {
 		return nil, err
@@ -363,6 +373,7 @@ func (r *SandboxBoxService) ReconnectCommandWithDataplaneURL(ctx context.Context
 	}
 
 	handle := newSandboxCommandHandle(ws, dataplaneURL, opts, commandID, 0, stdoutOffset, stderrOffset)
+	handle.sandboxID = sandboxIDFromContext(ctx)
 	handle.start()
 	return handle, nil
 }

@@ -20,6 +20,7 @@ type SandboxCommandHandle struct {
 	CommandID string
 	PID       int64
 
+	sandboxID    string
 	dataplaneURL string
 	opts         []option.RequestOption
 
@@ -62,6 +63,7 @@ func (h *SandboxCommandHandle) start() {
 // Next returns the next stdout/stderr chunk. If ok is false, the command stream
 // has ended and Result returns the final command result.
 func (h *SandboxCommandHandle) Next(ctx context.Context) (chunk SandboxOutputChunk, ok bool, err error) {
+	traceSandbox(ctx, h.sandboxID)
 	select {
 	case chunk, ok = <-h.chunks:
 		if !ok {
@@ -76,6 +78,7 @@ func (h *SandboxCommandHandle) Next(ctx context.Context) (chunk SandboxOutputChu
 // Result waits for the command to exit and returns its final result. If output
 // chunks have not been consumed, Result drains them before returning.
 func (h *SandboxCommandHandle) Result(ctx context.Context) (*SandboxExecutionResult, error) {
+	traceSandbox(ctx, h.sandboxID)
 	for {
 		select {
 		case _, ok := <-h.chunks:
@@ -216,6 +219,7 @@ func (h *SandboxCommandHandle) Kill() error {
 
 // Reconnect opens a new stream for this command from the last known offsets.
 func (h *SandboxCommandHandle) Reconnect(ctx context.Context) (*SandboxCommandHandle, error) {
+	traceSandbox(ctx, h.sandboxID)
 	if h.CommandID == "" {
 		return nil, &SandboxOperationError{Operation: "reconnect", Message: "cannot reconnect: command ID is not available"}
 	}
@@ -238,6 +242,7 @@ func (h *SandboxCommandHandle) Reconnect(ctx context.Context) (*SandboxCommandHa
 	reconnected.stdinDone = h.stdinDone
 	reconnected.pty = h.pty
 	h.stateMu.Unlock()
+	reconnected.sandboxID = h.sandboxID
 	reconnected.callbacks = h.callbacks
 	reconnected.start()
 	return reconnected, nil

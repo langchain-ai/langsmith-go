@@ -15,6 +15,7 @@ type SandboxWaitParams struct {
 
 // Wait polls the generated status endpoint until the sandbox is ready or failed.
 func (r *SandboxBoxService) Wait(ctx context.Context, name string, params SandboxWaitParams, opts ...option.RequestOption) (*SandboxResponse, error) {
+	ctx = traceSandboxReference(ctx, name)
 	timeout := params.Timeout
 	if timeout == 0 {
 		timeout = 120 * time.Second
@@ -34,7 +35,11 @@ func (r *SandboxBoxService) Wait(ctx context.Context, name string, params Sandbo
 		lastStatus = status.Status
 		switch status.Status {
 		case "ready":
-			return r.Get(ctx, name, opts...)
+			box, err := r.Get(ctx, name, opts...)
+			if err == nil {
+				traceSandbox(ctx, box.ID)
+			}
+			return box, err
 		case "failed":
 			return nil, &SandboxResourceCreationError{
 				ResourceType: "sandbox",
@@ -72,9 +77,12 @@ func (r *SandboxBoxService) WaitSandbox(ctx context.Context, name string, params
 
 // StartAndWait starts a stopped sandbox and waits until it is ready.
 func (r *SandboxBoxService) StartAndWait(ctx context.Context, name string, params SandboxWaitParams, opts ...option.RequestOption) (*SandboxResponse, error) {
-	if _, err := r.Start(ctx, name, opts...); err != nil {
+	ctx = traceSandboxReference(ctx, name)
+	box, err := r.Start(ctx, name, opts...)
+	if err != nil {
 		return nil, err
 	}
+	ctx = traceSandbox(ctx, box.ID)
 	return r.Wait(ctx, name, params, opts...)
 }
 

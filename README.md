@@ -45,6 +45,23 @@ The client can be configured using environment variables or by passing options d
 | `LANGSMITH_TENANT_ID` | Optional | Your LangSmith tenant ID |
 | `LANGSMITH_ENDPOINT` | Optional | Custom base URL for the LangSmith API (defaults to `https://api.smith.langchain.com`) |
 
+## Sandbox trace metadata
+
+Sandbox convenience methods add `langsmith.metadata.sandbox_id` to the active
+OpenTelemetry span in the supplied context when the canonical sandbox ID is known.
+Use `GetSandbox` or `NewSandbox` to obtain a handle; its command, file, lifecycle,
+snapshot, tunnel, and service methods annotate calls without creating spans or
+making extra lookup requests. Command `Next`, `Result`, and `Reconnect`, tunnel
+`Dial`, and service requests also annotate the spans in their supplied contexts.
+If a span uses multiple sandboxes, the most recently used ID wins; other attributes
+are preserved.
+
+Name-based convenience methods annotate IDs from their existing API responses.
+Unknown names and bare dataplane URLs are never used as IDs. Listing sandboxes,
+raw generated service methods, and command or tunnel operations without a context
+argument do not add metadata. Direct run ingestion does not have an active context
+and is not automatically annotated.
+
 ## Examples
 
 This repository includes several examples demonstrating common use cases:

@@ -8,6 +8,7 @@ import (
 
 // Run executes a command and waits for completion.
 func (s *Sandbox) Run(ctx context.Context, body SandboxBoxRunParams, opts ...option.RequestOption) (*SandboxExecutionResult, error) {
+	ctx = traceSandbox(ctx, s.ID)
 	dataplaneURL, err := requireSandboxDataplaneURL(s.Name, s.DataplaneURL)
 	if err != nil {
 		return nil, err
@@ -17,6 +18,7 @@ func (s *Sandbox) Run(ctx context.Context, body SandboxBoxRunParams, opts ...opt
 
 // StartCommand starts a streaming command in this sandbox.
 func (s *Sandbox) StartCommand(ctx context.Context, body SandboxCommandStartParams, opts ...option.RequestOption) (*SandboxCommandHandle, error) {
+	ctx = traceSandbox(ctx, s.ID)
 	dataplaneURL, err := requireSandboxDataplaneURL(s.Name, s.DataplaneURL)
 	if err != nil {
 		return nil, err
@@ -27,6 +29,7 @@ func (s *Sandbox) StartCommand(ctx context.Context, body SandboxCommandStartPara
 // RunWithCallbacks starts a WebSocket command, invokes callbacks for output,
 // and waits for completion.
 func (s *Sandbox) RunWithCallbacks(ctx context.Context, body SandboxCommandStartParams, callbacks SandboxCommandCallbacks, opts ...option.RequestOption) (*SandboxExecutionResult, error) {
+	ctx = traceSandbox(ctx, s.ID)
 	dataplaneURL, err := requireSandboxDataplaneURL(s.Name, s.DataplaneURL)
 	if err != nil {
 		return nil, err
@@ -36,6 +39,7 @@ func (s *Sandbox) RunWithCallbacks(ctx context.Context, body SandboxCommandStart
 
 // ReconnectCommand reconnects to a command stream.
 func (s *Sandbox) ReconnectCommand(ctx context.Context, commandID string, body SandboxCommandReconnectParams, opts ...option.RequestOption) (*SandboxCommandHandle, error) {
+	ctx = traceSandbox(ctx, s.ID)
 	dataplaneURL, err := requireSandboxDataplaneURL(s.Name, s.DataplaneURL)
 	if err != nil {
 		return nil, err

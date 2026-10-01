@@ -87,6 +87,7 @@ type SandboxTunnel struct {
 	LocalPort  int
 	RemotePort int
 
+	sandboxID     string
 	dataplaneURL  string
 	opts          []option.RequestOption
 	maxReconnects int
@@ -99,10 +100,12 @@ type SandboxTunnel struct {
 
 // Tunnel opens a TCP tunnel to a port inside the named sandbox.
 func (r *SandboxBoxService) Tunnel(ctx context.Context, name string, remotePort int, params SandboxTunnelParams, opts ...option.RequestOption) (*SandboxTunnel, error) {
+	ctx = traceSandboxReference(ctx, name)
 	box, err := r.Get(ctx, name, opts...)
 	if err != nil {
 		return nil, err
 	}
+	ctx = traceSandbox(ctx, box.ID)
 	dataplaneURL, err := requireSandboxDataplaneURL(box.Name, box.DataplaneURL)
 	if err != nil {
 		return nil, err
@@ -113,10 +116,12 @@ func (r *SandboxBoxService) Tunnel(ctx context.Context, name string, remotePort 
 // OpenTunnelStream opens a single TCP stream to a port inside the named
 // sandbox. This is useful for stdio bridges such as SSH ProxyCommand.
 func (r *SandboxBoxService) OpenTunnelStream(ctx context.Context, name string, remotePort int, opts ...option.RequestOption) (*SandboxTunnelStream, error) {
+	ctx = traceSandboxReference(ctx, name)
 	box, err := r.Get(ctx, name, opts...)
 	if err != nil {
 		return nil, err
 	}
+	ctx = traceSandbox(ctx, box.ID)
 	dataplaneURL, err := requireSandboxDataplaneURL(box.Name, box.DataplaneURL)
 	if err != nil {
 		return nil, err
@@ -157,6 +162,7 @@ func (r *SandboxBoxService) TunnelWithDataplaneURL(ctx context.Context, dataplan
 	}
 	t := &SandboxTunnel{
 		RemotePort:    remotePort,
+		sandboxID:     sandboxIDFromContext(ctx),
 		dataplaneURL:  dataplaneURL,
 		opts:          slices.Concat(r.Options, opts),
 		maxReconnects: maxReconnects,
@@ -169,6 +175,7 @@ func (r *SandboxBoxService) TunnelWithDataplaneURL(ctx context.Context, dataplan
 
 // OpenTunnelStream opens a single TCP stream to a port inside this sandbox.
 func (s *Sandbox) OpenTunnelStream(ctx context.Context, remotePort int, opts ...option.RequestOption) (*SandboxTunnelStream, error) {
+	ctx = traceSandbox(ctx, s.ID)
 	dataplaneURL, err := requireSandboxDataplaneURL(s.Name, s.DataplaneURL)
 	if err != nil {
 		return nil, err
@@ -178,6 +185,7 @@ func (s *Sandbox) OpenTunnelStream(ctx context.Context, remotePort int, opts ...
 
 // Tunnel opens a TCP tunnel from localhost to a port inside this sandbox.
 func (s *Sandbox) Tunnel(ctx context.Context, remotePort int, params SandboxTunnelParams, opts ...option.RequestOption) (*SandboxTunnel, error) {
+	ctx = traceSandbox(ctx, s.ID)
 	dataplaneURL, err := requireSandboxDataplaneURL(s.Name, s.DataplaneURL)
 	if err != nil {
 		return nil, err
@@ -209,6 +217,7 @@ func (t *SandboxTunnel) Close() error {
 
 // Dial opens a single stream over this tunnel's managed session.
 func (t *SandboxTunnel) Dial(ctx context.Context) (*SandboxTunnelStream, error) {
+	traceSandbox(ctx, t.sandboxID)
 	session, err := t.ensureSession(ctx)
 	if err != nil {
 		return nil, err

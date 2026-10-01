@@ -21,10 +21,12 @@ import (
 
 // ReadFile reads a file from a named sandbox.
 func (r *SandboxBoxService) ReadFile(ctx context.Context, name string, path string, opts ...option.RequestOption) ([]byte, error) {
+	ctx = traceSandboxReference(ctx, name)
 	box, err := r.Get(ctx, name, opts...)
 	if err != nil {
 		return nil, err
 	}
+	ctx = traceSandbox(ctx, box.ID)
 	dataplaneURL, err := requireSandboxDataplaneURL(box.Name, box.DataplaneURL)
 	if err != nil {
 		return nil, err
@@ -54,10 +56,12 @@ func (r *SandboxBoxService) ReadFileWithDataplaneURL(ctx context.Context, datapl
 
 // WriteFile writes bytes to a file in a named sandbox.
 func (r *SandboxBoxService) WriteFile(ctx context.Context, name string, path string, content []byte, opts ...option.RequestOption) error {
+	ctx = traceSandboxReference(ctx, name)
 	box, err := r.Get(ctx, name, opts...)
 	if err != nil {
 		return err
 	}
+	ctx = traceSandbox(ctx, box.ID)
 	dataplaneURL, err := requireSandboxDataplaneURL(box.Name, box.DataplaneURL)
 	if err != nil {
 		return err
@@ -101,6 +105,7 @@ func (r *SandboxBoxService) WriteFileWithDataplaneURL(ctx context.Context, datap
 
 // ReadFile reads a file from this sandbox.
 func (s *Sandbox) ReadFile(ctx context.Context, path string, opts ...option.RequestOption) ([]byte, error) {
+	ctx = traceSandbox(ctx, s.ID)
 	dataplaneURL, err := requireSandboxDataplaneURL(s.Name, s.DataplaneURL)
 	if err != nil {
 		return nil, err
@@ -110,6 +115,7 @@ func (s *Sandbox) ReadFile(ctx context.Context, path string, opts ...option.Requ
 
 // WriteFile writes bytes to a file in this sandbox.
 func (s *Sandbox) WriteFile(ctx context.Context, path string, content []byte, opts ...option.RequestOption) error {
+	ctx = traceSandbox(ctx, s.ID)
 	dataplaneURL, err := requireSandboxDataplaneURL(s.Name, s.DataplaneURL)
 	if err != nil {
 		return err
@@ -179,6 +185,7 @@ type SandboxGrepResult struct {
 
 // Glob finds files and directories matching a pattern in a named sandbox.
 func (r *SandboxBoxService) Glob(ctx context.Context, name string, body SandboxGlobParams, opts ...option.RequestOption) (*SandboxGlobResult, error) {
+	ctx = traceSandboxReference(ctx, name)
 	dataplaneURL, err := r.resolveDataplaneURL(ctx, name, opts...)
 	if err != nil {
 		return nil, err
@@ -200,11 +207,13 @@ func (r *SandboxBoxService) GlobWithDataplaneURL(ctx context.Context, dataplaneU
 // Ls lists a directory's immediate entries in a named sandbox, without
 // recursing: the non-recursive glob case.
 func (r *SandboxBoxService) Ls(ctx context.Context, name string, path string, opts ...option.RequestOption) (*SandboxGlobResult, error) {
+	ctx = traceSandboxReference(ctx, name)
 	return r.Glob(ctx, name, SandboxGlobParams{Pattern: F("*"), Path: F(path)}, opts...)
 }
 
 // Grep searches file contents in a named sandbox for a literal string.
 func (r *SandboxBoxService) Grep(ctx context.Context, name string, body SandboxGrepParams, opts ...option.RequestOption) (*SandboxGrepResult, error) {
+	ctx = traceSandboxReference(ctx, name)
 	dataplaneURL, err := r.resolveDataplaneURL(ctx, name, opts...)
 	if err != nil {
 		return nil, err
@@ -273,6 +282,7 @@ func (c SandboxFileChunk) End() int64 {
 // StatFile reports a file's size and validators in a named sandbox without
 // transferring it.
 func (r *SandboxBoxService) StatFile(ctx context.Context, name string, path string, opts ...option.RequestOption) (*SandboxFileStat, error) {
+	ctx = traceSandboxReference(ctx, name)
 	dataplaneURL, err := r.resolveDataplaneURL(ctx, name, opts...)
 	if err != nil {
 		return nil, err
@@ -304,6 +314,7 @@ func (r *SandboxBoxService) StatFileWithDataplaneURL(ctx context.Context, datapl
 // ReadFileRange reads part of a file in a named sandbox, for chunked reads and
 // resumed downloads.
 func (r *SandboxBoxService) ReadFileRange(ctx context.Context, name string, path string, body SandboxReadRangeParams, opts ...option.RequestOption) (*SandboxFileChunk, error) {
+	ctx = traceSandboxReference(ctx, name)
 	dataplaneURL, err := r.resolveDataplaneURL(ctx, name, opts...)
 	if err != nil {
 		return nil, err
@@ -357,10 +368,12 @@ func sandboxDownloadURL(dataplaneURL string, path string) (string, error) {
 }
 
 func (r *SandboxBoxService) resolveDataplaneURL(ctx context.Context, name string, opts ...option.RequestOption) (string, error) {
+	ctx = traceSandboxReference(ctx, name)
 	box, err := r.Get(ctx, name, opts...)
 	if err != nil {
 		return "", err
 	}
+	traceSandbox(ctx, box.ID)
 	return requireSandboxDataplaneURL(box.Name, box.DataplaneURL)
 }
 
@@ -444,6 +457,7 @@ func sandboxFileRequestError(err error, path string) error {
 
 // Glob finds files and directories matching a pattern in this sandbox.
 func (s *Sandbox) Glob(ctx context.Context, body SandboxGlobParams, opts ...option.RequestOption) (*SandboxGlobResult, error) {
+	ctx = traceSandbox(ctx, s.ID)
 	dataplaneURL, err := requireSandboxDataplaneURL(s.Name, s.DataplaneURL)
 	if err != nil {
 		return nil, err
@@ -453,11 +467,13 @@ func (s *Sandbox) Glob(ctx context.Context, body SandboxGlobParams, opts ...opti
 
 // Ls lists a directory's immediate entries in this sandbox, without recursing.
 func (s *Sandbox) Ls(ctx context.Context, path string, opts ...option.RequestOption) (*SandboxGlobResult, error) {
+	ctx = traceSandbox(ctx, s.ID)
 	return s.Glob(ctx, SandboxGlobParams{Pattern: F("*"), Path: F(path)}, opts...)
 }
 
 // Grep searches file contents in this sandbox for a literal string.
 func (s *Sandbox) Grep(ctx context.Context, body SandboxGrepParams, opts ...option.RequestOption) (*SandboxGrepResult, error) {
+	ctx = traceSandbox(ctx, s.ID)
 	dataplaneURL, err := requireSandboxDataplaneURL(s.Name, s.DataplaneURL)
 	if err != nil {
 		return nil, err
@@ -468,6 +484,7 @@ func (s *Sandbox) Grep(ctx context.Context, body SandboxGrepParams, opts ...opti
 // StatFile reports a file's size and validators in this sandbox without
 // transferring it.
 func (s *Sandbox) StatFile(ctx context.Context, path string, opts ...option.RequestOption) (*SandboxFileStat, error) {
+	ctx = traceSandbox(ctx, s.ID)
 	dataplaneURL, err := requireSandboxDataplaneURL(s.Name, s.DataplaneURL)
 	if err != nil {
 		return nil, err
@@ -477,6 +494,7 @@ func (s *Sandbox) StatFile(ctx context.Context, path string, opts ...option.Requ
 
 // ReadFileRange reads part of a file in this sandbox.
 func (s *Sandbox) ReadFileRange(ctx context.Context, path string, body SandboxReadRangeParams, opts ...option.RequestOption) (*SandboxFileChunk, error) {
+	ctx = traceSandbox(ctx, s.ID)
 	dataplaneURL, err := requireSandboxDataplaneURL(s.Name, s.DataplaneURL)
 	if err != nil {
 		return nil, err

@@ -33,15 +33,18 @@ func (r *SandboxBoxService) NewSandbox(ctx context.Context, body SandboxBoxNewPa
 	if err != nil {
 		return nil, err
 	}
+	traceSandbox(ctx, res.ID)
 	return sandboxFromNewResponse(res, r), nil
 }
 
 // GetSandbox retrieves a sandbox and returns the convenience wrapper.
 func (r *SandboxBoxService) GetSandbox(ctx context.Context, name string, opts ...option.RequestOption) (*Sandbox, error) {
+	ctx = traceSandboxReference(ctx, name)
 	res, err := r.Get(ctx, name, opts...)
 	if err != nil {
 		return nil, err
 	}
+	traceSandbox(ctx, res.ID)
 	return sandboxFromGetResponse(res, r), nil
 }
 
@@ -60,36 +63,43 @@ func (r *SandboxBoxService) ListSandboxes(ctx context.Context, query SandboxBoxL
 
 // Refresh fetches latest sandbox state and updates this object.
 func (s *Sandbox) Refresh(ctx context.Context, opts ...option.RequestOption) error {
+	ctx = traceSandbox(ctx, s.ID)
 	box, err := s.boxes.Get(ctx, s.Name, opts...)
 	if err != nil {
 		return err
 	}
+	traceSandbox(ctx, box.ID)
 	s.applyGetResponse(box)
 	return nil
 }
 
 // Update updates this sandbox and refreshes this object's fields.
 func (s *Sandbox) Update(ctx context.Context, body SandboxBoxUpdateParams, opts ...option.RequestOption) error {
+	ctx = traceSandbox(ctx, s.ID)
 	box, err := s.boxes.Update(ctx, s.Name, body, opts...)
 	if err != nil {
 		return err
 	}
+	traceSandbox(ctx, box.ID)
 	s.applyUpdateResponse(box)
 	return nil
 }
 
 // Start starts this sandbox and waits until it is ready.
 func (s *Sandbox) Start(ctx context.Context, params SandboxWaitParams, opts ...option.RequestOption) error {
+	ctx = traceSandbox(ctx, s.ID)
 	box, err := s.boxes.StartAndWait(ctx, s.Name, params, opts...)
 	if err != nil {
 		return err
 	}
+	traceSandbox(ctx, box.ID)
 	s.applyGetResponse(box)
 	return nil
 }
 
 // Stop stops this sandbox.
 func (s *Sandbox) Stop(ctx context.Context, opts ...option.RequestOption) error {
+	ctx = traceSandbox(ctx, s.ID)
 	if err := s.boxes.Stop(ctx, s.Name, opts...); err != nil {
 		return err
 	}
@@ -100,6 +110,7 @@ func (s *Sandbox) Stop(ctx context.Context, opts ...option.RequestOption) error 
 
 // Delete deletes this sandbox.
 func (s *Sandbox) Delete(ctx context.Context, opts ...option.RequestOption) error {
+	ctx = traceSandbox(ctx, s.ID)
 	return s.boxes.Delete(ctx, s.Name, opts...)
 }
 
