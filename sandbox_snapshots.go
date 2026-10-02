@@ -73,19 +73,23 @@ func (r *SandboxSnapshotService) NewAndWait(ctx context.Context, body SandboxSna
 // CaptureSnapshotAndWait captures a snapshot from a sandbox and waits until it
 // is ready or failed.
 func (r *SandboxBoxService) CaptureSnapshotAndWait(ctx context.Context, name string, body SandboxBoxNewSnapshotParams, params SnapshotWaitParams, opts ...option.RequestOption) (*SnapshotResponse, error) {
+	ctx = traceSandboxReference(ctx, name)
 	snapshot, err := r.NewSnapshot(ctx, name, body, opts...)
 	if err != nil {
 		return nil, err
 	}
+	traceSandbox(ctx, snapshot.SourceSandboxID)
 	return NewSandboxSnapshotService(r.Options...).Wait(ctx, snapshot.ID, params, opts...)
 }
 
 // CaptureSnapshot captures a snapshot from this sandbox.
 func (s *Sandbox) CaptureSnapshot(ctx context.Context, body SandboxBoxNewSnapshotParams, opts ...option.RequestOption) (*SnapshotResponse, error) {
+	ctx = traceSandbox(ctx, s.ID)
 	return s.boxes.NewSnapshot(ctx, s.Name, body, opts...)
 }
 
 // CaptureSnapshotAndWait captures a snapshot and waits until it is ready.
 func (s *Sandbox) CaptureSnapshotAndWait(ctx context.Context, body SandboxBoxNewSnapshotParams, params SnapshotWaitParams, opts ...option.RequestOption) (*SnapshotResponse, error) {
+	ctx = traceSandbox(ctx, s.ID)
 	return s.boxes.CaptureSnapshotAndWait(ctx, s.Name, body, params, opts...)
 }

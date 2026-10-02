@@ -20,6 +20,7 @@ const (
 
 // Service returns an auto-refreshing authenticated service URL helper.
 func (r *SandboxBoxService) Service(ctx context.Context, name string, body SandboxBoxGenerateServiceURLParams, opts ...option.RequestOption) (*SandboxServiceURL, error) {
+	ctx = traceSandboxReference(ctx, name)
 	body, err := normalizeSandboxServiceURLParams(body)
 	if err != nil {
 		return nil, err
@@ -28,13 +29,16 @@ func (r *SandboxBoxService) Service(ctx context.Context, name string, body Sandb
 	if err != nil {
 		return nil, err
 	}
-	return newSandboxServiceURL(res, func(ctx context.Context) (*SandboxServiceURL, error) {
+	service := newSandboxServiceURL(res, func(ctx context.Context) (*SandboxServiceURL, error) {
 		return r.Service(ctx, name, body, opts...)
-	}), nil
+	})
+	service.sandboxID = sandboxIDFromContext(ctx)
+	return service, nil
 }
 
 // SandboxServiceURL is an authenticated URL for an HTTP service inside a sandbox.
 type SandboxServiceURL struct {
+	sandboxID string
 	mu        sync.Mutex
 	browser   string
 	service   string
@@ -147,6 +151,7 @@ func (s *SandboxServiceURL) Delete(ctx context.Context, path string, headers htt
 }
 
 func (s *SandboxServiceURL) refreshIfNeeded(ctx context.Context) error {
+	ctx = traceSandbox(ctx, s.sandboxID)
 	s.mu.Lock()
 	if !s.shouldRefreshLocked() || s.refresher == nil {
 		s.mu.Unlock()
@@ -183,6 +188,7 @@ func (s *SandboxServiceURL) shouldRefreshLocked() bool {
 
 // Service returns an auto-refreshing service URL helper for this sandbox.
 func (s *Sandbox) Service(ctx context.Context, body SandboxBoxGenerateServiceURLParams, opts ...option.RequestOption) (*SandboxServiceURL, error) {
+	ctx = traceSandbox(ctx, s.ID)
 	return s.boxes.Service(ctx, s.Name, body, opts...)
 }
 

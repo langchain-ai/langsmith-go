@@ -31,6 +31,7 @@ import (
 // the [NewDatasetService] method instead.
 type DatasetService struct {
 	Options        []option.RequestOption
+	Examples       *DatasetExampleService
 	Versions       *DatasetVersionService
 	Runs           *DatasetRunService
 	ExperimentRuns *DatasetExperimentRunService
@@ -45,6 +46,7 @@ type DatasetService struct {
 func NewDatasetService(opts ...option.RequestOption) (r *DatasetService) {
 	r = &DatasetService{}
 	r.Options = opts
+	r.Examples = NewDatasetExampleService(opts...)
 	r.Versions = NewDatasetVersionService(opts...)
 	r.Runs = NewDatasetRunService(opts...)
 	r.ExperimentRuns = NewDatasetExperimentRunService(opts...)

@@ -1838,6 +1838,12 @@ type SandboxResponseProxyConfigRule struct {
 	EnvVars map[string]string                       `json:"env_vars"`
 	Gcp     SandboxResponseProxyConfigRulesGcp      `json:"gcp"`
 	Headers []SandboxResponseProxyConfigRulesHeader `json:"headers"`
+	// MatchHeaders restricts a header injection rule to requests carrying every listed
+	// header, each written "name: value" with a lowercase name and an exact value.
+	// Pair with headers of the same name to swap a placeholder the sandbox sends (e.g.
+	// "authorization: Bearer account-b") for a real credential, so one host can serve
+	// several accounts. Rules are evaluated in order and the first match wins.
+	MatchHeaders []string `json:"match_headers"`
 	// MatchHosts is only accepted for header injection rules. Provider auth rules use
 	// built-in host matching.
 	MatchHosts []string                           `json:"match_hosts"`
@@ -1849,18 +1855,19 @@ type SandboxResponseProxyConfigRule struct {
 // sandboxResponseProxyConfigRuleJSON contains the JSON metadata for the struct
 // [SandboxResponseProxyConfigRule]
 type sandboxResponseProxyConfigRuleJSON struct {
-	Name        apijson.Field
-	Aws         apijson.Field
-	Description apijson.Field
-	Enabled     apijson.Field
-	EnvVars     apijson.Field
-	Gcp         apijson.Field
-	Headers     apijson.Field
-	MatchHosts  apijson.Field
-	MatchPaths  apijson.Field
-	Type        apijson.Field
-	raw         string
-	ExtraFields map[string]apijson.Field
+	Name         apijson.Field
+	Aws          apijson.Field
+	Description  apijson.Field
+	Enabled      apijson.Field
+	EnvVars      apijson.Field
+	Gcp          apijson.Field
+	Headers      apijson.Field
+	MatchHeaders apijson.Field
+	MatchHosts   apijson.Field
+	MatchPaths   apijson.Field
+	Type         apijson.Field
+	raw          string
+	ExtraFields  map[string]apijson.Field
 }
 
 func (r *SandboxResponseProxyConfigRule) UnmarshalJSON(data []byte) (err error) {

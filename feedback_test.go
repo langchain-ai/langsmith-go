@@ -31,8 +31,13 @@ func TestFeedbackNewWithOptionalParams(t *testing.T) {
 	)
 	_, err := client.Feedback.New(context.TODO(), langsmith.FeedbackNewParams{
 		FeedbackCreateSchema: langsmith.FeedbackCreateSchemaParam{
-			Key:                     langsmith.F("key"),
-			ID:                      langsmith.F("182bd5e5-6e1a-4fe4-a799-aa6d9a6ab26e"),
+			Key: langsmith.F("key"),
+			ID:  langsmith.F("182bd5e5-6e1a-4fe4-a799-aa6d9a6ab26e"),
+			Address: langsmith.F(shared.AgentAddressParam{
+				ID:          langsmith.F("support-agent"),
+				Environment: langsmith.F(shared.AgentAddressEnvironmentProduction),
+				Kind:        langsmith.F(shared.AgentAddressKindAgent),
+			}),
 			AgentEnvironment:        langsmith.F(langsmith.FeedbackCreateSchemaAgentEnvironmentLocal),
 			AgentID:                 langsmith.F("agent_id"),
 			Comment:                 langsmith.F("comment"),

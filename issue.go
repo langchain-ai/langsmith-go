@@ -96,7 +96,10 @@ type Issue struct {
 	// Legacy: branch of the oldest fix in the board's oldest connected repository.
 	FixBranch       string `json:"fix_branch"`
 	FixDispatchedAt string `json:"fix_dispatched_at"`
-	FixPrNumber     int64  `json:"fix_pr_number"`
+	// Non-nil once the issue is handed off to a coding agent; Engine skips its own fix
+	// run while it is set.
+	FixHandoffBotUserID string `json:"fix_handoff_bot_user_id" api:"nullable"`
+	FixPrNumber         int64  `json:"fix_pr_number"`
 	// Issue-level: the problem every fix shares, and the last time a fix run was
 	// dispatched for this issue — one run works several fixes.
 	FixPrompt       string               `json:"fix_prompt"`
@@ -138,6 +141,7 @@ type issueJSON struct {
 	FirstSeenAt              apijson.Field
 	FixBranch                apijson.Field
 	FixDispatchedAt          apijson.Field
+	FixHandoffBotUserID      apijson.Field
 	FixPrNumber              apijson.Field
 	FixPrompt                apijson.Field
 	FixVerification          apijson.Field

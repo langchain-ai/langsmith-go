@@ -48,8 +48,9 @@ func NewFeedbackService(opts ...option.RequestOption) (r *FeedbackService) {
 // Create a new feedback.
 //
 // `session_id` identifies the tracing project the feedback belongs to. It is
-// required unless the feedback is addressed by `agent_id` and `agent_environment`,
-// which name that project through an Agent environment that already exists.
+// required unless the feedback is addressed by `address`, or by `agent_id` and
+// `agent_environment`, which name that project through an Agent environment that
+// already exists.
 func (r *FeedbackService) New(ctx context.Context, body FeedbackNewParams, opts ...option.RequestOption) (res *FeedbackSchema, err error) {
 	opts = slices.Concat(r.Options, opts)
 	path := "api/v1/feedback"
@@ -198,12 +199,18 @@ func (r AutoEvalFeedbackSourceType) IsKnown() bool {
 type FeedbackCreateSchemaParam struct {
 	Key param.Field[string] `json:"key" api:"required"`
 	ID  param.Field[string] `json:"id" format:"uuid"`
-	// Experimental. Only supported in workspaces where Agent addressing is enabled;
-	// other workspaces get a 403. The Agent environment whose tracing project the
-	// feedback belongs to. Matched case-insensitively. Sent together with agent_id.
+	// Beta. Only supported in workspaces where Agent addressing is enabled; other
+	// workspaces get a 403. Addresses the tracing project through an Agent environment
+	// instead of session_id. Never combined with agent_id, agent_environment, or
+	// session_id. The Agent and the environment must already exist; sending feedback
+	// does not create them.
+	Address param.Field[shared.AgentAddressParam] `json:"address"`
+	// Beta. Only supported in workspaces where Agent addressing is enabled; other
+	// workspaces get a 403. The Agent environment whose tracing project the feedback
+	// belongs to. Matched case-insensitively. Sent together with agent_id.
 	AgentEnvironment param.Field[FeedbackCreateSchemaAgentEnvironment] `json:"agent_environment"`
-	// Experimental. Only supported in workspaces where Agent addressing is enabled;
-	// other workspaces get a 403. The Agent's id, not a UUID: 1 to 63 lowercase ASCII
+	// Beta. Only supported in workspaces where Agent addressing is enabled; other
+	// workspaces get a 403. The Agent's id, not a UUID: 1 to 63 lowercase ASCII
 	// letters, digits, or hyphens, starting with a letter and ending with a letter or
 	// digit (e.g. support-agent). Addresses the tracing project through an Agent
 	// instead of session_id. Sent together with agent_environment, and never alongside
@@ -241,9 +248,9 @@ func (r FeedbackCreateSchemaParam) MarshalJSON() (data []byte, err error) {
 	return apijson.MarshalRoot(r)
 }
 
-// Experimental. Only supported in workspaces where Agent addressing is enabled;
-// other workspaces get a 403. The Agent environment whose tracing project the
-// feedback belongs to. Matched case-insensitively. Sent together with agent_id.
+// Beta. Only supported in workspaces where Agent addressing is enabled; other
+// workspaces get a 403. The Agent environment whose tracing project the feedback
+// belongs to. Matched case-insensitively. Sent together with agent_id.
 type FeedbackCreateSchemaAgentEnvironment string
 
 const (
