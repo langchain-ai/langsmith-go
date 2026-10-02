@@ -18,3 +18,38 @@ jobs:
         id: release
         with:
           token: ${{ secrets.GITHUB_TOKEN }}
+
+  # The langsmith CLI builds its generated commands against langsmith-go main
+  # and only releases against a released version. Starting the "stlc: sync CLI"
+  # workflow in langchainplus after every push picks up new SDK code as soon as
+  # it lands, and the release tag once release-please creates it (this job runs
+  # after release-please, so a release's tag already exists).
+  trigger-cli-sync:
+    needs: release-please
+    runs-on: self-hosted-ubuntu-small-amd64
+    permissions:
+      id-token: write
+    steps:
+      - name: Load GitHub App key from 1Password
+        id: load-gh-app-secrets
+        uses: 1password/load-secrets-action@3a12b0ab99d9cd590a3e9b5a90ea017210ed9556 # v4.0.1
+        with:
+          export-env: false
+        env:
+          OP_CONNECT_TOKEN: ${{ secrets.OP_CONNECT_TOKEN_INTERNAL }}
+          OP_CONNECT_HOST: ${{ secrets.OP_CONNECT_HOST }}
+          LANGCHAINPLUS_GITHUB_APP_PRIVATE_KEY: op://${{ secrets.INTERNAL_INFRA_OP_VAULT }}/langchain-actions-pr-bot/private_key
+
+      - name: Generate GitHub App token
+        id: app-token
+        uses: actions/create-github-app-token@v3
+        with:
+          app-id: "Iv23liMFOFBcPTKFWi3S"
+          private-key: ${{ steps.load-gh-app-secrets.outputs.LANGCHAINPLUS_GITHUB_APP_PRIVATE_KEY }}
+          repositories: langchainplus
+          permission-actions: write
+
+      - name: Start the CLI sync in langchainplus
+        env:
+          GH_TOKEN: ${{ steps.app-token.outputs.token }}
+        run: gh workflow run stlc_sync_cli.yml --repo langchain-ai/langchainplus
