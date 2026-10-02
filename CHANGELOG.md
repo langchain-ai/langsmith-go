@@ -1,5 +1,17 @@
 # Changelog
 
+## [0.27.1](https://github.com/langchain-ai/langsmith-go/compare/v0.27.0...v0.27.1) (2026-10-02)
+
+
+### Features
+
+* add AgentAddress type and address field to runs and feedback ([83ed9d3](https://github.com/langchain-ai/langsmith-go/commit/83ed9d3bc2d7acc8421508148a5e007a3c12e267))
+* add match_headers field to header injection rules ([c28f747](https://github.com/langchain-ai/langsmith-go/commit/c28f747bbf89b03f9c411546c245ef6bac4a1184))
+* add slack_handoff and fix_handoff_bot_user_id fields to webhook responses ([b1b05c8](https://github.com/langchain-ai/langsmith-go/commit/b1b05c833ec5f2b4c7c6c50385a73796448d0a22))
+* attach sandbox IDs to active trace metadata ([#113](https://github.com/langchain-ai/langsmith-go/issues/113)) ([94658b5](https://github.com/langchain-ai/langsmith-go/commit/94658b5a853e403909f31d6958356bf2b2178fba))
+* **datasets:** add delete example endpoint ([538e8a1](https://github.com/langchain-ai/langsmith-go/commit/538e8a182e75995b27d4af16b8517c4fcbbc5abf))
+* **info:** add engine_github_web_base_url field to info response ([27a5b72](https://github.com/langchain-ai/langsmith-go/commit/27a5b720a02d76d58ac8fbe61c195e3cab91e752))
+
 ## [0.27.0](https://github.com/langchain-ai/langsmith-go/compare/v0.26.7...v0.27.0) (2026-09-29)
 
 
