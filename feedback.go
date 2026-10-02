@@ -48,9 +48,8 @@ func NewFeedbackService(opts ...option.RequestOption) (r *FeedbackService) {
 // Create a new feedback.
 //
 // `session_id` identifies the tracing project the feedback belongs to. It is
-// required unless the feedback is addressed by `address`, or by `agent_id` and
-// `agent_environment`, which name that project through an Agent environment that
-// already exists.
+// required unless the feedback is addressed by `address`, which names that project
+// through an Agent environment that already exists.
 func (r *FeedbackService) New(ctx context.Context, body FeedbackNewParams, opts ...option.RequestOption) (res *FeedbackSchema, err error) {
 	opts = slices.Concat(r.Options, opts)
 	path := "api/v1/feedback"
@@ -200,23 +199,14 @@ type FeedbackCreateSchemaParam struct {
 	Key param.Field[string] `json:"key" api:"required"`
 	ID  param.Field[string] `json:"id" format:"uuid"`
 	// Beta. Only supported in workspaces where Agent addressing is enabled; other
-	// workspaces get a 403. Addresses the tracing project through an Agent environment
-	// instead of session_id. Never combined with agent_id, agent_environment, or
-	// session_id. The Agent and the environment must already exist; sending feedback
-	// does not create them.
-	Address param.Field[shared.AgentAddressParam] `json:"address"`
-	// Beta. Only supported in workspaces where Agent addressing is enabled; other
-	// workspaces get a 403. The Agent environment whose tracing project the feedback
-	// belongs to. Matched case-insensitively. Sent together with agent_id.
-	AgentEnvironment param.Field[FeedbackCreateSchemaAgentEnvironment] `json:"agent_environment"`
-	// Beta. Only supported in workspaces where Agent addressing is enabled; other
-	// workspaces get a 403. The Agent's id, not a UUID: 1 to 63 lowercase ASCII
-	// letters, digits, or hyphens, starting with a letter and ending with a letter or
-	// digit (e.g. support-agent). Addresses the tracing project through an Agent
-	// instead of session_id. Sent together with agent_environment, and never alongside
-	// session_id. The Agent and the environment must already exist; sending feedback
-	// does not create them.
-	AgentID                 param.Field[string]                                   `json:"agent_id"`
+	// workspaces get a 403. Addresses the tracing project through an Agent
+	// environment, as lrn:agents/{id}/environments/{environment}, instead of
+	// session_id. The id is 1 to 63 lowercase ASCII letters, digits, or hyphens,
+	// starting with a letter and ending with a letter or digit. The environment is
+	// local, development, staging, or production, matched case-insensitively. Never
+	// combined with session_id. The Agent and the environment must already exist;
+	// sending feedback does not create them.
+	Address                 param.Field[string]                                   `json:"address"`
 	Comment                 param.Field[string]                                   `json:"comment"`
 	ComparativeExperimentID param.Field[string]                                   `json:"comparative_experiment_id" format:"uuid"`
 	Correction              param.Field[FeedbackCreateSchemaCorrectionUnionParam] `json:"correction"`
@@ -236,8 +226,8 @@ type FeedbackCreateSchemaParam struct {
 	ModifiedAt       param.Field[time.Time]                                    `json:"modified_at" format:"date-time"`
 	RunID            param.Field[string]                                       `json:"run_id" format:"uuid"`
 	Score            param.Field[FeedbackCreateSchemaScoreUnionParam]          `json:"score"`
-	// Required unless the feedback is addressed by agent_id and agent_environment. The
-	// ID of the tracing project (session) the feedback belongs to.
+	// Required unless the feedback is addressed by address. The ID of the tracing
+	// project (session) the feedback belongs to.
 	SessionID param.Field[string]                              `json:"session_id" format:"uuid"`
 	StartTime param.Field[time.Time]                           `json:"start_time" format:"date-time"`
 	TraceID   param.Field[string]                              `json:"trace_id" format:"uuid"`
@@ -246,26 +236,6 @@ type FeedbackCreateSchemaParam struct {
 
 func (r FeedbackCreateSchemaParam) MarshalJSON() (data []byte, err error) {
 	return apijson.MarshalRoot(r)
-}
-
-// Beta. Only supported in workspaces where Agent addressing is enabled; other
-// workspaces get a 403. The Agent environment whose tracing project the feedback
-// belongs to. Matched case-insensitively. Sent together with agent_id.
-type FeedbackCreateSchemaAgentEnvironment string
-
-const (
-	FeedbackCreateSchemaAgentEnvironmentLocal       FeedbackCreateSchemaAgentEnvironment = "LOCAL"
-	FeedbackCreateSchemaAgentEnvironmentDevelopment FeedbackCreateSchemaAgentEnvironment = "DEVELOPMENT"
-	FeedbackCreateSchemaAgentEnvironmentStaging     FeedbackCreateSchemaAgentEnvironment = "STAGING"
-	FeedbackCreateSchemaAgentEnvironmentProduction  FeedbackCreateSchemaAgentEnvironment = "PRODUCTION"
-)
-
-func (r FeedbackCreateSchemaAgentEnvironment) IsKnown() bool {
-	switch r {
-	case FeedbackCreateSchemaAgentEnvironmentLocal, FeedbackCreateSchemaAgentEnvironmentDevelopment, FeedbackCreateSchemaAgentEnvironmentStaging, FeedbackCreateSchemaAgentEnvironmentProduction:
-		return true
-	}
-	return false
 }
 
 // Satisfied by [FeedbackCreateSchemaCorrectionMapParam], [shared.UnionString].
