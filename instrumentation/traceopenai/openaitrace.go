@@ -143,7 +143,7 @@ func MiddlewareWithTracerProvider(req *http.Request, next MiddlewareNext, tp tra
 	// Extract request attributes
 	var streaming bool
 	if len(requestBody) > 0 {
-		reqFields := parseRequestBody(requestBody)
+		reqFields := parseRequestBody(requestBody, span.IsRecording())
 		if reqFields.inputMessages != "" {
 			span.SetAttributes(attribute.String("gen_ai.prompt", reqFields.inputMessages))
 		}
@@ -409,8 +409,9 @@ type requestFields struct {
 }
 
 // parseRequestBody extracts input messages, model, and streaming flag from
-// the request body.
-func parseRequestBody(body []byte) requestFields {
+// the request body. Prompt normalization and serialization are only needed for
+// recording spans; streaming detection is also needed for parent token usage.
+func parseRequestBody(body []byte, capturePrompt bool) requestFields {
 	var req map[string]any
 	if err := json.Unmarshal(body, &req); err != nil {
 		return requestFields{}
@@ -423,6 +424,10 @@ func parseRequestBody(body []byte) requestFields {
 
 	// Streaming
 	fields.streaming, _ = req["stream"].(bool)
+
+	if !capturePrompt {
+		return fields
+	}
 
 	// Input messages — chat completions
 	if messages, ok := req["messages"].([]any); ok && len(messages) > 0 {
