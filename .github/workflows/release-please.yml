@@ -12,8 +12,6 @@ jobs:
   release-please:
     if: github.repository == 'langchain-ai/langsmith-go'
     runs-on: ubuntu-latest
-    outputs:
-      release_created: ${{ steps.release.outputs.release_created }}
 
     steps:
       - uses: googleapis/release-please-action@45996ed1f6d02564a971a2fa1b5860e934307cf7 # v5.0.0
@@ -21,13 +19,13 @@ jobs:
         with:
           token: ${{ secrets.GITHUB_TOKEN }}
 
-  # The langsmith CLI builds its generated commands against langsmith-go and
-  # only releases against a released version. Starting the "stlc: sync CLI"
-  # workflow in langchainplus right after a release moves the CLI to the new
-  # tag without waiting for its daily run.
+  # The langsmith CLI builds its generated commands against langsmith-go main
+  # and only releases against a released version. Starting the "stlc: sync CLI"
+  # workflow in langchainplus after every push picks up new SDK code as soon as
+  # it lands, and the release tag once release-please creates it (this job runs
+  # after release-please, so a release's tag already exists).
   trigger-cli-sync:
     needs: release-please
-    if: needs.release-please.outputs.release_created == 'true'
     runs-on: self-hosted-ubuntu-small-amd64
     permissions:
       id-token: write
