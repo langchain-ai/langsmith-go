@@ -18,7 +18,6 @@ import (
 	"github.com/langchain-ai/langsmith-go/internal/requestconfig"
 	"github.com/langchain-ai/langsmith-go/option"
 	"github.com/langchain-ai/langsmith-go/packages/pagination"
-	"github.com/langchain-ai/langsmith-go/shared"
 	"github.com/tidwall/gjson"
 )
 
@@ -660,17 +659,10 @@ func (r RunStatus) IsKnown() bool {
 type RunIngestParam struct {
 	ID param.Field[string] `json:"id"`
 	// Beta. Addresses the run to an Agent environment in place of session_id or
-	// session_name. Cannot be combined with agent_id or agent_environment. Only
-	// workspaces enabled for Agent addressing accept it; others get a 403.
-	Address param.Field[shared.AgentAddressParam] `json:"address"`
-	// Beta. The Agent environment the run belongs to, case-insensitive; requires
-	// agent_id. Only workspaces enabled for Agent addressing accept it; others get
-	// a 403.
-	AgentEnvironment param.Field[RunIngestAgentEnvironment] `json:"agent_environment"`
-	// Beta, superseded by address. Addresses the run to an Agent, with
-	// agent_environment, in place of session_id or session_name. Only workspaces
-	// enabled for Agent addressing accept it; others get a 403.
-	AgentID            param.Field[string]                   `json:"agent_id"`
+	// session_name, as lrn:agents/{id}/environments/{environment}. The environment is
+	// case-insensitive. Only workspaces enabled for Agent addressing accept it; others
+	// get a 403.
+	Address            param.Field[string]                   `json:"address"`
 	DottedOrder        param.Field[string]                   `json:"dotted_order"`
 	EndTime            param.Field[string]                   `json:"end_time"`
 	Error              param.Field[string]                   `json:"error"`
@@ -695,26 +687,6 @@ type RunIngestParam struct {
 
 func (r RunIngestParam) MarshalJSON() (data []byte, err error) {
 	return apijson.MarshalRoot(r)
-}
-
-// Beta. The Agent environment the run belongs to, case-insensitive; requires
-// agent_id. Only workspaces enabled for Agent addressing accept it; others get
-// a 403.
-type RunIngestAgentEnvironment string
-
-const (
-	RunIngestAgentEnvironmentLocal       RunIngestAgentEnvironment = "LOCAL"
-	RunIngestAgentEnvironmentDevelopment RunIngestAgentEnvironment = "DEVELOPMENT"
-	RunIngestAgentEnvironmentStaging     RunIngestAgentEnvironment = "STAGING"
-	RunIngestAgentEnvironmentProduction  RunIngestAgentEnvironment = "PRODUCTION"
-)
-
-func (r RunIngestAgentEnvironment) IsKnown() bool {
-	switch r {
-	case RunIngestAgentEnvironmentLocal, RunIngestAgentEnvironmentDevelopment, RunIngestAgentEnvironmentStaging, RunIngestAgentEnvironmentProduction:
-		return true
-	}
-	return false
 }
 
 type RunIngestRunType string
