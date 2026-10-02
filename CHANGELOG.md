@@ -1,5 +1,56 @@
 # Changelog
 
+## [0.27.0](https://github.com/langchain-ai/langsmith-go/compare/v0.26.7...v0.27.0) (2026-09-29)
+
+
+### ⚠ BREAKING CHANGES
+
+* **projects:** delete returns 202 with Location header instead of 200
+
+### Features
+
+* **deployments:** add baseline/preview experiment and dataset id fields ([409c8ce](https://github.com/langchain-ai/langsmith-go/commit/409c8ce140d2f6a82c914d164cb0ad4d87315062))
+* **ingestion:** accept Agent addressing on single and batch runs ([f37e62a](https://github.com/langchain-ai/langsmith-go/commit/f37e62a68ed6896f60dd18640b1903e973b7c020))
+* **issues:** add evidence and runs-analytics metric schemas to Issue model ([5c81d52](https://github.com/langchain-ai/langsmith-go/commit/5c81d520e5a4eefb2359db9644a341ebed5ba98c))
+* **issues:** add fixes array to Issue response with new Fix schema ([d48981f](https://github.com/langchain-ai/langsmith-go/commit/d48981f138a59e344409b2933cf25efb2509573f))
+* **projects:** add optional extra field to project schema ([1f0f626](https://github.com/langchain-ai/langsmith-go/commit/1f0f626c5103b53a9b3bab621ba6479b729ba0af))
+* **runs:** add tag_value_id filter query parameter ([1f6004f](https://github.com/langchain-ai/langsmith-go/commit/1f6004f6a9234f22ded1ff30212465858ce71115))
+* **sandboxes:** add csp_sandbox field and new enum values for download-url ([efeea06](https://github.com/langchain-ai/langsmith-go/commit/efeea06f60aa9990a51a197eac24afb863248282))
+* **sandbox:** verify service URL user tokens and proxy callbacks ([#109](https://github.com/langchain-ai/langsmith-go/issues/109)) ([be22f4c](https://github.com/langchain-ai/langsmith-go/commit/be22f4c2b778fcb3fd7c3d4fc0dffdf7d3bbef19))
+
+
+### Bug Fixes
+
+* **auth:** make profile OAuth refresh safe to rely on exclusively ([#110](https://github.com/langchain-ai/langsmith-go/issues/110)) ([74df1f1](https://github.com/langchain-ai/langsmith-go/commit/74df1f1323a58fd331b492016739c4140ae54bdf))
+* build, lint, and test failures (fix(projects)!: delete returns 202 with Location header instead of 200) ([2a34ace](https://github.com/langchain-ai/langsmith-go/commit/2a34ace229673496b36d2e65a2be3869a90c4fcd))
+* **evaluators:** type managed_code_evaluator_key as an enum ([92e4801](https://github.com/langchain-ai/langsmith-go/commit/92e4801aaef6d386998726b9c5080b0655541fda))
+* **projects:** delete returns 202 with Location header instead of 200 ([d03fa1e](https://github.com/langchain-ai/langsmith-go/commit/d03fa1ee95903fc94896aa9c6ef027c1ed14d237))
+* **runs:** deprecate error field in favour of extra.error ([a0acfdb](https://github.com/langchain-ai/langsmith-go/commit/a0acfdb5f3b0921bb1d9170971d4b5c7d700885b))
+* **sandbox:** require an audience when verifying proxy callbacks ([#111](https://github.com/langchain-ai/langsmith-go/issues/111)) ([5d0b4e5](https://github.com/langchain-ai/langsmith-go/commit/5d0b4e57c32b63aaee58111daa530779933df828))
+
+
+### Reverts
+
+* **stlc:** isolate SDK builds from publishing credentials ([#43780](https://github.com/langchain-ai/langsmith-go/issues/43780)) ([f9f468b](https://github.com/langchain-ai/langsmith-go/commit/f9f468bc499ae5aae59348b6744e36d4bb068ba8))
+
+
+### Chores
+
+* **annotation-queues:** note delete items removes active and completed ([c9e993e](https://github.com/langchain-ai/langsmith-go/commit/c9e993e334777de77142cf9a1b0895eb00fcf293))
+* **sandboxes:** update access field description for restricted mode ([8c0f552](https://github.com/langchain-ai/langsmith-go/commit/8c0f552d716f7391c151cda1fcb33eee0c69c92e))
+
+## [0.26.7](https://github.com/langchain-ai/langsmith-go/compare/v0.26.6...v0.26.7) (2026-09-22)
+
+
+### Features
+
+* add require_attachments optional boolean field to request ([bf9dbff](https://github.com/langchain-ai/langsmith-go/commit/bf9dbff76ec957bbedd9cab8ff9b78fa785d74d8))
+* **charts:** add preview method endpoint ([9106def](https://github.com/langchain-ai/langsmith-go/commit/9106defb63ba52e2a481d9bcdaefc1e58cd5f048))
+* **evaluators:** add managed code evaluator key and settings fields ([da3b47c](https://github.com/langchain-ai/langsmith-go/commit/da3b47c867c2a486dd51e72bc31eb2a008bb38e3))
+* **evaluators:** add require_attachments field to evaluator schemas ([cee82d0](https://github.com/langchain-ai/langsmith-go/commit/cee82d040bab3ffb7810ff2e7892cecba5d56de3))
+* **sandboxes:** add delegated_from_sandbox_id field to audit log context ([c5d7a19](https://github.com/langchain-ai/langsmith-go/commit/c5d7a19f5bbff7958c3fb07d1c4b1cde3c0c55a3))
+* **sandboxes:** add list and delete service URL sharing endpoints ([2e486ef](https://github.com/langchain-ai/langsmith-go/commit/2e486ef7ae69e3d7b8d4136456d2673c1bc5f633))
+
 ## [0.26.6](https://github.com/langchain-ai/langsmith-go/compare/v0.26.5...v0.26.6) (2026-09-18)
 
 
