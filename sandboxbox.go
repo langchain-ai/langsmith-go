@@ -1151,6 +1151,12 @@ type SandboxBoxNewParamsProxyConfigRule struct {
 	EnvVars param.Field[map[string]string]                           `json:"env_vars"`
 	Gcp     param.Field[SandboxBoxNewParamsProxyConfigRulesGcp]      `json:"gcp"`
 	Headers param.Field[[]SandboxBoxNewParamsProxyConfigRulesHeader] `json:"headers"`
+	// MatchHeaders restricts a header injection rule to requests carrying every listed
+	// header, each written "name: value" with a lowercase name and an exact value.
+	// Pair with headers of the same name to swap a placeholder the sandbox sends (e.g.
+	// "authorization: Bearer account-b") for a real credential, so one host can serve
+	// several accounts. Rules are evaluated in order and the first match wins.
+	MatchHeaders param.Field[[]string] `json:"match_headers"`
 	// MatchHosts is only accepted for header injection rules. Provider auth rules use
 	// built-in host matching.
 	MatchHosts param.Field[[]string] `json:"match_hosts"`
@@ -1460,6 +1466,12 @@ type SandboxBoxUpdateParamsProxyConfigRule struct {
 	EnvVars param.Field[map[string]string]                              `json:"env_vars"`
 	Gcp     param.Field[SandboxBoxUpdateParamsProxyConfigRulesGcp]      `json:"gcp"`
 	Headers param.Field[[]SandboxBoxUpdateParamsProxyConfigRulesHeader] `json:"headers"`
+	// MatchHeaders restricts a header injection rule to requests carrying every listed
+	// header, each written "name: value" with a lowercase name and an exact value.
+	// Pair with headers of the same name to swap a placeholder the sandbox sends (e.g.
+	// "authorization: Bearer account-b") for a real credential, so one host can serve
+	// several accounts. Rules are evaluated in order and the first match wins.
+	MatchHeaders param.Field[[]string] `json:"match_headers"`
 	// MatchHosts is only accepted for header injection rules. Provider auth rules use
 	// built-in host matching.
 	MatchHosts param.Field[[]string] `json:"match_hosts"`
