@@ -104,6 +104,10 @@ func (r *TraceService) QueryAutoPaging(ctx context.Context, body TraceQueryParam
 }
 
 type Trace struct {
+	// `query_metadata` describes why this trace matched the query, including
+	// `sem_filter_score` when a semantic filter is used. Returned automatically, or
+	// null when unavailable.
+	QueryMetadata interface{} `json:"query_metadata" api:"nullable"`
 	// `root_run` is the trace's root run. Which properties are populated is controlled
 	// by `selects` in the request.
 	RootRun Run `json:"root_run"`
@@ -116,6 +120,7 @@ type Trace struct {
 
 // traceJSON contains the JSON metadata for the struct [Trace]
 type traceJSON struct {
+	QueryMetadata   apijson.Field
 	RootRun         apijson.Field
 	TraceAggregates apijson.Field
 	raw             string

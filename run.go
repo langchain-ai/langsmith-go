@@ -339,6 +339,10 @@ type Run struct {
 	PromptTokenDetails RunPromptTokenDetails `json:"prompt_token_details"`
 	// `prompt_tokens` is the prompt-side token count.
 	PromptTokens int64 `json:"prompt_tokens"`
+	// `query_metadata` describes this query result, including `sem_filter_score` when
+	// a semantic filter is used. Returned automatically by run queries, or null when
+	// unavailable.
+	QueryMetadata interface{} `json:"query_metadata" api:"nullable"`
 	// `reference_dataset_id` is the dataset UUID for the reference example, if any.
 	ReferenceDatasetID string `json:"reference_dataset_id" format:"uuid"`
 	// `reference_example_id` is the dataset example UUID this run was compared
@@ -412,6 +416,7 @@ type runJSON struct {
 	PromptCostDetails      apijson.Field
 	PromptTokenDetails     apijson.Field
 	PromptTokens           apijson.Field
+	QueryMetadata          apijson.Field
 	ReferenceDatasetID     apijson.Field
 	ReferenceExampleID     apijson.Field
 	RunType                apijson.Field
