@@ -374,20 +374,31 @@ func (r IssueEvidenceSeriesMetricDefinitionDenominatorEntity) IsKnown() bool {
 type IssueEvidenceSeriesMetricDefinitionDenominatorField string
 
 const (
-	IssueEvidenceSeriesMetricDefinitionDenominatorFieldLatencySeconds    IssueEvidenceSeriesMetricDefinitionDenominatorField = "latency_seconds"
-	IssueEvidenceSeriesMetricDefinitionDenominatorFieldFirstTokenSeconds IssueEvidenceSeriesMetricDefinitionDenominatorField = "first_token_seconds"
-	IssueEvidenceSeriesMetricDefinitionDenominatorFieldTotalTokens       IssueEvidenceSeriesMetricDefinitionDenominatorField = "total_tokens"
-	IssueEvidenceSeriesMetricDefinitionDenominatorFieldPromptTokens      IssueEvidenceSeriesMetricDefinitionDenominatorField = "prompt_tokens"
-	IssueEvidenceSeriesMetricDefinitionDenominatorFieldCompletionTokens  IssueEvidenceSeriesMetricDefinitionDenominatorField = "completion_tokens"
-	IssueEvidenceSeriesMetricDefinitionDenominatorFieldTotalCost         IssueEvidenceSeriesMetricDefinitionDenominatorField = "total_cost"
-	IssueEvidenceSeriesMetricDefinitionDenominatorFieldPromptCost        IssueEvidenceSeriesMetricDefinitionDenominatorField = "prompt_cost"
-	IssueEvidenceSeriesMetricDefinitionDenominatorFieldCompletionCost    IssueEvidenceSeriesMetricDefinitionDenominatorField = "completion_cost"
-	IssueEvidenceSeriesMetricDefinitionDenominatorFieldFeedbackScore     IssueEvidenceSeriesMetricDefinitionDenominatorField = "feedback_score"
+	IssueEvidenceSeriesMetricDefinitionDenominatorFieldLatencySeconds                           IssueEvidenceSeriesMetricDefinitionDenominatorField = "latency_seconds"
+	IssueEvidenceSeriesMetricDefinitionDenominatorFieldFirstTokenSeconds                        IssueEvidenceSeriesMetricDefinitionDenominatorField = "first_token_seconds"
+	IssueEvidenceSeriesMetricDefinitionDenominatorFieldTotalTokens                              IssueEvidenceSeriesMetricDefinitionDenominatorField = "total_tokens"
+	IssueEvidenceSeriesMetricDefinitionDenominatorFieldPromptTokens                             IssueEvidenceSeriesMetricDefinitionDenominatorField = "prompt_tokens"
+	IssueEvidenceSeriesMetricDefinitionDenominatorFieldCompletionTokens                         IssueEvidenceSeriesMetricDefinitionDenominatorField = "completion_tokens"
+	IssueEvidenceSeriesMetricDefinitionDenominatorFieldTotalCost                                IssueEvidenceSeriesMetricDefinitionDenominatorField = "total_cost"
+	IssueEvidenceSeriesMetricDefinitionDenominatorFieldPromptCost                               IssueEvidenceSeriesMetricDefinitionDenominatorField = "prompt_cost"
+	IssueEvidenceSeriesMetricDefinitionDenominatorFieldCompletionCost                           IssueEvidenceSeriesMetricDefinitionDenominatorField = "completion_cost"
+	IssueEvidenceSeriesMetricDefinitionDenominatorFieldFeedbackScore                            IssueEvidenceSeriesMetricDefinitionDenominatorField = "feedback_score"
+	IssueEvidenceSeriesMetricDefinitionDenominatorFieldPromptTokenDetailsCacheCreation          IssueEvidenceSeriesMetricDefinitionDenominatorField = "prompt_token_details.cache_creation"
+	IssueEvidenceSeriesMetricDefinitionDenominatorFieldPromptTokenDetailsCacheRead              IssueEvidenceSeriesMetricDefinitionDenominatorField = "prompt_token_details.cache_read"
+	IssueEvidenceSeriesMetricDefinitionDenominatorFieldPromptTokenDetailsEphemeral1hInputTokens IssueEvidenceSeriesMetricDefinitionDenominatorField = "prompt_token_details.ephemeral_1h_input_tokens"
+	IssueEvidenceSeriesMetricDefinitionDenominatorFieldPromptTokenDetailsEphemeral5mInputTokens IssueEvidenceSeriesMetricDefinitionDenominatorField = "prompt_token_details.ephemeral_5m_input_tokens"
+	IssueEvidenceSeriesMetricDefinitionDenominatorFieldPromptTokenDetailsAudio                  IssueEvidenceSeriesMetricDefinitionDenominatorField = "prompt_token_details.audio"
+	IssueEvidenceSeriesMetricDefinitionDenominatorFieldPromptTokenDetailsImage                  IssueEvidenceSeriesMetricDefinitionDenominatorField = "prompt_token_details.image"
+	IssueEvidenceSeriesMetricDefinitionDenominatorFieldPromptTokenDetailsVideo                  IssueEvidenceSeriesMetricDefinitionDenominatorField = "prompt_token_details.video"
+	IssueEvidenceSeriesMetricDefinitionDenominatorFieldCompletionTokenDetailsReasoning          IssueEvidenceSeriesMetricDefinitionDenominatorField = "completion_token_details.reasoning"
+	IssueEvidenceSeriesMetricDefinitionDenominatorFieldCompletionTokenDetailsAudio              IssueEvidenceSeriesMetricDefinitionDenominatorField = "completion_token_details.audio"
+	IssueEvidenceSeriesMetricDefinitionDenominatorFieldCompletionTokenDetailsImage              IssueEvidenceSeriesMetricDefinitionDenominatorField = "completion_token_details.image"
+	IssueEvidenceSeriesMetricDefinitionDenominatorFieldCompletionTokenDetailsVideo              IssueEvidenceSeriesMetricDefinitionDenominatorField = "completion_token_details.video"
 )
 
 func (r IssueEvidenceSeriesMetricDefinitionDenominatorField) IsKnown() bool {
 	switch r {
-	case IssueEvidenceSeriesMetricDefinitionDenominatorFieldLatencySeconds, IssueEvidenceSeriesMetricDefinitionDenominatorFieldFirstTokenSeconds, IssueEvidenceSeriesMetricDefinitionDenominatorFieldTotalTokens, IssueEvidenceSeriesMetricDefinitionDenominatorFieldPromptTokens, IssueEvidenceSeriesMetricDefinitionDenominatorFieldCompletionTokens, IssueEvidenceSeriesMetricDefinitionDenominatorFieldTotalCost, IssueEvidenceSeriesMetricDefinitionDenominatorFieldPromptCost, IssueEvidenceSeriesMetricDefinitionDenominatorFieldCompletionCost, IssueEvidenceSeriesMetricDefinitionDenominatorFieldFeedbackScore:
+	case IssueEvidenceSeriesMetricDefinitionDenominatorFieldLatencySeconds, IssueEvidenceSeriesMetricDefinitionDenominatorFieldFirstTokenSeconds, IssueEvidenceSeriesMetricDefinitionDenominatorFieldTotalTokens, IssueEvidenceSeriesMetricDefinitionDenominatorFieldPromptTokens, IssueEvidenceSeriesMetricDefinitionDenominatorFieldCompletionTokens, IssueEvidenceSeriesMetricDefinitionDenominatorFieldTotalCost, IssueEvidenceSeriesMetricDefinitionDenominatorFieldPromptCost, IssueEvidenceSeriesMetricDefinitionDenominatorFieldCompletionCost, IssueEvidenceSeriesMetricDefinitionDenominatorFieldFeedbackScore, IssueEvidenceSeriesMetricDefinitionDenominatorFieldPromptTokenDetailsCacheCreation, IssueEvidenceSeriesMetricDefinitionDenominatorFieldPromptTokenDetailsCacheRead, IssueEvidenceSeriesMetricDefinitionDenominatorFieldPromptTokenDetailsEphemeral1hInputTokens, IssueEvidenceSeriesMetricDefinitionDenominatorFieldPromptTokenDetailsEphemeral5mInputTokens, IssueEvidenceSeriesMetricDefinitionDenominatorFieldPromptTokenDetailsAudio, IssueEvidenceSeriesMetricDefinitionDenominatorFieldPromptTokenDetailsImage, IssueEvidenceSeriesMetricDefinitionDenominatorFieldPromptTokenDetailsVideo, IssueEvidenceSeriesMetricDefinitionDenominatorFieldCompletionTokenDetailsReasoning, IssueEvidenceSeriesMetricDefinitionDenominatorFieldCompletionTokenDetailsAudio, IssueEvidenceSeriesMetricDefinitionDenominatorFieldCompletionTokenDetailsImage, IssueEvidenceSeriesMetricDefinitionDenominatorFieldCompletionTokenDetailsVideo:
 		return true
 	}
 	return false
@@ -440,20 +451,31 @@ func (r IssueEvidenceSeriesMetricDefinitionEntity) IsKnown() bool {
 type IssueEvidenceSeriesMetricDefinitionField string
 
 const (
-	IssueEvidenceSeriesMetricDefinitionFieldLatencySeconds    IssueEvidenceSeriesMetricDefinitionField = "latency_seconds"
-	IssueEvidenceSeriesMetricDefinitionFieldFirstTokenSeconds IssueEvidenceSeriesMetricDefinitionField = "first_token_seconds"
-	IssueEvidenceSeriesMetricDefinitionFieldTotalTokens       IssueEvidenceSeriesMetricDefinitionField = "total_tokens"
-	IssueEvidenceSeriesMetricDefinitionFieldPromptTokens      IssueEvidenceSeriesMetricDefinitionField = "prompt_tokens"
-	IssueEvidenceSeriesMetricDefinitionFieldCompletionTokens  IssueEvidenceSeriesMetricDefinitionField = "completion_tokens"
-	IssueEvidenceSeriesMetricDefinitionFieldTotalCost         IssueEvidenceSeriesMetricDefinitionField = "total_cost"
-	IssueEvidenceSeriesMetricDefinitionFieldPromptCost        IssueEvidenceSeriesMetricDefinitionField = "prompt_cost"
-	IssueEvidenceSeriesMetricDefinitionFieldCompletionCost    IssueEvidenceSeriesMetricDefinitionField = "completion_cost"
-	IssueEvidenceSeriesMetricDefinitionFieldFeedbackScore     IssueEvidenceSeriesMetricDefinitionField = "feedback_score"
+	IssueEvidenceSeriesMetricDefinitionFieldLatencySeconds                           IssueEvidenceSeriesMetricDefinitionField = "latency_seconds"
+	IssueEvidenceSeriesMetricDefinitionFieldFirstTokenSeconds                        IssueEvidenceSeriesMetricDefinitionField = "first_token_seconds"
+	IssueEvidenceSeriesMetricDefinitionFieldTotalTokens                              IssueEvidenceSeriesMetricDefinitionField = "total_tokens"
+	IssueEvidenceSeriesMetricDefinitionFieldPromptTokens                             IssueEvidenceSeriesMetricDefinitionField = "prompt_tokens"
+	IssueEvidenceSeriesMetricDefinitionFieldCompletionTokens                         IssueEvidenceSeriesMetricDefinitionField = "completion_tokens"
+	IssueEvidenceSeriesMetricDefinitionFieldTotalCost                                IssueEvidenceSeriesMetricDefinitionField = "total_cost"
+	IssueEvidenceSeriesMetricDefinitionFieldPromptCost                               IssueEvidenceSeriesMetricDefinitionField = "prompt_cost"
+	IssueEvidenceSeriesMetricDefinitionFieldCompletionCost                           IssueEvidenceSeriesMetricDefinitionField = "completion_cost"
+	IssueEvidenceSeriesMetricDefinitionFieldFeedbackScore                            IssueEvidenceSeriesMetricDefinitionField = "feedback_score"
+	IssueEvidenceSeriesMetricDefinitionFieldPromptTokenDetailsCacheCreation          IssueEvidenceSeriesMetricDefinitionField = "prompt_token_details.cache_creation"
+	IssueEvidenceSeriesMetricDefinitionFieldPromptTokenDetailsCacheRead              IssueEvidenceSeriesMetricDefinitionField = "prompt_token_details.cache_read"
+	IssueEvidenceSeriesMetricDefinitionFieldPromptTokenDetailsEphemeral1hInputTokens IssueEvidenceSeriesMetricDefinitionField = "prompt_token_details.ephemeral_1h_input_tokens"
+	IssueEvidenceSeriesMetricDefinitionFieldPromptTokenDetailsEphemeral5mInputTokens IssueEvidenceSeriesMetricDefinitionField = "prompt_token_details.ephemeral_5m_input_tokens"
+	IssueEvidenceSeriesMetricDefinitionFieldPromptTokenDetailsAudio                  IssueEvidenceSeriesMetricDefinitionField = "prompt_token_details.audio"
+	IssueEvidenceSeriesMetricDefinitionFieldPromptTokenDetailsImage                  IssueEvidenceSeriesMetricDefinitionField = "prompt_token_details.image"
+	IssueEvidenceSeriesMetricDefinitionFieldPromptTokenDetailsVideo                  IssueEvidenceSeriesMetricDefinitionField = "prompt_token_details.video"
+	IssueEvidenceSeriesMetricDefinitionFieldCompletionTokenDetailsReasoning          IssueEvidenceSeriesMetricDefinitionField = "completion_token_details.reasoning"
+	IssueEvidenceSeriesMetricDefinitionFieldCompletionTokenDetailsAudio              IssueEvidenceSeriesMetricDefinitionField = "completion_token_details.audio"
+	IssueEvidenceSeriesMetricDefinitionFieldCompletionTokenDetailsImage              IssueEvidenceSeriesMetricDefinitionField = "completion_token_details.image"
+	IssueEvidenceSeriesMetricDefinitionFieldCompletionTokenDetailsVideo              IssueEvidenceSeriesMetricDefinitionField = "completion_token_details.video"
 )
 
 func (r IssueEvidenceSeriesMetricDefinitionField) IsKnown() bool {
 	switch r {
-	case IssueEvidenceSeriesMetricDefinitionFieldLatencySeconds, IssueEvidenceSeriesMetricDefinitionFieldFirstTokenSeconds, IssueEvidenceSeriesMetricDefinitionFieldTotalTokens, IssueEvidenceSeriesMetricDefinitionFieldPromptTokens, IssueEvidenceSeriesMetricDefinitionFieldCompletionTokens, IssueEvidenceSeriesMetricDefinitionFieldTotalCost, IssueEvidenceSeriesMetricDefinitionFieldPromptCost, IssueEvidenceSeriesMetricDefinitionFieldCompletionCost, IssueEvidenceSeriesMetricDefinitionFieldFeedbackScore:
+	case IssueEvidenceSeriesMetricDefinitionFieldLatencySeconds, IssueEvidenceSeriesMetricDefinitionFieldFirstTokenSeconds, IssueEvidenceSeriesMetricDefinitionFieldTotalTokens, IssueEvidenceSeriesMetricDefinitionFieldPromptTokens, IssueEvidenceSeriesMetricDefinitionFieldCompletionTokens, IssueEvidenceSeriesMetricDefinitionFieldTotalCost, IssueEvidenceSeriesMetricDefinitionFieldPromptCost, IssueEvidenceSeriesMetricDefinitionFieldCompletionCost, IssueEvidenceSeriesMetricDefinitionFieldFeedbackScore, IssueEvidenceSeriesMetricDefinitionFieldPromptTokenDetailsCacheCreation, IssueEvidenceSeriesMetricDefinitionFieldPromptTokenDetailsCacheRead, IssueEvidenceSeriesMetricDefinitionFieldPromptTokenDetailsEphemeral1hInputTokens, IssueEvidenceSeriesMetricDefinitionFieldPromptTokenDetailsEphemeral5mInputTokens, IssueEvidenceSeriesMetricDefinitionFieldPromptTokenDetailsAudio, IssueEvidenceSeriesMetricDefinitionFieldPromptTokenDetailsImage, IssueEvidenceSeriesMetricDefinitionFieldPromptTokenDetailsVideo, IssueEvidenceSeriesMetricDefinitionFieldCompletionTokenDetailsReasoning, IssueEvidenceSeriesMetricDefinitionFieldCompletionTokenDetailsAudio, IssueEvidenceSeriesMetricDefinitionFieldCompletionTokenDetailsImage, IssueEvidenceSeriesMetricDefinitionFieldCompletionTokenDetailsVideo:
 		return true
 	}
 	return false
@@ -537,20 +559,31 @@ func (r IssueEvidenceSeriesMetricDefinitionNumeratorEntity) IsKnown() bool {
 type IssueEvidenceSeriesMetricDefinitionNumeratorField string
 
 const (
-	IssueEvidenceSeriesMetricDefinitionNumeratorFieldLatencySeconds    IssueEvidenceSeriesMetricDefinitionNumeratorField = "latency_seconds"
-	IssueEvidenceSeriesMetricDefinitionNumeratorFieldFirstTokenSeconds IssueEvidenceSeriesMetricDefinitionNumeratorField = "first_token_seconds"
-	IssueEvidenceSeriesMetricDefinitionNumeratorFieldTotalTokens       IssueEvidenceSeriesMetricDefinitionNumeratorField = "total_tokens"
-	IssueEvidenceSeriesMetricDefinitionNumeratorFieldPromptTokens      IssueEvidenceSeriesMetricDefinitionNumeratorField = "prompt_tokens"
-	IssueEvidenceSeriesMetricDefinitionNumeratorFieldCompletionTokens  IssueEvidenceSeriesMetricDefinitionNumeratorField = "completion_tokens"
-	IssueEvidenceSeriesMetricDefinitionNumeratorFieldTotalCost         IssueEvidenceSeriesMetricDefinitionNumeratorField = "total_cost"
-	IssueEvidenceSeriesMetricDefinitionNumeratorFieldPromptCost        IssueEvidenceSeriesMetricDefinitionNumeratorField = "prompt_cost"
-	IssueEvidenceSeriesMetricDefinitionNumeratorFieldCompletionCost    IssueEvidenceSeriesMetricDefinitionNumeratorField = "completion_cost"
-	IssueEvidenceSeriesMetricDefinitionNumeratorFieldFeedbackScore     IssueEvidenceSeriesMetricDefinitionNumeratorField = "feedback_score"
+	IssueEvidenceSeriesMetricDefinitionNumeratorFieldLatencySeconds                           IssueEvidenceSeriesMetricDefinitionNumeratorField = "latency_seconds"
+	IssueEvidenceSeriesMetricDefinitionNumeratorFieldFirstTokenSeconds                        IssueEvidenceSeriesMetricDefinitionNumeratorField = "first_token_seconds"
+	IssueEvidenceSeriesMetricDefinitionNumeratorFieldTotalTokens                              IssueEvidenceSeriesMetricDefinitionNumeratorField = "total_tokens"
+	IssueEvidenceSeriesMetricDefinitionNumeratorFieldPromptTokens                             IssueEvidenceSeriesMetricDefinitionNumeratorField = "prompt_tokens"
+	IssueEvidenceSeriesMetricDefinitionNumeratorFieldCompletionTokens                         IssueEvidenceSeriesMetricDefinitionNumeratorField = "completion_tokens"
+	IssueEvidenceSeriesMetricDefinitionNumeratorFieldTotalCost                                IssueEvidenceSeriesMetricDefinitionNumeratorField = "total_cost"
+	IssueEvidenceSeriesMetricDefinitionNumeratorFieldPromptCost                               IssueEvidenceSeriesMetricDefinitionNumeratorField = "prompt_cost"
+	IssueEvidenceSeriesMetricDefinitionNumeratorFieldCompletionCost                           IssueEvidenceSeriesMetricDefinitionNumeratorField = "completion_cost"
+	IssueEvidenceSeriesMetricDefinitionNumeratorFieldFeedbackScore                            IssueEvidenceSeriesMetricDefinitionNumeratorField = "feedback_score"
+	IssueEvidenceSeriesMetricDefinitionNumeratorFieldPromptTokenDetailsCacheCreation          IssueEvidenceSeriesMetricDefinitionNumeratorField = "prompt_token_details.cache_creation"
+	IssueEvidenceSeriesMetricDefinitionNumeratorFieldPromptTokenDetailsCacheRead              IssueEvidenceSeriesMetricDefinitionNumeratorField = "prompt_token_details.cache_read"
+	IssueEvidenceSeriesMetricDefinitionNumeratorFieldPromptTokenDetailsEphemeral1hInputTokens IssueEvidenceSeriesMetricDefinitionNumeratorField = "prompt_token_details.ephemeral_1h_input_tokens"
+	IssueEvidenceSeriesMetricDefinitionNumeratorFieldPromptTokenDetailsEphemeral5mInputTokens IssueEvidenceSeriesMetricDefinitionNumeratorField = "prompt_token_details.ephemeral_5m_input_tokens"
+	IssueEvidenceSeriesMetricDefinitionNumeratorFieldPromptTokenDetailsAudio                  IssueEvidenceSeriesMetricDefinitionNumeratorField = "prompt_token_details.audio"
+	IssueEvidenceSeriesMetricDefinitionNumeratorFieldPromptTokenDetailsImage                  IssueEvidenceSeriesMetricDefinitionNumeratorField = "prompt_token_details.image"
+	IssueEvidenceSeriesMetricDefinitionNumeratorFieldPromptTokenDetailsVideo                  IssueEvidenceSeriesMetricDefinitionNumeratorField = "prompt_token_details.video"
+	IssueEvidenceSeriesMetricDefinitionNumeratorFieldCompletionTokenDetailsReasoning          IssueEvidenceSeriesMetricDefinitionNumeratorField = "completion_token_details.reasoning"
+	IssueEvidenceSeriesMetricDefinitionNumeratorFieldCompletionTokenDetailsAudio              IssueEvidenceSeriesMetricDefinitionNumeratorField = "completion_token_details.audio"
+	IssueEvidenceSeriesMetricDefinitionNumeratorFieldCompletionTokenDetailsImage              IssueEvidenceSeriesMetricDefinitionNumeratorField = "completion_token_details.image"
+	IssueEvidenceSeriesMetricDefinitionNumeratorFieldCompletionTokenDetailsVideo              IssueEvidenceSeriesMetricDefinitionNumeratorField = "completion_token_details.video"
 )
 
 func (r IssueEvidenceSeriesMetricDefinitionNumeratorField) IsKnown() bool {
 	switch r {
-	case IssueEvidenceSeriesMetricDefinitionNumeratorFieldLatencySeconds, IssueEvidenceSeriesMetricDefinitionNumeratorFieldFirstTokenSeconds, IssueEvidenceSeriesMetricDefinitionNumeratorFieldTotalTokens, IssueEvidenceSeriesMetricDefinitionNumeratorFieldPromptTokens, IssueEvidenceSeriesMetricDefinitionNumeratorFieldCompletionTokens, IssueEvidenceSeriesMetricDefinitionNumeratorFieldTotalCost, IssueEvidenceSeriesMetricDefinitionNumeratorFieldPromptCost, IssueEvidenceSeriesMetricDefinitionNumeratorFieldCompletionCost, IssueEvidenceSeriesMetricDefinitionNumeratorFieldFeedbackScore:
+	case IssueEvidenceSeriesMetricDefinitionNumeratorFieldLatencySeconds, IssueEvidenceSeriesMetricDefinitionNumeratorFieldFirstTokenSeconds, IssueEvidenceSeriesMetricDefinitionNumeratorFieldTotalTokens, IssueEvidenceSeriesMetricDefinitionNumeratorFieldPromptTokens, IssueEvidenceSeriesMetricDefinitionNumeratorFieldCompletionTokens, IssueEvidenceSeriesMetricDefinitionNumeratorFieldTotalCost, IssueEvidenceSeriesMetricDefinitionNumeratorFieldPromptCost, IssueEvidenceSeriesMetricDefinitionNumeratorFieldCompletionCost, IssueEvidenceSeriesMetricDefinitionNumeratorFieldFeedbackScore, IssueEvidenceSeriesMetricDefinitionNumeratorFieldPromptTokenDetailsCacheCreation, IssueEvidenceSeriesMetricDefinitionNumeratorFieldPromptTokenDetailsCacheRead, IssueEvidenceSeriesMetricDefinitionNumeratorFieldPromptTokenDetailsEphemeral1hInputTokens, IssueEvidenceSeriesMetricDefinitionNumeratorFieldPromptTokenDetailsEphemeral5mInputTokens, IssueEvidenceSeriesMetricDefinitionNumeratorFieldPromptTokenDetailsAudio, IssueEvidenceSeriesMetricDefinitionNumeratorFieldPromptTokenDetailsImage, IssueEvidenceSeriesMetricDefinitionNumeratorFieldPromptTokenDetailsVideo, IssueEvidenceSeriesMetricDefinitionNumeratorFieldCompletionTokenDetailsReasoning, IssueEvidenceSeriesMetricDefinitionNumeratorFieldCompletionTokenDetailsAudio, IssueEvidenceSeriesMetricDefinitionNumeratorFieldCompletionTokenDetailsImage, IssueEvidenceSeriesMetricDefinitionNumeratorFieldCompletionTokenDetailsVideo:
 		return true
 	}
 	return false
