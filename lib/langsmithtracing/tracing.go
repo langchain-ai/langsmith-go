@@ -161,8 +161,10 @@ func WithRunTransform(fn RunTransformFunc) Option {
 // WithMergeFilteredEnvIntoExtraMetadata enables merging filtered process environment
 // variables (LANGCHAIN_* / LANGSMITH_* with secrets and endpoints excluded) into
 // extra.metadata on [TracingClient.CreateRun]. Default is false so metadata only
-// contains what the application sets in Extra; opt in when you want parity with
-// LangGraph-style deployments that surface env context on traces.
+// contains what the application sets in Extra, plus revision_id from
+// LANGSMITH_REVISION_ID or LANGCHAIN_REVISION_ID, which is always added. Opt in
+// when you want parity with LangGraph-style deployments that surface env context
+// on traces.
 func WithMergeFilteredEnvIntoExtraMetadata(v bool) Option {
 	return func(o *options) { o.mergeEnvMetadata = v }
 }
@@ -501,19 +503,22 @@ func mergeRuntimeEnv(extra map[string]any, mergeEnvMetadata bool) map[string]any
 	}
 	result["runtime"] = runtime
 
+	var envMeta map[string]any
 	if mergeEnvMetadata {
-		envMeta := env.LangChainEnvMetadata()
-		if len(envMeta) > 0 {
-			oldMeta, _ := result["metadata"].(map[string]any)
-			metadata := make(map[string]any, len(envMeta)+len(oldMeta))
-			for k, v := range envMeta {
-				metadata[k] = v
-			}
-			for k, v := range oldMeta {
-				metadata[k] = v
-			}
-			result["metadata"] = metadata
+		envMeta = env.LangChainEnvMetadata()
+	} else if revisionID := env.RevisionID(); revisionID != "" {
+		envMeta = map[string]any{"revision_id": revisionID}
+	}
+	if len(envMeta) > 0 {
+		oldMeta, _ := result["metadata"].(map[string]any)
+		metadata := make(map[string]any, len(envMeta)+len(oldMeta))
+		for k, v := range envMeta {
+			metadata[k] = v
 		}
+		for k, v := range oldMeta {
+			metadata[k] = v
+		}
+		result["metadata"] = metadata
 	}
 
 	return result

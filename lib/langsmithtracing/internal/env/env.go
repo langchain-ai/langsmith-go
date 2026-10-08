@@ -106,8 +106,18 @@ func RuntimeEnvironment() map[string]any {
 	return runtimeEnvMap
 }
 
+// RevisionID returns LANGSMITH_REVISION_ID, falling back to the legacy
+// LANGCHAIN_REVISION_ID. The tracing client adds it to every run as metadata.revision_id.
+func RevisionID() string {
+	if id := os.Getenv("LANGSMITH_REVISION_ID"); id != "" {
+		return id
+	}
+	return os.Getenv("LANGCHAIN_REVISION_ID")
+}
+
 // LangChainEnvMetadata returns filtered LANGCHAIN_*/LANGSMITH_* env vars
-// suitable for merging into extra.metadata. The tracing client only uses this when
+// suitable for merging into extra.metadata, with the revision env vars mapped to
+// revision_id. The tracing client only uses this when
 // WithMergeFilteredEnvIntoExtraMetadata(true) is set.
 // The same map may be returned on each call; do not mutate it—copy first if you need to edit.
 func LangChainEnvMetadata() map[string]any {
@@ -123,7 +133,6 @@ func LangChainEnvMetadata() map[string]any {
 			"LANGCHAIN_TRACING_V2": true,
 		}
 		envMetadataMap = make(map[string]any)
-		var revisionID string
 		for _, e := range os.Environ() {
 			k, v, ok := strings.Cut(e, "=")
 			if !ok {
@@ -140,13 +149,12 @@ func LangChainEnvMetadata() map[string]any {
 				strings.Contains(lower, "token") || strings.Contains(lower, "endpoint") {
 				continue
 			}
-			if k == "LANGCHAIN_REVISION_ID" {
-				revisionID = v
+			if k == "LANGSMITH_REVISION_ID" || k == "LANGCHAIN_REVISION_ID" {
 				continue
 			}
 			envMetadataMap[k] = v
 		}
-		if revisionID != "" {
+		if revisionID := RevisionID(); revisionID != "" {
 			envMetadataMap["revision_id"] = revisionID
 		}
 	})

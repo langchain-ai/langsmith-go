@@ -47,3 +47,26 @@ func TestTracingSampleRate(t *testing.T) {
 		}
 	})
 }
+
+func TestRevisionID(t *testing.T) {
+	tests := []struct {
+		name      string
+		langsmith string
+		langchain string
+		want      string
+	}{
+		{"unset", "", "", ""},
+		{"langsmith", "new", "", "new"},
+		{"legacy langchain", "", "legacy", "legacy"},
+		{"langsmith wins", "new", "legacy", "new"},
+	}
+	for _, tt := range tests {
+		t.Run(tt.name, func(t *testing.T) {
+			t.Setenv("LANGSMITH_REVISION_ID", tt.langsmith)
+			t.Setenv("LANGCHAIN_REVISION_ID", tt.langchain)
+			if got := RevisionID(); got != tt.want {
+				t.Fatalf("RevisionID() = %q, want %q", got, tt.want)
+			}
+		})
+	}
+}

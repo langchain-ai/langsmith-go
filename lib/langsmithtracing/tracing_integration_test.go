@@ -1823,3 +1823,101 @@ func formatDottedOrder(t time.Time, id uuid.UUID) string {
 		id.String(),
 	)
 }
+
+// TestRevisionIDInMetadata checks revision_id is added without opting into env metadata,
+// and that metadata set by the caller takes precedence.
+func TestRevisionIDInMetadata(t *testing.T) {
+	t.Setenv("LANGSMITH_REVISION_ID", "abc123")
+	t.Setenv("LANGCHAIN_REVISION_ID", "legacy")
+
+	var mu sync.Mutex
+	var capturedBodies [][]byte
+	var capturedContentTypes []string
+
+	srv := httptest.NewServer(http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
+		mu.Lock()
+		defer mu.Unlock()
+		body, _ := io.ReadAll(r.Body)
+		capturedBodies = append(capturedBodies, body)
+		capturedContentTypes = append(capturedContentTypes, r.Header.Get("Content-Type"))
+		w.WriteHeader(http.StatusAccepted)
+	}))
+	defer srv.Close()
+
+	cfg := langsmithtracing.DefaultDrainConfig()
+	cfg.DrainInterval = 50 * time.Millisecond
+
+	client := mustTracingClient(t, context.Background(),
+		langsmithtracing.WithAPIURL(srv.URL),
+		langsmithtracing.WithAPIKey("test-key"),
+		langsmithtracing.WithProject("revision-id-test"),
+		langsmithtracing.WithDrainConfig(cfg),
+	)
+
+	now := time.Now().UTC()
+	envID := uuid.New()
+	userID := uuid.New()
+	for _, r := range []*langsmithtracing.RunCreate{
+		{
+			ID: envID, TraceID: envID, Name: "env-revision", RunType: "chain",
+			StartTime: now, DottedOrder: formatDottedOrder(now, envID),
+		},
+		{
+			ID: userID, TraceID: userID, Name: "user-revision", RunType: "chain",
+			Extra:     map[string]any{"metadata": map[string]any{"revision_id": "from-user"}},
+			StartTime: now, DottedOrder: formatDottedOrder(now, userID),
+		},
+	} {
+		if err := client.CreateRun(r); err != nil {
+			t.Fatalf("CreateRun (%s): %v", r.Name, err)
+		}
+	}
+
+	client.Close()
+
+	mu.Lock()
+	defer mu.Unlock()
+
+	allParts := make(map[string][]byte)
+	for i, body := range capturedBodies {
+		decompressed := zstdDecompress(t, body)
+		_, params, err := mime.ParseMediaType(capturedContentTypes[i])
+		if err != nil {
+			t.Fatalf("parse content-type %d: %v", i, err)
+		}
+		reader := multipart.NewReader(bytes.NewReader(decompressed), params["boundary"])
+		for {
+			p, err := reader.NextPart()
+			if err == io.EOF {
+				break
+			}
+			if err != nil {
+				t.Fatalf("next part: %v", err)
+			}
+			data, _ := io.ReadAll(p)
+			allParts[p.FormName()] = data
+		}
+	}
+
+	for id, want := range map[uuid.UUID]string{envID: "abc123", userID: "from-user"} {
+		extraKey := "post." + id.String() + ".extra"
+		raw, ok := allParts[extraKey]
+		if !ok {
+			t.Fatalf("missing part %q", extraKey)
+		}
+		var extra struct {
+			Metadata map[string]any `json:"metadata"`
+		}
+		if err := json.Unmarshal(raw, &extra); err != nil {
+			t.Fatalf("unmarshal %s: %v", extraKey, err)
+		}
+		if got := extra.Metadata["revision_id"]; got != want {
+			t.Errorf("%s: revision_id = %v, want %q", extraKey, got, want)
+		}
+		for _, raw := range []string{"LANGSMITH_REVISION_ID", "LANGCHAIN_REVISION_ID"} {
+			if _, ok := extra.Metadata[raw]; ok {
+				t.Errorf("%s: metadata should not contain %s", extraKey, raw)
+			}
+		}
+	}
+}
