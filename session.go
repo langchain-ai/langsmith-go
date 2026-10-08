@@ -139,6 +139,22 @@ func (r *SessionService) Dashboard(ctx context.Context, sessionID string, params
 	return res, err
 }
 
+// **Beta:** This endpoint is in active development and may change without notice.
+// Returns the tracing project (session) an address names. An address is an AGENT
+// (`id` and `environment`), an EXPERIMENT (`id`), or an EVALUATOR (no `id`:
+// evaluator traces share one project per workspace). Send `kind` and `environment`
+// in upper case, as listed; they are matched case-insensitively, while the Agent
+// `id` is case-sensitive. An address that does not exist, or whose project you
+// cannot read, is a 404. Pass the returned `session_id` to any endpoint that takes
+// a project (session) ID. This is not supported on a BYOC data plane yet, and is a
+// 501 there.
+func (r *SessionService) Resolve(ctx context.Context, query SessionResolveParams, opts ...option.RequestOption) (res *SessionResolveResponse, err error) {
+	opts = slices.Concat(r.Options, opts)
+	path := "api/v1/sessions/resolutions"
+	err = requestconfig.ExecuteNewRequest(ctx, http.MethodGet, path, query, &res, opts...)
+	return res, err
+}
+
 type CustomChartsSection struct {
 	ID          string                          `json:"id" api:"required" format:"uuid"`
 	Charts      []CustomChartsSectionChart      `json:"charts" api:"required"`
@@ -6108,6 +6124,28 @@ func (r TracerSessionWithoutVirtualFieldsTraceTier) IsKnown() bool {
 	return false
 }
 
+type SessionResolveResponse struct {
+	// `session_id` is the tracing project (session) the address names.
+	SessionID string                     `json:"session_id" api:"required" format:"uuid"`
+	JSON      sessionResolveResponseJSON `json:"-"`
+}
+
+// sessionResolveResponseJSON contains the JSON metadata for the struct
+// [SessionResolveResponse]
+type sessionResolveResponseJSON struct {
+	SessionID   apijson.Field
+	raw         string
+	ExtraFields map[string]apijson.Field
+}
+
+func (r *SessionResolveResponse) UnmarshalJSON(data []byte) (err error) {
+	return apijson.UnmarshalRoot(data, r)
+}
+
+func (r sessionResolveResponseJSON) RawJSON() string {
+	return r.raw
+}
+
 type SessionNewParams struct {
 	Upsert             param.Field[bool]                      `query:"upsert"`
 	ID                 param.Field[string]                    `json:"id" format:"uuid"`
@@ -6250,4 +6288,57 @@ type SessionDashboardParams struct {
 
 func (r SessionDashboardParams) MarshalJSON() (data []byte, err error) {
 	return apijson.MarshalRoot(r.CustomChartsSectionRequest)
+}
+
+type SessionResolveParams struct {
+	// The kind of address.
+	Kind param.Field[SessionResolveParamsKind] `query:"kind" api:"required"`
+	// The Agent's user-assigned id for AGENT, or the experiment's id for EXPERIMENT.
+	// Not set for EVALUATOR.
+	ID param.Field[string] `query:"id"`
+	// The Agent environment. Only set for AGENT.
+	Environment param.Field[SessionResolveParamsEnvironment] `query:"environment"`
+}
+
+// URLQuery serializes [SessionResolveParams]'s query parameters as `url.Values`.
+func (r SessionResolveParams) URLQuery() (v url.Values) {
+	return apiquery.MarshalWithSettings(r, apiquery.QuerySettings{
+		ArrayFormat:  apiquery.ArrayQueryFormatRepeat,
+		NestedFormat: apiquery.NestedQueryFormatBrackets,
+	})
+}
+
+// The kind of address.
+type SessionResolveParamsKind string
+
+const (
+	SessionResolveParamsKindAgent      SessionResolveParamsKind = "AGENT"
+	SessionResolveParamsKindExperiment SessionResolveParamsKind = "EXPERIMENT"
+	SessionResolveParamsKindEvaluator  SessionResolveParamsKind = "EVALUATOR"
+)
+
+func (r SessionResolveParamsKind) IsKnown() bool {
+	switch r {
+	case SessionResolveParamsKindAgent, SessionResolveParamsKindExperiment, SessionResolveParamsKindEvaluator:
+		return true
+	}
+	return false
+}
+
+// The Agent environment. Only set for AGENT.
+type SessionResolveParamsEnvironment string
+
+const (
+	SessionResolveParamsEnvironmentLocal       SessionResolveParamsEnvironment = "LOCAL"
+	SessionResolveParamsEnvironmentDevelopment SessionResolveParamsEnvironment = "DEVELOPMENT"
+	SessionResolveParamsEnvironmentStaging     SessionResolveParamsEnvironment = "STAGING"
+	SessionResolveParamsEnvironmentProduction  SessionResolveParamsEnvironment = "PRODUCTION"
+)
+
+func (r SessionResolveParamsEnvironment) IsKnown() bool {
+	switch r {
+	case SessionResolveParamsEnvironmentLocal, SessionResolveParamsEnvironmentDevelopment, SessionResolveParamsEnvironmentStaging, SessionResolveParamsEnvironmentProduction:
+		return true
+	}
+	return false
 }
