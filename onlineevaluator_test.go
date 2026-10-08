@@ -32,6 +32,7 @@ func TestOnlineEvaluatorNewWithOptionalParams(t *testing.T) {
 			CodeEvaluator: langsmith.F(langsmith.CreateOnlineCodeEvaluatorRequestParam{
 				AdvancedFeaturesEnabled: langsmith.F(true),
 				Code:                    langsmith.F("code"),
+				CodeEvaluatorInput:      langsmith.F(langsmith.CreateOnlineCodeEvaluatorRequestCodeEvaluatorInputThread),
 				Dependencies:            langsmith.F("dependencies"),
 				Language:                langsmith.F("language"),
 				ManagedCodeEvaluatorKey: langsmith.F(langsmith.CreateOnlineCodeEvaluatorRequestManagedCodeEvaluatorKeyVoiceMetrics),
@@ -108,6 +109,7 @@ func TestOnlineEvaluatorUpdateWithOptionalParams(t *testing.T) {
 				CodeEvaluator: langsmith.F(langsmith.UpdateOnlineCodeEvaluatorRequestParam{
 					AdvancedFeaturesEnabled: langsmith.F(true),
 					Code:                    langsmith.F("code"),
+					CodeEvaluatorInput:      langsmith.F(langsmith.UpdateOnlineCodeEvaluatorRequestCodeEvaluatorInputThread),
 					Dependencies:            langsmith.F("dependencies"),
 					Language:                langsmith.F("language"),
 					ManagedCodeEvaluatorSettings: langsmith.F(map[string]langsmith.UpdateOnlineCodeEvaluatorRequestManagedCodeEvaluatorSettingParam{
