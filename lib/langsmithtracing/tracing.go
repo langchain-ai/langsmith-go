@@ -37,9 +37,15 @@ const (
 
 // TracingClient sends runs to LangSmith via the multipart ingestion endpoint.
 type TracingClient struct {
-	sink    *tracesink.TraceSink
-	project string
-	logger  ilog.Logger
+	sink   *tracesink.TraceSink
+	dest   destination
+	envErr error
+	logger ilog.Logger
+
+	betaOnce           sync.Once
+	addressedMu        sync.Mutex
+	addressedTraces    map[uuid.UUID]addressedTrace
+	addressedLastPrune time.Time
 
 	sampleRate        *float64
 	mergeEnvMetadata  bool
@@ -74,6 +80,9 @@ type RunCreate struct {
 	ReferenceExampleID *uuid.UUID     // Links run to a dataset example (evaluations).
 	InputAttachments   map[string]any // Attachment metadata for input fields.
 	OutputAttachments  map[string]any // Attachment metadata for output fields.
+
+	// Address (beta) replaces SessionName/SessionID; not both. Children follow an addressed root.
+	Address AgentAddress
 }
 
 // RunUpdate holds parameters for updating an existing run (multipart patch).
@@ -99,6 +108,9 @@ type RunUpdate struct {
 	ReferenceExampleID *uuid.UUID     // Links run to a dataset example (evaluations).
 	InputAttachments   map[string]any // Attachment metadata for input fields.
 	OutputAttachments  map[string]any // Attachment metadata for output fields.
+
+	// Address (beta) replaces SessionName/SessionID; not both.
+	Address AgentAddress
 }
 
 // RunOp is a decoded run operation exposed to transform hooks.
@@ -114,6 +126,7 @@ type options struct {
 	apiKey              string
 	oauthAccessToken    string
 	project             string
+	address             AgentAddress
 	drainConfig         *tracesink.DrainConfig
 	sampleRate          *float64
 	runTransform        RunTransformFunc
@@ -136,6 +149,9 @@ func WithOAuthAccessToken(token string) Option {
 
 // WithProject overrides the LangSmith project name.
 func WithProject(name string) Option { return func(o *options) { o.project = name } }
+
+// WithAddress (beta) sets the default address instead of a project; not with [WithProject].
+func WithAddress(a AgentAddress) Option { return func(o *options) { o.address = a } }
 
 // WithDrainConfig overrides the default drain/scaling configuration.
 func WithDrainConfig(config DrainConfig) Option {
@@ -190,7 +206,6 @@ func NewTracingClient(ctx context.Context, opts ...Option) (*TracingClient, erro
 	cfg := options{
 		apiURL:              env.APIURL(),
 		apiKey:              env.APIKey(),
-		project:             env.Project(),
 		compressionDisabled: env.CompressionDisabled(),
 	}
 	for _, o := range opts {
@@ -216,6 +231,11 @@ func NewTracingClient(ctx context.Context, opts ...Option) (*TracingClient, erro
 		l = ilog.DefaultLogger{}
 	}
 
+	dest, envErr, err := resolveClientDestination(cfg.project, cfg.address, l)
+	if err != nil {
+		return nil, err
+	}
+
 	endpoint := models.WriteEndpoint{
 		// The exporter appends "/runs/multipart" and "/runs/batch", so a trailing
 		// slash here would produce a doubled separator. option.WithBaseURL adds one
@@ -223,20 +243,23 @@ func NewTracingClient(ctx context.Context, opts ...Option) (*TracingClient, erro
 		URL:              strings.TrimRight(cfg.apiURL, "/"),
 		Key:              cfg.apiKey,
 		OAuthAccessToken: cfg.oauthAccessToken,
-		Project:          cfg.project,
+		Project:          dest.project,
 	}
 
 	exp := multipart.NewExporter(nil, multipart.DefaultRetry(), cfg.compressionDisabled, l)
 	sink := tracesink.NewTraceSink(ctx, exp, drainCfg, endpoint, cfg.runTransform, l)
 
 	return &TracingClient{
-		sink:              sink,
-		logger:            l,
-		project:           cfg.project,
-		sampleRate:        sampleRate,
-		mergeEnvMetadata:  cfg.mergeEnvMetadata,
-		filteredTraces:    make(map[uuid.UUID]time.Time),
-		filteredLastPrune: time.Now(),
+		sink:               sink,
+		logger:             l,
+		dest:               dest,
+		envErr:             envErr,
+		addressedTraces:    make(map[uuid.UUID]addressedTrace),
+		addressedLastPrune: time.Now(),
+		sampleRate:         sampleRate,
+		mergeEnvMetadata:   cfg.mergeEnvMetadata,
+		filteredTraces:     make(map[uuid.UUID]time.Time),
+		filteredLastPrune:  time.Now(),
 	}, nil
 }
 
@@ -251,9 +274,9 @@ func (c *TracingClient) CreateRun(r *RunCreate) error {
 		return err
 	}
 
-	sessionName := c.project
-	if r.SessionName != "" {
-		sessionName = r.SessionName
+	dest, err := c.resolveDestination(r.ID, r.TraceID, r.ParentRunID, r.SessionName, r.SessionID, r.Address)
+	if err != nil {
+		return err
 	}
 
 	runInfo := map[string]any{
@@ -261,10 +284,10 @@ func (c *TracingClient) CreateRun(r *RunCreate) error {
 		"trace_id":     r.TraceID.String(),
 		"name":         r.Name,
 		"run_type":     r.RunType,
-		"session_name": sessionName,
 		"start_time":   r.StartTime.UTC().Format(time.RFC3339Nano),
 		"dotted_order": r.DottedOrder,
 	}
+	c.applyDestination(runInfo, dest)
 	if r.ParentRunID != nil {
 		runInfo["parent_run_id"] = r.ParentRunID.String()
 	}
@@ -353,6 +376,12 @@ func (c *TracingClient) UpdateRun(r *RunUpdate) error {
 	}
 	if r.SessionID != nil {
 		runInfo["session_id"] = r.SessionID.String()
+	}
+	if !r.Address.IsZero() {
+		if r.SessionName != "" || r.SessionID != nil {
+			return errBothDestinations
+		}
+		c.applyDestination(runInfo, destination{address: r.Address})
 	}
 	if r.ReferenceExampleID != nil {
 		runInfo["reference_example_id"] = r.ReferenceExampleID.String()

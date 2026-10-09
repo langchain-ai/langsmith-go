@@ -424,9 +424,13 @@ func (r MissingParam) implementsDatasetUpdateParamsTransformationsUnion() {}
 
 func (r MissingParam) ImplementsAnnotationQueueRubricItemSchemaRegexValidatorUnionParam() {}
 
+func (r MissingParam) ImplementsAnnotationQueueUpdateParamsEnableReservationsUnion() {}
+
 func (r MissingParam) implementsAnnotationQueueUpdateParamsMetadataUnion() {}
 
 func (r MissingParam) ImplementsAnnotationQueueUpdateParamsNumReviewersPerItemUnion() {}
+
+func (r MissingParam) ImplementsAnnotationQueueUpdateParamsReservationMinutesUnion() {}
 
 // Enum for available dataset columns to sort by.
 type SortByDatasetColumn string

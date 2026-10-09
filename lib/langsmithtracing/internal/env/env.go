@@ -34,13 +34,19 @@ func APIKey() string {
 
 // Project returns the project name from LANGSMITH_PROJECT or LANGCHAIN_PROJECT.
 func Project() string {
-	if v := os.Getenv("LANGSMITH_PROJECT"); v != "" {
-		return v
-	}
-	if v := os.Getenv("LANGCHAIN_PROJECT"); v != "" {
+	if v := ProjectIfSet(); v != "" {
 		return v
 	}
 	return "default"
+}
+
+// ProjectIfSet returns the project name from LANGSMITH_PROJECT or
+// LANGCHAIN_PROJECT, or "" if neither is set.
+func ProjectIfSet() string {
+	if v := os.Getenv("LANGSMITH_PROJECT"); v != "" {
+		return v
+	}
+	return os.Getenv("LANGCHAIN_PROJECT")
 }
 
 // TracingSampleRate returns the sampling rate from
