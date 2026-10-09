@@ -229,6 +229,7 @@ func (r *AnnotationQueueService) GetTotalSize(ctx context.Context, queueID strin
 type AnnotationQueueRubricItemSchema struct {
 	FeedbackKey       string                                             `json:"feedback_key" api:"required"`
 	Description       string                                             `json:"description" api:"nullable"`
+	FeedbackConfigID  string                                             `json:"feedback_config_id" api:"nullable" format:"uuid"`
 	IsAssertion       bool                                               `json:"is_assertion" api:"nullable"`
 	IsRequired        bool                                               `json:"is_required" api:"nullable"`
 	RegexValidator    AnnotationQueueRubricItemSchemaRegexValidatorUnion `json:"regex_validator" api:"nullable"`
@@ -242,6 +243,7 @@ type AnnotationQueueRubricItemSchema struct {
 type annotationQueueRubricItemSchemaJSON struct {
 	FeedbackKey       apijson.Field
 	Description       apijson.Field
+	FeedbackConfigID  apijson.Field
 	IsAssertion       apijson.Field
 	IsRequired        apijson.Field
 	RegexValidator    apijson.Field
@@ -282,6 +284,7 @@ func init() {
 type AnnotationQueueRubricItemSchemaParam struct {
 	FeedbackKey       param.Field[string]                                                  `json:"feedback_key" api:"required"`
 	Description       param.Field[string]                                                  `json:"description"`
+	FeedbackConfigID  param.Field[string]                                                  `json:"feedback_config_id" format:"uuid"`
 	IsAssertion       param.Field[bool]                                                    `json:"is_assertion"`
 	IsRequired        param.Field[bool]                                                    `json:"is_required"`
 	RegexValidator    param.Field[AnnotationQueueRubricItemSchemaRegexValidatorUnionParam] `json:"regex_validator"`
