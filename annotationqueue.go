@@ -229,6 +229,7 @@ func (r *AnnotationQueueService) GetTotalSize(ctx context.Context, queueID strin
 type AnnotationQueueRubricItemSchema struct {
 	FeedbackKey       string                                             `json:"feedback_key" api:"required"`
 	Description       string                                             `json:"description" api:"nullable"`
+	FeedbackConfig    AnnotationQueueRubricItemSchemaFeedbackConfig      `json:"feedback_config" api:"nullable"`
 	FeedbackConfigID  string                                             `json:"feedback_config_id" api:"nullable" format:"uuid"`
 	IsAssertion       bool                                               `json:"is_assertion" api:"nullable"`
 	IsRequired        bool                                               `json:"is_required" api:"nullable"`
@@ -243,6 +244,7 @@ type AnnotationQueueRubricItemSchema struct {
 type annotationQueueRubricItemSchemaJSON struct {
 	FeedbackKey       apijson.Field
 	Description       apijson.Field
+	FeedbackConfig    apijson.Field
 	FeedbackConfigID  apijson.Field
 	IsAssertion       apijson.Field
 	IsRequired        apijson.Field
@@ -258,6 +260,108 @@ func (r *AnnotationQueueRubricItemSchema) UnmarshalJSON(data []byte) (err error)
 }
 
 func (r annotationQueueRubricItemSchemaJSON) RawJSON() string {
+	return r.raw
+}
+
+type AnnotationQueueRubricItemSchemaFeedbackConfig struct {
+	ID                 string                                                      `json:"id" api:"required" format:"uuid"`
+	FeedbackConfig     AnnotationQueueRubricItemSchemaFeedbackConfigFeedbackConfig `json:"feedback_config" api:"required"`
+	FeedbackKey        string                                                      `json:"feedback_key" api:"required"`
+	ModifiedAt         time.Time                                                   `json:"modified_at" api:"required" format:"date-time"`
+	TenantID           string                                                      `json:"tenant_id" api:"required" format:"uuid"`
+	IsLowerScoreBetter bool                                                        `json:"is_lower_score_better" api:"nullable"`
+	JSON               annotationQueueRubricItemSchemaFeedbackConfigJSON           `json:"-"`
+}
+
+// annotationQueueRubricItemSchemaFeedbackConfigJSON contains the JSON metadata for
+// the struct [AnnotationQueueRubricItemSchemaFeedbackConfig]
+type annotationQueueRubricItemSchemaFeedbackConfigJSON struct {
+	ID                 apijson.Field
+	FeedbackConfig     apijson.Field
+	FeedbackKey        apijson.Field
+	ModifiedAt         apijson.Field
+	TenantID           apijson.Field
+	IsLowerScoreBetter apijson.Field
+	raw                string
+	ExtraFields        map[string]apijson.Field
+}
+
+func (r *AnnotationQueueRubricItemSchemaFeedbackConfig) UnmarshalJSON(data []byte) (err error) {
+	return apijson.UnmarshalRoot(data, r)
+}
+
+func (r annotationQueueRubricItemSchemaFeedbackConfigJSON) RawJSON() string {
+	return r.raw
+}
+
+type AnnotationQueueRubricItemSchemaFeedbackConfigFeedbackConfig struct {
+	// Enum for feedback types.
+	Type       AnnotationQueueRubricItemSchemaFeedbackConfigFeedbackConfigType       `json:"type" api:"required"`
+	Categories []AnnotationQueueRubricItemSchemaFeedbackConfigFeedbackConfigCategory `json:"categories" api:"nullable"`
+	Max        float64                                                               `json:"max" api:"nullable"`
+	Min        float64                                                               `json:"min" api:"nullable"`
+	JSON       annotationQueueRubricItemSchemaFeedbackConfigFeedbackConfigJSON       `json:"-"`
+}
+
+// annotationQueueRubricItemSchemaFeedbackConfigFeedbackConfigJSON contains the
+// JSON metadata for the struct
+// [AnnotationQueueRubricItemSchemaFeedbackConfigFeedbackConfig]
+type annotationQueueRubricItemSchemaFeedbackConfigFeedbackConfigJSON struct {
+	Type        apijson.Field
+	Categories  apijson.Field
+	Max         apijson.Field
+	Min         apijson.Field
+	raw         string
+	ExtraFields map[string]apijson.Field
+}
+
+func (r *AnnotationQueueRubricItemSchemaFeedbackConfigFeedbackConfig) UnmarshalJSON(data []byte) (err error) {
+	return apijson.UnmarshalRoot(data, r)
+}
+
+func (r annotationQueueRubricItemSchemaFeedbackConfigFeedbackConfigJSON) RawJSON() string {
+	return r.raw
+}
+
+// Enum for feedback types.
+type AnnotationQueueRubricItemSchemaFeedbackConfigFeedbackConfigType string
+
+const (
+	AnnotationQueueRubricItemSchemaFeedbackConfigFeedbackConfigTypeContinuous  AnnotationQueueRubricItemSchemaFeedbackConfigFeedbackConfigType = "continuous"
+	AnnotationQueueRubricItemSchemaFeedbackConfigFeedbackConfigTypeCategorical AnnotationQueueRubricItemSchemaFeedbackConfigFeedbackConfigType = "categorical"
+	AnnotationQueueRubricItemSchemaFeedbackConfigFeedbackConfigTypeFreeform    AnnotationQueueRubricItemSchemaFeedbackConfigFeedbackConfigType = "freeform"
+)
+
+func (r AnnotationQueueRubricItemSchemaFeedbackConfigFeedbackConfigType) IsKnown() bool {
+	switch r {
+	case AnnotationQueueRubricItemSchemaFeedbackConfigFeedbackConfigTypeContinuous, AnnotationQueueRubricItemSchemaFeedbackConfigFeedbackConfigTypeCategorical, AnnotationQueueRubricItemSchemaFeedbackConfigFeedbackConfigTypeFreeform:
+		return true
+	}
+	return false
+}
+
+// Specific value and label pair for feedback
+type AnnotationQueueRubricItemSchemaFeedbackConfigFeedbackConfigCategory struct {
+	Value float64                                                                 `json:"value" api:"required"`
+	Label string                                                                  `json:"label" api:"nullable"`
+	JSON  annotationQueueRubricItemSchemaFeedbackConfigFeedbackConfigCategoryJSON `json:"-"`
+}
+
+// annotationQueueRubricItemSchemaFeedbackConfigFeedbackConfigCategoryJSON contains
+// the JSON metadata for the struct
+// [AnnotationQueueRubricItemSchemaFeedbackConfigFeedbackConfigCategory]
+type annotationQueueRubricItemSchemaFeedbackConfigFeedbackConfigCategoryJSON struct {
+	Value       apijson.Field
+	Label       apijson.Field
+	raw         string
+	ExtraFields map[string]apijson.Field
+}
+
+func (r *AnnotationQueueRubricItemSchemaFeedbackConfigFeedbackConfigCategory) UnmarshalJSON(data []byte) (err error) {
+	return apijson.UnmarshalRoot(data, r)
+}
+
+func (r annotationQueueRubricItemSchemaFeedbackConfigFeedbackConfigCategoryJSON) RawJSON() string {
 	return r.raw
 }
 
@@ -284,6 +388,7 @@ func init() {
 type AnnotationQueueRubricItemSchemaParam struct {
 	FeedbackKey       param.Field[string]                                                  `json:"feedback_key" api:"required"`
 	Description       param.Field[string]                                                  `json:"description"`
+	FeedbackConfig    param.Field[AnnotationQueueRubricItemSchemaFeedbackConfigParam]      `json:"feedback_config"`
 	FeedbackConfigID  param.Field[string]                                                  `json:"feedback_config_id" format:"uuid"`
 	IsAssertion       param.Field[bool]                                                    `json:"is_assertion"`
 	IsRequired        param.Field[bool]                                                    `json:"is_required"`
@@ -293,6 +398,41 @@ type AnnotationQueueRubricItemSchemaParam struct {
 }
 
 func (r AnnotationQueueRubricItemSchemaParam) MarshalJSON() (data []byte, err error) {
+	return apijson.MarshalRoot(r)
+}
+
+type AnnotationQueueRubricItemSchemaFeedbackConfigParam struct {
+	ID                 param.Field[string]                                                           `json:"id" api:"required" format:"uuid"`
+	FeedbackConfig     param.Field[AnnotationQueueRubricItemSchemaFeedbackConfigFeedbackConfigParam] `json:"feedback_config" api:"required"`
+	FeedbackKey        param.Field[string]                                                           `json:"feedback_key" api:"required"`
+	ModifiedAt         param.Field[time.Time]                                                        `json:"modified_at" api:"required" format:"date-time"`
+	TenantID           param.Field[string]                                                           `json:"tenant_id" api:"required" format:"uuid"`
+	IsLowerScoreBetter param.Field[bool]                                                             `json:"is_lower_score_better"`
+}
+
+func (r AnnotationQueueRubricItemSchemaFeedbackConfigParam) MarshalJSON() (data []byte, err error) {
+	return apijson.MarshalRoot(r)
+}
+
+type AnnotationQueueRubricItemSchemaFeedbackConfigFeedbackConfigParam struct {
+	// Enum for feedback types.
+	Type       param.Field[AnnotationQueueRubricItemSchemaFeedbackConfigFeedbackConfigType]            `json:"type" api:"required"`
+	Categories param.Field[[]AnnotationQueueRubricItemSchemaFeedbackConfigFeedbackConfigCategoryParam] `json:"categories"`
+	Max        param.Field[float64]                                                                    `json:"max"`
+	Min        param.Field[float64]                                                                    `json:"min"`
+}
+
+func (r AnnotationQueueRubricItemSchemaFeedbackConfigFeedbackConfigParam) MarshalJSON() (data []byte, err error) {
+	return apijson.MarshalRoot(r)
+}
+
+// Specific value and label pair for feedback
+type AnnotationQueueRubricItemSchemaFeedbackConfigFeedbackConfigCategoryParam struct {
+	Value param.Field[float64] `json:"value" api:"required"`
+	Label param.Field[string]  `json:"label"`
+}
+
+func (r AnnotationQueueRubricItemSchemaFeedbackConfigFeedbackConfigCategoryParam) MarshalJSON() (data []byte, err error) {
 	return apijson.MarshalRoot(r)
 }
 
