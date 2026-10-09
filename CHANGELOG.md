@@ -1,5 +1,29 @@
 # Changelog
 
+## [0.28.0](https://github.com/langchain-ai/langsmith-go/compare/v0.27.1...v0.28.0) (2026-10-09)
+
+
+### ⚠ BREAKING CHANGES
+
+* **issues:** add required message field to bot mention, remove fix_handoff_bot_user_id
+* **feedback:** replace agent_id/agent_environment fields with address string
+
+### Features
+
+* add agent, experiment and evaluator addresses ([#117](https://github.com/langchain-ai/langsmith-go/issues/117)) ([591b3e8](https://github.com/langchain-ai/langsmith-go/commit/591b3e89a4e91bb644a65a160051ca425d892e6a))
+* add can_use_teams field to instance info response ([c024373](https://github.com/langchain-ai/langsmith-go/commit/c0243733393b5a6dd4b783e94450539f01290f8a))
+* add code_evaluator_input field to code evaluator config ([c018d4d](https://github.com/langchain-ai/langsmith-go/commit/c018d4dae82f5899e9b0f08cb4910500053fe052))
+* **annotation-queues:** add feedback_config field to queue schema ([265a4bc](https://github.com/langchain-ai/langsmith-go/commit/265a4bc4a2598bcad7878c1c1b0108d3eb3f097f))
+* **evaluators:** add code_evaluator_input to code evaluator schemas ([5c02a14](https://github.com/langchain-ai/langsmith-go/commit/5c02a14518a688ec51b6cc45c5e16cced529d3a6))
+* **feedback:** add feedback_config_id field and expose id on feedback config ([77be09d](https://github.com/langchain-ai/langsmith-go/commit/77be09dc745bd9b0627df11e54d283df7fe363e2))
+* **feedback:** replace agent_id/agent_environment fields with address string ([7c1a0d9](https://github.com/langchain-ai/langsmith-go/commit/7c1a0d9f8861a26ed69b938e939d324bce31dc5c))
+* **issues:** add required message field to bot mention, remove fix_handoff_bot_user_id ([25a977b](https://github.com/langchain-ai/langsmith-go/commit/25a977b58b499a80114e987ef46ea3d8735821e8))
+* **runs:** add prompt and completion cost detail metric fields ([5307182](https://github.com/langchain-ai/langsmith-go/commit/53071824e26d6d58e5aaaec8c690a70050946427))
+* **runs:** add prompt and completion token detail metric fields ([b12108a](https://github.com/langchain-ai/langsmith-go/commit/b12108a4142ba4e42a61e74755a4a41bc943059e))
+* **sessions:** add resolve endpoint to look up a tracing project by address ([d4e4bde](https://github.com/langchain-ai/langsmith-go/commit/d4e4bded083b5e53ef64ade213ba7ee688336c58))
+* **tracing:** always attach revision_id from LANGSMITH_REVISION_ID ([#116](https://github.com/langchain-ai/langsmith-go/issues/116)) ([73c80b2](https://github.com/langchain-ai/langsmith-go/commit/73c80b22b811def0b38c6c4e0ee4ade6fd2cac12))
+* **webhooks:** add test_webhook_destination endpoint ([2b4c60c](https://github.com/langchain-ai/langsmith-go/commit/2b4c60cb5d23e1e74cdb83c9291ed0a8be3d26b1))
+
 ## [0.27.1](https://github.com/langchain-ai/langsmith-go/compare/v0.27.0...v0.27.1) (2026-10-02)
 
 
