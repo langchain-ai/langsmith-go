@@ -14,8 +14,8 @@ import (
 	"testing"
 	"time"
 
-	"github.com/klauspost/compress/zstd"
 	"github.com/google/uuid"
+	"github.com/klauspost/compress/zstd"
 
 	"github.com/langchain-ai/langsmith-go/lib/langsmithtracing/internal/models"
 )
@@ -444,11 +444,11 @@ func TestExporter_EmptyPartsAreSent(t *testing.T) {
 			ID:      uuid.MustParse("aaaaaaaa-aaaa-aaaa-aaaa-aaaaaaaaaaaa"),
 			TraceID: uuid.MustParse("aaaaaaaa-aaaa-aaaa-aaaa-aaaaaaaaaaaa"),
 			RunInfo: []byte(`{"id":"aaaaaaaa-aaaa-aaaa-aaaa-aaaaaaaaaaaa","name":"test"}`),
-			Inputs:  []byte(`{}`),    // empty map, explicitly provided
-			Outputs: []byte(`{}`),    // empty map, explicitly provided
-			Events:  nil,             // not provided → should be skipped
-			Extra:   []byte(`{}`),    // empty map, explicitly provided
-			Error:   nil,             // not provided → should be skipped
+			Inputs:  []byte(`{}`), // empty map, explicitly provided
+			Outputs: []byte(`{}`), // empty map, explicitly provided
+			Events:  nil,          // not provided → should be skipped
+			Extra:   []byte(`{}`), // empty map, explicitly provided
+			Error:   nil,          // not provided → should be skipped
 		},
 	})
 

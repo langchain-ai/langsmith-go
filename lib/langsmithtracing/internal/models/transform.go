@@ -11,10 +11,10 @@ import (
 // It combines all the split-out fields of a SerializedOp into a single
 // map for easy inspection and modification.
 type RunOp struct {
-	Kind    string            // "post" or "patch"
-	ID      uuid.UUID         //
-	TraceID uuid.UUID         //
-	Data    map[string]any    // merged run dict (run info + inputs + outputs + extra + events + error + serialized)
+	Kind        string                // "post" or "patch"
+	ID          uuid.UUID             //
+	TraceID     uuid.UUID             //
+	Data        map[string]any        // merged run dict (run info + inputs + outputs + extra + events + error + serialized)
 	Attachments map[string]Attachment // preserved as-is; not part of Data
 }
 
