@@ -181,7 +181,10 @@ func (r bulkDeleteEvaluatorsResponseJSON) RawJSON() string {
 type CreateOnlineCodeEvaluatorRequestParam struct {
 	AdvancedFeaturesEnabled param.Field[bool]   `json:"advanced_features_enabled"`
 	Code                    param.Field[string] `json:"code"`
-	Dependencies            param.Field[string] `json:"dependencies"`
+	// CodeEvaluatorInput is which thread data the evaluator receives. Null or omitted
+	// for run evaluators.
+	CodeEvaluatorInput param.Field[CreateOnlineCodeEvaluatorRequestCodeEvaluatorInput] `json:"code_evaluator_input"`
+	Dependencies       param.Field[string]                                             `json:"dependencies"`
 	// Default: "python"
 	Language                     param.Field[string]                                                                      `json:"language"`
 	ManagedCodeEvaluatorKey      param.Field[CreateOnlineCodeEvaluatorRequestManagedCodeEvaluatorKey]                     `json:"managed_code_evaluator_key"`
@@ -193,6 +196,25 @@ type CreateOnlineCodeEvaluatorRequestParam struct {
 
 func (r CreateOnlineCodeEvaluatorRequestParam) MarshalJSON() (data []byte, err error) {
 	return apijson.MarshalRoot(r)
+}
+
+// CodeEvaluatorInput is which thread data the evaluator receives. Null or omitted
+// for run evaluators.
+type CreateOnlineCodeEvaluatorRequestCodeEvaluatorInput string
+
+const (
+	CreateOnlineCodeEvaluatorRequestCodeEvaluatorInputThread           CreateOnlineCodeEvaluatorRequestCodeEvaluatorInput = "thread"
+	CreateOnlineCodeEvaluatorRequestCodeEvaluatorInputAllMessages      CreateOnlineCodeEvaluatorRequestCodeEvaluatorInput = "all_messages"
+	CreateOnlineCodeEvaluatorRequestCodeEvaluatorInputHumanAIPairs     CreateOnlineCodeEvaluatorRequestCodeEvaluatorInput = "human_ai_pairs"
+	CreateOnlineCodeEvaluatorRequestCodeEvaluatorInputFirstHumanLastAI CreateOnlineCodeEvaluatorRequestCodeEvaluatorInput = "first_human_last_ai"
+)
+
+func (r CreateOnlineCodeEvaluatorRequestCodeEvaluatorInput) IsKnown() bool {
+	switch r {
+	case CreateOnlineCodeEvaluatorRequestCodeEvaluatorInputThread, CreateOnlineCodeEvaluatorRequestCodeEvaluatorInputAllMessages, CreateOnlineCodeEvaluatorRequestCodeEvaluatorInputHumanAIPairs, CreateOnlineCodeEvaluatorRequestCodeEvaluatorInputFirstHumanLastAI:
+		return true
+	}
+	return false
 }
 
 type CreateOnlineCodeEvaluatorRequestManagedCodeEvaluatorKey string
@@ -288,12 +310,15 @@ func (r getOnlineEvaluatorSpendResponseJSON) RawJSON() string {
 }
 
 type OnlineCodeEvaluator struct {
-	AdvancedFeaturesEnabled bool                                    `json:"advanced_features_enabled"`
-	Code                    string                                  `json:"code"`
-	Dependencies            string                                  `json:"dependencies"`
-	EvaluatorBuildError     string                                  `json:"evaluator_build_error"`
-	EvaluatorBuildStatus    OnlineCodeEvaluatorEvaluatorBuildStatus `json:"evaluator_build_status"`
-	EvaluatorID             string                                  `json:"evaluator_id"`
+	AdvancedFeaturesEnabled bool   `json:"advanced_features_enabled"`
+	Code                    string `json:"code"`
+	// CodeEvaluatorInput is which thread data the evaluator receives. Null for run
+	// evaluators.
+	CodeEvaluatorInput   OnlineCodeEvaluatorCodeEvaluatorInput   `json:"code_evaluator_input" api:"nullable"`
+	Dependencies         string                                  `json:"dependencies"`
+	EvaluatorBuildError  string                                  `json:"evaluator_build_error"`
+	EvaluatorBuildStatus OnlineCodeEvaluatorEvaluatorBuildStatus `json:"evaluator_build_status"`
+	EvaluatorID          string                                  `json:"evaluator_id"`
 	// Default: "python"
 	Language                     string                                                    `json:"language"`
 	ManagedCodeEvaluatorKey      OnlineCodeEvaluatorManagedCodeEvaluatorKey                `json:"managed_code_evaluator_key"`
@@ -309,6 +334,7 @@ type OnlineCodeEvaluator struct {
 type onlineCodeEvaluatorJSON struct {
 	AdvancedFeaturesEnabled      apijson.Field
 	Code                         apijson.Field
+	CodeEvaluatorInput           apijson.Field
 	Dependencies                 apijson.Field
 	EvaluatorBuildError          apijson.Field
 	EvaluatorBuildStatus         apijson.Field
@@ -327,6 +353,25 @@ func (r *OnlineCodeEvaluator) UnmarshalJSON(data []byte) (err error) {
 
 func (r onlineCodeEvaluatorJSON) RawJSON() string {
 	return r.raw
+}
+
+// CodeEvaluatorInput is which thread data the evaluator receives. Null for run
+// evaluators.
+type OnlineCodeEvaluatorCodeEvaluatorInput string
+
+const (
+	OnlineCodeEvaluatorCodeEvaluatorInputThread           OnlineCodeEvaluatorCodeEvaluatorInput = "thread"
+	OnlineCodeEvaluatorCodeEvaluatorInputAllMessages      OnlineCodeEvaluatorCodeEvaluatorInput = "all_messages"
+	OnlineCodeEvaluatorCodeEvaluatorInputHumanAIPairs     OnlineCodeEvaluatorCodeEvaluatorInput = "human_ai_pairs"
+	OnlineCodeEvaluatorCodeEvaluatorInputFirstHumanLastAI OnlineCodeEvaluatorCodeEvaluatorInput = "first_human_last_ai"
+)
+
+func (r OnlineCodeEvaluatorCodeEvaluatorInput) IsKnown() bool {
+	switch r {
+	case OnlineCodeEvaluatorCodeEvaluatorInputThread, OnlineCodeEvaluatorCodeEvaluatorInputAllMessages, OnlineCodeEvaluatorCodeEvaluatorInputHumanAIPairs, OnlineCodeEvaluatorCodeEvaluatorInputFirstHumanLastAI:
+		return true
+	}
+	return false
 }
 
 type OnlineCodeEvaluatorEvaluatorBuildStatus string
@@ -629,8 +674,10 @@ func (r onlineSpendLimitJSON) RawJSON() string {
 }
 
 type UpdateOnlineCodeEvaluatorRequestParam struct {
-	AdvancedFeaturesEnabled      param.Field[bool]                                                                        `json:"advanced_features_enabled"`
-	Code                         param.Field[string]                                                                      `json:"code"`
+	AdvancedFeaturesEnabled param.Field[bool]   `json:"advanced_features_enabled"`
+	Code                    param.Field[string] `json:"code"`
+	// CodeEvaluatorInput is config (not a snapshot rebuild). Null clears it.
+	CodeEvaluatorInput           param.Field[UpdateOnlineCodeEvaluatorRequestCodeEvaluatorInput]                          `json:"code_evaluator_input"`
 	Dependencies                 param.Field[string]                                                                      `json:"dependencies"`
 	Language                     param.Field[string]                                                                      `json:"language"`
 	ManagedCodeEvaluatorSettings param.Field[map[string]UpdateOnlineCodeEvaluatorRequestManagedCodeEvaluatorSettingParam] `json:"managed_code_evaluator_settings"`
@@ -641,6 +688,24 @@ type UpdateOnlineCodeEvaluatorRequestParam struct {
 
 func (r UpdateOnlineCodeEvaluatorRequestParam) MarshalJSON() (data []byte, err error) {
 	return apijson.MarshalRoot(r)
+}
+
+// CodeEvaluatorInput is config (not a snapshot rebuild). Null clears it.
+type UpdateOnlineCodeEvaluatorRequestCodeEvaluatorInput string
+
+const (
+	UpdateOnlineCodeEvaluatorRequestCodeEvaluatorInputThread           UpdateOnlineCodeEvaluatorRequestCodeEvaluatorInput = "thread"
+	UpdateOnlineCodeEvaluatorRequestCodeEvaluatorInputAllMessages      UpdateOnlineCodeEvaluatorRequestCodeEvaluatorInput = "all_messages"
+	UpdateOnlineCodeEvaluatorRequestCodeEvaluatorInputHumanAIPairs     UpdateOnlineCodeEvaluatorRequestCodeEvaluatorInput = "human_ai_pairs"
+	UpdateOnlineCodeEvaluatorRequestCodeEvaluatorInputFirstHumanLastAI UpdateOnlineCodeEvaluatorRequestCodeEvaluatorInput = "first_human_last_ai"
+)
+
+func (r UpdateOnlineCodeEvaluatorRequestCodeEvaluatorInput) IsKnown() bool {
+	switch r {
+	case UpdateOnlineCodeEvaluatorRequestCodeEvaluatorInputThread, UpdateOnlineCodeEvaluatorRequestCodeEvaluatorInputAllMessages, UpdateOnlineCodeEvaluatorRequestCodeEvaluatorInputHumanAIPairs, UpdateOnlineCodeEvaluatorRequestCodeEvaluatorInputFirstHumanLastAI:
+		return true
+	}
+	return false
 }
 
 type UpdateOnlineCodeEvaluatorRequestManagedCodeEvaluatorSettingParam struct {

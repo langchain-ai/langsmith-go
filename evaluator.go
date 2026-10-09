@@ -44,16 +44,19 @@ func (r *EvaluatorService) List(ctx context.Context, query EvaluatorListParams, 
 }
 
 type CodeEvaluatorTopLevel struct {
-	Code               string                        `json:"code" api:"required"`
-	Language           CodeEvaluatorTopLevelLanguage `json:"language" api:"nullable"`
-	RequireAttachments bool                          `json:"require_attachments"`
-	JSON               codeEvaluatorTopLevelJSON     `json:"-"`
+	Code string `json:"code" api:"required"`
+	// Input provided to a code evaluator.
+	CodeEvaluatorInput CodeEvaluatorTopLevelCodeEvaluatorInput `json:"code_evaluator_input" api:"nullable"`
+	Language           CodeEvaluatorTopLevelLanguage           `json:"language" api:"nullable"`
+	RequireAttachments bool                                    `json:"require_attachments"`
+	JSON               codeEvaluatorTopLevelJSON               `json:"-"`
 }
 
 // codeEvaluatorTopLevelJSON contains the JSON metadata for the struct
 // [CodeEvaluatorTopLevel]
 type codeEvaluatorTopLevelJSON struct {
 	Code               apijson.Field
+	CodeEvaluatorInput apijson.Field
 	Language           apijson.Field
 	RequireAttachments apijson.Field
 	raw                string
@@ -66,6 +69,24 @@ func (r *CodeEvaluatorTopLevel) UnmarshalJSON(data []byte) (err error) {
 
 func (r codeEvaluatorTopLevelJSON) RawJSON() string {
 	return r.raw
+}
+
+// Input provided to a code evaluator.
+type CodeEvaluatorTopLevelCodeEvaluatorInput string
+
+const (
+	CodeEvaluatorTopLevelCodeEvaluatorInputThread           CodeEvaluatorTopLevelCodeEvaluatorInput = "thread"
+	CodeEvaluatorTopLevelCodeEvaluatorInputAllMessages      CodeEvaluatorTopLevelCodeEvaluatorInput = "all_messages"
+	CodeEvaluatorTopLevelCodeEvaluatorInputHumanAIPairs     CodeEvaluatorTopLevelCodeEvaluatorInput = "human_ai_pairs"
+	CodeEvaluatorTopLevelCodeEvaluatorInputFirstHumanLastAI CodeEvaluatorTopLevelCodeEvaluatorInput = "first_human_last_ai"
+)
+
+func (r CodeEvaluatorTopLevelCodeEvaluatorInput) IsKnown() bool {
+	switch r {
+	case CodeEvaluatorTopLevelCodeEvaluatorInputThread, CodeEvaluatorTopLevelCodeEvaluatorInputAllMessages, CodeEvaluatorTopLevelCodeEvaluatorInputHumanAIPairs, CodeEvaluatorTopLevelCodeEvaluatorInputFirstHumanLastAI:
+		return true
+	}
+	return false
 }
 
 type CodeEvaluatorTopLevelLanguage string

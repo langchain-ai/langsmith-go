@@ -12,7 +12,6 @@ import (
 	"github.com/langchain-ai/langsmith-go"
 	"github.com/langchain-ai/langsmith-go/internal/testutil"
 	"github.com/langchain-ai/langsmith-go/option"
-	"github.com/langchain-ai/langsmith-go/shared"
 )
 
 func TestRunNewWithOptionalParams(t *testing.T) {
@@ -31,17 +30,11 @@ func TestRunNewWithOptionalParams(t *testing.T) {
 	)
 	_, err := client.Runs.New(context.TODO(), langsmith.RunNewParams{
 		RunIngest: langsmith.RunIngestParam{
-			ID: langsmith.F("id"),
-			Address: langsmith.F(shared.AgentAddressParam{
-				ID:          langsmith.F("support-agent"),
-				Environment: langsmith.F(shared.AgentAddressEnvironmentProduction),
-				Kind:        langsmith.F(shared.AgentAddressKindAgent),
-			}),
-			AgentEnvironment: langsmith.F(langsmith.RunIngestAgentEnvironmentLocal),
-			AgentID:          langsmith.F("agent_id"),
-			DottedOrder:      langsmith.F("dotted_order"),
-			EndTime:          langsmith.F("end_time"),
-			Error:            langsmith.F("error"),
+			ID:          langsmith.F("id"),
+			Address:     langsmith.F("lrn:agents/support-agent/environments/production"),
+			DottedOrder: langsmith.F("dotted_order"),
+			EndTime:     langsmith.F("end_time"),
+			Error:       langsmith.F("error"),
 			Events: langsmith.F([]map[string]interface{}{{
 				"foo": "bar",
 			}}),
@@ -103,17 +96,11 @@ func TestRunUpdateWithOptionalParams(t *testing.T) {
 		"182bd5e5-6e1a-4fe4-a799-aa6d9a6ab26e",
 		langsmith.RunUpdateParams{
 			RunIngest: langsmith.RunIngestParam{
-				ID: langsmith.F("id"),
-				Address: langsmith.F(shared.AgentAddressParam{
-					ID:          langsmith.F("support-agent"),
-					Environment: langsmith.F(shared.AgentAddressEnvironmentProduction),
-					Kind:        langsmith.F(shared.AgentAddressKindAgent),
-				}),
-				AgentEnvironment: langsmith.F(langsmith.RunIngestAgentEnvironmentLocal),
-				AgentID:          langsmith.F("agent_id"),
-				DottedOrder:      langsmith.F("dotted_order"),
-				EndTime:          langsmith.F("end_time"),
-				Error:            langsmith.F("error"),
+				ID:          langsmith.F("id"),
+				Address:     langsmith.F("lrn:agents/support-agent/environments/production"),
+				DottedOrder: langsmith.F("dotted_order"),
+				EndTime:     langsmith.F("end_time"),
+				Error:       langsmith.F("error"),
 				Events: langsmith.F([]map[string]interface{}{{
 					"foo": "bar",
 				}}),
@@ -205,17 +192,11 @@ func TestRunIngestBatchWithOptionalParams(t *testing.T) {
 	)
 	_, err := client.Runs.IngestBatch(context.TODO(), langsmith.RunIngestBatchParams{
 		Patch: langsmith.F([]langsmith.RunIngestParam{{
-			ID: langsmith.F("id"),
-			Address: langsmith.F(shared.AgentAddressParam{
-				ID:          langsmith.F("support-agent"),
-				Environment: langsmith.F(shared.AgentAddressEnvironmentProduction),
-				Kind:        langsmith.F(shared.AgentAddressKindAgent),
-			}),
-			AgentEnvironment: langsmith.F(langsmith.RunIngestAgentEnvironmentLocal),
-			AgentID:          langsmith.F("agent_id"),
-			DottedOrder:      langsmith.F("dotted_order"),
-			EndTime:          langsmith.F("end_time"),
-			Error:            langsmith.F("error"),
+			ID:          langsmith.F("id"),
+			Address:     langsmith.F("lrn:agents/support-agent/environments/production"),
+			DottedOrder: langsmith.F("dotted_order"),
+			EndTime:     langsmith.F("end_time"),
+			Error:       langsmith.F("error"),
 			Events: langsmith.F([]map[string]interface{}{{
 				"foo": "bar",
 			}}),
@@ -249,17 +230,11 @@ func TestRunIngestBatchWithOptionalParams(t *testing.T) {
 			TraceID:     langsmith.F("trace_id"),
 		}}),
 		Post: langsmith.F([]langsmith.RunIngestParam{{
-			ID: langsmith.F("id"),
-			Address: langsmith.F(shared.AgentAddressParam{
-				ID:          langsmith.F("support-agent"),
-				Environment: langsmith.F(shared.AgentAddressEnvironmentProduction),
-				Kind:        langsmith.F(shared.AgentAddressKindAgent),
-			}),
-			AgentEnvironment: langsmith.F(langsmith.RunIngestAgentEnvironmentLocal),
-			AgentID:          langsmith.F("agent_id"),
-			DottedOrder:      langsmith.F("dotted_order"),
-			EndTime:          langsmith.F("end_time"),
-			Error:            langsmith.F("error"),
+			ID:          langsmith.F("id"),
+			Address:     langsmith.F("lrn:agents/support-agent/environments/production"),
+			DottedOrder: langsmith.F("dotted_order"),
+			EndTime:     langsmith.F("end_time"),
+			Error:       langsmith.F("error"),
 			Events: langsmith.F([]map[string]interface{}{{
 				"foo": "bar",
 			}}),
@@ -534,17 +509,11 @@ func TestRunUpdate2WithOptionalParams(t *testing.T) {
 		"182bd5e5-6e1a-4fe4-a799-aa6d9a6ab26e",
 		langsmith.RunUpdate2Params{
 			RunIngest: langsmith.RunIngestParam{
-				ID: langsmith.F("id"),
-				Address: langsmith.F(shared.AgentAddressParam{
-					ID:          langsmith.F("support-agent"),
-					Environment: langsmith.F(shared.AgentAddressEnvironmentProduction),
-					Kind:        langsmith.F(shared.AgentAddressKindAgent),
-				}),
-				AgentEnvironment: langsmith.F(langsmith.RunIngestAgentEnvironmentLocal),
-				AgentID:          langsmith.F("agent_id"),
-				DottedOrder:      langsmith.F("dotted_order"),
-				EndTime:          langsmith.F("end_time"),
-				Error:            langsmith.F("error"),
+				ID:          langsmith.F("id"),
+				Address:     langsmith.F("lrn:agents/support-agent/environments/production"),
+				DottedOrder: langsmith.F("dotted_order"),
+				EndTime:     langsmith.F("end_time"),
+				Error:       langsmith.F("error"),
 				Events: langsmith.F([]map[string]interface{}{{
 					"foo": "bar",
 				}}),

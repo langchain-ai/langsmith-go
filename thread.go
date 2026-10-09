@@ -168,6 +168,10 @@ type Thread struct {
 	// `num_errored_turns` is the count of root traces in the thread (within the query
 	// window) whose status was an error.
 	NumErroredTurns int64 `json:"num_errored_turns"`
+	// `query_metadata` describes why this thread matched the query, including
+	// `sem_filter_score` when a semantic filter is used. Returned automatically, or
+	// null when unavailable.
+	QueryMetadata interface{} `json:"query_metadata" api:"nullable"`
 	// `start_time` is a reference start time for this row (RFC3339 date-time), such as
 	// for sorting.
 	StartTime time.Time `json:"start_time" format:"date-time"`
@@ -209,6 +213,7 @@ type threadJSON struct {
 	MaxStartTime      apijson.Field
 	MinStartTime      apijson.Field
 	NumErroredTurns   apijson.Field
+	QueryMetadata     apijson.Field
 	StartTime         apijson.Field
 	ThreadID          apijson.Field
 	TotalCost         apijson.Field
