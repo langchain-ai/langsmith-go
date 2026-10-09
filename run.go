@@ -126,6 +126,10 @@ func (r *RunService) QueryV1AutoPaging(ctx context.Context, body RunQueryV1Param
 // start_time. Supports filters, cursor pagination, and `selects` to select fields
 // to return.
 //
+// When `ai_search` is set, `Accept: text/event-stream` is required; requests
+// without it return 406. AI search is unavailable on deployments that route
+// queries to the v1 backend and returns 501 there.
+//
 // Self-hosted deployments require LangSmith `v0.16` or later.
 func (r *RunService) QueryV2(ctx context.Context, params RunQueryV2Params, opts ...option.RequestOption) (res *pagination.ItemsCursorPostPagination[Run], err error) {
 	var raw *http.Response
@@ -150,6 +154,10 @@ func (r *RunService) QueryV2(ctx context.Context, params RunQueryV2Params, opts 
 // Returns a paginated list of runs for the given projects within min/max
 // start_time. Supports filters, cursor pagination, and `selects` to select fields
 // to return.
+//
+// When `ai_search` is set, `Accept: text/event-stream` is required; requests
+// without it return 406. AI search is unavailable on deployments that route
+// queries to the v1 backend and returns 501 there.
 //
 // Self-hosted deployments require LangSmith `v0.16` or later.
 func (r *RunService) QueryV2AutoPaging(ctx context.Context, params RunQueryV2Params, opts ...option.RequestOption) *pagination.ItemsCursorPostPaginationAutoPager[Run] {
@@ -1515,6 +1523,11 @@ func (r RunQueryV1ParamsSelect) IsKnown() bool {
 }
 
 type RunQueryV2Params struct {
+	// `ai_search` is a plain-language criterion evaluated against the messages from
+	// the agent trajectory scoped to the run. AND-ed with the ordinary filters.
+	// Requires semantic filtering enabled for the deployment. Must contain nonempty
+	// text of at most 2000 UTF-8 bytes. Not supported on public dataset queries.
+	AISearch param.Field[string] `json:"ai_search"`
 	// `cursor` is the opaque string from a previous response's `next_cursor`. Treat it
 	// as opaque and pass it back unmodified.
 	Cursor param.Field[string] `json:"cursor"`

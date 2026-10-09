@@ -341,6 +341,7 @@ func TestRunQueryV2WithOptionalParams(t *testing.T) {
 		option.WithTenantID("My Tenant ID"),
 	)
 	_, err := client.Runs.QueryV2(context.TODO(), langsmith.RunQueryV2Params{
+		AISearch:           langsmith.F("The customer was charged twice"),
 		Cursor:             langsmith.F("eyJ2IjoxLCJhIjoicnVucy5xdWVyeSIsImsiOiJwYXNzIiwiYiI6InNkYiIsInQiOiJsdChjdXJzb3IsICcyMDI1LTEyLTEyIDE5OjAzOjI4LjQ4MTI1NTAxOWIxM2YyJykifQ"),
 		Filter:             langsmith.F(`and(eq(run_type, "llm"), gt(latency, 5))`),
 		HasError:           langsmith.F(false),

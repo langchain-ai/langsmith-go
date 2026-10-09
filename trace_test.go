@@ -64,6 +64,7 @@ func TestTraceQueryWithOptionalParams(t *testing.T) {
 		option.WithTenantID("My Tenant ID"),
 	)
 	_, err := client.Traces.Query(context.TODO(), langsmith.TraceQueryParams{
+		AISearch:     langsmith.F("A run that contains a billing dispute"),
 		Cursor:       langsmith.F("cursor"),
 		MaxStartTime: langsmith.F(time.Now()),
 		MinStartTime: langsmith.F(time.Now()),
@@ -73,6 +74,7 @@ func TestTraceQueryWithOptionalParams(t *testing.T) {
 		TraceFilter:  langsmith.F(`eq(status, "error")`),
 		TraceIDs:     langsmith.F([]string{"182bd5e5-6e1a-4fe4-a799-aa6d9a6ab26e"}),
 		TreeFilter:   langsmith.F(`has(tags, "production")`),
+		Accept:       langsmith.F("Accept"),
 	})
 	if err != nil {
 		var apierr *langsmith.Error

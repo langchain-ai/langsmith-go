@@ -4,6 +4,15 @@ set -e
 
 cd "$(dirname "$0")/.."
 
+echo "==> Checking gofmt -s"
+unformatted=$(gofmt -s -l .) || exit 1
+if [ -n "${unformatted}" ]; then
+  echo "gofmt -s would change:"
+  printf '%s\n' "${unformatted}"
+  echo "Run ./scripts/format"
+  exit 1
+fi
+
 echo "==> Running Go build"
 go build ./...
 

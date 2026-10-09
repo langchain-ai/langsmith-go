@@ -87,6 +87,10 @@ func (r *ThreadService) ListTracesAutoPaging(ctx context.Context, threadID strin
 // Query threads within a project (session), with cursor-based pagination. Returns
 // threads matching the given time range and optional filters.
 //
+// When `ai_search` is set, `Accept: text/event-stream` is required; requests
+// without it return 406. AI search is unavailable on deployments that route
+// queries to the v1 backend and returns 501 there.
+//
 // Self-hosted deployments require LangSmith `v0.16` or later.
 func (r *ThreadService) Query(ctx context.Context, params ThreadQueryParams, opts ...option.RequestOption) (res *pagination.ItemsCursorPostPagination[Thread], err error) {
 	var raw *http.Response
@@ -110,6 +114,10 @@ func (r *ThreadService) Query(ctx context.Context, params ThreadQueryParams, opt
 
 // Query threads within a project (session), with cursor-based pagination. Returns
 // threads matching the given time range and optional filters.
+//
+// When `ai_search` is set, `Accept: text/event-stream` is required; requests
+// without it return 406. AI search is unavailable on deployments that route
+// queries to the v1 backend and returns 501 there.
 //
 // Self-hosted deployments require LangSmith `v0.16` or later.
 func (r *ThreadService) QueryAutoPaging(ctx context.Context, params ThreadQueryParams, opts ...option.RequestOption) *pagination.ItemsCursorPostPaginationAutoPager[Thread] {
@@ -1077,6 +1085,11 @@ func (r ThreadListTracesParamsSelect) IsKnown() bool {
 }
 
 type ThreadQueryParams struct {
+	// `ai_search` is a plain-language criterion evaluated against the messages from
+	// the agent trajectory scoped to the thread. AND-ed with the ordinary filters.
+	// Requires semantic filtering enabled for the deployment. Must contain nonempty
+	// text of at most 2000 UTF-8 bytes.
+	AISearch param.Field[string] `json:"ai_search"`
 	// `cursor` is the opaque string from a previous response's `next_cursor`. Omit on
 	// the first request; pass the returned cursor to fetch the next page.
 	Cursor param.Field[string] `json:"cursor"`
