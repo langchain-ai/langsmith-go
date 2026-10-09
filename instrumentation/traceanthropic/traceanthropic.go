@@ -307,6 +307,13 @@ func extractRequestAttributes(span trace.Span, body []byte) (streaming bool) {
 		return false
 	}
 
+	// Streaming still controls response parsing and usage propagation to a
+	// recording parent even when this span does not record attributes.
+	streaming, _ = req["stream"].(bool)
+	if !span.IsRecording() {
+		return streaming
+	}
+
 	// Model
 	if model, ok := req["model"].(string); ok {
 		span.SetAttributes(attribute.String("gen_ai.request.model", model))
@@ -321,9 +328,6 @@ func extractRequestAttributes(span trace.Span, body []byte) (streaming bool) {
 	if temp, ok := req["temperature"].(float64); ok {
 		span.SetAttributes(attribute.Float64("gen_ai.request.temperature", temp))
 	}
-
-	// Streaming flag
-	streaming, _ = req["stream"].(bool)
 
 	// Build input messages — system prepended, all roles preserved
 	var messages []any
