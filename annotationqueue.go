@@ -922,11 +922,11 @@ func (r annotationQueueGetAnnotationQueuesResponseAssignedReviewerJSON) RawJSON(
 type AnnotationQueueUpdateParams struct {
 	DefaultDataset      param.Field[string]                                              `json:"default_dataset" format:"uuid"`
 	Description         param.Field[string]                                              `json:"description"`
-	EnableReservations  param.Field[bool]                                                `json:"enable_reservations"`
+	EnableReservations  param.Field[AnnotationQueueUpdateParamsEnableReservationsUnion]  `json:"enable_reservations"`
 	Metadata            param.Field[AnnotationQueueUpdateParamsMetadataUnion]            `json:"metadata"`
 	Name                param.Field[string]                                              `json:"name"`
 	NumReviewersPerItem param.Field[AnnotationQueueUpdateParamsNumReviewersPerItemUnion] `json:"num_reviewers_per_item"`
-	ReservationMinutes  param.Field[int64]                                               `json:"reservation_minutes"`
+	ReservationMinutes  param.Field[AnnotationQueueUpdateParamsReservationMinutesUnion]  `json:"reservation_minutes"`
 	ReviewerAccessMode  param.Field[AnnotationQueueUpdateParamsReviewerAccessMode]       `json:"reviewer_access_mode"`
 	RubricInstructions  param.Field[string]                                              `json:"rubric_instructions"`
 	RubricItems         param.Field[[]AnnotationQueueRubricItemSchemaParam]              `json:"rubric_items"`
@@ -934,6 +934,11 @@ type AnnotationQueueUpdateParams struct {
 
 func (r AnnotationQueueUpdateParams) MarshalJSON() (data []byte, err error) {
 	return apijson.MarshalRoot(r)
+}
+
+// Satisfied by [shared.UnionBool], [MissingParam].
+type AnnotationQueueUpdateParamsEnableReservationsUnion interface {
+	ImplementsAnnotationQueueUpdateParamsEnableReservationsUnion()
 }
 
 // Satisfied by [AnnotationQueueUpdateParamsMetadataMap], [MissingParam].
@@ -949,6 +954,11 @@ func (r AnnotationQueueUpdateParamsMetadataMap) implementsAnnotationQueueUpdateP
 // Satisfied by [shared.UnionInt], [MissingParam].
 type AnnotationQueueUpdateParamsNumReviewersPerItemUnion interface {
 	ImplementsAnnotationQueueUpdateParamsNumReviewersPerItemUnion()
+}
+
+// Satisfied by [shared.UnionInt], [MissingParam].
+type AnnotationQueueUpdateParamsReservationMinutesUnion interface {
+	ImplementsAnnotationQueueUpdateParamsReservationMinutesUnion()
 }
 
 type AnnotationQueueUpdateParamsReviewerAccessMode string

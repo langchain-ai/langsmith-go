@@ -59,13 +59,13 @@ func TestAnnotationQueueUpdateWithOptionalParams(t *testing.T) {
 		langsmith.AnnotationQueueUpdateParams{
 			DefaultDataset:     langsmith.F("182bd5e5-6e1a-4fe4-a799-aa6d9a6ab26e"),
 			Description:        langsmith.F("description"),
-			EnableReservations: langsmith.F(true),
+			EnableReservations: langsmith.F[langsmith.AnnotationQueueUpdateParamsEnableReservationsUnion](shared.UnionBool(true)),
 			Metadata: langsmith.F[langsmith.AnnotationQueueUpdateParamsMetadataUnion](langsmith.AnnotationQueueUpdateParamsMetadataMap(map[string]interface{}{
 				"foo": "bar",
 			})),
 			Name:                langsmith.F("name"),
 			NumReviewersPerItem: langsmith.F[langsmith.AnnotationQueueUpdateParamsNumReviewersPerItemUnion](shared.UnionInt(int64(0))),
-			ReservationMinutes:  langsmith.F(int64(0)),
+			ReservationMinutes:  langsmith.F[langsmith.AnnotationQueueUpdateParamsReservationMinutesUnion](shared.UnionInt(int64(0))),
 			ReviewerAccessMode:  langsmith.F(langsmith.AnnotationQueueUpdateParamsReviewerAccessModeAny),
 			RubricInstructions:  langsmith.F("rubric_instructions"),
 			RubricItems: langsmith.F([]langsmith.AnnotationQueueRubricItemSchemaParam{{

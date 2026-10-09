@@ -53,20 +53,22 @@ func (UnionString) ImplementsAnnotationQueueRubricItemSchemaRegexValidatorUnion(
 
 type UnionBool bool
 
-func (UnionBool) ImplementsFeedbackCreateSchemaScoreUnionParam() {}
-func (UnionBool) ImplementsFeedbackCreateSchemaValueUnionParam() {}
-func (UnionBool) ImplementsFeedbackSchemaScoreUnion()            {}
-func (UnionBool) ImplementsFeedbackSchemaValueUnion()            {}
-func (UnionBool) ImplementsFeedbackUpdateParamsScoreUnion()      {}
-func (UnionBool) ImplementsFeedbackUpdateParamsValueUnion()      {}
-func (UnionBool) ImplementsFeedbackTokenGetParamsScoreUnion()    {}
-func (UnionBool) ImplementsFeedbackTokenGetParamsValueUnion()    {}
-func (UnionBool) ImplementsFeedbackTokenUpdateParamsScoreUnion() {}
-func (UnionBool) ImplementsFeedbackTokenUpdateParamsValueUnion() {}
+func (UnionBool) ImplementsFeedbackCreateSchemaScoreUnionParam()                {}
+func (UnionBool) ImplementsFeedbackCreateSchemaValueUnionParam()                {}
+func (UnionBool) ImplementsFeedbackSchemaScoreUnion()                           {}
+func (UnionBool) ImplementsFeedbackSchemaValueUnion()                           {}
+func (UnionBool) ImplementsFeedbackUpdateParamsScoreUnion()                     {}
+func (UnionBool) ImplementsFeedbackUpdateParamsValueUnion()                     {}
+func (UnionBool) ImplementsFeedbackTokenGetParamsScoreUnion()                   {}
+func (UnionBool) ImplementsFeedbackTokenGetParamsValueUnion()                   {}
+func (UnionBool) ImplementsFeedbackTokenUpdateParamsScoreUnion()                {}
+func (UnionBool) ImplementsFeedbackTokenUpdateParamsValueUnion()                {}
+func (UnionBool) ImplementsAnnotationQueueUpdateParamsEnableReservationsUnion() {}
 
 type UnionInt int64
 
 func (UnionInt) ImplementsAnnotationQueueUpdateParamsNumReviewersPerItemUnion() {}
+func (UnionInt) ImplementsAnnotationQueueUpdateParamsReservationMinutesUnion()  {}
 
 type UnionFloat float64
 
