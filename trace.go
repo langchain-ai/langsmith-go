@@ -68,13 +68,20 @@ func (r *TraceService) ListRuns(ctx context.Context, traceID string, params Trac
 // Supports filters (`trace_filter`, `tree_filter`), cursor pagination (`cursor`),
 // and field projection (`selects`).
 //
+// When `ai_search` is set, `Accept: text/event-stream` is required; requests
+// without it return 406. AI search is unavailable on deployments that route
+// queries to the v1 backend and returns 501 there.
+//
 // Self-hosted deployments require LangSmith `v0.16` or later.
-func (r *TraceService) Query(ctx context.Context, body TraceQueryParams, opts ...option.RequestOption) (res *pagination.ItemsCursorPostPagination[Trace], err error) {
+func (r *TraceService) Query(ctx context.Context, params TraceQueryParams, opts ...option.RequestOption) (res *pagination.ItemsCursorPostPagination[Trace], err error) {
 	var raw *http.Response
+	if params.Accept.Present {
+		opts = append(opts, option.WithHeader("Accept", fmt.Sprintf("%v", params.Accept)))
+	}
 	opts = slices.Concat(r.Options, opts)
 	opts = append([]option.RequestOption{option.WithResponseInto(&raw)}, opts...)
 	path := "api/v2/traces/query"
-	cfg, err := requestconfig.NewRequestConfig(ctx, http.MethodPost, path, body, &res, opts...)
+	cfg, err := requestconfig.NewRequestConfig(ctx, http.MethodPost, path, params, &res, opts...)
 	if err != nil {
 		return nil, err
 	}
@@ -98,9 +105,13 @@ func (r *TraceService) Query(ctx context.Context, body TraceQueryParams, opts ..
 // Supports filters (`trace_filter`, `tree_filter`), cursor pagination (`cursor`),
 // and field projection (`selects`).
 //
+// When `ai_search` is set, `Accept: text/event-stream` is required; requests
+// without it return 406. AI search is unavailable on deployments that route
+// queries to the v1 backend and returns 501 there.
+//
 // Self-hosted deployments require LangSmith `v0.16` or later.
-func (r *TraceService) QueryAutoPaging(ctx context.Context, body TraceQueryParams, opts ...option.RequestOption) *pagination.ItemsCursorPostPaginationAutoPager[Trace] {
-	return pagination.NewItemsCursorPostPaginationAutoPager(r.Query(ctx, body, opts...))
+func (r *TraceService) QueryAutoPaging(ctx context.Context, params TraceQueryParams, opts ...option.RequestOption) *pagination.ItemsCursorPostPaginationAutoPager[Trace] {
+	return pagination.NewItemsCursorPostPaginationAutoPager(r.Query(ctx, params, opts...))
 }
 
 type Trace struct {
@@ -277,6 +288,11 @@ func (r TraceListRunsParamsSelect) IsKnown() bool {
 }
 
 type TraceQueryParams struct {
+	// `ai_search` is a plain-language criterion evaluated against the messages from
+	// the agent trajectory scoped to the trace. AND-ed with the ordinary filters.
+	// Requires semantic filtering enabled for the deployment. Must contain nonempty
+	// text of at most 2000 UTF-8 bytes.
+	AISearch param.Field[string] `json:"ai_search"`
 	// `cursor` is the opaque string returned in a previous response's `next_cursor`.
 	Cursor param.Field[string] `json:"cursor"`
 	// `max_start_time` is the exclusive upper bound for the root-run start time scan
@@ -309,6 +325,7 @@ type TraceQueryParams struct {
 	// `tree_filter` narrows results to traces containing at least one run anywhere in
 	// the run tree (root or descendant) that matches this LangSmith filter expression.
 	TreeFilter param.Field[string] `json:"tree_filter"`
+	Accept     param.Field[string] `header:"Accept"`
 }
 
 func (r TraceQueryParams) MarshalJSON() (data []byte, err error) {
