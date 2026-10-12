@@ -92,6 +92,9 @@ func TestSandboxBoxNewWithOptionalParams(t *testing.T) {
 					Repo:            langsmith.F("repo"),
 					InitialPullOnly: langsmith.F(true),
 				}),
+				Encryption: langsmith.F(langsmith.SandboxBoxNewParamsMountConfigMountsSandboxapiS3BucketMountSpecEncryption{
+					KmsKey: langsmith.F("kms_key"),
+				}),
 				Gcs: langsmith.F(langsmith.SandboxBoxNewParamsMountConfigMountsSandboxapiS3BucketMountSpecGcs{
 					Bucket: langsmith.F("bucket"),
 					Prefix: langsmith.F("prefix"),

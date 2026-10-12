@@ -600,6 +600,12 @@ type SandboxResponseMountConfigMount struct {
 	// [SandboxResponseMountConfigMountsSandboxapiContextHubRepoMountSpecContexthub].
 	Contexthub interface{} `json:"contexthub"`
 	// This field can have the runtime type of
+	// [SandboxResponseMountConfigMountsSandboxapiS3BucketMountSpecEncryption],
+	// [SandboxResponseMountConfigMountsSandboxapiGcsBucketMountSpecEncryption],
+	// [SandboxResponseMountConfigMountsSandboxapiGitRepoMountSpecEncryption],
+	// [SandboxResponseMountConfigMountsSandboxapiContextHubRepoMountSpecEncryption].
+	Encryption interface{} `json:"encryption"`
+	// This field can have the runtime type of
 	// [SandboxResponseMountConfigMountsSandboxapiS3BucketMountSpecGcs],
 	// [SandboxResponseMountConfigMountsSandboxapiGcsBucketMountSpecGcs],
 	// [SandboxResponseMountConfigMountsSandboxapiGitRepoMountSpecGcs],
@@ -630,6 +636,7 @@ type sandboxResponseMountConfigMountJSON struct {
 	Type        apijson.Field
 	Cache       apijson.Field
 	Contexthub  apijson.Field
+	Encryption  apijson.Field
 	Gcs         apijson.Field
 	Git         apijson.Field
 	ReadOnly    apijson.Field
@@ -766,6 +773,7 @@ type SandboxResponseMountConfigMountsSandboxapiS3BucketMountSpec struct {
 	Type       SandboxResponseMountConfigMountsSandboxapiS3BucketMountSpecType       `json:"type" api:"required"`
 	Cache      SandboxResponseMountConfigMountsSandboxapiS3BucketMountSpecCache      `json:"cache"`
 	Contexthub SandboxResponseMountConfigMountsSandboxapiS3BucketMountSpecContexthub `json:"contexthub"`
+	Encryption SandboxResponseMountConfigMountsSandboxapiS3BucketMountSpecEncryption `json:"encryption"`
 	Gcs        SandboxResponseMountConfigMountsSandboxapiS3BucketMountSpecGcs        `json:"gcs"`
 	Git        SandboxResponseMountConfigMountsSandboxapiS3BucketMountSpecGit        `json:"git"`
 	ReadOnly   bool                                                                  `json:"read_only"`
@@ -782,6 +790,7 @@ type sandboxResponseMountConfigMountsSandboxapiS3BucketMountSpecJSON struct {
 	Type        apijson.Field
 	Cache       apijson.Field
 	Contexthub  apijson.Field
+	Encryption  apijson.Field
 	Gcs         apijson.Field
 	Git         apijson.Field
 	ReadOnly    apijson.Field
@@ -900,6 +909,30 @@ func (r sandboxResponseMountConfigMountsSandboxapiS3BucketMountSpecContexthubJSO
 	return r.raw
 }
 
+type SandboxResponseMountConfigMountsSandboxapiS3BucketMountSpecEncryption struct {
+	// KMSKey is the key to encrypt uploads with. S3 mounts take a KMS key ARN in the
+	// mount's region.
+	KmsKey string                                                                    `json:"kms_key" api:"required"`
+	JSON   sandboxResponseMountConfigMountsSandboxapiS3BucketMountSpecEncryptionJSON `json:"-"`
+}
+
+// sandboxResponseMountConfigMountsSandboxapiS3BucketMountSpecEncryptionJSON
+// contains the JSON metadata for the struct
+// [SandboxResponseMountConfigMountsSandboxapiS3BucketMountSpecEncryption]
+type sandboxResponseMountConfigMountsSandboxapiS3BucketMountSpecEncryptionJSON struct {
+	KmsKey      apijson.Field
+	raw         string
+	ExtraFields map[string]apijson.Field
+}
+
+func (r *SandboxResponseMountConfigMountsSandboxapiS3BucketMountSpecEncryption) UnmarshalJSON(data []byte) (err error) {
+	return apijson.UnmarshalRoot(data, r)
+}
+
+func (r sandboxResponseMountConfigMountsSandboxapiS3BucketMountSpecEncryptionJSON) RawJSON() string {
+	return r.raw
+}
+
 type SandboxResponseMountConfigMountsSandboxapiS3BucketMountSpecGcs struct {
 	Bucket string                                                             `json:"bucket" api:"required"`
 	Prefix string                                                             `json:"prefix"`
@@ -996,6 +1029,7 @@ type SandboxResponseMountConfigMountsSandboxapiGcsBucketMountSpec struct {
 	Type       SandboxResponseMountConfigMountsSandboxapiGcsBucketMountSpecType       `json:"type" api:"required"`
 	Cache      SandboxResponseMountConfigMountsSandboxapiGcsBucketMountSpecCache      `json:"cache"`
 	Contexthub SandboxResponseMountConfigMountsSandboxapiGcsBucketMountSpecContexthub `json:"contexthub"`
+	Encryption SandboxResponseMountConfigMountsSandboxapiGcsBucketMountSpecEncryption `json:"encryption"`
 	Git        SandboxResponseMountConfigMountsSandboxapiGcsBucketMountSpecGit        `json:"git"`
 	ReadOnly   bool                                                                   `json:"read_only"`
 	S3         SandboxResponseMountConfigMountsSandboxapiGcsBucketMountSpecS3         `json:"s3"`
@@ -1012,6 +1046,7 @@ type sandboxResponseMountConfigMountsSandboxapiGcsBucketMountSpecJSON struct {
 	Type        apijson.Field
 	Cache       apijson.Field
 	Contexthub  apijson.Field
+	Encryption  apijson.Field
 	Git         apijson.Field
 	ReadOnly    apijson.Field
 	S3          apijson.Field
@@ -1124,6 +1159,30 @@ func (r sandboxResponseMountConfigMountsSandboxapiGcsBucketMountSpecContexthubJS
 	return r.raw
 }
 
+type SandboxResponseMountConfigMountsSandboxapiGcsBucketMountSpecEncryption struct {
+	// KMSKey is the key to encrypt uploads with. S3 mounts take a KMS key ARN in the
+	// mount's region.
+	KmsKey string                                                                     `json:"kms_key" api:"required"`
+	JSON   sandboxResponseMountConfigMountsSandboxapiGcsBucketMountSpecEncryptionJSON `json:"-"`
+}
+
+// sandboxResponseMountConfigMountsSandboxapiGcsBucketMountSpecEncryptionJSON
+// contains the JSON metadata for the struct
+// [SandboxResponseMountConfigMountsSandboxapiGcsBucketMountSpecEncryption]
+type sandboxResponseMountConfigMountsSandboxapiGcsBucketMountSpecEncryptionJSON struct {
+	KmsKey      apijson.Field
+	raw         string
+	ExtraFields map[string]apijson.Field
+}
+
+func (r *SandboxResponseMountConfigMountsSandboxapiGcsBucketMountSpecEncryption) UnmarshalJSON(data []byte) (err error) {
+	return apijson.UnmarshalRoot(data, r)
+}
+
+func (r sandboxResponseMountConfigMountsSandboxapiGcsBucketMountSpecEncryptionJSON) RawJSON() string {
+	return r.raw
+}
+
 type SandboxResponseMountConfigMountsSandboxapiGcsBucketMountSpecGit struct {
 	RemoteURL              string                                                              `json:"remote_url" api:"required"`
 	Ref                    SandboxResponseMountConfigMountsSandboxapiGcsBucketMountSpecGitRef  `json:"ref"`
@@ -1226,6 +1285,7 @@ type SandboxResponseMountConfigMountsSandboxapiGitRepoMountSpec struct {
 	Type       SandboxResponseMountConfigMountsSandboxapiGitRepoMountSpecType       `json:"type" api:"required"`
 	Cache      SandboxResponseMountConfigMountsSandboxapiGitRepoMountSpecCache      `json:"cache"`
 	Contexthub SandboxResponseMountConfigMountsSandboxapiGitRepoMountSpecContexthub `json:"contexthub"`
+	Encryption SandboxResponseMountConfigMountsSandboxapiGitRepoMountSpecEncryption `json:"encryption"`
 	Gcs        SandboxResponseMountConfigMountsSandboxapiGitRepoMountSpecGcs        `json:"gcs"`
 	ReadOnly   bool                                                                 `json:"read_only"`
 	S3         SandboxResponseMountConfigMountsSandboxapiGitRepoMountSpecS3         `json:"s3"`
@@ -1242,6 +1302,7 @@ type sandboxResponseMountConfigMountsSandboxapiGitRepoMountSpecJSON struct {
 	Type        apijson.Field
 	Cache       apijson.Field
 	Contexthub  apijson.Field
+	Encryption  apijson.Field
 	Gcs         apijson.Field
 	ReadOnly    apijson.Field
 	S3          apijson.Field
@@ -1395,6 +1456,30 @@ func (r sandboxResponseMountConfigMountsSandboxapiGitRepoMountSpecContexthubJSON
 	return r.raw
 }
 
+type SandboxResponseMountConfigMountsSandboxapiGitRepoMountSpecEncryption struct {
+	// KMSKey is the key to encrypt uploads with. S3 mounts take a KMS key ARN in the
+	// mount's region.
+	KmsKey string                                                                   `json:"kms_key" api:"required"`
+	JSON   sandboxResponseMountConfigMountsSandboxapiGitRepoMountSpecEncryptionJSON `json:"-"`
+}
+
+// sandboxResponseMountConfigMountsSandboxapiGitRepoMountSpecEncryptionJSON
+// contains the JSON metadata for the struct
+// [SandboxResponseMountConfigMountsSandboxapiGitRepoMountSpecEncryption]
+type sandboxResponseMountConfigMountsSandboxapiGitRepoMountSpecEncryptionJSON struct {
+	KmsKey      apijson.Field
+	raw         string
+	ExtraFields map[string]apijson.Field
+}
+
+func (r *SandboxResponseMountConfigMountsSandboxapiGitRepoMountSpecEncryption) UnmarshalJSON(data []byte) (err error) {
+	return apijson.UnmarshalRoot(data, r)
+}
+
+func (r sandboxResponseMountConfigMountsSandboxapiGitRepoMountSpecEncryptionJSON) RawJSON() string {
+	return r.raw
+}
+
 type SandboxResponseMountConfigMountsSandboxapiGitRepoMountSpecGcs struct {
 	Bucket string                                                            `json:"bucket" api:"required"`
 	Prefix string                                                            `json:"prefix"`
@@ -1455,6 +1540,7 @@ type SandboxResponseMountConfigMountsSandboxapiContextHubRepoMountSpec struct {
 	MountPath  string                                                                      `json:"mount_path" api:"required"`
 	Type       SandboxResponseMountConfigMountsSandboxapiContextHubRepoMountSpecType       `json:"type" api:"required"`
 	Cache      SandboxResponseMountConfigMountsSandboxapiContextHubRepoMountSpecCache      `json:"cache"`
+	Encryption SandboxResponseMountConfigMountsSandboxapiContextHubRepoMountSpecEncryption `json:"encryption"`
 	Gcs        SandboxResponseMountConfigMountsSandboxapiContextHubRepoMountSpecGcs        `json:"gcs"`
 	Git        SandboxResponseMountConfigMountsSandboxapiContextHubRepoMountSpecGit        `json:"git"`
 	ReadOnly   bool                                                                        `json:"read_only"`
@@ -1471,6 +1557,7 @@ type sandboxResponseMountConfigMountsSandboxapiContextHubRepoMountSpecJSON struc
 	MountPath   apijson.Field
 	Type        apijson.Field
 	Cache       apijson.Field
+	Encryption  apijson.Field
 	Gcs         apijson.Field
 	Git         apijson.Field
 	ReadOnly    apijson.Field
@@ -1557,6 +1644,30 @@ func (r *SandboxResponseMountConfigMountsSandboxapiContextHubRepoMountSpecCache)
 }
 
 func (r sandboxResponseMountConfigMountsSandboxapiContextHubRepoMountSpecCacheJSON) RawJSON() string {
+	return r.raw
+}
+
+type SandboxResponseMountConfigMountsSandboxapiContextHubRepoMountSpecEncryption struct {
+	// KMSKey is the key to encrypt uploads with. S3 mounts take a KMS key ARN in the
+	// mount's region.
+	KmsKey string                                                                          `json:"kms_key" api:"required"`
+	JSON   sandboxResponseMountConfigMountsSandboxapiContextHubRepoMountSpecEncryptionJSON `json:"-"`
+}
+
+// sandboxResponseMountConfigMountsSandboxapiContextHubRepoMountSpecEncryptionJSON
+// contains the JSON metadata for the struct
+// [SandboxResponseMountConfigMountsSandboxapiContextHubRepoMountSpecEncryption]
+type sandboxResponseMountConfigMountsSandboxapiContextHubRepoMountSpecEncryptionJSON struct {
+	KmsKey      apijson.Field
+	raw         string
+	ExtraFields map[string]apijson.Field
+}
+
+func (r *SandboxResponseMountConfigMountsSandboxapiContextHubRepoMountSpecEncryption) UnmarshalJSON(data []byte) (err error) {
+	return apijson.UnmarshalRoot(data, r)
+}
+
+func (r sandboxResponseMountConfigMountsSandboxapiContextHubRepoMountSpecEncryptionJSON) RawJSON() string {
 	return r.raw
 }
 
