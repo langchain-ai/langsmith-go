@@ -3,8 +3,13 @@ package langsmith
 import (
 	"cmp"
 	"context"
+	"crypto"
+	"crypto/ecdsa"
 	"crypto/ed25519"
+	"crypto/elliptic"
+	"crypto/rsa"
 	"crypto/sha256"
+	_ "crypto/sha512" // registers SHA-384 and SHA-512 for crypto.Hash
 	"crypto/subtle"
 	"encoding/base64"
 	"encoding/hex"
@@ -12,10 +17,12 @@ import (
 	"errors"
 	"fmt"
 	"io"
+	"math/big"
 	"net/http"
 	"net/netip"
 	"net/url"
 	"os"
+	"slices"
 	"strings"
 	"sync"
 	"time"
@@ -56,6 +63,81 @@ func (e *SandboxTokenVerificationError) Unwrap() error { return e.Err }
 
 func verificationError(reason string, err error) error {
 	return &SandboxTokenVerificationError{Reason: reason, Err: err}
+}
+
+// sandboxKey is a JWKS signing key and the JWS algorithm it is used with.
+type sandboxKey struct {
+	alg string
+	pub crypto.PublicKey
+}
+
+// sandboxAlgs maps each supported JWS algorithm to its hash; EdDSA hashes
+// internally.
+var sandboxAlgs = map[string]crypto.Hash{
+	"RS256": crypto.SHA256, "RS384": crypto.SHA384, "RS512": crypto.SHA512,
+	"PS256": crypto.SHA256, "PS384": crypto.SHA384, "PS512": crypto.SHA512,
+	"ES256": crypto.SHA256, "ES384": crypto.SHA384, "ES512": crypto.SHA512,
+	"EdDSA": 0,
+}
+
+// sandboxECCurves maps each ES* algorithm to its curve.
+var sandboxECCurves = map[string]elliptic.Curve{
+	"ES256": elliptic.P256(), "ES384": elliptic.P384(), "ES512": elliptic.P521(),
+}
+
+// verifySandboxSignature verifies a JWS signature with the key's algorithm.
+func verifySandboxSignature(key sandboxKey, signed, sig []byte) bool {
+	hash := sandboxAlgs[key.alg]
+	var digest []byte
+	if hash != 0 {
+		h := hash.New()
+		h.Write(signed)
+		digest = h.Sum(nil)
+	}
+	switch pub := key.pub.(type) {
+	case ed25519.PublicKey:
+		return key.alg == "EdDSA" && ed25519.Verify(pub, signed, sig)
+	case *rsa.PublicKey:
+		switch {
+		case strings.HasPrefix(key.alg, "RS"):
+			return rsa.VerifyPKCS1v15(pub, hash, digest, sig) == nil
+		case strings.HasPrefix(key.alg, "PS"):
+			return rsa.VerifyPSS(pub, hash, digest, sig, &rsa.PSSOptions{SaltLength: rsa.PSSSaltLengthEqualsHash}) == nil
+		}
+	case *ecdsa.PublicKey:
+		// A JWS ECDSA signature is r || s, each the curve's byte size.
+		size := (pub.Curve.Params().BitSize + 7) / 8
+		if sandboxECCurves[key.alg] != pub.Curve || len(sig) != 2*size {
+			return false
+		}
+		return ecdsa.Verify(pub, digest, new(big.Int).SetBytes(sig[:size]), new(big.Int).SetBytes(sig[size:]))
+	}
+	return false
+}
+
+// sandboxKeyAlg returns the algorithm a JWKS key is used with: its alg member
+// if set, otherwise the default for its key type. It reports false if the
+// algorithm is unsupported or does not fit the key type.
+func sandboxKeyAlg(jwkAlg string, pub crypto.PublicKey) (string, bool) {
+	if _, ok := sandboxAlgs[jwkAlg]; !ok && jwkAlg != "" {
+		return "", false
+	}
+	switch pub := pub.(type) {
+	case ed25519.PublicKey:
+		return "EdDSA", jwkAlg == "" || jwkAlg == "EdDSA"
+	case *rsa.PublicKey:
+		if jwkAlg == "" {
+			return "RS256", true
+		}
+		return jwkAlg, strings.HasPrefix(jwkAlg, "RS") || strings.HasPrefix(jwkAlg, "PS")
+	case *ecdsa.PublicKey:
+		for alg, curve := range sandboxECCurves {
+			if curve == pub.Curve {
+				return alg, jwkAlg == "" || jwkAlg == alg
+			}
+		}
+	}
+	return "", false
 }
 
 // SandboxUser is the LangSmith user a service URL request was made by.
@@ -155,7 +237,7 @@ type SandboxTokenVerifier struct {
 	fetchSem chan struct{}
 
 	mu        sync.Mutex
-	keys      map[string]ed25519.PublicKey
+	keys      map[string]sandboxKey
 	fetchedAt time.Time
 }
 
@@ -209,7 +291,8 @@ func isLoopbackHost(host string) bool {
 }
 
 // VerifyUserToken verifies the X-Langsmith-User-Token header of a request made
-// through a LangSmith-login service URL.
+// through a LangSmith-login service URL. The token may use any JOSE asymmetric
+// algorithm (RS*, PS*, ES*, EdDSA), chosen by the JWKS key its kid names.
 func (v *SandboxTokenVerifier) VerifyUserToken(ctx context.Context, token string, opts SandboxUserTokenOptions) (*SandboxUser, error) {
 	if opts.Audience == "" {
 		return nil, errors.New("sandbox token verifier: SandboxUserTokenOptions.Audience is required")
@@ -218,7 +301,7 @@ func (v *SandboxTokenVerifier) VerifyUserToken(ctx context.Context, token string
 	if err != nil {
 		return nil, err
 	}
-	claims, err := v.verify(ctx, token, ExactAudience(host), opts.Issuer)
+	claims, err := v.verify(ctx, token, nil, ExactAudience(host), opts.Issuer)
 	if err != nil {
 		return nil, err
 	}
@@ -240,7 +323,7 @@ func (v *SandboxTokenVerifier) VerifyCallback(ctx context.Context, body []byte, 
 	if opts.Audience == nil {
 		return nil, errors.New("sandbox token verifier: SandboxCallbackOptions.Audience is required")
 	}
-	claims, err := v.verify(ctx, signature, opts.Audience, opts.Issuer)
+	claims, err := v.verify(ctx, signature, []string{"EdDSA"}, opts.Audience, opts.Issuer)
 	if err != nil {
 		return nil, err
 	}
@@ -309,7 +392,9 @@ func (a *sandboxAudience) UnmarshalJSON(b []byte) error {
 	return nil
 }
 
-func (v *SandboxTokenVerifier) verify(ctx context.Context, token string, audience func(string) bool, issuer string) (*sandboxTokenClaims, error) {
+// verify checks a token's signature and claims. algs restricts the accepted
+// algorithms; nil accepts any supported one.
+func (v *SandboxTokenVerifier) verify(ctx context.Context, token string, algs []string, audience func(string) bool, issuer string) (*sandboxTokenClaims, error) {
 	parts := strings.Split(token, ".")
 	if len(parts) != 3 {
 		return nil, verificationError("malformed token", nil)
@@ -326,7 +411,7 @@ func (v *SandboxTokenVerifier) verify(ctx context.Context, token string, audienc
 	if err != nil {
 		return nil, verificationError("malformed token signature", err)
 	}
-	if header.Alg != "EdDSA" {
+	if _, ok := sandboxAlgs[header.Alg]; !ok || (algs != nil && !slices.Contains(algs, header.Alg)) {
 		return nil, verificationError(fmt.Sprintf("unexpected signing algorithm %q", header.Alg), nil)
 	}
 	if header.Kid == "" {
@@ -337,7 +422,11 @@ func (v *SandboxTokenVerifier) verify(ctx context.Context, token string, audienc
 	if err != nil {
 		return nil, err
 	}
-	if !ed25519.Verify(key, []byte(parts[0]+"."+parts[1]), sig) {
+	if key.alg != header.Alg {
+		return nil, verificationError(fmt.Sprintf("unexpected signing algorithm %q for key %s", header.Alg, header.Kid), nil)
+	}
+	signed := []byte(parts[0] + "." + parts[1])
+	if !verifySandboxSignature(key, signed, sig) {
 		return nil, verificationError("invalid signature", nil)
 	}
 
@@ -384,7 +473,7 @@ func decodeSandboxTokenSegment(segment string, into any) error {
 	return json.Unmarshal(raw, into)
 }
 
-func (v *SandboxTokenVerifier) cachedKey(kid string, now time.Time) (ed25519.PublicKey, bool) {
+func (v *SandboxTokenVerifier) cachedKey(kid string, now time.Time) (sandboxKey, bool) {
 	v.mu.Lock()
 	defer v.mu.Unlock()
 	key, ok := v.keys[kid]
@@ -396,20 +485,20 @@ func (v *SandboxTokenVerifier) cachedKey(kid string, now time.Time) (ed25519.Pub
 	return key, v.keys == nil || !fresh || age >= sandboxJWKSMinRefresh
 }
 
-func (v *SandboxTokenVerifier) key(ctx context.Context, kid string) (ed25519.PublicKey, error) {
+func (v *SandboxTokenVerifier) key(ctx context.Context, kid string) (sandboxKey, error) {
 	key, refresh := v.cachedKey(kid, time.Now())
 	if refresh {
 		select {
 		case v.fetchSem <- struct{}{}:
 		case <-ctx.Done():
-			return nil, verificationError("waiting for JWKS", ctx.Err())
+			return sandboxKey{}, verificationError("waiting for JWKS", ctx.Err())
 		}
 		defer func() { <-v.fetchSem }()
 		now := time.Now()
 		if key, refresh = v.cachedKey(kid, now); refresh {
 			keys, err := v.fetchKeys(ctx)
 			if err != nil {
-				return nil, err
+				return sandboxKey{}, err
 			}
 			v.mu.Lock()
 			v.keys, v.fetchedAt = keys, now
@@ -417,13 +506,13 @@ func (v *SandboxTokenVerifier) key(ctx context.Context, kid string) (ed25519.Pub
 			key = keys[kid]
 		}
 	}
-	if key == nil {
-		return nil, verificationError("unknown signing key "+kid, nil)
+	if key.pub == nil {
+		return sandboxKey{}, verificationError("unknown signing key "+kid, nil)
 	}
 	return key, nil
 }
 
-func (v *SandboxTokenVerifier) fetchKeys(ctx context.Context) (map[string]ed25519.PublicKey, error) {
+func (v *SandboxTokenVerifier) fetchKeys(ctx context.Context) (map[string]sandboxKey, error) {
 	req, err := http.NewRequestWithContext(ctx, http.MethodGet, v.jwksURL, nil)
 	if err != nil {
 		return nil, verificationError("build JWKS request", err)
@@ -446,22 +535,62 @@ func (v *SandboxTokenVerifier) fetchKeys(ctx context.Context) (map[string]ed2551
 	if err := json.Unmarshal(raw, &set); err != nil || set.Keys == nil {
 		return nil, verificationError("invalid JWKS: expected an object with a keys array", err)
 	}
-	keys := make(map[string]ed25519.PublicKey, len(set.Keys))
+	keys := make(map[string]sandboxKey, len(set.Keys))
 	for _, entry := range set.Keys {
 		var jwk struct {
 			Kty string `json:"kty"`
 			Crv string `json:"crv"`
+			Alg string `json:"alg"`
 			Kid string `json:"kid"`
 			X   string `json:"x"`
+			Y   string `json:"y"`
+			N   string `json:"n"`
+			E   string `json:"e"`
 		}
-		if json.Unmarshal(entry, &jwk) != nil || jwk.Kty != "OKP" || jwk.Crv != "Ed25519" || jwk.Kid == "" {
+		if json.Unmarshal(entry, &jwk) != nil || jwk.Kid == "" {
 			continue
 		}
-		x, err := base64.RawURLEncoding.DecodeString(jwk.X)
-		if err != nil || len(x) != ed25519.PublicKeySize {
+		var pub crypto.PublicKey
+		switch {
+		case jwk.Kty == "OKP" && jwk.Crv == "Ed25519":
+			x, err := base64.RawURLEncoding.DecodeString(jwk.X)
+			if err != nil || len(x) != ed25519.PublicKeySize {
+				continue
+			}
+			pub = ed25519.PublicKey(x)
+		case jwk.Kty == "RSA":
+			n, errN := base64.RawURLEncoding.DecodeString(jwk.N)
+			e, errE := base64.RawURLEncoding.DecodeString(jwk.E)
+			if errN != nil || errE != nil || len(n) == 0 || len(e) == 0 || len(e) > 4 {
+				continue
+			}
+			pub = &rsa.PublicKey{
+				N: new(big.Int).SetBytes(n),
+				E: int(new(big.Int).SetBytes(e).Int64()),
+			}
+		case jwk.Kty == "EC":
+			x, errX := base64.RawURLEncoding.DecodeString(jwk.X)
+			y, errY := base64.RawURLEncoding.DecodeString(jwk.Y)
+			curve := map[string]elliptic.Curve{"P-256": elliptic.P256(), "P-384": elliptic.P384(), "P-521": elliptic.P521()}[jwk.Crv]
+			if errX != nil || errY != nil || curve == nil {
+				continue
+			}
+			// Coordinates are fixed-length; parsing rejects points off the curve.
+			size := (curve.Params().BitSize + 7) / 8
+			if len(x) != size || len(y) != size {
+				continue
+			}
+			ec, err := ecdsa.ParseUncompressedPublicKey(curve, append(append([]byte{4}, x...), y...))
+			if err != nil {
+				continue
+			}
+			pub = ec
+		default:
 			continue
 		}
-		keys[jwk.Kid] = ed25519.PublicKey(x)
+		if alg, ok := sandboxKeyAlg(jwk.Alg, pub); ok {
+			keys[jwk.Kid] = sandboxKey{alg: alg, pub: pub}
+		}
 	}
 	return keys, nil
 }
