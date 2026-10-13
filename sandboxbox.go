@@ -412,8 +412,9 @@ func (r SandboxBoxNewParamsMountConfig) MarshalJSON() (data []byte, err error) {
 }
 
 type SandboxBoxNewParamsMountConfigAuth struct {
-	Aws param.Field[SandboxBoxNewParamsMountConfigAuthAwsUnion] `json:"aws"`
-	Gcp param.Field[SandboxBoxNewParamsMountConfigAuthGcp]      `json:"gcp"`
+	Aws   param.Field[SandboxBoxNewParamsMountConfigAuthAwsUnion]   `json:"aws"`
+	Azure param.Field[SandboxBoxNewParamsMountConfigAuthAzureUnion] `json:"azure"`
+	Gcp   param.Field[SandboxBoxNewParamsMountConfigAuthGcpUnion]   `json:"gcp"`
 }
 
 func (r SandboxBoxNewParamsMountConfigAuth) MarshalJSON() (data []byte, err error) {
@@ -559,12 +560,143 @@ func (r SandboxBoxNewParamsMountConfigAuthAwsSandboxesSandboxAwsMountStaticAuthC
 	return false
 }
 
+type SandboxBoxNewParamsMountConfigAuthAzure struct {
+	AccountKey param.Field[interface{}] `json:"account_key"`
+	// ClientID is the application (client) ID, a GUID, of the app registration or
+	// user-assigned managed identity whose federated identity credential trusts
+	// LangSmith's issuer. Required with tenant_id.
+	ClientID param.Field[string]      `json:"client_id"`
+	SasToken param.Field[interface{}] `json:"sas_token"`
+	// SubjectScope picks the token subject the federated credential trusts:
+	// "workspace" (the default) or "tag:<tag value id>", which must be one of the
+	// sandbox's tag_value_ids. Only valid with tenant_id.
+	SubjectScope param.Field[string] `json:"subject_scope"`
+	// TenantID is the Entra tenant (directory) ID, a GUID. Setting it selects workload
+	// identity: LangSmith signs an OIDC token for this workspace and exchanges it at
+	// Entra ID for storage access tokens of client_id. Cannot be changed after
+	// creation.
+	TenantID param.Field[string] `json:"tenant_id"`
+}
+
+func (r SandboxBoxNewParamsMountConfigAuthAzure) MarshalJSON() (data []byte, err error) {
+	return apijson.MarshalRoot(r)
+}
+
+func (r SandboxBoxNewParamsMountConfigAuthAzure) implementsSandboxBoxNewParamsMountConfigAuthAzureUnion() {
+}
+
+// Satisfied by
+// [SandboxBoxNewParamsMountConfigAuthAzureSandboxesSandboxAzureMountWorkloadIdentityAuthConfig],
+// [SandboxBoxNewParamsMountConfigAuthAzureSandboxesSandboxAzureMountAccountKeyAuthConfig],
+// [SandboxBoxNewParamsMountConfigAuthAzureSandboxesSandboxAzureMountSasAuthConfig],
+// [SandboxBoxNewParamsMountConfigAuthAzure].
+type SandboxBoxNewParamsMountConfigAuthAzureUnion interface {
+	implementsSandboxBoxNewParamsMountConfigAuthAzureUnion()
+}
+
+type SandboxBoxNewParamsMountConfigAuthAzureSandboxesSandboxAzureMountWorkloadIdentityAuthConfig struct {
+	// ClientID is the application (client) ID, a GUID, of the app registration or
+	// user-assigned managed identity whose federated identity credential trusts
+	// LangSmith's issuer. Required with tenant_id.
+	ClientID param.Field[string] `json:"client_id" api:"required"`
+	// TenantID is the Entra tenant (directory) ID, a GUID. Setting it selects workload
+	// identity: LangSmith signs an OIDC token for this workspace and exchanges it at
+	// Entra ID for storage access tokens of client_id. Cannot be changed after
+	// creation.
+	TenantID param.Field[string] `json:"tenant_id" api:"required"`
+	// SubjectScope picks the token subject the federated credential trusts:
+	// "workspace" (the default) or "tag:<tag value id>", which must be one of the
+	// sandbox's tag_value_ids. Only valid with tenant_id.
+	SubjectScope param.Field[string] `json:"subject_scope"`
+}
+
+func (r SandboxBoxNewParamsMountConfigAuthAzureSandboxesSandboxAzureMountWorkloadIdentityAuthConfig) MarshalJSON() (data []byte, err error) {
+	return apijson.MarshalRoot(r)
+}
+
+func (r SandboxBoxNewParamsMountConfigAuthAzureSandboxesSandboxAzureMountWorkloadIdentityAuthConfig) implementsSandboxBoxNewParamsMountConfigAuthAzureUnion() {
+}
+
+type SandboxBoxNewParamsMountConfigAuthAzureSandboxesSandboxAzureMountAccountKeyAuthConfig struct {
+	AccountKey param.Field[SandboxBoxNewParamsMountConfigAuthAzureSandboxesSandboxAzureMountAccountKeyAuthConfigAccountKey] `json:"account_key" api:"required"`
+}
+
+func (r SandboxBoxNewParamsMountConfigAuthAzureSandboxesSandboxAzureMountAccountKeyAuthConfig) MarshalJSON() (data []byte, err error) {
+	return apijson.MarshalRoot(r)
+}
+
+func (r SandboxBoxNewParamsMountConfigAuthAzureSandboxesSandboxAzureMountAccountKeyAuthConfig) implementsSandboxBoxNewParamsMountConfigAuthAzureUnion() {
+}
+
+type SandboxBoxNewParamsMountConfigAuthAzureSandboxesSandboxAzureMountAccountKeyAuthConfigAccountKey struct {
+	Type  param.Field[SandboxBoxNewParamsMountConfigAuthAzureSandboxesSandboxAzureMountAccountKeyAuthConfigAccountKeyType] `json:"type" api:"required"`
+	IsSet param.Field[bool]                                                                                                `json:"is_set"`
+	Value param.Field[string]                                                                                              `json:"value"`
+}
+
+func (r SandboxBoxNewParamsMountConfigAuthAzureSandboxesSandboxAzureMountAccountKeyAuthConfigAccountKey) MarshalJSON() (data []byte, err error) {
+	return apijson.MarshalRoot(r)
+}
+
+type SandboxBoxNewParamsMountConfigAuthAzureSandboxesSandboxAzureMountAccountKeyAuthConfigAccountKeyType string
+
+const (
+	SandboxBoxNewParamsMountConfigAuthAzureSandboxesSandboxAzureMountAccountKeyAuthConfigAccountKeyTypePlaintext       SandboxBoxNewParamsMountConfigAuthAzureSandboxesSandboxAzureMountAccountKeyAuthConfigAccountKeyType = "plaintext"
+	SandboxBoxNewParamsMountConfigAuthAzureSandboxesSandboxAzureMountAccountKeyAuthConfigAccountKeyTypeOpaque          SandboxBoxNewParamsMountConfigAuthAzureSandboxesSandboxAzureMountAccountKeyAuthConfigAccountKeyType = "opaque"
+	SandboxBoxNewParamsMountConfigAuthAzureSandboxesSandboxAzureMountAccountKeyAuthConfigAccountKeyTypeWorkspaceSecret SandboxBoxNewParamsMountConfigAuthAzureSandboxesSandboxAzureMountAccountKeyAuthConfigAccountKeyType = "workspace_secret"
+)
+
+func (r SandboxBoxNewParamsMountConfigAuthAzureSandboxesSandboxAzureMountAccountKeyAuthConfigAccountKeyType) IsKnown() bool {
+	switch r {
+	case SandboxBoxNewParamsMountConfigAuthAzureSandboxesSandboxAzureMountAccountKeyAuthConfigAccountKeyTypePlaintext, SandboxBoxNewParamsMountConfigAuthAzureSandboxesSandboxAzureMountAccountKeyAuthConfigAccountKeyTypeOpaque, SandboxBoxNewParamsMountConfigAuthAzureSandboxesSandboxAzureMountAccountKeyAuthConfigAccountKeyTypeWorkspaceSecret:
+		return true
+	}
+	return false
+}
+
+type SandboxBoxNewParamsMountConfigAuthAzureSandboxesSandboxAzureMountSasAuthConfig struct {
+	SasToken param.Field[SandboxBoxNewParamsMountConfigAuthAzureSandboxesSandboxAzureMountSasAuthConfigSasToken] `json:"sas_token" api:"required"`
+}
+
+func (r SandboxBoxNewParamsMountConfigAuthAzureSandboxesSandboxAzureMountSasAuthConfig) MarshalJSON() (data []byte, err error) {
+	return apijson.MarshalRoot(r)
+}
+
+func (r SandboxBoxNewParamsMountConfigAuthAzureSandboxesSandboxAzureMountSasAuthConfig) implementsSandboxBoxNewParamsMountConfigAuthAzureUnion() {
+}
+
+type SandboxBoxNewParamsMountConfigAuthAzureSandboxesSandboxAzureMountSasAuthConfigSasToken struct {
+	Type  param.Field[SandboxBoxNewParamsMountConfigAuthAzureSandboxesSandboxAzureMountSasAuthConfigSasTokenType] `json:"type" api:"required"`
+	IsSet param.Field[bool]                                                                                       `json:"is_set"`
+	Value param.Field[string]                                                                                     `json:"value"`
+}
+
+func (r SandboxBoxNewParamsMountConfigAuthAzureSandboxesSandboxAzureMountSasAuthConfigSasToken) MarshalJSON() (data []byte, err error) {
+	return apijson.MarshalRoot(r)
+}
+
+type SandboxBoxNewParamsMountConfigAuthAzureSandboxesSandboxAzureMountSasAuthConfigSasTokenType string
+
+const (
+	SandboxBoxNewParamsMountConfigAuthAzureSandboxesSandboxAzureMountSasAuthConfigSasTokenTypePlaintext       SandboxBoxNewParamsMountConfigAuthAzureSandboxesSandboxAzureMountSasAuthConfigSasTokenType = "plaintext"
+	SandboxBoxNewParamsMountConfigAuthAzureSandboxesSandboxAzureMountSasAuthConfigSasTokenTypeOpaque          SandboxBoxNewParamsMountConfigAuthAzureSandboxesSandboxAzureMountSasAuthConfigSasTokenType = "opaque"
+	SandboxBoxNewParamsMountConfigAuthAzureSandboxesSandboxAzureMountSasAuthConfigSasTokenTypeWorkspaceSecret SandboxBoxNewParamsMountConfigAuthAzureSandboxesSandboxAzureMountSasAuthConfigSasTokenType = "workspace_secret"
+)
+
+func (r SandboxBoxNewParamsMountConfigAuthAzureSandboxesSandboxAzureMountSasAuthConfigSasTokenType) IsKnown() bool {
+	switch r {
+	case SandboxBoxNewParamsMountConfigAuthAzureSandboxesSandboxAzureMountSasAuthConfigSasTokenTypePlaintext, SandboxBoxNewParamsMountConfigAuthAzureSandboxesSandboxAzureMountSasAuthConfigSasTokenTypeOpaque, SandboxBoxNewParamsMountConfigAuthAzureSandboxesSandboxAzureMountSasAuthConfigSasTokenTypeWorkspaceSecret:
+		return true
+	}
+	return false
+}
+
 type SandboxBoxNewParamsMountConfigAuthGcp struct {
 	// ServiceAccountEmail is the service account to impersonate with the federated
 	// token. Omit it to use the federated principal directly. Only valid with
 	// workload_identity_provider.
-	ServiceAccountEmail param.Field[string]                                                  `json:"service_account_email"`
-	ServiceAccountJson  param.Field[SandboxBoxNewParamsMountConfigAuthGcpServiceAccountJson] `json:"service_account_json"`
+	ServiceAccountEmail param.Field[string]      `json:"service_account_email"`
+	ServiceAccountJson  param.Field[interface{}] `json:"service_account_json"`
 	// SubjectScope picks the token subject the provider trusts: "workspace" (the
 	// default) or "tag:<tag value id>", which must be one of the sandbox's
 	// tag_value_ids. Only valid with workload_identity_provider.
@@ -580,27 +712,72 @@ func (r SandboxBoxNewParamsMountConfigAuthGcp) MarshalJSON() (data []byte, err e
 	return apijson.MarshalRoot(r)
 }
 
-type SandboxBoxNewParamsMountConfigAuthGcpServiceAccountJson struct {
-	Type  param.Field[SandboxBoxNewParamsMountConfigAuthGcpServiceAccountJsonType] `json:"type" api:"required"`
-	IsSet param.Field[bool]                                                        `json:"is_set"`
-	Value param.Field[string]                                                      `json:"value"`
+func (r SandboxBoxNewParamsMountConfigAuthGcp) implementsSandboxBoxNewParamsMountConfigAuthGcpUnion() {
 }
 
-func (r SandboxBoxNewParamsMountConfigAuthGcpServiceAccountJson) MarshalJSON() (data []byte, err error) {
+// Satisfied by
+// [SandboxBoxNewParamsMountConfigAuthGcpSandboxesSandboxGcpMountWorkloadIdentityAuthConfig],
+// [SandboxBoxNewParamsMountConfigAuthGcpSandboxesSandboxGcpMountServiceAccountAuthConfig],
+// [SandboxBoxNewParamsMountConfigAuthGcp].
+type SandboxBoxNewParamsMountConfigAuthGcpUnion interface {
+	implementsSandboxBoxNewParamsMountConfigAuthGcpUnion()
+}
+
+type SandboxBoxNewParamsMountConfigAuthGcpSandboxesSandboxGcpMountWorkloadIdentityAuthConfig struct {
+	// WorkloadIdentityProvider federates an OIDC token LangSmith signs for this
+	// workspace through Workload Identity Federation instead of a service account key:
+	// //iam.googleapis.com/projects/<number>/locations/global/workloadIdentityPools/<pool>/providers/<provider>.
+	// Mutually exclusive with service_account_json. Cannot be changed after creation.
+	WorkloadIdentityProvider param.Field[string] `json:"workload_identity_provider" api:"required"`
+	// ServiceAccountEmail is the service account to impersonate with the federated
+	// token. Omit it to use the federated principal directly. Only valid with
+	// workload_identity_provider.
+	ServiceAccountEmail param.Field[string] `json:"service_account_email"`
+	// SubjectScope picks the token subject the provider trusts: "workspace" (the
+	// default) or "tag:<tag value id>", which must be one of the sandbox's
+	// tag_value_ids. Only valid with workload_identity_provider.
+	SubjectScope param.Field[string] `json:"subject_scope"`
+}
+
+func (r SandboxBoxNewParamsMountConfigAuthGcpSandboxesSandboxGcpMountWorkloadIdentityAuthConfig) MarshalJSON() (data []byte, err error) {
 	return apijson.MarshalRoot(r)
 }
 
-type SandboxBoxNewParamsMountConfigAuthGcpServiceAccountJsonType string
+func (r SandboxBoxNewParamsMountConfigAuthGcpSandboxesSandboxGcpMountWorkloadIdentityAuthConfig) implementsSandboxBoxNewParamsMountConfigAuthGcpUnion() {
+}
+
+type SandboxBoxNewParamsMountConfigAuthGcpSandboxesSandboxGcpMountServiceAccountAuthConfig struct {
+	ServiceAccountJson param.Field[SandboxBoxNewParamsMountConfigAuthGcpSandboxesSandboxGcpMountServiceAccountAuthConfigServiceAccountJson] `json:"service_account_json" api:"required"`
+}
+
+func (r SandboxBoxNewParamsMountConfigAuthGcpSandboxesSandboxGcpMountServiceAccountAuthConfig) MarshalJSON() (data []byte, err error) {
+	return apijson.MarshalRoot(r)
+}
+
+func (r SandboxBoxNewParamsMountConfigAuthGcpSandboxesSandboxGcpMountServiceAccountAuthConfig) implementsSandboxBoxNewParamsMountConfigAuthGcpUnion() {
+}
+
+type SandboxBoxNewParamsMountConfigAuthGcpSandboxesSandboxGcpMountServiceAccountAuthConfigServiceAccountJson struct {
+	Type  param.Field[SandboxBoxNewParamsMountConfigAuthGcpSandboxesSandboxGcpMountServiceAccountAuthConfigServiceAccountJsonType] `json:"type" api:"required"`
+	IsSet param.Field[bool]                                                                                                        `json:"is_set"`
+	Value param.Field[string]                                                                                                      `json:"value"`
+}
+
+func (r SandboxBoxNewParamsMountConfigAuthGcpSandboxesSandboxGcpMountServiceAccountAuthConfigServiceAccountJson) MarshalJSON() (data []byte, err error) {
+	return apijson.MarshalRoot(r)
+}
+
+type SandboxBoxNewParamsMountConfigAuthGcpSandboxesSandboxGcpMountServiceAccountAuthConfigServiceAccountJsonType string
 
 const (
-	SandboxBoxNewParamsMountConfigAuthGcpServiceAccountJsonTypePlaintext       SandboxBoxNewParamsMountConfigAuthGcpServiceAccountJsonType = "plaintext"
-	SandboxBoxNewParamsMountConfigAuthGcpServiceAccountJsonTypeOpaque          SandboxBoxNewParamsMountConfigAuthGcpServiceAccountJsonType = "opaque"
-	SandboxBoxNewParamsMountConfigAuthGcpServiceAccountJsonTypeWorkspaceSecret SandboxBoxNewParamsMountConfigAuthGcpServiceAccountJsonType = "workspace_secret"
+	SandboxBoxNewParamsMountConfigAuthGcpSandboxesSandboxGcpMountServiceAccountAuthConfigServiceAccountJsonTypePlaintext       SandboxBoxNewParamsMountConfigAuthGcpSandboxesSandboxGcpMountServiceAccountAuthConfigServiceAccountJsonType = "plaintext"
+	SandboxBoxNewParamsMountConfigAuthGcpSandboxesSandboxGcpMountServiceAccountAuthConfigServiceAccountJsonTypeOpaque          SandboxBoxNewParamsMountConfigAuthGcpSandboxesSandboxGcpMountServiceAccountAuthConfigServiceAccountJsonType = "opaque"
+	SandboxBoxNewParamsMountConfigAuthGcpSandboxesSandboxGcpMountServiceAccountAuthConfigServiceAccountJsonTypeWorkspaceSecret SandboxBoxNewParamsMountConfigAuthGcpSandboxesSandboxGcpMountServiceAccountAuthConfigServiceAccountJsonType = "workspace_secret"
 )
 
-func (r SandboxBoxNewParamsMountConfigAuthGcpServiceAccountJsonType) IsKnown() bool {
+func (r SandboxBoxNewParamsMountConfigAuthGcpSandboxesSandboxGcpMountServiceAccountAuthConfigServiceAccountJsonType) IsKnown() bool {
 	switch r {
-	case SandboxBoxNewParamsMountConfigAuthGcpServiceAccountJsonTypePlaintext, SandboxBoxNewParamsMountConfigAuthGcpServiceAccountJsonTypeOpaque, SandboxBoxNewParamsMountConfigAuthGcpServiceAccountJsonTypeWorkspaceSecret:
+	case SandboxBoxNewParamsMountConfigAuthGcpSandboxesSandboxGcpMountServiceAccountAuthConfigServiceAccountJsonTypePlaintext, SandboxBoxNewParamsMountConfigAuthGcpSandboxesSandboxGcpMountServiceAccountAuthConfigServiceAccountJsonTypeOpaque, SandboxBoxNewParamsMountConfigAuthGcpSandboxesSandboxGcpMountServiceAccountAuthConfigServiceAccountJsonTypeWorkspaceSecret:
 		return true
 	}
 	return false
@@ -610,6 +787,7 @@ type SandboxBoxNewParamsMountConfigMount struct {
 	ID         param.Field[string]                                   `json:"id" api:"required"`
 	MountPath  param.Field[string]                                   `json:"mount_path" api:"required"`
 	Type       param.Field[SandboxBoxNewParamsMountConfigMountsType] `json:"type" api:"required"`
+	AzureBlob  param.Field[interface{}]                              `json:"azure_blob"`
 	Cache      param.Field[interface{}]                              `json:"cache"`
 	Contexthub param.Field[interface{}]                              `json:"contexthub"`
 	Encryption param.Field[interface{}]                              `json:"encryption"`
@@ -629,6 +807,7 @@ func (r SandboxBoxNewParamsMountConfigMount) implementsSandboxBoxNewParamsMountC
 // [SandboxBoxNewParamsMountConfigMountsSandboxapiGcsBucketMountSpec],
 // [SandboxBoxNewParamsMountConfigMountsSandboxapiGitRepoMountSpec],
 // [SandboxBoxNewParamsMountConfigMountsSandboxapiContextHubRepoMountSpec],
+// [SandboxBoxNewParamsMountConfigMountsSandboxapiAzureBlobContainerMountSpec],
 // [SandboxBoxNewParamsMountConfigMount].
 type SandboxBoxNewParamsMountConfigMountUnion interface {
 	implementsSandboxBoxNewParamsMountConfigMountUnion()
@@ -639,6 +818,7 @@ type SandboxBoxNewParamsMountConfigMountsSandboxapiS3BucketMountSpec struct {
 	MountPath  param.Field[string]                                                                    `json:"mount_path" api:"required"`
 	S3         param.Field[SandboxBoxNewParamsMountConfigMountsSandboxapiS3BucketMountSpecS3]         `json:"s3" api:"required"`
 	Type       param.Field[SandboxBoxNewParamsMountConfigMountsSandboxapiS3BucketMountSpecType]       `json:"type" api:"required"`
+	AzureBlob  param.Field[SandboxBoxNewParamsMountConfigMountsSandboxapiS3BucketMountSpecAzureBlob]  `json:"azure_blob"`
 	Cache      param.Field[SandboxBoxNewParamsMountConfigMountsSandboxapiS3BucketMountSpecCache]      `json:"cache"`
 	Contexthub param.Field[SandboxBoxNewParamsMountConfigMountsSandboxapiS3BucketMountSpecContexthub] `json:"contexthub"`
 	Encryption param.Field[SandboxBoxNewParamsMountConfigMountsSandboxapiS3BucketMountSpecEncryption] `json:"encryption"`
@@ -671,16 +851,29 @@ type SandboxBoxNewParamsMountConfigMountsSandboxapiS3BucketMountSpecType string
 const (
 	SandboxBoxNewParamsMountConfigMountsSandboxapiS3BucketMountSpecTypeS3         SandboxBoxNewParamsMountConfigMountsSandboxapiS3BucketMountSpecType = "s3"
 	SandboxBoxNewParamsMountConfigMountsSandboxapiS3BucketMountSpecTypeGcs        SandboxBoxNewParamsMountConfigMountsSandboxapiS3BucketMountSpecType = "gcs"
+	SandboxBoxNewParamsMountConfigMountsSandboxapiS3BucketMountSpecTypeAzureBlob  SandboxBoxNewParamsMountConfigMountsSandboxapiS3BucketMountSpecType = "azure_blob"
 	SandboxBoxNewParamsMountConfigMountsSandboxapiS3BucketMountSpecTypeGit        SandboxBoxNewParamsMountConfigMountsSandboxapiS3BucketMountSpecType = "git"
 	SandboxBoxNewParamsMountConfigMountsSandboxapiS3BucketMountSpecTypeContexthub SandboxBoxNewParamsMountConfigMountsSandboxapiS3BucketMountSpecType = "contexthub"
 )
 
 func (r SandboxBoxNewParamsMountConfigMountsSandboxapiS3BucketMountSpecType) IsKnown() bool {
 	switch r {
-	case SandboxBoxNewParamsMountConfigMountsSandboxapiS3BucketMountSpecTypeS3, SandboxBoxNewParamsMountConfigMountsSandboxapiS3BucketMountSpecTypeGcs, SandboxBoxNewParamsMountConfigMountsSandboxapiS3BucketMountSpecTypeGit, SandboxBoxNewParamsMountConfigMountsSandboxapiS3BucketMountSpecTypeContexthub:
+	case SandboxBoxNewParamsMountConfigMountsSandboxapiS3BucketMountSpecTypeS3, SandboxBoxNewParamsMountConfigMountsSandboxapiS3BucketMountSpecTypeGcs, SandboxBoxNewParamsMountConfigMountsSandboxapiS3BucketMountSpecTypeAzureBlob, SandboxBoxNewParamsMountConfigMountsSandboxapiS3BucketMountSpecTypeGit, SandboxBoxNewParamsMountConfigMountsSandboxapiS3BucketMountSpecTypeContexthub:
 		return true
 	}
 	return false
+}
+
+type SandboxBoxNewParamsMountConfigMountsSandboxapiS3BucketMountSpecAzureBlob struct {
+	Container param.Field[string] `json:"container" api:"required"`
+	// StorageAccount is the storage account name: 3 to 24 lowercase letters and
+	// digits.
+	StorageAccount param.Field[string] `json:"storage_account" api:"required"`
+	Prefix         param.Field[string] `json:"prefix"`
+}
+
+func (r SandboxBoxNewParamsMountConfigMountsSandboxapiS3BucketMountSpecAzureBlob) MarshalJSON() (data []byte, err error) {
+	return apijson.MarshalRoot(r)
 }
 
 type SandboxBoxNewParamsMountConfigMountsSandboxapiS3BucketMountSpecCache struct {
@@ -764,6 +957,7 @@ type SandboxBoxNewParamsMountConfigMountsSandboxapiGcsBucketMountSpec struct {
 	Gcs        param.Field[SandboxBoxNewParamsMountConfigMountsSandboxapiGcsBucketMountSpecGcs]        `json:"gcs" api:"required"`
 	MountPath  param.Field[string]                                                                     `json:"mount_path" api:"required"`
 	Type       param.Field[SandboxBoxNewParamsMountConfigMountsSandboxapiGcsBucketMountSpecType]       `json:"type" api:"required"`
+	AzureBlob  param.Field[SandboxBoxNewParamsMountConfigMountsSandboxapiGcsBucketMountSpecAzureBlob]  `json:"azure_blob"`
 	Cache      param.Field[SandboxBoxNewParamsMountConfigMountsSandboxapiGcsBucketMountSpecCache]      `json:"cache"`
 	Contexthub param.Field[SandboxBoxNewParamsMountConfigMountsSandboxapiGcsBucketMountSpecContexthub] `json:"contexthub"`
 	Encryption param.Field[SandboxBoxNewParamsMountConfigMountsSandboxapiGcsBucketMountSpecEncryption] `json:"encryption"`
@@ -793,16 +987,29 @@ type SandboxBoxNewParamsMountConfigMountsSandboxapiGcsBucketMountSpecType string
 const (
 	SandboxBoxNewParamsMountConfigMountsSandboxapiGcsBucketMountSpecTypeS3         SandboxBoxNewParamsMountConfigMountsSandboxapiGcsBucketMountSpecType = "s3"
 	SandboxBoxNewParamsMountConfigMountsSandboxapiGcsBucketMountSpecTypeGcs        SandboxBoxNewParamsMountConfigMountsSandboxapiGcsBucketMountSpecType = "gcs"
+	SandboxBoxNewParamsMountConfigMountsSandboxapiGcsBucketMountSpecTypeAzureBlob  SandboxBoxNewParamsMountConfigMountsSandboxapiGcsBucketMountSpecType = "azure_blob"
 	SandboxBoxNewParamsMountConfigMountsSandboxapiGcsBucketMountSpecTypeGit        SandboxBoxNewParamsMountConfigMountsSandboxapiGcsBucketMountSpecType = "git"
 	SandboxBoxNewParamsMountConfigMountsSandboxapiGcsBucketMountSpecTypeContexthub SandboxBoxNewParamsMountConfigMountsSandboxapiGcsBucketMountSpecType = "contexthub"
 )
 
 func (r SandboxBoxNewParamsMountConfigMountsSandboxapiGcsBucketMountSpecType) IsKnown() bool {
 	switch r {
-	case SandboxBoxNewParamsMountConfigMountsSandboxapiGcsBucketMountSpecTypeS3, SandboxBoxNewParamsMountConfigMountsSandboxapiGcsBucketMountSpecTypeGcs, SandboxBoxNewParamsMountConfigMountsSandboxapiGcsBucketMountSpecTypeGit, SandboxBoxNewParamsMountConfigMountsSandboxapiGcsBucketMountSpecTypeContexthub:
+	case SandboxBoxNewParamsMountConfigMountsSandboxapiGcsBucketMountSpecTypeS3, SandboxBoxNewParamsMountConfigMountsSandboxapiGcsBucketMountSpecTypeGcs, SandboxBoxNewParamsMountConfigMountsSandboxapiGcsBucketMountSpecTypeAzureBlob, SandboxBoxNewParamsMountConfigMountsSandboxapiGcsBucketMountSpecTypeGit, SandboxBoxNewParamsMountConfigMountsSandboxapiGcsBucketMountSpecTypeContexthub:
 		return true
 	}
 	return false
+}
+
+type SandboxBoxNewParamsMountConfigMountsSandboxapiGcsBucketMountSpecAzureBlob struct {
+	Container param.Field[string] `json:"container" api:"required"`
+	// StorageAccount is the storage account name: 3 to 24 lowercase letters and
+	// digits.
+	StorageAccount param.Field[string] `json:"storage_account" api:"required"`
+	Prefix         param.Field[string] `json:"prefix"`
+}
+
+func (r SandboxBoxNewParamsMountConfigMountsSandboxapiGcsBucketMountSpecAzureBlob) MarshalJSON() (data []byte, err error) {
+	return apijson.MarshalRoot(r)
 }
 
 type SandboxBoxNewParamsMountConfigMountsSandboxapiGcsBucketMountSpecCache struct {
@@ -889,6 +1096,7 @@ type SandboxBoxNewParamsMountConfigMountsSandboxapiGitRepoMountSpec struct {
 	Git        param.Field[SandboxBoxNewParamsMountConfigMountsSandboxapiGitRepoMountSpecGit]        `json:"git" api:"required"`
 	MountPath  param.Field[string]                                                                   `json:"mount_path" api:"required"`
 	Type       param.Field[SandboxBoxNewParamsMountConfigMountsSandboxapiGitRepoMountSpecType]       `json:"type" api:"required"`
+	AzureBlob  param.Field[SandboxBoxNewParamsMountConfigMountsSandboxapiGitRepoMountSpecAzureBlob]  `json:"azure_blob"`
 	Cache      param.Field[SandboxBoxNewParamsMountConfigMountsSandboxapiGitRepoMountSpecCache]      `json:"cache"`
 	Contexthub param.Field[SandboxBoxNewParamsMountConfigMountsSandboxapiGitRepoMountSpecContexthub] `json:"contexthub"`
 	Encryption param.Field[SandboxBoxNewParamsMountConfigMountsSandboxapiGitRepoMountSpecEncryption] `json:"encryption"`
@@ -943,16 +1151,29 @@ type SandboxBoxNewParamsMountConfigMountsSandboxapiGitRepoMountSpecType string
 const (
 	SandboxBoxNewParamsMountConfigMountsSandboxapiGitRepoMountSpecTypeS3         SandboxBoxNewParamsMountConfigMountsSandboxapiGitRepoMountSpecType = "s3"
 	SandboxBoxNewParamsMountConfigMountsSandboxapiGitRepoMountSpecTypeGcs        SandboxBoxNewParamsMountConfigMountsSandboxapiGitRepoMountSpecType = "gcs"
+	SandboxBoxNewParamsMountConfigMountsSandboxapiGitRepoMountSpecTypeAzureBlob  SandboxBoxNewParamsMountConfigMountsSandboxapiGitRepoMountSpecType = "azure_blob"
 	SandboxBoxNewParamsMountConfigMountsSandboxapiGitRepoMountSpecTypeGit        SandboxBoxNewParamsMountConfigMountsSandboxapiGitRepoMountSpecType = "git"
 	SandboxBoxNewParamsMountConfigMountsSandboxapiGitRepoMountSpecTypeContexthub SandboxBoxNewParamsMountConfigMountsSandboxapiGitRepoMountSpecType = "contexthub"
 )
 
 func (r SandboxBoxNewParamsMountConfigMountsSandboxapiGitRepoMountSpecType) IsKnown() bool {
 	switch r {
-	case SandboxBoxNewParamsMountConfigMountsSandboxapiGitRepoMountSpecTypeS3, SandboxBoxNewParamsMountConfigMountsSandboxapiGitRepoMountSpecTypeGcs, SandboxBoxNewParamsMountConfigMountsSandboxapiGitRepoMountSpecTypeGit, SandboxBoxNewParamsMountConfigMountsSandboxapiGitRepoMountSpecTypeContexthub:
+	case SandboxBoxNewParamsMountConfigMountsSandboxapiGitRepoMountSpecTypeS3, SandboxBoxNewParamsMountConfigMountsSandboxapiGitRepoMountSpecTypeGcs, SandboxBoxNewParamsMountConfigMountsSandboxapiGitRepoMountSpecTypeAzureBlob, SandboxBoxNewParamsMountConfigMountsSandboxapiGitRepoMountSpecTypeGit, SandboxBoxNewParamsMountConfigMountsSandboxapiGitRepoMountSpecTypeContexthub:
 		return true
 	}
 	return false
+}
+
+type SandboxBoxNewParamsMountConfigMountsSandboxapiGitRepoMountSpecAzureBlob struct {
+	Container param.Field[string] `json:"container" api:"required"`
+	// StorageAccount is the storage account name: 3 to 24 lowercase letters and
+	// digits.
+	StorageAccount param.Field[string] `json:"storage_account" api:"required"`
+	Prefix         param.Field[string] `json:"prefix"`
+}
+
+func (r SandboxBoxNewParamsMountConfigMountsSandboxapiGitRepoMountSpecAzureBlob) MarshalJSON() (data []byte, err error) {
+	return apijson.MarshalRoot(r)
 }
 
 type SandboxBoxNewParamsMountConfigMountsSandboxapiGitRepoMountSpecCache struct {
@@ -1014,6 +1235,7 @@ type SandboxBoxNewParamsMountConfigMountsSandboxapiContextHubRepoMountSpec struc
 	Contexthub param.Field[SandboxBoxNewParamsMountConfigMountsSandboxapiContextHubRepoMountSpecContexthub] `json:"contexthub" api:"required"`
 	MountPath  param.Field[string]                                                                          `json:"mount_path" api:"required"`
 	Type       param.Field[SandboxBoxNewParamsMountConfigMountsSandboxapiContextHubRepoMountSpecType]       `json:"type" api:"required"`
+	AzureBlob  param.Field[SandboxBoxNewParamsMountConfigMountsSandboxapiContextHubRepoMountSpecAzureBlob]  `json:"azure_blob"`
 	Cache      param.Field[SandboxBoxNewParamsMountConfigMountsSandboxapiContextHubRepoMountSpecCache]      `json:"cache"`
 	Encryption param.Field[SandboxBoxNewParamsMountConfigMountsSandboxapiContextHubRepoMountSpecEncryption] `json:"encryption"`
 	Gcs        param.Field[SandboxBoxNewParamsMountConfigMountsSandboxapiContextHubRepoMountSpecGcs]        `json:"gcs"`
@@ -1048,16 +1270,29 @@ type SandboxBoxNewParamsMountConfigMountsSandboxapiContextHubRepoMountSpecType s
 const (
 	SandboxBoxNewParamsMountConfigMountsSandboxapiContextHubRepoMountSpecTypeS3         SandboxBoxNewParamsMountConfigMountsSandboxapiContextHubRepoMountSpecType = "s3"
 	SandboxBoxNewParamsMountConfigMountsSandboxapiContextHubRepoMountSpecTypeGcs        SandboxBoxNewParamsMountConfigMountsSandboxapiContextHubRepoMountSpecType = "gcs"
+	SandboxBoxNewParamsMountConfigMountsSandboxapiContextHubRepoMountSpecTypeAzureBlob  SandboxBoxNewParamsMountConfigMountsSandboxapiContextHubRepoMountSpecType = "azure_blob"
 	SandboxBoxNewParamsMountConfigMountsSandboxapiContextHubRepoMountSpecTypeGit        SandboxBoxNewParamsMountConfigMountsSandboxapiContextHubRepoMountSpecType = "git"
 	SandboxBoxNewParamsMountConfigMountsSandboxapiContextHubRepoMountSpecTypeContexthub SandboxBoxNewParamsMountConfigMountsSandboxapiContextHubRepoMountSpecType = "contexthub"
 )
 
 func (r SandboxBoxNewParamsMountConfigMountsSandboxapiContextHubRepoMountSpecType) IsKnown() bool {
 	switch r {
-	case SandboxBoxNewParamsMountConfigMountsSandboxapiContextHubRepoMountSpecTypeS3, SandboxBoxNewParamsMountConfigMountsSandboxapiContextHubRepoMountSpecTypeGcs, SandboxBoxNewParamsMountConfigMountsSandboxapiContextHubRepoMountSpecTypeGit, SandboxBoxNewParamsMountConfigMountsSandboxapiContextHubRepoMountSpecTypeContexthub:
+	case SandboxBoxNewParamsMountConfigMountsSandboxapiContextHubRepoMountSpecTypeS3, SandboxBoxNewParamsMountConfigMountsSandboxapiContextHubRepoMountSpecTypeGcs, SandboxBoxNewParamsMountConfigMountsSandboxapiContextHubRepoMountSpecTypeAzureBlob, SandboxBoxNewParamsMountConfigMountsSandboxapiContextHubRepoMountSpecTypeGit, SandboxBoxNewParamsMountConfigMountsSandboxapiContextHubRepoMountSpecTypeContexthub:
 		return true
 	}
 	return false
+}
+
+type SandboxBoxNewParamsMountConfigMountsSandboxapiContextHubRepoMountSpecAzureBlob struct {
+	Container param.Field[string] `json:"container" api:"required"`
+	// StorageAccount is the storage account name: 3 to 24 lowercase letters and
+	// digits.
+	StorageAccount param.Field[string] `json:"storage_account" api:"required"`
+	Prefix         param.Field[string] `json:"prefix"`
+}
+
+func (r SandboxBoxNewParamsMountConfigMountsSandboxapiContextHubRepoMountSpecAzureBlob) MarshalJSON() (data []byte, err error) {
+	return apijson.MarshalRoot(r)
 }
 
 type SandboxBoxNewParamsMountConfigMountsSandboxapiContextHubRepoMountSpecCache struct {
@@ -1134,18 +1369,158 @@ func (r SandboxBoxNewParamsMountConfigMountsSandboxapiContextHubRepoMountSpecS3)
 	return apijson.MarshalRoot(r)
 }
 
+type SandboxBoxNewParamsMountConfigMountsSandboxapiAzureBlobContainerMountSpec struct {
+	ID         param.Field[string]                                                                              `json:"id" api:"required"`
+	AzureBlob  param.Field[SandboxBoxNewParamsMountConfigMountsSandboxapiAzureBlobContainerMountSpecAzureBlob]  `json:"azure_blob" api:"required"`
+	MountPath  param.Field[string]                                                                              `json:"mount_path" api:"required"`
+	Type       param.Field[SandboxBoxNewParamsMountConfigMountsSandboxapiAzureBlobContainerMountSpecType]       `json:"type" api:"required"`
+	Cache      param.Field[SandboxBoxNewParamsMountConfigMountsSandboxapiAzureBlobContainerMountSpecCache]      `json:"cache"`
+	Contexthub param.Field[SandboxBoxNewParamsMountConfigMountsSandboxapiAzureBlobContainerMountSpecContexthub] `json:"contexthub"`
+	Encryption param.Field[SandboxBoxNewParamsMountConfigMountsSandboxapiAzureBlobContainerMountSpecEncryption] `json:"encryption"`
+	Gcs        param.Field[SandboxBoxNewParamsMountConfigMountsSandboxapiAzureBlobContainerMountSpecGcs]        `json:"gcs"`
+	Git        param.Field[SandboxBoxNewParamsMountConfigMountsSandboxapiAzureBlobContainerMountSpecGit]        `json:"git"`
+	ReadOnly   param.Field[bool]                                                                                `json:"read_only"`
+	S3         param.Field[SandboxBoxNewParamsMountConfigMountsSandboxapiAzureBlobContainerMountSpecS3]         `json:"s3"`
+}
+
+func (r SandboxBoxNewParamsMountConfigMountsSandboxapiAzureBlobContainerMountSpec) MarshalJSON() (data []byte, err error) {
+	return apijson.MarshalRoot(r)
+}
+
+func (r SandboxBoxNewParamsMountConfigMountsSandboxapiAzureBlobContainerMountSpec) implementsSandboxBoxNewParamsMountConfigMountUnion() {
+}
+
+type SandboxBoxNewParamsMountConfigMountsSandboxapiAzureBlobContainerMountSpecAzureBlob struct {
+	Container param.Field[string] `json:"container" api:"required"`
+	// StorageAccount is the storage account name: 3 to 24 lowercase letters and
+	// digits.
+	StorageAccount param.Field[string] `json:"storage_account" api:"required"`
+	Prefix         param.Field[string] `json:"prefix"`
+}
+
+func (r SandboxBoxNewParamsMountConfigMountsSandboxapiAzureBlobContainerMountSpecAzureBlob) MarshalJSON() (data []byte, err error) {
+	return apijson.MarshalRoot(r)
+}
+
+type SandboxBoxNewParamsMountConfigMountsSandboxapiAzureBlobContainerMountSpecType string
+
+const (
+	SandboxBoxNewParamsMountConfigMountsSandboxapiAzureBlobContainerMountSpecTypeS3         SandboxBoxNewParamsMountConfigMountsSandboxapiAzureBlobContainerMountSpecType = "s3"
+	SandboxBoxNewParamsMountConfigMountsSandboxapiAzureBlobContainerMountSpecTypeGcs        SandboxBoxNewParamsMountConfigMountsSandboxapiAzureBlobContainerMountSpecType = "gcs"
+	SandboxBoxNewParamsMountConfigMountsSandboxapiAzureBlobContainerMountSpecTypeAzureBlob  SandboxBoxNewParamsMountConfigMountsSandboxapiAzureBlobContainerMountSpecType = "azure_blob"
+	SandboxBoxNewParamsMountConfigMountsSandboxapiAzureBlobContainerMountSpecTypeGit        SandboxBoxNewParamsMountConfigMountsSandboxapiAzureBlobContainerMountSpecType = "git"
+	SandboxBoxNewParamsMountConfigMountsSandboxapiAzureBlobContainerMountSpecTypeContexthub SandboxBoxNewParamsMountConfigMountsSandboxapiAzureBlobContainerMountSpecType = "contexthub"
+)
+
+func (r SandboxBoxNewParamsMountConfigMountsSandboxapiAzureBlobContainerMountSpecType) IsKnown() bool {
+	switch r {
+	case SandboxBoxNewParamsMountConfigMountsSandboxapiAzureBlobContainerMountSpecTypeS3, SandboxBoxNewParamsMountConfigMountsSandboxapiAzureBlobContainerMountSpecTypeGcs, SandboxBoxNewParamsMountConfigMountsSandboxapiAzureBlobContainerMountSpecTypeAzureBlob, SandboxBoxNewParamsMountConfigMountsSandboxapiAzureBlobContainerMountSpecTypeGit, SandboxBoxNewParamsMountConfigMountsSandboxapiAzureBlobContainerMountSpecTypeContexthub:
+		return true
+	}
+	return false
+}
+
+type SandboxBoxNewParamsMountConfigMountsSandboxapiAzureBlobContainerMountSpecCache struct {
+	MaxSizeBytes     param.Field[int64] `json:"max_size_bytes"`
+	WritebackSeconds param.Field[int64] `json:"writeback_seconds"`
+}
+
+func (r SandboxBoxNewParamsMountConfigMountsSandboxapiAzureBlobContainerMountSpecCache) MarshalJSON() (data []byte, err error) {
+	return apijson.MarshalRoot(r)
+}
+
+type SandboxBoxNewParamsMountConfigMountsSandboxapiAzureBlobContainerMountSpecContexthub struct {
+	// Repo is the Context Hub repository to sync, as "owner/repo" (e.g. "-/my-agent",
+	// where "-" is the current workspace). The repo's latest commit tree is mirrored
+	// into the mount path.
+	Repo param.Field[string] `json:"repo" api:"required"`
+	// InitialPullOnly syncs the repo once at startup instead of polling for updates
+	// for the sandbox's lifetime.
+	InitialPullOnly param.Field[bool] `json:"initial_pull_only"`
+}
+
+func (r SandboxBoxNewParamsMountConfigMountsSandboxapiAzureBlobContainerMountSpecContexthub) MarshalJSON() (data []byte, err error) {
+	return apijson.MarshalRoot(r)
+}
+
+type SandboxBoxNewParamsMountConfigMountsSandboxapiAzureBlobContainerMountSpecEncryption struct {
+	// KMSKey is the key to encrypt uploads with. S3 mounts take a KMS key ARN in the
+	// mount's region.
+	KmsKey param.Field[string] `json:"kms_key" api:"required"`
+}
+
+func (r SandboxBoxNewParamsMountConfigMountsSandboxapiAzureBlobContainerMountSpecEncryption) MarshalJSON() (data []byte, err error) {
+	return apijson.MarshalRoot(r)
+}
+
+type SandboxBoxNewParamsMountConfigMountsSandboxapiAzureBlobContainerMountSpecGcs struct {
+	Bucket param.Field[string] `json:"bucket" api:"required"`
+	Prefix param.Field[string] `json:"prefix"`
+}
+
+func (r SandboxBoxNewParamsMountConfigMountsSandboxapiAzureBlobContainerMountSpecGcs) MarshalJSON() (data []byte, err error) {
+	return apijson.MarshalRoot(r)
+}
+
+type SandboxBoxNewParamsMountConfigMountsSandboxapiAzureBlobContainerMountSpecGit struct {
+	RemoteURL              param.Field[string]                                                                          `json:"remote_url" api:"required"`
+	Ref                    param.Field[SandboxBoxNewParamsMountConfigMountsSandboxapiAzureBlobContainerMountSpecGitRef] `json:"ref"`
+	RefreshIntervalSeconds param.Field[int64]                                                                           `json:"refresh_interval_seconds"`
+}
+
+func (r SandboxBoxNewParamsMountConfigMountsSandboxapiAzureBlobContainerMountSpecGit) MarshalJSON() (data []byte, err error) {
+	return apijson.MarshalRoot(r)
+}
+
+type SandboxBoxNewParamsMountConfigMountsSandboxapiAzureBlobContainerMountSpecGitRef struct {
+	Name param.Field[string]                                                                              `json:"name" api:"required"`
+	Type param.Field[SandboxBoxNewParamsMountConfigMountsSandboxapiAzureBlobContainerMountSpecGitRefType] `json:"type" api:"required"`
+}
+
+func (r SandboxBoxNewParamsMountConfigMountsSandboxapiAzureBlobContainerMountSpecGitRef) MarshalJSON() (data []byte, err error) {
+	return apijson.MarshalRoot(r)
+}
+
+type SandboxBoxNewParamsMountConfigMountsSandboxapiAzureBlobContainerMountSpecGitRefType string
+
+const (
+	SandboxBoxNewParamsMountConfigMountsSandboxapiAzureBlobContainerMountSpecGitRefTypeBranch SandboxBoxNewParamsMountConfigMountsSandboxapiAzureBlobContainerMountSpecGitRefType = "branch"
+	SandboxBoxNewParamsMountConfigMountsSandboxapiAzureBlobContainerMountSpecGitRefTypeTag    SandboxBoxNewParamsMountConfigMountsSandboxapiAzureBlobContainerMountSpecGitRefType = "tag"
+)
+
+func (r SandboxBoxNewParamsMountConfigMountsSandboxapiAzureBlobContainerMountSpecGitRefType) IsKnown() bool {
+	switch r {
+	case SandboxBoxNewParamsMountConfigMountsSandboxapiAzureBlobContainerMountSpecGitRefTypeBranch, SandboxBoxNewParamsMountConfigMountsSandboxapiAzureBlobContainerMountSpecGitRefTypeTag:
+		return true
+	}
+	return false
+}
+
+type SandboxBoxNewParamsMountConfigMountsSandboxapiAzureBlobContainerMountSpecS3 struct {
+	Bucket      param.Field[string] `json:"bucket" api:"required"`
+	Region      param.Field[string] `json:"region" api:"required"`
+	EndpointURL param.Field[string] `json:"endpoint_url"`
+	PathStyle   param.Field[bool]   `json:"path_style"`
+	Prefix      param.Field[string] `json:"prefix"`
+}
+
+func (r SandboxBoxNewParamsMountConfigMountsSandboxapiAzureBlobContainerMountSpecS3) MarshalJSON() (data []byte, err error) {
+	return apijson.MarshalRoot(r)
+}
+
 type SandboxBoxNewParamsMountConfigMountsType string
 
 const (
 	SandboxBoxNewParamsMountConfigMountsTypeS3         SandboxBoxNewParamsMountConfigMountsType = "s3"
 	SandboxBoxNewParamsMountConfigMountsTypeGcs        SandboxBoxNewParamsMountConfigMountsType = "gcs"
+	SandboxBoxNewParamsMountConfigMountsTypeAzureBlob  SandboxBoxNewParamsMountConfigMountsType = "azure_blob"
 	SandboxBoxNewParamsMountConfigMountsTypeGit        SandboxBoxNewParamsMountConfigMountsType = "git"
 	SandboxBoxNewParamsMountConfigMountsTypeContexthub SandboxBoxNewParamsMountConfigMountsType = "contexthub"
 )
 
 func (r SandboxBoxNewParamsMountConfigMountsType) IsKnown() bool {
 	switch r {
-	case SandboxBoxNewParamsMountConfigMountsTypeS3, SandboxBoxNewParamsMountConfigMountsTypeGcs, SandboxBoxNewParamsMountConfigMountsTypeGit, SandboxBoxNewParamsMountConfigMountsTypeContexthub:
+	case SandboxBoxNewParamsMountConfigMountsTypeS3, SandboxBoxNewParamsMountConfigMountsTypeGcs, SandboxBoxNewParamsMountConfigMountsTypeAzureBlob, SandboxBoxNewParamsMountConfigMountsTypeGit, SandboxBoxNewParamsMountConfigMountsTypeContexthub:
 		return true
 	}
 	return false
@@ -1214,8 +1589,9 @@ func (r SandboxBoxNewParamsProxyConfigCallbacksRequestHeadersType) IsKnown() boo
 }
 
 type SandboxBoxNewParamsProxyConfigRule struct {
-	Name param.Field[string]                                      `json:"name" api:"required"`
-	Aws  param.Field[SandboxBoxNewParamsProxyConfigRulesAwsUnion] `json:"aws"`
+	Name  param.Field[string]                                        `json:"name" api:"required"`
+	Aws   param.Field[SandboxBoxNewParamsProxyConfigRulesAwsUnion]   `json:"aws"`
+	Azure param.Field[SandboxBoxNewParamsProxyConfigRulesAzureUnion] `json:"azure"`
 	// Description says what this rule lets the sandbox reach, so an agent driving the
 	// sandbox can be told its capabilities. At most 1024 characters.
 	Description param.Field[string] `json:"description"`
@@ -1380,6 +1756,175 @@ const (
 func (r SandboxBoxNewParamsProxyConfigRulesAwsSandboxesProxyAwsStaticConfigRoleArn) IsKnown() bool {
 	switch r {
 	case SandboxBoxNewParamsProxyConfigRulesAwsSandboxesProxyAwsStaticConfigRoleArnEmpty:
+		return true
+	}
+	return false
+}
+
+type SandboxBoxNewParamsProxyConfigRulesAzure struct {
+	AccountKey param.Field[interface{}] `json:"account_key"`
+	// ClientID is the application (client) ID, a GUID, of the app registration or
+	// user-assigned managed identity whose federated identity credential trusts
+	// LangSmith's issuer. Required with tenant_id.
+	ClientID  param.Field[string]      `json:"client_id"`
+	Resources param.Field[interface{}] `json:"resources"`
+	SasToken  param.Field[interface{}] `json:"sas_token"`
+	// StorageAccount is the storage account static credentials authenticate to:
+	// requests to its blob, dfs, queue, table and file endpoints. Requires exactly one
+	// of account_key (requests are signed with SharedKey) or sas_token (appended to
+	// each request).
+	StorageAccount param.Field[string] `json:"storage_account"`
+	// SubjectScope picks the token subject the federated credential trusts:
+	// "workspace" (the default) or "tag:<tag value id>", which must be one of the
+	// sandbox's tag_value_ids. Only valid with tenant_id.
+	SubjectScope param.Field[string] `json:"subject_scope"`
+	// TenantID is the Entra tenant (directory) ID, a GUID. Setting it selects workload
+	// identity: LangSmith signs an OIDC token for this workspace and exchanges it at
+	// Entra ID for access tokens of client_id, so no secret is stored. Cannot be
+	// changed after creation.
+	TenantID param.Field[string] `json:"tenant_id"`
+}
+
+func (r SandboxBoxNewParamsProxyConfigRulesAzure) MarshalJSON() (data []byte, err error) {
+	return apijson.MarshalRoot(r)
+}
+
+func (r SandboxBoxNewParamsProxyConfigRulesAzure) implementsSandboxBoxNewParamsProxyConfigRulesAzureUnion() {
+}
+
+// Satisfied by
+// [SandboxBoxNewParamsProxyConfigRulesAzureSandboxesProxyAzureWorkloadIdentityConfig],
+// [SandboxBoxNewParamsProxyConfigRulesAzureSandboxesProxyAzureAccountKeyConfig],
+// [SandboxBoxNewParamsProxyConfigRulesAzureSandboxesProxyAzureSasConfig],
+// [SandboxBoxNewParamsProxyConfigRulesAzure].
+type SandboxBoxNewParamsProxyConfigRulesAzureUnion interface {
+	implementsSandboxBoxNewParamsProxyConfigRulesAzureUnion()
+}
+
+type SandboxBoxNewParamsProxyConfigRulesAzureSandboxesProxyAzureWorkloadIdentityConfig struct {
+	// ClientID is the application (client) ID, a GUID, of the app registration or
+	// user-assigned managed identity whose federated identity credential trusts
+	// LangSmith's issuer. Required with tenant_id.
+	ClientID param.Field[string] `json:"client_id" api:"required"`
+	// TenantID is the Entra tenant (directory) ID, a GUID. Setting it selects workload
+	// identity: LangSmith signs an OIDC token for this workspace and exchanges it at
+	// Entra ID for access tokens of client_id, so no secret is stored. Cannot be
+	// changed after creation.
+	TenantID param.Field[string] `json:"tenant_id" api:"required"`
+	// Resources narrows the Entra resources access tokens are obtained for, from
+	// https://storage.azure.com, https://vault.azure.net, https://management.azure.com
+	// and https://cognitiveservices.azure.com. Defaults to all of them. Only valid
+	// with tenant_id.
+	Resources param.Field[[]SandboxBoxNewParamsProxyConfigRulesAzureSandboxesProxyAzureWorkloadIdentityConfigResource] `json:"resources"`
+	// SubjectScope picks the token subject the federated credential trusts:
+	// "workspace" (the default) or "tag:<tag value id>", which must be one of the
+	// sandbox's tag_value_ids. Only valid with tenant_id.
+	SubjectScope param.Field[string] `json:"subject_scope"`
+}
+
+func (r SandboxBoxNewParamsProxyConfigRulesAzureSandboxesProxyAzureWorkloadIdentityConfig) MarshalJSON() (data []byte, err error) {
+	return apijson.MarshalRoot(r)
+}
+
+func (r SandboxBoxNewParamsProxyConfigRulesAzureSandboxesProxyAzureWorkloadIdentityConfig) implementsSandboxBoxNewParamsProxyConfigRulesAzureUnion() {
+}
+
+type SandboxBoxNewParamsProxyConfigRulesAzureSandboxesProxyAzureWorkloadIdentityConfigResource string
+
+const (
+	SandboxBoxNewParamsProxyConfigRulesAzureSandboxesProxyAzureWorkloadIdentityConfigResourceHTTPSStorageAzureCom           SandboxBoxNewParamsProxyConfigRulesAzureSandboxesProxyAzureWorkloadIdentityConfigResource = "https://storage.azure.com"
+	SandboxBoxNewParamsProxyConfigRulesAzureSandboxesProxyAzureWorkloadIdentityConfigResourceHTTPSVaultAzureNet             SandboxBoxNewParamsProxyConfigRulesAzureSandboxesProxyAzureWorkloadIdentityConfigResource = "https://vault.azure.net"
+	SandboxBoxNewParamsProxyConfigRulesAzureSandboxesProxyAzureWorkloadIdentityConfigResourceHTTPSManagementAzureCom        SandboxBoxNewParamsProxyConfigRulesAzureSandboxesProxyAzureWorkloadIdentityConfigResource = "https://management.azure.com"
+	SandboxBoxNewParamsProxyConfigRulesAzureSandboxesProxyAzureWorkloadIdentityConfigResourceHTTPSCognitiveservicesAzureCom SandboxBoxNewParamsProxyConfigRulesAzureSandboxesProxyAzureWorkloadIdentityConfigResource = "https://cognitiveservices.azure.com"
+)
+
+func (r SandboxBoxNewParamsProxyConfigRulesAzureSandboxesProxyAzureWorkloadIdentityConfigResource) IsKnown() bool {
+	switch r {
+	case SandboxBoxNewParamsProxyConfigRulesAzureSandboxesProxyAzureWorkloadIdentityConfigResourceHTTPSStorageAzureCom, SandboxBoxNewParamsProxyConfigRulesAzureSandboxesProxyAzureWorkloadIdentityConfigResourceHTTPSVaultAzureNet, SandboxBoxNewParamsProxyConfigRulesAzureSandboxesProxyAzureWorkloadIdentityConfigResourceHTTPSManagementAzureCom, SandboxBoxNewParamsProxyConfigRulesAzureSandboxesProxyAzureWorkloadIdentityConfigResourceHTTPSCognitiveservicesAzureCom:
+		return true
+	}
+	return false
+}
+
+type SandboxBoxNewParamsProxyConfigRulesAzureSandboxesProxyAzureAccountKeyConfig struct {
+	AccountKey param.Field[SandboxBoxNewParamsProxyConfigRulesAzureSandboxesProxyAzureAccountKeyConfigAccountKey] `json:"account_key" api:"required"`
+	// StorageAccount is the storage account static credentials authenticate to:
+	// requests to its blob, dfs, queue, table and file endpoints. Requires exactly one
+	// of account_key (requests are signed with SharedKey) or sas_token (appended to
+	// each request).
+	StorageAccount param.Field[string] `json:"storage_account" api:"required"`
+}
+
+func (r SandboxBoxNewParamsProxyConfigRulesAzureSandboxesProxyAzureAccountKeyConfig) MarshalJSON() (data []byte, err error) {
+	return apijson.MarshalRoot(r)
+}
+
+func (r SandboxBoxNewParamsProxyConfigRulesAzureSandboxesProxyAzureAccountKeyConfig) implementsSandboxBoxNewParamsProxyConfigRulesAzureUnion() {
+}
+
+type SandboxBoxNewParamsProxyConfigRulesAzureSandboxesProxyAzureAccountKeyConfigAccountKey struct {
+	Type  param.Field[SandboxBoxNewParamsProxyConfigRulesAzureSandboxesProxyAzureAccountKeyConfigAccountKeyType] `json:"type" api:"required"`
+	IsSet param.Field[bool]                                                                                      `json:"is_set"`
+	Value param.Field[string]                                                                                    `json:"value"`
+}
+
+func (r SandboxBoxNewParamsProxyConfigRulesAzureSandboxesProxyAzureAccountKeyConfigAccountKey) MarshalJSON() (data []byte, err error) {
+	return apijson.MarshalRoot(r)
+}
+
+type SandboxBoxNewParamsProxyConfigRulesAzureSandboxesProxyAzureAccountKeyConfigAccountKeyType string
+
+const (
+	SandboxBoxNewParamsProxyConfigRulesAzureSandboxesProxyAzureAccountKeyConfigAccountKeyTypePlaintext       SandboxBoxNewParamsProxyConfigRulesAzureSandboxesProxyAzureAccountKeyConfigAccountKeyType = "plaintext"
+	SandboxBoxNewParamsProxyConfigRulesAzureSandboxesProxyAzureAccountKeyConfigAccountKeyTypeOpaque          SandboxBoxNewParamsProxyConfigRulesAzureSandboxesProxyAzureAccountKeyConfigAccountKeyType = "opaque"
+	SandboxBoxNewParamsProxyConfigRulesAzureSandboxesProxyAzureAccountKeyConfigAccountKeyTypeWorkspaceSecret SandboxBoxNewParamsProxyConfigRulesAzureSandboxesProxyAzureAccountKeyConfigAccountKeyType = "workspace_secret"
+)
+
+func (r SandboxBoxNewParamsProxyConfigRulesAzureSandboxesProxyAzureAccountKeyConfigAccountKeyType) IsKnown() bool {
+	switch r {
+	case SandboxBoxNewParamsProxyConfigRulesAzureSandboxesProxyAzureAccountKeyConfigAccountKeyTypePlaintext, SandboxBoxNewParamsProxyConfigRulesAzureSandboxesProxyAzureAccountKeyConfigAccountKeyTypeOpaque, SandboxBoxNewParamsProxyConfigRulesAzureSandboxesProxyAzureAccountKeyConfigAccountKeyTypeWorkspaceSecret:
+		return true
+	}
+	return false
+}
+
+type SandboxBoxNewParamsProxyConfigRulesAzureSandboxesProxyAzureSasConfig struct {
+	SasToken param.Field[SandboxBoxNewParamsProxyConfigRulesAzureSandboxesProxyAzureSasConfigSasToken] `json:"sas_token" api:"required"`
+	// StorageAccount is the storage account static credentials authenticate to:
+	// requests to its blob, dfs, queue, table and file endpoints. Requires exactly one
+	// of account_key (requests are signed with SharedKey) or sas_token (appended to
+	// each request).
+	StorageAccount param.Field[string] `json:"storage_account" api:"required"`
+}
+
+func (r SandboxBoxNewParamsProxyConfigRulesAzureSandboxesProxyAzureSasConfig) MarshalJSON() (data []byte, err error) {
+	return apijson.MarshalRoot(r)
+}
+
+func (r SandboxBoxNewParamsProxyConfigRulesAzureSandboxesProxyAzureSasConfig) implementsSandboxBoxNewParamsProxyConfigRulesAzureUnion() {
+}
+
+type SandboxBoxNewParamsProxyConfigRulesAzureSandboxesProxyAzureSasConfigSasToken struct {
+	Type  param.Field[SandboxBoxNewParamsProxyConfigRulesAzureSandboxesProxyAzureSasConfigSasTokenType] `json:"type" api:"required"`
+	IsSet param.Field[bool]                                                                             `json:"is_set"`
+	Value param.Field[string]                                                                           `json:"value"`
+}
+
+func (r SandboxBoxNewParamsProxyConfigRulesAzureSandboxesProxyAzureSasConfigSasToken) MarshalJSON() (data []byte, err error) {
+	return apijson.MarshalRoot(r)
+}
+
+type SandboxBoxNewParamsProxyConfigRulesAzureSandboxesProxyAzureSasConfigSasTokenType string
+
+const (
+	SandboxBoxNewParamsProxyConfigRulesAzureSandboxesProxyAzureSasConfigSasTokenTypePlaintext       SandboxBoxNewParamsProxyConfigRulesAzureSandboxesProxyAzureSasConfigSasTokenType = "plaintext"
+	SandboxBoxNewParamsProxyConfigRulesAzureSandboxesProxyAzureSasConfigSasTokenTypeOpaque          SandboxBoxNewParamsProxyConfigRulesAzureSandboxesProxyAzureSasConfigSasTokenType = "opaque"
+	SandboxBoxNewParamsProxyConfigRulesAzureSandboxesProxyAzureSasConfigSasTokenTypeWorkspaceSecret SandboxBoxNewParamsProxyConfigRulesAzureSandboxesProxyAzureSasConfigSasTokenType = "workspace_secret"
+)
+
+func (r SandboxBoxNewParamsProxyConfigRulesAzureSandboxesProxyAzureSasConfigSasTokenType) IsKnown() bool {
+	switch r {
+	case SandboxBoxNewParamsProxyConfigRulesAzureSandboxesProxyAzureSasConfigSasTokenTypePlaintext, SandboxBoxNewParamsProxyConfigRulesAzureSandboxesProxyAzureSasConfigSasTokenTypeOpaque, SandboxBoxNewParamsProxyConfigRulesAzureSandboxesProxyAzureSasConfigSasTokenTypeWorkspaceSecret:
 		return true
 	}
 	return false
@@ -1560,8 +2105,9 @@ func (r SandboxBoxUpdateParamsProxyConfigCallbacksRequestHeadersType) IsKnown() 
 }
 
 type SandboxBoxUpdateParamsProxyConfigRule struct {
-	Name param.Field[string]                                         `json:"name" api:"required"`
-	Aws  param.Field[SandboxBoxUpdateParamsProxyConfigRulesAwsUnion] `json:"aws"`
+	Name  param.Field[string]                                           `json:"name" api:"required"`
+	Aws   param.Field[SandboxBoxUpdateParamsProxyConfigRulesAwsUnion]   `json:"aws"`
+	Azure param.Field[SandboxBoxUpdateParamsProxyConfigRulesAzureUnion] `json:"azure"`
 	// Description says what this rule lets the sandbox reach, so an agent driving the
 	// sandbox can be told its capabilities. At most 1024 characters.
 	Description param.Field[string] `json:"description"`
@@ -1726,6 +2272,175 @@ const (
 func (r SandboxBoxUpdateParamsProxyConfigRulesAwsSandboxesProxyAwsStaticConfigRoleArn) IsKnown() bool {
 	switch r {
 	case SandboxBoxUpdateParamsProxyConfigRulesAwsSandboxesProxyAwsStaticConfigRoleArnEmpty:
+		return true
+	}
+	return false
+}
+
+type SandboxBoxUpdateParamsProxyConfigRulesAzure struct {
+	AccountKey param.Field[interface{}] `json:"account_key"`
+	// ClientID is the application (client) ID, a GUID, of the app registration or
+	// user-assigned managed identity whose federated identity credential trusts
+	// LangSmith's issuer. Required with tenant_id.
+	ClientID  param.Field[string]      `json:"client_id"`
+	Resources param.Field[interface{}] `json:"resources"`
+	SasToken  param.Field[interface{}] `json:"sas_token"`
+	// StorageAccount is the storage account static credentials authenticate to:
+	// requests to its blob, dfs, queue, table and file endpoints. Requires exactly one
+	// of account_key (requests are signed with SharedKey) or sas_token (appended to
+	// each request).
+	StorageAccount param.Field[string] `json:"storage_account"`
+	// SubjectScope picks the token subject the federated credential trusts:
+	// "workspace" (the default) or "tag:<tag value id>", which must be one of the
+	// sandbox's tag_value_ids. Only valid with tenant_id.
+	SubjectScope param.Field[string] `json:"subject_scope"`
+	// TenantID is the Entra tenant (directory) ID, a GUID. Setting it selects workload
+	// identity: LangSmith signs an OIDC token for this workspace and exchanges it at
+	// Entra ID for access tokens of client_id, so no secret is stored. Cannot be
+	// changed after creation.
+	TenantID param.Field[string] `json:"tenant_id"`
+}
+
+func (r SandboxBoxUpdateParamsProxyConfigRulesAzure) MarshalJSON() (data []byte, err error) {
+	return apijson.MarshalRoot(r)
+}
+
+func (r SandboxBoxUpdateParamsProxyConfigRulesAzure) implementsSandboxBoxUpdateParamsProxyConfigRulesAzureUnion() {
+}
+
+// Satisfied by
+// [SandboxBoxUpdateParamsProxyConfigRulesAzureSandboxesProxyAzureWorkloadIdentityConfig],
+// [SandboxBoxUpdateParamsProxyConfigRulesAzureSandboxesProxyAzureAccountKeyConfig],
+// [SandboxBoxUpdateParamsProxyConfigRulesAzureSandboxesProxyAzureSasConfig],
+// [SandboxBoxUpdateParamsProxyConfigRulesAzure].
+type SandboxBoxUpdateParamsProxyConfigRulesAzureUnion interface {
+	implementsSandboxBoxUpdateParamsProxyConfigRulesAzureUnion()
+}
+
+type SandboxBoxUpdateParamsProxyConfigRulesAzureSandboxesProxyAzureWorkloadIdentityConfig struct {
+	// ClientID is the application (client) ID, a GUID, of the app registration or
+	// user-assigned managed identity whose federated identity credential trusts
+	// LangSmith's issuer. Required with tenant_id.
+	ClientID param.Field[string] `json:"client_id" api:"required"`
+	// TenantID is the Entra tenant (directory) ID, a GUID. Setting it selects workload
+	// identity: LangSmith signs an OIDC token for this workspace and exchanges it at
+	// Entra ID for access tokens of client_id, so no secret is stored. Cannot be
+	// changed after creation.
+	TenantID param.Field[string] `json:"tenant_id" api:"required"`
+	// Resources narrows the Entra resources access tokens are obtained for, from
+	// https://storage.azure.com, https://vault.azure.net, https://management.azure.com
+	// and https://cognitiveservices.azure.com. Defaults to all of them. Only valid
+	// with tenant_id.
+	Resources param.Field[[]SandboxBoxUpdateParamsProxyConfigRulesAzureSandboxesProxyAzureWorkloadIdentityConfigResource] `json:"resources"`
+	// SubjectScope picks the token subject the federated credential trusts:
+	// "workspace" (the default) or "tag:<tag value id>", which must be one of the
+	// sandbox's tag_value_ids. Only valid with tenant_id.
+	SubjectScope param.Field[string] `json:"subject_scope"`
+}
+
+func (r SandboxBoxUpdateParamsProxyConfigRulesAzureSandboxesProxyAzureWorkloadIdentityConfig) MarshalJSON() (data []byte, err error) {
+	return apijson.MarshalRoot(r)
+}
+
+func (r SandboxBoxUpdateParamsProxyConfigRulesAzureSandboxesProxyAzureWorkloadIdentityConfig) implementsSandboxBoxUpdateParamsProxyConfigRulesAzureUnion() {
+}
+
+type SandboxBoxUpdateParamsProxyConfigRulesAzureSandboxesProxyAzureWorkloadIdentityConfigResource string
+
+const (
+	SandboxBoxUpdateParamsProxyConfigRulesAzureSandboxesProxyAzureWorkloadIdentityConfigResourceHTTPSStorageAzureCom           SandboxBoxUpdateParamsProxyConfigRulesAzureSandboxesProxyAzureWorkloadIdentityConfigResource = "https://storage.azure.com"
+	SandboxBoxUpdateParamsProxyConfigRulesAzureSandboxesProxyAzureWorkloadIdentityConfigResourceHTTPSVaultAzureNet             SandboxBoxUpdateParamsProxyConfigRulesAzureSandboxesProxyAzureWorkloadIdentityConfigResource = "https://vault.azure.net"
+	SandboxBoxUpdateParamsProxyConfigRulesAzureSandboxesProxyAzureWorkloadIdentityConfigResourceHTTPSManagementAzureCom        SandboxBoxUpdateParamsProxyConfigRulesAzureSandboxesProxyAzureWorkloadIdentityConfigResource = "https://management.azure.com"
+	SandboxBoxUpdateParamsProxyConfigRulesAzureSandboxesProxyAzureWorkloadIdentityConfigResourceHTTPSCognitiveservicesAzureCom SandboxBoxUpdateParamsProxyConfigRulesAzureSandboxesProxyAzureWorkloadIdentityConfigResource = "https://cognitiveservices.azure.com"
+)
+
+func (r SandboxBoxUpdateParamsProxyConfigRulesAzureSandboxesProxyAzureWorkloadIdentityConfigResource) IsKnown() bool {
+	switch r {
+	case SandboxBoxUpdateParamsProxyConfigRulesAzureSandboxesProxyAzureWorkloadIdentityConfigResourceHTTPSStorageAzureCom, SandboxBoxUpdateParamsProxyConfigRulesAzureSandboxesProxyAzureWorkloadIdentityConfigResourceHTTPSVaultAzureNet, SandboxBoxUpdateParamsProxyConfigRulesAzureSandboxesProxyAzureWorkloadIdentityConfigResourceHTTPSManagementAzureCom, SandboxBoxUpdateParamsProxyConfigRulesAzureSandboxesProxyAzureWorkloadIdentityConfigResourceHTTPSCognitiveservicesAzureCom:
+		return true
+	}
+	return false
+}
+
+type SandboxBoxUpdateParamsProxyConfigRulesAzureSandboxesProxyAzureAccountKeyConfig struct {
+	AccountKey param.Field[SandboxBoxUpdateParamsProxyConfigRulesAzureSandboxesProxyAzureAccountKeyConfigAccountKey] `json:"account_key" api:"required"`
+	// StorageAccount is the storage account static credentials authenticate to:
+	// requests to its blob, dfs, queue, table and file endpoints. Requires exactly one
+	// of account_key (requests are signed with SharedKey) or sas_token (appended to
+	// each request).
+	StorageAccount param.Field[string] `json:"storage_account" api:"required"`
+}
+
+func (r SandboxBoxUpdateParamsProxyConfigRulesAzureSandboxesProxyAzureAccountKeyConfig) MarshalJSON() (data []byte, err error) {
+	return apijson.MarshalRoot(r)
+}
+
+func (r SandboxBoxUpdateParamsProxyConfigRulesAzureSandboxesProxyAzureAccountKeyConfig) implementsSandboxBoxUpdateParamsProxyConfigRulesAzureUnion() {
+}
+
+type SandboxBoxUpdateParamsProxyConfigRulesAzureSandboxesProxyAzureAccountKeyConfigAccountKey struct {
+	Type  param.Field[SandboxBoxUpdateParamsProxyConfigRulesAzureSandboxesProxyAzureAccountKeyConfigAccountKeyType] `json:"type" api:"required"`
+	IsSet param.Field[bool]                                                                                         `json:"is_set"`
+	Value param.Field[string]                                                                                       `json:"value"`
+}
+
+func (r SandboxBoxUpdateParamsProxyConfigRulesAzureSandboxesProxyAzureAccountKeyConfigAccountKey) MarshalJSON() (data []byte, err error) {
+	return apijson.MarshalRoot(r)
+}
+
+type SandboxBoxUpdateParamsProxyConfigRulesAzureSandboxesProxyAzureAccountKeyConfigAccountKeyType string
+
+const (
+	SandboxBoxUpdateParamsProxyConfigRulesAzureSandboxesProxyAzureAccountKeyConfigAccountKeyTypePlaintext       SandboxBoxUpdateParamsProxyConfigRulesAzureSandboxesProxyAzureAccountKeyConfigAccountKeyType = "plaintext"
+	SandboxBoxUpdateParamsProxyConfigRulesAzureSandboxesProxyAzureAccountKeyConfigAccountKeyTypeOpaque          SandboxBoxUpdateParamsProxyConfigRulesAzureSandboxesProxyAzureAccountKeyConfigAccountKeyType = "opaque"
+	SandboxBoxUpdateParamsProxyConfigRulesAzureSandboxesProxyAzureAccountKeyConfigAccountKeyTypeWorkspaceSecret SandboxBoxUpdateParamsProxyConfigRulesAzureSandboxesProxyAzureAccountKeyConfigAccountKeyType = "workspace_secret"
+)
+
+func (r SandboxBoxUpdateParamsProxyConfigRulesAzureSandboxesProxyAzureAccountKeyConfigAccountKeyType) IsKnown() bool {
+	switch r {
+	case SandboxBoxUpdateParamsProxyConfigRulesAzureSandboxesProxyAzureAccountKeyConfigAccountKeyTypePlaintext, SandboxBoxUpdateParamsProxyConfigRulesAzureSandboxesProxyAzureAccountKeyConfigAccountKeyTypeOpaque, SandboxBoxUpdateParamsProxyConfigRulesAzureSandboxesProxyAzureAccountKeyConfigAccountKeyTypeWorkspaceSecret:
+		return true
+	}
+	return false
+}
+
+type SandboxBoxUpdateParamsProxyConfigRulesAzureSandboxesProxyAzureSasConfig struct {
+	SasToken param.Field[SandboxBoxUpdateParamsProxyConfigRulesAzureSandboxesProxyAzureSasConfigSasToken] `json:"sas_token" api:"required"`
+	// StorageAccount is the storage account static credentials authenticate to:
+	// requests to its blob, dfs, queue, table and file endpoints. Requires exactly one
+	// of account_key (requests are signed with SharedKey) or sas_token (appended to
+	// each request).
+	StorageAccount param.Field[string] `json:"storage_account" api:"required"`
+}
+
+func (r SandboxBoxUpdateParamsProxyConfigRulesAzureSandboxesProxyAzureSasConfig) MarshalJSON() (data []byte, err error) {
+	return apijson.MarshalRoot(r)
+}
+
+func (r SandboxBoxUpdateParamsProxyConfigRulesAzureSandboxesProxyAzureSasConfig) implementsSandboxBoxUpdateParamsProxyConfigRulesAzureUnion() {
+}
+
+type SandboxBoxUpdateParamsProxyConfigRulesAzureSandboxesProxyAzureSasConfigSasToken struct {
+	Type  param.Field[SandboxBoxUpdateParamsProxyConfigRulesAzureSandboxesProxyAzureSasConfigSasTokenType] `json:"type" api:"required"`
+	IsSet param.Field[bool]                                                                                `json:"is_set"`
+	Value param.Field[string]                                                                              `json:"value"`
+}
+
+func (r SandboxBoxUpdateParamsProxyConfigRulesAzureSandboxesProxyAzureSasConfigSasToken) MarshalJSON() (data []byte, err error) {
+	return apijson.MarshalRoot(r)
+}
+
+type SandboxBoxUpdateParamsProxyConfigRulesAzureSandboxesProxyAzureSasConfigSasTokenType string
+
+const (
+	SandboxBoxUpdateParamsProxyConfigRulesAzureSandboxesProxyAzureSasConfigSasTokenTypePlaintext       SandboxBoxUpdateParamsProxyConfigRulesAzureSandboxesProxyAzureSasConfigSasTokenType = "plaintext"
+	SandboxBoxUpdateParamsProxyConfigRulesAzureSandboxesProxyAzureSasConfigSasTokenTypeOpaque          SandboxBoxUpdateParamsProxyConfigRulesAzureSandboxesProxyAzureSasConfigSasTokenType = "opaque"
+	SandboxBoxUpdateParamsProxyConfigRulesAzureSandboxesProxyAzureSasConfigSasTokenTypeWorkspaceSecret SandboxBoxUpdateParamsProxyConfigRulesAzureSandboxesProxyAzureSasConfigSasTokenType = "workspace_secret"
+)
+
+func (r SandboxBoxUpdateParamsProxyConfigRulesAzureSandboxesProxyAzureSasConfigSasTokenType) IsKnown() bool {
+	switch r {
+	case SandboxBoxUpdateParamsProxyConfigRulesAzureSandboxesProxyAzureSasConfigSasTokenTypePlaintext, SandboxBoxUpdateParamsProxyConfigRulesAzureSandboxesProxyAzureSasConfigSasTokenTypeOpaque, SandboxBoxUpdateParamsProxyConfigRulesAzureSandboxesProxyAzureSasConfigSasTokenTypeWorkspaceSecret:
 		return true
 	}
 	return false

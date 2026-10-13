@@ -66,15 +66,15 @@ func TestSandboxBoxNewWithOptionalParams(t *testing.T) {
 					RoleArn:      langsmith.F("x"),
 					SubjectScope: langsmith.F("tag:2fdcD1Dc-bbDb-2BBD-0Afa-1A3C33cFaADc"),
 				}),
-				Gcp: langsmith.F(langsmith.SandboxBoxNewParamsMountConfigAuthGcp{
-					ServiceAccountEmail: langsmith.F("service_account_email"),
-					ServiceAccountJson: langsmith.F(langsmith.SandboxBoxNewParamsMountConfigAuthGcpServiceAccountJson{
-						Type:  langsmith.F(langsmith.SandboxBoxNewParamsMountConfigAuthGcpServiceAccountJsonTypePlaintext),
-						IsSet: langsmith.F(true),
-						Value: langsmith.F("value"),
-					}),
+				Azure: langsmith.F[langsmith.SandboxBoxNewParamsMountConfigAuthAzureUnion](langsmith.SandboxBoxNewParamsMountConfigAuthAzureSandboxesSandboxAzureMountWorkloadIdentityAuthConfig{
+					ClientID:     langsmith.F("E1CB97d8-Ddf3-aAae-0Afa-1A3C33cFaADc"),
+					TenantID:     langsmith.F("E1CB97d8-Ddf3-aAae-0Afa-1A3C33cFaADc"),
+					SubjectScope: langsmith.F("tag:2fdcD1Dc-bbDb-2BBD-0Afa-1A3C33cFaADc"),
+				}),
+				Gcp: langsmith.F[langsmith.SandboxBoxNewParamsMountConfigAuthGcpUnion](langsmith.SandboxBoxNewParamsMountConfigAuthGcpSandboxesSandboxGcpMountWorkloadIdentityAuthConfig{
+					WorkloadIdentityProvider: langsmith.F("x"),
+					ServiceAccountEmail:      langsmith.F("service_account_email"),
 					SubjectScope:             langsmith.F("tag:2fdcD1Dc-bbDb-2BBD-0Afa-1A3C33cFaADc"),
-					WorkloadIdentityProvider: langsmith.F("workload_identity_provider"),
 				}),
 			}),
 			Mounts: langsmith.F([]langsmith.SandboxBoxNewParamsMountConfigMountUnion{langsmith.SandboxBoxNewParamsMountConfigMountsSandboxapiS3BucketMountSpec{
@@ -88,6 +88,11 @@ func TestSandboxBoxNewWithOptionalParams(t *testing.T) {
 					Prefix:      langsmith.F("prefix"),
 				}),
 				Type: langsmith.F(langsmith.SandboxBoxNewParamsMountConfigMountsSandboxapiS3BucketMountSpecTypeS3),
+				AzureBlob: langsmith.F(langsmith.SandboxBoxNewParamsMountConfigMountsSandboxapiS3BucketMountSpecAzureBlob{
+					Container:      langsmith.F("container"),
+					StorageAccount: langsmith.F("26f1klzn5713"),
+					Prefix:         langsmith.F("prefix"),
+				}),
 				Cache: langsmith.F(langsmith.SandboxBoxNewParamsMountConfigMountsSandboxapiS3BucketMountSpecCache{
 					MaxSizeBytes:     langsmith.F(int64(0)),
 					WritebackSeconds: langsmith.F(int64(0)),
@@ -139,6 +144,12 @@ func TestSandboxBoxNewWithOptionalParams(t *testing.T) {
 				Name: langsmith.F("name"),
 				Aws: langsmith.F[langsmith.SandboxBoxNewParamsProxyConfigRulesAwsUnion](langsmith.SandboxBoxNewParamsProxyConfigRulesAwsSandboxesProxyAwsRoleConfig{
 					RoleArn:      langsmith.F("x"),
+					SubjectScope: langsmith.F("tag:2fdcD1Dc-bbDb-2BBD-0Afa-1A3C33cFaADc"),
+				}),
+				Azure: langsmith.F[langsmith.SandboxBoxNewParamsProxyConfigRulesAzureUnion](langsmith.SandboxBoxNewParamsProxyConfigRulesAzureSandboxesProxyAzureWorkloadIdentityConfig{
+					ClientID:     langsmith.F("E1CB97d8-Ddf3-aAae-0Afa-1A3C33cFaADc"),
+					TenantID:     langsmith.F("E1CB97d8-Ddf3-aAae-0Afa-1A3C33cFaADc"),
+					Resources:    langsmith.F([]langsmith.SandboxBoxNewParamsProxyConfigRulesAzureSandboxesProxyAzureWorkloadIdentityConfigResource{langsmith.SandboxBoxNewParamsProxyConfigRulesAzureSandboxesProxyAzureWorkloadIdentityConfigResourceHTTPSStorageAzureCom}),
 					SubjectScope: langsmith.F("tag:2fdcD1Dc-bbDb-2BBD-0Afa-1A3C33cFaADc"),
 				}),
 				Description: langsmith.F("description"),
@@ -263,6 +274,12 @@ func TestSandboxBoxUpdateWithOptionalParams(t *testing.T) {
 					Name: langsmith.F("name"),
 					Aws: langsmith.F[langsmith.SandboxBoxUpdateParamsProxyConfigRulesAwsUnion](langsmith.SandboxBoxUpdateParamsProxyConfigRulesAwsSandboxesProxyAwsRoleConfig{
 						RoleArn:      langsmith.F("x"),
+						SubjectScope: langsmith.F("tag:2fdcD1Dc-bbDb-2BBD-0Afa-1A3C33cFaADc"),
+					}),
+					Azure: langsmith.F[langsmith.SandboxBoxUpdateParamsProxyConfigRulesAzureUnion](langsmith.SandboxBoxUpdateParamsProxyConfigRulesAzureSandboxesProxyAzureWorkloadIdentityConfig{
+						ClientID:     langsmith.F("E1CB97d8-Ddf3-aAae-0Afa-1A3C33cFaADc"),
+						TenantID:     langsmith.F("E1CB97d8-Ddf3-aAae-0Afa-1A3C33cFaADc"),
+						Resources:    langsmith.F([]langsmith.SandboxBoxUpdateParamsProxyConfigRulesAzureSandboxesProxyAzureWorkloadIdentityConfigResource{langsmith.SandboxBoxUpdateParamsProxyConfigRulesAzureSandboxesProxyAzureWorkloadIdentityConfigResourceHTTPSStorageAzureCom}),
 						SubjectScope: langsmith.F("tag:2fdcD1Dc-bbDb-2BBD-0Afa-1A3C33cFaADc"),
 					}),
 					Description: langsmith.F("description"),
