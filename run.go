@@ -1544,9 +1544,21 @@ type RunQueryV2Params struct {
 	IDs param.Field[[]string] `json:"ids" format:"uuid"`
 	// `is_root` returns only root runs (true) or only non-root runs (false).
 	IsRoot param.Field[bool] `json:"is_root"`
+	// `max_feedback_modified_at` is the exclusive upper bound (RFC3339) on feedback
+	// `modified_at`, applied to the feedback conditions in `filter`, `trace_filter`,
+	// or `tree_filter` (for example eq(feedback_key, "correctness")). Requires at
+	// least one feedback condition. Runs must still fall within the `start_time`
+	// window.
+	MaxFeedbackModifiedAt param.Field[time.Time] `json:"max_feedback_modified_at" format:"date-time"`
 	// `max_start_time` is the upper bound for run `start_time` (RFC3339). Defaults to
 	// now.
 	MaxStartTime param.Field[time.Time] `json:"max_start_time" format:"date-time"`
+	// `min_feedback_modified_at` is the inclusive lower bound (RFC3339) on feedback
+	// `modified_at`, applied to the feedback conditions in `filter`, `trace_filter`,
+	// or `tree_filter` (for example eq(feedback_key, "correctness")). Requires at
+	// least one feedback condition. Runs must still fall within the `start_time`
+	// window.
+	MinFeedbackModifiedAt param.Field[time.Time] `json:"min_feedback_modified_at" format:"date-time"`
 	// `min_start_time` is the lower bound for run `start_time` (RFC3339). Defaults to
 	// 1 day ago.
 	MinStartTime param.Field[time.Time] `json:"min_start_time" format:"date-time"`
