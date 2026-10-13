@@ -298,14 +298,21 @@ type SandboxResponseMountConfigAuthAws struct {
 	// This field can have the runtime type of
 	// [SandboxResponseMountConfigAuthAwsSandboxesSandboxAwsMountStaticAuthConfigAccessKeyID].
 	AccessKeyID interface{} `json:"access_key_id"`
-	// IAM role to assume with permissions scoped to the configured S3 mounts. Mutually
-	// exclusive with static credentials. Configure only at creation.
+	// IAM role to assume with AssumeRoleWithWebIdentity, using a short-lived OIDC
+	// token LangSmith signs for this workspace; the role's trust policy must trust
+	// LangSmith's issuer for the token subject. LangSmith scopes the credentials to
+	// the configured S3 mounts. Mutually exclusive with static credentials, and cannot
+	// be changed after creation.
 	RoleArn string `json:"role_arn"`
 	// This field can have the runtime type of
 	// [SandboxResponseMountConfigAuthAwsSandboxesSandboxAwsMountStaticAuthConfigSecretAccessKey].
-	SecretAccessKey interface{}                           `json:"secret_access_key"`
-	JSON            sandboxResponseMountConfigAuthAwsJSON `json:"-"`
-	union           SandboxResponseMountConfigAuthAwsUnion
+	SecretAccessKey interface{} `json:"secret_access_key"`
+	// SubjectScope picks the token subject the role trusts: "workspace" (the default)
+	// or "tag:<tag value id>", which must be one of the sandbox's tag_value_ids. Only
+	// valid with role_arn.
+	SubjectScope string                                `json:"subject_scope"`
+	JSON         sandboxResponseMountConfigAuthAwsJSON `json:"-"`
+	union        SandboxResponseMountConfigAuthAwsUnion
 }
 
 // sandboxResponseMountConfigAuthAwsJSON contains the JSON metadata for the struct
@@ -314,6 +321,7 @@ type sandboxResponseMountConfigAuthAwsJSON struct {
 	AccessKeyID     apijson.Field
 	RoleArn         apijson.Field
 	SecretAccessKey apijson.Field
+	SubjectScope    apijson.Field
 	raw             string
 	ExtraFields     map[string]apijson.Field
 }
@@ -364,19 +372,27 @@ func init() {
 }
 
 type SandboxResponseMountConfigAuthAwsSandboxesSandboxAwsMountRoleAuthConfig struct {
-	// IAM role to assume with permissions scoped to the configured S3 mounts. Mutually
-	// exclusive with static credentials. Configure only at creation.
-	RoleArn string                                                                      `json:"role_arn" api:"required"`
-	JSON    sandboxResponseMountConfigAuthAwsSandboxesSandboxAwsMountRoleAuthConfigJSON `json:"-"`
+	// IAM role to assume with AssumeRoleWithWebIdentity, using a short-lived OIDC
+	// token LangSmith signs for this workspace; the role's trust policy must trust
+	// LangSmith's issuer for the token subject. LangSmith scopes the credentials to
+	// the configured S3 mounts. Mutually exclusive with static credentials, and cannot
+	// be changed after creation.
+	RoleArn string `json:"role_arn" api:"required"`
+	// SubjectScope picks the token subject the role trusts: "workspace" (the default)
+	// or "tag:<tag value id>", which must be one of the sandbox's tag_value_ids. Only
+	// valid with role_arn.
+	SubjectScope string                                                                      `json:"subject_scope"`
+	JSON         sandboxResponseMountConfigAuthAwsSandboxesSandboxAwsMountRoleAuthConfigJSON `json:"-"`
 }
 
 // sandboxResponseMountConfigAuthAwsSandboxesSandboxAwsMountRoleAuthConfigJSON
 // contains the JSON metadata for the struct
 // [SandboxResponseMountConfigAuthAwsSandboxesSandboxAwsMountRoleAuthConfig]
 type sandboxResponseMountConfigAuthAwsSandboxesSandboxAwsMountRoleAuthConfigJSON struct {
-	RoleArn     apijson.Field
-	raw         string
-	ExtraFields map[string]apijson.Field
+	RoleArn      apijson.Field
+	SubjectScope apijson.Field
+	raw          string
+	ExtraFields  map[string]apijson.Field
 }
 
 func (r *SandboxResponseMountConfigAuthAwsSandboxesSandboxAwsMountRoleAuthConfig) UnmarshalJSON(data []byte) (err error) {
@@ -393,8 +409,11 @@ func (r SandboxResponseMountConfigAuthAwsSandboxesSandboxAwsMountRoleAuthConfig)
 type SandboxResponseMountConfigAuthAwsSandboxesSandboxAwsMountStaticAuthConfig struct {
 	AccessKeyID     SandboxResponseMountConfigAuthAwsSandboxesSandboxAwsMountStaticAuthConfigAccessKeyID     `json:"access_key_id" api:"required"`
 	SecretAccessKey SandboxResponseMountConfigAuthAwsSandboxesSandboxAwsMountStaticAuthConfigSecretAccessKey `json:"secret_access_key" api:"required"`
-	// IAM role to assume with permissions scoped to the configured S3 mounts. Mutually
-	// exclusive with static credentials. Configure only at creation.
+	// IAM role to assume with AssumeRoleWithWebIdentity, using a short-lived OIDC
+	// token LangSmith signs for this workspace; the role's trust policy must trust
+	// LangSmith's issuer for the token subject. LangSmith scopes the credentials to
+	// the configured S3 mounts. Mutually exclusive with static credentials, and cannot
+	// be changed after creation.
 	RoleArn SandboxResponseMountConfigAuthAwsSandboxesSandboxAwsMountStaticAuthConfigRoleArn `json:"role_arn"`
 	JSON    sandboxResponseMountConfigAuthAwsSandboxesSandboxAwsMountStaticAuthConfigJSON    `json:"-"`
 }
@@ -505,8 +524,11 @@ func (r SandboxResponseMountConfigAuthAwsSandboxesSandboxAwsMountStaticAuthConfi
 	return false
 }
 
-// IAM role to assume with permissions scoped to the configured S3 mounts. Mutually
-// exclusive with static credentials. Configure only at creation.
+// IAM role to assume with AssumeRoleWithWebIdentity, using a short-lived OIDC
+// token LangSmith signs for this workspace; the role's trust policy must trust
+// LangSmith's issuer for the token subject. LangSmith scopes the credentials to
+// the configured S3 mounts. Mutually exclusive with static credentials, and cannot
+// be changed after creation.
 type SandboxResponseMountConfigAuthAwsSandboxesSandboxAwsMountStaticAuthConfigRoleArn string
 
 const (
@@ -522,16 +544,32 @@ func (r SandboxResponseMountConfigAuthAwsSandboxesSandboxAwsMountStaticAuthConfi
 }
 
 type SandboxResponseMountConfigAuthGcp struct {
-	ServiceAccountJson SandboxResponseMountConfigAuthGcpServiceAccountJson `json:"service_account_json" api:"required"`
-	JSON               sandboxResponseMountConfigAuthGcpJSON               `json:"-"`
+	// ServiceAccountEmail is the service account to impersonate with the federated
+	// token. Omit it to use the federated principal directly. Only valid with
+	// workload_identity_provider.
+	ServiceAccountEmail string                                              `json:"service_account_email"`
+	ServiceAccountJson  SandboxResponseMountConfigAuthGcpServiceAccountJson `json:"service_account_json"`
+	// SubjectScope picks the token subject the provider trusts: "workspace" (the
+	// default) or "tag:<tag value id>", which must be one of the sandbox's
+	// tag_value_ids. Only valid with workload_identity_provider.
+	SubjectScope string `json:"subject_scope"`
+	// WorkloadIdentityProvider federates an OIDC token LangSmith signs for this
+	// workspace through Workload Identity Federation instead of a service account key:
+	// //iam.googleapis.com/projects/<number>/locations/global/workloadIdentityPools/<pool>/providers/<provider>.
+	// Mutually exclusive with service_account_json. Cannot be changed after creation.
+	WorkloadIdentityProvider string                                `json:"workload_identity_provider"`
+	JSON                     sandboxResponseMountConfigAuthGcpJSON `json:"-"`
 }
 
 // sandboxResponseMountConfigAuthGcpJSON contains the JSON metadata for the struct
 // [SandboxResponseMountConfigAuthGcp]
 type sandboxResponseMountConfigAuthGcpJSON struct {
-	ServiceAccountJson apijson.Field
-	raw                string
-	ExtraFields        map[string]apijson.Field
+	ServiceAccountEmail      apijson.Field
+	ServiceAccountJson       apijson.Field
+	SubjectScope             apijson.Field
+	WorkloadIdentityProvider apijson.Field
+	raw                      string
+	ExtraFields              map[string]apijson.Field
 }
 
 func (r *SandboxResponseMountConfigAuthGcp) UnmarshalJSON(data []byte) (err error) {
@@ -1993,15 +2031,21 @@ type SandboxResponseProxyConfigRulesAws struct {
 	// This field can have the runtime type of
 	// [SandboxResponseProxyConfigRulesAwsSandboxesProxyAwsStaticConfigAccessKeyID].
 	AccessKeyID interface{} `json:"access_key_id"`
-	// RoleARN selects automatically renewed IAM-role credentials instead of static
-	// keys. Access follows the role's effective AWS permissions, not the sandbox's
-	// mount scope. Configure at creation; the role cannot be changed afterward.
+	// IAM role to assume with AssumeRoleWithWebIdentity, using a short-lived OIDC
+	// token LangSmith signs for this workspace. The role's trust policy must trust
+	// LangSmith's issuer for the token subject. Credentials renew automatically, and
+	// access follows the role's effective AWS permissions. Mutually exclusive with
+	// static keys, and cannot be changed after creation.
 	RoleArn string `json:"role_arn"`
 	// This field can have the runtime type of
 	// [SandboxResponseProxyConfigRulesAwsSandboxesProxyAwsStaticConfigSecretAccessKey].
-	SecretAccessKey interface{}                            `json:"secret_access_key"`
-	JSON            sandboxResponseProxyConfigRulesAwsJSON `json:"-"`
-	union           SandboxResponseProxyConfigRulesAwsUnion
+	SecretAccessKey interface{} `json:"secret_access_key"`
+	// SubjectScope picks the token subject the role trusts: "workspace" (the default)
+	// or "tag:<tag value id>", which must be one of the sandbox's tag_value_ids. Only
+	// valid with role_arn.
+	SubjectScope string                                 `json:"subject_scope"`
+	JSON         sandboxResponseProxyConfigRulesAwsJSON `json:"-"`
+	union        SandboxResponseProxyConfigRulesAwsUnion
 }
 
 // sandboxResponseProxyConfigRulesAwsJSON contains the JSON metadata for the struct
@@ -2010,6 +2054,7 @@ type sandboxResponseProxyConfigRulesAwsJSON struct {
 	AccessKeyID     apijson.Field
 	RoleArn         apijson.Field
 	SecretAccessKey apijson.Field
+	SubjectScope    apijson.Field
 	raw             string
 	ExtraFields     map[string]apijson.Field
 }
@@ -2060,20 +2105,27 @@ func init() {
 }
 
 type SandboxResponseProxyConfigRulesAwsSandboxesProxyAwsRoleConfig struct {
-	// RoleARN selects automatically renewed IAM-role credentials instead of static
-	// keys. Access follows the role's effective AWS permissions, not the sandbox's
-	// mount scope. Configure at creation; the role cannot be changed afterward.
-	RoleArn string                                                            `json:"role_arn" api:"required"`
-	JSON    sandboxResponseProxyConfigRulesAwsSandboxesProxyAwsRoleConfigJSON `json:"-"`
+	// IAM role to assume with AssumeRoleWithWebIdentity, using a short-lived OIDC
+	// token LangSmith signs for this workspace. The role's trust policy must trust
+	// LangSmith's issuer for the token subject. Credentials renew automatically, and
+	// access follows the role's effective AWS permissions. Mutually exclusive with
+	// static keys, and cannot be changed after creation.
+	RoleArn string `json:"role_arn" api:"required"`
+	// SubjectScope picks the token subject the role trusts: "workspace" (the default)
+	// or "tag:<tag value id>", which must be one of the sandbox's tag_value_ids. Only
+	// valid with role_arn.
+	SubjectScope string                                                            `json:"subject_scope"`
+	JSON         sandboxResponseProxyConfigRulesAwsSandboxesProxyAwsRoleConfigJSON `json:"-"`
 }
 
 // sandboxResponseProxyConfigRulesAwsSandboxesProxyAwsRoleConfigJSON contains the
 // JSON metadata for the struct
 // [SandboxResponseProxyConfigRulesAwsSandboxesProxyAwsRoleConfig]
 type sandboxResponseProxyConfigRulesAwsSandboxesProxyAwsRoleConfigJSON struct {
-	RoleArn     apijson.Field
-	raw         string
-	ExtraFields map[string]apijson.Field
+	RoleArn      apijson.Field
+	SubjectScope apijson.Field
+	raw          string
+	ExtraFields  map[string]apijson.Field
 }
 
 func (r *SandboxResponseProxyConfigRulesAwsSandboxesProxyAwsRoleConfig) UnmarshalJSON(data []byte) (err error) {
@@ -2090,9 +2142,11 @@ func (r SandboxResponseProxyConfigRulesAwsSandboxesProxyAwsRoleConfig) implement
 type SandboxResponseProxyConfigRulesAwsSandboxesProxyAwsStaticConfig struct {
 	AccessKeyID     SandboxResponseProxyConfigRulesAwsSandboxesProxyAwsStaticConfigAccessKeyID     `json:"access_key_id" api:"required"`
 	SecretAccessKey SandboxResponseProxyConfigRulesAwsSandboxesProxyAwsStaticConfigSecretAccessKey `json:"secret_access_key" api:"required"`
-	// RoleARN selects automatically renewed IAM-role credentials instead of static
-	// keys. Access follows the role's effective AWS permissions, not the sandbox's
-	// mount scope. Configure at creation; the role cannot be changed afterward.
+	// IAM role to assume with AssumeRoleWithWebIdentity, using a short-lived OIDC
+	// token LangSmith signs for this workspace. The role's trust policy must trust
+	// LangSmith's issuer for the token subject. Credentials renew automatically, and
+	// access follows the role's effective AWS permissions. Mutually exclusive with
+	// static keys, and cannot be changed after creation.
 	RoleArn SandboxResponseProxyConfigRulesAwsSandboxesProxyAwsStaticConfigRoleArn `json:"role_arn"`
 	JSON    sandboxResponseProxyConfigRulesAwsSandboxesProxyAwsStaticConfigJSON    `json:"-"`
 }
@@ -2203,9 +2257,11 @@ func (r SandboxResponseProxyConfigRulesAwsSandboxesProxyAwsStaticConfigSecretAcc
 	return false
 }
 
-// RoleARN selects automatically renewed IAM-role credentials instead of static
-// keys. Access follows the role's effective AWS permissions, not the sandbox's
-// mount scope. Configure at creation; the role cannot be changed afterward.
+// IAM role to assume with AssumeRoleWithWebIdentity, using a short-lived OIDC
+// token LangSmith signs for this workspace. The role's trust policy must trust
+// LangSmith's issuer for the token subject. Credentials renew automatically, and
+// access follows the role's effective AWS permissions. Mutually exclusive with
+// static keys, and cannot be changed after creation.
 type SandboxResponseProxyConfigRulesAwsSandboxesProxyAwsStaticConfigRoleArn string
 
 const (
@@ -2221,18 +2277,36 @@ func (r SandboxResponseProxyConfigRulesAwsSandboxesProxyAwsStaticConfigRoleArn) 
 }
 
 type SandboxResponseProxyConfigRulesGcp struct {
-	Scopes             []string                                             `json:"scopes" api:"required"`
-	ServiceAccountJson SandboxResponseProxyConfigRulesGcpServiceAccountJson `json:"service_account_json" api:"required"`
-	JSON               sandboxResponseProxyConfigRulesGcpJSON               `json:"-"`
+	// Scopes are the OAuth scopes requested for the access token. Omit them to use
+	// https://www.googleapis.com/auth/cloud-platform.
+	Scopes []string `json:"scopes"`
+	// ServiceAccountEmail is the service account to impersonate with the federated
+	// token. Omit it to use the federated principal directly.
+	ServiceAccountEmail string                                               `json:"service_account_email"`
+	ServiceAccountJson  SandboxResponseProxyConfigRulesGcpServiceAccountJson `json:"service_account_json"`
+	// SubjectScope picks the token subject the provider trusts: "workspace" (the
+	// default) or "tag:<tag value id>", which must be one of the sandbox's
+	// tag_value_ids. Only valid with workload_identity_provider.
+	SubjectScope string `json:"subject_scope"`
+	// WorkloadIdentityProvider federates an OIDC token LangSmith signs for this
+	// workspace through Workload Identity Federation instead of a service account key.
+	// Use the full resource name:
+	// //iam.googleapis.com/projects/<number>/locations/global/workloadIdentityPools/<pool>/providers/<provider>.
+	// Cannot be changed after creation.
+	WorkloadIdentityProvider string                                 `json:"workload_identity_provider"`
+	JSON                     sandboxResponseProxyConfigRulesGcpJSON `json:"-"`
 }
 
 // sandboxResponseProxyConfigRulesGcpJSON contains the JSON metadata for the struct
 // [SandboxResponseProxyConfigRulesGcp]
 type sandboxResponseProxyConfigRulesGcpJSON struct {
-	Scopes             apijson.Field
-	ServiceAccountJson apijson.Field
-	raw                string
-	ExtraFields        map[string]apijson.Field
+	Scopes                   apijson.Field
+	ServiceAccountEmail      apijson.Field
+	ServiceAccountJson       apijson.Field
+	SubjectScope             apijson.Field
+	WorkloadIdentityProvider apijson.Field
+	raw                      string
+	ExtraFields              map[string]apijson.Field
 }
 
 func (r *SandboxResponseProxyConfigRulesGcp) UnmarshalJSON(data []byte) (err error) {

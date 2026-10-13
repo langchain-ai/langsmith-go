@@ -63,14 +63,18 @@ func TestSandboxBoxNewWithOptionalParams(t *testing.T) {
 		MountConfig: langsmith.F(langsmith.SandboxBoxNewParamsMountConfig{
 			Auth: langsmith.F(langsmith.SandboxBoxNewParamsMountConfigAuth{
 				Aws: langsmith.F[langsmith.SandboxBoxNewParamsMountConfigAuthAwsUnion](langsmith.SandboxBoxNewParamsMountConfigAuthAwsSandboxesSandboxAwsMountRoleAuthConfig{
-					RoleArn: langsmith.F("x"),
+					RoleArn:      langsmith.F("x"),
+					SubjectScope: langsmith.F("tag:2fdcD1Dc-bbDb-2BBD-0Afa-1A3C33cFaADc"),
 				}),
 				Gcp: langsmith.F(langsmith.SandboxBoxNewParamsMountConfigAuthGcp{
+					ServiceAccountEmail: langsmith.F("service_account_email"),
 					ServiceAccountJson: langsmith.F(langsmith.SandboxBoxNewParamsMountConfigAuthGcpServiceAccountJson{
 						Type:  langsmith.F(langsmith.SandboxBoxNewParamsMountConfigAuthGcpServiceAccountJsonTypePlaintext),
 						IsSet: langsmith.F(true),
 						Value: langsmith.F("value"),
 					}),
+					SubjectScope:             langsmith.F("tag:2fdcD1Dc-bbDb-2BBD-0Afa-1A3C33cFaADc"),
+					WorkloadIdentityProvider: langsmith.F("workload_identity_provider"),
 				}),
 			}),
 			Mounts: langsmith.F([]langsmith.SandboxBoxNewParamsMountConfigMountUnion{langsmith.SandboxBoxNewParamsMountConfigMountsSandboxapiS3BucketMountSpec{
@@ -134,7 +138,8 @@ func TestSandboxBoxNewWithOptionalParams(t *testing.T) {
 			Rules: langsmith.F([]langsmith.SandboxBoxNewParamsProxyConfigRule{{
 				Name: langsmith.F("name"),
 				Aws: langsmith.F[langsmith.SandboxBoxNewParamsProxyConfigRulesAwsUnion](langsmith.SandboxBoxNewParamsProxyConfigRulesAwsSandboxesProxyAwsRoleConfig{
-					RoleArn: langsmith.F("x"),
+					RoleArn:      langsmith.F("x"),
+					SubjectScope: langsmith.F("tag:2fdcD1Dc-bbDb-2BBD-0Afa-1A3C33cFaADc"),
 				}),
 				Description: langsmith.F("description"),
 				Enabled:     langsmith.F(true),
@@ -142,12 +147,15 @@ func TestSandboxBoxNewWithOptionalParams(t *testing.T) {
 					"foo": "string",
 				}),
 				Gcp: langsmith.F(langsmith.SandboxBoxNewParamsProxyConfigRulesGcp{
-					Scopes: langsmith.F([]string{"string"}),
+					Scopes:              langsmith.F([]string{"string"}),
+					ServiceAccountEmail: langsmith.F("service_account_email"),
 					ServiceAccountJson: langsmith.F(langsmith.SandboxBoxNewParamsProxyConfigRulesGcpServiceAccountJson{
 						Type:  langsmith.F(langsmith.SandboxBoxNewParamsProxyConfigRulesGcpServiceAccountJsonTypePlaintext),
 						IsSet: langsmith.F(true),
 						Value: langsmith.F("value"),
 					}),
+					SubjectScope:             langsmith.F("tag:2fdcD1Dc-bbDb-2BBD-0Afa-1A3C33cFaADc"),
+					WorkloadIdentityProvider: langsmith.F("workload_identity_provider"),
 				}),
 				Headers: langsmith.F([]langsmith.SandboxBoxNewParamsProxyConfigRulesHeader{{
 					Name:  langsmith.F("name"),
@@ -254,7 +262,8 @@ func TestSandboxBoxUpdateWithOptionalParams(t *testing.T) {
 				Rules: langsmith.F([]langsmith.SandboxBoxUpdateParamsProxyConfigRule{{
 					Name: langsmith.F("name"),
 					Aws: langsmith.F[langsmith.SandboxBoxUpdateParamsProxyConfigRulesAwsUnion](langsmith.SandboxBoxUpdateParamsProxyConfigRulesAwsSandboxesProxyAwsRoleConfig{
-						RoleArn: langsmith.F("x"),
+						RoleArn:      langsmith.F("x"),
+						SubjectScope: langsmith.F("tag:2fdcD1Dc-bbDb-2BBD-0Afa-1A3C33cFaADc"),
 					}),
 					Description: langsmith.F("description"),
 					Enabled:     langsmith.F(true),
@@ -262,12 +271,15 @@ func TestSandboxBoxUpdateWithOptionalParams(t *testing.T) {
 						"foo": "string",
 					}),
 					Gcp: langsmith.F(langsmith.SandboxBoxUpdateParamsProxyConfigRulesGcp{
-						Scopes: langsmith.F([]string{"string"}),
+						Scopes:              langsmith.F([]string{"string"}),
+						ServiceAccountEmail: langsmith.F("service_account_email"),
 						ServiceAccountJson: langsmith.F(langsmith.SandboxBoxUpdateParamsProxyConfigRulesGcpServiceAccountJson{
 							Type:  langsmith.F(langsmith.SandboxBoxUpdateParamsProxyConfigRulesGcpServiceAccountJsonTypePlaintext),
 							IsSet: langsmith.F(true),
 							Value: langsmith.F("value"),
 						}),
+						SubjectScope:             langsmith.F("tag:2fdcD1Dc-bbDb-2BBD-0Afa-1A3C33cFaADc"),
+						WorkloadIdentityProvider: langsmith.F("workload_identity_provider"),
 					}),
 					Headers: langsmith.F([]langsmith.SandboxBoxUpdateParamsProxyConfigRulesHeader{{
 						Name:  langsmith.F("name"),

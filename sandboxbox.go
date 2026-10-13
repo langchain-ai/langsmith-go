@@ -422,10 +422,17 @@ func (r SandboxBoxNewParamsMountConfigAuth) MarshalJSON() (data []byte, err erro
 
 type SandboxBoxNewParamsMountConfigAuthAws struct {
 	AccessKeyID param.Field[interface{}] `json:"access_key_id"`
-	// IAM role to assume with permissions scoped to the configured S3 mounts. Mutually
-	// exclusive with static credentials. Configure only at creation.
+	// IAM role to assume with AssumeRoleWithWebIdentity, using a short-lived OIDC
+	// token LangSmith signs for this workspace; the role's trust policy must trust
+	// LangSmith's issuer for the token subject. LangSmith scopes the credentials to
+	// the configured S3 mounts. Mutually exclusive with static credentials, and cannot
+	// be changed after creation.
 	RoleArn         param.Field[string]      `json:"role_arn"`
 	SecretAccessKey param.Field[interface{}] `json:"secret_access_key"`
+	// SubjectScope picks the token subject the role trusts: "workspace" (the default)
+	// or "tag:<tag value id>", which must be one of the sandbox's tag_value_ids. Only
+	// valid with role_arn.
+	SubjectScope param.Field[string] `json:"subject_scope"`
 }
 
 func (r SandboxBoxNewParamsMountConfigAuthAws) MarshalJSON() (data []byte, err error) {
@@ -444,9 +451,16 @@ type SandboxBoxNewParamsMountConfigAuthAwsUnion interface {
 }
 
 type SandboxBoxNewParamsMountConfigAuthAwsSandboxesSandboxAwsMountRoleAuthConfig struct {
-	// IAM role to assume with permissions scoped to the configured S3 mounts. Mutually
-	// exclusive with static credentials. Configure only at creation.
+	// IAM role to assume with AssumeRoleWithWebIdentity, using a short-lived OIDC
+	// token LangSmith signs for this workspace; the role's trust policy must trust
+	// LangSmith's issuer for the token subject. LangSmith scopes the credentials to
+	// the configured S3 mounts. Mutually exclusive with static credentials, and cannot
+	// be changed after creation.
 	RoleArn param.Field[string] `json:"role_arn" api:"required"`
+	// SubjectScope picks the token subject the role trusts: "workspace" (the default)
+	// or "tag:<tag value id>", which must be one of the sandbox's tag_value_ids. Only
+	// valid with role_arn.
+	SubjectScope param.Field[string] `json:"subject_scope"`
 }
 
 func (r SandboxBoxNewParamsMountConfigAuthAwsSandboxesSandboxAwsMountRoleAuthConfig) MarshalJSON() (data []byte, err error) {
@@ -459,8 +473,11 @@ func (r SandboxBoxNewParamsMountConfigAuthAwsSandboxesSandboxAwsMountRoleAuthCon
 type SandboxBoxNewParamsMountConfigAuthAwsSandboxesSandboxAwsMountStaticAuthConfig struct {
 	AccessKeyID     param.Field[SandboxBoxNewParamsMountConfigAuthAwsSandboxesSandboxAwsMountStaticAuthConfigAccessKeyID]     `json:"access_key_id" api:"required"`
 	SecretAccessKey param.Field[SandboxBoxNewParamsMountConfigAuthAwsSandboxesSandboxAwsMountStaticAuthConfigSecretAccessKey] `json:"secret_access_key" api:"required"`
-	// IAM role to assume with permissions scoped to the configured S3 mounts. Mutually
-	// exclusive with static credentials. Configure only at creation.
+	// IAM role to assume with AssumeRoleWithWebIdentity, using a short-lived OIDC
+	// token LangSmith signs for this workspace; the role's trust policy must trust
+	// LangSmith's issuer for the token subject. LangSmith scopes the credentials to
+	// the configured S3 mounts. Mutually exclusive with static credentials, and cannot
+	// be changed after creation.
 	RoleArn param.Field[SandboxBoxNewParamsMountConfigAuthAwsSandboxesSandboxAwsMountStaticAuthConfigRoleArn] `json:"role_arn"`
 }
 
@@ -523,8 +540,11 @@ func (r SandboxBoxNewParamsMountConfigAuthAwsSandboxesSandboxAwsMountStaticAuthC
 	return false
 }
 
-// IAM role to assume with permissions scoped to the configured S3 mounts. Mutually
-// exclusive with static credentials. Configure only at creation.
+// IAM role to assume with AssumeRoleWithWebIdentity, using a short-lived OIDC
+// token LangSmith signs for this workspace; the role's trust policy must trust
+// LangSmith's issuer for the token subject. LangSmith scopes the credentials to
+// the configured S3 mounts. Mutually exclusive with static credentials, and cannot
+// be changed after creation.
 type SandboxBoxNewParamsMountConfigAuthAwsSandboxesSandboxAwsMountStaticAuthConfigRoleArn string
 
 const (
@@ -540,7 +560,20 @@ func (r SandboxBoxNewParamsMountConfigAuthAwsSandboxesSandboxAwsMountStaticAuthC
 }
 
 type SandboxBoxNewParamsMountConfigAuthGcp struct {
-	ServiceAccountJson param.Field[SandboxBoxNewParamsMountConfigAuthGcpServiceAccountJson] `json:"service_account_json" api:"required"`
+	// ServiceAccountEmail is the service account to impersonate with the federated
+	// token. Omit it to use the federated principal directly. Only valid with
+	// workload_identity_provider.
+	ServiceAccountEmail param.Field[string]                                                  `json:"service_account_email"`
+	ServiceAccountJson  param.Field[SandboxBoxNewParamsMountConfigAuthGcpServiceAccountJson] `json:"service_account_json"`
+	// SubjectScope picks the token subject the provider trusts: "workspace" (the
+	// default) or "tag:<tag value id>", which must be one of the sandbox's
+	// tag_value_ids. Only valid with workload_identity_provider.
+	SubjectScope param.Field[string] `json:"subject_scope"`
+	// WorkloadIdentityProvider federates an OIDC token LangSmith signs for this
+	// workspace through Workload Identity Federation instead of a service account key:
+	// //iam.googleapis.com/projects/<number>/locations/global/workloadIdentityPools/<pool>/providers/<provider>.
+	// Mutually exclusive with service_account_json. Cannot be changed after creation.
+	WorkloadIdentityProvider param.Field[string] `json:"workload_identity_provider"`
 }
 
 func (r SandboxBoxNewParamsMountConfigAuthGcp) MarshalJSON() (data []byte, err error) {
@@ -1215,11 +1248,17 @@ func (r SandboxBoxNewParamsProxyConfigRule) MarshalJSON() (data []byte, err erro
 
 type SandboxBoxNewParamsProxyConfigRulesAws struct {
 	AccessKeyID param.Field[interface{}] `json:"access_key_id"`
-	// RoleARN selects automatically renewed IAM-role credentials instead of static
-	// keys. Access follows the role's effective AWS permissions, not the sandbox's
-	// mount scope. Configure at creation; the role cannot be changed afterward.
+	// IAM role to assume with AssumeRoleWithWebIdentity, using a short-lived OIDC
+	// token LangSmith signs for this workspace. The role's trust policy must trust
+	// LangSmith's issuer for the token subject. Credentials renew automatically, and
+	// access follows the role's effective AWS permissions. Mutually exclusive with
+	// static keys, and cannot be changed after creation.
 	RoleArn         param.Field[string]      `json:"role_arn"`
 	SecretAccessKey param.Field[interface{}] `json:"secret_access_key"`
+	// SubjectScope picks the token subject the role trusts: "workspace" (the default)
+	// or "tag:<tag value id>", which must be one of the sandbox's tag_value_ids. Only
+	// valid with role_arn.
+	SubjectScope param.Field[string] `json:"subject_scope"`
 }
 
 func (r SandboxBoxNewParamsProxyConfigRulesAws) MarshalJSON() (data []byte, err error) {
@@ -1238,10 +1277,16 @@ type SandboxBoxNewParamsProxyConfigRulesAwsUnion interface {
 }
 
 type SandboxBoxNewParamsProxyConfigRulesAwsSandboxesProxyAwsRoleConfig struct {
-	// RoleARN selects automatically renewed IAM-role credentials instead of static
-	// keys. Access follows the role's effective AWS permissions, not the sandbox's
-	// mount scope. Configure at creation; the role cannot be changed afterward.
+	// IAM role to assume with AssumeRoleWithWebIdentity, using a short-lived OIDC
+	// token LangSmith signs for this workspace. The role's trust policy must trust
+	// LangSmith's issuer for the token subject. Credentials renew automatically, and
+	// access follows the role's effective AWS permissions. Mutually exclusive with
+	// static keys, and cannot be changed after creation.
 	RoleArn param.Field[string] `json:"role_arn" api:"required"`
+	// SubjectScope picks the token subject the role trusts: "workspace" (the default)
+	// or "tag:<tag value id>", which must be one of the sandbox's tag_value_ids. Only
+	// valid with role_arn.
+	SubjectScope param.Field[string] `json:"subject_scope"`
 }
 
 func (r SandboxBoxNewParamsProxyConfigRulesAwsSandboxesProxyAwsRoleConfig) MarshalJSON() (data []byte, err error) {
@@ -1254,9 +1299,11 @@ func (r SandboxBoxNewParamsProxyConfigRulesAwsSandboxesProxyAwsRoleConfig) imple
 type SandboxBoxNewParamsProxyConfigRulesAwsSandboxesProxyAwsStaticConfig struct {
 	AccessKeyID     param.Field[SandboxBoxNewParamsProxyConfigRulesAwsSandboxesProxyAwsStaticConfigAccessKeyID]     `json:"access_key_id" api:"required"`
 	SecretAccessKey param.Field[SandboxBoxNewParamsProxyConfigRulesAwsSandboxesProxyAwsStaticConfigSecretAccessKey] `json:"secret_access_key" api:"required"`
-	// RoleARN selects automatically renewed IAM-role credentials instead of static
-	// keys. Access follows the role's effective AWS permissions, not the sandbox's
-	// mount scope. Configure at creation; the role cannot be changed afterward.
+	// IAM role to assume with AssumeRoleWithWebIdentity, using a short-lived OIDC
+	// token LangSmith signs for this workspace. The role's trust policy must trust
+	// LangSmith's issuer for the token subject. Credentials renew automatically, and
+	// access follows the role's effective AWS permissions. Mutually exclusive with
+	// static keys, and cannot be changed after creation.
 	RoleArn param.Field[SandboxBoxNewParamsProxyConfigRulesAwsSandboxesProxyAwsStaticConfigRoleArn] `json:"role_arn"`
 }
 
@@ -1319,9 +1366,11 @@ func (r SandboxBoxNewParamsProxyConfigRulesAwsSandboxesProxyAwsStaticConfigSecre
 	return false
 }
 
-// RoleARN selects automatically renewed IAM-role credentials instead of static
-// keys. Access follows the role's effective AWS permissions, not the sandbox's
-// mount scope. Configure at creation; the role cannot be changed afterward.
+// IAM role to assume with AssumeRoleWithWebIdentity, using a short-lived OIDC
+// token LangSmith signs for this workspace. The role's trust policy must trust
+// LangSmith's issuer for the token subject. Credentials renew automatically, and
+// access follows the role's effective AWS permissions. Mutually exclusive with
+// static keys, and cannot be changed after creation.
 type SandboxBoxNewParamsProxyConfigRulesAwsSandboxesProxyAwsStaticConfigRoleArn string
 
 const (
@@ -1337,8 +1386,23 @@ func (r SandboxBoxNewParamsProxyConfigRulesAwsSandboxesProxyAwsStaticConfigRoleA
 }
 
 type SandboxBoxNewParamsProxyConfigRulesGcp struct {
-	Scopes             param.Field[[]string]                                                 `json:"scopes" api:"required"`
-	ServiceAccountJson param.Field[SandboxBoxNewParamsProxyConfigRulesGcpServiceAccountJson] `json:"service_account_json" api:"required"`
+	// Scopes are the OAuth scopes requested for the access token. Omit them to use
+	// https://www.googleapis.com/auth/cloud-platform.
+	Scopes param.Field[[]string] `json:"scopes"`
+	// ServiceAccountEmail is the service account to impersonate with the federated
+	// token. Omit it to use the federated principal directly.
+	ServiceAccountEmail param.Field[string]                                                   `json:"service_account_email"`
+	ServiceAccountJson  param.Field[SandboxBoxNewParamsProxyConfigRulesGcpServiceAccountJson] `json:"service_account_json"`
+	// SubjectScope picks the token subject the provider trusts: "workspace" (the
+	// default) or "tag:<tag value id>", which must be one of the sandbox's
+	// tag_value_ids. Only valid with workload_identity_provider.
+	SubjectScope param.Field[string] `json:"subject_scope"`
+	// WorkloadIdentityProvider federates an OIDC token LangSmith signs for this
+	// workspace through Workload Identity Federation instead of a service account key.
+	// Use the full resource name:
+	// //iam.googleapis.com/projects/<number>/locations/global/workloadIdentityPools/<pool>/providers/<provider>.
+	// Cannot be changed after creation.
+	WorkloadIdentityProvider param.Field[string] `json:"workload_identity_provider"`
 }
 
 func (r SandboxBoxNewParamsProxyConfigRulesGcp) MarshalJSON() (data []byte, err error) {
@@ -1530,11 +1594,17 @@ func (r SandboxBoxUpdateParamsProxyConfigRule) MarshalJSON() (data []byte, err e
 
 type SandboxBoxUpdateParamsProxyConfigRulesAws struct {
 	AccessKeyID param.Field[interface{}] `json:"access_key_id"`
-	// RoleARN selects automatically renewed IAM-role credentials instead of static
-	// keys. Access follows the role's effective AWS permissions, not the sandbox's
-	// mount scope. Configure at creation; the role cannot be changed afterward.
+	// IAM role to assume with AssumeRoleWithWebIdentity, using a short-lived OIDC
+	// token LangSmith signs for this workspace. The role's trust policy must trust
+	// LangSmith's issuer for the token subject. Credentials renew automatically, and
+	// access follows the role's effective AWS permissions. Mutually exclusive with
+	// static keys, and cannot be changed after creation.
 	RoleArn         param.Field[string]      `json:"role_arn"`
 	SecretAccessKey param.Field[interface{}] `json:"secret_access_key"`
+	// SubjectScope picks the token subject the role trusts: "workspace" (the default)
+	// or "tag:<tag value id>", which must be one of the sandbox's tag_value_ids. Only
+	// valid with role_arn.
+	SubjectScope param.Field[string] `json:"subject_scope"`
 }
 
 func (r SandboxBoxUpdateParamsProxyConfigRulesAws) MarshalJSON() (data []byte, err error) {
@@ -1553,10 +1623,16 @@ type SandboxBoxUpdateParamsProxyConfigRulesAwsUnion interface {
 }
 
 type SandboxBoxUpdateParamsProxyConfigRulesAwsSandboxesProxyAwsRoleConfig struct {
-	// RoleARN selects automatically renewed IAM-role credentials instead of static
-	// keys. Access follows the role's effective AWS permissions, not the sandbox's
-	// mount scope. Configure at creation; the role cannot be changed afterward.
+	// IAM role to assume with AssumeRoleWithWebIdentity, using a short-lived OIDC
+	// token LangSmith signs for this workspace. The role's trust policy must trust
+	// LangSmith's issuer for the token subject. Credentials renew automatically, and
+	// access follows the role's effective AWS permissions. Mutually exclusive with
+	// static keys, and cannot be changed after creation.
 	RoleArn param.Field[string] `json:"role_arn" api:"required"`
+	// SubjectScope picks the token subject the role trusts: "workspace" (the default)
+	// or "tag:<tag value id>", which must be one of the sandbox's tag_value_ids. Only
+	// valid with role_arn.
+	SubjectScope param.Field[string] `json:"subject_scope"`
 }
 
 func (r SandboxBoxUpdateParamsProxyConfigRulesAwsSandboxesProxyAwsRoleConfig) MarshalJSON() (data []byte, err error) {
@@ -1569,9 +1645,11 @@ func (r SandboxBoxUpdateParamsProxyConfigRulesAwsSandboxesProxyAwsRoleConfig) im
 type SandboxBoxUpdateParamsProxyConfigRulesAwsSandboxesProxyAwsStaticConfig struct {
 	AccessKeyID     param.Field[SandboxBoxUpdateParamsProxyConfigRulesAwsSandboxesProxyAwsStaticConfigAccessKeyID]     `json:"access_key_id" api:"required"`
 	SecretAccessKey param.Field[SandboxBoxUpdateParamsProxyConfigRulesAwsSandboxesProxyAwsStaticConfigSecretAccessKey] `json:"secret_access_key" api:"required"`
-	// RoleARN selects automatically renewed IAM-role credentials instead of static
-	// keys. Access follows the role's effective AWS permissions, not the sandbox's
-	// mount scope. Configure at creation; the role cannot be changed afterward.
+	// IAM role to assume with AssumeRoleWithWebIdentity, using a short-lived OIDC
+	// token LangSmith signs for this workspace. The role's trust policy must trust
+	// LangSmith's issuer for the token subject. Credentials renew automatically, and
+	// access follows the role's effective AWS permissions. Mutually exclusive with
+	// static keys, and cannot be changed after creation.
 	RoleArn param.Field[SandboxBoxUpdateParamsProxyConfigRulesAwsSandboxesProxyAwsStaticConfigRoleArn] `json:"role_arn"`
 }
 
@@ -1634,9 +1712,11 @@ func (r SandboxBoxUpdateParamsProxyConfigRulesAwsSandboxesProxyAwsStaticConfigSe
 	return false
 }
 
-// RoleARN selects automatically renewed IAM-role credentials instead of static
-// keys. Access follows the role's effective AWS permissions, not the sandbox's
-// mount scope. Configure at creation; the role cannot be changed afterward.
+// IAM role to assume with AssumeRoleWithWebIdentity, using a short-lived OIDC
+// token LangSmith signs for this workspace. The role's trust policy must trust
+// LangSmith's issuer for the token subject. Credentials renew automatically, and
+// access follows the role's effective AWS permissions. Mutually exclusive with
+// static keys, and cannot be changed after creation.
 type SandboxBoxUpdateParamsProxyConfigRulesAwsSandboxesProxyAwsStaticConfigRoleArn string
 
 const (
@@ -1652,8 +1732,23 @@ func (r SandboxBoxUpdateParamsProxyConfigRulesAwsSandboxesProxyAwsStaticConfigRo
 }
 
 type SandboxBoxUpdateParamsProxyConfigRulesGcp struct {
-	Scopes             param.Field[[]string]                                                    `json:"scopes" api:"required"`
-	ServiceAccountJson param.Field[SandboxBoxUpdateParamsProxyConfigRulesGcpServiceAccountJson] `json:"service_account_json" api:"required"`
+	// Scopes are the OAuth scopes requested for the access token. Omit them to use
+	// https://www.googleapis.com/auth/cloud-platform.
+	Scopes param.Field[[]string] `json:"scopes"`
+	// ServiceAccountEmail is the service account to impersonate with the federated
+	// token. Omit it to use the federated principal directly.
+	ServiceAccountEmail param.Field[string]                                                      `json:"service_account_email"`
+	ServiceAccountJson  param.Field[SandboxBoxUpdateParamsProxyConfigRulesGcpServiceAccountJson] `json:"service_account_json"`
+	// SubjectScope picks the token subject the provider trusts: "workspace" (the
+	// default) or "tag:<tag value id>", which must be one of the sandbox's
+	// tag_value_ids. Only valid with workload_identity_provider.
+	SubjectScope param.Field[string] `json:"subject_scope"`
+	// WorkloadIdentityProvider federates an OIDC token LangSmith signs for this
+	// workspace through Workload Identity Federation instead of a service account key.
+	// Use the full resource name:
+	// //iam.googleapis.com/projects/<number>/locations/global/workloadIdentityPools/<pool>/providers/<provider>.
+	// Cannot be changed after creation.
+	WorkloadIdentityProvider param.Field[string] `json:"workload_identity_provider"`
 }
 
 func (r SandboxBoxUpdateParamsProxyConfigRulesGcp) MarshalJSON() (data []byte, err error) {
