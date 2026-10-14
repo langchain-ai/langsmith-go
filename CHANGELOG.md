@@ -1,5 +1,23 @@
 # Changelog
 
+## [0.28.1](https://github.com/langchain-ai/langsmith-go/compare/v0.28.0...v0.28.1) (2026-10-14)
+
+
+### Features
+
+* **feedback:** add feedback_config_id field to feedback creation ([e7d3176](https://github.com/langchain-ai/langsmith-go/commit/e7d317638e3638c80ca36bd6dfc041b0529e2d82))
+* **runs:** add ai_search field and SSE streaming to query endpoints ([e7d3176](https://github.com/langchain-ai/langsmith-go/commit/e7d317638e3638c80ca36bd6dfc041b0529e2d82))
+* **runs:** add min/max feedback_modified_at filter fields ([e7d3176](https://github.com/langchain-ai/langsmith-go/commit/e7d317638e3638c80ca36bd6dfc041b0529e2d82))
+* **sandbox:** accept any JOSE asymmetric algorithm chosen by the JWKS key ([e7d3176](https://github.com/langchain-ai/langsmith-go/commit/e7d317638e3638c80ca36bd6dfc041b0529e2d82))
+* **sandboxes:** add Azure Blob mount and Azure proxy auth config support ([e7d3176](https://github.com/langchain-ai/langsmith-go/commit/e7d317638e3638c80ca36bd6dfc041b0529e2d82))
+* **sandboxes:** add encryption spec and cache/encryption mount variants ([e7d3176](https://github.com/langchain-ai/langsmith-go/commit/e7d317638e3638c80ca36bd6dfc041b0529e2d82))
+* **sandboxes:** add subject_scope and workload identity fields to AWS and GCP configs ([e7d3176](https://github.com/langchain-ai/langsmith-go/commit/e7d317638e3638c80ca36bd6dfc041b0529e2d82))
+
+
+### Chores
+
+* stop pinning a version in the README install section ([e7d3176](https://github.com/langchain-ai/langsmith-go/commit/e7d317638e3638c80ca36bd6dfc041b0529e2d82))
+
 ## [0.28.0](https://github.com/langchain-ai/langsmith-go/compare/v0.27.1...v0.28.0) (2026-10-09)
 
 
