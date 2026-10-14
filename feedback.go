@@ -215,11 +215,20 @@ type FeedbackCreateSchemaParam struct {
 	// takes precedence.
 	//
 	// Deprecated: deprecated
-	Error                param.Field[bool]                                    `json:"error"`
-	ExtendTraceRetention param.Field[bool]                                    `json:"extend_trace_retention"`
-	Extra                param.Field[map[string]interface{}]                  `json:"extra"`
-	FeedbackConfig       param.Field[FeedbackCreateSchemaFeedbackConfigParam] `json:"feedback_config"`
-	FeedbackGroupID      param.Field[string]                                  `json:"feedback_group_id" format:"uuid"`
+	Error                param.Field[bool]                   `json:"error"`
+	ExtendTraceRetention param.Field[bool]                   `json:"extend_trace_retention"`
+	Extra                param.Field[map[string]interface{}] `json:"extra"`
+	// The scale the score is checked against. If the feedback key already has a
+	// feedback config, this must match it exactly or the request is rejected; if it
+	// has none, this becomes the key's feedback config.
+	FeedbackConfig param.Field[FeedbackCreateSchemaFeedbackConfigParam] `json:"feedback_config"`
+	// The ID of the feedback config this feedback was written against. It must be a
+	// feedback config for this feedback key in the same workspace, or the feedback is
+	// rejected. It doesn't change how the score is checked; feedback_config does that.
+	// If omitted, the server may record the key's enforced feedback config, or the one
+	// created for the key by this request.
+	FeedbackConfigID param.Field[string] `json:"feedback_config_id" format:"uuid"`
+	FeedbackGroupID  param.Field[string] `json:"feedback_group_id" format:"uuid"`
 	// Feedback from the LangChainPlus App.
 	FeedbackSource   param.Field[FeedbackCreateSchemaFeedbackSourceUnionParam] `json:"feedback_source"`
 	FeedbackThreadID param.Field[string]                                       `json:"feedback_thread_id"`
@@ -248,6 +257,9 @@ type FeedbackCreateSchemaCorrectionMapParam map[string]interface{}
 func (r FeedbackCreateSchemaCorrectionMapParam) ImplementsFeedbackCreateSchemaCorrectionUnionParam() {
 }
 
+// The scale the score is checked against. If the feedback key already has a
+// feedback config, this must match it exactly or the request is rejected; if it
+// has none, this becomes the key's feedback config.
 type FeedbackCreateSchemaFeedbackConfigParam struct {
 	// Enum for feedback types.
 	Type       param.Field[FeedbackCreateSchemaFeedbackConfigType]            `json:"type" api:"required"`

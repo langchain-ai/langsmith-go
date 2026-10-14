@@ -126,6 +126,10 @@ func (r *RunService) QueryV1AutoPaging(ctx context.Context, body RunQueryV1Param
 // start_time. Supports filters, cursor pagination, and `selects` to select fields
 // to return.
 //
+// When `ai_search` is set, `Accept: text/event-stream` is required; requests
+// without it return 406. AI search is unavailable on deployments that route
+// queries to the v1 backend and returns 501 there.
+//
 // Self-hosted deployments require LangSmith `v0.16` or later.
 func (r *RunService) QueryV2(ctx context.Context, params RunQueryV2Params, opts ...option.RequestOption) (res *pagination.ItemsCursorPostPagination[Run], err error) {
 	var raw *http.Response
@@ -150,6 +154,10 @@ func (r *RunService) QueryV2(ctx context.Context, params RunQueryV2Params, opts 
 // Returns a paginated list of runs for the given projects within min/max
 // start_time. Supports filters, cursor pagination, and `selects` to select fields
 // to return.
+//
+// When `ai_search` is set, `Accept: text/event-stream` is required; requests
+// without it return 406. AI search is unavailable on deployments that route
+// queries to the v1 backend and returns 501 there.
 //
 // Self-hosted deployments require LangSmith `v0.16` or later.
 func (r *RunService) QueryV2AutoPaging(ctx context.Context, params RunQueryV2Params, opts ...option.RequestOption) *pagination.ItemsCursorPostPaginationAutoPager[Run] {
@@ -1515,6 +1523,11 @@ func (r RunQueryV1ParamsSelect) IsKnown() bool {
 }
 
 type RunQueryV2Params struct {
+	// `ai_search` is a plain-language criterion evaluated against the messages from
+	// the agent trajectory scoped to the run. AND-ed with the ordinary filters.
+	// Requires semantic filtering enabled for the deployment. Must contain nonempty
+	// text of at most 2000 UTF-8 bytes. Not supported on public dataset queries.
+	AISearch param.Field[string] `json:"ai_search"`
 	// `cursor` is the opaque string from a previous response's `next_cursor`. Treat it
 	// as opaque and pass it back unmodified.
 	Cursor param.Field[string] `json:"cursor"`
@@ -1531,9 +1544,21 @@ type RunQueryV2Params struct {
 	IDs param.Field[[]string] `json:"ids" format:"uuid"`
 	// `is_root` returns only root runs (true) or only non-root runs (false).
 	IsRoot param.Field[bool] `json:"is_root"`
+	// `max_feedback_modified_at` is the exclusive upper bound (RFC3339) on feedback
+	// `modified_at`, applied to the feedback conditions in `filter`, `trace_filter`,
+	// or `tree_filter` (for example eq(feedback_key, "correctness")). Requires at
+	// least one feedback condition. Runs must still fall within the `start_time`
+	// window.
+	MaxFeedbackModifiedAt param.Field[time.Time] `json:"max_feedback_modified_at" format:"date-time"`
 	// `max_start_time` is the upper bound for run `start_time` (RFC3339). Defaults to
 	// now.
 	MaxStartTime param.Field[time.Time] `json:"max_start_time" format:"date-time"`
+	// `min_feedback_modified_at` is the inclusive lower bound (RFC3339) on feedback
+	// `modified_at`, applied to the feedback conditions in `filter`, `trace_filter`,
+	// or `tree_filter` (for example eq(feedback_key, "correctness")). Requires at
+	// least one feedback condition. Runs must still fall within the `start_time`
+	// window.
+	MinFeedbackModifiedAt param.Field[time.Time] `json:"min_feedback_modified_at" format:"date-time"`
 	// `min_start_time` is the lower bound for run `start_time` (RFC3339). Defaults to
 	// 1 day ago.
 	MinStartTime param.Field[time.Time] `json:"min_start_time" format:"date-time"`
