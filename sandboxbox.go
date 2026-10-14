@@ -1603,7 +1603,7 @@ type SandboxBoxNewParamsProxyConfigRule struct {
 	// per-sandbox env_vars win over these, and provider-managed (AWS/GCP) vars win
 	// over both.
 	EnvVars param.Field[map[string]string]                           `json:"env_vars"`
-	Gcp     param.Field[SandboxBoxNewParamsProxyConfigRulesGcp]      `json:"gcp"`
+	Gcp     param.Field[SandboxBoxNewParamsProxyConfigRulesGcpUnion] `json:"gcp"`
 	Headers param.Field[[]SandboxBoxNewParamsProxyConfigRulesHeader] `json:"headers"`
 	// MatchHeaders restricts a header injection rule to requests carrying every listed
 	// header, each written "name: value" with a lowercase name and an exact value.
@@ -1931,13 +1931,11 @@ func (r SandboxBoxNewParamsProxyConfigRulesAzureSandboxesProxyAzureSasConfigSasT
 }
 
 type SandboxBoxNewParamsProxyConfigRulesGcp struct {
-	// Scopes are the OAuth scopes requested for the access token. Omit them to use
-	// https://www.googleapis.com/auth/cloud-platform.
-	Scopes param.Field[[]string] `json:"scopes"`
+	Scopes param.Field[interface{}] `json:"scopes"`
 	// ServiceAccountEmail is the service account to impersonate with the federated
 	// token. Omit it to use the federated principal directly.
-	ServiceAccountEmail param.Field[string]                                                   `json:"service_account_email"`
-	ServiceAccountJson  param.Field[SandboxBoxNewParamsProxyConfigRulesGcpServiceAccountJson] `json:"service_account_json"`
+	ServiceAccountEmail param.Field[string]      `json:"service_account_email"`
+	ServiceAccountJson  param.Field[interface{}] `json:"service_account_json"`
 	// SubjectScope picks the token subject the provider trusts: "workspace" (the
 	// default) or "tag:<tag value id>", which must be one of the sandbox's
 	// tag_value_ids. Only valid with workload_identity_provider.
@@ -1954,27 +1952,78 @@ func (r SandboxBoxNewParamsProxyConfigRulesGcp) MarshalJSON() (data []byte, err 
 	return apijson.MarshalRoot(r)
 }
 
-type SandboxBoxNewParamsProxyConfigRulesGcpServiceAccountJson struct {
-	Type  param.Field[SandboxBoxNewParamsProxyConfigRulesGcpServiceAccountJsonType] `json:"type" api:"required"`
-	IsSet param.Field[bool]                                                         `json:"is_set"`
-	Value param.Field[string]                                                       `json:"value"`
+func (r SandboxBoxNewParamsProxyConfigRulesGcp) implementsSandboxBoxNewParamsProxyConfigRulesGcpUnion() {
 }
 
-func (r SandboxBoxNewParamsProxyConfigRulesGcpServiceAccountJson) MarshalJSON() (data []byte, err error) {
+// Satisfied by
+// [SandboxBoxNewParamsProxyConfigRulesGcpSandboxesProxyGcpWorkloadIdentityConfig],
+// [SandboxBoxNewParamsProxyConfigRulesGcpSandboxesProxyGcpServiceAccountConfig],
+// [SandboxBoxNewParamsProxyConfigRulesGcp].
+type SandboxBoxNewParamsProxyConfigRulesGcpUnion interface {
+	implementsSandboxBoxNewParamsProxyConfigRulesGcpUnion()
+}
+
+type SandboxBoxNewParamsProxyConfigRulesGcpSandboxesProxyGcpWorkloadIdentityConfig struct {
+	// WorkloadIdentityProvider federates an OIDC token LangSmith signs for this
+	// workspace through Workload Identity Federation instead of a service account key.
+	// Use the full resource name:
+	// //iam.googleapis.com/projects/<number>/locations/global/workloadIdentityPools/<pool>/providers/<provider>.
+	// Cannot be changed after creation.
+	WorkloadIdentityProvider param.Field[string] `json:"workload_identity_provider" api:"required"`
+	// Scopes are the OAuth scopes requested for the access token. Omit them to use
+	// https://www.googleapis.com/auth/cloud-platform.
+	Scopes param.Field[[]string] `json:"scopes"`
+	// ServiceAccountEmail is the service account to impersonate with the federated
+	// token. Omit it to use the federated principal directly.
+	ServiceAccountEmail param.Field[string] `json:"service_account_email"`
+	// SubjectScope picks the token subject the provider trusts: "workspace" (the
+	// default) or "tag:<tag value id>", which must be one of the sandbox's
+	// tag_value_ids. Only valid with workload_identity_provider.
+	SubjectScope param.Field[string] `json:"subject_scope"`
+}
+
+func (r SandboxBoxNewParamsProxyConfigRulesGcpSandboxesProxyGcpWorkloadIdentityConfig) MarshalJSON() (data []byte, err error) {
 	return apijson.MarshalRoot(r)
 }
 
-type SandboxBoxNewParamsProxyConfigRulesGcpServiceAccountJsonType string
+func (r SandboxBoxNewParamsProxyConfigRulesGcpSandboxesProxyGcpWorkloadIdentityConfig) implementsSandboxBoxNewParamsProxyConfigRulesGcpUnion() {
+}
+
+type SandboxBoxNewParamsProxyConfigRulesGcpSandboxesProxyGcpServiceAccountConfig struct {
+	ServiceAccountJson param.Field[SandboxBoxNewParamsProxyConfigRulesGcpSandboxesProxyGcpServiceAccountConfigServiceAccountJson] `json:"service_account_json" api:"required"`
+	// Scopes are the OAuth scopes requested for the access token. Omit them to use
+	// https://www.googleapis.com/auth/cloud-platform.
+	Scopes param.Field[[]string] `json:"scopes"`
+}
+
+func (r SandboxBoxNewParamsProxyConfigRulesGcpSandboxesProxyGcpServiceAccountConfig) MarshalJSON() (data []byte, err error) {
+	return apijson.MarshalRoot(r)
+}
+
+func (r SandboxBoxNewParamsProxyConfigRulesGcpSandboxesProxyGcpServiceAccountConfig) implementsSandboxBoxNewParamsProxyConfigRulesGcpUnion() {
+}
+
+type SandboxBoxNewParamsProxyConfigRulesGcpSandboxesProxyGcpServiceAccountConfigServiceAccountJson struct {
+	Type  param.Field[SandboxBoxNewParamsProxyConfigRulesGcpSandboxesProxyGcpServiceAccountConfigServiceAccountJsonType] `json:"type" api:"required"`
+	IsSet param.Field[bool]                                                                                              `json:"is_set"`
+	Value param.Field[string]                                                                                            `json:"value"`
+}
+
+func (r SandboxBoxNewParamsProxyConfigRulesGcpSandboxesProxyGcpServiceAccountConfigServiceAccountJson) MarshalJSON() (data []byte, err error) {
+	return apijson.MarshalRoot(r)
+}
+
+type SandboxBoxNewParamsProxyConfigRulesGcpSandboxesProxyGcpServiceAccountConfigServiceAccountJsonType string
 
 const (
-	SandboxBoxNewParamsProxyConfigRulesGcpServiceAccountJsonTypePlaintext       SandboxBoxNewParamsProxyConfigRulesGcpServiceAccountJsonType = "plaintext"
-	SandboxBoxNewParamsProxyConfigRulesGcpServiceAccountJsonTypeOpaque          SandboxBoxNewParamsProxyConfigRulesGcpServiceAccountJsonType = "opaque"
-	SandboxBoxNewParamsProxyConfigRulesGcpServiceAccountJsonTypeWorkspaceSecret SandboxBoxNewParamsProxyConfigRulesGcpServiceAccountJsonType = "workspace_secret"
+	SandboxBoxNewParamsProxyConfigRulesGcpSandboxesProxyGcpServiceAccountConfigServiceAccountJsonTypePlaintext       SandboxBoxNewParamsProxyConfigRulesGcpSandboxesProxyGcpServiceAccountConfigServiceAccountJsonType = "plaintext"
+	SandboxBoxNewParamsProxyConfigRulesGcpSandboxesProxyGcpServiceAccountConfigServiceAccountJsonTypeOpaque          SandboxBoxNewParamsProxyConfigRulesGcpSandboxesProxyGcpServiceAccountConfigServiceAccountJsonType = "opaque"
+	SandboxBoxNewParamsProxyConfigRulesGcpSandboxesProxyGcpServiceAccountConfigServiceAccountJsonTypeWorkspaceSecret SandboxBoxNewParamsProxyConfigRulesGcpSandboxesProxyGcpServiceAccountConfigServiceAccountJsonType = "workspace_secret"
 )
 
-func (r SandboxBoxNewParamsProxyConfigRulesGcpServiceAccountJsonType) IsKnown() bool {
+func (r SandboxBoxNewParamsProxyConfigRulesGcpSandboxesProxyGcpServiceAccountConfigServiceAccountJsonType) IsKnown() bool {
 	switch r {
-	case SandboxBoxNewParamsProxyConfigRulesGcpServiceAccountJsonTypePlaintext, SandboxBoxNewParamsProxyConfigRulesGcpServiceAccountJsonTypeOpaque, SandboxBoxNewParamsProxyConfigRulesGcpServiceAccountJsonTypeWorkspaceSecret:
+	case SandboxBoxNewParamsProxyConfigRulesGcpSandboxesProxyGcpServiceAccountConfigServiceAccountJsonTypePlaintext, SandboxBoxNewParamsProxyConfigRulesGcpSandboxesProxyGcpServiceAccountConfigServiceAccountJsonTypeOpaque, SandboxBoxNewParamsProxyConfigRulesGcpSandboxesProxyGcpServiceAccountConfigServiceAccountJsonTypeWorkspaceSecret:
 		return true
 	}
 	return false
@@ -2119,7 +2168,7 @@ type SandboxBoxUpdateParamsProxyConfigRule struct {
 	// per-sandbox env_vars win over these, and provider-managed (AWS/GCP) vars win
 	// over both.
 	EnvVars param.Field[map[string]string]                              `json:"env_vars"`
-	Gcp     param.Field[SandboxBoxUpdateParamsProxyConfigRulesGcp]      `json:"gcp"`
+	Gcp     param.Field[SandboxBoxUpdateParamsProxyConfigRulesGcpUnion] `json:"gcp"`
 	Headers param.Field[[]SandboxBoxUpdateParamsProxyConfigRulesHeader] `json:"headers"`
 	// MatchHeaders restricts a header injection rule to requests carrying every listed
 	// header, each written "name: value" with a lowercase name and an exact value.
@@ -2447,13 +2496,11 @@ func (r SandboxBoxUpdateParamsProxyConfigRulesAzureSandboxesProxyAzureSasConfigS
 }
 
 type SandboxBoxUpdateParamsProxyConfigRulesGcp struct {
-	// Scopes are the OAuth scopes requested for the access token. Omit them to use
-	// https://www.googleapis.com/auth/cloud-platform.
-	Scopes param.Field[[]string] `json:"scopes"`
+	Scopes param.Field[interface{}] `json:"scopes"`
 	// ServiceAccountEmail is the service account to impersonate with the federated
 	// token. Omit it to use the federated principal directly.
-	ServiceAccountEmail param.Field[string]                                                      `json:"service_account_email"`
-	ServiceAccountJson  param.Field[SandboxBoxUpdateParamsProxyConfigRulesGcpServiceAccountJson] `json:"service_account_json"`
+	ServiceAccountEmail param.Field[string]      `json:"service_account_email"`
+	ServiceAccountJson  param.Field[interface{}] `json:"service_account_json"`
 	// SubjectScope picks the token subject the provider trusts: "workspace" (the
 	// default) or "tag:<tag value id>", which must be one of the sandbox's
 	// tag_value_ids. Only valid with workload_identity_provider.
@@ -2470,27 +2517,78 @@ func (r SandboxBoxUpdateParamsProxyConfigRulesGcp) MarshalJSON() (data []byte, e
 	return apijson.MarshalRoot(r)
 }
 
-type SandboxBoxUpdateParamsProxyConfigRulesGcpServiceAccountJson struct {
-	Type  param.Field[SandboxBoxUpdateParamsProxyConfigRulesGcpServiceAccountJsonType] `json:"type" api:"required"`
-	IsSet param.Field[bool]                                                            `json:"is_set"`
-	Value param.Field[string]                                                          `json:"value"`
+func (r SandboxBoxUpdateParamsProxyConfigRulesGcp) implementsSandboxBoxUpdateParamsProxyConfigRulesGcpUnion() {
 }
 
-func (r SandboxBoxUpdateParamsProxyConfigRulesGcpServiceAccountJson) MarshalJSON() (data []byte, err error) {
+// Satisfied by
+// [SandboxBoxUpdateParamsProxyConfigRulesGcpSandboxesProxyGcpWorkloadIdentityConfig],
+// [SandboxBoxUpdateParamsProxyConfigRulesGcpSandboxesProxyGcpServiceAccountConfig],
+// [SandboxBoxUpdateParamsProxyConfigRulesGcp].
+type SandboxBoxUpdateParamsProxyConfigRulesGcpUnion interface {
+	implementsSandboxBoxUpdateParamsProxyConfigRulesGcpUnion()
+}
+
+type SandboxBoxUpdateParamsProxyConfigRulesGcpSandboxesProxyGcpWorkloadIdentityConfig struct {
+	// WorkloadIdentityProvider federates an OIDC token LangSmith signs for this
+	// workspace through Workload Identity Federation instead of a service account key.
+	// Use the full resource name:
+	// //iam.googleapis.com/projects/<number>/locations/global/workloadIdentityPools/<pool>/providers/<provider>.
+	// Cannot be changed after creation.
+	WorkloadIdentityProvider param.Field[string] `json:"workload_identity_provider" api:"required"`
+	// Scopes are the OAuth scopes requested for the access token. Omit them to use
+	// https://www.googleapis.com/auth/cloud-platform.
+	Scopes param.Field[[]string] `json:"scopes"`
+	// ServiceAccountEmail is the service account to impersonate with the federated
+	// token. Omit it to use the federated principal directly.
+	ServiceAccountEmail param.Field[string] `json:"service_account_email"`
+	// SubjectScope picks the token subject the provider trusts: "workspace" (the
+	// default) or "tag:<tag value id>", which must be one of the sandbox's
+	// tag_value_ids. Only valid with workload_identity_provider.
+	SubjectScope param.Field[string] `json:"subject_scope"`
+}
+
+func (r SandboxBoxUpdateParamsProxyConfigRulesGcpSandboxesProxyGcpWorkloadIdentityConfig) MarshalJSON() (data []byte, err error) {
 	return apijson.MarshalRoot(r)
 }
 
-type SandboxBoxUpdateParamsProxyConfigRulesGcpServiceAccountJsonType string
+func (r SandboxBoxUpdateParamsProxyConfigRulesGcpSandboxesProxyGcpWorkloadIdentityConfig) implementsSandboxBoxUpdateParamsProxyConfigRulesGcpUnion() {
+}
+
+type SandboxBoxUpdateParamsProxyConfigRulesGcpSandboxesProxyGcpServiceAccountConfig struct {
+	ServiceAccountJson param.Field[SandboxBoxUpdateParamsProxyConfigRulesGcpSandboxesProxyGcpServiceAccountConfigServiceAccountJson] `json:"service_account_json" api:"required"`
+	// Scopes are the OAuth scopes requested for the access token. Omit them to use
+	// https://www.googleapis.com/auth/cloud-platform.
+	Scopes param.Field[[]string] `json:"scopes"`
+}
+
+func (r SandboxBoxUpdateParamsProxyConfigRulesGcpSandboxesProxyGcpServiceAccountConfig) MarshalJSON() (data []byte, err error) {
+	return apijson.MarshalRoot(r)
+}
+
+func (r SandboxBoxUpdateParamsProxyConfigRulesGcpSandboxesProxyGcpServiceAccountConfig) implementsSandboxBoxUpdateParamsProxyConfigRulesGcpUnion() {
+}
+
+type SandboxBoxUpdateParamsProxyConfigRulesGcpSandboxesProxyGcpServiceAccountConfigServiceAccountJson struct {
+	Type  param.Field[SandboxBoxUpdateParamsProxyConfigRulesGcpSandboxesProxyGcpServiceAccountConfigServiceAccountJsonType] `json:"type" api:"required"`
+	IsSet param.Field[bool]                                                                                                 `json:"is_set"`
+	Value param.Field[string]                                                                                               `json:"value"`
+}
+
+func (r SandboxBoxUpdateParamsProxyConfigRulesGcpSandboxesProxyGcpServiceAccountConfigServiceAccountJson) MarshalJSON() (data []byte, err error) {
+	return apijson.MarshalRoot(r)
+}
+
+type SandboxBoxUpdateParamsProxyConfigRulesGcpSandboxesProxyGcpServiceAccountConfigServiceAccountJsonType string
 
 const (
-	SandboxBoxUpdateParamsProxyConfigRulesGcpServiceAccountJsonTypePlaintext       SandboxBoxUpdateParamsProxyConfigRulesGcpServiceAccountJsonType = "plaintext"
-	SandboxBoxUpdateParamsProxyConfigRulesGcpServiceAccountJsonTypeOpaque          SandboxBoxUpdateParamsProxyConfigRulesGcpServiceAccountJsonType = "opaque"
-	SandboxBoxUpdateParamsProxyConfigRulesGcpServiceAccountJsonTypeWorkspaceSecret SandboxBoxUpdateParamsProxyConfigRulesGcpServiceAccountJsonType = "workspace_secret"
+	SandboxBoxUpdateParamsProxyConfigRulesGcpSandboxesProxyGcpServiceAccountConfigServiceAccountJsonTypePlaintext       SandboxBoxUpdateParamsProxyConfigRulesGcpSandboxesProxyGcpServiceAccountConfigServiceAccountJsonType = "plaintext"
+	SandboxBoxUpdateParamsProxyConfigRulesGcpSandboxesProxyGcpServiceAccountConfigServiceAccountJsonTypeOpaque          SandboxBoxUpdateParamsProxyConfigRulesGcpSandboxesProxyGcpServiceAccountConfigServiceAccountJsonType = "opaque"
+	SandboxBoxUpdateParamsProxyConfigRulesGcpSandboxesProxyGcpServiceAccountConfigServiceAccountJsonTypeWorkspaceSecret SandboxBoxUpdateParamsProxyConfigRulesGcpSandboxesProxyGcpServiceAccountConfigServiceAccountJsonType = "workspace_secret"
 )
 
-func (r SandboxBoxUpdateParamsProxyConfigRulesGcpServiceAccountJsonType) IsKnown() bool {
+func (r SandboxBoxUpdateParamsProxyConfigRulesGcpSandboxesProxyGcpServiceAccountConfigServiceAccountJsonType) IsKnown() bool {
 	switch r {
-	case SandboxBoxUpdateParamsProxyConfigRulesGcpServiceAccountJsonTypePlaintext, SandboxBoxUpdateParamsProxyConfigRulesGcpServiceAccountJsonTypeOpaque, SandboxBoxUpdateParamsProxyConfigRulesGcpServiceAccountJsonTypeWorkspaceSecret:
+	case SandboxBoxUpdateParamsProxyConfigRulesGcpSandboxesProxyGcpServiceAccountConfigServiceAccountJsonTypePlaintext, SandboxBoxUpdateParamsProxyConfigRulesGcpSandboxesProxyGcpServiceAccountConfigServiceAccountJsonTypeOpaque, SandboxBoxUpdateParamsProxyConfigRulesGcpSandboxesProxyGcpServiceAccountConfigServiceAccountJsonTypeWorkspaceSecret:
 		return true
 	}
 	return false
