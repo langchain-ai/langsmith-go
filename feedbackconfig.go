@@ -33,10 +33,13 @@ func NewFeedbackConfigService(opts ...option.RequestOption) (r *FeedbackConfigSe
 	return
 }
 
-// Soft delete a feedback config by marking it as deleted.
+// Soft delete one feedback config by id, or every config of a feedback key.
 //
 // The config can be recreated later with the same key (simple reuse pattern).
-// Existing feedback records with this key will remain unchanged.
+// Existing feedback records with this key will remain unchanged. Deleting an
+// enforced config turns off its enforcement instead of removing it, and needs the
+// feedback-configs:manage-enforced permission. Deleting an unenforced config that
+// an annotation queue uses is refused.
 func (r *FeedbackConfigService) Delete(ctx context.Context, body FeedbackConfigDeleteParams, opts ...option.RequestOption) (err error) {
 	opts = slices.Concat(r.Options, opts)
 	opts = append([]option.RequestOption{option.WithHeader("Accept", "*/*")}, opts...)
@@ -46,7 +49,8 @@ func (r *FeedbackConfigService) Delete(ctx context.Context, body FeedbackConfigD
 }
 
 type FeedbackConfigDeleteParams struct {
-	FeedbackKey param.Field[string] `query:"feedback_key" api:"required"`
+	ID          param.Field[string] `query:"id" format:"uuid"`
+	FeedbackKey param.Field[string] `query:"feedback_key"`
 }
 
 // URLQuery serializes [FeedbackConfigDeleteParams]'s query parameters as

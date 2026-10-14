@@ -13,7 +13,7 @@ import (
 	"github.com/langchain-ai/langsmith-go/option"
 )
 
-func TestFeedbackConfigDelete(t *testing.T) {
+func TestFeedbackConfigDeleteWithOptionalParams(t *testing.T) {
 	t.Skip("Mock server tests are disabled")
 	baseURL := "http://localhost:4010"
 	if envURL, ok := os.LookupEnv("TEST_API_BASE_URL"); ok {
@@ -28,6 +28,7 @@ func TestFeedbackConfigDelete(t *testing.T) {
 		option.WithTenantID("My Tenant ID"),
 	)
 	err := client.Feedback.Configs.Delete(context.TODO(), langsmith.FeedbackConfigDeleteParams{
+		ID:          langsmith.F("182bd5e5-6e1a-4fe4-a799-aa6d9a6ab26e"),
 		FeedbackKey: langsmith.F("feedback_key"),
 	})
 	if err != nil {
