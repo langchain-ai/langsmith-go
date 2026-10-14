@@ -295,12 +295,12 @@ func TestSerializedOp_SizeNilReceiver(t *testing.T) {
 
 func TestSerializedOp_SizeIncludesAllFields(t *testing.T) {
 	op := &SerializedOp{
-		RunInfo:  []byte(`{"name":"x"}`),
-		Inputs:   []byte(`{"a":1}`),
-		Outputs:  []byte(`{"b":2}`),
-		Events:   []byte(`[1]`),
-		Extra:    []byte(`{}`),
-		Error:    []byte(`"err"`),
+		RunInfo:    []byte(`{"name":"x"}`),
+		Inputs:     []byte(`{"a":1}`),
+		Outputs:    []byte(`{"b":2}`),
+		Events:     []byte(`[1]`),
+		Extra:      []byte(`{}`),
+		Error:      []byte(`"err"`),
 		Serialized: []byte(`{}`),
 		Attachments: map[string]Attachment{
 			"f": {Data: []byte("12345")},

@@ -54,7 +54,8 @@ func TestFeedbackNewWithOptionalParams(t *testing.T) {
 				Max: langsmith.F(0.000000),
 				Min: langsmith.F(0.000000),
 			}),
-			FeedbackGroupID: langsmith.F("182bd5e5-6e1a-4fe4-a799-aa6d9a6ab26e"),
+			FeedbackConfigID: langsmith.F("182bd5e5-6e1a-4fe4-a799-aa6d9a6ab26e"),
+			FeedbackGroupID:  langsmith.F("182bd5e5-6e1a-4fe4-a799-aa6d9a6ab26e"),
 			FeedbackSource: langsmith.F[langsmith.FeedbackCreateSchemaFeedbackSourceUnionParam](langsmith.AppFeedbackSourceParam{
 				Metadata: langsmith.F(map[string]interface{}{
 					"foo": "bar",
