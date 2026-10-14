@@ -269,6 +269,9 @@ type AnnotationQueueRubricItemSchemaFeedbackConfig struct {
 	FeedbackKey        string                                                      `json:"feedback_key" api:"required"`
 	ModifiedAt         time.Time                                                   `json:"modified_at" api:"required" format:"date-time"`
 	TenantID           string                                                      `json:"tenant_id" api:"required" format:"uuid"`
+	IsDeleted          bool                                                        `json:"is_deleted"`
+	IsEnforced         bool                                                        `json:"is_enforced"`
+	IsFirst            bool                                                        `json:"is_first"`
 	IsLowerScoreBetter bool                                                        `json:"is_lower_score_better" api:"nullable"`
 	JSON               annotationQueueRubricItemSchemaFeedbackConfigJSON           `json:"-"`
 }
@@ -281,6 +284,9 @@ type annotationQueueRubricItemSchemaFeedbackConfigJSON struct {
 	FeedbackKey        apijson.Field
 	ModifiedAt         apijson.Field
 	TenantID           apijson.Field
+	IsDeleted          apijson.Field
+	IsEnforced         apijson.Field
+	IsFirst            apijson.Field
 	IsLowerScoreBetter apijson.Field
 	raw                string
 	ExtraFields        map[string]apijson.Field
@@ -407,6 +413,9 @@ type AnnotationQueueRubricItemSchemaFeedbackConfigParam struct {
 	FeedbackKey        param.Field[string]                                                           `json:"feedback_key" api:"required"`
 	ModifiedAt         param.Field[time.Time]                                                        `json:"modified_at" api:"required" format:"date-time"`
 	TenantID           param.Field[string]                                                           `json:"tenant_id" api:"required" format:"uuid"`
+	IsDeleted          param.Field[bool]                                                             `json:"is_deleted"`
+	IsEnforced         param.Field[bool]                                                             `json:"is_enforced"`
+	IsFirst            param.Field[bool]                                                             `json:"is_first"`
 	IsLowerScoreBetter param.Field[bool]                                                             `json:"is_lower_score_better"`
 }
 
