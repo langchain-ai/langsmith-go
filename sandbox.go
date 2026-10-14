@@ -3425,13 +3425,14 @@ func (r SandboxResponseProxyConfigRulesAzureSandboxesProxyAzureSasConfigSasToken
 }
 
 type SandboxResponseProxyConfigRulesGcp struct {
-	// Scopes are the OAuth scopes requested for the access token. Omit them to use
-	// https://www.googleapis.com/auth/cloud-platform.
-	Scopes []string `json:"scopes"`
+	// This field can have the runtime type of [[]string].
+	Scopes interface{} `json:"scopes"`
 	// ServiceAccountEmail is the service account to impersonate with the federated
 	// token. Omit it to use the federated principal directly.
-	ServiceAccountEmail string                                               `json:"service_account_email"`
-	ServiceAccountJson  SandboxResponseProxyConfigRulesGcpServiceAccountJson `json:"service_account_json"`
+	ServiceAccountEmail string `json:"service_account_email"`
+	// This field can have the runtime type of
+	// [SandboxResponseProxyConfigRulesGcpSandboxesProxyGcpServiceAccountConfigServiceAccountJson].
+	ServiceAccountJson interface{} `json:"service_account_json"`
 	// SubjectScope picks the token subject the provider trusts: "workspace" (the
 	// default) or "tag:<tag value id>", which must be one of the sandbox's
 	// tag_value_ids. Only valid with workload_identity_provider.
@@ -3443,6 +3444,7 @@ type SandboxResponseProxyConfigRulesGcp struct {
 	// Cannot be changed after creation.
 	WorkloadIdentityProvider string                                 `json:"workload_identity_provider"`
 	JSON                     sandboxResponseProxyConfigRulesGcpJSON `json:"-"`
+	union                    SandboxResponseProxyConfigRulesGcpUnion
 }
 
 // sandboxResponseProxyConfigRulesGcpJSON contains the JSON metadata for the struct
@@ -3457,24 +3459,134 @@ type sandboxResponseProxyConfigRulesGcpJSON struct {
 	ExtraFields              map[string]apijson.Field
 }
 
-func (r *SandboxResponseProxyConfigRulesGcp) UnmarshalJSON(data []byte) (err error) {
-	return apijson.UnmarshalRoot(data, r)
-}
-
 func (r sandboxResponseProxyConfigRulesGcpJSON) RawJSON() string {
 	return r.raw
 }
 
-type SandboxResponseProxyConfigRulesGcpServiceAccountJson struct {
-	Type  SandboxResponseProxyConfigRulesGcpServiceAccountJsonType `json:"type" api:"required"`
-	IsSet bool                                                     `json:"is_set"`
-	Value string                                                   `json:"value"`
-	JSON  sandboxResponseProxyConfigRulesGcpServiceAccountJsonJSON `json:"-"`
+func (r *SandboxResponseProxyConfigRulesGcp) UnmarshalJSON(data []byte) (err error) {
+	*r = SandboxResponseProxyConfigRulesGcp{}
+	err = apijson.UnmarshalRoot(data, &r.union)
+	if err != nil {
+		return err
+	}
+	return apijson.Port(r.union, &r)
 }
 
-// sandboxResponseProxyConfigRulesGcpServiceAccountJsonJSON contains the JSON
-// metadata for the struct [SandboxResponseProxyConfigRulesGcpServiceAccountJson]
-type sandboxResponseProxyConfigRulesGcpServiceAccountJsonJSON struct {
+// AsUnion returns a [SandboxResponseProxyConfigRulesGcpUnion] interface which you
+// can cast to the specific types for more type safety.
+//
+// Possible runtime types of the union are
+// [SandboxResponseProxyConfigRulesGcpSandboxesProxyGcpWorkloadIdentityConfig],
+// [SandboxResponseProxyConfigRulesGcpSandboxesProxyGcpServiceAccountConfig].
+func (r SandboxResponseProxyConfigRulesGcp) AsUnion() SandboxResponseProxyConfigRulesGcpUnion {
+	return r.union
+}
+
+// Union satisfied by
+// [SandboxResponseProxyConfigRulesGcpSandboxesProxyGcpWorkloadIdentityConfig] or
+// [SandboxResponseProxyConfigRulesGcpSandboxesProxyGcpServiceAccountConfig].
+type SandboxResponseProxyConfigRulesGcpUnion interface {
+	implementsSandboxResponseProxyConfigRulesGcp()
+}
+
+func init() {
+	apijson.RegisterUnion(
+		reflect.TypeOf((*SandboxResponseProxyConfigRulesGcpUnion)(nil)).Elem(),
+		"",
+		apijson.UnionVariant{
+			TypeFilter: gjson.JSON,
+			Type:       reflect.TypeOf(SandboxResponseProxyConfigRulesGcpSandboxesProxyGcpWorkloadIdentityConfig{}),
+		},
+		apijson.UnionVariant{
+			TypeFilter: gjson.JSON,
+			Type:       reflect.TypeOf(SandboxResponseProxyConfigRulesGcpSandboxesProxyGcpServiceAccountConfig{}),
+		},
+	)
+}
+
+type SandboxResponseProxyConfigRulesGcpSandboxesProxyGcpWorkloadIdentityConfig struct {
+	// WorkloadIdentityProvider federates an OIDC token LangSmith signs for this
+	// workspace through Workload Identity Federation instead of a service account key.
+	// Use the full resource name:
+	// //iam.googleapis.com/projects/<number>/locations/global/workloadIdentityPools/<pool>/providers/<provider>.
+	// Cannot be changed after creation.
+	WorkloadIdentityProvider string `json:"workload_identity_provider" api:"required"`
+	// Scopes are the OAuth scopes requested for the access token. Omit them to use
+	// https://www.googleapis.com/auth/cloud-platform.
+	Scopes []string `json:"scopes"`
+	// ServiceAccountEmail is the service account to impersonate with the federated
+	// token. Omit it to use the federated principal directly.
+	ServiceAccountEmail string `json:"service_account_email"`
+	// SubjectScope picks the token subject the provider trusts: "workspace" (the
+	// default) or "tag:<tag value id>", which must be one of the sandbox's
+	// tag_value_ids. Only valid with workload_identity_provider.
+	SubjectScope string                                                                        `json:"subject_scope"`
+	JSON         sandboxResponseProxyConfigRulesGcpSandboxesProxyGcpWorkloadIdentityConfigJSON `json:"-"`
+}
+
+// sandboxResponseProxyConfigRulesGcpSandboxesProxyGcpWorkloadIdentityConfigJSON
+// contains the JSON metadata for the struct
+// [SandboxResponseProxyConfigRulesGcpSandboxesProxyGcpWorkloadIdentityConfig]
+type sandboxResponseProxyConfigRulesGcpSandboxesProxyGcpWorkloadIdentityConfigJSON struct {
+	WorkloadIdentityProvider apijson.Field
+	Scopes                   apijson.Field
+	ServiceAccountEmail      apijson.Field
+	SubjectScope             apijson.Field
+	raw                      string
+	ExtraFields              map[string]apijson.Field
+}
+
+func (r *SandboxResponseProxyConfigRulesGcpSandboxesProxyGcpWorkloadIdentityConfig) UnmarshalJSON(data []byte) (err error) {
+	return apijson.UnmarshalRoot(data, r)
+}
+
+func (r sandboxResponseProxyConfigRulesGcpSandboxesProxyGcpWorkloadIdentityConfigJSON) RawJSON() string {
+	return r.raw
+}
+
+func (r SandboxResponseProxyConfigRulesGcpSandboxesProxyGcpWorkloadIdentityConfig) implementsSandboxResponseProxyConfigRulesGcp() {
+}
+
+type SandboxResponseProxyConfigRulesGcpSandboxesProxyGcpServiceAccountConfig struct {
+	ServiceAccountJson SandboxResponseProxyConfigRulesGcpSandboxesProxyGcpServiceAccountConfigServiceAccountJson `json:"service_account_json" api:"required"`
+	// Scopes are the OAuth scopes requested for the access token. Omit them to use
+	// https://www.googleapis.com/auth/cloud-platform.
+	Scopes []string                                                                    `json:"scopes"`
+	JSON   sandboxResponseProxyConfigRulesGcpSandboxesProxyGcpServiceAccountConfigJSON `json:"-"`
+}
+
+// sandboxResponseProxyConfigRulesGcpSandboxesProxyGcpServiceAccountConfigJSON
+// contains the JSON metadata for the struct
+// [SandboxResponseProxyConfigRulesGcpSandboxesProxyGcpServiceAccountConfig]
+type sandboxResponseProxyConfigRulesGcpSandboxesProxyGcpServiceAccountConfigJSON struct {
+	ServiceAccountJson apijson.Field
+	Scopes             apijson.Field
+	raw                string
+	ExtraFields        map[string]apijson.Field
+}
+
+func (r *SandboxResponseProxyConfigRulesGcpSandboxesProxyGcpServiceAccountConfig) UnmarshalJSON(data []byte) (err error) {
+	return apijson.UnmarshalRoot(data, r)
+}
+
+func (r sandboxResponseProxyConfigRulesGcpSandboxesProxyGcpServiceAccountConfigJSON) RawJSON() string {
+	return r.raw
+}
+
+func (r SandboxResponseProxyConfigRulesGcpSandboxesProxyGcpServiceAccountConfig) implementsSandboxResponseProxyConfigRulesGcp() {
+}
+
+type SandboxResponseProxyConfigRulesGcpSandboxesProxyGcpServiceAccountConfigServiceAccountJson struct {
+	Type  SandboxResponseProxyConfigRulesGcpSandboxesProxyGcpServiceAccountConfigServiceAccountJsonType `json:"type" api:"required"`
+	IsSet bool                                                                                          `json:"is_set"`
+	Value string                                                                                        `json:"value"`
+	JSON  sandboxResponseProxyConfigRulesGcpSandboxesProxyGcpServiceAccountConfigServiceAccountJsonJSON `json:"-"`
+}
+
+// sandboxResponseProxyConfigRulesGcpSandboxesProxyGcpServiceAccountConfigServiceAccountJsonJSON
+// contains the JSON metadata for the struct
+// [SandboxResponseProxyConfigRulesGcpSandboxesProxyGcpServiceAccountConfigServiceAccountJson]
+type sandboxResponseProxyConfigRulesGcpSandboxesProxyGcpServiceAccountConfigServiceAccountJsonJSON struct {
 	Type        apijson.Field
 	IsSet       apijson.Field
 	Value       apijson.Field
@@ -3482,25 +3594,25 @@ type sandboxResponseProxyConfigRulesGcpServiceAccountJsonJSON struct {
 	ExtraFields map[string]apijson.Field
 }
 
-func (r *SandboxResponseProxyConfigRulesGcpServiceAccountJson) UnmarshalJSON(data []byte) (err error) {
+func (r *SandboxResponseProxyConfigRulesGcpSandboxesProxyGcpServiceAccountConfigServiceAccountJson) UnmarshalJSON(data []byte) (err error) {
 	return apijson.UnmarshalRoot(data, r)
 }
 
-func (r sandboxResponseProxyConfigRulesGcpServiceAccountJsonJSON) RawJSON() string {
+func (r sandboxResponseProxyConfigRulesGcpSandboxesProxyGcpServiceAccountConfigServiceAccountJsonJSON) RawJSON() string {
 	return r.raw
 }
 
-type SandboxResponseProxyConfigRulesGcpServiceAccountJsonType string
+type SandboxResponseProxyConfigRulesGcpSandboxesProxyGcpServiceAccountConfigServiceAccountJsonType string
 
 const (
-	SandboxResponseProxyConfigRulesGcpServiceAccountJsonTypePlaintext       SandboxResponseProxyConfigRulesGcpServiceAccountJsonType = "plaintext"
-	SandboxResponseProxyConfigRulesGcpServiceAccountJsonTypeOpaque          SandboxResponseProxyConfigRulesGcpServiceAccountJsonType = "opaque"
-	SandboxResponseProxyConfigRulesGcpServiceAccountJsonTypeWorkspaceSecret SandboxResponseProxyConfigRulesGcpServiceAccountJsonType = "workspace_secret"
+	SandboxResponseProxyConfigRulesGcpSandboxesProxyGcpServiceAccountConfigServiceAccountJsonTypePlaintext       SandboxResponseProxyConfigRulesGcpSandboxesProxyGcpServiceAccountConfigServiceAccountJsonType = "plaintext"
+	SandboxResponseProxyConfigRulesGcpSandboxesProxyGcpServiceAccountConfigServiceAccountJsonTypeOpaque          SandboxResponseProxyConfigRulesGcpSandboxesProxyGcpServiceAccountConfigServiceAccountJsonType = "opaque"
+	SandboxResponseProxyConfigRulesGcpSandboxesProxyGcpServiceAccountConfigServiceAccountJsonTypeWorkspaceSecret SandboxResponseProxyConfigRulesGcpSandboxesProxyGcpServiceAccountConfigServiceAccountJsonType = "workspace_secret"
 )
 
-func (r SandboxResponseProxyConfigRulesGcpServiceAccountJsonType) IsKnown() bool {
+func (r SandboxResponseProxyConfigRulesGcpSandboxesProxyGcpServiceAccountConfigServiceAccountJsonType) IsKnown() bool {
 	switch r {
-	case SandboxResponseProxyConfigRulesGcpServiceAccountJsonTypePlaintext, SandboxResponseProxyConfigRulesGcpServiceAccountJsonTypeOpaque, SandboxResponseProxyConfigRulesGcpServiceAccountJsonTypeWorkspaceSecret:
+	case SandboxResponseProxyConfigRulesGcpSandboxesProxyGcpServiceAccountConfigServiceAccountJsonTypePlaintext, SandboxResponseProxyConfigRulesGcpSandboxesProxyGcpServiceAccountConfigServiceAccountJsonTypeOpaque, SandboxResponseProxyConfigRulesGcpSandboxesProxyGcpServiceAccountConfigServiceAccountJsonTypeWorkspaceSecret:
 		return true
 	}
 	return false

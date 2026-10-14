@@ -157,16 +157,11 @@ func TestSandboxBoxNewWithOptionalParams(t *testing.T) {
 				EnvVars: langsmith.F(map[string]string{
 					"foo": "string",
 				}),
-				Gcp: langsmith.F(langsmith.SandboxBoxNewParamsProxyConfigRulesGcp{
-					Scopes:              langsmith.F([]string{"string"}),
-					ServiceAccountEmail: langsmith.F("service_account_email"),
-					ServiceAccountJson: langsmith.F(langsmith.SandboxBoxNewParamsProxyConfigRulesGcpServiceAccountJson{
-						Type:  langsmith.F(langsmith.SandboxBoxNewParamsProxyConfigRulesGcpServiceAccountJsonTypePlaintext),
-						IsSet: langsmith.F(true),
-						Value: langsmith.F("value"),
-					}),
+				Gcp: langsmith.F[langsmith.SandboxBoxNewParamsProxyConfigRulesGcpUnion](langsmith.SandboxBoxNewParamsProxyConfigRulesGcpSandboxesProxyGcpWorkloadIdentityConfig{
+					WorkloadIdentityProvider: langsmith.F("x"),
+					Scopes:                   langsmith.F([]string{"string"}),
+					ServiceAccountEmail:      langsmith.F("service_account_email"),
 					SubjectScope:             langsmith.F("tag:2fdcD1Dc-bbDb-2BBD-0Afa-1A3C33cFaADc"),
-					WorkloadIdentityProvider: langsmith.F("workload_identity_provider"),
 				}),
 				Headers: langsmith.F([]langsmith.SandboxBoxNewParamsProxyConfigRulesHeader{{
 					Name:  langsmith.F("name"),
@@ -287,16 +282,11 @@ func TestSandboxBoxUpdateWithOptionalParams(t *testing.T) {
 					EnvVars: langsmith.F(map[string]string{
 						"foo": "string",
 					}),
-					Gcp: langsmith.F(langsmith.SandboxBoxUpdateParamsProxyConfigRulesGcp{
-						Scopes:              langsmith.F([]string{"string"}),
-						ServiceAccountEmail: langsmith.F("service_account_email"),
-						ServiceAccountJson: langsmith.F(langsmith.SandboxBoxUpdateParamsProxyConfigRulesGcpServiceAccountJson{
-							Type:  langsmith.F(langsmith.SandboxBoxUpdateParamsProxyConfigRulesGcpServiceAccountJsonTypePlaintext),
-							IsSet: langsmith.F(true),
-							Value: langsmith.F("value"),
-						}),
+					Gcp: langsmith.F[langsmith.SandboxBoxUpdateParamsProxyConfigRulesGcpUnion](langsmith.SandboxBoxUpdateParamsProxyConfigRulesGcpSandboxesProxyGcpWorkloadIdentityConfig{
+						WorkloadIdentityProvider: langsmith.F("x"),
+						Scopes:                   langsmith.F([]string{"string"}),
+						ServiceAccountEmail:      langsmith.F("service_account_email"),
 						SubjectScope:             langsmith.F("tag:2fdcD1Dc-bbDb-2BBD-0Afa-1A3C33cFaADc"),
-						WorkloadIdentityProvider: langsmith.F("workload_identity_provider"),
 					}),
 					Headers: langsmith.F([]langsmith.SandboxBoxUpdateParamsProxyConfigRulesHeader{{
 						Name:  langsmith.F("name"),
