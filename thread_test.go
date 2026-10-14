@@ -98,6 +98,7 @@ func TestThreadQueryWithOptionalParams(t *testing.T) {
 		option.WithTenantID("My Tenant ID"),
 	)
 	_, err := client.Threads.Query(context.TODO(), langsmith.ThreadQueryParams{
+		AISearch:     langsmith.F("A conversation about a refund request"),
 		Cursor:       langsmith.F("cursor"),
 		Filter:       langsmith.F("filter"),
 		MaxStartTime: langsmith.F(time.Now()),

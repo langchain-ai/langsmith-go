@@ -9,25 +9,17 @@ It is generated with [Stainless](https://www.stainless.com/).
 
 ## Installation
 
-<!-- x-release-please-start-version -->
-
 ```go
 import (
 	"github.com/langchain-ai/langsmith-go" // imported as langsmith
 )
 ```
 
-<!-- x-release-please-end -->
-
-Or to pin the version:
-
-<!-- x-release-please-start-version -->
+Or to pin a version, use a tag from the [releases](https://github.com/langchain-ai/langsmith-go/releases):
 
 ```sh
-go get -u 'github.com/langchain-ai/langsmith-go@v0.28.0'
+go get -u 'github.com/langchain-ai/langsmith-go@vX.Y.Z'
 ```
-
-<!-- x-release-please-end -->
 
 ## Requirements
 

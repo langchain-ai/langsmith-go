@@ -1,13 +1,19 @@
 package langsmith
 
 import (
+	"crypto"
+	"crypto/ecdsa"
 	"crypto/ed25519"
+	"crypto/elliptic"
 	"crypto/rand"
+	"crypto/rsa"
 	"crypto/sha256"
+	"crypto/sha512"
 	"encoding/base64"
 	"encoding/hex"
 	"encoding/json"
 	"errors"
+	"math/big"
 	"net/http"
 	"net/http/httptest"
 	"strings"
@@ -439,6 +445,214 @@ func TestNewSandboxTokenVerifierJWKSURL(t *testing.T) {
 		_, err := NewSandboxTokenVerifier(SandboxTokenVerifierOptions{
 			JWKSURL: "http://langsmith.internal/.well-known/jwks.json", AllowInsecureJWKS: true,
 		})
+		require.NoError(t, err)
+	})
+}
+
+func signVerifyTestRS256(t *testing.T, priv *rsa.PrivateKey, kid string, claims map[string]any) string {
+	t.Helper()
+	h, err := json.Marshal(map[string]any{"alg": "RS256", "kid": kid, "typ": "JWT"})
+	require.NoError(t, err)
+	c, err := json.Marshal(claims)
+	require.NoError(t, err)
+	input := base64.RawURLEncoding.EncodeToString(h) + "." + base64.RawURLEncoding.EncodeToString(c)
+	digest := sha256.Sum256([]byte(input))
+	sig, err := rsa.SignPKCS1v15(rand.Reader, priv, crypto.SHA256, digest[:])
+	require.NoError(t, err)
+	return input + "." + base64.RawURLEncoding.EncodeToString(sig)
+}
+
+func TestSandboxVerifyRS256(t *testing.T) {
+	rsaPriv, err := rsa.GenerateKey(rand.Reader, 2048)
+	require.NoError(t, err)
+	const rsaKID = "rsa-kid"
+	rsaJWK := map[string]any{
+		"kty": "RSA", "kid": rsaKID,
+		"n": base64.RawURLEncoding.EncodeToString(rsaPriv.N.Bytes()),
+		"e": base64.RawURLEncoding.EncodeToString(big.NewInt(int64(rsaPriv.E)).Bytes()),
+	}
+	edKey := newVerifyTestKey(t, verifyTestKID)
+	srv := newJWKSTestServer(t)
+	srv.serve(map[string]any{"keys": []map[string]any{edKey.jwk(), rsaJWK}})
+	v := srv.verifier(t)
+	verifyUser := func(token string) (*SandboxUser, error) {
+		return v.VerifyUserToken(t.Context(), token, SandboxUserTokenOptions{Audience: verifyTestServiceHost})
+	}
+
+	t.Run("RS256 under an RSA kid verifies", func(t *testing.T) {
+		user, err := verifyUser(signVerifyTestRS256(t, rsaPriv, rsaKID, userTestClaims(nil)))
+		require.NoError(t, err)
+		assert.Equal(t, "user-123", user.Subject)
+	})
+
+	t.Run("algorithm must match the key", func(t *testing.T) {
+		// An EdDSA header under the RSA kid and an RS256 header under the Ed25519 kid.
+		_, edPriv, err := ed25519.GenerateKey(rand.Reader)
+		require.NoError(t, err)
+		edUnderRSA := signVerifyTestToken(t, edPriv, map[string]any{"alg": "EdDSA", "kid": rsaKID}, userTestClaims(nil))
+		_, err = verifyUser(edUnderRSA)
+		requireVerificationError(t, err, "algorithm")
+		_, err = verifyUser(signVerifyTestRS256(t, rsaPriv, verifyTestKID, userTestClaims(nil)))
+		requireVerificationError(t, err, "algorithm")
+	})
+
+	t.Run("callbacks stay EdDSA-only", func(t *testing.T) {
+		body := callbackTestBody(t, nil)
+		sig := signVerifyTestRS256(t, rsaPriv, rsaKID, callbackTestClaims(body, nil))
+		_, err := v.VerifyCallback(t.Context(), body, sig, SandboxCallbackOptions{Audience: ExactAudience(verifyTestCallbackURL)})
+		requireVerificationError(t, err, "algorithm")
+	})
+}
+
+// signVerifyTestAlg signs a token with header alg using priv, an *rsa.PrivateKey,
+// *ecdsa.PrivateKey or ed25519.PrivateKey.
+func signVerifyTestAlg(t *testing.T, priv crypto.Signer, alg, kid string, claims map[string]any) string {
+	t.Helper()
+	h, err := json.Marshal(map[string]any{"alg": alg, "kid": kid, "typ": "JWT"})
+	require.NoError(t, err)
+	c, err := json.Marshal(claims)
+	require.NoError(t, err)
+	input := []byte(base64.RawURLEncoding.EncodeToString(h) + "." + base64.RawURLEncoding.EncodeToString(c))
+	var sig []byte
+	switch key := priv.(type) {
+	case ed25519.PrivateKey:
+		sig = ed25519.Sign(key, input)
+	case *rsa.PrivateKey:
+		hash := sandboxAlgs[alg]
+		digest := hash.New()
+		digest.Write(input)
+		if strings.HasPrefix(alg, "PS") {
+			sig, err = rsa.SignPSS(rand.Reader, key, hash, digest.Sum(nil), &rsa.PSSOptions{SaltLength: rsa.PSSSaltLengthEqualsHash})
+		} else {
+			sig, err = rsa.SignPKCS1v15(rand.Reader, key, hash, digest.Sum(nil))
+		}
+		require.NoError(t, err)
+	case *ecdsa.PrivateKey:
+		var digest []byte
+		switch key.Curve.Params().BitSize {
+		case 256:
+			d := sha256.Sum256(input)
+			digest = d[:]
+		case 384:
+			d := sha512.Sum384(input)
+			digest = d[:]
+		default:
+			d := sha512.Sum512(input)
+			digest = d[:]
+		}
+		r, s, err := ecdsa.Sign(rand.Reader, key, digest)
+		require.NoError(t, err)
+		size := (key.Curve.Params().BitSize + 7) / 8
+		sig = append(r.FillBytes(make([]byte, size)), s.FillBytes(make([]byte, size))...)
+	}
+	return string(input) + "." + base64.RawURLEncoding.EncodeToString(sig)
+}
+
+func TestSandboxVerifyAsymmetricAlgorithms(t *testing.T) {
+	rsaPriv, err := rsa.GenerateKey(rand.Reader, 2048)
+	require.NoError(t, err)
+	rsaJWK := func(kid, alg string) map[string]any {
+		jwk := map[string]any{
+			"kty": "RSA", "kid": kid,
+			"n": base64.RawURLEncoding.EncodeToString(rsaPriv.N.Bytes()),
+			"e": base64.RawURLEncoding.EncodeToString(big.NewInt(int64(rsaPriv.E)).Bytes()),
+		}
+		if alg != "" {
+			jwk["alg"] = alg
+		}
+		return jwk
+	}
+	ecPriv := func(curve elliptic.Curve) *ecdsa.PrivateKey {
+		priv, err := ecdsa.GenerateKey(curve, rand.Reader)
+		require.NoError(t, err)
+		return priv
+	}
+	ecJWK := func(kid, crv string, priv *ecdsa.PrivateKey) map[string]any {
+		size := (priv.Curve.Params().BitSize + 7) / 8
+		return map[string]any{
+			"kty": "EC", "crv": crv, "kid": kid,
+			"x": base64.RawURLEncoding.EncodeToString(priv.X.FillBytes(make([]byte, size))),
+			"y": base64.RawURLEncoding.EncodeToString(priv.Y.FillBytes(make([]byte, size))),
+		}
+	}
+	p256, p384 := ecPriv(elliptic.P256()), ecPriv(elliptic.P384())
+	edKey := newVerifyTestKey(t, "ed-kid")
+
+	// A key published with an alg member, and without one (RS256, ES256 by default).
+	srv := newJWKSTestServer(t)
+	srv.serve(map[string]any{"keys": []map[string]any{
+		rsaJWK("rs256", ""), rsaJWK("rs512", "RS512"), rsaJWK("ps256", "PS256"),
+		ecJWK("es256", "P-256", p256), ecJWK("es384", "P-384", p384), edKey.jwk(),
+	}})
+	v := srv.verifier(t)
+	verifyUser := func(token string) (*SandboxUser, error) {
+		return v.VerifyUserToken(t.Context(), token, SandboxUserTokenOptions{Audience: verifyTestServiceHost})
+	}
+
+	for _, tc := range []struct {
+		alg, kid string
+		priv     crypto.Signer
+	}{
+		{"RS256", "rs256", rsaPriv},
+		{"RS512", "rs512", rsaPriv},
+		{"PS256", "ps256", rsaPriv},
+		{"ES256", "es256", p256},
+		{"ES384", "es384", p384},
+		{"EdDSA", "ed-kid", edKey.priv},
+	} {
+		t.Run(tc.alg+" verifies", func(t *testing.T) {
+			user, err := verifyUser(signVerifyTestAlg(t, tc.priv, tc.alg, tc.kid, userTestClaims(nil)))
+			require.NoError(t, err)
+			assert.Equal(t, "user-123", user.Subject)
+		})
+	}
+
+	t.Run("rejects", func(t *testing.T) {
+		claims := userTestClaims(nil)
+		es256 := strings.Split(signVerifyTestAlg(t, p256, "ES256", "es256", claims), ".")
+		shortSig := strings.Join(es256[:2], ".") + "." + base64.RawURLEncoding.EncodeToString(make([]byte, 63))
+		for name, tc := range map[string]struct {
+			token, want string
+		}{
+			"ES256 header under an RSA kid":       {signVerifyTestAlg(t, p256, "ES256", "rs256", claims), "algorithm"},
+			"RS256 header under an RS512 key":     {signVerifyTestAlg(t, rsaPriv, "RS256", "rs512", claims), "algorithm"},
+			"RS256 header under a PS256 key":      {signVerifyTestAlg(t, rsaPriv, "RS256", "ps256", claims), "algorithm"},
+			"ES384 header under a P-256 kid":      {signVerifyTestAlg(t, p384, "ES384", "es256", claims), "algorithm"},
+			"ES256 signature by another EC key":   {signVerifyTestAlg(t, ecPriv(elliptic.P256()), "ES256", "es256", claims), "invalid signature"},
+			"HS256":                               {signVerifyTestAlg(t, edKey.priv, "HS256", "ed-kid", claims), "algorithm"},
+			"none":                                {signVerifyTestAlg(t, edKey.priv, "none", "ed-kid", claims), "algorithm"},
+			"ES256 signature of the wrong length": {shortSig, "invalid signature"},
+		} {
+			t.Run(name, func(t *testing.T) {
+				_, err := verifyUser(tc.token)
+				requireVerificationError(t, err, tc.want)
+			})
+		}
+	})
+
+	t.Run("callbacks stay EdDSA-only", func(t *testing.T) {
+		body := callbackTestBody(t, nil)
+		sig := signVerifyTestAlg(t, p256, "ES256", "es256", callbackTestClaims(body, nil))
+		_, err := v.VerifyCallback(t.Context(), body, sig, SandboxCallbackOptions{Audience: ExactAudience(verifyTestCallbackURL)})
+		requireVerificationError(t, err, "algorithm")
+	})
+
+	t.Run("unusable EC and alg entries are skipped", func(t *testing.T) {
+		offCurve := ecJWK("off-curve", "P-256", p256)
+		offCurve["y"] = base64.RawURLEncoding.EncodeToString(make([]byte, 32))
+		wrongAlg := ecJWK("ec-rs256", "P-256", p256)
+		wrongAlg["alg"] = "RS256"
+		unsupported := rsaJWK("hs256", "HS256")
+		shortCoord := ecJWK("short", "P-256", p256)
+		shortCoord["x"] = base64.RawURLEncoding.EncodeToString(p256.X.Bytes()[1:])
+		unknownCurve := ecJWK("secp256k1", "secp256k1", p256)
+		srv.serve(map[string]any{"keys": []map[string]any{offCurve, wrongAlg, unsupported, shortCoord, unknownCurve, ecJWK("ok", "P-256", p256)}})
+		v := srv.verifier(t)
+		for _, kid := range []string{"off-curve", "ec-rs256", "hs256", "short", "secp256k1"} {
+			_, err := v.VerifyUserToken(t.Context(), signVerifyTestAlg(t, p256, "ES256", kid, userTestClaims(nil)), SandboxUserTokenOptions{Audience: verifyTestServiceHost})
+			requireVerificationError(t, err, "unknown signing key")
+		}
+		_, err := v.VerifyUserToken(t.Context(), signVerifyTestAlg(t, p256, "ES256", "ok", userTestClaims(nil)), SandboxUserTokenOptions{Audience: verifyTestServiceHost})
 		require.NoError(t, err)
 	})
 }
