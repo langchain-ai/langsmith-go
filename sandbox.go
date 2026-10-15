@@ -3943,6 +3943,10 @@ type SandboxListUsageCostsParams struct {
 	// HOUR returns hourly buckets. RESOURCE sums each resource over the requested
 	// interval and sets period_start to start_time.
 	Granularity param.Field[SandboxListUsageCostsParamsGranularity] `query:"granularity"`
+	// Include usage totals across the filtered interval (RESOURCE only). Omitted when
+	// unrestricted resource access cannot be verified or the service does not support
+	// totals.
+	IncludeTotals param.Field[bool] `query:"include_totals"`
 	// Maximum rows to return
 	PageSize param.Field[int64] `query:"page_size"`
 	// Resource UUID filter; repeat this parameter up to 100 times
