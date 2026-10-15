@@ -249,6 +249,7 @@ func TestOnlineEvaluatorSpendWithOptionalParams(t *testing.T) {
 	)
 	_, err := client.OnlineEvaluators.Spend(context.TODO(), langsmith.OnlineEvaluatorSpendParams{
 		PeriodStart: langsmith.F("period_start"),
+		AgentID:     langsmith.F("agent_id"),
 		DatasetID:   langsmith.F("dataset_id"),
 		EvaluatorID: langsmith.F("evaluator_id"),
 		FeedbackKey: langsmith.F("feedback_key"),

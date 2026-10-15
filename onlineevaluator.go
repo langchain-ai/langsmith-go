@@ -123,8 +123,9 @@ func (r *OnlineEvaluatorService) BulkDelete(ctx context.Context, body OnlineEval
 
 // Returns per-day LLM evaluator spend for the requested 7-day period, grouped by
 // evaluator, resource, or run rule. Exactly one of group_by, evaluator_id,
-// session_id, or dataset_id is required. resource_id, type, feedback_key, and
-// tag_value_id may be supplied with group_by to narrow listing aggregations.
+// session_id, or dataset_id is required. resource_id, type, feedback_key,
+// tag_value_id, and agent_id may be supplied with group_by to narrow listing
+// aggregations.
 func (r *OnlineEvaluatorService) Spend(ctx context.Context, query OnlineEvaluatorSpendParams, opts ...option.RequestOption) (res *GetOnlineEvaluatorSpendResponse, err error) {
 	opts = slices.Concat(r.Options, opts)
 	path := "api/v1/platform/evaluators/spend"
@@ -779,7 +780,8 @@ func (r OnlineEvaluatorUpdateParams) MarshalJSON() (data []byte, err error) {
 }
 
 type OnlineEvaluatorListParams struct {
-	// Filter to evaluators attached to the agent's environments or tagged datasets
+	// Filter to evaluators attached to the agent's environments or tagged datasets;
+	// run_rules then lists only those attachments
 	AgentID param.Field[string] `query:"agent_id"`
 	// Filter by feedback key
 	FeedbackKey param.Field[string] `query:"feedback_key"`
@@ -843,6 +845,9 @@ func (r OnlineEvaluatorBulkDeleteParams) URLQuery() (v url.Values) {
 type OnlineEvaluatorSpendParams struct {
 	// Start of the 7-day window (YYYY-MM-DD).
 	PeriodStart param.Field[string] `query:"period_start" api:"required"`
+	// Filter grouped results to spend from evaluator attachments on the agent's
+	// environments or tagged datasets. Only valid with group_by.
+	AgentID param.Field[string] `query:"agent_id"`
 	// Filter to a specific dataset (UUID). Mutually exclusive with group_by.
 	DatasetID param.Field[string] `query:"dataset_id"`
 	// Filter to a specific evaluator (UUID). Mutually exclusive with group_by.
