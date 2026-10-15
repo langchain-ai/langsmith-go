@@ -29,13 +29,14 @@ func TestSandboxListUsageCostsWithOptionalParams(t *testing.T) {
 		option.WithTenantID("My Tenant ID"),
 	)
 	_, err := client.Sandboxes.ListUsageCosts(context.TODO(), langsmith.SandboxListUsageCostsParams{
-		EndTime:      langsmith.F(time.Now()),
-		StartTime:    langsmith.F(time.Now()),
-		Cursor:       langsmith.F("cursor"),
-		Granularity:  langsmith.F(langsmith.SandboxListUsageCostsParamsGranularityHour),
-		PageSize:     langsmith.F(int64(1)),
-		ResourceIDs:  langsmith.F([]string{"string"}),
-		ResourceType: langsmith.F(langsmith.SandboxListUsageCostsParamsResourceTypeSandbox),
+		EndTime:       langsmith.F(time.Now()),
+		StartTime:     langsmith.F(time.Now()),
+		Cursor:        langsmith.F("cursor"),
+		Granularity:   langsmith.F(langsmith.SandboxListUsageCostsParamsGranularityHour),
+		IncludeTotals: langsmith.F(true),
+		PageSize:      langsmith.F(int64(1)),
+		ResourceIDs:   langsmith.F([]string{"string"}),
+		ResourceType:  langsmith.F(langsmith.SandboxListUsageCostsParamsResourceTypeSandbox),
 	})
 	if err != nil {
 		var apierr *langsmith.Error
