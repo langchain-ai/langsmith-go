@@ -42,7 +42,8 @@ func TestOnlineEvaluatorNewWithOptionalParams(t *testing.T) {
 						KeyName:   langsmith.F("key_name"),
 					},
 				}),
-				RequireAttachments: langsmith.F(true),
+				RequireAttachments:   langsmith.F(true),
+				WorkspaceSecretsKeys: langsmith.F([]string{"string"}),
 			}),
 			LlmEvaluator: langsmith.F(langsmith.CreateOnlineLlmEvaluatorRequestParam{
 				CommitHashOrTag:      langsmith.F("commit_hash_or_tag"),
@@ -118,7 +119,8 @@ func TestOnlineEvaluatorUpdateWithOptionalParams(t *testing.T) {
 							KeyName:   langsmith.F("key_name"),
 						},
 					}),
-					RequireAttachments: langsmith.F(true),
+					RequireAttachments:   langsmith.F(true),
+					WorkspaceSecretsKeys: langsmith.F([]string{"string"}),
 				}),
 				LlmEvaluator: langsmith.F(langsmith.UpdateOnlineLlmEvaluatorRequestParam{
 					CommitHashOrTag:       langsmith.F("commit_hash_or_tag"),

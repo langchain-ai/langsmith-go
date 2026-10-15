@@ -193,6 +193,11 @@ type CreateOnlineCodeEvaluatorRequestParam struct {
 	// RequireAttachments opts the evaluator into selecting/presigning run attachments
 	// (s3_urls) at evaluation time. Default false.
 	RequireAttachments param.Field[bool] `json:"require_attachments"`
+	// WorkspaceSecretsKeys names the workspace secrets this evaluator may use. Each is
+	// sent as a header on requests to the hosts allowed for that secret; evaluator
+	// code never sees the value. Requires advanced_features_enabled, and each secret
+	// needs an allowed host with a header.
+	WorkspaceSecretsKeys param.Field[[]string] `json:"workspace_secrets_keys"`
 }
 
 func (r CreateOnlineCodeEvaluatorRequestParam) MarshalJSON() (data []byte, err error) {
@@ -326,8 +331,13 @@ type OnlineCodeEvaluator struct {
 	ManagedCodeEvaluatorSettings map[string]OnlineCodeEvaluatorManagedCodeEvaluatorSetting `json:"managed_code_evaluator_settings"`
 	// RequireAttachments opts the evaluator into selecting/presigning run attachments
 	// (s3_urls) at evaluation time. Default false.
-	RequireAttachments bool                    `json:"require_attachments"`
-	JSON               onlineCodeEvaluatorJSON `json:"-"`
+	RequireAttachments bool `json:"require_attachments"`
+	// WorkspaceSecretsKeys names the workspace secrets this evaluator may use. Each is
+	// sent as a header on requests to the hosts allowed for that secret; evaluator
+	// code never sees the value. Requires advanced_features_enabled, and each secret
+	// needs an allowed host with a header.
+	WorkspaceSecretsKeys []string                `json:"workspace_secrets_keys"`
+	JSON                 onlineCodeEvaluatorJSON `json:"-"`
 }
 
 // onlineCodeEvaluatorJSON contains the JSON metadata for the struct
@@ -344,6 +354,7 @@ type onlineCodeEvaluatorJSON struct {
 	ManagedCodeEvaluatorKey      apijson.Field
 	ManagedCodeEvaluatorSettings apijson.Field
 	RequireAttachments           apijson.Field
+	WorkspaceSecretsKeys         apijson.Field
 	raw                          string
 	ExtraFields                  map[string]apijson.Field
 }
@@ -685,6 +696,12 @@ type UpdateOnlineCodeEvaluatorRequestParam struct {
 	// RequireAttachments is fetch-time config: updating it does not rebuild the
 	// sandbox snapshot.
 	RequireAttachments param.Field[bool] `json:"require_attachments"`
+	// WorkspaceSecretsKeys names the workspace secrets this evaluator may use. Each is
+	// sent as a header on requests to the hosts allowed for that secret; evaluator
+	// code never sees the value. Requires advanced_features_enabled, and each secret
+	// needs an allowed host with a header. Omit to keep the current list; [] clears
+	// it. Changing it does not rebuild the evaluator.
+	WorkspaceSecretsKeys param.Field[[]string] `json:"workspace_secrets_keys"`
 }
 
 func (r UpdateOnlineCodeEvaluatorRequestParam) MarshalJSON() (data []byte, err error) {
