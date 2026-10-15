@@ -2,8 +2,10 @@ package langsmith
 
 import (
 	"context"
+	"errors"
 	"fmt"
 	"os"
+	"strings"
 	"time"
 
 	"go.opentelemetry.io/otel"
@@ -28,6 +30,7 @@ type OTelTracerOption func(*tracerConfig)
 type tracerConfig struct {
 	apiKey       string
 	projectName  string
+	address      AgentAddress
 	serviceName  string
 	endpoint     string
 	batchTimeout time.Duration
@@ -44,6 +47,16 @@ func WithAPIKey(apiKey string) OTelTracerOption {
 func WithProjectName(projectName string) OTelTracerOption {
 	return func(c *tracerConfig) {
 		c.projectName = projectName
+	}
+}
+
+// WithAddress (beta) sends traces to an agent environment instead of a project. It cannot be
+// combined with [WithProjectName]. Without either option, LANGSMITH_AGENT_ID and
+// LANGSMITH_AGENT_ENVIRONMENT address the agent when both are set. Agent addressing is enabled
+// per workspace.
+func WithAddress(a AgentAddress) OTelTracerOption {
+	return func(c *tracerConfig) {
+		c.address = a
 	}
 }
 
@@ -96,7 +109,10 @@ func NewOTel(tp *sdktrace.TracerProvider, opts ...OTelTracerOption) (*OTelTracer
 		return nil, fmt.Errorf("TracerProvider must not be nil (use NewOTelTracer to create one automatically)")
 	}
 
-	cfg := resolveConfig(opts)
+	cfg, err := resolveConfig(opts)
+	if err != nil {
+		return nil, err
+	}
 
 	if cfg.apiKey == "" {
 		return nil, fmt.Errorf("API key is required (use WithAPIKey or set LANGSMITH_API_KEY environment variable)")
@@ -119,7 +135,10 @@ func NewOTel(tp *sdktrace.TracerProvider, opts ...OTelTracerOption) (*OTelTracer
 // NewOTelTracer creates a new [OTelTracer] that owns its own TracerProvider.
 // For sharing a TracerProvider with other libraries, use [NewOTel] instead.
 func NewOTelTracer(opts ...OTelTracerOption) (*OTelTracer, error) {
-	cfg := resolveConfig(opts)
+	cfg, err := resolveConfig(opts)
+	if err != nil {
+		return nil, err
+	}
 
 	if cfg.apiKey == "" {
 		return nil, fmt.Errorf("API key is required (use WithAPIKey or set LANGSMITH_API_KEY environment variable)")
@@ -128,7 +147,6 @@ func NewOTelTracer(opts ...OTelTracerOption) (*OTelTracer, error) {
 	ctx := context.Background()
 
 	var res *resource.Resource
-	var err error
 	if cfg.serviceName != "" {
 		res, err = resource.New(ctx,
 			resource.WithAttributes(
@@ -164,7 +182,7 @@ func NewOTelTracer(opts ...OTelTracerOption) (*OTelTracer, error) {
 	}, nil
 }
 
-func resolveConfig(opts []OTelTracerOption) *tracerConfig {
+func resolveConfig(opts []OTelTracerOption) (*tracerConfig, error) {
 	cfg := &tracerConfig{
 		endpoint:     defaultEndpoint,
 		batchTimeout: defaultBatchTimeout,
@@ -175,13 +193,38 @@ func resolveConfig(opts []OTelTracerOption) *tracerConfig {
 	if cfg.apiKey == "" {
 		cfg.apiKey = os.Getenv("LANGSMITH_API_KEY")
 	}
-	if cfg.projectName == "" {
-		cfg.projectName = os.Getenv("LANGSMITH_PROJECT")
+	if !cfg.address.IsZero() && cfg.projectName != "" {
+		return nil, errors.New("langsmith: WithAddress and WithProjectName cannot be combined")
 	}
-	if cfg.projectName == "" {
+	if cfg.address.IsZero() && cfg.projectName == "" {
+		// The environment decides when neither option names a destination.
+		envAddress, err := AgentAddressFromEnv()
+		if err != nil {
+			return nil, err
+		}
+		envProject := os.Getenv("LANGSMITH_PROJECT")
+		if !envAddress.IsZero() && envProject != "" {
+			return nil, fmt.Errorf("%w: LANGSMITH_PROJECT and the LANGSMITH_AGENT_* variables are both set", ErrEnvAddress)
+		}
+		cfg.address, cfg.projectName = envAddress, envProject
+	}
+	if cfg.address.IsZero() && cfg.projectName == "" {
 		cfg.projectName = "default"
 	}
-	return cfg
+	return cfg, nil
+}
+
+// headers returns the OTLP request headers. An address replaces the project header, because
+// ingestion rejects a request that sets both.
+func (c *tracerConfig) headers() map[string]string {
+	headers := map[string]string{"x-api-key": c.apiKey}
+	if c.address.IsZero() {
+		headers["Langsmith-Project"] = c.projectName
+		return headers
+	}
+	headers["Langsmith-Agent-Id"] = c.address.ID()
+	headers["Langsmith-Agent-Environment"] = strings.ToLower(c.address.Environment())
+	return headers
 }
 
 func createProcessor(cfg *tracerConfig) (sdktrace.SpanProcessor, error) {
@@ -190,10 +233,7 @@ func createProcessor(cfg *tracerConfig) (sdktrace.SpanProcessor, error) {
 	exporter, err := otlptracehttp.New(ctx,
 		otlptracehttp.WithEndpoint(cfg.endpoint),
 		otlptracehttp.WithURLPath(defaultURLPath),
-		otlptracehttp.WithHeaders(map[string]string{
-			"x-api-key":         cfg.apiKey,
-			"Langsmith-Project": cfg.projectName,
-		}),
+		otlptracehttp.WithHeaders(cfg.headers()),
 	)
 	if err != nil {
 		return nil, fmt.Errorf("creating OTLP exporter: %w", err)
