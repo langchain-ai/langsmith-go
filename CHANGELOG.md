@@ -1,5 +1,28 @@
 # Changelog
 
+## [0.28.2](https://github.com/langchain-ai/langsmith-go/compare/v0.28.1...v0.28.2) (2026-10-16)
+
+
+### Features
+
+* **code-eval-v2:** allow trajectory on code_evaluator_input storage ([8472e48](https://github.com/langchain-ai/langsmith-go/commit/8472e4850b5b0158a47fe32b9610566e906312d8))
+* **code-evals:** require advanced_features for code_evaluator_input ([7c95ffa](https://github.com/langchain-ai/langsmith-go/commit/7c95ffad423d4c63ddc0dcd60e1ff0df9de95e5f))
+* **evaluators:** scope evaluator spend and run rules to an agent ([60b6f1b](https://github.com/langchain-ai/langsmith-go/commit/60b6f1b495c14ba130a5a3e465f682817d14b94f))
+* **evaluators:** workspace_secrets_keys on code evaluator CRUD ([9575188](https://github.com/langchain-ai/langsmith-go/commit/9575188298d8c6f1022ca7100646ba5e3e9df91f))
+* **feedback-configs:** deleting an enforced config turns it off ([1f4ab04](https://github.com/langchain-ai/langsmith-go/commit/1f4ab0462f40dc3b8b7279f83d3281b7960c0d1b))
+* **sdk:** expose prompt webhooks in the SDKs and the langsmith CLI ([0dbea70](https://github.com/langchain-ai/langsmith-go/commit/0dbea708005fe2411b3e16c82de549333020eb34))
+* **sdks:** send OTLP traces to an Agent environment from the Go tracer ([e181277](https://github.com/langchain-ai/langsmith-go/commit/e1812777f454ba884f1a2d6d10cfb5698e51ef4a))
+
+
+### Bug Fixes
+
+* **sdks:** regenerate sdks/go for the GCP proxy rule variants ([6a2ff57](https://github.com/langchain-ai/langsmith-go/commit/6a2ff575fa559ef19baf3111b59793f62f6bdfe7))
+
+
+### Performance Improvements
+
+* load sandbox cost pages and totals independently ([54551aa](https://github.com/langchain-ai/langsmith-go/commit/54551aa0fea8f5456d5cb25356e86acbbdd9cfc5))
+
 ## [0.28.1](https://github.com/langchain-ai/langsmith-go/compare/v0.28.0...v0.28.1) (2026-10-14)
 
 
