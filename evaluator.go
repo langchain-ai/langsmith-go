@@ -81,11 +81,12 @@ const (
 	CodeEvaluatorTopLevelCodeEvaluatorInputAllMessages      CodeEvaluatorTopLevelCodeEvaluatorInput = "all_messages"
 	CodeEvaluatorTopLevelCodeEvaluatorInputHumanAIPairs     CodeEvaluatorTopLevelCodeEvaluatorInput = "human_ai_pairs"
 	CodeEvaluatorTopLevelCodeEvaluatorInputFirstHumanLastAI CodeEvaluatorTopLevelCodeEvaluatorInput = "first_human_last_ai"
+	CodeEvaluatorTopLevelCodeEvaluatorInputTrajectory       CodeEvaluatorTopLevelCodeEvaluatorInput = "trajectory"
 )
 
 func (r CodeEvaluatorTopLevelCodeEvaluatorInput) IsKnown() bool {
 	switch r {
-	case CodeEvaluatorTopLevelCodeEvaluatorInputThread, CodeEvaluatorTopLevelCodeEvaluatorInputAllMessages, CodeEvaluatorTopLevelCodeEvaluatorInputHumanAIPairs, CodeEvaluatorTopLevelCodeEvaluatorInputFirstHumanLastAI:
+	case CodeEvaluatorTopLevelCodeEvaluatorInputThread, CodeEvaluatorTopLevelCodeEvaluatorInputAllMessages, CodeEvaluatorTopLevelCodeEvaluatorInputHumanAIPairs, CodeEvaluatorTopLevelCodeEvaluatorInputFirstHumanLastAI, CodeEvaluatorTopLevelCodeEvaluatorInputTrajectory:
 		return true
 	}
 	return false

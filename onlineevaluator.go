@@ -213,11 +213,12 @@ const (
 	CreateOnlineCodeEvaluatorRequestCodeEvaluatorInputAllMessages      CreateOnlineCodeEvaluatorRequestCodeEvaluatorInput = "all_messages"
 	CreateOnlineCodeEvaluatorRequestCodeEvaluatorInputHumanAIPairs     CreateOnlineCodeEvaluatorRequestCodeEvaluatorInput = "human_ai_pairs"
 	CreateOnlineCodeEvaluatorRequestCodeEvaluatorInputFirstHumanLastAI CreateOnlineCodeEvaluatorRequestCodeEvaluatorInput = "first_human_last_ai"
+	CreateOnlineCodeEvaluatorRequestCodeEvaluatorInputTrajectory       CreateOnlineCodeEvaluatorRequestCodeEvaluatorInput = "trajectory"
 )
 
 func (r CreateOnlineCodeEvaluatorRequestCodeEvaluatorInput) IsKnown() bool {
 	switch r {
-	case CreateOnlineCodeEvaluatorRequestCodeEvaluatorInputThread, CreateOnlineCodeEvaluatorRequestCodeEvaluatorInputAllMessages, CreateOnlineCodeEvaluatorRequestCodeEvaluatorInputHumanAIPairs, CreateOnlineCodeEvaluatorRequestCodeEvaluatorInputFirstHumanLastAI:
+	case CreateOnlineCodeEvaluatorRequestCodeEvaluatorInputThread, CreateOnlineCodeEvaluatorRequestCodeEvaluatorInputAllMessages, CreateOnlineCodeEvaluatorRequestCodeEvaluatorInputHumanAIPairs, CreateOnlineCodeEvaluatorRequestCodeEvaluatorInputFirstHumanLastAI, CreateOnlineCodeEvaluatorRequestCodeEvaluatorInputTrajectory:
 		return true
 	}
 	return false
@@ -376,11 +377,12 @@ const (
 	OnlineCodeEvaluatorCodeEvaluatorInputAllMessages      OnlineCodeEvaluatorCodeEvaluatorInput = "all_messages"
 	OnlineCodeEvaluatorCodeEvaluatorInputHumanAIPairs     OnlineCodeEvaluatorCodeEvaluatorInput = "human_ai_pairs"
 	OnlineCodeEvaluatorCodeEvaluatorInputFirstHumanLastAI OnlineCodeEvaluatorCodeEvaluatorInput = "first_human_last_ai"
+	OnlineCodeEvaluatorCodeEvaluatorInputTrajectory       OnlineCodeEvaluatorCodeEvaluatorInput = "trajectory"
 )
 
 func (r OnlineCodeEvaluatorCodeEvaluatorInput) IsKnown() bool {
 	switch r {
-	case OnlineCodeEvaluatorCodeEvaluatorInputThread, OnlineCodeEvaluatorCodeEvaluatorInputAllMessages, OnlineCodeEvaluatorCodeEvaluatorInputHumanAIPairs, OnlineCodeEvaluatorCodeEvaluatorInputFirstHumanLastAI:
+	case OnlineCodeEvaluatorCodeEvaluatorInputThread, OnlineCodeEvaluatorCodeEvaluatorInputAllMessages, OnlineCodeEvaluatorCodeEvaluatorInputHumanAIPairs, OnlineCodeEvaluatorCodeEvaluatorInputFirstHumanLastAI, OnlineCodeEvaluatorCodeEvaluatorInputTrajectory:
 		return true
 	}
 	return false
@@ -716,11 +718,12 @@ const (
 	UpdateOnlineCodeEvaluatorRequestCodeEvaluatorInputAllMessages      UpdateOnlineCodeEvaluatorRequestCodeEvaluatorInput = "all_messages"
 	UpdateOnlineCodeEvaluatorRequestCodeEvaluatorInputHumanAIPairs     UpdateOnlineCodeEvaluatorRequestCodeEvaluatorInput = "human_ai_pairs"
 	UpdateOnlineCodeEvaluatorRequestCodeEvaluatorInputFirstHumanLastAI UpdateOnlineCodeEvaluatorRequestCodeEvaluatorInput = "first_human_last_ai"
+	UpdateOnlineCodeEvaluatorRequestCodeEvaluatorInputTrajectory       UpdateOnlineCodeEvaluatorRequestCodeEvaluatorInput = "trajectory"
 )
 
 func (r UpdateOnlineCodeEvaluatorRequestCodeEvaluatorInput) IsKnown() bool {
 	switch r {
-	case UpdateOnlineCodeEvaluatorRequestCodeEvaluatorInputThread, UpdateOnlineCodeEvaluatorRequestCodeEvaluatorInputAllMessages, UpdateOnlineCodeEvaluatorRequestCodeEvaluatorInputHumanAIPairs, UpdateOnlineCodeEvaluatorRequestCodeEvaluatorInputFirstHumanLastAI:
+	case UpdateOnlineCodeEvaluatorRequestCodeEvaluatorInputThread, UpdateOnlineCodeEvaluatorRequestCodeEvaluatorInputAllMessages, UpdateOnlineCodeEvaluatorRequestCodeEvaluatorInputHumanAIPairs, UpdateOnlineCodeEvaluatorRequestCodeEvaluatorInputFirstHumanLastAI, UpdateOnlineCodeEvaluatorRequestCodeEvaluatorInputTrajectory:
 		return true
 	}
 	return false
