@@ -30,6 +30,7 @@ type SandboxService struct {
 	Boxes      *SandboxBoxService
 	Registries *SandboxRegistryService
 	Snapshots  *SandboxSnapshotService
+	Browsers   *SandboxBrowserService
 }
 
 // NewSandboxService generates a new service that applies the given options to each
@@ -41,6 +42,7 @@ func NewSandboxService(opts ...option.RequestOption) (r *SandboxService) {
 	r.Boxes = NewSandboxBoxService(opts...)
 	r.Registries = NewSandboxRegistryService(opts...)
 	r.Snapshots = NewSandboxSnapshotService(opts...)
+	r.Browsers = NewSandboxBrowserService(opts...)
 	return
 }
 

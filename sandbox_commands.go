@@ -54,10 +54,15 @@ func (r SandboxRunConfig) MarshalJSON() (data []byte, err error) {
 	return apijson.MarshalRoot(r)
 }
 
-// SandboxBoxRunParams configures a blocking sandbox command execution.
+// SandboxBoxRunParams configures a blocking sandbox command execution. Set
+// exactly one of Command and Argv.
 type SandboxBoxRunParams struct {
-	Command param.Field[string] `json:"command" api:"required"`
-	Timeout param.Field[int64]  `json:"timeout"`
+	// Command runs through Shell with -c.
+	Command param.Field[string] `json:"command"`
+	// Argv runs a program directly, without a shell, so its arguments need no
+	// quoting. Argv[0] is the program.
+	Argv    param.Field[[]string] `json:"-"`
+	Timeout param.Field[int64]    `json:"timeout_seconds"`
 	// Deprecated: use RunConfig.EnvVars. Combining the two is rejected.
 	Env param.Field[map[string]string] `json:"env"`
 	// Deprecated: use RunConfig.WorkDir. Combining the two is rejected.
@@ -420,18 +425,28 @@ type sandboxWSMessage struct {
 }
 
 func normalizeSandboxRunParams(body SandboxBoxRunParams) (SandboxBoxRunParams, int64, error) {
-	command, ok := sandboxRequiredString(body.Command)
-	if !ok {
+	command, hasCommand := sandboxRequiredString(body.Command)
+	argv := sandboxFieldValue(body.Argv, nil)
+	switch {
+	case hasCommand && len(argv) > 0:
+		return SandboxBoxRunParams{}, 0, errors.New("set command or argv, not both")
+	case len(argv) > 0:
+		if argv[0] == "" {
+			return SandboxBoxRunParams{}, 0, errors.New("argv[0] must name the program to run")
+		}
+		// The API takes command as a string for shell mode or an array for argv.
+		body.Command = Raw[string](argv)
+	case hasCommand:
+		body.Command = F(command)
+		body.Shell = F(sandboxFieldValue(body.Shell, defaultSandboxCommandShell))
+	default:
 		return SandboxBoxRunParams{}, 0, errors.New("missing required command parameter")
 	}
 	if err := checkSandboxRunConfigNotCombined(body.RunConfig, body.Env, body.CWD); err != nil {
 		return SandboxBoxRunParams{}, 0, err
 	}
 	timeout := sandboxFieldValue(body.Timeout, defaultSandboxCommandTimeoutSeconds)
-	shell := sandboxFieldValue(body.Shell, defaultSandboxCommandShell)
-	body.Command = F(command)
 	body.Timeout = F(timeout)
-	body.Shell = F(shell)
 	return body, timeout, nil
 }
 

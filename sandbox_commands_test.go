@@ -66,8 +66,8 @@ func TestSandboxBoxRunWithDataplaneURL(t *testing.T) {
 	if gotPayload["command"] != "echo hello" {
 		t.Fatalf("expected command payload, got %#v", gotPayload["command"])
 	}
-	if gotPayload["timeout"] != float64(12) {
-		t.Fatalf("expected timeout payload, got %#v", gotPayload["timeout"])
+	if gotPayload["timeout_seconds"] != float64(12) {
+		t.Fatalf("expected timeout_seconds payload, got %#v", gotPayload["timeout_seconds"])
 	}
 	if gotPayload["shell"] != "/bin/sh" {
 		t.Fatalf("expected shell payload, got %#v", gotPayload["shell"])
@@ -78,6 +78,46 @@ func TestSandboxBoxRunWithDataplaneURL(t *testing.T) {
 	env, ok := gotPayload["env"].(map[string]any)
 	if !ok || env["NAME"] != "value" {
 		t.Fatalf("expected env payload, got %#v", gotPayload["env"])
+	}
+}
+
+func TestSandboxBoxRunArgv(t *testing.T) {
+	var gotPayload map[string]any
+	srv := httptest.NewServer(http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
+		if err := json.NewDecoder(r.Body).Decode(&gotPayload); err != nil {
+			t.Fatalf("decode request body: %v", err)
+		}
+		w.Header().Set("Content-Type", "application/json")
+		_ = json.NewEncoder(w).Encode(map[string]any{"stdout": "a b\n", "exit_code": 0})
+	}))
+	defer srv.Close()
+
+	client := langsmith.NewClient(
+		option.WithBaseURL("http://control-plane.test"),
+		option.WithAPIKey("test-api-key"),
+		option.WithMaxRetries(0),
+	)
+	_, err := client.Sandboxes.Boxes.RunWithDataplaneURL(context.Background(), srv.URL, langsmith.SandboxBoxRunParams{
+		Argv: langsmith.F([]string{"echo", "a b"}),
+	})
+	if err != nil {
+		t.Fatalf("RunWithDataplaneURL returned error: %v", err)
+	}
+	command, ok := gotPayload["command"].([]any)
+	if !ok || len(command) != 2 || command[0] != "echo" || command[1] != "a b" {
+		t.Fatalf("expected argv command payload, got %#v", gotPayload["command"])
+	}
+	if _, ok := gotPayload["shell"]; ok {
+		t.Fatalf("expected no shell for argv, got %#v", gotPayload["shell"])
+	}
+
+	for name, params := range map[string]langsmith.SandboxBoxRunParams{
+		"both":  {Command: langsmith.String("true"), Argv: langsmith.F([]string{"true"})},
+		"empty": {Argv: langsmith.F([]string{})},
+	} {
+		if _, err := client.Sandboxes.Boxes.RunWithDataplaneURL(context.Background(), srv.URL, params); err == nil {
+			t.Fatalf("%s: expected an error", name)
+		}
 	}
 }
 
