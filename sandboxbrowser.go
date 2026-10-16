@@ -92,18 +92,33 @@ func (r *SandboxBrowserService) Restart(ctx context.Context, name string, body S
 // BrowserAttachment is one window of a browser (beta).
 type BrowserAttachment struct {
 	ID string `json:"id"`
+	// APICDPURL is the same Chrome DevTools endpoint through the LangSmith API, for
+	// clients outside any sandbox. It takes any API credential: headers as for any API
+	// call (X-Api-Key, or Authorization: Bearer with an OAuth access token, plus
+	// X-Tenant-Id where needed), or, for clients that take only a URL, api_key, token
+	// and tenant_id query parameters.
+	APICdpURL string `json:"api_cdp_url"`
 	// CDPURL is the Chrome DevTools endpoint the attached sandbox connects to, for
 	// example with Playwright's connect_over_cdp. It works only from inside that
 	// sandbox.
 	CdpURL string `json:"cdp_url"`
-	// Clients are the sandboxes currently connected to this window. An unrestricted
-	// window's connections are not listed.
+	// Clients are the sandboxes currently connected to this window, with "api" for
+	// each client connected through api_cdp_url. An unrestricted window's connections
+	// are not listed.
 	Clients []string `json:"clients"`
 	// Controller is "agent" while the attached sandbox drives the window and "human"
 	// while a person has taken it over.
 	Controller BrowserAttachmentController `json:"controller"`
 	CreatedAt  string                      `json:"created_at"`
-	Name       string                      `json:"name"`
+	// LocalhostAlias is the sandbox's localhost as the browser sees it: open
+	// http://<localhost_alias>:<port> in a window to reach a server listening on that
+	// port in the sandbox, whether bound to localhost or to all interfaces (any port
+	// but 80 and 443). While this is the only sandbox sharing its localhost,
+	// http://localhost:<port> works too. Pages on other sites can navigate to a
+	// plain-HTTP server there but cannot fetch from it. Set only for windows attached
+	// with share_localhost.
+	LocalhostAlias string `json:"localhost_alias"`
+	Name           string `json:"name"`
 	// Reason is why the agent asked a person to take over, when it did.
 	Reason string `json:"reason"`
 	// Sandbox is the attached sandbox; empty for a window a person opened.
@@ -120,18 +135,20 @@ type BrowserAttachment struct {
 // browserAttachmentJSON contains the JSON metadata for the struct
 // [BrowserAttachment]
 type browserAttachmentJSON struct {
-	ID           apijson.Field
-	CdpURL       apijson.Field
-	Clients      apijson.Field
-	Controller   apijson.Field
-	CreatedAt    apijson.Field
-	Name         apijson.Field
-	Reason       apijson.Field
-	Sandbox      apijson.Field
-	Tabs         apijson.Field
-	Unrestricted apijson.Field
-	raw          string
-	ExtraFields  map[string]apijson.Field
+	ID             apijson.Field
+	APICdpURL      apijson.Field
+	CdpURL         apijson.Field
+	Clients        apijson.Field
+	Controller     apijson.Field
+	CreatedAt      apijson.Field
+	LocalhostAlias apijson.Field
+	Name           apijson.Field
+	Reason         apijson.Field
+	Sandbox        apijson.Field
+	Tabs           apijson.Field
+	Unrestricted   apijson.Field
+	raw            string
+	ExtraFields    map[string]apijson.Field
 }
 
 func (r *BrowserAttachment) UnmarshalJSON(data []byte) (err error) {

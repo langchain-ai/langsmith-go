@@ -40,11 +40,14 @@ func NewSandboxBrowserAttachmentService(opts ...option.RequestOption) (r *Sandbo
 }
 
 // Beta: give a sandbox its own window of the browser, or, with no sandbox, open a
-// window for the person calling. The response's cdp_url is the Chrome DevTools
-// endpoint the sandbox connects to; it can open more tabs, which stay in its
-// window. Windows share the browser's cookies and logins. Keeping each sandbox to
-// its own window is best effort, not a security boundary: attach only sandboxes
-// you would trust with every login in the browser. Attaching takes, for the
+// window for the person calling (or, with controller "agent", for a client to
+// drive over api_cdp_url). The response's cdp_url is the Chrome DevTools endpoint
+// the sandbox connects to, and api_cdp_url the same endpoint through the API; a
+// client can open more tabs, which stay in its window. Windows share the browser's
+// cookies and logins. Keeping each sandbox to its own window is best effort, not a
+// security boundary: attach only sandboxes you would trust with every login in the
+// browser. With share_localhost, the browser can also reach the servers the
+// sandbox runs, at the response's localhost_alias. Attaching takes, for the
 // browser and for the attached sandbox each, being its creator or a role with
 // sandboxes:exec. With unrestricted, nothing is filtered: the sandbox gets the
 // whole browser, including people's windows, every site's cookies, and commands
@@ -113,11 +116,21 @@ func (r *SandboxBrowserAttachmentService) TakeOver(ctx context.Context, name str
 }
 
 type SandboxBrowserAttachmentNewParams struct {
+	// Controller is who drives a window opened with no sandbox: "human" (default) for
+	// a person in the live view, or "agent" for a client that drives it over
+	// api_cdp_url. A sandbox's window always starts with "agent".
+	Controller param.Field[SandboxBrowserAttachmentNewParamsController] `json:"controller"`
 	// Name labels the window in the live view; defaults to the sandbox name.
 	Name param.Field[string] `json:"name"`
 	// Sandbox is the name or ID of the sandbox to attach. Leave it out to open a
 	// window for the person calling, to use from the live view.
 	Sandbox param.Field[string] `json:"sandbox"`
+	// ShareLocalhost shares the sandbox's localhost with the browser, so pages can
+	// open the servers it runs, such as dev servers, at the response's
+	// localhost_alias. It reaches every port of the sandbox, including servers bound
+	// only to its localhost. Off by default. Not available for a window opened with no
+	// sandbox, or when the sandbox is itself a browser.
+	ShareLocalhost param.Field[bool] `json:"share_localhost"`
 	// Unrestricted gives the sandbox the whole browser over CDP, with nothing
 	// filtered: every window and tab including people's, every site's cookies, and
 	// commands that close or crash the browser. Taking over its window does not pause
@@ -127,4 +140,22 @@ type SandboxBrowserAttachmentNewParams struct {
 
 func (r SandboxBrowserAttachmentNewParams) MarshalJSON() (data []byte, err error) {
 	return apijson.MarshalRoot(r)
+}
+
+// Controller is who drives a window opened with no sandbox: "human" (default) for
+// a person in the live view, or "agent" for a client that drives it over
+// api_cdp_url. A sandbox's window always starts with "agent".
+type SandboxBrowserAttachmentNewParamsController string
+
+const (
+	SandboxBrowserAttachmentNewParamsControllerAgent SandboxBrowserAttachmentNewParamsController = "agent"
+	SandboxBrowserAttachmentNewParamsControllerHuman SandboxBrowserAttachmentNewParamsController = "human"
+)
+
+func (r SandboxBrowserAttachmentNewParamsController) IsKnown() bool {
+	switch r {
+	case SandboxBrowserAttachmentNewParamsControllerAgent, SandboxBrowserAttachmentNewParamsControllerHuman:
+		return true
+	}
+	return false
 }

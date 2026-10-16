@@ -31,9 +31,11 @@ func TestSandboxBrowserAttachmentNewWithOptionalParams(t *testing.T) {
 		context.TODO(),
 		"name",
 		langsmith.SandboxBrowserAttachmentNewParams{
-			Name:         langsmith.F("name"),
-			Sandbox:      langsmith.F("sandbox"),
-			Unrestricted: langsmith.F(true),
+			Controller:     langsmith.F(langsmith.SandboxBrowserAttachmentNewParamsControllerAgent),
+			Name:           langsmith.F("name"),
+			Sandbox:        langsmith.F("sandbox"),
+			ShareLocalhost: langsmith.F(true),
+			Unrestricted:   langsmith.F(true),
 		},
 	)
 	if err != nil {
