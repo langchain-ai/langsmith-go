@@ -1,5 +1,14 @@
 # Changelog
 
+## [0.28.3](https://github.com/langchain-ai/langsmith-go/compare/v0.28.2...v0.28.3) (2026-10-17)
+
+
+### Features
+
+* **sandboxes:** add argv exec and the browser beta to the Go SDK ([efa785f](https://github.com/langchain-ai/langsmith-go/commit/efa785f198a47991a755a3e594029c3812382025))
+* **sandboxes:** browser window controller, view/act links and window size ([b7afe16](https://github.com/langchain-ai/langsmith-go/commit/b7afe16318e65fd31753fb618d7ed807c980e78c))
+* **sandboxes:** let browser sandboxes share an attached sandbox's localhost ([6b5c0fd](https://github.com/langchain-ai/langsmith-go/commit/6b5c0fdf533a8862f1071b48a1f9233e07d0bc1d))
+
 ## [0.28.2](https://github.com/langchain-ai/langsmith-go/compare/v0.28.1...v0.28.2) (2026-10-16)
 
 
