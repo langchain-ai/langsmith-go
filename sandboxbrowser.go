@@ -61,37 +61,26 @@ func (r *SandboxBrowserService) Get(ctx context.Context, name string, opts ...op
 	return res, err
 }
 
-// Beta: change a running browser's settings. Changing hidpi relaunches Chrome:
-// logins survive, open tabs do not, and attached sandboxes reconnect to fresh
-// windows.
-func (r *SandboxBrowserService) Update(ctx context.Context, name string, body SandboxBrowserUpdateParams, opts ...option.RequestOption) (res *BrowserResponse, err error) {
+// Beta: load the unpacked extensions placed in the browser's
+// /var/lib/browserd/extensions (one per directory) that its Chrome does not have
+// yet. Chrome loads them while running, so windows, tabs and connections are left
+// as they are. Extensions already loaded stay loaded, even if removed from the
+// directory, until Chrome next launches.
+func (r *SandboxBrowserService) LoadExtensions(ctx context.Context, name string, opts ...option.RequestOption) (res *SandboxBrowserLoadExtensionsResponse, err error) {
 	opts = slices.Concat(r.Options, opts)
 	if name == "" {
 		err = errors.New("missing required name parameter")
 		return nil, err
 	}
-	path := fmt.Sprintf("api/v2/sandboxes/browsers/%s", name)
-	err = requestconfig.ExecuteNewRequest(ctx, http.MethodPatch, path, body, &res, opts...)
-	return res, err
-}
-
-// Beta: restart the browser. "warm" (default) stops and starts the browser sandbox
-// keeping its memory, "cold" reboots it from disk, and "browser" relaunches only
-// Chrome. Logins survive all three; attached sandboxes reconnect to fresh windows.
-func (r *SandboxBrowserService) Restart(ctx context.Context, name string, body SandboxBrowserRestartParams, opts ...option.RequestOption) (res *BrowserResponse, err error) {
-	opts = slices.Concat(r.Options, opts)
-	if name == "" {
-		err = errors.New("missing required name parameter")
-		return nil, err
-	}
-	path := fmt.Sprintf("api/v2/sandboxes/browsers/%s/restart", name)
-	err = requestconfig.ExecuteNewRequest(ctx, http.MethodPost, path, body, &res, opts...)
+	path := fmt.Sprintf("api/v2/sandboxes/browsers/%s/extensions/load", name)
+	err = requestconfig.ExecuteNewRequest(ctx, http.MethodPost, path, nil, &res, opts...)
 	return res, err
 }
 
 // BrowserAttachment is one window of a browser (beta).
 type BrowserAttachment struct {
-	ID string `json:"id"`
+	ID     string `json:"id"`
+	ActURL string `json:"act_url"`
 	// APICDPURL is the same Chrome DevTools endpoint through the LangSmith API, for
 	// clients outside any sandbox. It takes any API credential: headers as for any API
 	// call (X-Api-Key, or Authorization: Bearer with an OAuth access token, plus
@@ -106,10 +95,12 @@ type BrowserAttachment struct {
 	// each client connected through api_cdp_url. An unrestricted window's connections
 	// are not listed.
 	Clients []string `json:"clients"`
-	// Controller is "agent" while the attached sandbox drives the window and "human"
+	// Controller is "agent" while the attached sandbox drives the window and "user"
 	// while a person has taken it over.
-	Controller BrowserAttachmentController `json:"controller"`
-	CreatedAt  string                      `json:"created_at"`
+	Controller    BrowserAttachmentController `json:"controller"`
+	CreatedAt     string                      `json:"created_at"`
+	Height        int64                       `json:"height"`
+	LinksExpireAt string                      `json:"links_expire_at"`
 	// LocalhostAlias is the sandbox's localhost as the browser sees it: open
 	// http://<localhost_alias>:<port> in a window to reach a server listening on that
 	// port in the sandbox, whether bound to localhost or to all interfaces (any port
@@ -128,25 +119,39 @@ type BrowserAttachment struct {
 	// filtered: every window and tab, every site's cookies, and commands that close or
 	// crash the browser. Taking over such a window does not pause its sandbox, and the
 	// LSBrowserControl domain is not available.
-	Unrestricted bool                  `json:"unrestricted"`
-	JSON         browserAttachmentJSON `json:"-"`
+	Unrestricted bool `json:"unrestricted"`
+	// ViewURL and ActURL open the window on the sandbox service domain with no
+	// LangSmith login, for an agent to send to a person: ViewURL to watch it, ActURL
+	// also to use it while its controller is "user". Anyone holding a link can open
+	// the window until LinksExpireAt. Each response mints new ones; they are returned
+	// only to those who may use the browser.
+	ViewURL string `json:"view_url"`
+	// Width and Height are the window's page size in CSS pixels, when it was given
+	// one; a window without one keeps Chrome's default of 1280x800.
+	Width int64                 `json:"width"`
+	JSON  browserAttachmentJSON `json:"-"`
 }
 
 // browserAttachmentJSON contains the JSON metadata for the struct
 // [BrowserAttachment]
 type browserAttachmentJSON struct {
 	ID             apijson.Field
+	ActURL         apijson.Field
 	APICdpURL      apijson.Field
 	CdpURL         apijson.Field
 	Clients        apijson.Field
 	Controller     apijson.Field
 	CreatedAt      apijson.Field
+	Height         apijson.Field
+	LinksExpireAt  apijson.Field
 	LocalhostAlias apijson.Field
 	Name           apijson.Field
 	Reason         apijson.Field
 	Sandbox        apijson.Field
 	Tabs           apijson.Field
 	Unrestricted   apijson.Field
+	ViewURL        apijson.Field
+	Width          apijson.Field
 	raw            string
 	ExtraFields    map[string]apijson.Field
 }
@@ -159,18 +164,18 @@ func (r browserAttachmentJSON) RawJSON() string {
 	return r.raw
 }
 
-// Controller is "agent" while the attached sandbox drives the window and "human"
+// Controller is "agent" while the attached sandbox drives the window and "user"
 // while a person has taken it over.
 type BrowserAttachmentController string
 
 const (
 	BrowserAttachmentControllerAgent BrowserAttachmentController = "agent"
-	BrowserAttachmentControllerHuman BrowserAttachmentController = "human"
+	BrowserAttachmentControllerUser  BrowserAttachmentController = "user"
 )
 
 func (r BrowserAttachmentController) IsKnown() bool {
 	switch r {
-	case BrowserAttachmentControllerAgent, BrowserAttachmentControllerHuman:
+	case BrowserAttachmentControllerAgent, BrowserAttachmentControllerUser:
 		return true
 	}
 	return false
@@ -233,10 +238,33 @@ func (r browserTabJSON) RawJSON() string {
 	return r.raw
 }
 
+type SandboxBrowserLoadExtensionsResponse struct {
+	// Loaded are the ids of the extensions this call loaded; empty when Chrome already
+	// had every extension in the directory.
+	Loaded []string                                 `json:"loaded"`
+	JSON   sandboxBrowserLoadExtensionsResponseJSON `json:"-"`
+}
+
+// sandboxBrowserLoadExtensionsResponseJSON contains the JSON metadata for the
+// struct [SandboxBrowserLoadExtensionsResponse]
+type sandboxBrowserLoadExtensionsResponseJSON struct {
+	Loaded      apijson.Field
+	raw         string
+	ExtraFields map[string]apijson.Field
+}
+
+func (r *SandboxBrowserLoadExtensionsResponse) UnmarshalJSON(data []byte) (err error) {
+	return apijson.UnmarshalRoot(data, r)
+}
+
+func (r sandboxBrowserLoadExtensionsResponseJSON) RawJSON() string {
+	return r.raw
+}
+
 type SandboxBrowserNewParams struct {
 	// HiDPI renders pages at twice the resolution, so the live view is sharp on HiDPI
 	// screens, at four times the pixels for the browser to render and stream. Off by
-	// default.
+	// default, and fixed once the browser is created.
 	Hidpi param.Field[bool] `json:"hidpi"`
 	// IdleTTLSeconds stops the browser after this long without use. A stopped browser
 	// resumes with its memory on the next connection. Defaults to the sandbox default;
@@ -253,45 +281,4 @@ type SandboxBrowserNewParams struct {
 
 func (r SandboxBrowserNewParams) MarshalJSON() (data []byte, err error) {
 	return apijson.MarshalRoot(r)
-}
-
-type SandboxBrowserUpdateParams struct {
-	// HiDPI renders pages at twice the resolution. Changing it relaunches Chrome:
-	// logins survive, open tabs do not, and attached sandboxes reconnect to fresh
-	// windows.
-	Hidpi param.Field[bool] `json:"hidpi"`
-}
-
-func (r SandboxBrowserUpdateParams) MarshalJSON() (data []byte, err error) {
-	return apijson.MarshalRoot(r)
-}
-
-type SandboxBrowserRestartParams struct {
-	// Mode is "warm" (default) to stop and start the browser sandbox keeping its
-	// memory, "cold" to reboot it from disk, or "browser" to relaunch only Chrome.
-	// Logins survive all three.
-	Mode param.Field[SandboxBrowserRestartParamsMode] `json:"mode"`
-}
-
-func (r SandboxBrowserRestartParams) MarshalJSON() (data []byte, err error) {
-	return apijson.MarshalRoot(r)
-}
-
-// Mode is "warm" (default) to stop and start the browser sandbox keeping its
-// memory, "cold" to reboot it from disk, or "browser" to relaunch only Chrome.
-// Logins survive all three.
-type SandboxBrowserRestartParamsMode string
-
-const (
-	SandboxBrowserRestartParamsModeWarm    SandboxBrowserRestartParamsMode = "warm"
-	SandboxBrowserRestartParamsModeCold    SandboxBrowserRestartParamsMode = "cold"
-	SandboxBrowserRestartParamsModeBrowser SandboxBrowserRestartParamsMode = "browser"
-)
-
-func (r SandboxBrowserRestartParamsMode) IsKnown() bool {
-	switch r {
-	case SandboxBrowserRestartParamsModeWarm, SandboxBrowserRestartParamsModeCold, SandboxBrowserRestartParamsModeBrowser:
-		return true
-	}
-	return false
 }

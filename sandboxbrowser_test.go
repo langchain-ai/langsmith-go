@@ -67,7 +67,7 @@ func TestSandboxBrowserGet(t *testing.T) {
 	}
 }
 
-func TestSandboxBrowserUpdateWithOptionalParams(t *testing.T) {
+func TestSandboxBrowserLoadExtensions(t *testing.T) {
 	t.Skip("Mock server tests are disabled")
 	baseURL := "http://localhost:4010"
 	if envURL, ok := os.LookupEnv("TEST_API_BASE_URL"); ok {
@@ -81,43 +81,7 @@ func TestSandboxBrowserUpdateWithOptionalParams(t *testing.T) {
 		option.WithAPIKey("My API Key"),
 		option.WithTenantID("My Tenant ID"),
 	)
-	_, err := client.Sandboxes.Browsers.Update(
-		context.TODO(),
-		"name",
-		langsmith.SandboxBrowserUpdateParams{
-			Hidpi: langsmith.F(true),
-		},
-	)
-	if err != nil {
-		var apierr *langsmith.Error
-		if errors.As(err, &apierr) {
-			t.Log(string(apierr.DumpRequest(true)))
-		}
-		t.Fatalf("err should be nil: %s", err.Error())
-	}
-}
-
-func TestSandboxBrowserRestartWithOptionalParams(t *testing.T) {
-	t.Skip("Mock server tests are disabled")
-	baseURL := "http://localhost:4010"
-	if envURL, ok := os.LookupEnv("TEST_API_BASE_URL"); ok {
-		baseURL = envURL
-	}
-	if !testutil.CheckTestServer(t, baseURL) {
-		return
-	}
-	client := langsmith.NewClient(
-		option.WithBaseURL(baseURL),
-		option.WithAPIKey("My API Key"),
-		option.WithTenantID("My Tenant ID"),
-	)
-	_, err := client.Sandboxes.Browsers.Restart(
-		context.TODO(),
-		"name",
-		langsmith.SandboxBrowserRestartParams{
-			Mode: langsmith.F(langsmith.SandboxBrowserRestartParamsModeWarm),
-		},
-	)
+	_, err := client.Sandboxes.Browsers.LoadExtensions(context.TODO(), "name")
 	if err != nil {
 		var apierr *langsmith.Error
 		if errors.As(err, &apierr) {

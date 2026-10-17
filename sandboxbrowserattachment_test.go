@@ -32,10 +32,44 @@ func TestSandboxBrowserAttachmentNewWithOptionalParams(t *testing.T) {
 		"name",
 		langsmith.SandboxBrowserAttachmentNewParams{
 			Controller:     langsmith.F(langsmith.SandboxBrowserAttachmentNewParamsControllerAgent),
+			Height:         langsmith.F(int64(300)),
 			Name:           langsmith.F("name"),
 			Sandbox:        langsmith.F("sandbox"),
 			ShareLocalhost: langsmith.F(true),
 			Unrestricted:   langsmith.F(true),
+			Width:          langsmith.F(int64(400)),
+		},
+	)
+	if err != nil {
+		var apierr *langsmith.Error
+		if errors.As(err, &apierr) {
+			t.Log(string(apierr.DumpRequest(true)))
+		}
+		t.Fatalf("err should be nil: %s", err.Error())
+	}
+}
+
+func TestSandboxBrowserAttachmentUpdateWithOptionalParams(t *testing.T) {
+	t.Skip("Mock server tests are disabled")
+	baseURL := "http://localhost:4010"
+	if envURL, ok := os.LookupEnv("TEST_API_BASE_URL"); ok {
+		baseURL = envURL
+	}
+	if !testutil.CheckTestServer(t, baseURL) {
+		return
+	}
+	client := langsmith.NewClient(
+		option.WithBaseURL(baseURL),
+		option.WithAPIKey("My API Key"),
+		option.WithTenantID("My Tenant ID"),
+	)
+	_, err := client.Sandboxes.Browsers.Attachments.Update(
+		context.TODO(),
+		"name",
+		"attachment_id",
+		langsmith.SandboxBrowserAttachmentUpdateParams{
+			Height: langsmith.F(int64(300)),
+			Width:  langsmith.F(int64(400)),
 		},
 	)
 	if err != nil {
@@ -75,7 +109,7 @@ func TestSandboxBrowserAttachmentDelete(t *testing.T) {
 	}
 }
 
-func TestSandboxBrowserAttachmentHandBack(t *testing.T) {
+func TestSandboxBrowserAttachmentSetControllerWithOptionalParams(t *testing.T) {
 	t.Skip("Mock server tests are disabled")
 	baseURL := "http://localhost:4010"
 	if envURL, ok := os.LookupEnv("TEST_API_BASE_URL"); ok {
@@ -89,38 +123,13 @@ func TestSandboxBrowserAttachmentHandBack(t *testing.T) {
 		option.WithAPIKey("My API Key"),
 		option.WithTenantID("My Tenant ID"),
 	)
-	_, err := client.Sandboxes.Browsers.Attachments.HandBack(
+	_, err := client.Sandboxes.Browsers.Attachments.SetController(
 		context.TODO(),
 		"name",
 		"attachment_id",
-	)
-	if err != nil {
-		var apierr *langsmith.Error
-		if errors.As(err, &apierr) {
-			t.Log(string(apierr.DumpRequest(true)))
-		}
-		t.Fatalf("err should be nil: %s", err.Error())
-	}
-}
-
-func TestSandboxBrowserAttachmentTakeOver(t *testing.T) {
-	t.Skip("Mock server tests are disabled")
-	baseURL := "http://localhost:4010"
-	if envURL, ok := os.LookupEnv("TEST_API_BASE_URL"); ok {
-		baseURL = envURL
-	}
-	if !testutil.CheckTestServer(t, baseURL) {
-		return
-	}
-	client := langsmith.NewClient(
-		option.WithBaseURL(baseURL),
-		option.WithAPIKey("My API Key"),
-		option.WithTenantID("My Tenant ID"),
-	)
-	_, err := client.Sandboxes.Browsers.Attachments.TakeOver(
-		context.TODO(),
-		"name",
-		"attachment_id",
+		langsmith.SandboxBrowserAttachmentSetControllerParams{
+			Controller: langsmith.F(langsmith.SandboxBrowserAttachmentSetControllerParamsControllerAgent),
+		},
 	)
 	if err != nil {
 		var apierr *langsmith.Error
