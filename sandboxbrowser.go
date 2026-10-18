@@ -8,6 +8,7 @@ import (
 	"fmt"
 	"net/http"
 	"slices"
+	"time"
 
 	"github.com/langchain-ai/langsmith-go/internal/apijson"
 	"github.com/langchain-ai/langsmith-go/internal/param"
@@ -100,7 +101,7 @@ type BrowserAttachment struct {
 	Controller    BrowserAttachmentController `json:"controller"`
 	CreatedAt     string                      `json:"created_at"`
 	Height        int64                       `json:"height"`
-	LinksExpireAt string                      `json:"links_expire_at"`
+	LinksExpireAt time.Time                   `json:"links_expire_at" format:"date-time"`
 	// LocalhostAlias is the sandbox's localhost as the browser sees it: open
 	// http://<localhost_alias>:<port> in a window to reach a server listening on that
 	// port in the sandbox, whether bound to localhost or to all interfaces (any port

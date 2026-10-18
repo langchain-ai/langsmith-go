@@ -774,6 +774,16 @@ Methods:
 - <code title="delete /api/v2/sandboxes/browsers/{name}/attachments/{attachment_id}">client.Sandboxes.Browsers.Attachments.<a href="https://pkg.go.dev/github.com/langchain-ai/langsmith-go#SandboxBrowserAttachmentService.Delete">Delete</a>(ctx <a href="https://pkg.go.dev/context">context</a>.<a href="https://pkg.go.dev/context#Context">Context</a>, name <a href="https://pkg.go.dev/builtin#string">string</a>, attachmentID <a href="https://pkg.go.dev/builtin#string">string</a>) <a href="https://pkg.go.dev/builtin#error">error</a></code>
 - <code title="post /api/v2/sandboxes/browsers/{name}/attachments/{attachment_id}/controller">client.Sandboxes.Browsers.Attachments.<a href="https://pkg.go.dev/github.com/langchain-ai/langsmith-go#SandboxBrowserAttachmentService.SetController">SetController</a>(ctx <a href="https://pkg.go.dev/context">context</a>.<a href="https://pkg.go.dev/context#Context">Context</a>, name <a href="https://pkg.go.dev/builtin#string">string</a>, attachmentID <a href="https://pkg.go.dev/builtin#string">string</a>, body <a href="https://pkg.go.dev/github.com/langchain-ai/langsmith-go">langsmith</a>.<a href="https://pkg.go.dev/github.com/langchain-ai/langsmith-go#SandboxBrowserAttachmentSetControllerParams">SandboxBrowserAttachmentSetControllerParams</a>) (\*<a href="https://pkg.go.dev/github.com/langchain-ai/langsmith-go">langsmith</a>.<a href="https://pkg.go.dev/github.com/langchain-ai/langsmith-go#BrowserAttachment">BrowserAttachment</a>, <a href="https://pkg.go.dev/builtin#error">error</a>)</code>
 
+#### Links
+
+Response Types:
+
+- <a href="https://pkg.go.dev/github.com/langchain-ai/langsmith-go">langsmith</a>.<a href="https://pkg.go.dev/github.com/langchain-ai/langsmith-go#BrowserWindowLinks">BrowserWindowLinks</a>
+
+Methods:
+
+- <code title="post /api/v2/sandboxes/browsers/{name}/attachments/{attachment_id}/links">client.Sandboxes.Browsers.Attachments.Links.<a href="https://pkg.go.dev/github.com/langchain-ai/langsmith-go#SandboxBrowserAttachmentLinkService.New">New</a>(ctx <a href="https://pkg.go.dev/context">context</a>.<a href="https://pkg.go.dev/context#Context">Context</a>, name <a href="https://pkg.go.dev/builtin#string">string</a>, attachmentID <a href="https://pkg.go.dev/builtin#string">string</a>, body <a href="https://pkg.go.dev/github.com/langchain-ai/langsmith-go">langsmith</a>.<a href="https://pkg.go.dev/github.com/langchain-ai/langsmith-go#SandboxBrowserAttachmentLinkNewParams">SandboxBrowserAttachmentLinkNewParams</a>) (\*<a href="https://pkg.go.dev/github.com/langchain-ai/langsmith-go">langsmith</a>.<a href="https://pkg.go.dev/github.com/langchain-ai/langsmith-go#BrowserWindowLinks">BrowserWindowLinks</a>, <a href="https://pkg.go.dev/builtin#error">error</a>)</code>
+
 #### Tabs
 
 Methods:

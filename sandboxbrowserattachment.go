@@ -26,6 +26,7 @@ import (
 // the [NewSandboxBrowserAttachmentService] method instead.
 type SandboxBrowserAttachmentService struct {
 	Options []option.RequestOption
+	Links   *SandboxBrowserAttachmentLinkService
 	Tabs    *SandboxBrowserAttachmentTabService
 }
 
@@ -35,6 +36,7 @@ type SandboxBrowserAttachmentService struct {
 func NewSandboxBrowserAttachmentService(opts ...option.RequestOption) (r *SandboxBrowserAttachmentService) {
 	r = &SandboxBrowserAttachmentService{}
 	r.Options = opts
+	r.Links = NewSandboxBrowserAttachmentLinkService(opts...)
 	r.Tabs = NewSandboxBrowserAttachmentTabService(opts...)
 	return
 }
