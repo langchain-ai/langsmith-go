@@ -64,17 +64,19 @@ func TestTraceQueryWithOptionalParams(t *testing.T) {
 		option.WithTenantID("My Tenant ID"),
 	)
 	_, err := client.Traces.Query(context.TODO(), langsmith.TraceQueryParams{
-		AISearch:     langsmith.F("A run that contains a billing dispute"),
-		Cursor:       langsmith.F("cursor"),
-		MaxStartTime: langsmith.F(time.Now()),
-		MinStartTime: langsmith.F(time.Now()),
-		PageSize:     langsmith.F(int64(20)),
-		ProjectID:    langsmith.F("018e4c7e-a9fb-7ef0-a5b6-6ea3a82e9327"),
-		Selects:      langsmith.F([]langsmith.RunSelectField{langsmith.RunSelectFieldID, langsmith.RunSelectFieldName, langsmith.RunSelectFieldStartTime, langsmith.RunSelectFieldStatus, langsmith.RunSelectFieldTotalTokens, langsmith.RunSelectFieldTotalCost, langsmith.RunSelectFieldFirstTokenTime}),
-		TraceFilter:  langsmith.F(`eq(status, "error")`),
-		TraceIDs:     langsmith.F([]string{"182bd5e5-6e1a-4fe4-a799-aa6d9a6ab26e"}),
-		TreeFilter:   langsmith.F(`has(tags, "production")`),
-		Accept:       langsmith.F("Accept"),
+		AISearch:              langsmith.F("A run that contains a billing dispute"),
+		Cursor:                langsmith.F("cursor"),
+		MaxFeedbackModifiedAt: langsmith.F(time.Now()),
+		MaxStartTime:          langsmith.F(time.Now()),
+		MinFeedbackModifiedAt: langsmith.F(time.Now()),
+		MinStartTime:          langsmith.F(time.Now()),
+		PageSize:              langsmith.F(int64(20)),
+		ProjectID:             langsmith.F("018e4c7e-a9fb-7ef0-a5b6-6ea3a82e9327"),
+		Selects:               langsmith.F([]langsmith.RunSelectField{langsmith.RunSelectFieldID, langsmith.RunSelectFieldName, langsmith.RunSelectFieldStartTime, langsmith.RunSelectFieldStatus, langsmith.RunSelectFieldTotalTokens, langsmith.RunSelectFieldTotalCost, langsmith.RunSelectFieldFirstTokenTime}),
+		TraceFilter:           langsmith.F(`eq(status, "error")`),
+		TraceIDs:              langsmith.F([]string{"182bd5e5-6e1a-4fe4-a799-aa6d9a6ab26e"}),
+		TreeFilter:            langsmith.F(`has(tags, "production")`),
+		Accept:                langsmith.F("Accept"),
 	})
 	if err != nil {
 		var apierr *langsmith.Error

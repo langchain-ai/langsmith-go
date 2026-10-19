@@ -295,9 +295,21 @@ type TraceQueryParams struct {
 	AISearch param.Field[string] `json:"ai_search"`
 	// `cursor` is the opaque string returned in a previous response's `next_cursor`.
 	Cursor param.Field[string] `json:"cursor"`
+	// `max_feedback_modified_at` is the exclusive upper bound (RFC3339) on feedback
+	// `modified_at`, applied to the feedback conditions in `trace_filter` or
+	// `tree_filter` (for example eq(feedback_key, "correctness")). Requires at least
+	// one feedback condition. Root runs must still fall within the `start_time`
+	// window.
+	MaxFeedbackModifiedAt param.Field[time.Time] `json:"max_feedback_modified_at" format:"date-time"`
 	// `max_start_time` is the exclusive upper bound for the root-run start time scan
 	// (RFC3339). Defaults to the request time when omitted.
 	MaxStartTime param.Field[time.Time] `json:"max_start_time" format:"date-time"`
+	// `min_feedback_modified_at` is the inclusive lower bound (RFC3339) on feedback
+	// `modified_at`, applied to the feedback conditions in `trace_filter` or
+	// `tree_filter` (for example eq(feedback_key, "correctness")). Requires at least
+	// one feedback condition. Root runs must still fall within the `start_time`
+	// window.
+	MinFeedbackModifiedAt param.Field[time.Time] `json:"min_feedback_modified_at" format:"date-time"`
 	// `min_start_time` is the inclusive lower bound for the root-run start time scan
 	// (RFC3339). Defaults to 24 hours before the request when omitted.
 	MinStartTime param.Field[time.Time] `json:"min_start_time" format:"date-time"`
