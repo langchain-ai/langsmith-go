@@ -50,8 +50,8 @@ func TestContextHubMountOmitsOptionalFields(t *testing.T) {
 
 func TestContextHubMountUsableAsMountUnion(t *testing.T) {
 	params := SandboxBoxNewParams{
-		MountConfig: F(SandboxBoxNewParamsMountConfig{
-			Mounts: F([]SandboxBoxNewParamsMountConfigMountUnion{
+		MountConfig: F(SandboxMountConfigParam{
+			Mounts: F([]SandboxMountConfigMountsUnionParam{
 				ContextHubMount(ContextHubMountParams{
 					ID:        "memories",
 					MountPath: "/memories",

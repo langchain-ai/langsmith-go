@@ -20,17 +20,17 @@ type ContextHubMountParams struct {
 // MountPath and the caller's credentials must have access to the repo. The sync
 // is one-way: files written under MountPath in the sandbox are never pushed
 // back to the repo, and the next sync overwrites them.
-func ContextHubMount(params ContextHubMountParams) SandboxBoxNewParamsMountConfigMountsSandboxapiContextHubRepoMountSpec {
-	contextHub := SandboxBoxNewParamsMountConfigMountsSandboxapiContextHubRepoMountSpecContexthub{
+func ContextHubMount(params ContextHubMountParams) SandboxMountConfigMountsSandboxapiContextHubRepoMountSpecParam {
+	contextHub := SandboxMountConfigMountsSandboxapiContextHubRepoMountSpecContexthubParam{
 		Repo: F(params.Repo),
 	}
 	if params.InitialPullOnly {
 		contextHub.InitialPullOnly = F(true)
 	}
 
-	return SandboxBoxNewParamsMountConfigMountsSandboxapiContextHubRepoMountSpec{
+	return SandboxMountConfigMountsSandboxapiContextHubRepoMountSpecParam{
 		ID:         F(params.ID),
-		Type:       F(SandboxBoxNewParamsMountConfigMountsSandboxapiContextHubRepoMountSpecTypeContexthub),
+		Type:       F(SandboxMountConfigMountsSandboxapiContextHubRepoMountSpecTypeContexthub),
 		MountPath:  F(params.MountPath),
 		Contexthub: F(contextHub),
 	}

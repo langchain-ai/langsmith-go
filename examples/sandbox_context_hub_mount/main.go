@@ -47,8 +47,8 @@ func run() error {
 
 	sandbox, err := client.Sandboxes.Boxes.NewSandbox(ctx, langsmith.SandboxBoxNewParams{
 		Name: langsmith.String("context-hub-mount-sandbox"),
-		MountConfig: langsmith.F(langsmith.SandboxBoxNewParamsMountConfig{
-			Mounts: langsmith.F([]langsmith.SandboxBoxNewParamsMountConfigMountUnion{mount}),
+		MountConfig: langsmith.F(langsmith.SandboxMountConfigParam{
+			Mounts: langsmith.F([]langsmith.SandboxMountConfigMountsUnionParam{mount}),
 		}),
 	})
 	if err != nil {
