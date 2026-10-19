@@ -491,6 +491,11 @@ type SandboxBoxNewSnapshotParams struct {
 	Name param.Field[string] `json:"name" api:"required"`
 	// if omitted, creates a fresh checkpoint from the running VM
 	Checkpoint param.Field[string] `json:"checkpoint"`
+	// Must be true when the included settings hold literal secret values (opaque
+	// values rather than workspace secret references, and any env var value),
+	// acknowledging that the snapshot stores them and every sandbox created from it
+	// can use them.
+	ConfirmAllowSnapshotSecretValues param.Field[bool] `json:"confirm_allow_snapshot_secret_values"`
 	// Description says what this snapshot's image can do, so a caller can hand it to
 	// an agent as a capability summary. At most 1024 characters.
 	Description param.Field[string] `json:"description"`
@@ -498,6 +503,16 @@ type SandboxBoxNewSnapshotParams struct {
 	DockerImage param.Field[string] `json:"docker_image"`
 	// required for Docker image export unless the sandbox has a capacity
 	FsCapacityBytes param.Field[int64] `json:"fs_capacity_bytes"`
+	// Sandbox settings to carry into the snapshot. Sandboxes created from it start
+	// with each carried setting their create request leaves unset: "mounts" (the
+	// mount_config, with its auth), "proxy_config", "env_vars", "resources" (CPU and
+	// memory), "lifecycle" (idle_ttl_seconds, delete_after_stop_seconds,
+	// preserve_memory_on_stop), and "labels" (merged under this request's labels;
+	// reserved com.langchain.\* labels are left out). "all" names every one of these.
+	// VM memory is captured with include_memory, not here. Warning: mounts,
+	// proxy_config and env_vars carry the sandbox's credentials, and every sandbox
+	// created from the snapshot can use them.
+	Include param.Field[[]SandboxBoxNewSnapshotParamsInclude] `json:"include"`
 	// IncludeMemory, when true, captures a full VM memory snapshot alongside the
 	// filesystem clone. Only honored when the sandbox is running AND Checkpoint is
 	// omitted (i.e. a fresh in-VM checkpoint is requested). Defaults to false to keep
@@ -515,6 +530,26 @@ type SandboxBoxNewSnapshotParams struct {
 
 func (r SandboxBoxNewSnapshotParams) MarshalJSON() (data []byte, err error) {
 	return apijson.MarshalRoot(r)
+}
+
+type SandboxBoxNewSnapshotParamsInclude string
+
+const (
+	SandboxBoxNewSnapshotParamsIncludeAll         SandboxBoxNewSnapshotParamsInclude = "all"
+	SandboxBoxNewSnapshotParamsIncludeMounts      SandboxBoxNewSnapshotParamsInclude = "mounts"
+	SandboxBoxNewSnapshotParamsIncludeProxyConfig SandboxBoxNewSnapshotParamsInclude = "proxy_config"
+	SandboxBoxNewSnapshotParamsIncludeEnvVars     SandboxBoxNewSnapshotParamsInclude = "env_vars"
+	SandboxBoxNewSnapshotParamsIncludeResources   SandboxBoxNewSnapshotParamsInclude = "resources"
+	SandboxBoxNewSnapshotParamsIncludeLifecycle   SandboxBoxNewSnapshotParamsInclude = "lifecycle"
+	SandboxBoxNewSnapshotParamsIncludeLabels      SandboxBoxNewSnapshotParamsInclude = "labels"
+)
+
+func (r SandboxBoxNewSnapshotParamsInclude) IsKnown() bool {
+	switch r {
+	case SandboxBoxNewSnapshotParamsIncludeAll, SandboxBoxNewSnapshotParamsIncludeMounts, SandboxBoxNewSnapshotParamsIncludeProxyConfig, SandboxBoxNewSnapshotParamsIncludeEnvVars, SandboxBoxNewSnapshotParamsIncludeResources, SandboxBoxNewSnapshotParamsIncludeLifecycle, SandboxBoxNewSnapshotParamsIncludeLabels:
+		return true
+	}
+	return false
 }
 
 // RunConfig overrides the runtime configuration the snapshot carries: for a

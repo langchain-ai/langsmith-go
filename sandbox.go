@@ -4989,18 +4989,30 @@ type SnapshotResponse struct {
 	CreatedBy string `json:"created_by"`
 	// Description says what this snapshot's image can do, so a caller can hand it to
 	// an agent as a capability summary.
-	Description     string            `json:"description"`
-	DockerImage     string            `json:"docker_image"`
-	FsCapacityBytes int64             `json:"fs_capacity_bytes"`
-	FsUsedBytes     int64             `json:"fs_used_bytes"`
-	ImageDigest     string            `json:"image_digest"`
-	Labels          map[string]string `json:"labels"`
+	Description     string `json:"description"`
+	DockerImage     string `json:"docker_image"`
+	FsCapacityBytes int64  `json:"fs_capacity_bytes"`
+	FsUsedBytes     int64  `json:"fs_used_bytes"`
+	ImageDigest     string `json:"image_digest"`
+	// The settings this snapshot carries, in include terms: sandboxes created from it
+	// start with each one their create request leaves unset. Env var values are never
+	// returned.
+	Included []SnapshotResponseIncluded `json:"included"`
+	Labels   map[string]string          `json:"labels"`
 	// MemorySnapshotSizeBytes is non-nil iff the snapshot was captured with VM memory
 	// state. A non-nil value is the canonical signal that this snapshot can
 	// warm-restore from memory; nil means rootfs only.
-	MemorySnapshotSizeBytes int64  `json:"memory_snapshot_size_bytes"`
-	Name                    string `json:"name"`
-	RegistryID              string `json:"registry_id"`
+	MemorySnapshotSizeBytes int64 `json:"memory_snapshot_size_bytes"`
+	// The mount_config sandboxes created from this snapshot start with when their
+	// create request has none, with secret values redacted. Present only on snapshots
+	// captured with include "mounts" or "all" from a sandbox that had mounts.
+	MountConfig SandboxMountConfig `json:"mount_config"`
+	Name        string             `json:"name"`
+	// The proxy_config sandboxes created from this snapshot start with when their
+	// create request has none, with secret values redacted. Present only on snapshots
+	// captured with include "proxy_config" or "all".
+	ProxyConfig ProxyConfig `json:"proxy_config"`
+	RegistryID  string      `json:"registry_id"`
 	// RunConfig is what sandboxes from this snapshot boot with. Absent on snapshots
 	// built before it was recorded, which run as root with their own env.
 	RunConfig       SnapshotResponseRunConfig `json:"run_config"`
@@ -5025,9 +5037,12 @@ type snapshotResponseJSON struct {
 	FsCapacityBytes         apijson.Field
 	FsUsedBytes             apijson.Field
 	ImageDigest             apijson.Field
+	Included                apijson.Field
 	Labels                  apijson.Field
 	MemorySnapshotSizeBytes apijson.Field
+	MountConfig             apijson.Field
 	Name                    apijson.Field
+	ProxyConfig             apijson.Field
 	RegistryID              apijson.Field
 	RunConfig               apijson.Field
 	SourceSandboxID         apijson.Field
@@ -5045,6 +5060,25 @@ func (r *SnapshotResponse) UnmarshalJSON(data []byte) (err error) {
 
 func (r snapshotResponseJSON) RawJSON() string {
 	return r.raw
+}
+
+type SnapshotResponseIncluded string
+
+const (
+	SnapshotResponseIncludedMounts      SnapshotResponseIncluded = "mounts"
+	SnapshotResponseIncludedProxyConfig SnapshotResponseIncluded = "proxy_config"
+	SnapshotResponseIncludedEnvVars     SnapshotResponseIncluded = "env_vars"
+	SnapshotResponseIncludedResources   SnapshotResponseIncluded = "resources"
+	SnapshotResponseIncludedLifecycle   SnapshotResponseIncluded = "lifecycle"
+	SnapshotResponseIncludedLabels      SnapshotResponseIncluded = "labels"
+)
+
+func (r SnapshotResponseIncluded) IsKnown() bool {
+	switch r {
+	case SnapshotResponseIncludedMounts, SnapshotResponseIncludedProxyConfig, SnapshotResponseIncludedEnvVars, SnapshotResponseIncludedResources, SnapshotResponseIncludedLifecycle, SnapshotResponseIncludedLabels:
+		return true
+	}
+	return false
 }
 
 // RunConfig is what sandboxes from this snapshot boot with. Absent on snapshots
