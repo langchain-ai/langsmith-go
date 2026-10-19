@@ -92,6 +92,23 @@ func TestOTelTracerHeaders(t *testing.T) {
 	}
 }
 
+func TestOTelTracerRejectsInvalidAddresses(t *testing.T) {
+	tests := map[string]AgentAddress{
+		"no kind":       {ID: "support-agent", Environment: "LOCAL"},
+		"not an agent":  {Kind: "EXPERIMENT", ID: "0190c3d4-0000-7000-8000-0000000000b1"},
+		"invalid parts": {Kind: "AGENT", ID: "Bad_Id", Environment: "zz"},
+	}
+	for name, literal := range tests {
+		t.Run(name, func(t *testing.T) {
+			setTracerEnv(t, nil)
+			_, err := resolveConfig([]OTelTracerOption{WithAPIKey("key"), WithAddress(literal)})
+			if !errors.Is(err, ErrInvalidAddress) {
+				t.Fatalf("error = %v, want one wrapping ErrInvalidAddress", err)
+			}
+		})
+	}
+}
+
 func TestOTelTracerRefusesAmbiguousDestinations(t *testing.T) {
 	tests := []struct {
 		name    string

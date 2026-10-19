@@ -39,6 +39,10 @@ type addressedTrace struct {
 // resolveClientDestination returns the client default: options, then env. A bad
 // env is envErr, not a failure, so runs naming their own destination still trace.
 func resolveClientDestination(project string, addr AgentAddress, l ilog.Logger) (dest destination, envErr, err error) {
+	addr, err = address.OptionalAgent(addr)
+	if err != nil {
+		return destination{}, nil, err
+	}
 	switch {
 	case project != "" && !addr.IsZero():
 		return destination{}, nil, errBothDestinations
@@ -70,6 +74,10 @@ func resolveClientDestination(project string, addr AgentAddress, l ilog.Logger) 
 // resolveDestination: the run's own project or address, then its addressed
 // trace's, then the client's.
 func (c *TracingClient) resolveDestination(id, traceID uuid.UUID, parent *uuid.UUID, sessionName string, sessionID *uuid.UUID, addr AgentAddress) (destination, error) {
+	addr, err := address.OptionalAgent(addr)
+	if err != nil {
+		return destination{}, err
+	}
 	named := sessionName != "" || sessionID != nil
 	switch {
 	case named && !addr.IsZero():

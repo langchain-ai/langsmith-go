@@ -131,3 +131,23 @@ func TestChildFollowsAddressedRoot(t *testing.T) {
 		t.Errorf("child = %v", got)
 	}
 }
+
+func TestInvalidAddressIsRejected(t *testing.T) {
+	clearAddressEnv(t)
+	c, rec := newAddressClient(t)
+	for name, a := range map[string]langsmithtracing.AgentAddress{
+		"bad literal":  {Kind: "AGENT", ID: "Bad_Id", Environment: "LOCAL"},
+		"not an agent": {Kind: "EXPERIMENT", ID: "0190c3d4-0000-7000-8000-0000000000b1"},
+	} {
+		if err := c.CreateRun(rootRun(name, func(r *langsmithtracing.RunCreate) { r.Address = a })); err == nil {
+			t.Errorf("%s: want error", name)
+		}
+	}
+	if _, err := langsmithtracing.NewTracingClient(context.Background(), langsmithtracing.WithAddress(langsmithtracing.AgentAddress{Kind: "AGENT", ID: "Bad_Id"})); err == nil {
+		t.Error("client option: want error")
+	}
+	c.Close()
+	if len(rec.ops) != 0 {
+		t.Errorf("ops sent = %d, want 0", len(rec.ops))
+	}
+}

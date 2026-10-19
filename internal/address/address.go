@@ -2,6 +2,7 @@
 package address
 
 import (
+	"encoding/json"
 	"errors"
 	"fmt"
 	"os"
@@ -27,83 +28,189 @@ var uuidPattern = regexp.MustCompile(`^(?i:[0-9a-f]{8}-[0-9a-f]{4}-[0-9a-f]{4}-[
 
 var environments = []string{"LOCAL", "DEVELOPMENT", "STAGING", "PRODUCTION"}
 
-// APIAddress is an address as the query APIs take it. Environment is set only for AGENT.
-type APIAddress struct {
-	Kind        string
-	ID          string
-	Environment string
-}
+var errNoKind = fmt.Errorf("%w: the address is unset or has no kind", ErrInvalidAddress)
+
+const (
+	KindAgent      = "AGENT"
+	KindExperiment = "EXPERIMENT"
+	KindEvaluator  = "EVALUATOR"
+)
 
 // Address names the tracing project of a feature.
 type Address interface {
-	ToAPIAddress() APIAddress
 	isAddress()
 }
 
-// AgentAddress is an agent environment. The zero value is unset.
+// AgentAddress is an agent environment. The zero value is unset. Build one with
+// [NewAgentAddress]; a literal must set Kind to [KindAgent].
 type AgentAddress struct {
-	id          string
-	environment string // upper case
+	Kind        string `json:"kind,omitzero"`
+	ID          string `json:"id,omitempty"`
+	Environment string `json:"environment,omitempty"`
 }
 
 func NewAgentAddress(id, environment string) (AgentAddress, error) {
-	if !agentIDPattern.MatchString(id) {
-		return AgentAddress{}, fmt.Errorf("%w: agent id must be 1 to 63 lowercase ASCII letters, digits, or hyphens, start with a letter, and end with a letter or digit", ErrInvalidAddress)
-	}
-	env := strings.ToUpper(environment)
-	for _, e := range environments {
-		if env == e {
-			return AgentAddress{id: id, environment: env}, nil
-		}
-	}
-	return AgentAddress{}, fmt.Errorf("%w: environment must be one of %s", ErrInvalidAddress, strings.ToLower(strings.Join(environments, ", ")))
+	return EnsureAgent(AgentAddress{Kind: KindAgent, ID: id, Environment: environment})
 }
 
 func (AgentAddress) isAddress() {}
 
 func (a AgentAddress) IsZero() bool { return a == AgentAddress{} }
 
-func (a AgentAddress) ID() string { return a.id }
-
-func (a AgentAddress) Environment() string { return a.environment }
-
-func (a AgentAddress) ToAPIAddress() APIAddress {
-	return APIAddress{Kind: "AGENT", ID: a.id, Environment: a.environment}
+func (a *AgentAddress) UnmarshalJSON(data []byte) error {
+	type plain AgentAddress
+	var v plain
+	if skip, err := decode(data, &v); skip || err != nil {
+		return err
+	}
+	if v == (plain{}) { // the marshalled zero value
+		*a = AgentAddress{}
+		return nil
+	}
+	e, err := EnsureAgent(AgentAddress(v))
+	if err == nil {
+		*a = e
+	}
+	return err
 }
 
 // LRN returns the wire form, `lrn:agents/{id}/environments/{environment}`.
 func LRN(a AgentAddress) string {
-	return "lrn:agents/" + a.id + "/environments/" + strings.ToLower(a.environment)
+	return "lrn:agents/" + a.ID + "/environments/" + strings.ToLower(a.Environment)
 }
 
 // ExperimentAddress is an experiment's project. It cannot receive traces.
 type ExperimentAddress struct {
-	id string
+	Kind string `json:"kind,omitzero"`
+	ID   string `json:"id,omitempty"`
 }
 
 func NewExperimentAddress(id string) (ExperimentAddress, error) {
-	if !uuidPattern.MatchString(id) {
-		return ExperimentAddress{}, fmt.Errorf("%w: experiment id must be a UUID with hyphens", ErrInvalidAddress)
+	a, err := Ensure(ExperimentAddress{Kind: KindExperiment, ID: id})
+	if err != nil {
+		return ExperimentAddress{}, err
 	}
-	return ExperimentAddress{id: strings.ToLower(id)}, nil
+	return a.(ExperimentAddress), nil
 }
 
 func (ExperimentAddress) isAddress() {}
 
-func (a ExperimentAddress) ID() string { return a.id }
-
-func (a ExperimentAddress) ToAPIAddress() APIAddress {
-	return APIAddress{Kind: "EXPERIMENT", ID: a.id}
+func (a *ExperimentAddress) UnmarshalJSON(data []byte) error {
+	type plain ExperimentAddress
+	var v plain
+	if skip, err := decode(data, &v); skip || err != nil {
+		return err
+	}
+	if v == (plain{}) { // the marshalled zero value
+		*a = ExperimentAddress{}
+		return nil
+	}
+	e, err := Ensure(ExperimentAddress(v))
+	if err == nil {
+		*a = e.(ExperimentAddress)
+	}
+	return err
 }
 
 // EvaluatorAddress is the workspace's evaluator project. It cannot receive traces.
-type EvaluatorAddress struct{}
+type EvaluatorAddress struct {
+	Kind string `json:"kind,omitzero"`
+}
 
-func NewEvaluatorAddress() EvaluatorAddress { return EvaluatorAddress{} }
+func NewEvaluatorAddress() EvaluatorAddress { return EvaluatorAddress{Kind: KindEvaluator} }
 
 func (EvaluatorAddress) isAddress() {}
 
-func (EvaluatorAddress) ToAPIAddress() APIAddress { return APIAddress{Kind: "EVALUATOR"} }
+func (a *EvaluatorAddress) UnmarshalJSON(data []byte) error {
+	type plain EvaluatorAddress
+	var v plain
+	if skip, err := decode(data, &v); skip || err != nil {
+		return err
+	}
+	if v == (plain{}) { // the marshalled zero value
+		*a = EvaluatorAddress{}
+		return nil
+	}
+	e, err := Ensure(EvaluatorAddress(v))
+	if err == nil {
+		*a = e.(EvaluatorAddress)
+	}
+	return err
+}
+
+// decode reports skip for JSON null, which leaves the value unset.
+func decode(data []byte, v any) (skip bool, err error) {
+	if string(data) == "null" {
+		return true, nil
+	}
+	if json.Unmarshal(data, v) != nil {
+		return false, fmt.Errorf("%w: not an address object", ErrInvalidAddress)
+	}
+	return false, nil
+}
+
+func Ensure(a Address) (Address, error) {
+	switch v := a.(type) {
+	case AgentAddress:
+		return EnsureAgent(v)
+	case *AgentAddress:
+		if v != nil {
+			return EnsureAgent(*v)
+		}
+	case ExperimentAddress:
+		if v.Kind == "" {
+			return nil, errNoKind
+		}
+		if v.Kind == KindExperiment && uuidPattern.MatchString(v.ID) {
+			return ExperimentAddress{Kind: KindExperiment, ID: strings.ToLower(v.ID)}, nil
+		}
+		return nil, fmt.Errorf("%w: an experiment address needs kind %s and an id that is a UUID with hyphens", ErrInvalidAddress, KindExperiment)
+	case *ExperimentAddress:
+		if v != nil {
+			return Ensure(*v)
+		}
+	case EvaluatorAddress:
+		if v.Kind == "" {
+			return nil, errNoKind
+		}
+		if v.Kind == KindEvaluator {
+			return v, nil
+		}
+		return nil, fmt.Errorf("%w: an evaluator address needs kind %s", ErrInvalidAddress, KindEvaluator)
+	case *EvaluatorAddress:
+		if v != nil {
+			return Ensure(*v)
+		}
+	}
+	return nil, fmt.Errorf("%w: not an agent, experiment or evaluator address", ErrInvalidAddress)
+}
+
+// EnsureAgent rejects any kind but AGENT: only an agent can receive traces.
+func EnsureAgent(a AgentAddress) (AgentAddress, error) {
+	if a.Kind == "" {
+		return AgentAddress{}, errNoKind
+	}
+	if a.Kind != KindAgent {
+		return AgentAddress{}, fmt.Errorf("%w: only an %s address can receive traces", ErrInvalidAddress, KindAgent)
+	}
+	if !agentIDPattern.MatchString(a.ID) {
+		return AgentAddress{}, fmt.Errorf("%w: agent id must be 1 to 63 lowercase ASCII letters, digits, or hyphens, start with a letter, and end with a letter or digit", ErrInvalidAddress)
+	}
+	env := strings.ToUpper(a.Environment)
+	for _, e := range environments {
+		if env == e {
+			return AgentAddress{Kind: KindAgent, ID: a.ID, Environment: env}, nil
+		}
+	}
+	return AgentAddress{}, fmt.Errorf("%w: environment must be one of %s", ErrInvalidAddress, strings.ToLower(strings.Join(environments, ", ")))
+}
+
+func OptionalAgent(a AgentAddress) (AgentAddress, error) {
+	if a.IsZero() {
+		return a, nil
+	}
+	return EnsureAgent(a)
+}
 
 // FromEnv returns the zero address if neither env var is set, and an error
 // wrapping [ErrEnvAddress] if only one is set or a value is invalid.

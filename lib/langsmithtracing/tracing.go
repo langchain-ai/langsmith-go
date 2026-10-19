@@ -12,6 +12,7 @@ import (
 
 	"github.com/google/uuid"
 
+	"github.com/langchain-ai/langsmith-go/internal/address"
 	"github.com/langchain-ai/langsmith-go/lib/langsmithtracing/internal/env"
 	ilog "github.com/langchain-ai/langsmith-go/lib/langsmithtracing/internal/logger"
 	"github.com/langchain-ai/langsmith-go/lib/langsmithtracing/internal/models"
@@ -378,10 +379,14 @@ func (c *TracingClient) UpdateRun(r *RunUpdate) error {
 		runInfo["session_id"] = r.SessionID.String()
 	}
 	if !r.Address.IsZero() {
+		addr, err := address.OptionalAgent(r.Address)
+		if err != nil {
+			return err
+		}
 		if r.SessionName != "" || r.SessionID != nil {
 			return errBothDestinations
 		}
-		c.applyDestination(runInfo, destination{address: r.Address})
+		c.applyDestination(runInfo, destination{address: addr})
 	}
 	if r.ReferenceExampleID != nil {
 		runInfo["reference_example_id"] = r.ReferenceExampleID.String()

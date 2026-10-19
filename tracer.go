@@ -8,6 +8,7 @@ import (
 	"strings"
 	"time"
 
+	"github.com/langchain-ai/langsmith-go/internal/address"
 	"go.opentelemetry.io/otel"
 	"go.opentelemetry.io/otel/exporters/otlp/otlptrace/otlptracehttp"
 	"go.opentelemetry.io/otel/propagation"
@@ -193,6 +194,11 @@ func resolveConfig(opts []OTelTracerOption) (*tracerConfig, error) {
 	if cfg.apiKey == "" {
 		cfg.apiKey = os.Getenv("LANGSMITH_API_KEY")
 	}
+	addr, err := address.OptionalAgent(cfg.address)
+	if err != nil {
+		return nil, err
+	}
+	cfg.address = addr
 	if !cfg.address.IsZero() && cfg.projectName != "" {
 		return nil, errors.New("langsmith: WithAddress and WithProjectName cannot be combined")
 	}
@@ -222,8 +228,8 @@ func (c *tracerConfig) headers() map[string]string {
 		headers["Langsmith-Project"] = c.projectName
 		return headers
 	}
-	headers["Langsmith-Agent-Id"] = c.address.ID()
-	headers["Langsmith-Agent-Environment"] = strings.ToLower(c.address.Environment())
+	headers["Langsmith-Agent-Id"] = c.address.ID
+	headers["Langsmith-Agent-Environment"] = strings.ToLower(c.address.Environment)
 	return headers
 }
 
