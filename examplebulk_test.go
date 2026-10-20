@@ -42,6 +42,9 @@ func TestExampleBulkNew(t *testing.T) {
 			Outputs: langsmith.F(map[string]interface{}{
 				"foo": "bar",
 			}),
+			ReferenceOutputs: langsmith.F(map[string]interface{}{
+				"foo": "bar",
+			}),
 			SourceRunID:             langsmith.F("182bd5e5-6e1a-4fe4-a799-aa6d9a6ab26e"),
 			SourceRunStartTime:      langsmith.F(time.Now()),
 			SourceSessionID:         langsmith.F("182bd5e5-6e1a-4fe4-a799-aa6d9a6ab26e"),

@@ -64,12 +64,16 @@ func (r ExampleBulkNewParams) MarshalJSON() (data []byte, err error) {
 // Example with optional created_at to prevent duplicate versions in bulk
 // operations.
 type ExampleBulkNewParamsBody struct {
-	DatasetID          param.Field[string]                             `json:"dataset_id" api:"required" format:"uuid"`
-	ID                 param.Field[string]                             `json:"id" format:"uuid"`
-	CreatedAt          param.Field[string]                             `json:"created_at"`
-	Inputs             param.Field[map[string]interface{}]             `json:"inputs"`
-	Metadata           param.Field[map[string]interface{}]             `json:"metadata"`
+	DatasetID param.Field[string]                 `json:"dataset_id" api:"required" format:"uuid"`
+	ID        param.Field[string]                 `json:"id" format:"uuid"`
+	CreatedAt param.Field[string]                 `json:"created_at"`
+	Inputs    param.Field[map[string]interface{}] `json:"inputs"`
+	Metadata  param.Field[map[string]interface{}] `json:"metadata"`
+	// Deprecated: use reference_outputs instead.
+	//
+	// Deprecated: deprecated
 	Outputs            param.Field[map[string]interface{}]             `json:"outputs"`
+	ReferenceOutputs   param.Field[map[string]interface{}]             `json:"reference_outputs"`
 	SourceRunID        param.Field[string]                             `json:"source_run_id" format:"uuid"`
 	SourceRunStartTime param.Field[time.Time]                          `json:"source_run_start_time" format:"date-time"`
 	SourceSessionID    param.Field[string]                             `json:"source_session_id" format:"uuid"`
