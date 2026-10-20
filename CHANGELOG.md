@@ -1,5 +1,34 @@
 # Changelog
 
+## [0.28.3](https://github.com/langchain-ai/langsmith-go/compare/v0.28.2...v0.28.3) (2026-10-20)
+
+
+### Features
+
+* **evaluators:** add a decision evaluator type ([34a3f25](https://github.com/langchain-ai/langsmith-go/commit/34a3f254693e0a3276aacb724005f266d244732b))
+* **runs:** add feedback modified_at window to /v2/traces/query ([23bde37](https://github.com/langchain-ai/langsmith-go/commit/23bde371ee7b46f2197a66c737eb8ddf71276ac8))
+* **sandboxes:** add argv exec and the browser beta to the Go SDK ([efa785f](https://github.com/langchain-ai/langsmith-go/commit/efa785f198a47991a755a3e594029c3812382025))
+* **sandboxes:** browser window controller, view/act links and window size ([b7afe16](https://github.com/langchain-ai/langsmith-go/commit/b7afe16318e65fd31753fb618d7ed807c980e78c))
+* **sandboxes:** carry sandbox settings into snapshots with include ([e089f91](https://github.com/langchain-ai/langsmith-go/commit/e089f9189aae8447cdbbf9ae36506e5463802123))
+* **sandboxes:** embeddable browser window links with control signals ([a67680f](https://github.com/langchain-ai/langsmith-go/commit/a67680f490129aa5c4ee73d04f3270e59bfb91ee))
+* **sandboxes:** let browser sandboxes share an attached sandbox's localhost ([6b5c0fd](https://github.com/langchain-ai/langsmith-go/commit/6b5c0fdf533a8862f1071b48a1f9233e07d0bc1d))
+
+
+### Bug Fixes
+
+* **sdks:** serialize Go addresses as plain data ([609d169](https://github.com/langchain-ai/langsmith-go/commit/609d1696b95f4b8db27c6fd2b88ac2e09ef757f9))
+* support Standard Units in sandbox cost breakdowns ([bee5e4c](https://github.com/langchain-ai/langsmith-go/commit/bee5e4c5a0e6de975ef80228b343404b37445319))
+
+
+### Chores
+
+* **sdks:** stop committing generated .stats.yml ([37ed706](https://github.com/langchain-ai/langsmith-go/commit/37ed706325ead9367c557712f23590b2ffa652f5))
+
+
+### Build System
+
+* **sdks:** share sandbox mount and proxy config models ([f2230fa](https://github.com/langchain-ai/langsmith-go/commit/f2230fabc36de8abd2d233fdf6833b45606193ed))
+
 ## [0.28.2](https://github.com/langchain-ai/langsmith-go/compare/v0.28.1...v0.28.2) (2026-10-16)
 
 
