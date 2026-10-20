@@ -5119,19 +5119,29 @@ type SandboxListUsageCostsResponse struct {
 	PeriodStart  time.Time                                 `json:"period_start" api:"required" format:"date-time"`
 	ResourceID   string                                    `json:"resource_id" api:"required" format:"uuid"`
 	ResourceType SandboxListUsageCostsResponseResourceType `json:"resource_type" api:"required"`
-	JSON         sandboxListUsageCostsResponseJSON         `json:"-"`
+	// Recorded compute usage in Standard Units, as a decimal string, separate from
+	// LCU. Null means complete Standard compute usage is unavailable; "0" means known
+	// zero usage.
+	ComputeStandardUnits string `json:"compute_standard_units" api:"nullable" format:"decimal"`
+	// Allocated storage usage in Standard Units, as a decimal string, separate from
+	// LSU. Null means complete Standard storage usage is unavailable; "0" means known
+	// zero usage.
+	StorageStandardUnits string                            `json:"storage_standard_units" api:"nullable" format:"decimal"`
+	JSON                 sandboxListUsageCostsResponseJSON `json:"-"`
 }
 
 // sandboxListUsageCostsResponseJSON contains the JSON metadata for the struct
 // [SandboxListUsageCostsResponse]
 type sandboxListUsageCostsResponseJSON struct {
-	Lcu          apijson.Field
-	Lsu          apijson.Field
-	PeriodStart  apijson.Field
-	ResourceID   apijson.Field
-	ResourceType apijson.Field
-	raw          string
-	ExtraFields  map[string]apijson.Field
+	Lcu                  apijson.Field
+	Lsu                  apijson.Field
+	PeriodStart          apijson.Field
+	ResourceID           apijson.Field
+	ResourceType         apijson.Field
+	ComputeStandardUnits apijson.Field
+	StorageStandardUnits apijson.Field
+	raw                  string
+	ExtraFields          map[string]apijson.Field
 }
 
 func (r *SandboxListUsageCostsResponse) UnmarshalJSON(data []byte) (err error) {
