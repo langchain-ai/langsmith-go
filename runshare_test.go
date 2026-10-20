@@ -13,7 +13,7 @@ import (
 	"github.com/langchain-ai/langsmith-go/option"
 )
 
-func TestRunShareNewWithOptionalParams(t *testing.T) {
+func TestRunShareNew(t *testing.T) {
 	t.Skip("Mock server tests are disabled")
 	baseURL := "http://localhost:4010"
 	if envURL, ok := os.LookupEnv("TEST_API_BASE_URL"); ok {
@@ -44,7 +44,7 @@ func TestRunShareNewWithOptionalParams(t *testing.T) {
 	}
 }
 
-func TestRunShareDeleteWithOptionalParams(t *testing.T) {
+func TestRunShareDelete(t *testing.T) {
 	t.Skip("Mock server tests are disabled")
 	baseURL := "http://localhost:4010"
 	if envURL, ok := os.LookupEnv("TEST_API_BASE_URL"); ok {

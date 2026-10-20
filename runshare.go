@@ -87,9 +87,9 @@ func (r runShareNewResponseJSON) RawJSON() string {
 
 type RunShareNewParams struct {
 	// session_id is the tracing project UUID containing the trace.
-	SessionID param.Field[string] `json:"session_id" format:"uuid"`
+	SessionID param.Field[string] `json:"session_id" api:"required" format:"uuid"`
 	// trace_id is the root trace UUID to share.
-	TraceID param.Field[string] `json:"trace_id" format:"uuid"`
+	TraceID param.Field[string] `json:"trace_id" api:"required" format:"uuid"`
 }
 
 func (r RunShareNewParams) MarshalJSON() (data []byte, err error) {
@@ -98,7 +98,7 @@ func (r RunShareNewParams) MarshalJSON() (data []byte, err error) {
 
 type RunShareDeleteParams struct {
 	// session_id is the tracing project UUID containing the trace.
-	SessionID param.Field[string] `json:"session_id" format:"uuid"`
+	SessionID param.Field[string] `json:"session_id" api:"required" format:"uuid"`
 }
 
 func (r RunShareDeleteParams) MarshalJSON() (data []byte, err error) {
