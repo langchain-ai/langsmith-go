@@ -610,13 +610,14 @@ func (r onlineEvaluatorSpendGroupJSON) RawJSON() string {
 type OnlineEvaluatorType string
 
 const (
-	OnlineEvaluatorTypeLlm  OnlineEvaluatorType = "llm"
-	OnlineEvaluatorTypeCode OnlineEvaluatorType = "code"
+	OnlineEvaluatorTypeLlm           OnlineEvaluatorType = "llm"
+	OnlineEvaluatorTypeCode          OnlineEvaluatorType = "code"
+	OnlineEvaluatorTypeDecisionModel OnlineEvaluatorType = "decision_model"
 )
 
 func (r OnlineEvaluatorType) IsKnown() bool {
 	switch r {
-	case OnlineEvaluatorTypeLlm, OnlineEvaluatorTypeCode:
+	case OnlineEvaluatorTypeLlm, OnlineEvaluatorTypeCode, OnlineEvaluatorTypeDecisionModel:
 		return true
 	}
 	return false
@@ -885,8 +886,8 @@ type OnlineEvaluatorSpendParams struct {
 	// Filter grouped results to evaluators, projects, or datasets tagged with all
 	// supplied tag value IDs. Only valid with group_by.
 	TagValueID param.Field[[]string] `query:"tag_value_id"`
-	// Filter grouped results by evaluator type: 'llm' or 'code'. Only valid with
-	// group_by.
+	// Filter grouped results by evaluator type: 'llm', 'code' or 'decision_model'.
+	// Only valid with group_by.
 	Type param.Field[string] `query:"type"`
 }
 
