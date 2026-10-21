@@ -8,6 +8,7 @@ import (
 	"testing"
 
 	"github.com/langchain-ai/langsmith-go"
+	"github.com/langchain-ai/langsmith-go/packages/pagination"
 )
 
 // repoOwner extracts the owner from a repo's FullName ("owner/handle").
@@ -30,11 +31,13 @@ func TestRepoCRUD(t *testing.T) {
 	handle := uniqueName("go-integ-prompt")
 
 	// Create repo
-	created, err := client.Repos.New(ctx, langsmith.RepoNewParams{
-		RepoHandle:  langsmith.F(handle),
-		IsPublic:    langsmith.F(false),
-		Description: langsmith.F("Integration test prompt"),
-		Tags:        langsmith.F([]string{"test", "go-sdk"}),
+	created, err := retryOn429(t, func() (*langsmith.CreateRepoResponse, error) {
+		return client.Repos.New(ctx, langsmith.RepoNewParams{
+			RepoHandle:  langsmith.F(handle),
+			IsPublic:    langsmith.F(false),
+			Description: langsmith.F("Integration test prompt"),
+			Tags:        langsmith.F([]string{"test", "go-sdk"}),
+		})
 	})
 	if err != nil {
 		t.Fatalf("create repo: %v", err)
@@ -45,7 +48,9 @@ func TestRepoCRUD(t *testing.T) {
 	owner := repoOwner(created.Repo.FullName, created.Repo.Owner)
 
 	// Get repo
-	got, err := client.Repos.Get(ctx, owner, handle)
+	got, err := retryOn429(t, func() (*langsmith.GetRepoResponse, error) {
+		return client.Repos.Get(ctx, owner, handle)
+	})
 	if err != nil {
 		t.Fatalf("get repo: %v", err)
 	}
@@ -54,15 +59,19 @@ func TestRepoCRUD(t *testing.T) {
 	}
 
 	// Update repo
-	_, err = client.Repos.Update(ctx, owner, handle, langsmith.RepoUpdateParams{
-		Description: langsmith.F("Updated description"),
+	_, err = retryOn429(t, func() (*langsmith.CreateRepoResponse, error) {
+		return client.Repos.Update(ctx, owner, handle, langsmith.RepoUpdateParams{
+			Description: langsmith.F("Updated description"),
+		})
 	})
 	if err != nil {
 		t.Fatalf("update repo: %v", err)
 	}
 
 	// Verify update persisted
-	updated, err := client.Repos.Get(ctx, owner, handle)
+	updated, err := retryOn429(t, func() (*langsmith.GetRepoResponse, error) {
+		return client.Repos.Get(ctx, owner, handle)
+	})
 	if err != nil {
 		t.Fatalf("get updated repo: %v", err)
 	}
@@ -71,8 +80,10 @@ func TestRepoCRUD(t *testing.T) {
 	}
 
 	// List repos
-	listed, err := client.Repos.List(ctx, langsmith.RepoListParams{
-		Query: langsmith.F(handle),
+	listed, err := retryOn429(t, func() (*pagination.OffsetPaginationRepos[langsmith.RepoWithLookups], error) {
+		return client.Repos.List(ctx, langsmith.RepoListParams{
+			Query: langsmith.F(handle),
+		})
 	})
 	if err != nil {
 		t.Fatalf("list repos: %v", err)
@@ -82,7 +93,9 @@ func TestRepoCRUD(t *testing.T) {
 	}
 
 	// Delete repo
-	_, err = client.Repos.Delete(ctx, owner, handle)
+	_, err = retryOn429(t, func() (*langsmith.RepoDeleteResponse, error) {
+		return client.Repos.Delete(ctx, owner, handle)
+	})
 	if err != nil {
 		t.Fatalf("delete repo: %v", err)
 	}
@@ -96,15 +109,21 @@ func TestCommitCRUD(t *testing.T) {
 	handle := uniqueName("go-integ-commit")
 
 	// Create repo first
-	created, err := client.Repos.New(ctx, langsmith.RepoNewParams{
-		RepoHandle: langsmith.F(handle),
-		IsPublic:   langsmith.F(false),
+	created, err := retryOn429(t, func() (*langsmith.CreateRepoResponse, error) {
+		return client.Repos.New(ctx, langsmith.RepoNewParams{
+			RepoHandle: langsmith.F(handle),
+			IsPublic:   langsmith.F(false),
+		})
 	})
 	if err != nil {
 		t.Fatalf("create repo: %v", err)
 	}
 	owner := repoOwner(created.Repo.FullName, created.Repo.Owner)
-	defer client.Repos.Delete(ctx, owner, handle)
+	defer func() {
+		_, _ = retryOn429(t, func() (*langsmith.RepoDeleteResponse, error) {
+			return client.Repos.Delete(ctx, owner, handle)
+		})
+	}()
 
 	// Create a commit with a simple prompt manifest
 	manifest := map[string]interface{}{
@@ -116,8 +135,10 @@ func TestCommitCRUD(t *testing.T) {
 			"template":        "Tell me a joke about {topic}",
 		},
 	}
-	commit, err := client.Commits.New(ctx, owner, handle, langsmith.CommitNewParams{
-		Manifest: langsmith.F[interface{}](manifest),
+	commit, err := retryOn429(t, func() (*langsmith.CommitNewResponse, error) {
+		return client.Commits.New(ctx, owner, handle, langsmith.CommitNewParams{
+			Manifest: langsmith.F[interface{}](manifest),
+		})
 	})
 	if err != nil {
 		t.Fatalf("create commit: %v", err)
@@ -127,7 +148,9 @@ func TestCommitCRUD(t *testing.T) {
 	}
 
 	// List commits
-	listed, err := client.Commits.List(ctx, owner, handle, langsmith.CommitListParams{})
+	listed, err := retryOn429(t, func() (*pagination.OffsetPaginationCommits[langsmith.CommitWithLookups], error) {
+		return client.Commits.List(ctx, owner, handle, langsmith.CommitListParams{})
+	})
 	if err != nil {
 		t.Fatalf("list commits: %v", err)
 	}

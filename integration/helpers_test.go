@@ -5,8 +5,10 @@ package integration
 import (
 	"context"
 	"encoding/json"
+	"errors"
 	"fmt"
 	"math/rand"
+	"net/http"
 	"os"
 	"strings"
 	"sync"
@@ -144,6 +146,31 @@ func getSpanAttrInt(spans tracetest.SpanStubs, key string) (int64, bool) {
 // Polling uses exponential backoff (500ms → 1s → 2s → 2s …) with a total
 // budget of 10s for the session lookup and 10s for the run query, keeping the
 // worst-case wall time to ~20s instead of the previous 60s.
+// retryOn429 runs call, and on HTTP 429 waits 10 seconds and tries again.
+// Three retries, then the last error is returned.
+func retryOn429[T any](t *testing.T, call func() (T, error)) (T, error) {
+	t.Helper()
+	const retries = 3
+	const pause = 10 * time.Second
+	var zero T
+	for attempt := 0; ; attempt++ {
+		result, err := call()
+		if err == nil {
+			return result, nil
+		}
+		if !isTooManyRequests(err) || attempt == retries {
+			return zero, err
+		}
+		t.Logf("LangSmith returned 429, retry %d/%d in %s", attempt+1, retries, pause)
+		time.Sleep(pause)
+	}
+}
+
+func isTooManyRequests(err error) bool {
+	var apiErr *langsmith.Error
+	return errors.As(err, &apiErr) && apiErr.StatusCode == http.StatusTooManyRequests
+}
+
 func pollForRuns(t *testing.T, projectName string, minRuns int, runName string) []langsmith.RunSchema {
 	t.Helper()
 	client := langsmith.NewClient()
