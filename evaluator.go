@@ -136,6 +136,7 @@ type Evaluator struct {
 	DatasetName                         string                    `json:"dataset_name" api:"nullable"`
 	EvaluatorID                         string                    `json:"evaluator_id" api:"nullable" format:"uuid"`
 	EvaluatorName                       string                    `json:"evaluator_name" api:"nullable"`
+	EvaluatorType                       string                    `json:"evaluator_type" api:"nullable"`
 	Evaluators                          []EvaluatorTopLevel       `json:"evaluators" api:"nullable"`
 	ExtendAnnotationQueueTraceRetention bool                      `json:"extend_annotation_queue_trace_retention" api:"nullable"`
 	ExtendDatasetTraceRetention         bool                      `json:"extend_dataset_trace_retention" api:"nullable"`
@@ -190,6 +191,7 @@ type evaluatorJSON struct {
 	DatasetName                         apijson.Field
 	EvaluatorID                         apijson.Field
 	EvaluatorName                       apijson.Field
+	EvaluatorType                       apijson.Field
 	Evaluators                          apijson.Field
 	ExtendAnnotationQueueTraceRetention apijson.Field
 	ExtendDatasetTraceRetention         apijson.Field
