@@ -40,8 +40,10 @@ func NewSandboxBrowserAttachmentLinkService(opts ...option.RequestOption) (r *Sa
 // window's pages in an iframe. Without embed_origins no page may frame them. An
 // embedded page sends its parent window messages when control changes and when it
 // connects or disconnects (see the browser guide). Either link opens the window to
-// anyone who holds it until it expires; detaching the window ends it early.
-// Minting takes being the browser's creator or a role with sandboxes:exec.
+// anyone who holds it until it expires; detaching the window ends it early. A
+// stopped browser starts when links are minted and when a link is opened, and
+// resumes with its windows. Minting takes being the browser's creator or a role
+// with sandboxes:exec.
 func (r *SandboxBrowserAttachmentLinkService) New(ctx context.Context, name string, attachmentID string, body SandboxBrowserAttachmentLinkNewParams, opts ...option.RequestOption) (res *BrowserWindowLinks, err error) {
 	opts = slices.Concat(r.Options, opts)
 	if name == "" {
