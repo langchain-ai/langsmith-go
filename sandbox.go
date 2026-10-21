@@ -4908,21 +4908,25 @@ type ServiceURLResponse struct {
 	// omitted in token mode.
 	Access     ServiceURLResponseAccess `json:"access"`
 	BrowserURL string                   `json:"browser_url"`
-	ExpiresAt  string                   `json:"expires_at"`
-	ServiceURL string                   `json:"service_url"`
-	JSON       serviceURLResponseJSON   `json:"-"`
+	// EmbedOrigins echoes the origins that may embed a LangSmith login URL,
+	// normalized; omitted when there are none.
+	EmbedOrigins []string               `json:"embed_origins"`
+	ExpiresAt    string                 `json:"expires_at"`
+	ServiceURL   string                 `json:"service_url"`
+	JSON         serviceURLResponseJSON `json:"-"`
 }
 
 // serviceURLResponseJSON contains the JSON metadata for the struct
 // [ServiceURLResponse]
 type serviceURLResponseJSON struct {
-	Token       apijson.Field
-	Access      apijson.Field
-	BrowserURL  apijson.Field
-	ExpiresAt   apijson.Field
-	ServiceURL  apijson.Field
-	raw         string
-	ExtraFields map[string]apijson.Field
+	Token        apijson.Field
+	Access       apijson.Field
+	BrowserURL   apijson.Field
+	EmbedOrigins apijson.Field
+	ExpiresAt    apijson.Field
+	ServiceURL   apijson.Field
+	raw          string
+	ExtraFields  map[string]apijson.Field
 }
 
 func (r *ServiceURLResponse) UnmarshalJSON(data []byte) (err error) {

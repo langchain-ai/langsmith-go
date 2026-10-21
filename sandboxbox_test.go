@@ -514,6 +514,7 @@ func TestSandboxBoxGenerateServiceURLWithOptionalParams(t *testing.T) {
 		"name",
 		langsmith.SandboxBoxGenerateServiceURLParams{
 			Access:           langsmith.F(langsmith.SandboxBoxGenerateServiceURLParamsAccessRestricted),
+			EmbedOrigins:     langsmith.F([]string{"string"}),
 			ExpiresInSeconds: langsmith.F(int64(0)),
 			Port:             langsmith.F(int64(0)),
 		},

@@ -185,8 +185,10 @@ func (r *SandboxBoxService) GenerateDownloadURL(ctx context.Context, name string
 // service_url (for use with the X-Langsmith-Sandbox-Service-Token header), the raw
 // token, and its expiry. Set access=restricted|workspace to instead enable durable
 // LangSmith login (no token; users authenticate with their normal LangSmith
-// session), or access=off to disable it. LangSmith login and token access are
-// mutually exclusive per service URL.
+// session), or access=off to disable it. With LangSmith login, embed_origins names
+// the pages that may show the URL in an iframe; a viewer signs in from inside the
+// frame through a LangSmith popup. LangSmith login and token access are mutually
+// exclusive per service URL.
 func (r *SandboxBoxService) GenerateServiceURL(ctx context.Context, name string, body SandboxBoxGenerateServiceURLParams, opts ...option.RequestOption) (res *ServiceURLResponse, err error) {
 	opts = slices.Concat(r.Options, opts)
 	if name == "" {
@@ -277,6 +279,9 @@ type SandboxBoxListServiceURLsResponse struct {
 	Port      int64                                   `json:"port" api:"required"`
 	// The LangSmith user who first shared this port, when known.
 	CreatedBy string `json:"created_by" format:"uuid"`
+	// Origins that may embed a LangSmith login URL in an iframe; omitted when there
+	// are none.
+	EmbedOrigins []string `json:"embed_origins"`
 	// When the share expires. Set only for "token"; a login grant does not expire.
 	ExpiresAt time.Time                             `json:"expires_at" format:"date-time"`
 	JSON      sandboxBoxListServiceURLsResponseJSON `json:"-"`
@@ -285,13 +290,14 @@ type SandboxBoxListServiceURLsResponse struct {
 // sandboxBoxListServiceURLsResponseJSON contains the JSON metadata for the struct
 // [SandboxBoxListServiceURLsResponse]
 type sandboxBoxListServiceURLsResponseJSON struct {
-	Access      apijson.Field
-	CreatedAt   apijson.Field
-	Port        apijson.Field
-	CreatedBy   apijson.Field
-	ExpiresAt   apijson.Field
-	raw         string
-	ExtraFields map[string]apijson.Field
+	Access       apijson.Field
+	CreatedAt    apijson.Field
+	Port         apijson.Field
+	CreatedBy    apijson.Field
+	EmbedOrigins apijson.Field
+	ExpiresAt    apijson.Field
+	raw          string
+	ExtraFields  map[string]apijson.Field
 }
 
 func (r *SandboxBoxListServiceURLsResponse) UnmarshalJSON(data []byte) (err error) {
@@ -649,9 +655,15 @@ type SandboxBoxGenerateServiceURLParams struct {
 	// member of the owning workspace. "off" — remove an existing LangSmith login grant
 	// and mint a token. A LangSmith login grant is durable; token mode is refused
 	// (409) while one exists.
-	Access           param.Field[SandboxBoxGenerateServiceURLParamsAccess] `json:"access"`
-	ExpiresInSeconds param.Field[int64]                                    `json:"expires_in_seconds"`
-	Port             param.Field[int64]                                    `json:"port"`
+	Access param.Field[SandboxBoxGenerateServiceURLParamsAccess] `json:"access"`
+	// EmbedOrigins are the pages allowed to show a LangSmith login service URL in an
+	// iframe, besides LangSmith itself: at most 5 origins such as
+	// https://app.example.com (http only for localhost). Valid only with access
+	// "restricted" or "workspace". Each call sets the URL's whole list, so omitting
+	// the field removes any origins set before.
+	EmbedOrigins     param.Field[[]string] `json:"embed_origins"`
+	ExpiresInSeconds param.Field[int64]    `json:"expires_in_seconds"`
+	Port             param.Field[int64]    `json:"port"`
 }
 
 func (r SandboxBoxGenerateServiceURLParams) MarshalJSON() (data []byte, err error) {
