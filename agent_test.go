@@ -93,6 +93,7 @@ func TestAgentUpdateWithOptionalParams(t *testing.T) {
 		langsmith.AgentUpdateParams{
 			AgentType:  langsmith.F(langsmith.AgentUpdateParamsAgentTypeCustom),
 			Name:       langsmith.F("name"),
+			OwnerID:    langsmith.F("182bd5e5-6e1a-4fe4-a799-aa6d9a6ab26e"),
 			SourceType: langsmith.F(langsmith.AgentUpdateParamsSourceTypeLsd),
 		},
 	)

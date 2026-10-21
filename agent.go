@@ -40,8 +40,9 @@ func NewAgentService(opts ...option.RequestOption) (r *AgentService) {
 
 // Creates an Agent with a caller-assigned ID. Returns 409 if the ID already
 // exists. Creates all four environments unless production_only is set for a FLEET
-// agent. agent_type defaults to CUSTOM. Requires permission to create projects.
-// The response does not include runtime bindings.
+// agent. agent_type defaults to CUSTOM. The authenticated user becomes the owner
+// when available. Requires permission to create projects. The response does not
+// include runtime bindings.
 func (r *AgentService) New(ctx context.Context, body AgentNewParams, opts ...option.RequestOption) (res *Agent, err error) {
 	opts = slices.Concat(r.Options, opts)
 	path := "api/v1/agents"
@@ -63,11 +64,14 @@ func (r *AgentService) Get(ctx context.Context, agentID string, query AgentGetPa
 	return res, err
 }
 
-// Updates an Agent's name, source_type, or agent_type. Omitted fields keep their
-// values. Changing agent_type requires workspaces:manage in addition to project
-// update access; repeating the current type is a no-op. Source type can change
-// only for an EXTERNAL Agent without runtime bindings. The id is immutable and is
-// rejected when present. Requires update permission on every environment project.
+// Updates an Agent's name, source_type, agent_type, or owner_id. Omitted fields
+// keep their values. Changing or clearing owner_id additionally requires
+// workspaces:manage; assigning an owner also requires workspaces:read and active
+// workspace membership. Fleet ownership cannot be changed through this endpoint.
+// Changing agent_type requires workspaces:manage in addition to project update
+// access; repeating the current type is a no-op. Source type can change only for
+// an EXTERNAL Agent without runtime bindings. The id is immutable and is rejected
+// when present. Requires update permission on every environment project.
 func (r *AgentService) Update(ctx context.Context, agentID string, body AgentUpdateParams, opts ...option.RequestOption) (res *Agent, err error) {
 	opts = slices.Concat(r.Options, opts)
 	if agentID == "" {
@@ -130,9 +134,12 @@ type Agent struct {
 	Environments []AgentEnvironment `json:"environments" api:"required"`
 	Name         string             `json:"name" api:"required"`
 	SourceType   AgentSourceType    `json:"source_type" api:"required"`
-	TagKeyID     string             `json:"tag_key_id" api:"nullable" format:"uuid"`
-	TagValueID   string             `json:"tag_value_id" api:"nullable" format:"uuid"`
-	JSON         agentJSON          `json:"-"`
+	// Owner is the owner's full name, falling back to email when available.
+	Owner      string    `json:"owner"`
+	OwnerID    string    `json:"owner_id" api:"nullable" format:"uuid"`
+	TagKeyID   string    `json:"tag_key_id" api:"nullable" format:"uuid"`
+	TagValueID string    `json:"tag_value_id" api:"nullable" format:"uuid"`
+	JSON       agentJSON `json:"-"`
 }
 
 // agentJSON contains the JSON metadata for the struct [Agent]
@@ -143,6 +150,8 @@ type agentJSON struct {
 	Environments apijson.Field
 	Name         apijson.Field
 	SourceType   apijson.Field
+	Owner        apijson.Field
+	OwnerID      apijson.Field
 	TagKeyID     apijson.Field
 	TagValueID   apijson.Field
 	raw          string
@@ -350,6 +359,8 @@ type AgentUpdateParams struct {
 	AgentType param.Field[AgentUpdateParamsAgentType] `json:"agent_type"`
 	// New display name. Omit to keep the current name.
 	Name param.Field[string] `json:"name"`
+	// Omit to leave the owner unchanged; null clears it.
+	OwnerID param.Field[string] `json:"owner_id" format:"uuid"`
 	// New runtime kind. Only EXTERNAL agents without runtime bindings can change kind.
 	SourceType param.Field[AgentUpdateParamsSourceType] `json:"source_type"`
 }
