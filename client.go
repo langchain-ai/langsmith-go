@@ -22,6 +22,7 @@ import (
 type Client struct {
 	Options          []option.RequestOption
 	ProductFeedback  *ProductFeedbackService
+	Agents           *AgentService
 	Fleet            *FleetService
 	Sessions         *SessionService
 	Examples         *ExampleService
@@ -92,6 +93,7 @@ func NewClient(opts ...option.RequestOption) (r *Client) {
 	r = &Client{Options: opts}
 
 	r.ProductFeedback = NewProductFeedbackService(opts...)
+	r.Agents = NewAgentService(opts...)
 	r.Fleet = NewFleetService(opts...)
 	r.Sessions = NewSessionService(opts...)
 	r.Examples = NewExampleService(opts...)
