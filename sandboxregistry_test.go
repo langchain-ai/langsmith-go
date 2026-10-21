@@ -118,9 +118,11 @@ func TestSandboxRegistryListWithOptionalParams(t *testing.T) {
 		option.WithTenantID("My Tenant ID"),
 	)
 	_, err := client.Sandboxes.Registries.List(context.TODO(), langsmith.SandboxRegistryListParams{
+		Cursor:       langsmith.F("cursor"),
 		Limit:        langsmith.F(int64(0)),
 		NameContains: langsmith.F("name_contains"),
 		Offset:       langsmith.F(int64(0)),
+		PageSize:     langsmith.F(int64(1)),
 	})
 	if err != nil {
 		var apierr *langsmith.Error

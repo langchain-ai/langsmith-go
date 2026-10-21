@@ -68,7 +68,11 @@ func (r *SandboxRegistryService) Update(ctx context.Context, name string, body S
 	return res, err
 }
 
-// List sandbox registries for pulling private images.
+// List sandbox registries for pulling private images. Page with page_size and
+// cursor, replaying next_cursor until it is null. Results are ordered newest
+// first, with stable ordering for equal creation times. Keep filters unchanged
+// between pages. Requests without page_size or cursor retain the legacy default of
+// 50 results. Cursor requests default to 20 results, with a maximum of 100.
 func (r *SandboxRegistryService) List(ctx context.Context, query SandboxRegistryListParams, opts ...option.RequestOption) (res *RegistryListResponse, err error) {
 	opts = slices.Concat(r.Options, opts)
 	path := "api/v2/sandboxes/registries"
@@ -90,7 +94,12 @@ func (r *SandboxRegistryService) Delete(ctx context.Context, name string, opts .
 }
 
 type RegistryListResponse struct {
-	Offset     int64                    `json:"offset"`
+	Items      []RegistryResponse `json:"items"`
+	NextCursor string             `json:"next_cursor" api:"nullable"`
+	// Deprecated: only applies to limit/offset requests. Use next_cursor when paging
+	// with a cursor.
+	Offset int64 `json:"offset"`
+	// Deprecated: use items.
 	Registries []RegistryResponse       `json:"registries"`
 	JSON       registryListResponseJSON `json:"-"`
 }
@@ -98,6 +107,8 @@ type RegistryListResponse struct {
 // registryListResponseJSON contains the JSON metadata for the struct
 // [RegistryListResponse]
 type registryListResponseJSON struct {
+	Items       apijson.Field
+	NextCursor  apijson.Field
 	Offset      apijson.Field
 	Registries  apijson.Field
 	raw         string
@@ -260,12 +271,16 @@ func (r SandboxRegistryUpdateParamsAuthType) IsKnown() bool {
 }
 
 type SandboxRegistryListParams struct {
-	// Maximum number of registries to return
+	// Opaque cursor from a prior response's next_cursor
+	Cursor param.Field[string] `query:"cursor"`
+	// Deprecated: use page_size. Maximum number of registries to return
 	Limit param.Field[int64] `query:"limit"`
 	// Filter to registries whose name contains this substring
 	NameContains param.Field[string] `query:"name_contains"`
-	// Number of registries to skip
+	// Deprecated: use cursor. Number of registries to skip
 	Offset param.Field[int64] `query:"offset"`
+	// Number of results per cursor page
+	PageSize param.Field[int64] `query:"page_size"`
 }
 
 // URLQuery serializes [SandboxRegistryListParams]'s query parameters as
