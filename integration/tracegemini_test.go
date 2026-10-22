@@ -529,7 +529,7 @@ func TestGemini_TokenUsage_NonStreaming(t *testing.T) {
 	}
 
 	if tt.SendsToLangSmith() {
-		runs := pollForRuns(t, tt.Project, 1, expectedRunName)
+		runs := pollForRunsWithUsage(t, tt.Project, 1, expectedRunName)
 		if len(runs) == 0 {
 			t.Error("expected at least one run in LangSmith for token usage")
 		} else {
@@ -570,7 +570,7 @@ func TestGemini_TokenUsage_Streaming(t *testing.T) {
 	}
 
 	if tt.SendsToLangSmith() {
-		runs := pollForRuns(t, tt.Project, 1, expectedRunName)
+		runs := pollForRunsWithUsage(t, tt.Project, 1, expectedRunName)
 		if len(runs) == 0 {
 			t.Error("expected at least one run in LangSmith for streaming token usage")
 		} else {

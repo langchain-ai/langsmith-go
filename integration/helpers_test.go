@@ -173,6 +173,25 @@ func isTooManyRequests(err error) bool {
 
 func pollForRuns(t *testing.T, projectName string, minRuns int, runName string) []langsmith.RunSchema {
 	t.Helper()
+	return pollForRunsUntil(t, projectName, minRuns, runName, nil)
+}
+
+// pollForRunsWithUsage is pollForRuns but keeps polling until every matched run
+// has token counts. Usage is populated after the run itself becomes queryable,
+// so a run found on the first poll can still report zero tokens.
+func pollForRunsWithUsage(t *testing.T, projectName string, minRuns int, runName string) []langsmith.RunSchema {
+	t.Helper()
+	return pollForRunsUntil(t, projectName, minRuns, runName, func(r langsmith.RunSchema) bool {
+		return r.PromptTokens > 0 && r.CompletionTokens > 0
+	})
+}
+
+// pollForRunsUntil polls until at least minRuns runs match runName and, when
+// ready is non-nil, every matched run satisfies ready. If the runs exist but
+// never become ready, the last matched runs are returned so the caller's
+// assertions report what is missing.
+func pollForRunsUntil(t *testing.T, projectName string, minRuns int, runName string, ready func(langsmith.RunSchema) bool) []langsmith.RunSchema {
+	t.Helper()
 	client := langsmith.NewClient()
 	ctx := context.Background()
 
@@ -215,7 +234,12 @@ func pollForRuns(t *testing.T, projectName string, minRuns int, runName string) 
 		langsmith.RunQueryParamsSelectTotalTokens,
 		langsmith.RunQueryParamsSelectMessages,
 	}
-	deadline = time.Now().Add(pollBudget)
+	runBudget := pollBudget
+	if ready != nil {
+		runBudget = 30 * time.Second
+	}
+	var lastRuns []langsmith.RunSchema
+	deadline = time.Now().Add(runBudget)
 	wait = 500 * time.Millisecond
 	for time.Now().Before(deadline) {
 		time.Sleep(wait)
@@ -238,10 +262,17 @@ func pollForRuns(t *testing.T, projectName string, minRuns int, runName string) 
 				runs = filtered
 			}
 			if len(runs) >= minRuns {
-				return runs
+				if ready == nil || allRunsReady(runs, ready) {
+					return runs
+				}
+				lastRuns = runs
 			}
 		}
 		wait = min(wait*2, 2*time.Second)
+	}
+	if lastRuns != nil {
+		t.Logf("runs in session %q still not ready after polling; asserting on last result", projectName)
+		return lastRuns
 	}
 	if runName != "" {
 		t.Errorf("expected at least %d run(s) with name %q in session %q, not found after polling", minRuns, runName, projectName)
@@ -249,6 +280,15 @@ func pollForRuns(t *testing.T, projectName string, minRuns int, runName string) 
 		t.Errorf("expected at least %d runs in session %q, not found after polling", minRuns, projectName)
 	}
 	return nil
+}
+
+func allRunsReady(runs []langsmith.RunSchema, ready func(langsmith.RunSchema) bool) bool {
+	for _, r := range runs {
+		if !ready(r) {
+			return false
+		}
+	}
+	return true
 }
 
 type LangSmithRunAssertions struct {
