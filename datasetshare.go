@@ -36,7 +36,12 @@ func NewDatasetShareService(opts ...option.RequestOption) (r *DatasetShareServic
 	return
 }
 
-// Share a dataset.
+// Share a dataset publicly and return its share token.
+//
+// Anyone with the share token can view the dataset, its examples, and its
+// experiments, including their runs and feedback, without signing in. When the
+// dataset is already shared, returns its existing share token. Fails with 403 when
+// the organization disables public sharing.
 func (r *DatasetShareService) New(ctx context.Context, datasetID string, body DatasetShareNewParams, opts ...option.RequestOption) (res *DatasetShareSchema, err error) {
 	opts = slices.Concat(r.Options, opts)
 	if datasetID == "" {
@@ -48,7 +53,9 @@ func (r *DatasetShareService) New(ctx context.Context, datasetID string, body Da
 	return res, err
 }
 
-// Get the state of sharing a dataset
+// Get a dataset's share token.
+//
+// Returns null when the dataset is not shared.
 func (r *DatasetShareService) Get(ctx context.Context, datasetID string, opts ...option.RequestOption) (res *DatasetShareSchema, err error) {
 	opts = slices.Concat(r.Options, opts)
 	if datasetID == "" {
@@ -60,7 +67,9 @@ func (r *DatasetShareService) Get(ctx context.Context, datasetID string, opts ..
 	return res, err
 }
 
-// Unshare a dataset.
+// Stop sharing a dataset.
+//
+// Its share token stops working. Succeeds when the dataset is not shared.
 func (r *DatasetShareService) DeleteAll(ctx context.Context, datasetID string, opts ...option.RequestOption) (res *DatasetShareDeleteAllResponse, err error) {
 	opts = slices.Concat(r.Options, opts)
 	if datasetID == "" {
@@ -98,6 +107,7 @@ func (r datasetShareSchemaJSON) RawJSON() string {
 type DatasetShareDeleteAllResponse = interface{}
 
 type DatasetShareNewParams struct {
+	// Deprecated and has no effect. A shared dataset always shows its experiments.
 	ShareProjects param.Field[bool] `query:"share_projects"`
 }
 
