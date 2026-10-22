@@ -40,10 +40,14 @@ func NewAgentService(opts ...option.RequestOption) (r *AgentService) {
 
 // Creates an Agent with a caller-assigned ID. Returns 409 if the ID already
 // exists. Creates all four environments unless production_only is set for a FLEET
-// agent. agent_type defaults to CUSTOM. The authenticated user becomes the owner
+// agent. source_type defaults to EXTERNAL in this SDK. agent_type defaults to
+// CUSTOM. The authenticated user becomes the owner
 // when available. Requires permission to create projects. The response does not
 // include runtime bindings.
 func (r *AgentService) New(ctx context.Context, body AgentNewParams, opts ...option.RequestOption) (res *Agent, err error) {
+	if !body.SourceType.Present {
+		body.SourceType = F(AgentNewParamsSourceTypeExternal)
+	}
 	opts = slices.Concat(r.Options, opts)
 	path := "api/v1/agents"
 	err = requestconfig.ExecuteNewRequest(ctx, http.MethodPost, path, body, &res, opts...)
@@ -276,7 +280,8 @@ type AgentNewParams struct {
 	// with a letter and ending with a letter or digit.
 	ID param.Field[string] `json:"id" api:"required"`
 	// Agent runtime kind. Use EXTERNAL for an application hosted outside LangSmith.
-	SourceType param.Field[AgentNewParamsSourceType] `json:"source_type" api:"required"`
+	// Defaults to EXTERNAL when omitted.
+	SourceType param.Field[AgentNewParamsSourceType] `json:"source_type"`
 	// AgentType defaults to CUSTOM when omitted.
 	AgentType param.Field[AgentNewParamsAgentType] `json:"agent_type"`
 	// Display name. Defaults to the agent ID.

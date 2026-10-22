@@ -4,14 +4,69 @@ package langsmith_test
 
 import (
 	"context"
+	"encoding/json"
 	"errors"
+	"net/http"
+	"net/http/httptest"
 	"os"
+	"reflect"
 	"testing"
 
 	"github.com/langchain-ai/langsmith-go"
+	"github.com/langchain-ai/langsmith-go/internal/param"
 	"github.com/langchain-ai/langsmith-go/internal/testutil"
 	"github.com/langchain-ai/langsmith-go/option"
 )
+
+func TestAgentNewSourceTypeDefault(t *testing.T) {
+	tests := []struct {
+		name       string
+		sourceType param.Field[langsmith.AgentNewParamsSourceType]
+		want       any
+	}{
+		{name: "omitted", want: "EXTERNAL"},
+		{name: "external", sourceType: langsmith.F(langsmith.AgentNewParamsSourceTypeExternal), want: "EXTERNAL"},
+		{name: "lsd", sourceType: langsmith.F(langsmith.AgentNewParamsSourceTypeLsd), want: "LSD"},
+		{name: "mda", sourceType: langsmith.F(langsmith.AgentNewParamsSourceTypeMda), want: "MDA"},
+		{name: "fleet", sourceType: langsmith.F(langsmith.AgentNewParamsSourceTypeFleet), want: "FLEET"},
+		{name: "empty", sourceType: langsmith.F(langsmith.AgentNewParamsSourceType("")), want: ""},
+		{name: "null", sourceType: langsmith.Null[langsmith.AgentNewParamsSourceType](), want: nil},
+		{name: "raw", sourceType: langsmith.Raw[langsmith.AgentNewParamsSourceType]("future-type"), want: "future-type"},
+	}
+	for _, tt := range tests {
+		t.Run(tt.name, func(t *testing.T) {
+			server := httptest.NewServer(http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
+				if r.Method != http.MethodPost || r.URL.Path != "/api/v1/agents" {
+					t.Errorf("unexpected request: %s %s", r.Method, r.URL.Path)
+				}
+				var body map[string]any
+				if err := json.NewDecoder(r.Body).Decode(&body); err != nil {
+					t.Errorf("decode request: %v", err)
+				}
+				want := map[string]any{"id": "example-agent", "name": "Example agent", "source_type": tt.want}
+				if !reflect.DeepEqual(body, want) {
+					t.Errorf("body = %#v, want %#v", body, want)
+				}
+				for key, value := range map[string]string{"x-api-key": "test-api-key", "x-tenant-id": "test-workspace", "x-test-header": "preserved"} {
+					if r.Header.Get(key) != value {
+						t.Errorf("header %s = %q, want %q", key, r.Header.Get(key), value)
+					}
+				}
+				w.Header().Set("Content-Type", "application/json")
+				_, _ = w.Write([]byte(`{"id":"example-agent"}`))
+			}))
+			defer server.Close()
+			client := langsmith.NewClient(option.WithBaseURL(server.URL), option.WithAPIKey("test-api-key"), option.WithTenantID("test-workspace"))
+			body := langsmith.AgentNewParams{ID: langsmith.F("example-agent"), Name: langsmith.F("Example agent"), SourceType: tt.sourceType}
+			if _, err := client.Agents.New(context.Background(), body, option.WithHeader("x-test-header", "preserved")); err != nil {
+				t.Fatal(err)
+			}
+			if !reflect.DeepEqual(body.SourceType, tt.sourceType) {
+				t.Fatal("caller source type was mutated")
+			}
+		})
+	}
+}
 
 func TestAgentNewWithOptionalParams(t *testing.T) {
 	t.Skip("Mock server tests are disabled")
