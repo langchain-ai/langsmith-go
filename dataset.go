@@ -123,7 +123,15 @@ func (r *DatasetService) Delete(ctx context.Context, datasetID string, opts ...o
 	return res, err
 }
 
-// Clone a dataset.
+// Copy examples from a source dataset into an existing target dataset.
+//
+// Each copied example gets a new ID and keeps the inputs, outputs, metadata, and
+// source run ID of its source example. Attachments are copied when blob storage is
+// enabled. Copying the same examples twice adds them twice. Requires the
+// datasets:clone permission on both datasets. Returns the ID, dataset ID, creation
+// and modification times, and source run ID of each new example. Without example
+// IDs, a source or target that is not found can return an empty list instead of an
+// error.
 func (r *DatasetService) Clone(ctx context.Context, body DatasetCloneParams, opts ...option.RequestOption) (res *[]DatasetCloneResponse, err error) {
 	opts = slices.Concat(r.Options, opts)
 	path := "api/v1/datasets/clone"
@@ -673,14 +681,24 @@ func (r DatasetListParamsExclude) IsKnown() bool {
 }
 
 type DatasetCloneParams struct {
+	// ID of the dataset in this workspace to copy examples from. It is not modified.
 	SourceDatasetID param.Field[string] `json:"source_dataset_id" api:"required" format:"uuid"`
+	// ID of the dataset in this workspace that receives the copied examples. Its
+	// current examples are kept.
 	TargetDatasetID param.Field[string] `json:"target_dataset_id" api:"required" format:"uuid"`
 	// Only modifications made on or before this time are included. If None, the latest
 	// version of the dataset is used.
-	AsOf        param.Field[DatasetCloneParamsAsOfUnion]  `json:"as_of" format:"date-time"`
-	Examples    param.Field[[]string]                     `json:"examples" format:"uuid"`
-	Split       param.Field[DatasetCloneParamsSplitUnion] `json:"split"`
-	TagValueIDs param.Field[[]string]                     `json:"tag_value_ids" format:"uuid"`
+	AsOf param.Field[DatasetCloneParamsAsOfUnion] `json:"as_of" format:"date-time"`
+	// IDs of source examples to copy. Defaults to every example in the source version.
+	// When IDs are given and nothing is copied, because none match or either dataset
+	// is not found, the request fails with 404.
+	Examples param.Field[[]string] `json:"examples" format:"uuid"`
+	// Split name, or list of split names, assigned to every copied example in place of
+	// its source splits. Defaults to keeping the source splits.
+	Split param.Field[DatasetCloneParamsSplitUnion] `json:"split"`
+	// List of resource tag value IDs to attach to the target dataset, up to 100.
+	// Requires the datasets:tag_on_create permission.
+	TagValueIDs param.Field[[]string] `json:"tag_value_ids" format:"uuid"`
 }
 
 func (r DatasetCloneParams) MarshalJSON() (data []byte, err error) {
@@ -695,6 +713,9 @@ type DatasetCloneParamsAsOfUnion interface {
 	ImplementsDatasetCloneParamsAsOfUnion()
 }
 
+// Split name, or list of split names, assigned to every copied example in place of
+// its source splits. Defaults to keeping the source splits.
+//
 // Satisfied by [shared.UnionString], [DatasetCloneParamsSplitArray].
 type DatasetCloneParamsSplitUnion interface {
 	ImplementsDatasetCloneParamsSplitUnion()
