@@ -734,25 +734,31 @@ func (r IssueFixVerificationStatus) IsKnown() bool {
 }
 
 type IssueFix struct {
-	ID        string       `json:"id" api:"required"`
-	Branch    string       `json:"branch" api:"required,nullable"`
-	CreatedAt time.Time    `json:"created_at" api:"required" format:"date-time"`
-	PrNumber  int64        `json:"pr_number" api:"required,nullable"`
-	RepoURL   string       `json:"repo_url" api:"required"`
-	UpdatedAt time.Time    `json:"updated_at" api:"required" format:"date-time"`
-	JSON      issueFixJSON `json:"-"`
+	ID        string             `json:"id" api:"required"`
+	Branch    string             `json:"branch" api:"required,nullable"`
+	CreatedAt time.Time          `json:"created_at" api:"required" format:"date-time"`
+	PrNumber  int64              `json:"pr_number" api:"required,nullable"`
+	Provider  IssueFixesProvider `json:"provider" api:"required"`
+	// ProviderWebBaseURL is the GitLab instance a GitLab fix lives on; null for
+	// GitHub.
+	ProviderWebBaseURL string       `json:"provider_web_base_url" api:"required,nullable"`
+	RepoURL            string       `json:"repo_url" api:"required"`
+	UpdatedAt          time.Time    `json:"updated_at" api:"required" format:"date-time"`
+	JSON               issueFixJSON `json:"-"`
 }
 
 // issueFixJSON contains the JSON metadata for the struct [IssueFix]
 type issueFixJSON struct {
-	ID          apijson.Field
-	Branch      apijson.Field
-	CreatedAt   apijson.Field
-	PrNumber    apijson.Field
-	RepoURL     apijson.Field
-	UpdatedAt   apijson.Field
-	raw         string
-	ExtraFields map[string]apijson.Field
+	ID                 apijson.Field
+	Branch             apijson.Field
+	CreatedAt          apijson.Field
+	PrNumber           apijson.Field
+	Provider           apijson.Field
+	ProviderWebBaseURL apijson.Field
+	RepoURL            apijson.Field
+	UpdatedAt          apijson.Field
+	raw                string
+	ExtraFields        map[string]apijson.Field
 }
 
 func (r *IssueFix) UnmarshalJSON(data []byte) (err error) {
@@ -761,6 +767,21 @@ func (r *IssueFix) UnmarshalJSON(data []byte) (err error) {
 
 func (r issueFixJSON) RawJSON() string {
 	return r.raw
+}
+
+type IssueFixesProvider string
+
+const (
+	IssueFixesProviderGitHub IssueFixesProvider = "github"
+	IssueFixesProviderGitlab IssueFixesProvider = "gitlab"
+)
+
+func (r IssueFixesProvider) IsKnown() bool {
+	switch r {
+	case IssueFixesProviderGitHub, IssueFixesProviderGitlab:
+		return true
+	}
+	return false
 }
 
 type IssueLinearContext struct {
