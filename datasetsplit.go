@@ -36,7 +36,12 @@ func NewDatasetSplitService(opts ...option.RequestOption) (r *DatasetSplitServic
 	return
 }
 
-// Update Dataset Splits
+// Add examples to a split, or remove them from it.
+//
+// Returns the IDs of the given examples found in the dataset. Each of them gets a
+// new version, even when its splits do not change. An example's other splits are
+// kept, and an example without a split counts as being in the base split. Removing
+// an example's last split leaves it in no split.
 func (r *DatasetSplitService) New(ctx context.Context, datasetID string, body DatasetSplitNewParams, opts ...option.RequestOption) (res *[]string, err error) {
 	opts = slices.Concat(r.Options, opts)
 	if datasetID == "" {
@@ -48,7 +53,9 @@ func (r *DatasetSplitService) New(ctx context.Context, datasetID string, body Da
 	return res, err
 }
 
-// Get Dataset Splits
+// List the split names a dataset's examples belong to.
+//
+// An example whose split was never set counts as the base split.
 func (r *DatasetSplitService) Get(ctx context.Context, datasetID string, query DatasetSplitGetParams, opts ...option.RequestOption) (res *[]string, err error) {
 	opts = slices.Concat(r.Options, opts)
 	if datasetID == "" {
@@ -61,9 +68,12 @@ func (r *DatasetSplitService) Get(ctx context.Context, datasetID string, query D
 }
 
 type DatasetSplitNewParams struct {
-	Examples  param.Field[[]string] `json:"examples" api:"required" format:"uuid"`
-	SplitName param.Field[string]   `json:"split_name" api:"required"`
-	Remove    param.Field[bool]     `json:"remove"`
+	// IDs of the examples to change. IDs of examples in other datasets are ignored.
+	Examples param.Field[[]string] `json:"examples" api:"required" format:"uuid"`
+	// Split to add the examples to, or remove them from.
+	SplitName param.Field[string] `json:"split_name" api:"required"`
+	// Remove the examples from the split instead of adding them.
+	Remove param.Field[bool] `json:"remove"`
 }
 
 func (r DatasetSplitNewParams) MarshalJSON() (data []byte, err error) {
