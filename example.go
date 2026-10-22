@@ -321,18 +321,21 @@ type ExampleListParams struct {
 	ID param.Field[[]string] `query:"id" format:"uuid"`
 	// Only modifications made on or before this time are included. If None, the latest
 	// version of the dataset is used.
-	AsOf             param.Field[ExampleListParamsAsOfUnion] `query:"as_of" format:"date-time"`
-	Dataset          param.Field[string]                     `query:"dataset" format:"uuid"`
-	Descending       param.Field[bool]                       `query:"descending"`
-	Filter           param.Field[string]                     `query:"filter"`
-	FullTextContains param.Field[[]string]                   `query:"full_text_contains"`
-	Limit            param.Field[int64]                      `query:"limit"`
-	Metadata         param.Field[string]                     `query:"metadata"`
-	Offset           param.Field[int64]                      `query:"offset"`
-	Order            param.Field[ExampleListParamsOrder]     `query:"order"`
-	RandomSeed       param.Field[float64]                    `query:"random_seed"`
-	Select           param.Field[[]ExampleSelect]            `query:"select"`
-	Splits           param.Field[[]string]                   `query:"splits"`
+	AsOf       param.Field[ExampleListParamsAsOfUnion] `query:"as_of" format:"date-time"`
+	Dataset    param.Field[string]                     `query:"dataset" format:"uuid"`
+	Descending param.Field[bool]                       `query:"descending"`
+	// Return only the fields in `select`, plus id. Other default fields (created_at,
+	// modified_at, inputs, name, dataset_id) are absent unless selected.
+	ExcludeDefaultFields param.Field[bool]                   `query:"exclude_default_fields"`
+	Filter               param.Field[string]                 `query:"filter"`
+	FullTextContains     param.Field[[]string]               `query:"full_text_contains"`
+	Limit                param.Field[int64]                  `query:"limit"`
+	Metadata             param.Field[string]                 `query:"metadata"`
+	Offset               param.Field[int64]                  `query:"offset"`
+	Order                param.Field[ExampleListParamsOrder] `query:"order"`
+	RandomSeed           param.Field[float64]                `query:"random_seed"`
+	Select               param.Field[[]ExampleSelect]        `query:"select"`
+	Splits               param.Field[[]string]               `query:"splits"`
 }
 
 // URLQuery serializes [ExampleListParams]'s query parameters as `url.Values`.
