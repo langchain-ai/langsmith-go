@@ -191,7 +191,12 @@ func (r *DatasetService) GetVersion(ctx context.Context, datasetID string, query
 	return res, err
 }
 
-// Set a tag on a dataset version.
+// Tag a dataset version.
+//
+// Points the tag at the version given by as_of, creating the tag or moving it if
+// the dataset already has it. Other tags are unchanged. Requires permission to
+// update datasets. Returns the version's time and all of its tags. Returns 400 if
+// the tag is latest, and 404 if the dataset or the as_of tag does not exist.
 func (r *DatasetService) UpdateTags(ctx context.Context, datasetID string, body DatasetUpdateTagsParams, opts ...option.RequestOption) (res *DatasetVersion, err error) {
 	opts = slices.Concat(r.Options, opts)
 	if datasetID == "" {
@@ -771,18 +776,32 @@ func (r DatasetGetVersionParams) URLQuery() (v url.Values) {
 }
 
 type DatasetUpdateTagsParams struct {
-	// Only modifications made on or before this time are included. If None, the latest
-	// version of the dataset is used.
+	// The version to tag: an ISO 8601 timestamp, or the name of an existing tag on
+	// this dataset (latest resolves to the most recent example change, and returns 404
+	// for a dataset with no examples). A value that does not parse as a timestamp is
+	// treated as a tag name, and an unknown tag name returns 404. Timestamps are not
+	// checked against the dataset history: the tag covers every example change made on
+	// or before that time, so a future time keeps picking up new changes until it
+	// passes. Use the exact as_of of an existing version, since looking up a version
+	// by tag returns 404 when the tag's time does not match a version.
 	AsOf param.Field[DatasetUpdateTagsParamsAsOfUnion] `json:"as_of" api:"required" format:"date-time"`
-	Tag  param.Field[string]                           `json:"tag" api:"required"`
+	// The tag to set. If the dataset already has this tag, it is moved to the new
+	// version. The tag latest is reserved and returns 400.
+	Tag param.Field[string] `json:"tag" api:"required"`
 }
 
 func (r DatasetUpdateTagsParams) MarshalJSON() (data []byte, err error) {
 	return apijson.MarshalRoot(r)
 }
 
-// Only modifications made on or before this time are included. If None, the latest
-// version of the dataset is used.
+// The version to tag: an ISO 8601 timestamp, or the name of an existing tag on
+// this dataset (latest resolves to the most recent example change, and returns 404
+// for a dataset with no examples). A value that does not parse as a timestamp is
+// treated as a tag name, and an unknown tag name returns 404. Timestamps are not
+// checked against the dataset history: the tag covers every example change made on
+// or before that time, so a future time keeps picking up new changes until it
+// passes. Use the exact as_of of an existing version, since looking up a version
+// by tag returns 404 when the tag's time does not match a version.
 //
 // Satisfied by [shared.UnionTime], [shared.UnionString].
 type DatasetUpdateTagsParamsAsOfUnion interface {
