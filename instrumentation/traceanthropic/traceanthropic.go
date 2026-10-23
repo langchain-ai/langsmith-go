@@ -170,9 +170,12 @@ func (rt *roundTripper) RoundTrip(req *http.Request) (*http.Response, error) {
 	}
 
 	// Extract request attributes and streaming flag
-	var streaming bool
-	if len(requestBody) > 0 {
-		streaming = extractRequestAttributes(span, requestBody)
+	model, streaming, bedrock := bedrockInvokeModel(req.URL.Path)
+	if bedrock {
+		span.SetAttributes(attribute.String("gen_ai.request.model", model))
+	}
+	if len(requestBody) > 0 && extractRequestAttributes(span, requestBody) {
+		streaming = true
 	}
 
 	// Inject span context into request headers and update request context
@@ -222,6 +225,11 @@ func (rt *roundTripper) RoundTrip(req *http.Request) (*http.Response, error) {
 			span.RecordError(endErr)
 			span.SetStatus(codes.Error, endErr.Error())
 		}
+		streamFailed := streamingLive && streamErr != nil
+		if streamFailed && !incompleteStream {
+			span.RecordError(streamErr)
+			span.SetStatus(codes.Error, streamErr.Error())
+		}
 
 		switch {
 		case streamingLive:
@@ -234,7 +242,7 @@ func (rt *roundTripper) RoundTrip(req *http.Request) (*http.Response, error) {
 		default:
 			extractResponseAttributes(span, data, parentSpan)
 		}
-		if resp.StatusCode < 400 && !incompleteStream {
+		if resp.StatusCode < 400 && !incompleteStream && !streamFailed {
 			span.SetStatus(codes.Ok, "")
 		}
 		span.End()
@@ -243,16 +251,24 @@ func (rt *roundTripper) RoundTrip(req *http.Request) (*http.Response, error) {
 	// HTTP errors so an error body doesn't inflate it.
 	if streaming && resp.StatusCode < 400 {
 		var sentNewToken bool
-		scanner := traceutil.NewSSEScanner(func(chunk map[string]any) {
+		onChunk := func(chunk map[string]any) {
 			anthropicAcc.feed(chunk)
 			if !sentNewToken && isFirstContent(chunk) {
 				sentNewToken = true
 				span.AddEvent("new_token")
 			}
-		})
-		scanner.OnDone = func() {}
-		scanner.OnError = func(err error) { streamErr = err }
-		traceutil.ScanSSE(br, scanner)
+		}
+		onError := func(err error) { streamErr = err }
+		if isAWSEventStream(resp.Header) {
+			scanner := traceutil.NewEventStreamScanner(onChunk)
+			scanner.OnError = onError
+			traceutil.ScanEventStream(br, scanner)
+		} else {
+			scanner := traceutil.NewSSEScanner(onChunk)
+			scanner.OnDone = func() {}
+			scanner.OnError = onError
+			traceutil.ScanSSE(br, scanner)
+		}
 		br.LimitBuffer(500)
 	}
 	resp.Body = br
@@ -277,10 +293,36 @@ func shouldTrace(req *http.Request) bool {
 	return isAnthropicEndpoint(req.URL.Path)
 }
 
-// isAnthropicEndpoint matches direct and Vertex Anthropic calls.
+// isAnthropicEndpoint matches direct, Vertex, and Bedrock InvokeModel Anthropic calls.
 func isAnthropicEndpoint(path string) bool {
-	return strings.Contains(path, "/v1/messages") ||
+	_, _, bedrock := bedrockInvokeModel(path)
+	return bedrock ||
+		strings.Contains(path, "/v1/messages") ||
 		strings.Contains(path, "/publishers/anthropic/")
+}
+
+// bedrockInvokeModel parses a Bedrock InvokeModel or
+// InvokeModelWithResponseStream path, /model/{modelId}/invoke or
+// /model/{modelId}/invoke-with-response-stream, after any path prefix.
+func bedrockInvokeModel(path string) (model string, streaming, ok bool) {
+	_, rest, found := strings.Cut(strings.TrimRight(path, "/"), "/model/")
+	if !found {
+		return "", false, false
+	}
+	if id, found := strings.CutSuffix(rest, "/invoke-with-response-stream"); found && id != "" {
+		return id, true, true
+	}
+	if id, found := strings.CutSuffix(rest, "/invoke"); found && id != "" {
+		return id, false, true
+	}
+	return "", false, false
+}
+
+// isAWSEventStream reports whether a response body is an AWS event stream,
+// as returned by Bedrock InvokeModelWithResponseStream.
+func isAWSEventStream(header http.Header) bool {
+	contentType := strings.ToLower(header.Get("Content-Type"))
+	return strings.HasPrefix(contentType, "application/vnd.amazon.eventstream")
 }
 
 // getSpanName returns an appropriate span name based on the API endpoint.

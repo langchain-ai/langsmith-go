@@ -3,7 +3,9 @@ package traceanthropic
 import (
 	"bytes"
 	"context"
+	"encoding/binary"
 	"encoding/json"
+	"hash/crc32"
 	"io"
 	"net/http"
 	"reflect"
@@ -11,6 +13,7 @@ import (
 	"testing"
 
 	"go.opentelemetry.io/otel/attribute"
+	"go.opentelemetry.io/otel/codes"
 	sdktrace "go.opentelemetry.io/otel/sdk/trace"
 	"go.opentelemetry.io/otel/sdk/trace/tracetest"
 )
@@ -134,6 +137,170 @@ func TestRoundTrip_AnthropicCompatibleMessagesHost(t *testing.T) {
 	}
 	if gotURL != "https://api.fireworks.ai/inference/v1/messages" {
 		t.Fatalf("http.url = %q, want Fireworks URL", gotURL)
+	}
+}
+
+func bedrockEventStream(t *testing.T, events ...string) []byte {
+	t.Helper()
+	var stream []byte
+	for _, event := range events {
+		payload, err := json.Marshal(map[string]any{"bytes": []byte(event)})
+		if err != nil {
+			t.Fatal(err)
+		}
+		var headers []byte
+		for _, kv := range [][2]string{{":message-type", "event"}, {":event-type", "chunk"}} {
+			headers = append(headers, byte(len(kv[0])))
+			headers = append(headers, kv[0]...)
+			headers = append(headers, 7)
+			headers = binary.BigEndian.AppendUint16(headers, uint16(len(kv[1])))
+			headers = append(headers, kv[1]...)
+		}
+		msg := binary.BigEndian.AppendUint32(nil, uint32(16+len(headers)+len(payload)))
+		msg = binary.BigEndian.AppendUint32(msg, uint32(len(headers)))
+		msg = binary.BigEndian.AppendUint32(msg, crc32.ChecksumIEEE(msg))
+		msg = append(append(msg, headers...), payload...)
+		stream = append(stream, binary.BigEndian.AppendUint32(msg, crc32.ChecksumIEEE(msg))...)
+	}
+	return stream
+}
+
+type bedrockTransport struct {
+	contentType string
+	body        []byte
+}
+
+func (t *bedrockTransport) RoundTrip(req *http.Request) (*http.Response, error) {
+	return &http.Response{
+		StatusCode: http.StatusOK,
+		Body:       io.NopCloser(bytes.NewReader(t.body)),
+		Header:     http.Header{"Content-Type": {t.contentType}},
+		Request:    req,
+	}, nil
+}
+
+func TestRoundTrip_BedrockInvokeModel(t *testing.T) {
+	const model = "us.anthropic.claude-haiku-4-5-20251001-v1:0"
+	for _, tc := range []struct {
+		name, action, contentType string
+		body                      []byte
+		wantNewToken              bool
+	}{
+		{
+			name: "invoke", action: "invoke", contentType: "application/json",
+			body: []byte(`{"model":"claude-haiku-4-5-20251001","content":[{"type":"text","text":"OK"}],"usage":{"input_tokens":3,"output_tokens":1},"stop_reason":"end_turn"}`),
+		},
+		{
+			name: "invoke with response stream", action: "invoke-with-response-stream",
+			contentType: "application/vnd.amazon.eventstream",
+			body: bedrockEventStream(t,
+				`{"type":"message_start","message":{"model":"claude-haiku-4-5-20251001","usage":{"input_tokens":3}}}`,
+				`{"type":"content_block_start","index":0,"content_block":{"type":"text","text":""}}`,
+				`{"type":"content_block_delta","index":0,"delta":{"type":"text_delta","text":"OK"}}`,
+				`{"type":"message_delta","delta":{"stop_reason":"end_turn"},"usage":{"output_tokens":1}}`,
+				`{"type":"message_stop"}`,
+			),
+			wantNewToken: true,
+		},
+	} {
+		t.Run(tc.name, func(t *testing.T) {
+			exporter := tracetest.NewInMemoryExporter()
+			tp := sdktrace.NewTracerProvider(sdktrace.WithSyncer(exporter))
+			client := WrapClient(&http.Client{
+				Transport: &bedrockTransport{contentType: tc.contentType, body: tc.body},
+			}, WithTracerProvider(tp))
+
+			body := `{"anthropic_version":"bedrock-2023-05-31","messages":[{"role":"user","content":"reply with OK"}],"max_tokens":64}`
+			req, err := http.NewRequestWithContext(context.Background(), http.MethodPost,
+				"https://bedrock-runtime.us-east-1.amazonaws.com/model/"+model+"/"+tc.action, strings.NewReader(body))
+			if err != nil {
+				t.Fatal(err)
+			}
+			resp, err := client.Do(req)
+			if err != nil {
+				t.Fatal(err)
+			}
+			got, err := io.ReadAll(resp.Body)
+			if err != nil {
+				t.Fatal(err)
+			}
+			resp.Body.Close()
+			if !bytes.Equal(got, tc.body) {
+				t.Error("response body must reach the caller unchanged")
+			}
+
+			spans := exporter.GetSpans()
+			if len(spans) != 1 {
+				t.Fatalf("got %d spans, want 1", len(spans))
+			}
+			span := spans[0]
+			if span.Name != "anthropic.messages" {
+				t.Errorf("span name = %q, want anthropic.messages", span.Name)
+			}
+			if span.Status.Code != codes.Ok {
+				t.Errorf("status = %v %q, want Ok", span.Status.Code, span.Status.Description)
+			}
+			attrs := make(map[string]attribute.Value)
+			for _, attr := range span.Attributes {
+				attrs[string(attr.Key)] = attr.Value
+			}
+			for key, want := range map[string]string{
+				"gen_ai.request.model":           model,
+				"gen_ai.response.model":          "claude-haiku-4-5-20251001",
+				"gen_ai.operation.name":          "chat",
+				"langsmith.metadata.stop_reason": "end_turn",
+			} {
+				if got := attrs[key].AsString(); got != want {
+					t.Errorf("%s = %q, want %q", key, got, want)
+				}
+			}
+			if got := attrs["gen_ai.completion"].AsString(); !strings.Contains(got, `"text":"OK"`) {
+				t.Errorf("gen_ai.completion = %q, want the assistant text", got)
+			}
+			if got := attrs["gen_ai.usage.total_tokens"].AsInt64(); got != 4 {
+				t.Errorf("gen_ai.usage.total_tokens = %d, want 4", got)
+			}
+			if got := hasEvent(spans, "new_token"); got != tc.wantNewToken {
+				t.Errorf("new_token event = %v, want %v", got, tc.wantNewToken)
+			}
+		})
+	}
+}
+
+func TestRoundTrip_BedrockEventStreamDecodeFailureAfterStop(t *testing.T) {
+	stream := bedrockEventStream(t,
+		`{"type":"message_start","message":{"model":"claude-haiku-4-5-20251001","usage":{"input_tokens":3}}}`,
+		`{"type":"message_stop"}`,
+	)
+	trailing := bedrockEventStream(t, `{"type":"ping"}`)
+	exporter := tracetest.NewInMemoryExporter()
+	tp := sdktrace.NewTracerProvider(sdktrace.WithSyncer(exporter))
+	client := WrapClient(&http.Client{Transport: &bedrockTransport{
+		contentType: "application/vnd.amazon.eventstream",
+		body:        append(stream, trailing[:len(trailing)-1]...),
+	}}, WithTracerProvider(tp))
+
+	req, err := http.NewRequestWithContext(context.Background(), http.MethodPost,
+		"https://bedrock-runtime.us-east-1.amazonaws.com/model/us.anthropic.claude-haiku-4-5/invoke-with-response-stream",
+		strings.NewReader(`{"anthropic_version":"bedrock-2023-05-31","messages":[],"max_tokens":64}`))
+	if err != nil {
+		t.Fatal(err)
+	}
+	resp, err := client.Do(req)
+	if err != nil {
+		t.Fatal(err)
+	}
+	if _, err := io.ReadAll(resp.Body); err != nil {
+		t.Fatal(err)
+	}
+	resp.Body.Close()
+
+	spans := exporter.GetSpans()
+	if len(spans) != 1 {
+		t.Fatalf("got %d spans, want 1", len(spans))
+	}
+	if spans[0].Status.Code != codes.Error {
+		t.Errorf("status = %v, want Error for a stream that failed to decode", spans[0].Status.Code)
 	}
 }
 
@@ -273,6 +440,10 @@ func TestGetSpanName(t *testing.T) {
 		{"/v1/messages", "anthropic.messages"},
 		{"/v1/messages?beta=true", "anthropic.messages"},
 		{"/v1/complete", "anthropic.request"},
+		{"/model/us.anthropic.claude-haiku-4-5-20251001-v1:0/invoke", "anthropic.messages"},
+		{"/base/model/global.anthropic.claude-haiku-4-5/invoke-with-response-stream", "anthropic.messages"},
+		{"/model/invoke", "anthropic.request"},
+		{"/model/us.anthropic.claude-haiku-4-5/converse", "anthropic.request"},
 		{"", "anthropic.request"},
 	}
 	for _, tt := range tests {
