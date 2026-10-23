@@ -76,7 +76,15 @@ func (r *DatasetService) Get(ctx context.Context, datasetID string, opts ...opti
 	return res, err
 }
 
-// Update a specific dataset.
+// Update a dataset.
+//
+// Only the fields in the request change; omitted fields keep their value. Setting
+// a schema or transformations checks every existing example against the result.
+// Returns 400, leaving the dataset unchanged, if an example does not match, the
+// dataset is not a key-value dataset, or a transformation points into inputs or
+// outputs that have no schema. The X-Updated-Examples-Count response header holds
+// the number of examples changed through patch_examples. Returns 404 if the
+// dataset does not exist and 409 if the new name is already used.
 func (r *DatasetService) Update(ctx context.Context, datasetID string, body DatasetUpdateParams, opts ...option.RequestOption) (res *DatasetUpdateResponse, err error) {
 	opts = slices.Concat(r.Options, opts)
 	if datasetID == "" {
@@ -537,30 +545,73 @@ func (r DatasetNewParams) MarshalJSON() (data []byte, err error) {
 }
 
 type DatasetUpdateParams struct {
-	BaselineExperimentID    param.Field[DatasetUpdateParamsBaselineExperimentIDUnion]    `json:"baseline_experiment_id" format:"uuid"`
-	Description             param.Field[DatasetUpdateParamsDescriptionUnion]             `json:"description"`
-	InputsSchemaDefinition  param.Field[DatasetUpdateParamsInputsSchemaDefinitionUnion]  `json:"inputs_schema_definition"`
-	Metadata                param.Field[DatasetUpdateParamsMetadataUnion]                `json:"metadata"`
-	Name                    param.Field[DatasetUpdateParamsNameUnion]                    `json:"name"`
+	// ID of the experiment used as the baseline when comparing experiments on this
+	// dataset. Must be an experiment run on this dataset, otherwise returns 400. Null
+	// clears it. Omit to keep the current baseline.
+	BaselineExperimentID param.Field[DatasetUpdateParamsBaselineExperimentIDUnion] `json:"baseline_experiment_id" format:"uuid"`
+	// New dataset description. Null clears it. Omit to keep the current description.
+	Description param.Field[DatasetUpdateParamsDescriptionUnion] `json:"description"`
+	// JSON Schema that example inputs must match. Replaces the current inputs schema
+	// as a whole; null removes it, which returns 400 while transformations still point
+	// into inputs. Only key-value datasets support schemas. Every existing example
+	// must match the new schema, otherwise the request returns 400 with the IDs of the
+	// examples that do not, and nothing is changed. Omit to keep the current schema.
+	InputsSchemaDefinition param.Field[DatasetUpdateParamsInputsSchemaDefinitionUnion] `json:"inputs_schema_definition"`
+	// Dataset metadata as a JSON object. Replaces the current metadata as a whole;
+	// keys are not merged. Send an empty object to clear it. Omit to keep the current
+	// metadata.
+	Metadata param.Field[DatasetUpdateParamsMetadataUnion] `json:"metadata"`
+	// New dataset name. Must be unique in the workspace; a name already used by
+	// another dataset returns 409. Null returns 400. Omit to keep the current name.
+	Name param.Field[DatasetUpdateParamsNameUnion] `json:"name"`
+	// JSON Schema that example outputs must match. Replaces the current outputs schema
+	// as a whole; null removes it, which returns 400 while transformations still point
+	// into outputs. Only key-value datasets support schemas. Every existing example
+	// must match the new schema, otherwise the request returns 400 with the IDs of the
+	// examples that do not, and nothing is changed. Omit to keep the current schema.
 	OutputsSchemaDefinition param.Field[DatasetUpdateParamsOutputsSchemaDefinitionUnion] `json:"outputs_schema_definition"`
-	PatchExamples           param.Field[map[string]DatasetUpdateParamsPatchExamples]     `json:"patch_examples"`
-	Transformations         param.Field[DatasetUpdateParamsTransformationsUnion]         `json:"transformations"`
+	// Example updates keyed by example ID, applied in the same transaction so existing
+	// examples can be fixed to match a new schema. Only used when the request also
+	// sets inputs_schema_definition, outputs_schema_definition, or transformations and
+	// the dataset ends up with at least one schema; otherwise it is ignored. Each
+	// update replaces the inputs, outputs, metadata, or split it sets and keeps the
+	// rest; attachment operations are ignored. An ID that is not an example in this
+	// dataset returns 404.
+	PatchExamples param.Field[map[string]DatasetUpdateParamsPatchExamples] `json:"patch_examples"`
+	// Transformations applied to new examples, each a path into inputs or outputs and
+	// a transformation type. Replaces the whole current list; null or an empty list
+	// removes all of them. Existing examples are not transformed. Requires a schema on
+	// the inputs or outputs the path points into, otherwise returns 400. Omit to keep
+	// the current list.
+	Transformations param.Field[DatasetUpdateParamsTransformationsUnion] `json:"transformations"`
 }
 
 func (r DatasetUpdateParams) MarshalJSON() (data []byte, err error) {
 	return apijson.MarshalRoot(r)
 }
 
+// ID of the experiment used as the baseline when comparing experiments on this
+// dataset. Must be an experiment run on this dataset, otherwise returns 400. Null
+// clears it. Omit to keep the current baseline.
+//
 // Satisfied by [shared.UnionString], [MissingParam].
 type DatasetUpdateParamsBaselineExperimentIDUnion interface {
 	ImplementsDatasetUpdateParamsBaselineExperimentIDUnion()
 }
 
+// New dataset description. Null clears it. Omit to keep the current description.
+//
 // Satisfied by [shared.UnionString], [MissingParam].
 type DatasetUpdateParamsDescriptionUnion interface {
 	ImplementsDatasetUpdateParamsDescriptionUnion()
 }
 
+// JSON Schema that example inputs must match. Replaces the current inputs schema
+// as a whole; null removes it, which returns 400 while transformations still point
+// into inputs. Only key-value datasets support schemas. Every existing example
+// must match the new schema, otherwise the request returns 400 with the IDs of the
+// examples that do not, and nothing is changed. Omit to keep the current schema.
+//
 // Satisfied by [DatasetUpdateParamsInputsSchemaDefinitionMap], [MissingParam].
 type DatasetUpdateParamsInputsSchemaDefinitionUnion interface {
 	implementsDatasetUpdateParamsInputsSchemaDefinitionUnion()
@@ -571,6 +622,10 @@ type DatasetUpdateParamsInputsSchemaDefinitionMap map[string]interface{}
 func (r DatasetUpdateParamsInputsSchemaDefinitionMap) implementsDatasetUpdateParamsInputsSchemaDefinitionUnion() {
 }
 
+// Dataset metadata as a JSON object. Replaces the current metadata as a whole;
+// keys are not merged. Send an empty object to clear it. Omit to keep the current
+// metadata.
+//
 // Satisfied by [DatasetUpdateParamsMetadataMap], [MissingParam].
 type DatasetUpdateParamsMetadataUnion interface {
 	implementsDatasetUpdateParamsMetadataUnion()
@@ -580,11 +635,20 @@ type DatasetUpdateParamsMetadataMap map[string]interface{}
 
 func (r DatasetUpdateParamsMetadataMap) implementsDatasetUpdateParamsMetadataUnion() {}
 
+// New dataset name. Must be unique in the workspace; a name already used by
+// another dataset returns 409. Null returns 400. Omit to keep the current name.
+//
 // Satisfied by [shared.UnionString], [MissingParam].
 type DatasetUpdateParamsNameUnion interface {
 	ImplementsDatasetUpdateParamsNameUnion()
 }
 
+// JSON Schema that example outputs must match. Replaces the current outputs schema
+// as a whole; null removes it, which returns 400 while transformations still point
+// into outputs. Only key-value datasets support schemas. Every existing example
+// must match the new schema, otherwise the request returns 400 with the IDs of the
+// examples that do not, and nothing is changed. Omit to keep the current schema.
+//
 // Satisfied by [DatasetUpdateParamsOutputsSchemaDefinitionMap], [MissingParam].
 type DatasetUpdateParamsOutputsSchemaDefinitionUnion interface {
 	implementsDatasetUpdateParamsOutputsSchemaDefinitionUnion()
@@ -620,6 +684,12 @@ type DatasetUpdateParamsPatchExamplesSplitArray []string
 func (r DatasetUpdateParamsPatchExamplesSplitArray) ImplementsDatasetUpdateParamsPatchExamplesSplitUnion() {
 }
 
+// Transformations applied to new examples, each a path into inputs or outputs and
+// a transformation type. Replaces the whole current list; null or an empty list
+// removes all of them. Existing examples are not transformed. Requires a schema on
+// the inputs or outputs the path points into, otherwise returns 400. Omit to keep
+// the current list.
+//
 // Satisfied by [DatasetUpdateParamsTransformationsArray], [MissingParam].
 type DatasetUpdateParamsTransformationsUnion interface {
 	implementsDatasetUpdateParamsTransformationsUnion()
