@@ -509,6 +509,12 @@ type SandboxBoxNewSnapshotParams struct {
 	DockerImage param.Field[string] `json:"docker_image"`
 	// required for Docker image export unless the sandbox has a capacity
 	FsCapacityBytes param.Field[int64] `json:"fs_capacity_bytes"`
+	// ImageConfig sets the command and ports the snapshot records, as a Docker image's
+	// ENTRYPOINT, CMD and EXPOSE do. By default a capture keeps those of the snapshot
+	// the sandbox was created from; each field given here replaces that one, and an
+	// empty list clears it. A function serving the snapshot runs this command and
+	// listens on its one exposed port.
+	ImageConfig param.Field[SandboxBoxNewSnapshotParamsImageConfig] `json:"image_config"`
 	// Sandbox settings to carry into the snapshot. Sandboxes created from it start
 	// with each carried setting their create request leaves unset: "mounts" (the
 	// mount_config, with its auth), "proxy_config", "env_vars", "resources" (CPU and
@@ -535,6 +541,25 @@ type SandboxBoxNewSnapshotParams struct {
 }
 
 func (r SandboxBoxNewSnapshotParams) MarshalJSON() (data []byte, err error) {
+	return apijson.MarshalRoot(r)
+}
+
+// ImageConfig sets the command and ports the snapshot records, as a Docker image's
+// ENTRYPOINT, CMD and EXPOSE do. By default a capture keeps those of the snapshot
+// the sandbox was created from; each field given here replaces that one, and an
+// empty list clears it. A function serving the snapshot runs this command and
+// listens on its one exposed port.
+type SandboxBoxNewSnapshotParamsImageConfig struct {
+	// Cmd follows Entrypoint, as CMD: its arguments, or the whole command when
+	// Entrypoint is empty.
+	Cmd param.Field[[]string] `json:"cmd"`
+	// Entrypoint is the program the command starts with, as ENTRYPOINT.
+	Entrypoint param.Field[[]string] `json:"entrypoint"`
+	// ExposedPorts are the TCP ports the command listens on, as EXPOSE.
+	ExposedPorts param.Field[[]int64] `json:"exposed_ports"`
+}
+
+func (r SandboxBoxNewSnapshotParamsImageConfig) MarshalJSON() (data []byte, err error) {
 	return apijson.MarshalRoot(r)
 }
 

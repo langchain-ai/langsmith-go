@@ -147,7 +147,8 @@ func getSpanAttrInt(spans tracetest.SpanStubs, key string) (int64, bool) {
 // budget of 10s for the session lookup and 10s for the run query, keeping the
 // worst-case wall time to ~20s instead of the previous 60s.
 // retryOn429 runs call, and on HTTP 429 waits 10 seconds and tries again.
-// Three retries, then the last error is returned.
+// Three retries, then the test is skipped: a rate-limited environment says nothing about the SDK.
+// Any other error is returned.
 func retryOn429[T any](t *testing.T, call func() (T, error)) (T, error) {
 	t.Helper()
 	const retries = 3
@@ -158,8 +159,11 @@ func retryOn429[T any](t *testing.T, call func() (T, error)) (T, error) {
 		if err == nil {
 			return result, nil
 		}
-		if !isTooManyRequests(err) || attempt == retries {
+		if !isTooManyRequests(err) {
 			return zero, err
+		}
+		if attempt == retries {
+			t.Skipf("LangSmith still rate limited after %d retries: %v", retries, err)
 		}
 		t.Logf("LangSmith returned 429, retry %d/%d in %s", attempt+1, retries, pause)
 		time.Sleep(pause)

@@ -405,8 +405,13 @@ func TestSandboxBoxNewSnapshotWithOptionalParams(t *testing.T) {
 			Description:                      langsmith.F("description"),
 			DockerImage:                      langsmith.F("docker_image"),
 			FsCapacityBytes:                  langsmith.F(int64(0)),
-			Include:                          langsmith.F([]langsmith.SandboxBoxNewSnapshotParamsInclude{langsmith.SandboxBoxNewSnapshotParamsIncludeAll}),
-			IncludeMemory:                    langsmith.F(true),
+			ImageConfig: langsmith.F(langsmith.SandboxBoxNewSnapshotParamsImageConfig{
+				Cmd:          langsmith.F([]string{"string"}),
+				Entrypoint:   langsmith.F([]string{"string"}),
+				ExposedPorts: langsmith.F([]int64{int64(0)}),
+			}),
+			Include:       langsmith.F([]langsmith.SandboxBoxNewSnapshotParamsInclude{langsmith.SandboxBoxNewSnapshotParamsIncludeAll}),
+			IncludeMemory: langsmith.F(true),
 			Labels: langsmith.F(map[string]string{
 				"foo": "string",
 			}),
