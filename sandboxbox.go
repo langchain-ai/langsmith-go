@@ -376,6 +376,10 @@ type SandboxBoxNewParams struct {
 	SnapshotName param.Field[string]   `json:"snapshot_name"`
 	TagValueIDs  param.Field[[]string] `json:"tag_value_ids"`
 	Vcpus        param.Field[int64]    `json:"vcpus"`
+	// Volumes (beta) attaches existing volumes at mount paths inside the sandbox. At
+	// most 4; requires sandbox volumes to be enabled for your workspace. Attaching a
+	// volume requires being its creator or holding sandboxes:exec.
+	Volumes param.Field[[]SandboxBoxNewParamsVolume] `json:"volumes"`
 }
 
 func (r SandboxBoxNewParams) MarshalJSON() (data []byte, err error) {
@@ -418,6 +422,19 @@ type SandboxBoxNewParamsRunConfig struct {
 }
 
 func (r SandboxBoxNewParamsRunConfig) MarshalJSON() (data []byte, err error) {
+	return apijson.MarshalRoot(r)
+}
+
+type SandboxBoxNewParamsVolume struct {
+	// MountPath is the absolute directory inside the sandbox where the volume appears.
+	MountPath param.Field[string] `json:"mount_path" api:"required"`
+	// Volume is the volume's ID or name.
+	Volume param.Field[string] `json:"volume" api:"required"`
+	// ReadOnly mounts the volume read-only; many sandboxes may do so at once.
+	ReadOnly param.Field[bool] `json:"read_only"`
+}
+
+func (r SandboxBoxNewParamsVolume) MarshalJSON() (data []byte, err error) {
 	return apijson.MarshalRoot(r)
 }
 

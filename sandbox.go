@@ -4770,7 +4770,10 @@ type SandboxResponse struct {
 	UpdatedAt     string                   `json:"updated_at"`
 	UpdatedBy     string                   `json:"updated_by"`
 	Vcpus         int64                    `json:"vcpus"`
-	JSON          sandboxResponseJSON      `json:"-"`
+	// Volumes (beta) are the volumes attached to the sandbox, in slot order. Absent
+	// when the workspace does not have sandbox volumes enabled.
+	Volumes []SandboxResponseVolume `json:"volumes"`
+	JSON    sandboxResponseJSON     `json:"-"`
 }
 
 // sandboxResponseJSON contains the JSON metadata for the struct [SandboxResponse]
@@ -4799,6 +4802,7 @@ type sandboxResponseJSON struct {
 	UpdatedAt              apijson.Field
 	UpdatedBy              apijson.Field
 	Vcpus                  apijson.Field
+	Volumes                apijson.Field
 	raw                    string
 	ExtraFields            map[string]apijson.Field
 }
@@ -4875,6 +4879,33 @@ func (r *SandboxResponseRunConfig) UnmarshalJSON(data []byte) (err error) {
 }
 
 func (r sandboxResponseRunConfigJSON) RawJSON() string {
+	return r.raw
+}
+
+type SandboxResponseVolume struct {
+	MountPath  string                    `json:"mount_path"`
+	ReadOnly   bool                      `json:"read_only"`
+	VolumeID   string                    `json:"volume_id"`
+	VolumeName string                    `json:"volume_name"`
+	JSON       sandboxResponseVolumeJSON `json:"-"`
+}
+
+// sandboxResponseVolumeJSON contains the JSON metadata for the struct
+// [SandboxResponseVolume]
+type sandboxResponseVolumeJSON struct {
+	MountPath   apijson.Field
+	ReadOnly    apijson.Field
+	VolumeID    apijson.Field
+	VolumeName  apijson.Field
+	raw         string
+	ExtraFields map[string]apijson.Field
+}
+
+func (r *SandboxResponseVolume) UnmarshalJSON(data []byte) (err error) {
+	return apijson.UnmarshalRoot(data, r)
+}
+
+func (r sandboxResponseVolumeJSON) RawJSON() string {
 	return r.raw
 }
 

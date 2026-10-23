@@ -188,6 +188,11 @@ func TestSandboxBoxNewWithOptionalParams(t *testing.T) {
 		SnapshotName: langsmith.F("snapshot_name"),
 		TagValueIDs:  langsmith.F([]string{"string"}),
 		Vcpus:        langsmith.F(int64(0)),
+		Volumes: langsmith.F([]langsmith.SandboxBoxNewParamsVolume{{
+			MountPath: langsmith.F("mount_path"),
+			Volume:    langsmith.F("volume"),
+			ReadOnly:  langsmith.F(true),
+		}}),
 	})
 	if err != nil {
 		var apierr *langsmith.Error
