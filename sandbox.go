@@ -4774,8 +4774,12 @@ type SandboxResponse struct {
 	MemBytes               int64                           `json:"mem_bytes"`
 	MountConfig            SandboxMountConfig              `json:"mount_config"`
 	Name                   string                          `json:"name"`
-	PreserveMemoryOnStop   bool                            `json:"preserve_memory_on_stop"`
-	ProxyConfig            ProxyConfig                     `json:"proxy_config"`
+	// Persistent (private beta) reports whether the sandbox keeps its filesystem
+	// across stops. When false, its writes are discarded whenever it stops and it is
+	// not charged for storage.
+	Persistent           bool        `json:"persistent"`
+	PreserveMemoryOnStop bool        `json:"preserve_memory_on_stop"`
+	ProxyConfig          ProxyConfig `json:"proxy_config"`
 	// RunConfig is what the sandbox's commands run with: the user, working directory
 	// and base env beneath env_vars.
 	RunConfig     SandboxResponseRunConfig `json:"run_config"`
@@ -4808,6 +4812,7 @@ type sandboxResponseJSON struct {
 	MemBytes               apijson.Field
 	MountConfig            apijson.Field
 	Name                   apijson.Field
+	Persistent             apijson.Field
 	PreserveMemoryOnStop   apijson.Field
 	ProxyConfig            apijson.Field
 	RunConfig              apijson.Field

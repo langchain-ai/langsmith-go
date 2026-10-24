@@ -120,6 +120,7 @@ func TestSandboxBoxNewWithOptionalParams(t *testing.T) {
 			}}),
 		}),
 		Name:                 langsmith.F("name"),
+		Persistent:           langsmith.F(true),
 		PreserveMemoryOnStop: langsmith.F(true),
 		ProxyConfig: langsmith.F(langsmith.ProxyConfigParam{
 			AccessControl: langsmith.F(langsmith.ProxyConfigAccessControlParam{
