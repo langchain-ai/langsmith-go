@@ -1,5 +1,45 @@
 # Changelog
 
+## [0.29.0](https://github.com/langchain-ai/langsmith-go/compare/v0.28.3...v0.29.0) (2026-10-24)
+
+
+### ⚠ BREAKING CHANGES
+
+* **sandboxes:** add sandbox volumes
+
+### Features
+
+* add agent owner API support ([f6c09cf](https://github.com/langchain-ai/langsmith-go/commit/f6c09cffc168a2c972ee894034bab48a655e36d5))
+* **agents:** add agent registry CRUD to SDKs and CLI ([6287c71](https://github.com/langchain-ai/langsmith-go/commit/6287c71722ab27ee5261b6188668a9d09b00cd6c))
+* allow listing examples without default fields ([774cb57](https://github.com/langchain-ai/langsmith-go/commit/774cb575e47998fad3074e210115018ced642fa0))
+* **cli:** expose datasets clone to the CLI ([b616257](https://github.com/langchain-ai/langsmith-go/commit/b616257491cca2000a6eb39590987a01c4be349f))
+* **cli:** expose datasets share to the CLI ([63869bc](https://github.com/langchain-ai/langsmith-go/commit/63869bc8294b18095c518328f3460dadd296a786))
+* **cli:** expose datasets splits to the CLI ([7f8c098](https://github.com/langchain-ai/langsmith-go/commit/7f8c0981837caa54168cb53528f524bec6bd2f0f))
+* **cli:** expose datasets update to the CLI ([397f394](https://github.com/langchain-ai/langsmith-go/commit/397f394286a68c352d8356950f95f4ce676cec70))
+* **cli:** expose datasets update-tags to the CLI ([fb89d53](https://github.com/langchain-ai/langsmith-go/commit/fb89d536961940d2ddd691ca4d826aa687f751a4))
+* **cli:** expose runs share and get-url to the CLI ([5dd01c5](https://github.com/langchain-ai/langsmith-go/commit/5dd01c5d6f9556c4b300b9047e540c10ba01a24a))
+* **engine:** scan and fix GitLab projects through a workspace service account ([9ffa090](https://github.com/langchain-ai/langsmith-go/commit/9ffa0904ddc4c0483124fc21ae497193b495b12f))
+* **evaluators:** save decision-model evaluators with the decision_model type ([f82d8eb](https://github.com/langchain-ai/langsmith-go/commit/f82d8eb28e2e00ce3b2c226a9b2e5f135a222811))
+* **sandboxes:** add sandbox volumes ([9f003fe](https://github.com/langchain-ai/langsmith-go/commit/9f003fea0ae18d58346b9a0b76029118f447da13))
+* **sandboxes:** browser window links start a stopped browser ([cc87a98](https://github.com/langchain-ai/langsmith-go/commit/cc87a98c1f12819102e954212f5c154b86eb0922))
+* **sandboxes:** create non-persistent sandboxes with `persistent: false` (private beta), never billed for storage ([dd8fc3b](https://github.com/langchain-ai/langsmith-go/commit/dd8fc3b457692e2ecfe983ee345e2d2d12a042c4))
+* **sandboxes:** let LangSmith login service URLs be embedded by named origins ([329495c](https://github.com/langchain-ai/langsmith-go/commit/329495c3cf01ef809ea2af0b32fb96844ff040bd))
+* **sandboxes:** relay sandbox egress through a customer's network ([c38769f](https://github.com/langchain-ai/langsmith-go/commit/c38769f583530df0c6b1942f4bff7e7e5d93a6bb))
+* **sandboxes:** sandbox functions ([913dcb2](https://github.com/langchain-ai/langsmith-go/commit/913dcb27cd97ed0f4d32dc8977fa6e546482c780))
+
+
+### Bug Fixes
+
+* **gateway:** trace Bedrock Runtime Anthropic calls ([deaa0ce](https://github.com/langchain-ai/langsmith-go/commit/deaa0ce9ea865b25b46e5b77b3d0ed4c62a80704))
+* **sandboxes:** add cursor pagination to registry listing ([f54de3f](https://github.com/langchain-ai/langsmith-go/commit/f54de3f60478e45c889a26920c408fe361dbd3c7))
+* **sdk:** default Go agent creation to EXTERNAL ([b50a4ae](https://github.com/langchain-ai/langsmith-go/commit/b50a4ae3a6c02d86a5c6705c077cf648c3d1ebb8))
+* update reference outputs ([987fd26](https://github.com/langchain-ai/langsmith-go/commit/987fd26384c89906b551ec1c8fc25671e6403c06))
+
+
+### Refactors
+
+* **connections:** move the connector into the Go SDK ([68d6619](https://github.com/langchain-ai/langsmith-go/commit/68d66197fd3ff76fa49c2a74468d89fe536304d6))
+
 ## [0.28.3](https://github.com/langchain-ai/langsmith-go/compare/v0.28.2...v0.28.3) (2026-10-20)
 
 
