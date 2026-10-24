@@ -255,12 +255,20 @@ type ProxyConfigRule struct {
 	// "authorization: Bearer account-b") for a real credential, so one host can serve
 	// several accounts. Rules are evaluated in order and the first match wins.
 	MatchHeaders []string `json:"match_headers"`
-	// MatchHosts is only accepted for header injection rules. Provider auth rules use
-	// built-in host matching.
-	MatchHosts []string            `json:"match_hosts"`
-	MatchPaths []string            `json:"match_paths"`
-	Type       string              `json:"type"`
-	JSON       proxyConfigRuleJSON `json:"-"`
+	// MatchHosts is only accepted for header injection and relay rules. Provider auth
+	// rules use built-in host matching. A relay rule may also list IP addresses and
+	// CIDR blocks (10.0.0.0/8), which match connections the sandbox makes to an IP
+	// address rather than a name.
+	MatchHosts []string `json:"match_hosts"`
+	MatchPaths []string `json:"match_paths"`
+	// RelayID is the ID of the LangSmith relay (a connection of kind relay) that
+	// carries connections to match_hosts when type is relay. Those connections leave
+	// from the relay's connector, and its network and IP, instead of the sandbox host.
+	// Access control still applies first, the first enabled matching relay rule wins,
+	// and a matched host never falls back to a direct connection.
+	RelayID string              `json:"relay_id" format:"uuid"`
+	Type    string              `json:"type"`
+	JSON    proxyConfigRuleJSON `json:"-"`
 }
 
 // proxyConfigRuleJSON contains the JSON metadata for the struct [ProxyConfigRule]
@@ -276,6 +284,7 @@ type proxyConfigRuleJSON struct {
 	MatchHeaders apijson.Field
 	MatchHosts   apijson.Field
 	MatchPaths   apijson.Field
+	RelayID      apijson.Field
 	Type         apijson.Field
 	raw          string
 	ExtraFields  map[string]apijson.Field
@@ -1138,11 +1147,19 @@ type ProxyConfigRuleParam struct {
 	// "authorization: Bearer account-b") for a real credential, so one host can serve
 	// several accounts. Rules are evaluated in order and the first match wins.
 	MatchHeaders param.Field[[]string] `json:"match_headers"`
-	// MatchHosts is only accepted for header injection rules. Provider auth rules use
-	// built-in host matching.
+	// MatchHosts is only accepted for header injection and relay rules. Provider auth
+	// rules use built-in host matching. A relay rule may also list IP addresses and
+	// CIDR blocks (10.0.0.0/8), which match connections the sandbox makes to an IP
+	// address rather than a name.
 	MatchHosts param.Field[[]string] `json:"match_hosts"`
 	MatchPaths param.Field[[]string] `json:"match_paths"`
-	Type       param.Field[string]   `json:"type"`
+	// RelayID is the ID of the LangSmith relay (a connection of kind relay) that
+	// carries connections to match_hosts when type is relay. Those connections leave
+	// from the relay's connector, and its network and IP, instead of the sandbox host.
+	// Access control still applies first, the first enabled matching relay rule wins,
+	// and a matched host never falls back to a direct connection.
+	RelayID param.Field[string] `json:"relay_id" format:"uuid"`
+	Type    param.Field[string] `json:"type"`
 }
 
 func (r ProxyConfigRuleParam) MarshalJSON() (data []byte, err error) {
