@@ -275,6 +275,9 @@ type SandboxBrowserNewParams struct {
 	// Name of the browser sandbox. Generated when omitted, as "browser-" followed by
 	// the browser's ID.
 	Name param.Field[string] `json:"name"`
+	// ProxyConfig applies a sandbox's proxy rules to the pages the browser loads:
+	// header injection, access control, and relay rules.
+	ProxyConfig param.Field[ProxyConfigParam] `json:"proxy_config"`
 	// VCPUs and MemBytes size the browser sandbox, as for any sandbox. With neither
 	// set, a browser gets 2 vCPUs and 8 GiB.
 	Vcpus param.Field[int64] `json:"vcpus"`
