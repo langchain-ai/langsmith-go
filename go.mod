@@ -5,6 +5,8 @@ go 1.26.7
 require (
 	github.com/anthropics/anthropic-sdk-go v1.55.0
 	github.com/google/uuid v1.6.0
+	github.com/gorilla/websocket v1.5.3
+	github.com/hashicorp/yamux v0.1.2
 	github.com/klauspost/compress v1.19.0
 	github.com/sashabaranov/go-openai v1.41.2
 	github.com/stretchr/testify v1.12.1
@@ -14,6 +16,7 @@ require (
 	go.opentelemetry.io/otel/exporters/otlp/otlptrace/otlptracehttp v1.46.0
 	go.opentelemetry.io/otel/sdk v1.46.0
 	go.opentelemetry.io/otel/trace v1.46.0
+	go.uber.org/goleak v1.3.0
 	golang.org/x/net v0.58.0
 	google.golang.org/genai v1.62.0
 )
@@ -33,7 +36,6 @@ require (
 	github.com/google/s2a-go v0.1.9 // indirect
 	github.com/googleapis/enterprise-certificate-proxy v0.3.11 // indirect
 	github.com/googleapis/gax-go/v2 v2.17.0 // indirect
-	github.com/gorilla/websocket v1.5.3 // indirect
 	github.com/grpc-ecosystem/grpc-gateway/v2 v2.30.0 // indirect
 	github.com/invopop/jsonschema v0.14.0 // indirect
 	github.com/pb33f/ordered-map/v2 v2.3.1 // indirect
