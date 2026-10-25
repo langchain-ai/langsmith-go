@@ -29,6 +29,26 @@ func TestNormalizeSandboxServiceURLParams(t *testing.T) {
 	}); err == nil {
 		t.Fatal("expected invalid ttl error")
 	}
+
+	// The origins are re-sent on every refresh, so the params keep their own
+	// copy, typed or raw, and a Raw override stays one.
+	typed := []string{"https://dash.example.com"}
+	raw := []string{"https://dash.example.com"}
+	typedParams, err := normalizeSandboxServiceURLParams(SandboxBoxGenerateServiceURLParams{Port: Int(8080), EmbedOrigins: F(typed)})
+	if err != nil {
+		t.Fatalf("normalizeSandboxServiceURLParams returned error: %v", err)
+	}
+	rawParams, err := normalizeSandboxServiceURLParams(SandboxBoxGenerateServiceURLParams{Port: Int(8080), EmbedOrigins: Raw[[]string](raw)})
+	if err != nil {
+		t.Fatalf("normalizeSandboxServiceURLParams returned error: %v", err)
+	}
+	typed[0], raw[0] = "https://evil.example.com", "https://evil.example.com"
+	if got := typedParams.EmbedOrigins.Value; len(got) != 1 || got[0] != "https://dash.example.com" {
+		t.Fatalf("typed origins follow the caller's slice: %v", got)
+	}
+	if got, ok := rawParams.EmbedOrigins.Raw.([]string); !ok || len(got) != 1 || got[0] != "https://dash.example.com" {
+		t.Fatalf("raw origins were dropped or follow the caller's slice: %#v", rawParams.EmbedOrigins.Raw)
+	}
 }
 
 func TestSandboxServiceURLAccessorsWithoutRefresh(t *testing.T) {

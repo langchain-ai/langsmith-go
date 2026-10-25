@@ -3,9 +3,11 @@ package langsmith_test
 import (
 	"context"
 	"encoding/json"
+	"fmt"
 	"io"
 	"net/http"
 	"net/http/httptest"
+	"strings"
 	"sync/atomic"
 	"testing"
 	"time"
@@ -168,7 +170,7 @@ func TestSandboxWaitHelpers(t *testing.T) {
 
 func TestSandboxServiceURLRefreshAndRequest(t *testing.T) {
 	var serviceURLCalls atomic.Int64
-	var firstPayload map[string]any
+	var firstPayload, secondPayload map[string]any
 	var serviceAuthHeader string
 	var serviceCustomHeader string
 
@@ -184,18 +186,23 @@ func TestSandboxServiceURLRefreshAndRequest(t *testing.T) {
 			if call == 1 {
 				firstPayload = payload
 				_ = json.NewEncoder(w).Encode(map[string]any{
-					"browser_url": srvURL(r) + "/browser",
-					"service_url": srvURL(r) + "/service",
-					"token":       "token-1",
-					"expires_at":  time.Now().Add(time.Second).UTC().Format(time.RFC3339),
+					"browser_url":   srvURL(r) + "/browser",
+					"service_url":   srvURL(r) + "/service",
+					"embed_url":     srvURL(r) + "/_svc/embed#token=token-1",
+					"embed_origins": []string{"https://dash.example.com"},
+					"token":         "token-1",
+					"expires_at":    time.Now().Add(time.Second).UTC().Format(time.RFC3339),
 				})
 				return
 			}
+			secondPayload = payload
 			_ = json.NewEncoder(w).Encode(map[string]any{
-				"browser_url": srvURL(r) + "/browser",
-				"service_url": srvURL(r) + "/service",
-				"token":       "token-2",
-				"expires_at":  time.Now().Add(time.Hour).UTC().Format(time.RFC3339),
+				"browser_url":   srvURL(r) + "/browser",
+				"service_url":   srvURL(r) + "/service",
+				"embed_url":     srvURL(r) + "/_svc/embed#token=token-2",
+				"embed_origins": []string{"https://dash.example.com"},
+				"token":         "token-2",
+				"expires_at":    time.Now().Add(time.Hour).UTC().Format(time.RFC3339),
 			})
 		case r.Method == http.MethodGet && r.URL.Path == "/service/path":
 			serviceAuthHeader = r.Header.Get("X-Langsmith-Sandbox-Service-Token")
@@ -212,12 +219,16 @@ func TestSandboxServiceURLRefreshAndRequest(t *testing.T) {
 		option.WithAPIKey("test-api-key"),
 		option.WithMaxRetries(0),
 	)
+	origins := []string{"https://Dash.Example.com"}
 	service, err := client.Sandboxes.Boxes.Service(context.Background(), "test-box", langsmith.SandboxBoxGenerateServiceURLParams{
-		Port: langsmith.Int(3000),
+		Port:         langsmith.Int(3000),
+		EmbedOrigins: langsmith.F(origins),
 	})
 	if err != nil {
 		t.Fatalf("Service returned error: %v", err)
 	}
+	// Changing the caller's slice after minting must not change later tokens.
+	origins[0] = "https://evil.example.com"
 	if firstPayload["port"] != float64(3000) {
 		t.Fatalf("unexpected service port payload: %#v", firstPayload["port"])
 	}
@@ -234,6 +245,19 @@ func TestSandboxServiceURLRefreshAndRequest(t *testing.T) {
 	}
 	if serviceURLCalls.Load() != 2 {
 		t.Fatalf("expected 2 service URL calls, got %d", serviceURLCalls.Load())
+	}
+	if got := fmt.Sprint(secondPayload["embed_origins"]); got != "[https://Dash.Example.com]" {
+		t.Fatalf("a refresh must mint with the same embed origins, got %s", got)
+	}
+	embedURL, err := service.EmbedURL(context.Background())
+	if err != nil {
+		t.Fatalf("EmbedURL returned error: %v", err)
+	}
+	if !strings.HasSuffix(embedURL, "/_svc/embed#token=token-2") {
+		t.Fatalf("expected the refreshed embed URL, got %q", embedURL)
+	}
+	if got := service.EmbedOrigins(); len(got) != 1 || got[0] != "https://dash.example.com" {
+		t.Fatalf("expected the normalized embed origins, got %v", got)
 	}
 
 	resp, err := service.Get(context.Background(), "/path", http.Header{"X-Test": []string{"yes"}})

@@ -4961,12 +4961,17 @@ type ServiceURLResponse struct {
 	// omitted in token mode.
 	Access     ServiceURLResponseAccess `json:"access"`
 	BrowserURL string                   `json:"browser_url"`
-	// EmbedOrigins echoes the origins that may embed a LangSmith login URL,
-	// normalized; omitted when there are none.
-	EmbedOrigins []string               `json:"embed_origins"`
-	ExpiresAt    string                 `json:"expires_at"`
-	ServiceURL   string                 `json:"service_url"`
-	JSON         serviceURLResponseJSON `json:"-"`
+	// EmbedOrigins echoes the origins that may embed the URL, normalized; omitted when
+	// there are none.
+	EmbedOrigins []string `json:"embed_origins"`
+	// EmbedURL opens the service in an iframe: the token rides the URL fragment, which
+	// no server, log or Referer header sees, and the page it loads trades it for the
+	// cookie. Append &redirect=/path to land elsewhere than /. Omitted in LangSmith
+	// login mode.
+	EmbedURL   string                 `json:"embed_url"`
+	ExpiresAt  string                 `json:"expires_at"`
+	ServiceURL string                 `json:"service_url"`
+	JSON       serviceURLResponseJSON `json:"-"`
 }
 
 // serviceURLResponseJSON contains the JSON metadata for the struct
@@ -4976,6 +4981,7 @@ type serviceURLResponseJSON struct {
 	Access       apijson.Field
 	BrowserURL   apijson.Field
 	EmbedOrigins apijson.Field
+	EmbedURL     apijson.Field
 	ExpiresAt    apijson.Field
 	ServiceURL   apijson.Field
 	raw          string

@@ -5,6 +5,7 @@ import (
 	"fmt"
 	"io"
 	"net/http"
+	"slices"
 	"strings"
 	"sync"
 	"time"
@@ -18,7 +19,8 @@ const (
 	maxSandboxServiceURLTTLSeconds     = int64(86400)
 )
 
-// Service returns an auto-refreshing authenticated service URL helper.
+// Service returns an auto-refreshing authenticated service URL helper. Each
+// refresh mints a new token with the same body, so its embed origins carry over.
 func (r *SandboxBoxService) Service(ctx context.Context, name string, body SandboxBoxGenerateServiceURLParams, opts ...option.RequestOption) (*SandboxServiceURL, error) {
 	ctx = traceSandboxReference(ctx, name)
 	body, err := normalizeSandboxServiceURLParams(body)
@@ -38,22 +40,26 @@ func (r *SandboxBoxService) Service(ctx context.Context, name string, body Sandb
 
 // SandboxServiceURL is an authenticated URL for an HTTP service inside a sandbox.
 type SandboxServiceURL struct {
-	sandboxID string
-	mu        sync.Mutex
-	browser   string
-	service   string
-	token     string
-	expiresAt string
-	refresher func(context.Context) (*SandboxServiceURL, error)
+	sandboxID    string
+	mu           sync.Mutex
+	browser      string
+	service      string
+	embed        string
+	embedOrigins []string
+	token        string
+	expiresAt    string
+	refresher    func(context.Context) (*SandboxServiceURL, error)
 }
 
 func newSandboxServiceURL(res *ServiceURLResponse, refresher func(context.Context) (*SandboxServiceURL, error)) *SandboxServiceURL {
 	return &SandboxServiceURL{
-		browser:   res.BrowserURL,
-		service:   res.ServiceURL,
-		token:     res.Token,
-		expiresAt: res.ExpiresAt,
-		refresher: refresher,
+		browser:      res.BrowserURL,
+		service:      res.ServiceURL,
+		embed:        res.EmbedURL,
+		embedOrigins: res.EmbedOrigins,
+		token:        res.Token,
+		expiresAt:    res.ExpiresAt,
+		refresher:    refresher,
 	}
 }
 
@@ -66,6 +72,27 @@ func (s *SandboxServiceURL) BrowserURL(ctx context.Context) (string, error) {
 	s.mu.Lock()
 	defer s.mu.Unlock()
 	return s.browser, nil
+}
+
+// EmbedURL returns a URL to load in an iframe, refreshing the token if it is
+// near expiry. The token rides the URL fragment, so no server sees it; append
+// "&redirect=/path" to open a page other than "/". Pages on the origins passed
+// as EmbedOrigins may frame it. It is empty for a LangSmith login URL.
+func (s *SandboxServiceURL) EmbedURL(ctx context.Context) (string, error) {
+	if err := s.refreshIfNeeded(ctx); err != nil {
+		return "", err
+	}
+	s.mu.Lock()
+	defer s.mu.Unlock()
+	return s.embed, nil
+}
+
+// EmbedOrigins returns the origins allowed to frame the URL, as the server
+// normalized them.
+func (s *SandboxServiceURL) EmbedOrigins() []string {
+	s.mu.Lock()
+	defer s.mu.Unlock()
+	return slices.Clone(s.embedOrigins)
 }
 
 // ServiceURL returns the base service URL, refreshing the token if it is near
@@ -168,6 +195,8 @@ func (s *SandboxServiceURL) refreshIfNeeded(ctx context.Context) error {
 	s.mu.Lock()
 	s.browser = fresh.browser
 	s.service = fresh.service
+	s.embed = fresh.embed
+	s.embedOrigins = fresh.embedOrigins
 	s.token = fresh.token
 	s.expiresAt = fresh.expiresAt
 	s.refresher = fresh.refresher
@@ -203,5 +232,12 @@ func normalizeSandboxServiceURLParams(body SandboxBoxGenerateServiceURLParams) (
 	}
 	body.Port = F(port)
 	body.ExpiresInSeconds = F(expiresInSeconds)
+	// Every refresh re-sends this body, so it keeps its own copy of the
+	// origins: a caller changing its slice later can't change later tokens.
+	// The copy goes into the field in place, keeping a Raw override.
+	body.EmbedOrigins.Value = slices.Clone(body.EmbedOrigins.Value)
+	if raw, ok := body.EmbedOrigins.Raw.([]string); ok {
+		body.EmbedOrigins.Raw = slices.Clone(raw)
+	}
 	return body, nil
 }

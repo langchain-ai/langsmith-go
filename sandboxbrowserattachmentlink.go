@@ -37,13 +37,14 @@ func NewSandboxBrowserAttachmentLinkService(opts ...option.RequestOption) (r *Sa
 
 // Beta: mint a view link and an act link for one window, as every attachment
 // response does, with a chosen lifetime and the origins allowed to embed the
-// window's pages in an iframe. Without embed_origins no page may frame them. An
-// embedded page sends its parent window messages when control changes and when it
-// connects or disconnects (see the browser guide). Either link opens the window to
-// anyone who holds it until it expires; detaching the window ends it early. A
-// stopped browser starts when links are minted and when a link is opened, and
-// resumes with its windows. Minting takes being the browser's creator or a role
-// with sandboxes:exec.
+// window's pages in an iframe. Without embed_origins no page may frame them.
+// view_embed_url and act_embed_url carry the same tokens in the URL fragment, for
+// an iframe, so no server sees them. An embedded page sends its parent window
+// messages when control changes and when it connects or disconnects (see the
+// browser guide). Either link opens the window to anyone who holds it until it
+// expires; detaching the window ends it early. A stopped browser starts when links
+// are minted and when a link is opened, and resumes with its windows. Minting
+// takes being the browser's creator or a role with sandboxes:exec.
 func (r *SandboxBrowserAttachmentLinkService) New(ctx context.Context, name string, attachmentID string, body SandboxBrowserAttachmentLinkNewParams, opts ...option.RequestOption) (res *BrowserWindowLinks, err error) {
 	opts = slices.Concat(r.Options, opts)
 	if name == "" {
@@ -60,10 +61,15 @@ func (r *SandboxBrowserAttachmentLinkService) New(ctx context.Context, name stri
 }
 
 type BrowserWindowLinks struct {
+	ActEmbedURL string `json:"act_embed_url"`
 	// ActURL also lets the person take control of the window, use it, and hand it
 	// back.
 	ActURL    string    `json:"act_url"`
 	ExpiresAt time.Time `json:"expires_at" format:"date-time"`
+	// ViewEmbedURL and ActEmbedURL open the same window in an iframe with the token in
+	// the URL fragment, which no server, log or Referer header sees. Viewer options
+	// follow the token in the fragment, as in {act_embed_url}&fit=follow&zoom=1.
+	ViewEmbedURL string `json:"view_embed_url"`
 	// ViewURL shows the window and takes no input.
 	ViewURL string                 `json:"view_url"`
 	JSON    browserWindowLinksJSON `json:"-"`
@@ -72,11 +78,13 @@ type BrowserWindowLinks struct {
 // browserWindowLinksJSON contains the JSON metadata for the struct
 // [BrowserWindowLinks]
 type browserWindowLinksJSON struct {
-	ActURL      apijson.Field
-	ExpiresAt   apijson.Field
-	ViewURL     apijson.Field
-	raw         string
-	ExtraFields map[string]apijson.Field
+	ActEmbedURL  apijson.Field
+	ActURL       apijson.Field
+	ExpiresAt    apijson.Field
+	ViewEmbedURL apijson.Field
+	ViewURL      apijson.Field
+	raw          string
+	ExtraFields  map[string]apijson.Field
 }
 
 func (r *BrowserWindowLinks) UnmarshalJSON(data []byte) (err error) {
