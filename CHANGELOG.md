@@ -1,5 +1,25 @@
 # Changelog
 
+## [0.29.1](https://github.com/langchain-ai/langsmith-go/compare/v0.29.0...v0.29.1) (2026-10-26)
+
+
+### Features
+
+* **engine:** scope GitHub fixes to the instance they were opened on ([33c50ce](https://github.com/langchain-ai/langsmith-go/commit/33c50ce36b7f418b676689e5d6f6126ecf6b0464))
+* **sandboxes:** accept proxy_config when creating a browser ([354f3cc](https://github.com/langchain-ai/langsmith-go/commit/354f3ccfe2b03687038b4fb11e6c8c9a47f204f9))
+* **sandboxes:** embed token-mode service URLs and browser windows with the token kept out of server-visible URLs ([aa0ece5](https://github.com/langchain-ai/langsmith-go/commit/aa0ece56b20e6e4f2f837db2d79ec7742c859f8f))
+
+
+### Bug Fixes
+
+* **sdk-go:** make concurrent OAuth refreshes reliable on Windows ([844e61a](https://github.com/langchain-ai/langsmith-go/commit/844e61aa14ec716849dd01f66be1c55b3eb72768))
+
+
+### Documentation
+
+* remove the beta label from agent addressing ([08c3e46](https://github.com/langchain-ai/langsmith-go/commit/08c3e4679513cb1d5296a4e202b254e23b29b74b))
+* **threads:** bring POST /api/v2/threads/query into API standards compliance ([7422692](https://github.com/langchain-ai/langsmith-go/commit/74226921fc25ed8b43132271fedb8e663d5f3a23))
+
 ## [0.29.0](https://github.com/langchain-ai/langsmith-go/compare/v0.28.3...v0.29.0) (2026-10-24)
 
 
