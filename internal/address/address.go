@@ -1,4 +1,4 @@
-// Package address implements the beta tracing addresses, re-exported by langsmith.
+// Package address implements the tracing addresses, re-exported by langsmith.
 package address
 
 import (

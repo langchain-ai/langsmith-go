@@ -43,7 +43,6 @@ type TracingClient struct {
 	envErr error
 	logger ilog.Logger
 
-	betaOnce           sync.Once
 	addressedMu        sync.Mutex
 	addressedTraces    map[uuid.UUID]addressedTrace
 	addressedLastPrune time.Time
@@ -82,7 +81,7 @@ type RunCreate struct {
 	InputAttachments   map[string]any // Attachment metadata for input fields.
 	OutputAttachments  map[string]any // Attachment metadata for output fields.
 
-	// Address (beta) replaces SessionName/SessionID; not both. Children follow an addressed root.
+	// Address replaces SessionName/SessionID; not both. Children follow an addressed root.
 	Address AgentAddress
 }
 
@@ -110,7 +109,7 @@ type RunUpdate struct {
 	InputAttachments   map[string]any // Attachment metadata for input fields.
 	OutputAttachments  map[string]any // Attachment metadata for output fields.
 
-	// Address (beta) replaces SessionName/SessionID; not both.
+	// Address replaces SessionName/SessionID; not both.
 	Address AgentAddress
 }
 
@@ -151,7 +150,7 @@ func WithOAuthAccessToken(token string) Option {
 // WithProject overrides the LangSmith project name.
 func WithProject(name string) Option { return func(o *options) { o.project = name } }
 
-// WithAddress (beta) sets the default address instead of a project; not with [WithProject].
+// WithAddress sets the default address instead of a project; not with [WithProject].
 func WithAddress(a AgentAddress) Option { return func(o *options) { o.address = a } }
 
 // WithDrainConfig overrides the default drain/scaling configuration.

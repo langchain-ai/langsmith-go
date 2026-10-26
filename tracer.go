@@ -51,10 +51,9 @@ func WithProjectName(projectName string) OTelTracerOption {
 	}
 }
 
-// WithAddress (beta) sends traces to an agent environment instead of a project. It cannot be
+// WithAddress sends traces to an agent environment instead of a project. It cannot be
 // combined with [WithProjectName]. Without either option, LANGSMITH_AGENT_ID and
-// LANGSMITH_AGENT_ENVIRONMENT address the agent when both are set. Agent addressing is enabled
-// per workspace.
+// LANGSMITH_AGENT_ENVIRONMENT address the agent when both are set.
 func WithAddress(a AgentAddress) OTelTracerOption {
 	return func(c *tracerConfig) {
 		c.address = a

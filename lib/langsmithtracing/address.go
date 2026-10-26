@@ -12,10 +12,10 @@ import (
 	ilog "github.com/langchain-ai/langsmith-go/lib/langsmithtracing/internal/logger"
 )
 
-// AgentAddress (beta) is an agent environment, the only address that can receive traces.
+// AgentAddress is an agent environment, the only address that can receive traces.
 type AgentAddress = address.AgentAddress
 
-// NewAgentAddress (beta) validates an agent id and environment.
+// NewAgentAddress validates an agent id and environment.
 func NewAgentAddress(id, environment string) (AgentAddress, error) {
 	return address.NewAgentAddress(id, environment)
 }
@@ -112,9 +112,6 @@ func (c *TracingClient) applyDestination(runInfo map[string]any, d destination) 
 		}
 		return
 	}
-	c.betaOnce.Do(func() {
-		c.logger.Warn("addressing runs to an agent is in beta and enabled per workspace; a workspace without it rejects the run, so the trace is lost rather than falling back to a project")
-	})
 	runInfo["address"] = address.LRN(d.address)
 }
 

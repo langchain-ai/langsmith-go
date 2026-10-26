@@ -40,7 +40,7 @@ var (
 	WithTracingAPIURL                     = langsmithtracing.WithAPIURL
 	WithTracingAPIKey                     = langsmithtracing.WithAPIKey
 	WithTracingProject                    = langsmithtracing.WithProject
-	WithTracingAddress                    = langsmithtracing.WithAddress // beta
+	WithTracingAddress                    = langsmithtracing.WithAddress
 	WithTracingDrain                      = langsmithtracing.WithDrainConfig
 	WithSampleRate                        = langsmithtracing.WithSampleRate
 	WithRunTransform                      = langsmithtracing.WithRunTransform
