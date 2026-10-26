@@ -739,8 +739,8 @@ type IssueFix struct {
 	CreatedAt time.Time          `json:"created_at" api:"required" format:"date-time"`
 	PrNumber  int64              `json:"pr_number" api:"required,nullable"`
 	Provider  IssueFixesProvider `json:"provider" api:"required"`
-	// ProviderWebBaseURL is the GitLab instance a GitLab fix lives on; null for
-	// GitHub.
+	// ProviderWebBaseURL is the instance the fix was opened on; null on GitHub fixes
+	// from before it was recorded.
 	ProviderWebBaseURL string       `json:"provider_web_base_url" api:"required,nullable"`
 	RepoURL            string       `json:"repo_url" api:"required"`
 	UpdatedAt          time.Time    `json:"updated_at" api:"required" format:"date-time"`
