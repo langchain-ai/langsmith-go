@@ -624,6 +624,86 @@ func TestAcquireOAuthRefreshDirLockWaitsForFreshLock(t *testing.T) {
 	}
 }
 
+// Each waiter must get the lock as soon as the one before it releases it, while
+// the others keep polling. Waiting out the staleness window instead uses up the
+// whole refresh timeout.
+func TestOAuthRefreshLockHandsOffBetweenWaiters(t *testing.T) {
+	path := filepath.Join(t.TempDir(), "config.json.oauth.lock")
+	held, err := acquireOAuthRefreshLock(context.Background(), path)
+	if err != nil {
+		t.Fatal(err)
+	}
+
+	const waiters = 8
+	var holders atomic.Int32
+	done := make(chan error, waiters)
+	for range waiters {
+		go func() {
+			ctx, cancel := context.WithTimeout(context.Background(), oauthRefreshLockStaleAfter/2)
+			defer cancel()
+			lock, err := acquireOAuthRefreshLock(ctx, path)
+			if err != nil {
+				done <- err
+				return
+			}
+			if n := holders.Add(1); n != 1 {
+				err = fmt.Errorf("%d holders at once", n)
+			}
+			time.Sleep(5 * time.Millisecond)
+			holders.Add(-1)
+			if unlockErr := lock.Unlock(); err == nil {
+				err = unlockErr
+			}
+			done <- err
+		}()
+	}
+
+	select {
+	case err := <-done:
+		t.Fatalf("waiter returned while the lock was held: %v", err)
+	case <-time.After(100 * time.Millisecond):
+	}
+	if err := held.Unlock(); err != nil {
+		t.Fatal(err)
+	}
+	for range waiters {
+		if err := <-done; err != nil {
+			t.Fatal(err)
+		}
+	}
+}
+
+// Another command can be reading the config when a refresh saves the rotated
+// tokens. The save must still land: the server has already rotated the refresh
+// token, so losing the new one forces the user to log in again.
+func TestSaveProfileOAuthWhileConfigIsOpen(t *testing.T) {
+	path := filepath.Join(t.TempDir(), "config.json")
+	if err := os.WriteFile(path, []byte(`{"profiles":{"dev":{"oauth":{"refresh_token":"old-refresh-token"}}}}`), 0600); err != nil {
+		t.Fatal(err)
+	}
+	reader, err := os.Open(path)
+	if err != nil {
+		t.Fatal(err)
+	}
+	closed := make(chan struct{})
+	time.AfterFunc(50*time.Millisecond, func() {
+		_ = reader.Close()
+		close(closed)
+	})
+	t.Cleanup(func() { <-closed })
+
+	if err := saveProfileOAuth(path, "dev", configOAuth{AccessToken: "new-access-token", RefreshToken: "new-refresh-token"}); err != nil {
+		t.Fatal(err)
+	}
+	_, p, err := loadProfileConfigFromPath(path, "dev")
+	if err != nil {
+		t.Fatal(err)
+	}
+	if p.OAuth.RefreshToken != "new-refresh-token" {
+		t.Fatalf("expected the rotated refresh token to be saved, got %q", p.OAuth.RefreshToken)
+	}
+}
+
 func TestLoadProfileOptions_RefreshTokenOnlyBeforeProfileAPIKey(t *testing.T) {
 	clearAuthEnv(t)
 	tokenRequests := 0

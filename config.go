@@ -660,7 +660,7 @@ func writeFileAtomic(path string, data []byte, perm os.FileMode) error {
 	if err := f.Close(); err != nil {
 		return err
 	}
-	return os.Rename(tmp, path)
+	return replaceFile(tmp, path)
 }
 
 func normalizeConfigURL(apiURL string) string {
