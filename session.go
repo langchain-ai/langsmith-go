@@ -6066,7 +6066,9 @@ func (r TracerSessionTraceTier) IsKnown() bool {
 	return false
 }
 
-// TracerSession schema.
+// Legacy session response model. Use TracerSession for new integrations.
+//
+// Deprecated: deprecated
 type TracerSessionWithoutVirtualFields struct {
 	ID                   string                                     `json:"id" api:"required" format:"uuid"`
 	TenantID             string                                     `json:"tenant_id" api:"required" format:"uuid"`
