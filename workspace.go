@@ -57,7 +57,10 @@ func (r *WorkspaceService) Get(ctx context.Context, workspaceID string, query Wo
 	return res, err
 }
 
-// Update a workspace.
+// Rename a workspace in the current organization.
+//
+// Requires the workspace settings manage permission. A name that is already taken
+// returns 409.
 func (r *WorkspaceService) Update(ctx context.Context, workspaceID string, body WorkspaceUpdateParams, opts ...option.RequestOption) (res *WorkspaceUpdateResponse, err error) {
 	opts = slices.Concat(r.Options, opts)
 	if workspaceID == "" {
@@ -78,7 +81,11 @@ func (r *WorkspaceService) List(ctx context.Context, query WorkspaceListParams, 
 	return res, err
 }
 
-// Delete Workspace
+// Delete a workspace and its data.
+//
+// Only the workspace the request is scoped to (the X-Tenant-Id header, or the API
+// key's workspace) can be deleted; any other ID returns 403. Requires the
+// workspace delete permission.
 func (r *WorkspaceService) Delete(ctx context.Context, workspaceID string, opts ...option.RequestOption) (res *WorkspaceDeleteResponse, err error) {
 	opts = slices.Concat(r.Options, opts)
 	if workspaceID == "" {
@@ -263,8 +270,10 @@ func (r WorkspaceNewParams) MarshalJSON() (data []byte, err error) {
 }
 
 type WorkspaceGetParams struct {
-	DataPlaneID    param.Field[string] `query:"data_plane_id" format:"uuid"`
-	IncludeDeleted param.Field[bool]   `query:"include_deleted"`
+	// Accepted only from a data plane service; other callers get 403.
+	DataPlaneID param.Field[string] `query:"data_plane_id" format:"uuid"`
+	// Also return the workspace if it has been deleted.
+	IncludeDeleted param.Field[bool] `query:"include_deleted"`
 }
 
 // URLQuery serializes [WorkspaceGetParams]'s query parameters as `url.Values`.
@@ -276,6 +285,7 @@ func (r WorkspaceGetParams) URLQuery() (v url.Values) {
 }
 
 type WorkspaceUpdateParams struct {
+	// New workspace name. Letters, digits, spaces and - \_ ' @ ( ) only.
 	DisplayName param.Field[string] `json:"display_name" api:"required"`
 }
 
