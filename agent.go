@@ -138,6 +138,8 @@ type Agent struct {
 	Environments []AgentEnvironment `json:"environments" api:"required"`
 	Name         string             `json:"name" api:"required"`
 	SourceType   AgentSourceType    `json:"source_type" api:"required"`
+	// AvatarURL is a short-lived URL for the agent avatar, when present.
+	AvatarURL string `json:"avatar_url" api:"nullable"`
 	// Owner is the owner's full name, falling back to email when available.
 	Owner      string    `json:"owner"`
 	OwnerID    string    `json:"owner_id" api:"nullable" format:"uuid"`
@@ -154,6 +156,7 @@ type agentJSON struct {
 	Environments apijson.Field
 	Name         apijson.Field
 	SourceType   apijson.Field
+	AvatarURL    apijson.Field
 	Owner        apijson.Field
 	OwnerID      apijson.Field
 	TagKeyID     apijson.Field
