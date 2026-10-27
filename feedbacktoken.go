@@ -64,7 +64,8 @@ func (r *FeedbackTokenService) Get(ctx context.Context, token string, query Feed
 	return res, err
 }
 
-// Create a new feedback with a token.
+// Submit feedback for the token's run and key. The token is the credential, so
+// anyone with it can submit feedback.
 func (r *FeedbackTokenService) Update(ctx context.Context, token string, body FeedbackTokenUpdateParams, opts ...option.RequestOption) (res *FeedbackTokenUpdateResponse, err error) {
 	opts = slices.Concat(r.Options, opts)
 	if token == "" {

@@ -661,19 +661,28 @@ func (r DatasetUpdateParamsOutputsSchemaDefinitionMap) implementsDatasetUpdatePa
 
 // Update class for Example.
 type DatasetUpdateParamsPatchExamples struct {
-	AttachmentsOperations param.Field[AttachmentsOperationsParam]                 `json:"attachments_operations"`
-	DatasetID             param.Field[string]                                     `json:"dataset_id" format:"uuid"`
-	Inputs                param.Field[map[string]interface{}]                     `json:"inputs"`
-	Metadata              param.Field[map[string]interface{}]                     `json:"metadata"`
-	Outputs               param.Field[map[string]interface{}]                     `json:"outputs"`
-	Overwrite             param.Field[bool]                                       `json:"overwrite"`
-	Split                 param.Field[DatasetUpdateParamsPatchExamplesSplitUnion] `json:"split"`
+	// Attachments to rename or keep.
+	AttachmentsOperations param.Field[AttachmentsOperationsParam] `json:"attachments_operations"`
+	// The example's current dataset. An example can't move to another dataset.
+	DatasetID param.Field[string] `json:"dataset_id" format:"uuid"`
+	// New inputs. Replaces the existing inputs; omit to keep them.
+	Inputs param.Field[map[string]interface{}] `json:"inputs"`
+	// New metadata. Replaces the existing metadata; omit to keep it.
+	Metadata param.Field[map[string]interface{}] `json:"metadata"`
+	// New outputs. Replaces the existing outputs; omit to keep them.
+	Outputs param.Field[map[string]interface{}] `json:"outputs"`
+	// Not used.
+	Overwrite param.Field[bool] `json:"overwrite"`
+	// Split or splits to put the example in. Replaces its current splits.
+	Split param.Field[DatasetUpdateParamsPatchExamplesSplitUnion] `json:"split"`
 }
 
 func (r DatasetUpdateParamsPatchExamples) MarshalJSON() (data []byte, err error) {
 	return apijson.MarshalRoot(r)
 }
 
+// Split or splits to put the example in. Replaces its current splits.
+//
 // Satisfied by [DatasetUpdateParamsPatchExamplesSplitArray], [shared.UnionString].
 type DatasetUpdateParamsPatchExamplesSplitUnion interface {
 	ImplementsDatasetUpdateParamsPatchExamplesSplitUnion()

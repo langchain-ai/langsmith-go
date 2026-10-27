@@ -929,27 +929,42 @@ func (r annotationQueueGetAnnotationQueuesResponseAssignedReviewerJSON) RawJSON(
 }
 
 type AnnotationQueueUpdateParams struct {
-	DefaultDataset      param.Field[string]                                              `json:"default_dataset" format:"uuid"`
-	Description         param.Field[string]                                              `json:"description"`
-	EnableReservations  param.Field[AnnotationQueueUpdateParamsEnableReservationsUnion]  `json:"enable_reservations"`
-	Metadata            param.Field[AnnotationQueueUpdateParamsMetadataUnion]            `json:"metadata"`
-	Name                param.Field[string]                                              `json:"name"`
+	// Dataset that reviewed runs are added to by default.
+	DefaultDataset param.Field[string] `json:"default_dataset" format:"uuid"`
+	// New description.
+	Description param.Field[string] `json:"description"`
+	// Whether a reviewer reserves a run while reviewing it, so others skip it.
+	EnableReservations param.Field[AnnotationQueueUpdateParamsEnableReservationsUnion] `json:"enable_reservations"`
+	// Metadata to store on the queue. Replaces the existing metadata.
+	Metadata param.Field[AnnotationQueueUpdateParamsMetadataUnion] `json:"metadata"`
+	// New name for the queue.
+	Name param.Field[string] `json:"name"`
+	// How many reviewers must review each run.
 	NumReviewersPerItem param.Field[AnnotationQueueUpdateParamsNumReviewersPerItemUnion] `json:"num_reviewers_per_item"`
-	ReservationMinutes  param.Field[AnnotationQueueUpdateParamsReservationMinutesUnion]  `json:"reservation_minutes"`
-	ReviewerAccessMode  param.Field[AnnotationQueueUpdateParamsReviewerAccessMode]       `json:"reviewer_access_mode"`
-	RubricInstructions  param.Field[string]                                              `json:"rubric_instructions"`
-	RubricItems         param.Field[[]AnnotationQueueRubricItemSchemaParam]              `json:"rubric_items"`
+	// How long a reservation lasts, in minutes.
+	ReservationMinutes param.Field[AnnotationQueueUpdateParamsReservationMinutesUnion] `json:"reservation_minutes"`
+	// Who completes a run: any (one reviewer is enough) or assigned (every assigned
+	// reviewer must submit).
+	ReviewerAccessMode param.Field[AnnotationQueueUpdateParamsReviewerAccessMode] `json:"reviewer_access_mode"`
+	// Instructions shown to reviewers.
+	RubricInstructions param.Field[string] `json:"rubric_instructions"`
+	// Feedback keys reviewers fill in for each run.
+	RubricItems param.Field[[]AnnotationQueueRubricItemSchemaParam] `json:"rubric_items"`
 }
 
 func (r AnnotationQueueUpdateParams) MarshalJSON() (data []byte, err error) {
 	return apijson.MarshalRoot(r)
 }
 
+// Whether a reviewer reserves a run while reviewing it, so others skip it.
+//
 // Satisfied by [shared.UnionBool], [MissingParam].
 type AnnotationQueueUpdateParamsEnableReservationsUnion interface {
 	ImplementsAnnotationQueueUpdateParamsEnableReservationsUnion()
 }
 
+// Metadata to store on the queue. Replaces the existing metadata.
+//
 // Satisfied by [AnnotationQueueUpdateParamsMetadataMap], [MissingParam].
 type AnnotationQueueUpdateParamsMetadataUnion interface {
 	implementsAnnotationQueueUpdateParamsMetadataUnion()
@@ -960,16 +975,22 @@ type AnnotationQueueUpdateParamsMetadataMap map[string]interface{}
 func (r AnnotationQueueUpdateParamsMetadataMap) implementsAnnotationQueueUpdateParamsMetadataUnion() {
 }
 
+// How many reviewers must review each run.
+//
 // Satisfied by [shared.UnionInt], [MissingParam].
 type AnnotationQueueUpdateParamsNumReviewersPerItemUnion interface {
 	ImplementsAnnotationQueueUpdateParamsNumReviewersPerItemUnion()
 }
 
+// How long a reservation lasts, in minutes.
+//
 // Satisfied by [shared.UnionInt], [MissingParam].
 type AnnotationQueueUpdateParamsReservationMinutesUnion interface {
 	ImplementsAnnotationQueueUpdateParamsReservationMinutesUnion()
 }
 
+// Who completes a run: any (one reviewer is enough) or assigned (every assigned
+// reviewer must submit).
 type AnnotationQueueUpdateParamsReviewerAccessMode string
 
 const (
@@ -1026,9 +1047,13 @@ func (r AnnotationQueueExportParams) MarshalJSON() (data []byte, err error) {
 }
 
 type AnnotationQueuePopulateParams struct {
-	QueueID              param.Field[string]   `json:"queue_id" api:"required" format:"uuid"`
-	SessionIDs           param.Field[[]string] `json:"session_ids" api:"required" format:"uuid"`
-	ExtendTraceRetention param.Field[bool]     `json:"extend_trace_retention"`
+	// ID of the annotation queue to add runs to.
+	QueueID param.Field[string] `json:"queue_id" api:"required" format:"uuid"`
+	// Experiments whose runs are added to the queue. Each must be an experiment on a
+	// dataset.
+	SessionIDs param.Field[[]string] `json:"session_ids" api:"required" format:"uuid"`
+	// Upgrade the added traces from short-lived to extended retention.
+	ExtendTraceRetention param.Field[bool] `json:"extend_trace_retention"`
 }
 
 func (r AnnotationQueuePopulateParams) MarshalJSON() (data []byte, err error) {

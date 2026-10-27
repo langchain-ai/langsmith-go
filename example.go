@@ -123,7 +123,7 @@ func (r *ExampleService) DeleteAll(ctx context.Context, body ExampleDeleteAllPar
 	return res, err
 }
 
-// Count all examples by query params
+// Count the examples that match the filters.
 func (r *ExampleService) GetCount(ctx context.Context, query ExampleGetCountParams, opts ...option.RequestOption) (res *int64, err error) {
 	opts = slices.Concat(r.Options, opts)
 	path := "api/v1/examples/count"
@@ -295,19 +295,28 @@ type ExampleGetParamsAsOfUnion interface {
 }
 
 type ExampleUpdateParams struct {
-	AttachmentsOperations param.Field[AttachmentsOperationsParam]    `json:"attachments_operations"`
-	DatasetID             param.Field[string]                        `json:"dataset_id" format:"uuid"`
-	Inputs                param.Field[map[string]interface{}]        `json:"inputs"`
-	Metadata              param.Field[map[string]interface{}]        `json:"metadata"`
-	Outputs               param.Field[map[string]interface{}]        `json:"outputs"`
-	Overwrite             param.Field[bool]                          `json:"overwrite"`
-	Split                 param.Field[ExampleUpdateParamsSplitUnion] `json:"split"`
+	// Attachments to rename or keep.
+	AttachmentsOperations param.Field[AttachmentsOperationsParam] `json:"attachments_operations"`
+	// The example's current dataset. An example can't move to another dataset.
+	DatasetID param.Field[string] `json:"dataset_id" format:"uuid"`
+	// New inputs. Replaces the existing inputs; omit to keep them.
+	Inputs param.Field[map[string]interface{}] `json:"inputs"`
+	// New metadata. Replaces the existing metadata; omit to keep it.
+	Metadata param.Field[map[string]interface{}] `json:"metadata"`
+	// New outputs. Replaces the existing outputs; omit to keep them.
+	Outputs param.Field[map[string]interface{}] `json:"outputs"`
+	// Not used.
+	Overwrite param.Field[bool] `json:"overwrite"`
+	// Split or splits to put the example in. Replaces its current splits.
+	Split param.Field[ExampleUpdateParamsSplitUnion] `json:"split"`
 }
 
 func (r ExampleUpdateParams) MarshalJSON() (data []byte, err error) {
 	return apijson.MarshalRoot(r)
 }
 
+// Split or splits to put the example in. Replaces its current splits.
+//
 // Satisfied by [ExampleUpdateParamsSplitArray], [shared.UnionString].
 type ExampleUpdateParamsSplitUnion interface {
 	ImplementsExampleUpdateParamsSplitUnion()
@@ -384,15 +393,22 @@ func (r ExampleDeleteAllParams) URLQuery() (v url.Values) {
 }
 
 type ExampleGetCountParams struct {
+	// Only count examples with these IDs.
 	ID param.Field[[]string] `query:"id" format:"uuid"`
 	// Only modifications made on or before this time are included. If None, the latest
 	// version of the dataset is used.
-	AsOf             param.Field[ExampleGetCountParamsAsOfUnion] `query:"as_of" format:"date-time"`
-	Dataset          param.Field[string]                         `query:"dataset" format:"uuid"`
-	Filter           param.Field[string]                         `query:"filter"`
-	FullTextContains param.Field[[]string]                       `query:"full_text_contains"`
-	Metadata         param.Field[string]                         `query:"metadata"`
-	Splits           param.Field[[]string]                       `query:"splits"`
+	AsOf param.Field[ExampleGetCountParamsAsOfUnion] `query:"as_of" format:"date-time"`
+	// Only count examples in this dataset.
+	Dataset param.Field[string] `query:"dataset" format:"uuid"`
+	// Filter expression the examples must match.
+	Filter param.Field[string] `query:"filter"`
+	// Only count examples whose inputs or outputs contain every one of these terms,
+	// ignoring case.
+	FullTextContains param.Field[[]string] `query:"full_text_contains"`
+	// JSON object. Only count examples whose metadata contains it.
+	Metadata param.Field[string] `query:"metadata"`
+	// Only count examples in any of these splits.
+	Splits param.Field[[]string] `query:"splits"`
 }
 
 // URLQuery serializes [ExampleGetCountParams]'s query parameters as `url.Values`.
