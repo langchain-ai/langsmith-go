@@ -346,6 +346,7 @@ func TestRunQueryV2WithOptionalParams(t *testing.T) {
 		Filter:                langsmith.F(`and(eq(run_type, "llm"), gt(latency, 5))`),
 		HasError:              langsmith.F(false),
 		IDs:                   langsmith.F([]string{"018e4c7e-a9fb-7ef0-a5b6-6ea3a82e9327", "f47ac10b-58cc-4372-a567-0e02b2c3d479"}),
+		IncludeSubtreeUsage:   langsmith.F(true),
 		IsRoot:                langsmith.F(true),
 		MaxFeedbackModifiedAt: langsmith.F(time.Now()),
 		MaxStartTime:          langsmith.F(time.Now()),

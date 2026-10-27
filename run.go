@@ -1541,6 +1541,12 @@ type RunQueryV2Params struct {
 	HasError param.Field[bool] `json:"has_error"`
 	// `ids` optionally limits the request to these run UUIDs.
 	IDs param.Field[[]string] `json:"ids" format:"uuid"`
+	// `include_subtree_usage` enriches selected token and cost fields on root and
+	// intermediate runs with subtree totals, and selected `first_token_time` with the
+	// earliest observed subtree timestamp. Descendants contribute regardless of this
+	// request's filters or time bounds. Runs without observed descendants retain their
+	// original values. Defaults to false.
+	IncludeSubtreeUsage param.Field[bool] `json:"include_subtree_usage"`
 	// `is_root` returns only root runs (true) or only non-root runs (false).
 	IsRoot param.Field[bool] `json:"is_root"`
 	// `max_feedback_modified_at` is the exclusive upper bound (RFC3339) on feedback
