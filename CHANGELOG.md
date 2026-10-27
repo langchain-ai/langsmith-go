@@ -1,5 +1,20 @@
 # Changelog
 
+## [0.29.2](https://github.com/langchain-ai/langsmith-go/compare/v0.29.1...v0.29.2) (2026-10-27)
+
+
+### Features
+
+* **backend:** add support for uploading custom avatars for agents ([9ea904c](https://github.com/langchain-ai/langsmith-go/commit/9ea904cbe1919dbc724d130d41140449eb777c4c))
+* **cli:** expose workspaces retrieve, update and delete to the CLI ([6544ad1](https://github.com/langchain-ai/langsmith-go/commit/6544ad16fd5af903d561035dc6c555f61e14383c))
+* include subtree usage in frontend runs queries ([fd899a7](https://github.com/langchain-ai/langsmith-go/commit/fd899a771582148cfa9c30c7ffacd90de672375a))
+* **sdks:** stream v2 run, trace and thread queries ([fb9cdcc](https://github.com/langchain-ai/langsmith-go/commit/fb9cdccc51778c8ab9b1da8b965d81f09c5c1f26))
+
+
+### Bug Fixes
+
+* align v1 session write responses (LSO-4121, LSO-4130) ([00834a1](https://github.com/langchain-ai/langsmith-go/commit/00834a10122aaa8ef2e2bad349827f6f22101eca))
+
 ## [0.29.1](https://github.com/langchain-ai/langsmith-go/compare/v0.29.0...v0.29.1) (2026-10-26)
 
 
