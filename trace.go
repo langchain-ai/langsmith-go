@@ -26,7 +26,8 @@ import (
 // automatically. You should not instantiate this service directly, and instead use
 // the [NewTraceService] method instead.
 type TraceService struct {
-	Options []option.RequestOption
+	Options   []option.RequestOption
+	Streaming *TraceStreamingService
 }
 
 // NewTraceService generates a new service that applies the given options to each
@@ -35,6 +36,7 @@ type TraceService struct {
 func NewTraceService(opts ...option.RequestOption) (r *TraceService) {
 	r = &TraceService{}
 	r.Options = opts
+	r.Streaming = NewTraceStreamingService(opts...)
 	return
 }
 

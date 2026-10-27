@@ -26,8 +26,9 @@ import (
 // automatically. You should not instantiate this service directly, and instead use
 // the [NewThreadService] method instead.
 type ThreadService struct {
-	Options []option.RequestOption
-	Share   *ThreadShareService
+	Options   []option.RequestOption
+	Streaming *ThreadStreamingService
+	Share     *ThreadShareService
 }
 
 // NewThreadService generates a new service that applies the given options to each
@@ -36,6 +37,7 @@ type ThreadService struct {
 func NewThreadService(opts ...option.RequestOption) (r *ThreadService) {
 	r = &ThreadService{}
 	r.Options = opts
+	r.Streaming = NewThreadStreamingService(opts...)
 	r.Share = NewThreadShareService(opts...)
 	return
 }

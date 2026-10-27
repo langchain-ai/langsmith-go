@@ -1,3 +1,8 @@
+# Shared Response Types
+
+- <a href="https://pkg.go.dev/github.com/langchain-ai/langsmith-go/shared">shared</a>.<a href="https://pkg.go.dev/github.com/langchain-ai/langsmith-go/shared#QueryPatchEvent">QueryPatchEvent</a>
+- <a href="https://pkg.go.dev/github.com/langchain-ai/langsmith-go/shared">shared</a>.<a href="https://pkg.go.dev/github.com/langchain-ai/langsmith-go/shared#QueryPatchOperation">QueryPatchOperation</a>
+
 # ProductFeedback
 
 Response Types:
@@ -304,6 +309,16 @@ Methods:
 - <code title="post /api/v1/runs/stats">client.Runs.<a href="https://pkg.go.dev/github.com/langchain-ai/langsmith-go#RunService.Stats">Stats</a>(ctx <a href="https://pkg.go.dev/context">context</a>.<a href="https://pkg.go.dev/context#Context">Context</a>, body <a href="https://pkg.go.dev/github.com/langchain-ai/langsmith-go">langsmith</a>.<a href="https://pkg.go.dev/github.com/langchain-ai/langsmith-go#RunStatsParams">RunStatsParams</a>) (\*<a href="https://pkg.go.dev/github.com/langchain-ai/langsmith-go">langsmith</a>.<a href="https://pkg.go.dev/github.com/langchain-ai/langsmith-go#RunStatsResponseUnion">RunStatsResponseUnion</a>, <a href="https://pkg.go.dev/builtin#error">error</a>)</code>
 - <code title="patch /api/v1/runs/{run_id}">client.Runs.<a href="https://pkg.go.dev/github.com/langchain-ai/langsmith-go#RunService.Update2">Update2</a>(ctx <a href="https://pkg.go.dev/context">context</a>.<a href="https://pkg.go.dev/context#Context">Context</a>, runID <a href="https://pkg.go.dev/builtin#string">string</a>, body <a href="https://pkg.go.dev/github.com/langchain-ai/langsmith-go">langsmith</a>.<a href="https://pkg.go.dev/github.com/langchain-ai/langsmith-go#RunUpdate2Params">RunUpdate2Params</a>) (\*<a href="https://pkg.go.dev/github.com/langchain-ai/langsmith-go">langsmith</a>.<a href="https://pkg.go.dev/github.com/langchain-ai/langsmith-go#RunUpdate2Response">RunUpdate2Response</a>, <a href="https://pkg.go.dev/builtin#error">error</a>)</code>
 
+## Streaming
+
+Response Types:
+
+- <a href="https://pkg.go.dev/github.com/langchain-ai/langsmith-go">langsmith</a>.<a href="https://pkg.go.dev/github.com/langchain-ai/langsmith-go#RunStreamingQueryV2Response">RunStreamingQueryV2Response</a>
+
+Methods:
+
+- <code title="post /api/v2/runs/query">client.Runs.Streaming.<a href="https://pkg.go.dev/github.com/langchain-ai/langsmith-go#RunStreamingService.QueryV2">QueryV2</a>(ctx <a href="https://pkg.go.dev/context">context</a>.<a href="https://pkg.go.dev/context#Context">Context</a>, params <a href="https://pkg.go.dev/github.com/langchain-ai/langsmith-go">langsmith</a>.<a href="https://pkg.go.dev/github.com/langchain-ai/langsmith-go#RunStreamingQueryV2Params">RunStreamingQueryV2Params</a>) (\*<a href="https://pkg.go.dev/github.com/langchain-ai/langsmith-go">langsmith</a>.<a href="https://pkg.go.dev/github.com/langchain-ai/langsmith-go#RunStreamingQueryV2Response">RunStreamingQueryV2Response</a>, <a href="https://pkg.go.dev/builtin#error">error</a>)</code>
+
 ## Share
 
 Response Types:
@@ -330,6 +345,16 @@ Methods:
 - <code title="get /api/v2/threads/{thread_id}/traces">client.Threads.<a href="https://pkg.go.dev/github.com/langchain-ai/langsmith-go#ThreadService.ListTraces">ListTraces</a>(ctx <a href="https://pkg.go.dev/context">context</a>.<a href="https://pkg.go.dev/context#Context">Context</a>, threadID <a href="https://pkg.go.dev/builtin#string">string</a>, query <a href="https://pkg.go.dev/github.com/langchain-ai/langsmith-go">langsmith</a>.<a href="https://pkg.go.dev/github.com/langchain-ai/langsmith-go#ThreadListTracesParams">ThreadListTracesParams</a>) (\*<a href="https://pkg.go.dev/github.com/langchain-ai/langsmith-go/packages/pagination">pagination</a>.<a href="https://pkg.go.dev/github.com/langchain-ai/langsmith-go/packages/pagination#ItemsCursorGetPagination">ItemsCursorGetPagination</a>[<a href="https://pkg.go.dev/github.com/langchain-ai/langsmith-go">langsmith</a>.<a href="https://pkg.go.dev/github.com/langchain-ai/langsmith-go#ThreadTrace">ThreadTrace</a>], <a href="https://pkg.go.dev/builtin#error">error</a>)</code>
 - <code title="post /api/v2/threads/query">client.Threads.<a href="https://pkg.go.dev/github.com/langchain-ai/langsmith-go#ThreadService.Query">Query</a>(ctx <a href="https://pkg.go.dev/context">context</a>.<a href="https://pkg.go.dev/context#Context">Context</a>, params <a href="https://pkg.go.dev/github.com/langchain-ai/langsmith-go">langsmith</a>.<a href="https://pkg.go.dev/github.com/langchain-ai/langsmith-go#ThreadQueryParams">ThreadQueryParams</a>) (\*<a href="https://pkg.go.dev/github.com/langchain-ai/langsmith-go/packages/pagination">pagination</a>.<a href="https://pkg.go.dev/github.com/langchain-ai/langsmith-go/packages/pagination#ItemsCursorPostPagination">ItemsCursorPostPagination</a>[<a href="https://pkg.go.dev/github.com/langchain-ai/langsmith-go">langsmith</a>.<a href="https://pkg.go.dev/github.com/langchain-ai/langsmith-go#Thread">Thread</a>], <a href="https://pkg.go.dev/builtin#error">error</a>)</code>
 - <code title="get /api/v2/threads/{thread_id}/stats">client.Threads.<a href="https://pkg.go.dev/github.com/langchain-ai/langsmith-go#ThreadService.Stats">Stats</a>(ctx <a href="https://pkg.go.dev/context">context</a>.<a href="https://pkg.go.dev/context#Context">Context</a>, threadID <a href="https://pkg.go.dev/builtin#string">string</a>, query <a href="https://pkg.go.dev/github.com/langchain-ai/langsmith-go">langsmith</a>.<a href="https://pkg.go.dev/github.com/langchain-ai/langsmith-go#ThreadStatsParams">ThreadStatsParams</a>) (\*<a href="https://pkg.go.dev/github.com/langchain-ai/langsmith-go">langsmith</a>.<a href="https://pkg.go.dev/github.com/langchain-ai/langsmith-go#ThreadStats">ThreadStats</a>, <a href="https://pkg.go.dev/builtin#error">error</a>)</code>
+
+## Streaming
+
+Response Types:
+
+- <a href="https://pkg.go.dev/github.com/langchain-ai/langsmith-go">langsmith</a>.<a href="https://pkg.go.dev/github.com/langchain-ai/langsmith-go#ThreadStreamingQueryResponse">ThreadStreamingQueryResponse</a>
+
+Methods:
+
+- <code title="post /api/v2/threads/query">client.Threads.Streaming.<a href="https://pkg.go.dev/github.com/langchain-ai/langsmith-go#ThreadStreamingService.Query">Query</a>(ctx <a href="https://pkg.go.dev/context">context</a>.<a href="https://pkg.go.dev/context#Context">Context</a>, params <a href="https://pkg.go.dev/github.com/langchain-ai/langsmith-go">langsmith</a>.<a href="https://pkg.go.dev/github.com/langchain-ai/langsmith-go#ThreadStreamingQueryParams">ThreadStreamingQueryParams</a>) (\*<a href="https://pkg.go.dev/github.com/langchain-ai/langsmith-go">langsmith</a>.<a href="https://pkg.go.dev/github.com/langchain-ai/langsmith-go#ThreadStreamingQueryResponse">ThreadStreamingQueryResponse</a>, <a href="https://pkg.go.dev/builtin#error">error</a>)</code>
 
 ## Share
 
@@ -366,6 +391,16 @@ Methods:
 
 - <code title="get /api/v2/traces/{trace_id}/runs">client.Traces.<a href="https://pkg.go.dev/github.com/langchain-ai/langsmith-go#TraceService.ListRuns">ListRuns</a>(ctx <a href="https://pkg.go.dev/context">context</a>.<a href="https://pkg.go.dev/context#Context">Context</a>, traceID <a href="https://pkg.go.dev/builtin#string">string</a>, params <a href="https://pkg.go.dev/github.com/langchain-ai/langsmith-go">langsmith</a>.<a href="https://pkg.go.dev/github.com/langchain-ai/langsmith-go#TraceListRunsParams">TraceListRunsParams</a>) (\*<a href="https://pkg.go.dev/github.com/langchain-ai/langsmith-go">langsmith</a>.<a href="https://pkg.go.dev/github.com/langchain-ai/langsmith-go#TraceListRunsResponse">TraceListRunsResponse</a>, <a href="https://pkg.go.dev/builtin#error">error</a>)</code>
 - <code title="post /api/v2/traces/query">client.Traces.<a href="https://pkg.go.dev/github.com/langchain-ai/langsmith-go#TraceService.Query">Query</a>(ctx <a href="https://pkg.go.dev/context">context</a>.<a href="https://pkg.go.dev/context#Context">Context</a>, params <a href="https://pkg.go.dev/github.com/langchain-ai/langsmith-go">langsmith</a>.<a href="https://pkg.go.dev/github.com/langchain-ai/langsmith-go#TraceQueryParams">TraceQueryParams</a>) (\*<a href="https://pkg.go.dev/github.com/langchain-ai/langsmith-go/packages/pagination">pagination</a>.<a href="https://pkg.go.dev/github.com/langchain-ai/langsmith-go/packages/pagination#ItemsCursorPostPagination">ItemsCursorPostPagination</a>[<a href="https://pkg.go.dev/github.com/langchain-ai/langsmith-go">langsmith</a>.<a href="https://pkg.go.dev/github.com/langchain-ai/langsmith-go#Trace">Trace</a>], <a href="https://pkg.go.dev/builtin#error">error</a>)</code>
+
+## Streaming
+
+Response Types:
+
+- <a href="https://pkg.go.dev/github.com/langchain-ai/langsmith-go">langsmith</a>.<a href="https://pkg.go.dev/github.com/langchain-ai/langsmith-go#TraceStreamingQueryResponse">TraceStreamingQueryResponse</a>
+
+Methods:
+
+- <code title="post /api/v2/traces/query">client.Traces.Streaming.<a href="https://pkg.go.dev/github.com/langchain-ai/langsmith-go#TraceStreamingService.Query">Query</a>(ctx <a href="https://pkg.go.dev/context">context</a>.<a href="https://pkg.go.dev/context#Context">Context</a>, params <a href="https://pkg.go.dev/github.com/langchain-ai/langsmith-go">langsmith</a>.<a href="https://pkg.go.dev/github.com/langchain-ai/langsmith-go#TraceStreamingQueryParams">TraceStreamingQueryParams</a>) (\*<a href="https://pkg.go.dev/github.com/langchain-ai/langsmith-go">langsmith</a>.<a href="https://pkg.go.dev/github.com/langchain-ai/langsmith-go#TraceStreamingQueryResponse">TraceStreamingQueryResponse</a>, <a href="https://pkg.go.dev/builtin#error">error</a>)</code>
 
 # Evaluators
 

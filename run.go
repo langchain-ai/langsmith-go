@@ -28,8 +28,9 @@ import (
 // automatically. You should not instantiate this service directly, and instead use
 // the [NewRunService] method instead.
 type RunService struct {
-	Options []option.RequestOption
-	Share   *RunShareService
+	Options   []option.RequestOption
+	Streaming *RunStreamingService
+	Share     *RunShareService
 }
 
 // NewRunService generates a new service that applies the given options to each
@@ -38,6 +39,7 @@ type RunService struct {
 func NewRunService(opts ...option.RequestOption) (r *RunService) {
 	r = &RunService{}
 	r.Options = opts
+	r.Streaming = NewRunStreamingService(opts...)
 	r.Share = NewRunShareService(opts...)
 	return
 }
