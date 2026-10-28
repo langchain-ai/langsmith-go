@@ -5186,11 +5186,21 @@ type SandboxListUsageCostsResponse struct {
 	// LCU. Null means complete Standard compute usage is unavailable; "0" means known
 	// zero usage.
 	ComputeStandardUnits string `json:"compute_standard_units" api:"nullable" format:"decimal"`
+	// Memory usage in GiB-hours, as a decimal string. Available with RESOURCE
+	// granularity; null means complete usage is unavailable.
+	MemoryGibHours string `json:"memory_gib_hours" api:"nullable" format:"decimal"`
+	// Storage usage in GiB-hours from hourly attributed-byte samples, including
+	// checkpoints. Available with RESOURCE granularity; null means complete usage is
+	// unavailable.
+	StorageGibHours string `json:"storage_gib_hours" api:"nullable" format:"decimal"`
 	// Allocated storage usage in Standard Units, as a decimal string, separate from
 	// LSU. Null means complete Standard storage usage is unavailable; "0" means known
 	// zero usage.
-	StorageStandardUnits string                            `json:"storage_standard_units" api:"nullable" format:"decimal"`
-	JSON                 sandboxListUsageCostsResponseJSON `json:"-"`
+	StorageStandardUnits string `json:"storage_standard_units" api:"nullable" format:"decimal"`
+	// CPU usage in vCPU-hours, as a decimal string. Available with RESOURCE
+	// granularity; null means complete usage is unavailable.
+	VcpuHours string                            `json:"vcpu_hours" api:"nullable" format:"decimal"`
+	JSON      sandboxListUsageCostsResponseJSON `json:"-"`
 }
 
 // sandboxListUsageCostsResponseJSON contains the JSON metadata for the struct
@@ -5202,7 +5212,10 @@ type sandboxListUsageCostsResponseJSON struct {
 	ResourceID           apijson.Field
 	ResourceType         apijson.Field
 	ComputeStandardUnits apijson.Field
+	MemoryGibHours       apijson.Field
+	StorageGibHours      apijson.Field
 	StorageStandardUnits apijson.Field
+	VcpuHours            apijson.Field
 	raw                  string
 	ExtraFields          map[string]apijson.Field
 }
@@ -5240,9 +5253,13 @@ type SandboxListUsageCostsParams struct {
 	// HOUR returns hourly buckets. RESOURCE sums each resource over the requested
 	// interval and sets period_start to start_time.
 	Granularity param.Field[SandboxListUsageCostsParamsGranularity] `query:"granularity"`
+	// Include bounded daily physical usage for the top 10 resources per metric and
+	// Other. Requires RESOURCE and include_totals. Omitted when unrestricted access or
+	// service support is unavailable. CLI: use --format raw to show this summary.
+	IncludeDaily param.Field[bool] `query:"include_daily"`
 	// Include usage totals across the filtered interval (RESOURCE only). Omitted when
 	// unrestricted resource access cannot be verified or the service does not support
-	// totals.
+	// totals. CLI: use --format raw to show this summary.
 	IncludeTotals param.Field[bool] `query:"include_totals"`
 	// Maximum rows to return
 	PageSize param.Field[int64] `query:"page_size"`
