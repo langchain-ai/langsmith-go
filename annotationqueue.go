@@ -306,23 +306,26 @@ func (r annotationQueueRubricItemSchemaFeedbackConfigJSON) RawJSON() string {
 
 type AnnotationQueueRubricItemSchemaFeedbackConfigFeedbackConfig struct {
 	// Enum for feedback types.
-	Type       AnnotationQueueRubricItemSchemaFeedbackConfigFeedbackConfigType       `json:"type" api:"required"`
-	Categories []AnnotationQueueRubricItemSchemaFeedbackConfigFeedbackConfigCategory `json:"categories" api:"nullable"`
-	Max        float64                                                               `json:"max" api:"nullable"`
-	Min        float64                                                               `json:"min" api:"nullable"`
-	JSON       annotationQueueRubricItemSchemaFeedbackConfigFeedbackConfigJSON       `json:"-"`
+	Type AnnotationQueueRubricItemSchemaFeedbackConfigFeedbackConfigType `json:"type" api:"required"`
+	// Whether a reviewer can pick several categories. Categorical feedback only.
+	AllowsMultipleCategories bool                                                                  `json:"allows_multiple_categories"`
+	Categories               []AnnotationQueueRubricItemSchemaFeedbackConfigFeedbackConfigCategory `json:"categories" api:"nullable"`
+	Max                      float64                                                               `json:"max" api:"nullable"`
+	Min                      float64                                                               `json:"min" api:"nullable"`
+	JSON                     annotationQueueRubricItemSchemaFeedbackConfigFeedbackConfigJSON       `json:"-"`
 }
 
 // annotationQueueRubricItemSchemaFeedbackConfigFeedbackConfigJSON contains the
 // JSON metadata for the struct
 // [AnnotationQueueRubricItemSchemaFeedbackConfigFeedbackConfig]
 type annotationQueueRubricItemSchemaFeedbackConfigFeedbackConfigJSON struct {
-	Type        apijson.Field
-	Categories  apijson.Field
-	Max         apijson.Field
-	Min         apijson.Field
-	raw         string
-	ExtraFields map[string]apijson.Field
+	Type                     apijson.Field
+	AllowsMultipleCategories apijson.Field
+	Categories               apijson.Field
+	Max                      apijson.Field
+	Min                      apijson.Field
+	raw                      string
+	ExtraFields              map[string]apijson.Field
 }
 
 func (r *AnnotationQueueRubricItemSchemaFeedbackConfigFeedbackConfig) UnmarshalJSON(data []byte) (err error) {
@@ -591,10 +594,12 @@ func (r AnnotationQueueRubricItemSchemaFeedbackConfigParam) MarshalJSON() (data 
 
 type AnnotationQueueRubricItemSchemaFeedbackConfigFeedbackConfigParam struct {
 	// Enum for feedback types.
-	Type       param.Field[AnnotationQueueRubricItemSchemaFeedbackConfigFeedbackConfigType]            `json:"type" api:"required"`
-	Categories param.Field[[]AnnotationQueueRubricItemSchemaFeedbackConfigFeedbackConfigCategoryParam] `json:"categories"`
-	Max        param.Field[float64]                                                                    `json:"max"`
-	Min        param.Field[float64]                                                                    `json:"min"`
+	Type param.Field[AnnotationQueueRubricItemSchemaFeedbackConfigFeedbackConfigType] `json:"type" api:"required"`
+	// Whether a reviewer can pick several categories. Categorical feedback only.
+	AllowsMultipleCategories param.Field[bool]                                                                       `json:"allows_multiple_categories"`
+	Categories               param.Field[[]AnnotationQueueRubricItemSchemaFeedbackConfigFeedbackConfigCategoryParam] `json:"categories"`
+	Max                      param.Field[float64]                                                                    `json:"max"`
+	Min                      param.Field[float64]                                                                    `json:"min"`
 }
 
 func (r AnnotationQueueRubricItemSchemaFeedbackConfigFeedbackConfigParam) MarshalJSON() (data []byte, err error) {

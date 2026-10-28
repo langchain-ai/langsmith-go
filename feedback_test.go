@@ -46,7 +46,8 @@ func TestFeedbackNewWithOptionalParams(t *testing.T) {
 				"foo": "bar",
 			}),
 			FeedbackConfig: langsmith.F(langsmith.FeedbackCreateSchemaFeedbackConfigParam{
-				Type: langsmith.F(langsmith.FeedbackCreateSchemaFeedbackConfigTypeContinuous),
+				Type:                     langsmith.F(langsmith.FeedbackCreateSchemaFeedbackConfigTypeContinuous),
+				AllowsMultipleCategories: langsmith.F(true),
 				Categories: langsmith.F([]langsmith.FeedbackCreateSchemaFeedbackConfigCategoryParam{{
 					Value: langsmith.F(0.000000),
 					Label: langsmith.F("x"),
@@ -134,7 +135,8 @@ func TestFeedbackUpdateWithOptionalParams(t *testing.T) {
 				"foo": "bar",
 			})),
 			FeedbackConfig: langsmith.F(langsmith.FeedbackUpdateParamsFeedbackConfig{
-				Type: langsmith.F(langsmith.FeedbackUpdateParamsFeedbackConfigTypeContinuous),
+				Type:                     langsmith.F(langsmith.FeedbackUpdateParamsFeedbackConfigTypeContinuous),
+				AllowsMultipleCategories: langsmith.F(true),
 				Categories: langsmith.F([]langsmith.FeedbackUpdateParamsFeedbackConfigCategory{{
 					Value: langsmith.F(0.000000),
 					Label: langsmith.F("x"),

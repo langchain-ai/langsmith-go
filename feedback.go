@@ -261,10 +261,12 @@ func (r FeedbackCreateSchemaCorrectionMapParam) ImplementsFeedbackCreateSchemaCo
 // has none, this becomes the key's feedback config.
 type FeedbackCreateSchemaFeedbackConfigParam struct {
 	// Enum for feedback types.
-	Type       param.Field[FeedbackCreateSchemaFeedbackConfigType]            `json:"type" api:"required"`
-	Categories param.Field[[]FeedbackCreateSchemaFeedbackConfigCategoryParam] `json:"categories"`
-	Max        param.Field[float64]                                           `json:"max"`
-	Min        param.Field[float64]                                           `json:"min"`
+	Type param.Field[FeedbackCreateSchemaFeedbackConfigType] `json:"type" api:"required"`
+	// Whether a reviewer can pick several categories. Categorical feedback only.
+	AllowsMultipleCategories param.Field[bool]                                              `json:"allows_multiple_categories"`
+	Categories               param.Field[[]FeedbackCreateSchemaFeedbackConfigCategoryParam] `json:"categories"`
+	Max                      param.Field[float64]                                           `json:"max"`
+	Min                      param.Field[float64]                                           `json:"min"`
 }
 
 func (r FeedbackCreateSchemaFeedbackConfigParam) MarshalJSON() (data []byte, err error) {
@@ -629,10 +631,12 @@ func (r FeedbackUpdateParamsCorrectionMap) ImplementsFeedbackUpdateParamsCorrect
 
 type FeedbackUpdateParamsFeedbackConfig struct {
 	// Enum for feedback types.
-	Type       param.Field[FeedbackUpdateParamsFeedbackConfigType]       `json:"type" api:"required"`
-	Categories param.Field[[]FeedbackUpdateParamsFeedbackConfigCategory] `json:"categories"`
-	Max        param.Field[float64]                                      `json:"max"`
-	Min        param.Field[float64]                                      `json:"min"`
+	Type param.Field[FeedbackUpdateParamsFeedbackConfigType] `json:"type" api:"required"`
+	// Whether a reviewer can pick several categories. Categorical feedback only.
+	AllowsMultipleCategories param.Field[bool]                                         `json:"allows_multiple_categories"`
+	Categories               param.Field[[]FeedbackUpdateParamsFeedbackConfigCategory] `json:"categories"`
+	Max                      param.Field[float64]                                      `json:"max"`
+	Min                      param.Field[float64]                                      `json:"min"`
 }
 
 func (r FeedbackUpdateParamsFeedbackConfig) MarshalJSON() (data []byte, err error) {

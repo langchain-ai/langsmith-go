@@ -40,7 +40,8 @@ func TestFeedbackTokenNewWithOptionalParams(t *testing.T) {
 				Minutes: langsmith.F(int64(0)),
 			}),
 			FeedbackConfig: langsmith.F(langsmith.FeedbackIngestTokenCreateSchemaFeedbackConfigParam{
-				Type: langsmith.F(langsmith.FeedbackIngestTokenCreateSchemaFeedbackConfigTypeContinuous),
+				Type:                     langsmith.F(langsmith.FeedbackIngestTokenCreateSchemaFeedbackConfigTypeContinuous),
+				AllowsMultipleCategories: langsmith.F(true),
 				Categories: langsmith.F([]langsmith.FeedbackIngestTokenCreateSchemaFeedbackConfigCategoryParam{{
 					Value: langsmith.F(0.000000),
 					Label: langsmith.F("x"),

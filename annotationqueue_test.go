@@ -74,7 +74,8 @@ func TestAnnotationQueueUpdateWithOptionalParams(t *testing.T) {
 				FeedbackConfig: langsmith.F(langsmith.AnnotationQueueRubricItemSchemaFeedbackConfigParam{
 					ID: langsmith.F("182bd5e5-6e1a-4fe4-a799-aa6d9a6ab26e"),
 					FeedbackConfig: langsmith.F(langsmith.AnnotationQueueRubricItemSchemaFeedbackConfigFeedbackConfigParam{
-						Type: langsmith.F(langsmith.AnnotationQueueRubricItemSchemaFeedbackConfigFeedbackConfigTypeContinuous),
+						Type:                     langsmith.F(langsmith.AnnotationQueueRubricItemSchemaFeedbackConfigFeedbackConfigTypeContinuous),
+						AllowsMultipleCategories: langsmith.F(true),
 						Categories: langsmith.F([]langsmith.AnnotationQueueRubricItemSchemaFeedbackConfigFeedbackConfigCategoryParam{{
 							Value: langsmith.F(0.000000),
 							Label: langsmith.F("x"),
@@ -186,7 +187,8 @@ func TestAnnotationQueueAnnotationQueuesWithOptionalParams(t *testing.T) {
 			FeedbackConfig: langsmith.F(langsmith.AnnotationQueueRubricItemSchemaFeedbackConfigParam{
 				ID: langsmith.F("182bd5e5-6e1a-4fe4-a799-aa6d9a6ab26e"),
 				FeedbackConfig: langsmith.F(langsmith.AnnotationQueueRubricItemSchemaFeedbackConfigFeedbackConfigParam{
-					Type: langsmith.F(langsmith.AnnotationQueueRubricItemSchemaFeedbackConfigFeedbackConfigTypeContinuous),
+					Type:                     langsmith.F(langsmith.AnnotationQueueRubricItemSchemaFeedbackConfigFeedbackConfigTypeContinuous),
+					AllowsMultipleCategories: langsmith.F(true),
 					Categories: langsmith.F([]langsmith.AnnotationQueueRubricItemSchemaFeedbackConfigFeedbackConfigCategoryParam{{
 						Value: langsmith.F(0.000000),
 						Label: langsmith.F("x"),
