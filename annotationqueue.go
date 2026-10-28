@@ -234,8 +234,10 @@ type AnnotationQueueRubricItemSchema struct {
 	IsAssertion       bool                                               `json:"is_assertion" api:"nullable"`
 	IsRequired        bool                                               `json:"is_required" api:"nullable"`
 	RegexValidator    AnnotationQueueRubricItemSchemaRegexValidatorUnion `json:"regex_validator" api:"nullable"`
+	RequiredIf        AnnotationQueueRubricItemSchemaRequiredIf          `json:"required_if" api:"nullable"`
 	ScoreDescriptions map[string]string                                  `json:"score_descriptions" api:"nullable"`
 	ValueDescriptions map[string]string                                  `json:"value_descriptions" api:"nullable"`
+	VisibleIf         AnnotationQueueRubricItemSchemaVisibleIf           `json:"visible_if" api:"nullable"`
 	JSON              annotationQueueRubricItemSchemaJSON                `json:"-"`
 }
 
@@ -249,8 +251,10 @@ type annotationQueueRubricItemSchemaJSON struct {
 	IsAssertion       apijson.Field
 	IsRequired        apijson.Field
 	RegexValidator    apijson.Field
+	RequiredIf        apijson.Field
 	ScoreDescriptions apijson.Field
 	ValueDescriptions apijson.Field
+	VisibleIf         apijson.Field
 	raw               string
 	ExtraFields       map[string]apijson.Field
 }
@@ -391,6 +395,166 @@ func init() {
 	)
 }
 
+type AnnotationQueueRubricItemSchemaRequiredIf struct {
+	Join  AnnotationQueueRubricItemSchemaRequiredIfJoin   `json:"join" api:"required"`
+	Rules []AnnotationQueueRubricItemSchemaRequiredIfRule `json:"rules" api:"required"`
+	JSON  annotationQueueRubricItemSchemaRequiredIfJSON   `json:"-"`
+}
+
+// annotationQueueRubricItemSchemaRequiredIfJSON contains the JSON metadata for the
+// struct [AnnotationQueueRubricItemSchemaRequiredIf]
+type annotationQueueRubricItemSchemaRequiredIfJSON struct {
+	Join        apijson.Field
+	Rules       apijson.Field
+	raw         string
+	ExtraFields map[string]apijson.Field
+}
+
+func (r *AnnotationQueueRubricItemSchemaRequiredIf) UnmarshalJSON(data []byte) (err error) {
+	return apijson.UnmarshalRoot(data, r)
+}
+
+func (r annotationQueueRubricItemSchemaRequiredIfJSON) RawJSON() string {
+	return r.raw
+}
+
+type AnnotationQueueRubricItemSchemaRequiredIfJoin string
+
+const (
+	AnnotationQueueRubricItemSchemaRequiredIfJoinAll AnnotationQueueRubricItemSchemaRequiredIfJoin = "all"
+	AnnotationQueueRubricItemSchemaRequiredIfJoinAny AnnotationQueueRubricItemSchemaRequiredIfJoin = "any"
+)
+
+func (r AnnotationQueueRubricItemSchemaRequiredIfJoin) IsKnown() bool {
+	switch r {
+	case AnnotationQueueRubricItemSchemaRequiredIfJoinAll, AnnotationQueueRubricItemSchemaRequiredIfJoinAny:
+		return true
+	}
+	return false
+}
+
+type AnnotationQueueRubricItemSchemaRequiredIfRule struct {
+	Key    string                                            `json:"key" api:"required"`
+	Op     AnnotationQueueRubricItemSchemaRequiredIfRulesOp  `json:"op" api:"required"`
+	Values []float64                                         `json:"values"`
+	JSON   annotationQueueRubricItemSchemaRequiredIfRuleJSON `json:"-"`
+}
+
+// annotationQueueRubricItemSchemaRequiredIfRuleJSON contains the JSON metadata for
+// the struct [AnnotationQueueRubricItemSchemaRequiredIfRule]
+type annotationQueueRubricItemSchemaRequiredIfRuleJSON struct {
+	Key         apijson.Field
+	Op          apijson.Field
+	Values      apijson.Field
+	raw         string
+	ExtraFields map[string]apijson.Field
+}
+
+func (r *AnnotationQueueRubricItemSchemaRequiredIfRule) UnmarshalJSON(data []byte) (err error) {
+	return apijson.UnmarshalRoot(data, r)
+}
+
+func (r annotationQueueRubricItemSchemaRequiredIfRuleJSON) RawJSON() string {
+	return r.raw
+}
+
+type AnnotationQueueRubricItemSchemaRequiredIfRulesOp string
+
+const (
+	AnnotationQueueRubricItemSchemaRequiredIfRulesOpIs         AnnotationQueueRubricItemSchemaRequiredIfRulesOp = "is"
+	AnnotationQueueRubricItemSchemaRequiredIfRulesOpIsOneOf    AnnotationQueueRubricItemSchemaRequiredIfRulesOp = "is_one_of"
+	AnnotationQueueRubricItemSchemaRequiredIfRulesOpIsEmpty    AnnotationQueueRubricItemSchemaRequiredIfRulesOp = "is_empty"
+	AnnotationQueueRubricItemSchemaRequiredIfRulesOpIsNotEmpty AnnotationQueueRubricItemSchemaRequiredIfRulesOp = "is_not_empty"
+)
+
+func (r AnnotationQueueRubricItemSchemaRequiredIfRulesOp) IsKnown() bool {
+	switch r {
+	case AnnotationQueueRubricItemSchemaRequiredIfRulesOpIs, AnnotationQueueRubricItemSchemaRequiredIfRulesOpIsOneOf, AnnotationQueueRubricItemSchemaRequiredIfRulesOpIsEmpty, AnnotationQueueRubricItemSchemaRequiredIfRulesOpIsNotEmpty:
+		return true
+	}
+	return false
+}
+
+type AnnotationQueueRubricItemSchemaVisibleIf struct {
+	Join  AnnotationQueueRubricItemSchemaVisibleIfJoin   `json:"join" api:"required"`
+	Rules []AnnotationQueueRubricItemSchemaVisibleIfRule `json:"rules" api:"required"`
+	JSON  annotationQueueRubricItemSchemaVisibleIfJSON   `json:"-"`
+}
+
+// annotationQueueRubricItemSchemaVisibleIfJSON contains the JSON metadata for the
+// struct [AnnotationQueueRubricItemSchemaVisibleIf]
+type annotationQueueRubricItemSchemaVisibleIfJSON struct {
+	Join        apijson.Field
+	Rules       apijson.Field
+	raw         string
+	ExtraFields map[string]apijson.Field
+}
+
+func (r *AnnotationQueueRubricItemSchemaVisibleIf) UnmarshalJSON(data []byte) (err error) {
+	return apijson.UnmarshalRoot(data, r)
+}
+
+func (r annotationQueueRubricItemSchemaVisibleIfJSON) RawJSON() string {
+	return r.raw
+}
+
+type AnnotationQueueRubricItemSchemaVisibleIfJoin string
+
+const (
+	AnnotationQueueRubricItemSchemaVisibleIfJoinAll AnnotationQueueRubricItemSchemaVisibleIfJoin = "all"
+	AnnotationQueueRubricItemSchemaVisibleIfJoinAny AnnotationQueueRubricItemSchemaVisibleIfJoin = "any"
+)
+
+func (r AnnotationQueueRubricItemSchemaVisibleIfJoin) IsKnown() bool {
+	switch r {
+	case AnnotationQueueRubricItemSchemaVisibleIfJoinAll, AnnotationQueueRubricItemSchemaVisibleIfJoinAny:
+		return true
+	}
+	return false
+}
+
+type AnnotationQueueRubricItemSchemaVisibleIfRule struct {
+	Key    string                                           `json:"key" api:"required"`
+	Op     AnnotationQueueRubricItemSchemaVisibleIfRulesOp  `json:"op" api:"required"`
+	Values []float64                                        `json:"values"`
+	JSON   annotationQueueRubricItemSchemaVisibleIfRuleJSON `json:"-"`
+}
+
+// annotationQueueRubricItemSchemaVisibleIfRuleJSON contains the JSON metadata for
+// the struct [AnnotationQueueRubricItemSchemaVisibleIfRule]
+type annotationQueueRubricItemSchemaVisibleIfRuleJSON struct {
+	Key         apijson.Field
+	Op          apijson.Field
+	Values      apijson.Field
+	raw         string
+	ExtraFields map[string]apijson.Field
+}
+
+func (r *AnnotationQueueRubricItemSchemaVisibleIfRule) UnmarshalJSON(data []byte) (err error) {
+	return apijson.UnmarshalRoot(data, r)
+}
+
+func (r annotationQueueRubricItemSchemaVisibleIfRuleJSON) RawJSON() string {
+	return r.raw
+}
+
+type AnnotationQueueRubricItemSchemaVisibleIfRulesOp string
+
+const (
+	AnnotationQueueRubricItemSchemaVisibleIfRulesOpIs         AnnotationQueueRubricItemSchemaVisibleIfRulesOp = "is"
+	AnnotationQueueRubricItemSchemaVisibleIfRulesOpIsOneOf    AnnotationQueueRubricItemSchemaVisibleIfRulesOp = "is_one_of"
+	AnnotationQueueRubricItemSchemaVisibleIfRulesOpIsEmpty    AnnotationQueueRubricItemSchemaVisibleIfRulesOp = "is_empty"
+	AnnotationQueueRubricItemSchemaVisibleIfRulesOpIsNotEmpty AnnotationQueueRubricItemSchemaVisibleIfRulesOp = "is_not_empty"
+)
+
+func (r AnnotationQueueRubricItemSchemaVisibleIfRulesOp) IsKnown() bool {
+	switch r {
+	case AnnotationQueueRubricItemSchemaVisibleIfRulesOpIs, AnnotationQueueRubricItemSchemaVisibleIfRulesOpIsOneOf, AnnotationQueueRubricItemSchemaVisibleIfRulesOpIsEmpty, AnnotationQueueRubricItemSchemaVisibleIfRulesOpIsNotEmpty:
+		return true
+	}
+	return false
+}
+
 type AnnotationQueueRubricItemSchemaParam struct {
 	FeedbackKey       param.Field[string]                                                  `json:"feedback_key" api:"required"`
 	Description       param.Field[string]                                                  `json:"description"`
@@ -399,8 +563,10 @@ type AnnotationQueueRubricItemSchemaParam struct {
 	IsAssertion       param.Field[bool]                                                    `json:"is_assertion"`
 	IsRequired        param.Field[bool]                                                    `json:"is_required"`
 	RegexValidator    param.Field[AnnotationQueueRubricItemSchemaRegexValidatorUnionParam] `json:"regex_validator"`
+	RequiredIf        param.Field[AnnotationQueueRubricItemSchemaRequiredIfParam]          `json:"required_if"`
 	ScoreDescriptions param.Field[map[string]string]                                       `json:"score_descriptions"`
 	ValueDescriptions param.Field[map[string]string]                                       `json:"value_descriptions"`
+	VisibleIf         param.Field[AnnotationQueueRubricItemSchemaVisibleIfParam]           `json:"visible_if"`
 }
 
 func (r AnnotationQueueRubricItemSchemaParam) MarshalJSON() (data []byte, err error) {
@@ -448,6 +614,44 @@ func (r AnnotationQueueRubricItemSchemaFeedbackConfigFeedbackConfigCategoryParam
 // Satisfied by [shared.UnionString], [MissingParam].
 type AnnotationQueueRubricItemSchemaRegexValidatorUnionParam interface {
 	ImplementsAnnotationQueueRubricItemSchemaRegexValidatorUnionParam()
+}
+
+type AnnotationQueueRubricItemSchemaRequiredIfParam struct {
+	Join  param.Field[AnnotationQueueRubricItemSchemaRequiredIfJoin]        `json:"join" api:"required"`
+	Rules param.Field[[]AnnotationQueueRubricItemSchemaRequiredIfRuleParam] `json:"rules" api:"required"`
+}
+
+func (r AnnotationQueueRubricItemSchemaRequiredIfParam) MarshalJSON() (data []byte, err error) {
+	return apijson.MarshalRoot(r)
+}
+
+type AnnotationQueueRubricItemSchemaRequiredIfRuleParam struct {
+	Key    param.Field[string]                                           `json:"key" api:"required"`
+	Op     param.Field[AnnotationQueueRubricItemSchemaRequiredIfRulesOp] `json:"op" api:"required"`
+	Values param.Field[[]float64]                                        `json:"values"`
+}
+
+func (r AnnotationQueueRubricItemSchemaRequiredIfRuleParam) MarshalJSON() (data []byte, err error) {
+	return apijson.MarshalRoot(r)
+}
+
+type AnnotationQueueRubricItemSchemaVisibleIfParam struct {
+	Join  param.Field[AnnotationQueueRubricItemSchemaVisibleIfJoin]        `json:"join" api:"required"`
+	Rules param.Field[[]AnnotationQueueRubricItemSchemaVisibleIfRuleParam] `json:"rules" api:"required"`
+}
+
+func (r AnnotationQueueRubricItemSchemaVisibleIfParam) MarshalJSON() (data []byte, err error) {
+	return apijson.MarshalRoot(r)
+}
+
+type AnnotationQueueRubricItemSchemaVisibleIfRuleParam struct {
+	Key    param.Field[string]                                          `json:"key" api:"required"`
+	Op     param.Field[AnnotationQueueRubricItemSchemaVisibleIfRulesOp] `json:"op" api:"required"`
+	Values param.Field[[]float64]                                       `json:"values"`
+}
+
+func (r AnnotationQueueRubricItemSchemaVisibleIfRuleParam) MarshalJSON() (data []byte, err error) {
+	return apijson.MarshalRoot(r)
 }
 
 // AnnotationQueue schema.

@@ -94,11 +94,27 @@ func TestAnnotationQueueUpdateWithOptionalParams(t *testing.T) {
 				IsAssertion:      langsmith.F(true),
 				IsRequired:       langsmith.F(true),
 				RegexValidator:   langsmith.F[langsmith.AnnotationQueueRubricItemSchemaRegexValidatorUnionParam](shared.UnionString("string")),
+				RequiredIf: langsmith.F(langsmith.AnnotationQueueRubricItemSchemaRequiredIfParam{
+					Join: langsmith.F(langsmith.AnnotationQueueRubricItemSchemaRequiredIfJoinAll),
+					Rules: langsmith.F([]langsmith.AnnotationQueueRubricItemSchemaRequiredIfRuleParam{{
+						Key:    langsmith.F("key"),
+						Op:     langsmith.F(langsmith.AnnotationQueueRubricItemSchemaRequiredIfRulesOpIs),
+						Values: langsmith.F([]float64{0.000000}),
+					}}),
+				}),
 				ScoreDescriptions: langsmith.F(map[string]string{
 					"foo": "string",
 				}),
 				ValueDescriptions: langsmith.F(map[string]string{
 					"foo": "string",
+				}),
+				VisibleIf: langsmith.F(langsmith.AnnotationQueueRubricItemSchemaVisibleIfParam{
+					Join: langsmith.F(langsmith.AnnotationQueueRubricItemSchemaVisibleIfJoinAll),
+					Rules: langsmith.F([]langsmith.AnnotationQueueRubricItemSchemaVisibleIfRuleParam{{
+						Key:    langsmith.F("key"),
+						Op:     langsmith.F(langsmith.AnnotationQueueRubricItemSchemaVisibleIfRulesOpIs),
+						Values: langsmith.F([]float64{0.000000}),
+					}}),
 				}),
 			}}),
 		},
@@ -190,11 +206,27 @@ func TestAnnotationQueueAnnotationQueuesWithOptionalParams(t *testing.T) {
 			IsAssertion:      langsmith.F(true),
 			IsRequired:       langsmith.F(true),
 			RegexValidator:   langsmith.F[langsmith.AnnotationQueueRubricItemSchemaRegexValidatorUnionParam](shared.UnionString("string")),
+			RequiredIf: langsmith.F(langsmith.AnnotationQueueRubricItemSchemaRequiredIfParam{
+				Join: langsmith.F(langsmith.AnnotationQueueRubricItemSchemaRequiredIfJoinAll),
+				Rules: langsmith.F([]langsmith.AnnotationQueueRubricItemSchemaRequiredIfRuleParam{{
+					Key:    langsmith.F("key"),
+					Op:     langsmith.F(langsmith.AnnotationQueueRubricItemSchemaRequiredIfRulesOpIs),
+					Values: langsmith.F([]float64{0.000000}),
+				}}),
+			}),
 			ScoreDescriptions: langsmith.F(map[string]string{
 				"foo": "string",
 			}),
 			ValueDescriptions: langsmith.F(map[string]string{
 				"foo": "string",
+			}),
+			VisibleIf: langsmith.F(langsmith.AnnotationQueueRubricItemSchemaVisibleIfParam{
+				Join: langsmith.F(langsmith.AnnotationQueueRubricItemSchemaVisibleIfJoinAll),
+				Rules: langsmith.F([]langsmith.AnnotationQueueRubricItemSchemaVisibleIfRuleParam{{
+					Key:    langsmith.F("key"),
+					Op:     langsmith.F(langsmith.AnnotationQueueRubricItemSchemaVisibleIfRulesOpIs),
+					Values: langsmith.F([]float64{0.000000}),
+				}}),
 			}),
 		}}),
 		SessionIDs: langsmith.F([]string{"182bd5e5-6e1a-4fe4-a799-aa6d9a6ab26e"}),
