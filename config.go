@@ -10,7 +10,9 @@ import (
 	"net/http"
 	"net/url"
 	"os"
+	"os/exec"
 	"path/filepath"
+	"runtime"
 	"slices"
 	"strings"
 	"sync"
@@ -25,14 +27,21 @@ const (
 	oauthClientID       = "langsmith-cli"
 	tokenRefreshLeeway  = time.Minute
 	tokenRefreshTimeout = 10 * time.Second
+	apiKeyCmdTimeout    = 30 * time.Second
 )
 
 // configProfile holds per-profile configuration from ~/.langsmith/config.json.
 // A profile uses api_key (X-API-Key header) or OAuth access_token
 // (Authorization: Bearer header) for authentication. access_token is written
 // by `langsmith login` under the profile's oauth object.
+//
+// Instead of storing the key, a profile can name where it lives: api_key_env
+// is an environment variable, and api_key_cmd is a shell command that prints
+// the key. api_key wins over api_key_env, which wins over api_key_cmd.
 type configProfile struct {
 	APIKey      string      `json:"api_key,omitempty"`
+	APIKeyEnv   string      `json:"api_key_env,omitempty"`
+	APIKeyCmd   string      `json:"api_key_cmd,omitempty"`
 	APIURL      string      `json:"api_url,omitempty"`
 	WorkspaceID string      `json:"workspace_id,omitempty"`
 	OAuth       configOAuth `json:"oauth,omitempty"`
@@ -131,6 +140,8 @@ func loadProfileOptionsForProfile(profileName string, explicit bool) ([]option.R
 			opts = append(opts, withProfileAuth(&profileAuth{state: state, override: explicit}))
 		case p.APIKey != "":
 			opts = append(opts, option.WithAPIKey(p.APIKey))
+		case p.APIKeyEnv != "" || p.APIKeyCmd != "":
+			opts = append(opts, withProfileAPIKeyRef(state.profileName, p, explicit))
 		case explicit:
 			opts = append(opts, resetAPIKey())
 		}
@@ -267,6 +278,122 @@ func withProfileAuth(auth *profileAuth) option.RequestOption {
 			return next(req)
 		}))
 	})
+}
+
+// withProfileAPIKeyRef reads a profile's api_key_env or api_key_cmd when a
+// request is sent rather than when options are applied, so the command runs
+// only for requests that need it and an API key the caller sets after this
+// option wins without running it. An explicitly selected profile clears
+// earlier credentials and puts its middleware first, so a default OAuth
+// profile's middleware sees the key and steps aside, as it does for api_key.
+func withProfileAPIKeyRef(profileName string, p configProfile, override bool) option.RequestOption {
+	return requestconfig.RequestOptionFunc(func(r *requestconfig.RequestConfig) error {
+		mw := func(req *http.Request, next option.MiddlewareNext) (*http.Response, error) {
+			if req.Header.Get("X-API-Key") != "" || req.Header.Get("Authorization") != "" {
+				return next(req)
+			}
+			key, err := resolveProfileAPIKeyRef(req.Context(), profileName, p)
+			if err != nil {
+				return nil, err
+			}
+			req.Header.Set("X-API-Key", key)
+			resp, err := next(req)
+			if err == nil && resp.StatusCode == http.StatusUnauthorized && p.APIKeyEnv == "" {
+				// The command's key may have been rotated; run it again next time.
+				forgetAPIKeyCmd(p.APIKeyCmd, key)
+			}
+			return resp, err
+		}
+		if !override {
+			return r.Apply(option.WithMiddleware(mw))
+		}
+		r.APIKey = ""
+		r.OAuthAccessToken = ""
+		for _, name := range []string{"X-API-Key", "Authorization", "X-User-Id"} {
+			r.Request.Header.Del(name)
+		}
+		r.Middlewares = append([]option.Middleware{mw}, r.Middlewares...)
+		return nil
+	})
+}
+
+func resolveProfileAPIKeyRef(ctx context.Context, profileName string, p configProfile) (string, error) {
+	if p.APIKeyEnv != "" {
+		if key := strings.TrimSpace(os.Getenv(p.APIKeyEnv)); key != "" {
+			return key, nil
+		}
+		return "", fmt.Errorf("LangSmith profile %q reads its API key from $%s, which is not set", profileName, p.APIKeyEnv)
+	}
+	key, err := runAPIKeyCmd(ctx, p.APIKeyCmd)
+	if err != nil {
+		return "", fmt.Errorf("LangSmith profile %q: api_key_cmd: %w", profileName, err)
+	}
+	return key, nil
+}
+
+// apiKeyCmdKeys caches each api_key_cmd's key, so a command such as a password
+// manager lookup runs once rather than per request. Failures are not cached,
+// and a key the server rejects is forgotten, so the next request runs the
+// command again.
+var (
+	apiKeyCmdMu   sync.Mutex
+	apiKeyCmdKeys = map[string]string{}
+)
+
+func runAPIKeyCmd(ctx context.Context, command string) (string, error) {
+	apiKeyCmdMu.Lock()
+	defer apiKeyCmdMu.Unlock()
+	if key, ok := apiKeyCmdKeys[command]; ok {
+		return key, nil
+	}
+
+	ctx, cancel := context.WithTimeout(ctx, apiKeyCmdTimeout)
+	defer cancel()
+	out, err := shellCommand(ctx, command).Output()
+	if err != nil {
+		var exitErr *exec.ExitError
+		if errors.As(err, &exitErr) {
+			if stderr := lastLine(exitErr.Stderr); stderr != "" {
+				return "", fmt.Errorf("%w: %s", err, stderr)
+			}
+		}
+		return "", err
+	}
+	key := strings.TrimSpace(string(out))
+	if key == "" {
+		return "", errors.New("command printed no API key")
+	}
+	apiKeyCmdKeys[command] = key
+	return key, nil
+}
+
+// forgetAPIKeyCmd drops command's cached key if it is still the rejected one,
+// so a late 401 for an old key does not evict a newer key another request
+// already fetched.
+func forgetAPIKeyCmd(command, rejected string) {
+	apiKeyCmdMu.Lock()
+	defer apiKeyCmdMu.Unlock()
+	if apiKeyCmdKeys[command] == rejected {
+		delete(apiKeyCmdKeys, command)
+	}
+}
+
+func shellCommand(ctx context.Context, command string) *exec.Cmd {
+	if runtime.GOOS == "windows" {
+		return exec.CommandContext(ctx, "cmd", "/C", command)
+	}
+	return exec.CommandContext(ctx, "/bin/sh", "-c", command)
+}
+
+// lastLine returns the last non-empty line of a command's stderr, which is
+// usually its error message, capped so a noisy command cannot flood the error.
+func lastLine(b []byte) string {
+	lines := strings.Split(strings.TrimSpace(string(b)), "\n")
+	line := strings.TrimSpace(lines[len(lines)-1])
+	if len(line) > 200 {
+		line = line[:200] + "..."
+	}
+	return line
 }
 
 // ProfileAuthError reports that a profile's OAuth access token has expired and

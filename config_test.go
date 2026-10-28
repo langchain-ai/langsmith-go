@@ -10,6 +10,7 @@ import (
 	"net/http/httptest"
 	"os"
 	"path/filepath"
+	"runtime"
 	"strings"
 	"sync"
 	"sync/atomic"
@@ -1275,6 +1276,172 @@ func TestWithProfileClearsInheritedAPIKeyForCredentiallessProfile(t *testing.T) 
 	}
 }
 
+// apiKeyRefServer records the X-API-Key and Authorization headers of each
+// request it receives.
+func apiKeyRefServer(t *testing.T) (*httptest.Server, func() (apiKey, auth string)) {
+	t.Helper()
+	var mu sync.Mutex
+	var apiKey, auth string
+	ts := httptest.NewServer(http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
+		mu.Lock()
+		apiKey, auth = r.Header.Get("X-API-Key"), r.Header.Get("Authorization")
+		mu.Unlock()
+		w.Header().Set("Content-Type", "application/json")
+		_ = json.NewEncoder(w).Encode(map[string]any{"version": "test"})
+	}))
+	t.Cleanup(ts.Close)
+	return ts, func() (string, string) {
+		mu.Lock()
+		defer mu.Unlock()
+		return apiKey, auth
+	}
+}
+
+func writeProfileConfig(t *testing.T, content string) {
+	t.Helper()
+	path := filepath.Join(t.TempDir(), "config.json")
+	if err := os.WriteFile(path, []byte(content), 0600); err != nil {
+		t.Fatal(err)
+	}
+	t.Setenv("LANGSMITH_CONFIG_FILE", path)
+	t.Setenv("LANGSMITH_PROFILE", "")
+}
+
+// countingKeyCmd returns an api_key_cmd that prints key and appends a line to
+// a file each time it runs, and a function that reports how many times it ran.
+func countingKeyCmd(t *testing.T, key string) (string, func() int) {
+	t.Helper()
+	if runtime.GOOS == "windows" {
+		t.Skip("api_key_cmd test uses a POSIX shell")
+	}
+	runs := filepath.Join(t.TempDir(), "runs")
+	cmd := fmt.Sprintf("echo run >> %q; printf '%%s\\n' %q", runs, key)
+	return cmd, func() int {
+		data, err := os.ReadFile(runs)
+		if errors.Is(err, os.ErrNotExist) {
+			return 0
+		}
+		if err != nil {
+			t.Fatal(err)
+		}
+		return strings.Count(string(data), "run")
+	}
+}
+
+func TestProfileAPIKeyEnvIsReadAtRequestTime(t *testing.T) {
+	clearAuthEnv(t)
+	ts, got := apiKeyRefServer(t)
+	writeProfileConfig(t, `{"current_profile": "prod", "profiles": {"prod": {"api_key_env": "PROD_LANGSMITH_KEY"}}}`)
+
+	client := NewClient(option.WithBaseURL(ts.URL), option.WithMaxRetries(0))
+	t.Setenv("PROD_LANGSMITH_KEY", "env-ref-key")
+	if _, err := client.Info.List(context.Background()); err != nil {
+		t.Fatal(err)
+	}
+	if apiKey, _ := got(); apiKey != "env-ref-key" {
+		t.Fatalf("expected key from api_key_env, got %q", apiKey)
+	}
+}
+
+func TestProfileAPIKeyEnvUnsetFailsRequest(t *testing.T) {
+	clearAuthEnv(t)
+	ts, _ := apiKeyRefServer(t)
+	writeProfileConfig(t, `{"current_profile": "prod", "profiles": {"prod": {"api_key_env": "PROD_LANGSMITH_KEY"}}}`)
+	t.Setenv("PROD_LANGSMITH_KEY", "")
+
+	client := NewClient(option.WithBaseURL(ts.URL), option.WithMaxRetries(0))
+	_, err := client.Info.List(context.Background())
+	if err == nil || !strings.Contains(err.Error(), "$PROD_LANGSMITH_KEY, which is not set") {
+		t.Fatalf("expected unset api_key_env error, got %v", err)
+	}
+}
+
+func TestProfileAPIKeyCmdRunsOncePerProcess(t *testing.T) {
+	clearAuthEnv(t)
+	ts, got := apiKeyRefServer(t)
+	cmd, runs := countingKeyCmd(t, "cmd-ref-key")
+	content, _ := json.Marshal(map[string]any{
+		"current_profile": "prod",
+		"profiles":        map[string]any{"prod": map[string]string{"api_key_cmd": cmd}},
+	})
+	writeProfileConfig(t, string(content))
+
+	client := NewClient(option.WithBaseURL(ts.URL), option.WithMaxRetries(0))
+	for range 2 {
+		if _, err := client.Info.List(context.Background()); err != nil {
+			t.Fatal(err)
+		}
+	}
+	if apiKey, _ := got(); apiKey != "cmd-ref-key" {
+		t.Fatalf("expected key from api_key_cmd, got %q", apiKey)
+	}
+	if n := runs(); n != 1 {
+		t.Fatalf("expected api_key_cmd to run once, ran %d times", n)
+	}
+}
+
+func TestProfileAPIKeyCmdFailureReportsStderr(t *testing.T) {
+	clearAuthEnv(t)
+	if runtime.GOOS == "windows" {
+		t.Skip("api_key_cmd test uses a POSIX shell")
+	}
+	ts, _ := apiKeyRefServer(t)
+	writeProfileConfig(t, `{"current_profile": "prod", "profiles": {"prod": {"api_key_cmd": "echo 'not signed in' >&2; exit 3"}}}`)
+
+	client := NewClient(option.WithBaseURL(ts.URL), option.WithMaxRetries(0))
+	_, err := client.Info.List(context.Background())
+	if err == nil || !strings.Contains(err.Error(), `profile "prod": api_key_cmd`) || !strings.Contains(err.Error(), "not signed in") {
+		t.Fatalf("expected api_key_cmd failure with stderr, got %v", err)
+	}
+}
+
+func TestProfileAPIKeyCmdSkippedWhenCallerSetsAPIKey(t *testing.T) {
+	clearAuthEnv(t)
+	ts, got := apiKeyRefServer(t)
+	cmd, runs := countingKeyCmd(t, "cmd-ref-key")
+	content, _ := json.Marshal(map[string]any{
+		"current_profile": "prod",
+		"profiles":        map[string]any{"prod": map[string]string{"api_key_cmd": cmd}},
+	})
+	writeProfileConfig(t, string(content))
+
+	client := NewClient(WithProfile("prod"), option.WithAPIKey("caller-key"), option.WithBaseURL(ts.URL), option.WithMaxRetries(0))
+	if _, err := client.Info.List(context.Background()); err != nil {
+		t.Fatal(err)
+	}
+	if apiKey, _ := got(); apiKey != "caller-key" {
+		t.Fatalf("expected caller key to win, got %q", apiKey)
+	}
+	if n := runs(); n != 0 {
+		t.Fatalf("expected api_key_cmd not to run, ran %d times", n)
+	}
+}
+
+func TestWithProfileAPIKeyRefOverridesDefaultOAuthProfile(t *testing.T) {
+	clearAuthEnv(t)
+	ts, got := apiKeyRefServer(t)
+	writeProfileConfig(t, `{
+  "current_profile": "default",
+  "profiles": {
+    "default": {"oauth": {"access_token": "default-access-token"}},
+    "prod": {"api_key_env": "PROD_LANGSMITH_KEY"}
+  }
+}`)
+	t.Setenv("PROD_LANGSMITH_KEY", "env-ref-key")
+
+	client := NewClient(WithProfile("prod"), option.WithBaseURL(ts.URL), option.WithMaxRetries(0))
+	if _, err := client.Info.List(context.Background()); err != nil {
+		t.Fatal(err)
+	}
+	apiKey, auth := got()
+	if apiKey != "env-ref-key" {
+		t.Fatalf("expected explicit profile's api_key_env, got %q", apiKey)
+	}
+	if auth != "" {
+		t.Fatalf("expected default profile bearer dropped, got %q", auth)
+	}
+}
+
 func TestWithProfileMissingProfileReturnsError(t *testing.T) {
 	clearAuthEnv(t)
 	dir := t.TempDir()
@@ -1323,4 +1490,42 @@ func clearAuthEnv(t *testing.T) {
 	t.Helper()
 	t.Setenv("LANGSMITH_API_KEY", "")
 	t.Setenv("LANGSMITH_ENDPOINT", "")
+}
+
+func TestProfileAPIKeyCmdRerunsAfterUnauthorized(t *testing.T) {
+	clearAuthEnv(t)
+	ts := httptest.NewServer(http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
+		w.WriteHeader(http.StatusUnauthorized)
+	}))
+	defer ts.Close()
+	cmd, runs := countingKeyCmd(t, "rotated-away-key")
+	content, _ := json.Marshal(map[string]any{
+		"current_profile": "prod",
+		"profiles":        map[string]any{"prod": map[string]string{"api_key_cmd": cmd}},
+	})
+	writeProfileConfig(t, string(content))
+
+	client := NewClient(option.WithBaseURL(ts.URL), option.WithMaxRetries(0))
+	for range 2 {
+		_, _ = client.Info.List(context.Background())
+	}
+	if n := runs(); n != 2 {
+		t.Fatalf("expected a rejected key to be forgotten and the command rerun, ran %d times", n)
+	}
+}
+
+func TestForgetAPIKeyCmdKeepsNewerKey(t *testing.T) {
+	const command = "test-forget-api-key-cmd"
+	apiKeyCmdMu.Lock()
+	apiKeyCmdKeys[command] = "new-key"
+	apiKeyCmdMu.Unlock()
+	t.Cleanup(func() { forgetAPIKeyCmd(command, "new-key") })
+
+	forgetAPIKeyCmd(command, "old-key")
+	apiKeyCmdMu.Lock()
+	got := apiKeyCmdKeys[command]
+	apiKeyCmdMu.Unlock()
+	if got != "new-key" {
+		t.Fatalf("a late 401 for an old key evicted the newer key, cache has %q", got)
+	}
 }
