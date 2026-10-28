@@ -4774,9 +4774,9 @@ type SandboxResponse struct {
 	MemBytes               int64                           `json:"mem_bytes"`
 	MountConfig            SandboxMountConfig              `json:"mount_config"`
 	Name                   string                          `json:"name"`
-	// Persistent (private beta) reports whether the sandbox keeps its filesystem
-	// across stops. When false, its writes are discarded whenever it stops and it is
-	// not charged for storage.
+	// Persistent reports whether the sandbox keeps its filesystem across stops. When
+	// false, its writes are discarded whenever it stops and it is not charged for
+	// storage.
 	Persistent           bool        `json:"persistent"`
 	PreserveMemoryOnStop bool        `json:"preserve_memory_on_stop"`
 	ProxyConfig          ProxyConfig `json:"proxy_config"`
