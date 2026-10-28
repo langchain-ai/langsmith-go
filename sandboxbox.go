@@ -339,8 +339,12 @@ type SandboxBoxNewParams struct {
 	CPUMillicores          param.Field[int64]             `json:"cpu_millicores"`
 	DeleteAfterStopSeconds param.Field[int64]             `json:"delete_after_stop_seconds"`
 	EnvVars                param.Field[map[string]string] `json:"env_vars"`
-	FsCapacityBytes        param.Field[int64]             `json:"fs_capacity_bytes"`
-	IdleTtlSeconds         param.Field[int64]             `json:"idle_ttl_seconds"`
+	// Disk for the sandbox, in bytes; defaults to the snapshot's and cannot be
+	// smaller. A sandbox with persistent=false gets at most 16 GiB of disk per vCPU,
+	// so at most 256 GiB: omit CPU and it is derived from the disk, set it and a
+	// larger disk is rejected.
+	FsCapacityBytes param.Field[int64] `json:"fs_capacity_bytes"`
+	IdleTtlSeconds  param.Field[int64] `json:"idle_ttl_seconds"`
 	// Labels are free-form key/value metadata persisted with the sandbox and returned
 	// on reads. Labels from the source snapshot are inherited unless overridden here.
 	Labels param.Field[map[string]string] `json:"labels"`
