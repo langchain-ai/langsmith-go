@@ -39,6 +39,7 @@ func DefaultDrainConfig() DrainConfig { return langsmithtracing.DefaultDrainConf
 var (
 	WithTracingAPIURL                     = langsmithtracing.WithAPIURL
 	WithTracingAPIKey                     = langsmithtracing.WithAPIKey
+	WithTracingHTTPClient                 = langsmithtracing.WithHTTPClient
 	WithTracingProject                    = langsmithtracing.WithProject
 	WithTracingAddress                    = langsmithtracing.WithAddress
 	WithTracingDrain                      = langsmithtracing.WithDrainConfig

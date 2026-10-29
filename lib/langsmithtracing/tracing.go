@@ -6,6 +6,7 @@ import (
 	"fmt"
 	"log"
 	"math/rand/v2"
+	"net/http"
 	"strings"
 	"sync"
 	"time"
@@ -133,6 +134,7 @@ type options struct {
 	logger              ilog.Logger
 	mergeEnvMetadata    bool // see [WithMergeFilteredEnvIntoExtraMetadata]
 	compressionDisabled bool // see [WithCompressionDisabled]
+	httpClient          *http.Client
 }
 
 // WithAPIURL overrides the LangSmith API URL.
@@ -140,6 +142,12 @@ func WithAPIURL(url string) Option { return func(o *options) { o.apiURL = url } 
 
 // WithAPIKey overrides the LangSmith API key.
 func WithAPIKey(key string) Option { return func(o *options) { o.apiKey = key } }
+
+// WithHTTPClient configures the transport, timeout and redirect policy used
+// for trace exports. When omitted, the default exporter client is used.
+func WithHTTPClient(client *http.Client) Option {
+	return func(o *options) { o.httpClient = client }
+}
 
 // WithOAuthAccessToken sets an OAuth access token for authentication.
 // When set, it takes precedence over the API key.
@@ -246,7 +254,7 @@ func NewTracingClient(ctx context.Context, opts ...Option) (*TracingClient, erro
 		Project:          dest.project,
 	}
 
-	exp := multipart.NewExporter(nil, multipart.DefaultRetry(), cfg.compressionDisabled, l)
+	exp := multipart.NewExporter(cfg.httpClient, multipart.DefaultRetry(), cfg.compressionDisabled, l)
 	sink := tracesink.NewTraceSink(ctx, exp, drainCfg, endpoint, cfg.runTransform, l)
 
 	return &TracingClient{
