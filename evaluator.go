@@ -43,6 +43,16 @@ func (r *EvaluatorService) List(ctx context.Context, query EvaluatorListParams, 
 	return res, err
 }
 
+// Create a decision-model evaluator (Jev, SemIf or OpenAI Decisions) from its
+// prompt and questions, and attach it to a project or dataset. Each question's key
+// becomes a feedback key.
+func (r *EvaluatorService) NewDecisionModel(ctx context.Context, body EvaluatorNewDecisionModelParams, opts ...option.RequestOption) (res *Evaluator, err error) {
+	opts = slices.Concat(r.Options, opts)
+	path := "api/v1/runs/rules/decision-models"
+	err = requestconfig.ExecuteNewRequest(ctx, http.MethodPost, path, body, &res, opts...)
+	return res, err
+}
+
 type CodeEvaluatorTopLevel struct {
 	Code                    string `json:"code" api:"required"`
 	AdvancedFeaturesEnabled bool   `json:"advanced_features_enabled"`
@@ -448,6 +458,138 @@ const (
 func (r EvaluatorListParamsType) IsKnown() bool {
 	switch r {
 	case EvaluatorListParamsTypeSession, EvaluatorListParamsTypeDataset:
+		return true
+	}
+	return false
+}
+
+type EvaluatorNewDecisionModelParams struct {
+	DisplayName param.Field[string] `json:"display_name" api:"required"`
+	// The prompt the model reads, as (role, template) pairs.
+	Prompt param.Field[[][]interface{}] `json:"prompt" api:"required"`
+	// The questions, keyed by feedback key, in the order to ask them.
+	Questions param.Field[map[string]EvaluatorNewDecisionModelParamsQuestions] `json:"questions" api:"required"`
+	// Call this endpoint directly instead of through the LangSmith gateway, with the
+	// workspace's TYPESAFE_API_KEY or OPENAI_API_KEY secret. Required for
+	// typesafe_compatible.
+	BaseURL param.Field[string] `json:"base_url"`
+	// The dataset whose experiments to evaluate.
+	DatasetID param.Field[string] `json:"dataset_id" format:"uuid"`
+	// Only evaluate runs that match this filter.
+	Filter param.Field[string] `json:"filter"`
+	// How many times to retry a failed model call. openai_decisions only.
+	MaxRetries param.Field[int64] `json:"max_retries"`
+	// Defaults to jev-latest for typesafe and gpt-6-luna for openai_decisions. Use
+	// semif-qwen3.5-4b for SemIf.
+	Model param.Field[string] `json:"model"`
+	// Headers sent with each model call. They are saved in the evaluator's prompt as
+	// given, so do not put API keys here.
+	ModelHeaders param.Field[map[string]string] `json:"model_headers"`
+	// A saved model configuration to start from: its model, endpoint, key and settings
+	// apply unless set here.
+	PlaygroundSettingsID param.Field[string] `json:"playground_settings_id" format:"uuid"`
+	// typesafe for Jev and SemIf, typesafe_compatible for a TypeSafe-compatible
+	// endpoint, or openai_decisions.
+	Provider param.Field[EvaluatorNewDecisionModelParamsProvider] `json:"provider"`
+	// The fraction of runs to evaluate.
+	SamplingRate param.Field[float64] `json:"sampling_rate"`
+	// The tracing project to evaluate.
+	SessionID      param.Field[string]                                        `json:"session_id" format:"uuid"`
+	TemplateFormat param.Field[EvaluatorNewDecisionModelParamsTemplateFormat] `json:"template_format"`
+	// Seconds to wait for each model call. openai_decisions only.
+	TimeoutSeconds param.Field[int64] `json:"timeout_seconds"`
+	// Maps the prompt's variables to run fields.
+	VariableMapping param.Field[map[string]string] `json:"variable_mapping"`
+}
+
+func (r EvaluatorNewDecisionModelParams) MarshalJSON() (data []byte, err error) {
+	return apijson.MarshalRoot(r)
+}
+
+// A question a decision model answers about each run.
+type EvaluatorNewDecisionModelParamsQuestions struct {
+	Instructions param.Field[string] `json:"instructions" api:"required"`
+	// noul: a yes/no question scored 0 to 1. choice: one of the options. score: one of
+	// the levels, scored by position.
+	Type param.Field[EvaluatorNewDecisionModelParamsQuestionsType] `json:"type" api:"required"`
+	// 2 to 10 level names, lowest first. score only.
+	Levels param.Field[[]string] `json:"levels"`
+	// What a no answer means. noul only; set both yes and no, or neither.
+	No param.Field[string] `json:"no"`
+	// 2 to 255 option names, or names mapped to descriptions. choice only.
+	Options param.Field[EvaluatorNewDecisionModelParamsQuestionsOptionsUnion] `json:"options"`
+	// What a yes answer means. noul only; set both yes and no, or neither.
+	Yes param.Field[string] `json:"yes"`
+}
+
+func (r EvaluatorNewDecisionModelParamsQuestions) MarshalJSON() (data []byte, err error) {
+	return apijson.MarshalRoot(r)
+}
+
+// noul: a yes/no question scored 0 to 1. choice: one of the options. score: one of
+// the levels, scored by position.
+type EvaluatorNewDecisionModelParamsQuestionsType string
+
+const (
+	EvaluatorNewDecisionModelParamsQuestionsTypeNoul   EvaluatorNewDecisionModelParamsQuestionsType = "noul"
+	EvaluatorNewDecisionModelParamsQuestionsTypeChoice EvaluatorNewDecisionModelParamsQuestionsType = "choice"
+	EvaluatorNewDecisionModelParamsQuestionsTypeScore  EvaluatorNewDecisionModelParamsQuestionsType = "score"
+)
+
+func (r EvaluatorNewDecisionModelParamsQuestionsType) IsKnown() bool {
+	switch r {
+	case EvaluatorNewDecisionModelParamsQuestionsTypeNoul, EvaluatorNewDecisionModelParamsQuestionsTypeChoice, EvaluatorNewDecisionModelParamsQuestionsTypeScore:
+		return true
+	}
+	return false
+}
+
+// 2 to 255 option names, or names mapped to descriptions. choice only.
+//
+// Satisfied by [EvaluatorNewDecisionModelParamsQuestionsOptionsArray],
+// [EvaluatorNewDecisionModelParamsQuestionsOptionsMap].
+type EvaluatorNewDecisionModelParamsQuestionsOptionsUnion interface {
+	implementsEvaluatorNewDecisionModelParamsQuestionsOptionsUnion()
+}
+
+type EvaluatorNewDecisionModelParamsQuestionsOptionsArray []string
+
+func (r EvaluatorNewDecisionModelParamsQuestionsOptionsArray) implementsEvaluatorNewDecisionModelParamsQuestionsOptionsUnion() {
+}
+
+type EvaluatorNewDecisionModelParamsQuestionsOptionsMap map[string]string
+
+func (r EvaluatorNewDecisionModelParamsQuestionsOptionsMap) implementsEvaluatorNewDecisionModelParamsQuestionsOptionsUnion() {
+}
+
+// typesafe for Jev and SemIf, typesafe_compatible for a TypeSafe-compatible
+// endpoint, or openai_decisions.
+type EvaluatorNewDecisionModelParamsProvider string
+
+const (
+	EvaluatorNewDecisionModelParamsProviderTypesafe           EvaluatorNewDecisionModelParamsProvider = "typesafe"
+	EvaluatorNewDecisionModelParamsProviderTypesafeCompatible EvaluatorNewDecisionModelParamsProvider = "typesafe_compatible"
+	EvaluatorNewDecisionModelParamsProviderOpenAIDecisions    EvaluatorNewDecisionModelParamsProvider = "openai_decisions"
+)
+
+func (r EvaluatorNewDecisionModelParamsProvider) IsKnown() bool {
+	switch r {
+	case EvaluatorNewDecisionModelParamsProviderTypesafe, EvaluatorNewDecisionModelParamsProviderTypesafeCompatible, EvaluatorNewDecisionModelParamsProviderOpenAIDecisions:
+		return true
+	}
+	return false
+}
+
+type EvaluatorNewDecisionModelParamsTemplateFormat string
+
+const (
+	EvaluatorNewDecisionModelParamsTemplateFormatMustache EvaluatorNewDecisionModelParamsTemplateFormat = "mustache"
+	EvaluatorNewDecisionModelParamsTemplateFormatFString  EvaluatorNewDecisionModelParamsTemplateFormat = "f-string"
+)
+
+func (r EvaluatorNewDecisionModelParamsTemplateFormat) IsKnown() bool {
+	switch r {
+	case EvaluatorNewDecisionModelParamsTemplateFormatMustache, EvaluatorNewDecisionModelParamsTemplateFormatFString:
 		return true
 	}
 	return false

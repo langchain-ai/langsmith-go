@@ -415,6 +415,7 @@ Response Types:
 Methods:
 
 - <code title="get /api/v1/runs/rules">client.Evaluators.<a href="https://pkg.go.dev/github.com/langchain-ai/langsmith-go#EvaluatorService.List">List</a>(ctx <a href="https://pkg.go.dev/context">context</a>.<a href="https://pkg.go.dev/context#Context">Context</a>, query <a href="https://pkg.go.dev/github.com/langchain-ai/langsmith-go">langsmith</a>.<a href="https://pkg.go.dev/github.com/langchain-ai/langsmith-go#EvaluatorListParams">EvaluatorListParams</a>) (\*[]<a href="https://pkg.go.dev/github.com/langchain-ai/langsmith-go">langsmith</a>.<a href="https://pkg.go.dev/github.com/langchain-ai/langsmith-go#Evaluator">Evaluator</a>, <a href="https://pkg.go.dev/builtin#error">error</a>)</code>
+- <code title="post /api/v1/runs/rules/decision-models">client.Evaluators.<a href="https://pkg.go.dev/github.com/langchain-ai/langsmith-go#EvaluatorService.NewDecisionModel">NewDecisionModel</a>(ctx <a href="https://pkg.go.dev/context">context</a>.<a href="https://pkg.go.dev/context#Context">Context</a>, body <a href="https://pkg.go.dev/github.com/langchain-ai/langsmith-go">langsmith</a>.<a href="https://pkg.go.dev/github.com/langchain-ai/langsmith-go#EvaluatorNewDecisionModelParams">EvaluatorNewDecisionModelParams</a>) (\*<a href="https://pkg.go.dev/github.com/langchain-ai/langsmith-go">langsmith</a>.<a href="https://pkg.go.dev/github.com/langchain-ai/langsmith-go#Evaluator">Evaluator</a>, <a href="https://pkg.go.dev/builtin#error">error</a>)</code>
 
 # OnlineEvaluators
 
