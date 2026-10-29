@@ -464,6 +464,7 @@ func (r EvaluatorListParamsType) IsKnown() bool {
 }
 
 type EvaluatorNewDecisionModelParams struct {
+	// The evaluator's name.
 	DisplayName param.Field[string] `json:"display_name" api:"required"`
 	// The prompt the model reads, as (role, template) pairs.
 	Prompt param.Field[[][]interface{}] `json:"prompt" api:"required"`
