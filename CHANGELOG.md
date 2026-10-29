@@ -1,5 +1,31 @@
 # Changelog
 
+## [0.29.3](https://github.com/langchain-ai/langsmith-go/compare/v0.29.2...v0.29.3) (2026-10-29)
+
+
+### Features
+
+* add HTTPS destination rewrite rules for sandboxes ([14d671e](https://github.com/langchain-ai/langsmith-go/commit/14d671e24af6efaf7d79f057b5c3b5c84ee51797))
+* **annotation-queues:** rubric item required_if and visible_if conditions ([a28bdcc](https://github.com/langchain-ai/langsmith-go/commit/a28bdcc150de00ad59d77f60e1750c09f4cbe9da))
+* **cli:** let profiles read the API key from an env var or command ([ee5e9cc](https://github.com/langchain-ai/langsmith-go/commit/ee5e9cc799dc5a277f96db86e909148ea86ef843))
+* **feedback:** add allows_multiple_categories flag to categorical feedback configs ([7cc416b](https://github.com/langchain-ai/langsmith-go/commit/7cc416ba57b8aefdac4aad4c7a278d4dc3672e83))
+* **sandboxes:** allow non-persistent mode for all tenants ([e70d986](https://github.com/langchain-ai/langsmith-go/commit/e70d986f1f5123395c1f97928cebf126152ad3b6))
+* **sandboxes:** show granular usage instead of dollar estimates ([4409c0f](https://github.com/langchain-ai/langsmith-go/commit/4409c0fe339cf96de24c9847cd7f48969a051ef4))
+* **sdks:** add create_decision_model to the generated SDKs ([2578444](https://github.com/langchain-ai/langsmith-go/commit/257844455b8a086962c83cc3569d7a402ff8512f))
+* show dataplane name in workspace selector ([2753c72](https://github.com/langchain-ai/langsmith-go/commit/2753c721226f46ca11bd5d829cc3383b570d4eb3))
+* trace AI search planning and configure model reasoning ([90c8f04](https://github.com/langchain-ai/langsmith-go/commit/90c8f04abff6183bea74c7ebcb52237a8d744c97))
+
+
+### Bug Fixes
+
+* **sandboxes:** cap non-persistent sandbox disk at 16 GiB per vCPU ([4a0fa23](https://github.com/langchain-ai/langsmith-go/commit/4a0fa23d3c941779a1bf6ac77a7e5c76b9c02fda))
+* **sandboxes:** retain recorded storage across sampling gaps ([a38ad87](https://github.com/langchain-ai/langsmith-go/commit/a38ad8716a564b2c37b77b2101549327fed9fcaa))
+
+
+### Documentation
+
+* **api:** describe the annotation queue, example and feedback token CLI flags ([b6af391](https://github.com/langchain-ai/langsmith-go/commit/b6af39147357ce5e6610ca10d79e3ca614869349))
+
 ## [0.29.2](https://github.com/langchain-ai/langsmith-go/compare/v0.29.1...v0.29.2) (2026-10-27)
 
 
