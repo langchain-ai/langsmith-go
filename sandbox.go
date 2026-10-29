@@ -249,16 +249,17 @@ type ProxyConfigRule struct {
 	EnvVars map[string]string        `json:"env_vars"`
 	Gcp     ProxyConfigRulesGcp      `json:"gcp"`
 	Headers []ProxyConfigRulesHeader `json:"headers"`
-	// MatchHeaders restricts a header injection rule to requests carrying every listed
-	// header, each written "name: value" with a lowercase name and an exact value.
-	// Pair with headers of the same name to swap a placeholder the sandbox sends (e.g.
-	// "authorization: Bearer account-b") for a real credential, so one host can serve
-	// several accounts. Rules are evaluated in order and the first match wins.
+	// MatchHeaders restricts a header injection or rewrite rule to requests carrying
+	// every listed header, each written "name: value" with a lowercase name and an
+	// exact value. Pair with headers of the same name to swap a placeholder the
+	// sandbox sends (e.g. "authorization: Bearer account-b") for a real credential, so
+	// one host can serve several accounts. Rules are evaluated in order and the first
+	// match wins.
 	MatchHeaders []string `json:"match_headers"`
-	// MatchHosts is only accepted for header injection and relay rules. Provider auth
-	// rules use built-in host matching. A relay rule may also list IP addresses and
-	// CIDR blocks (10.0.0.0/8), which match connections the sandbox makes to an IP
-	// address rather than a name.
+	// MatchHosts is only accepted for header injection, rewrite, and relay rules.
+	// Provider auth rules use built-in host matching. A relay rule may also list IP
+	// addresses and CIDR blocks (10.0.0.0/8), which match connections the sandbox
+	// makes to an IP address rather than a name.
 	MatchHosts []string `json:"match_hosts"`
 	MatchPaths []string `json:"match_paths"`
 	// RelayID is the ID of the LangSmith relay (a connection of kind relay) that
@@ -266,9 +267,10 @@ type ProxyConfigRule struct {
 	// from the relay's connector, and its network and IP, instead of the sandbox host.
 	// Access control still applies first, the first enabled matching relay rule wins,
 	// and a matched host never falls back to a direct connection.
-	RelayID string              `json:"relay_id" format:"uuid"`
-	Type    string              `json:"type"`
-	JSON    proxyConfigRuleJSON `json:"-"`
+	RelayID string                  `json:"relay_id" format:"uuid"`
+	Rewrite ProxyConfigRulesRewrite `json:"rewrite"`
+	Type    string                  `json:"type"`
+	JSON    proxyConfigRuleJSON     `json:"-"`
 }
 
 // proxyConfigRuleJSON contains the JSON metadata for the struct [ProxyConfigRule]
@@ -285,6 +287,7 @@ type proxyConfigRuleJSON struct {
 	MatchHosts   apijson.Field
 	MatchPaths   apijson.Field
 	RelayID      apijson.Field
+	Rewrite      apijson.Field
 	Type         apijson.Field
 	raw          string
 	ExtraFields  map[string]apijson.Field
@@ -1078,6 +1081,61 @@ func (r ProxyConfigRulesHeadersType) IsKnown() bool {
 	return false
 }
 
+type ProxyConfigRulesRewrite struct {
+	Port int64 `json:"port" api:"required"`
+	// Credentials is what happens to credential headers the sandbox sent, such as
+	// Authorization and Cookie: "strip" (the default) removes them, "redact" keeps
+	// each with its value replaced by "redacted" (after an auth scheme such as "Bearer
+	// "), and "keep" forwards them unchanged.
+	Credentials ProxyConfigRulesRewriteCredentials `json:"credentials"`
+	// Host is an HTTPS destination. Exactly one of host and sandbox is set.
+	Host string `json:"host"`
+	// Sandbox is the name or ID of a sandbox to send requests to, over plain HTTP. A
+	// sandbox link from this sandbox to that sandbox's port must exist. Exactly one of
+	// host and sandbox is set.
+	Sandbox string                      `json:"sandbox"`
+	JSON    proxyConfigRulesRewriteJSON `json:"-"`
+}
+
+// proxyConfigRulesRewriteJSON contains the JSON metadata for the struct
+// [ProxyConfigRulesRewrite]
+type proxyConfigRulesRewriteJSON struct {
+	Port        apijson.Field
+	Credentials apijson.Field
+	Host        apijson.Field
+	Sandbox     apijson.Field
+	raw         string
+	ExtraFields map[string]apijson.Field
+}
+
+func (r *ProxyConfigRulesRewrite) UnmarshalJSON(data []byte) (err error) {
+	return apijson.UnmarshalRoot(data, r)
+}
+
+func (r proxyConfigRulesRewriteJSON) RawJSON() string {
+	return r.raw
+}
+
+// Credentials is what happens to credential headers the sandbox sent, such as
+// Authorization and Cookie: "strip" (the default) removes them, "redact" keeps
+// each with its value replaced by "redacted" (after an auth scheme such as "Bearer
+// "), and "keep" forwards them unchanged.
+type ProxyConfigRulesRewriteCredentials string
+
+const (
+	ProxyConfigRulesRewriteCredentialsStrip  ProxyConfigRulesRewriteCredentials = "strip"
+	ProxyConfigRulesRewriteCredentialsRedact ProxyConfigRulesRewriteCredentials = "redact"
+	ProxyConfigRulesRewriteCredentialsKeep   ProxyConfigRulesRewriteCredentials = "keep"
+)
+
+func (r ProxyConfigRulesRewriteCredentials) IsKnown() bool {
+	switch r {
+	case ProxyConfigRulesRewriteCredentialsStrip, ProxyConfigRulesRewriteCredentialsRedact, ProxyConfigRulesRewriteCredentialsKeep:
+		return true
+	}
+	return false
+}
+
 type ProxyConfigParam struct {
 	AccessControl param.Field[ProxyConfigAccessControlParam] `json:"access_control"`
 	Callbacks     param.Field[[]ProxyConfigCallbackParam]    `json:"callbacks"`
@@ -1141,16 +1199,17 @@ type ProxyConfigRuleParam struct {
 	EnvVars param.Field[map[string]string]             `json:"env_vars"`
 	Gcp     param.Field[ProxyConfigRulesGcpUnionParam] `json:"gcp"`
 	Headers param.Field[[]ProxyConfigRulesHeaderParam] `json:"headers"`
-	// MatchHeaders restricts a header injection rule to requests carrying every listed
-	// header, each written "name: value" with a lowercase name and an exact value.
-	// Pair with headers of the same name to swap a placeholder the sandbox sends (e.g.
-	// "authorization: Bearer account-b") for a real credential, so one host can serve
-	// several accounts. Rules are evaluated in order and the first match wins.
+	// MatchHeaders restricts a header injection or rewrite rule to requests carrying
+	// every listed header, each written "name: value" with a lowercase name and an
+	// exact value. Pair with headers of the same name to swap a placeholder the
+	// sandbox sends (e.g. "authorization: Bearer account-b") for a real credential, so
+	// one host can serve several accounts. Rules are evaluated in order and the first
+	// match wins.
 	MatchHeaders param.Field[[]string] `json:"match_headers"`
-	// MatchHosts is only accepted for header injection and relay rules. Provider auth
-	// rules use built-in host matching. A relay rule may also list IP addresses and
-	// CIDR blocks (10.0.0.0/8), which match connections the sandbox makes to an IP
-	// address rather than a name.
+	// MatchHosts is only accepted for header injection, rewrite, and relay rules.
+	// Provider auth rules use built-in host matching. A relay rule may also list IP
+	// addresses and CIDR blocks (10.0.0.0/8), which match connections the sandbox
+	// makes to an IP address rather than a name.
 	MatchHosts param.Field[[]string] `json:"match_hosts"`
 	MatchPaths param.Field[[]string] `json:"match_paths"`
 	// RelayID is the ID of the LangSmith relay (a connection of kind relay) that
@@ -1158,8 +1217,9 @@ type ProxyConfigRuleParam struct {
 	// from the relay's connector, and its network and IP, instead of the sandbox host.
 	// Access control still applies first, the first enabled matching relay rule wins,
 	// and a matched host never falls back to a direct connection.
-	RelayID param.Field[string] `json:"relay_id" format:"uuid"`
-	Type    param.Field[string] `json:"type"`
+	RelayID param.Field[string]                       `json:"relay_id" format:"uuid"`
+	Rewrite param.Field[ProxyConfigRulesRewriteParam] `json:"rewrite"`
+	Type    param.Field[string]                       `json:"type"`
 }
 
 func (r ProxyConfigRuleParam) MarshalJSON() (data []byte, err error) {
@@ -1460,6 +1520,25 @@ type ProxyConfigRulesHeaderParam struct {
 }
 
 func (r ProxyConfigRulesHeaderParam) MarshalJSON() (data []byte, err error) {
+	return apijson.MarshalRoot(r)
+}
+
+type ProxyConfigRulesRewriteParam struct {
+	Port param.Field[int64] `json:"port" api:"required"`
+	// Credentials is what happens to credential headers the sandbox sent, such as
+	// Authorization and Cookie: "strip" (the default) removes them, "redact" keeps
+	// each with its value replaced by "redacted" (after an auth scheme such as "Bearer
+	// "), and "keep" forwards them unchanged.
+	Credentials param.Field[ProxyConfigRulesRewriteCredentials] `json:"credentials"`
+	// Host is an HTTPS destination. Exactly one of host and sandbox is set.
+	Host param.Field[string] `json:"host"`
+	// Sandbox is the name or ID of a sandbox to send requests to, over plain HTTP. A
+	// sandbox link from this sandbox to that sandbox's port must exist. Exactly one of
+	// host and sandbox is set.
+	Sandbox param.Field[string] `json:"sandbox"`
+}
+
+func (r ProxyConfigRulesRewriteParam) MarshalJSON() (data []byte, err error) {
 	return apijson.MarshalRoot(r)
 }
 
