@@ -119,57 +119,60 @@ func (r CodeEvaluatorTopLevelLanguage) IsKnown() bool {
 
 // Run rules schema.
 type Evaluator struct {
-	ID                                  string                    `json:"id" api:"required" format:"uuid"`
-	CreatedAt                           time.Time                 `json:"created_at" api:"required" format:"date-time"`
-	DisplayName                         string                    `json:"display_name" api:"required"`
-	EvaluatorVersion                    int64                     `json:"evaluator_version" api:"required"`
-	SamplingRate                        float64                   `json:"sampling_rate" api:"required"`
-	TenantID                            string                    `json:"tenant_id" api:"required" format:"uuid"`
-	UpdatedAt                           time.Time                 `json:"updated_at" api:"required" format:"date-time"`
-	Webhooks                            []EvaluatorWebhook        `json:"webhooks" api:"required,nullable"`
-	AddToAnnotationQueueID              string                    `json:"add_to_annotation_queue_id" api:"nullable" format:"uuid"`
-	AddToAnnotationQueueName            string                    `json:"add_to_annotation_queue_name" api:"nullable"`
-	AddToDatasetID                      string                    `json:"add_to_dataset_id" api:"nullable" format:"uuid"`
-	AddToDatasetName                    string                    `json:"add_to_dataset_name" api:"nullable"`
-	AddToDatasetPreferCorrection        bool                      `json:"add_to_dataset_prefer_correction"`
-	Alerts                              []EvaluatorPagerdutyAlert `json:"alerts" api:"nullable"`
-	AlignmentAnnotationQueueID          string                    `json:"alignment_annotation_queue_id" api:"nullable" format:"uuid"`
-	BackfillCompletedAt                 time.Time                 `json:"backfill_completed_at" api:"nullable" format:"date-time"`
-	BackfillError                       string                    `json:"backfill_error" api:"nullable"`
-	BackfillFrom                        time.Time                 `json:"backfill_from" api:"nullable" format:"date-time"`
-	BackfillID                          string                    `json:"backfill_id" api:"nullable" format:"uuid"`
-	BackfillProgress                    float64                   `json:"backfill_progress" api:"nullable"`
-	BackfillStatus                      string                    `json:"backfill_status" api:"nullable"`
-	CodeEvaluators                      []CodeEvaluatorTopLevel   `json:"code_evaluators" api:"nullable"`
-	CorrectionsDatasetID                string                    `json:"corrections_dataset_id" api:"nullable" format:"uuid"`
-	DatasetID                           string                    `json:"dataset_id" api:"nullable" format:"uuid"`
-	DatasetName                         string                    `json:"dataset_name" api:"nullable"`
-	EvaluatorID                         string                    `json:"evaluator_id" api:"nullable" format:"uuid"`
-	EvaluatorName                       string                    `json:"evaluator_name" api:"nullable"`
-	EvaluatorType                       string                    `json:"evaluator_type" api:"nullable"`
-	Evaluators                          []EvaluatorTopLevel       `json:"evaluators" api:"nullable"`
-	ExtendAnnotationQueueTraceRetention bool                      `json:"extend_annotation_queue_trace_retention" api:"nullable"`
-	ExtendDatasetTraceRetention         bool                      `json:"extend_dataset_trace_retention" api:"nullable"`
-	ExtendEvaluatorTraceRetention       bool                      `json:"extend_evaluator_trace_retention" api:"nullable"`
-	ExtendOnly                          bool                      `json:"extend_only"`
-	ExtendWebhookTraceRetention         bool                      `json:"extend_webhook_trace_retention" api:"nullable"`
-	Filter                              string                    `json:"filter" api:"nullable"`
-	GroupBy                             EvaluatorGroupBy          `json:"group_by" api:"nullable"`
-	IncludeExtendedStats                bool                      `json:"include_extended_stats"`
-	IsEnabled                           bool                      `json:"is_enabled"`
-	IsManagedEvaluator                  bool                      `json:"is_managed_evaluator"`
-	IsTracingDisabled                   bool                      `json:"is_tracing_disabled"`
-	NumFewShotExamples                  int64                     `json:"num_few_shot_examples" api:"nullable"`
-	SessionID                           string                    `json:"session_id" api:"nullable" format:"uuid"`
-	SessionName                         string                    `json:"session_name" api:"nullable"`
-	SpendLimit                          EvaluatorSpendLimit       `json:"spend_limit" api:"nullable"`
-	SpendUsd                            float64                   `json:"spend_usd" api:"nullable"`
-	TraceCount                          int64                     `json:"trace_count" api:"nullable"`
-	TraceFilter                         string                    `json:"trace_filter" api:"nullable"`
-	Transient                           bool                      `json:"transient"`
-	TreeFilter                          string                    `json:"tree_filter" api:"nullable"`
-	UseCorrectionsDataset               bool                      `json:"use_corrections_dataset"`
-	JSON                                evaluatorJSON             `json:"-"`
+	ID                           string                    `json:"id" api:"required" format:"uuid"`
+	CreatedAt                    time.Time                 `json:"created_at" api:"required" format:"date-time"`
+	DisplayName                  string                    `json:"display_name" api:"required"`
+	EvaluatorVersion             int64                     `json:"evaluator_version" api:"required"`
+	SamplingRate                 float64                   `json:"sampling_rate" api:"required"`
+	TenantID                     string                    `json:"tenant_id" api:"required" format:"uuid"`
+	UpdatedAt                    time.Time                 `json:"updated_at" api:"required" format:"date-time"`
+	Webhooks                     []EvaluatorWebhook        `json:"webhooks" api:"required,nullable"`
+	AddToAnnotationQueueID       string                    `json:"add_to_annotation_queue_id" api:"nullable" format:"uuid"`
+	AddToAnnotationQueueName     string                    `json:"add_to_annotation_queue_name" api:"nullable"`
+	AddToDatasetID               string                    `json:"add_to_dataset_id" api:"nullable" format:"uuid"`
+	AddToDatasetName             string                    `json:"add_to_dataset_name" api:"nullable"`
+	AddToDatasetPreferCorrection bool                      `json:"add_to_dataset_prefer_correction"`
+	Alerts                       []EvaluatorPagerdutyAlert `json:"alerts" api:"nullable"`
+	AlignmentAnnotationQueueID   string                    `json:"alignment_annotation_queue_id" api:"nullable" format:"uuid"`
+	BackfillCompletedAt          time.Time                 `json:"backfill_completed_at" api:"nullable" format:"date-time"`
+	BackfillError                string                    `json:"backfill_error" api:"nullable"`
+	BackfillFrom                 time.Time                 `json:"backfill_from" api:"nullable" format:"date-time"`
+	BackfillID                   string                    `json:"backfill_id" api:"nullable" format:"uuid"`
+	BackfillProgress             float64                   `json:"backfill_progress" api:"nullable"`
+	BackfillStatus               string                    `json:"backfill_status" api:"nullable"`
+	CodeEvaluators               []CodeEvaluatorTopLevel   `json:"code_evaluators" api:"nullable"`
+	CorrectionsDatasetID         string                    `json:"corrections_dataset_id" api:"nullable" format:"uuid"`
+	DatasetID                    string                    `json:"dataset_id" api:"nullable" format:"uuid"`
+	DatasetName                  string                    `json:"dataset_name" api:"nullable"`
+	// spend_limit if set; otherwise the organization's default evaluator spend limit,
+	// once the rule has made its first evaluator call.
+	EffectiveSpendLimit                 EvaluatorEffectiveSpendLimit `json:"effective_spend_limit" api:"nullable"`
+	EvaluatorID                         string                       `json:"evaluator_id" api:"nullable" format:"uuid"`
+	EvaluatorName                       string                       `json:"evaluator_name" api:"nullable"`
+	EvaluatorType                       string                       `json:"evaluator_type" api:"nullable"`
+	Evaluators                          []EvaluatorTopLevel          `json:"evaluators" api:"nullable"`
+	ExtendAnnotationQueueTraceRetention bool                         `json:"extend_annotation_queue_trace_retention" api:"nullable"`
+	ExtendDatasetTraceRetention         bool                         `json:"extend_dataset_trace_retention" api:"nullable"`
+	ExtendEvaluatorTraceRetention       bool                         `json:"extend_evaluator_trace_retention" api:"nullable"`
+	ExtendOnly                          bool                         `json:"extend_only"`
+	ExtendWebhookTraceRetention         bool                         `json:"extend_webhook_trace_retention" api:"nullable"`
+	Filter                              string                       `json:"filter" api:"nullable"`
+	GroupBy                             EvaluatorGroupBy             `json:"group_by" api:"nullable"`
+	IncludeExtendedStats                bool                         `json:"include_extended_stats"`
+	IsEnabled                           bool                         `json:"is_enabled"`
+	IsManagedEvaluator                  bool                         `json:"is_managed_evaluator"`
+	IsTracingDisabled                   bool                         `json:"is_tracing_disabled"`
+	NumFewShotExamples                  int64                        `json:"num_few_shot_examples" api:"nullable"`
+	SessionID                           string                       `json:"session_id" api:"nullable" format:"uuid"`
+	SessionName                         string                       `json:"session_name" api:"nullable"`
+	SpendLimit                          EvaluatorSpendLimit          `json:"spend_limit" api:"nullable"`
+	SpendUsd                            float64                      `json:"spend_usd" api:"nullable"`
+	TraceCount                          int64                        `json:"trace_count" api:"nullable"`
+	TraceFilter                         string                       `json:"trace_filter" api:"nullable"`
+	Transient                           bool                         `json:"transient"`
+	TreeFilter                          string                       `json:"tree_filter" api:"nullable"`
+	UseCorrectionsDataset               bool                         `json:"use_corrections_dataset"`
+	JSON                                evaluatorJSON                `json:"-"`
 }
 
 // evaluatorJSON contains the JSON metadata for the struct [Evaluator]
@@ -199,6 +202,7 @@ type evaluatorJSON struct {
 	CorrectionsDatasetID                apijson.Field
 	DatasetID                           apijson.Field
 	DatasetName                         apijson.Field
+	EffectiveSpendLimit                 apijson.Field
 	EvaluatorID                         apijson.Field
 	EvaluatorName                       apijson.Field
 	EvaluatorType                       apijson.Field
@@ -234,6 +238,45 @@ func (r *Evaluator) UnmarshalJSON(data []byte) (err error) {
 
 func (r evaluatorJSON) RawJSON() string {
 	return r.raw
+}
+
+// spend_limit if set; otherwise the organization's default evaluator spend limit,
+// once the rule has made its first evaluator call.
+type EvaluatorEffectiveSpendLimit struct {
+	LimitUsd string                             `json:"limit_usd" api:"required"`
+	Window   EvaluatorEffectiveSpendLimitWindow `json:"window" api:"required"`
+	JSON     evaluatorEffectiveSpendLimitJSON   `json:"-"`
+}
+
+// evaluatorEffectiveSpendLimitJSON contains the JSON metadata for the struct
+// [EvaluatorEffectiveSpendLimit]
+type evaluatorEffectiveSpendLimitJSON struct {
+	LimitUsd    apijson.Field
+	Window      apijson.Field
+	raw         string
+	ExtraFields map[string]apijson.Field
+}
+
+func (r *EvaluatorEffectiveSpendLimit) UnmarshalJSON(data []byte) (err error) {
+	return apijson.UnmarshalRoot(data, r)
+}
+
+func (r evaluatorEffectiveSpendLimitJSON) RawJSON() string {
+	return r.raw
+}
+
+type EvaluatorEffectiveSpendLimitWindow string
+
+const (
+	EvaluatorEffectiveSpendLimitWindowWeekly EvaluatorEffectiveSpendLimitWindow = "weekly"
+)
+
+func (r EvaluatorEffectiveSpendLimitWindow) IsKnown() bool {
+	switch r {
+	case EvaluatorEffectiveSpendLimitWindowWeekly:
+		return true
+	}
+	return false
 }
 
 type EvaluatorGroupBy string
