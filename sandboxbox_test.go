@@ -144,7 +144,10 @@ func TestSandboxBoxNewWithOptionalParams(t *testing.T) {
 			Rules: langsmith.F([]langsmith.ProxyConfigRuleParam{{
 				Name: langsmith.F("name"),
 				Aws: langsmith.F[langsmith.ProxyConfigRulesAwsUnionParam](langsmith.ProxyConfigRulesAwsSandboxesProxyAwsRoleConfigParam{
-					RoleArn:      langsmith.F("x"),
+					RoleArn: langsmith.F("x"),
+					SessionTags: langsmith.F(map[string]string{
+						"foo": "string",
+					}),
 					SubjectScope: langsmith.F("tag:2fdcD1Dc-bbDb-2BBD-0Afa-1A3C33cFaADc"),
 				}),
 				Azure: langsmith.F[langsmith.ProxyConfigRulesAzureUnionParam](langsmith.ProxyConfigRulesAzureSandboxesProxyAzureWorkloadIdentityConfigParam{
@@ -281,7 +284,10 @@ func TestSandboxBoxUpdateWithOptionalParams(t *testing.T) {
 				Rules: langsmith.F([]langsmith.ProxyConfigRuleParam{{
 					Name: langsmith.F("name"),
 					Aws: langsmith.F[langsmith.ProxyConfigRulesAwsUnionParam](langsmith.ProxyConfigRulesAwsSandboxesProxyAwsRoleConfigParam{
-						RoleArn:      langsmith.F("x"),
+						RoleArn: langsmith.F("x"),
+						SessionTags: langsmith.F(map[string]string{
+							"foo": "string",
+						}),
 						SubjectScope: langsmith.F("tag:2fdcD1Dc-bbDb-2BBD-0Afa-1A3C33cFaADc"),
 					}),
 					Azure: langsmith.F[langsmith.ProxyConfigRulesAzureUnionParam](langsmith.ProxyConfigRulesAzureSandboxesProxyAzureWorkloadIdentityConfigParam{

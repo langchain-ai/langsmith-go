@@ -324,6 +324,8 @@ type ProxyConfigRulesAws struct {
 	// This field can have the runtime type of
 	// [ProxyConfigRulesAwsSandboxesProxyAwsStaticConfigSecretAccessKey].
 	SecretAccessKey interface{} `json:"secret_access_key"`
+	// This field can have the runtime type of [map[string]string].
+	SessionTags interface{} `json:"session_tags"`
 	// SubjectScope picks the token subject the role trusts: "workspace" (the default)
 	// or "tag:<tag value id>", which must be one of the sandbox's tag_value_ids. Only
 	// valid with role_arn.
@@ -338,6 +340,7 @@ type proxyConfigRulesAwsJSON struct {
 	AccessKeyID     apijson.Field
 	RoleArn         apijson.Field
 	SecretAccessKey apijson.Field
+	SessionTags     apijson.Field
 	SubjectScope    apijson.Field
 	raw             string
 	ExtraFields     map[string]apijson.Field
@@ -394,6 +397,13 @@ type ProxyConfigRulesAwsSandboxesProxyAwsRoleConfig struct {
 	// access follows the role's effective AWS permissions. Mutually exclusive with
 	// static keys, and cannot be changed after creation.
 	RoleArn string `json:"role_arn" api:"required"`
+	// SessionTags are AWS session tags on the role session, for role policies that
+	// scope access with ${aws:PrincipalTag/<key>}. The role's trust policy must allow
+	// sts:TagSession. At most 50; keys are 1-128 and values 1-256 letters, numbers,
+	// spaces or \_.:=+-@ (keys may also contain /); keys starting with aws: or
+	// langsmith: are reserved. Only valid with role_arn, and cannot be changed after
+	// creation.
+	SessionTags map[string]string `json:"session_tags"`
 	// SubjectScope picks the token subject the role trusts: "workspace" (the default)
 	// or "tag:<tag value id>", which must be one of the sandbox's tag_value_ids. Only
 	// valid with role_arn.
@@ -405,6 +415,7 @@ type ProxyConfigRulesAwsSandboxesProxyAwsRoleConfig struct {
 // for the struct [ProxyConfigRulesAwsSandboxesProxyAwsRoleConfig]
 type proxyConfigRulesAwsSandboxesProxyAwsRoleConfigJSON struct {
 	RoleArn      apijson.Field
+	SessionTags  apijson.Field
 	SubjectScope apijson.Field
 	raw          string
 	ExtraFields  map[string]apijson.Field
@@ -1255,6 +1266,7 @@ type ProxyConfigRulesAwsParam struct {
 	// static keys, and cannot be changed after creation.
 	RoleArn         param.Field[string]      `json:"role_arn"`
 	SecretAccessKey param.Field[interface{}] `json:"secret_access_key"`
+	SessionTags     param.Field[interface{}] `json:"session_tags"`
 	// SubjectScope picks the token subject the role trusts: "workspace" (the default)
 	// or "tag:<tag value id>", which must be one of the sandbox's tag_value_ids. Only
 	// valid with role_arn.
@@ -1281,6 +1293,13 @@ type ProxyConfigRulesAwsSandboxesProxyAwsRoleConfigParam struct {
 	// access follows the role's effective AWS permissions. Mutually exclusive with
 	// static keys, and cannot be changed after creation.
 	RoleArn param.Field[string] `json:"role_arn" api:"required"`
+	// SessionTags are AWS session tags on the role session, for role policies that
+	// scope access with ${aws:PrincipalTag/<key>}. The role's trust policy must allow
+	// sts:TagSession. At most 50; keys are 1-128 and values 1-256 letters, numbers,
+	// spaces or \_.:=+-@ (keys may also contain /); keys starting with aws: or
+	// langsmith: are reserved. Only valid with role_arn, and cannot be changed after
+	// creation.
+	SessionTags param.Field[map[string]string] `json:"session_tags"`
 	// SubjectScope picks the token subject the role trusts: "workspace" (the default)
 	// or "tag:<tag value id>", which must be one of the sandbox's tag_value_ids. Only
 	// valid with role_arn.
