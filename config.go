@@ -95,7 +95,14 @@ func (e oauthErrorResponse) Error() string {
 	return e.Code + ": " + e.ErrorDescription
 }
 
-// loadProfileOptions reads ~/.langsmith/config.json and returns RequestOptions
+// loadProfileOptions returns the client defaults that come from hand-written
+// code: the active profile's options and the 204 No Content handling.
+// DefaultClientOptions calls it for every client.
+func loadProfileOptions() []option.RequestOption {
+	return append(profileOptions(), withNoContentAsEmptyJSON())
+}
+
+// profileOptions reads ~/.langsmith/config.json and returns RequestOptions
 // for the active profile. Returns nil if no config file exists or no matching
 // profile is found.
 //
@@ -103,7 +110,7 @@ func (e oauthErrorResponse) Error() string {
 //  1. LANGSMITH_PROFILE environment variable
 //  2. current_profile key in config file
 //  3. "default" profile
-func loadProfileOptions() []option.RequestOption {
+func profileOptions() []option.RequestOption {
 	opts, _ := loadProfileOptionsForProfile("", false)
 	return opts
 }

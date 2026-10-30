@@ -109,7 +109,7 @@ func TestRefreshPreservesFieldsTheSDKDoesNotModel(t *testing.T) {
 	path := writeOAuthProfileConfig(t, ts.URL, ts.URL)
 
 	var out map[string]string
-	if err := requestconfig.ExecuteNewRequest(context.Background(), http.MethodGet, "/info", nil, &out, loadProfileOptions()...); err != nil {
+	if err := requestconfig.ExecuteNewRequest(context.Background(), http.MethodGet, "/info", nil, &out, profileOptions()...); err != nil {
 		t.Fatal(err)
 	}
 	if out["auth"] != "Bearer new-access-token" {
@@ -284,7 +284,7 @@ func TestExpiredTokenWithRejectedRefreshReturnsReauthError(t *testing.T) {
 
 	var out map[string]string
 	err := requestconfig.ExecuteNewRequest(context.Background(), http.MethodGet, "/info", nil, &out,
-		append(loadProfileOptions(), option.WithMaxRetries(2))...)
+		append(profileOptions(), option.WithMaxRetries(2))...)
 	var authErr *ProfileAuthError
 	if !errors.As(err, &authErr) {
 		t.Fatalf("expected ProfileAuthError, got %v", err)
@@ -318,7 +318,7 @@ func TestUnexpiredTokenIsUsedWhenRefreshFails(t *testing.T) {
 	}
 
 	var out map[string]string
-	if err := requestconfig.ExecuteNewRequest(context.Background(), http.MethodGet, "/info", nil, &out, loadProfileOptions()...); err != nil {
+	if err := requestconfig.ExecuteNewRequest(context.Background(), http.MethodGet, "/info", nil, &out, profileOptions()...); err != nil {
 		t.Fatal(err)
 	}
 	if out["auth"] != "Bearer old-access-token" {
@@ -334,7 +334,7 @@ func TestExplicitBearerBeatsDefaultProfile(t *testing.T) {
 
 	explicit := jwtWithSubject(t, "explicit-user")
 	var gotUserID string
-	opts := append(loadProfileOptions(),
+	opts := append(profileOptions(),
 		option.WithHeader("Authorization", "Bearer "+explicit),
 		option.WithMiddleware(func(req *http.Request, next option.MiddlewareNext) (*http.Response, error) {
 			gotUserID = req.Header.Get("X-User-Id")

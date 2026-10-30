@@ -30,7 +30,7 @@ func jwtWithSubject(t *testing.T, sub string) string {
 
 func TestLoadProfileOptions_NoFile(t *testing.T) {
 	t.Setenv("LANGSMITH_CONFIG_FILE", "/nonexistent/path/config.json")
-	opts := loadProfileOptions()
+	opts := profileOptions()
 	if len(opts) != 0 {
 		t.Errorf("expected no options for missing file, got %d", len(opts))
 	}
@@ -57,7 +57,7 @@ func TestLoadProfileOptions_ValidProfile(t *testing.T) {
 	t.Setenv("LANGSMITH_CONFIG_FILE", path)
 	t.Setenv("LANGSMITH_PROFILE", "")
 
-	opts := loadProfileOptions()
+	opts := profileOptions()
 	if len(opts) != 3 {
 		t.Fatalf("expected 3 options (base_url, api_key, tenant_id), got %d", len(opts))
 	}
@@ -85,7 +85,7 @@ func TestLoadProfileOptions_EnvProfileOverride(t *testing.T) {
 	t.Setenv("LANGSMITH_CONFIG_FILE", path)
 	t.Setenv("LANGSMITH_PROFILE", "staging")
 
-	opts := loadProfileOptions()
+	opts := profileOptions()
 	if len(opts) != 1 {
 		t.Fatalf("expected 1 option (api_key only), got %d", len(opts))
 	}
@@ -110,7 +110,7 @@ func TestLoadProfileOptions_FallbackToDefault(t *testing.T) {
 	t.Setenv("LANGSMITH_CONFIG_FILE", path)
 	t.Setenv("LANGSMITH_PROFILE", "")
 
-	opts := loadProfileOptions()
+	opts := profileOptions()
 	if len(opts) != 2 {
 		t.Fatalf("expected 2 options (base_url, api_key), got %d", len(opts))
 	}
@@ -134,7 +134,7 @@ func TestLoadProfileOptions_NoMatchingProfile(t *testing.T) {
 	t.Setenv("LANGSMITH_CONFIG_FILE", path)
 	t.Setenv("LANGSMITH_PROFILE", "")
 
-	opts := loadProfileOptions()
+	opts := profileOptions()
 	if len(opts) != 0 {
 		t.Errorf("expected no options for missing profile, got %d", len(opts))
 	}
@@ -148,7 +148,7 @@ func TestLoadProfileOptions_InvalidJSON(t *testing.T) {
 	}
 	t.Setenv("LANGSMITH_CONFIG_FILE", path)
 
-	opts := loadProfileOptions()
+	opts := profileOptions()
 	if len(opts) != 0 {
 		t.Errorf("expected no options for invalid JSON, got %d", len(opts))
 	}
@@ -172,7 +172,7 @@ func TestLoadProfileOptions_PartialFields(t *testing.T) {
 	t.Setenv("LANGSMITH_CONFIG_FILE", path)
 	t.Setenv("LANGSMITH_PROFILE", "")
 
-	opts := loadProfileOptions()
+	opts := profileOptions()
 	if len(opts) != 1 {
 		t.Fatalf("expected 1 option (api_key only), got %d", len(opts))
 	}
@@ -246,7 +246,7 @@ func TestLoadProfileOptions_OAuthAccessToken(t *testing.T) {
 	t.Setenv("LANGSMITH_CONFIG_FILE", path)
 	t.Setenv("LANGSMITH_PROFILE", "")
 
-	opts := loadProfileOptions()
+	opts := profileOptions()
 	cfg := applyOptions(t, opts)
 	if cfg.OAuthAccessToken != accessToken {
 		t.Fatalf("expected profile access token to become OAuth access token, got %q", cfg.OAuthAccessToken)
@@ -293,7 +293,7 @@ func TestLoadProfileOptions_APIKeyOverrideDropsOAuthUserID(t *testing.T) {
 	t.Setenv("LANGSMITH_CONFIG_FILE", path)
 	t.Setenv("LANGSMITH_PROFILE", "")
 
-	opts := append(loadProfileOptions(), option.WithAPIKey("override-api-key"))
+	opts := append(profileOptions(), option.WithAPIKey("override-api-key"))
 	cfg := applyOptions(t, opts)
 	if cfg.OAuthAccessToken != "" {
 		t.Fatalf("expected API key override to clear OAuth access token, got %q", cfg.OAuthAccessToken)
@@ -302,7 +302,7 @@ func TestLoadProfileOptions_APIKeyOverrideDropsOAuthUserID(t *testing.T) {
 		t.Fatalf("expected API key override to clear initial X-User-Id, got %q", got)
 	}
 
-	preProfileOpts := append([]option.RequestOption{option.WithAPIKey("override-api-key")}, loadProfileOptions()...)
+	preProfileOpts := append([]option.RequestOption{option.WithAPIKey("override-api-key")}, profileOptions()...)
 	cfg = applyOptions(t, preProfileOpts)
 	if cfg.OAuthAccessToken != "" {
 		t.Fatalf("expected pre-existing API key to suppress OAuth access token, got %q", cfg.OAuthAccessToken)
@@ -386,7 +386,7 @@ func TestLoadProfileOptions_RefreshesExpiredAccessToken(t *testing.T) {
 	t.Setenv("LANGSMITH_CONFIG_FILE", path)
 	t.Setenv("LANGSMITH_PROFILE", "")
 
-	opts := loadProfileOptions()
+	opts := profileOptions()
 	cfg := applyOptions(t, opts)
 	if cfg.OAuthAccessToken != "old-access-token" {
 		t.Fatalf("expected initial access token before request, got %q", cfg.OAuthAccessToken)
@@ -483,8 +483,8 @@ func TestLoadProfileOptions_RefreshesExpiredAccessTokenOnceAcrossAuthStates(t *t
 	t.Setenv("LANGSMITH_CONFIG_FILE", path)
 	t.Setenv("LANGSMITH_PROFILE", "")
 
-	optsA := loadProfileOptions()
-	optsB := loadProfileOptions()
+	optsA := profileOptions()
+	optsB := profileOptions()
 
 	var wg sync.WaitGroup
 	wg.Add(2)
@@ -756,7 +756,7 @@ func TestLoadProfileOptions_RefreshTokenOnlyBeforeProfileAPIKey(t *testing.T) {
 	t.Setenv("LANGSMITH_CONFIG_FILE", path)
 	t.Setenv("LANGSMITH_PROFILE", "")
 
-	opts := loadProfileOptions()
+	opts := profileOptions()
 	cfg := applyOptions(t, opts)
 	if got := cfg.Request.Header.Get("X-API-Key"); got != "" {
 		t.Fatalf("expected no initial X-API-Key before refresh, got %q", got)
@@ -837,7 +837,7 @@ func TestLoadProfileOptions_RefreshUsesProfileAPIURL(t *testing.T) {
 	t.Setenv("LANGSMITH_CONFIG_FILE", path)
 	t.Setenv("LANGSMITH_PROFILE", "")
 
-	opts := append(loadProfileOptions(), option.WithBaseURL(apiTS.URL))
+	opts := append(profileOptions(), option.WithBaseURL(apiTS.URL))
 	var out map[string]string
 	if err := requestconfig.ExecuteNewRequest(context.Background(), http.MethodGet, "/info", nil, &out, opts...); err != nil {
 		t.Fatal(err)
@@ -877,7 +877,7 @@ func TestLoadProfileOptions_OAuthAccessTokenOverridesProfileAPIKey(t *testing.T)
 	t.Setenv("LANGSMITH_CONFIG_FILE", path)
 	t.Setenv("LANGSMITH_PROFILE", "")
 
-	opts := loadProfileOptions()
+	opts := profileOptions()
 	cfg := applyOptions(t, opts)
 	if cfg.APIKey != "" {
 		t.Fatalf("expected profile OAuth token to take precedence over profile API key")
@@ -913,7 +913,7 @@ func TestLoadProfileOptions_EnvAuthSuppressesProfileAuth(t *testing.T) {
 	t.Setenv("LANGSMITH_PROFILE", "")
 	t.Setenv("LANGSMITH_API_KEY", "env-api-key")
 
-	opts := loadProfileOptions()
+	opts := profileOptions()
 	cfg := applyOptions(t, opts)
 	if cfg.APIKey != "" || cfg.OAuthAccessToken != "" {
 		t.Fatalf("expected profile auth to be suppressed when env auth is set")
