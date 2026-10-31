@@ -536,7 +536,10 @@ func refreshProfileLocked(ctx context.Context, path, profileName, rejected strin
 
 	lock, err := acquireOAuthRefreshLock(ctx, path+".oauth.lock")
 	if err != nil {
-		return configFile{}, configProfile{}, err
+		return configFile{}, configProfile{}, fmt.Errorf(
+			"acquiring OAuth refresh lock (another process may be refreshing; a lock left by a crashed process is released after %s): %w",
+			oauthRefreshLockStaleAfter, err,
+		)
 	}
 	defer lock.Unlock()
 
@@ -623,14 +626,29 @@ func resolveProfileName(cfg configFile) string {
 
 // configPath returns the path to the config file.
 func configPath() string {
-	if v := os.Getenv("LANGSMITH_CONFIG_FILE"); v != "" {
-		return v
+	path := os.Getenv("LANGSMITH_CONFIG_FILE")
+	if path == "" || path == "~" || strings.HasPrefix(path, "~/") || strings.HasPrefix(path, `~\`) {
+		home, err := os.UserHomeDir()
+		if err != nil {
+			return ""
+		}
+		if path == "" {
+			path = filepath.Join(home, ".langsmith", "config.json")
+		} else {
+			path = filepath.Join(home, strings.TrimLeft(path[1:], `/\`))
+		}
 	}
-	home, err := os.UserHomeDir()
+	path, err := filepath.Abs(path)
 	if err != nil {
 		return ""
 	}
-	return filepath.Join(home, ".langsmith", "config.json")
+	// Resolve symlinks so every alias of one config shares one refresh lock.
+	// A config that does not exist yet (or cannot be resolved) keeps its
+	// absolute path.
+	if resolved, err := filepath.EvalSymlinks(path); err == nil {
+		return resolved
+	}
+	return path
 }
 
 func shouldRefreshProfileToken(p configProfile) bool {

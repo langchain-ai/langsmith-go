@@ -526,11 +526,7 @@ func TestAcquireOAuthRefreshDirLockBreaksExpiredTimestampLock(t *testing.T) {
 	if err := os.Mkdir(lockDir, 0700); err != nil {
 		t.Fatal(err)
 	}
-	if err := os.WriteFile(
-		filepath.Join(lockDir, oauthRefreshLockTimestampFile),
-		[]byte(now.Add(-oauthRefreshLockStaleAfter-time.Second).Format(time.RFC3339Nano)+"\n"),
-		0600,
-	); err != nil {
+	if err := writeOAuthRefreshLockMetadata(lockDir, now.Add(-oauthRefreshLockStaleAfter-time.Second), "crashed-owner"); err != nil {
 		t.Fatal(err)
 	}
 
@@ -538,65 +534,44 @@ func TestAcquireOAuthRefreshDirLockBreaksExpiredTimestampLock(t *testing.T) {
 	if err != nil {
 		t.Fatal(err)
 	}
-	defer lock.unlock()
+	defer lock.Unlock()
 
-	createdAt, ok := oauthRefreshDirLockCreatedAt(lockDir)
-	if !ok {
-		t.Fatal("expected refreshed lock timestamp")
+	if owner, _ := oauthRefreshLockOwner(lockDir); owner != lock.owner {
+		t.Fatalf("expected lock to be taken over, owner is %q", owner)
 	}
-	if !createdAt.Equal(now) {
+	if createdAt, ok := oauthRefreshLockCreatedAt(lockDir); !ok || !createdAt.Equal(now) {
 		t.Fatalf("expected refreshed lock timestamp %s, got %s", now, createdAt)
 	}
 }
 
 func TestAcquireOAuthRefreshDirLockBreaksExpiredLockWithoutTimestamp(t *testing.T) {
 	now := time.Unix(1700000000, 0).UTC()
-	lockDir := filepath.Join(t.TempDir(), "config.json.oauth.lock.lock")
-	if err := os.Mkdir(lockDir, 0700); err != nil {
-		t.Fatal(err)
-	}
-	staleAt := now.Add(-oauthRefreshLockStaleAfter - time.Second)
-	if err := os.Chtimes(lockDir, staleAt, staleAt); err != nil {
-		t.Fatal(err)
-	}
+	for _, metadata := range []string{"", "malformed"} {
+		t.Run(metadata, func(t *testing.T) {
+			lockDir := filepath.Join(t.TempDir(), "config.json.oauth.lock.lock")
+			if err := os.Mkdir(lockDir, 0700); err != nil {
+				t.Fatal(err)
+			}
+			if metadata != "" {
+				if err := os.WriteFile(filepath.Join(lockDir, oauthRefreshLockTimestampFile), []byte(metadata), 0600); err != nil {
+					t.Fatal(err)
+				}
+			}
+			staleAt := now.Add(-oauthRefreshLockStaleAfter - time.Second)
+			if err := os.Chtimes(lockDir, staleAt, staleAt); err != nil {
+				t.Fatal(err)
+			}
 
-	lock, err := acquireOAuthRefreshDirLock(context.Background(), lockDir, func() time.Time { return now })
-	if err != nil {
-		t.Fatal(err)
-	}
-	defer lock.unlock()
+			lock, err := acquireOAuthRefreshDirLock(context.Background(), lockDir, func() time.Time { return now })
+			if err != nil {
+				t.Fatal(err)
+			}
+			defer lock.Unlock()
 
-	if _, err := os.Stat(filepath.Join(lockDir, oauthRefreshLockTimestampFile)); err != nil {
-		t.Fatalf("expected timestamp file after taking stale lock: %v", err)
-	}
-}
-
-func TestOAuthRefreshDirLockUnlockDoesNotRemoveNewOwner(t *testing.T) {
-	now := time.Unix(1700000000, 0).UTC()
-	lockDir := filepath.Join(t.TempDir(), "config.json.oauth.lock.lock")
-	if err := os.Mkdir(lockDir, 0700); err != nil {
-		t.Fatal(err)
-	}
-	if err := writeOAuthRefreshLockMetadata(
-		lockDir,
-		now.Add(-oauthRefreshLockStaleAfter-time.Second),
-		"stale-owner",
-	); err != nil {
-		t.Fatal(err)
-	}
-
-	lock, err := acquireOAuthRefreshDirLock(context.Background(), lockDir, func() time.Time { return now })
-	if err != nil {
-		t.Fatal(err)
-	}
-	defer lock.unlock()
-
-	staleLock := &oauthRefreshDirLock{path: lockDir, owner: "stale-owner"}
-	if err := staleLock.unlock(); err != nil {
-		t.Fatal(err)
-	}
-	if _, err := os.Stat(lockDir); err != nil {
-		t.Fatalf("expected stale owner unlock to leave new lock in place: %v", err)
+			if owner, _ := oauthRefreshLockOwner(lockDir); owner != lock.owner {
+				t.Fatalf("expected lock to be taken over, owner is %q", owner)
+			}
+		})
 	}
 }
 
@@ -606,11 +581,7 @@ func TestAcquireOAuthRefreshDirLockWaitsForFreshLock(t *testing.T) {
 	if err := os.Mkdir(lockDir, 0700); err != nil {
 		t.Fatal(err)
 	}
-	if err := os.WriteFile(
-		filepath.Join(lockDir, oauthRefreshLockTimestampFile),
-		[]byte(now.Add(-oauthRefreshLockStaleAfter+time.Second).Format(time.RFC3339Nano)+"\n"),
-		0600,
-	); err != nil {
+	if err := writeOAuthRefreshLockMetadata(lockDir, now.Add(-oauthRefreshLockStaleAfter+time.Second), "live-owner"); err != nil {
 		t.Fatal(err)
 	}
 
@@ -620,9 +591,155 @@ func TestAcquireOAuthRefreshDirLockWaitsForFreshLock(t *testing.T) {
 	if !errors.Is(err, context.DeadlineExceeded) {
 		t.Fatalf("expected deadline while fresh lock exists, got %v", err)
 	}
-	if _, err := os.Stat(lockDir); err != nil {
-		t.Fatalf("expected fresh lock directory to remain: %v", err)
+	if owner, _ := oauthRefreshLockOwner(lockDir); owner != "live-owner" {
+		t.Fatalf("expected live owner to keep the lock, got %q", owner)
 	}
+}
+
+// A holder bounds its refresh to tokenRefreshTimeout; the takeover threshold
+// must leave margin above that so a slow but live holder is never evicted.
+func TestOAuthRefreshLockStaleAfterExceedsRefreshTimeout(t *testing.T) {
+	if oauthRefreshLockStaleAfter < tokenRefreshTimeout+5*time.Second {
+		t.Fatalf("stale threshold %s leaves too little margin over refresh timeout %s", oauthRefreshLockStaleAfter, tokenRefreshTimeout)
+	}
+}
+
+func TestOAuthRefreshLockUnlockRetriesTransientRemoveFailure(t *testing.T) {
+	lockDir := filepath.Join(t.TempDir(), "config.json.oauth.lock.lock")
+	lock, err := acquireOAuthRefreshDirLock(context.Background(), lockDir, time.Now)
+	if err != nil {
+		t.Fatal(err)
+	}
+	failures := 2
+	oauthRefreshLockRemoveAll = func(path string) error {
+		if failures > 0 {
+			failures--
+			return errors.New("sharing violation")
+		}
+		return os.RemoveAll(path)
+	}
+	t.Cleanup(func() { oauthRefreshLockRemoveAll = os.RemoveAll })
+
+	if err := lock.Unlock(); err != nil {
+		t.Fatalf("expected unlock to retry, got %v", err)
+	}
+	if _, err := os.Stat(lockDir); !os.IsNotExist(err) {
+		t.Fatalf("expected lock directory removed, got %v", err)
+	}
+}
+
+func TestOAuthRefreshDirLockUnlockDoesNotRemoveNewOwner(t *testing.T) {
+	lockDir := filepath.Join(t.TempDir(), "config.json.oauth.lock.lock")
+	lock, err := acquireOAuthRefreshDirLock(context.Background(), lockDir, time.Now)
+	if err != nil {
+		t.Fatal(err)
+	}
+	defer lock.Unlock()
+	staleLock := &oauthRefreshLock{path: lockDir, owner: "stale-owner"}
+	if err := staleLock.Unlock(); err != nil {
+		t.Fatal(err)
+	}
+	if _, err := os.Stat(lockDir); err != nil {
+		t.Fatalf("expected foreign owner unlock to leave lock in place: %v", err)
+	}
+}
+
+// While another process holds the refresh lock, a token inside the refresh
+// leeway still authenticates; only an expired one fails. The cached refresh
+// token is never used without the lock.
+func TestProfileAuthUsesUnexpiredTokenWhenRefreshLockIsBusy(t *testing.T) {
+	for _, tc := range []struct {
+		name      string
+		expiresIn time.Duration
+		wantErr   bool
+	}{
+		{"within leeway", 30 * time.Second, false},
+		{"expired", -time.Minute, true},
+	} {
+		t.Run(tc.name, func(t *testing.T) {
+			var refreshes atomic.Int32
+			srv := httptest.NewServer(http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
+				refreshes.Add(1)
+				w.WriteHeader(http.StatusInternalServerError)
+			}))
+			defer srv.Close()
+
+			path := filepath.Join(t.TempDir(), "config.json")
+			profile := configProfile{
+				APIURL: srv.URL,
+				OAuth:  configOAuth{AccessToken: "cached-access", RefreshToken: "cached-refresh", ExpiresAt: time.Now().Add(tc.expiresIn).UTC().Format(time.RFC3339)},
+			}
+			cfg := configFile{Profiles: map[string]configProfile{"default": profile}}
+			data, err := json.Marshal(cfg)
+			if err != nil {
+				t.Fatal(err)
+			}
+			if err := os.WriteFile(path, data, 0600); err != nil {
+				t.Fatal(err)
+			}
+			held, err := acquireOAuthRefreshLock(context.Background(), path+".oauth.lock")
+			if err != nil {
+				t.Fatal(err)
+			}
+			defer held.Unlock()
+
+			auth := &profileAuth{state: &profileState{path: path, profileName: "default", cfg: cfg}}
+			ctx, cancel := context.WithTimeout(context.Background(), 50*time.Millisecond)
+			defer cancel()
+			got, err := auth.currentProfile(ctx)
+			if tc.wantErr {
+				var authErr *ProfileAuthError
+				if !errors.As(err, &authErr) {
+					t.Fatalf("expected profile auth error, got %v", err)
+				}
+			} else {
+				if err != nil {
+					t.Fatalf("expected cached token while lock is busy, got %v", err)
+				}
+				if got.OAuth.AccessToken != "cached-access" {
+					t.Fatalf("got access token %q", got.OAuth.AccessToken)
+				}
+			}
+			if n := refreshes.Load(); n != 0 {
+				t.Fatalf("refreshed %d times without the lock", n)
+			}
+		})
+	}
+}
+
+func TestConfigPathCanonicalizesAliases(t *testing.T) {
+	home := t.TempDir()
+	t.Setenv("HOME", home)
+	t.Setenv("USERPROFILE", home)
+	dir := filepath.Join(home, ".langsmith")
+	if err := os.Mkdir(dir, 0700); err != nil {
+		t.Fatal(err)
+	}
+	target := filepath.Join(dir, "config.json")
+	if err := os.WriteFile(target, []byte(`{}`), 0600); err != nil {
+		t.Fatal(err)
+	}
+	want, err := filepath.EvalSymlinks(target)
+	if err != nil {
+		t.Fatal(err)
+	}
+	t.Chdir(home)
+	for _, path := range []string{"", target, "~/.langsmith/config.json", ".langsmith/config.json"} {
+		t.Setenv("LANGSMITH_CONFIG_FILE", path)
+		if got := configPath(); got != want {
+			t.Errorf("%q: got %q, want %q", path, got, want)
+		}
+	}
+	t.Run("symlink", func(t *testing.T) {
+		alias := filepath.Join(home, "alias.json")
+		if err := os.Symlink(target, alias); err != nil {
+			t.Skipf("symlink unavailable: %v", err)
+		}
+		t.Setenv("LANGSMITH_CONFIG_FILE", alias)
+		if got := configPath(); got != want {
+			t.Errorf("got %q, want %q", got, want)
+		}
+	})
 }
 
 // Each waiter must get the lock as soon as the one before it releases it, while
@@ -640,7 +757,7 @@ func TestOAuthRefreshLockHandsOffBetweenWaiters(t *testing.T) {
 	done := make(chan error, waiters)
 	for range waiters {
 		go func() {
-			ctx, cancel := context.WithTimeout(context.Background(), oauthRefreshLockStaleAfter/2)
+			ctx, cancel := context.WithTimeout(context.Background(), 5*time.Second)
 			defer cancel()
 			lock, err := acquireOAuthRefreshLock(ctx, path)
 			if err != nil {
