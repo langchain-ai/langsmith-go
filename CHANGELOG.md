@@ -1,5 +1,26 @@
 # Changelog
 
+## [0.29.4](https://github.com/langchain-ai/langsmith-go/compare/v0.29.3...v0.29.4) (2026-10-31)
+
+
+### Features
+
+* **cli:** add langsmith evaluators create-decision-model ([838a341](https://github.com/langchain-ai/langsmith-go/commit/838a341dd8285c876979cfe29041138c73c53c43))
+* **commits:** add cursor pagination to commits list ([4518976](https://github.com/langchain-ai/langsmith-go/commit/451897639cc2d3729e0672aa031d1e1dbb2ff763))
+* **sandboxes:** AWS session tags on proxy role rules ([ee6099c](https://github.com/langchain-ai/langsmith-go/commit/ee6099c3cdd6db9837b699a524c369cd344c1988))
+
+
+### Bug Fixes
+
+* **evaluators:** show the effective spend limit in the evaluator tables ([2a50269](https://github.com/langchain-ai/langsmith-go/commit/2a5026981eb6a2d354f6aaf9780f26a6c93e1673))
+* **sdks:** accept 204 No Content from delete endpoints ([203ebde](https://github.com/langchain-ai/langsmith-go/commit/203ebdee0c5a63687a9155473bdef20d4e896bd4))
+* **sdks:** unify shared-profile OAuth refresh locking ([f1d2221](https://github.com/langchain-ai/langsmith-go/commit/f1d222123c9719ec991117eaac4a4725de757748))
+
+
+### Documentation
+
+* **sandboxes:** document match_paths on proxy rules ([a5c8f3d](https://github.com/langchain-ai/langsmith-go/commit/a5c8f3d0ccd90f7cdc6b1419736e247c4a514b0a))
+
 ## [0.29.3](https://github.com/langchain-ai/langsmith-go/compare/v0.29.2...v0.29.3) (2026-10-29)
 
 
