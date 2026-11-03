@@ -1884,6 +1884,88 @@ func TestServiceTier_Propagated(t *testing.T) {
 	})
 }
 
+// The response's model is recorded for every response shape so pricing still
+// has a model when the request one is missing.
+func TestRoundTrip_ResponseModel(t *testing.T) {
+	tests := []struct {
+		name     string
+		path     string
+		request  string
+		response string
+		want     string
+	}{
+		{
+			name:     "chat completions",
+			path:     "/v1/chat/completions",
+			request:  `{"model":"gpt-4o","messages":[{"role":"user","content":"hi"}]}`,
+			response: `{"model":"gpt-4o-2024-08-06","choices":[{"message":{"role":"assistant","content":"ok"}}]}`,
+			want:     "gpt-4o-2024-08-06",
+		},
+		{
+			name:    "streaming chat completions",
+			path:    "/v1/chat/completions",
+			request: `{"model":"gpt-4o","messages":[{"role":"user","content":"hi"}],"stream":true}`,
+			response: "data: {\"model\":\"gpt-4o-2024-08-06\",\"choices\":[{\"delta\":{\"content\":\"ok\"}}]}\n\n" +
+				"data: [DONE]\n\n",
+			want: "gpt-4o-2024-08-06",
+		},
+		{
+			name:     "responses",
+			path:     "/v1/responses",
+			request:  `{"model":"gpt-4o","input":"hi"}`,
+			response: `{"object":"response","model":"gpt-4o-2024-08-06","output":[]}`,
+			want:     "gpt-4o-2024-08-06",
+		},
+		{
+			name:    "streaming responses",
+			path:    "/v1/responses",
+			request: `{"model":"gpt-4o","input":"hi","stream":true}`,
+			response: "data: {\"type\":\"response.output_text.delta\",\"delta\":\"ok\"}\n\n" +
+				"data: {\"type\":\"response.completed\",\"response\":{\"model\":\"gpt-4o-2024-08-06\",\"output\":[]}}\n\n",
+			want: "gpt-4o-2024-08-06",
+		},
+		{
+			name:     "embeddings",
+			path:     "/v1/embeddings",
+			request:  `{"model":"text-embedding-3-small","input":"hi"}`,
+			response: `{"object":"list","model":"text-embedding-3-small","data":[]}`,
+			want:     "text-embedding-3-small",
+		},
+	}
+	for _, tt := range tests {
+		t.Run(tt.name, func(t *testing.T) {
+			client, exporter := newTracedClient(t, []byte(tt.response))
+			req, err := http.NewRequestWithContext(context.Background(), http.MethodPost,
+				"https://api.openai.com"+tt.path, strings.NewReader(tt.request))
+			if err != nil {
+				t.Fatal(err)
+			}
+			resp, err := client.Do(req)
+			if err != nil {
+				t.Fatal(err)
+			}
+			if _, err := io.ReadAll(resp.Body); err != nil {
+				t.Fatal(err)
+			}
+			resp.Body.Close()
+
+			spans := exporter.GetSpans()
+			if len(spans) == 0 {
+				t.Fatal("expected at least one span")
+			}
+			var got string
+			for _, attr := range spans[0].Attributes {
+				if attr.Key == "gen_ai.response.model" {
+					got = attr.Value.AsString()
+				}
+			}
+			if got != tt.want {
+				t.Errorf("gen_ai.response.model = %q, want %q", got, tt.want)
+			}
+		})
+	}
+}
+
 // TestExtractStreamingCompletion_UsageMetadataAndServiceTier verifies the
 // streaming path threads service_tier from an earlier chunk into buildOpenAIUsage
 // when usage arrives on a later chunk.

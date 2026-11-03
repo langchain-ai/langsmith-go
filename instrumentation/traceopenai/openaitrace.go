@@ -32,6 +32,10 @@ const (
 	usageMetadataKey = attribute.Key("langsmith.usage_metadata")
 	// serviceTierKey is a price modifier recorded as run metadata, not a token count.
 	serviceTierKey = attribute.Key("langsmith.metadata.service_tier")
+	// responseModelKey is the model the response reports, often a dated
+	// snapshot of the requested alias. Pricing falls back to it when the span
+	// has no request model, such as when the request body was too large to capture.
+	responseModelKey = attribute.Key("gen_ai.response.model")
 
 	// openAILongContextInputThreshold is the input-token cliff above which OpenAI
 	// bills the long-context rate for the full session.
@@ -247,6 +251,9 @@ func MiddlewareWithTracerProvider(req *http.Request, next MiddlewareNext, tp tra
 
 		if completion != "" {
 			span.SetAttributes(attribute.String("gen_ai.completion", completion))
+		}
+		if usage.Model != "" {
+			span.SetAttributes(responseModelKey.String(usage.Model))
 		}
 		if usage.HasUsage {
 			// langsmith.usage_metadata is the converter's preferred,
@@ -779,6 +786,7 @@ type chatCompletionAccumulator struct {
 	content   strings.Builder
 	toolCalls []*chatToolCallAcc
 	usage     usageInfo
+	model     string
 }
 
 // chatToolCallAcc accumulates one tool call across deltas: id, type and
@@ -833,9 +841,12 @@ func (a *chatCompletionAccumulator) feed(chunk map[string]any) {
 		}
 	}
 
-	// service_tier rides at the top level of each chunk.
+	// service_tier and model ride at the top level of each chunk.
 	if st, ok := chunk["service_tier"].(string); ok && st != "" {
 		a.usage.ServiceTier = st
+	}
+	if model, ok := chunk["model"].(string); ok && model != "" {
+		a.model = model
 	}
 	// Extract a.usage (present in the last chunk when include_usage is set)
 	if usageMap, ok := chunk["usage"].(map[string]any); ok {
@@ -846,6 +857,8 @@ func (a *chatCompletionAccumulator) feed(chunk map[string]any) {
 // spanContent renders the accumulated deltas as the {"messages":[...]} span
 // attribute value and its usage.
 func (a *chatCompletionAccumulator) spanContent() (string, usageInfo) {
+	usage := a.usage
+	usage.Model = a.model
 	text := a.content.String()
 
 	// Build assistant message
@@ -870,9 +883,9 @@ func (a *chatCompletionAccumulator) spanContent() (string, usageInfo) {
 
 	if len(msg) == 1 {
 		// Only "role" — no a.content or tool calls
-		return "", a.usage
+		return "", usage
 	}
-	return marshalMessages([]any{msg}), a.usage
+	return marshalMessages([]any{msg}), usage
 }
 
 // usageInfo holds token usage information.
@@ -889,6 +902,8 @@ type usageInfo struct {
 	// ServiceTier is the response service tier (e.g. default/flex/priority), a
 	// price modifier recorded as run metadata rather than a token count.
 	ServiceTier string
+	// Model is the response's top-level model, recorded as gen_ai.response.model.
+	Model string
 }
 
 // openAIUsagePricingBucket is the model_price_map bucket for tiered or long-context
@@ -1160,14 +1175,14 @@ func extractResponsesUsage(resp map[string]any) usageInfo {
 	if st, ok := resp["service_tier"].(string); ok && st != "" {
 		serviceTier = st
 	}
-	usageMap, ok := resp["usage"].(map[string]any)
-	if !ok {
-		if serviceTier == "" {
-			return usageInfo{}
-		}
-		return usageInfo{ServiceTier: serviceTier}
+	var usage usageInfo
+	if usageMap, ok := resp["usage"].(map[string]any); ok {
+		usage = buildOpenAIUsage(usageMap, serviceTier)
+	} else {
+		usage.ServiceTier = serviceTier
 	}
-	return buildOpenAIUsage(usageMap, serviceTier)
+	usage.Model, _ = resp["model"].(string)
+	return usage
 }
 
 // extractResponsesOutput builds a chat-completions output from a Responses API response.
