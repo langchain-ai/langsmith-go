@@ -124,7 +124,8 @@ func (r *SessionService) Delete(ctx context.Context, sessionID string, opts ...o
 	return err
 }
 
-// Get a prebuilt dashboard for a tracing project.
+// GET with body payload — no resources created. Returns the prebuilt dashboard for
+// the tracing project matching the query passed as the request payload.
 func (r *SessionService) Dashboard(ctx context.Context, sessionID string, params SessionDashboardParams, opts ...option.RequestOption) (res *CustomChartsSection, err error) {
 	if params.Accept.Present {
 		opts = append(opts, option.WithHeader("accept", fmt.Sprintf("%v", params.Accept)))
