@@ -28,10 +28,11 @@ func TestSandboxBrowserNewWithOptionalParams(t *testing.T) {
 		option.WithTenantID("My Tenant ID"),
 	)
 	_, err := client.Sandboxes.Browsers.New(context.TODO(), langsmith.SandboxBrowserNewParams{
-		Hidpi:          langsmith.F(true),
-		IdleTtlSeconds: langsmith.F(int64(0)),
-		MemBytes:       langsmith.F(int64(0)),
-		Name:           langsmith.F("name"),
+		DeleteAfterStopSeconds: langsmith.F(int64(0)),
+		Hidpi:                  langsmith.F(true),
+		IdleTtlSeconds:         langsmith.F(int64(0)),
+		MemBytes:               langsmith.F(int64(0)),
+		Name:                   langsmith.F("name"),
 		ProxyConfig: langsmith.F(langsmith.ProxyConfigParam{
 			AccessControl: langsmith.F(langsmith.ProxyConfigAccessControlParam{
 				AllowList: langsmith.F([]string{"string"}),

@@ -42,7 +42,9 @@ func NewSandboxBrowserService(opts ...option.RequestOption) (r *SandboxBrowserSe
 
 // Beta: create a browser sandbox, which runs one persistent Chrome that other
 // sandboxes attach to. Logins made in it persist across restarts. It keeps its
-// memory when it stops and is never deleted automatically.
+// memory when it stops. A stopped browser is deleted after the sandbox default,
+// along with its logins, unless delete_after_stop_seconds sets another delay or 0
+// to keep it.
 func (r *SandboxBrowserService) New(ctx context.Context, body SandboxBrowserNewParams, opts ...option.RequestOption) (res *BrowserResponse, err error) {
 	opts = slices.Concat(r.Options, opts)
 	path := "api/v2/sandboxes/browsers"
@@ -263,6 +265,9 @@ func (r sandboxBrowserLoadExtensionsResponseJSON) RawJSON() string {
 }
 
 type SandboxBrowserNewParams struct {
+	// DeleteAfterStopSeconds deletes the browser this long after it stops. Defaults to
+	// the sandbox default; 0 keeps a stopped browser until it is deleted.
+	DeleteAfterStopSeconds param.Field[int64] `json:"delete_after_stop_seconds"`
 	// HiDPI renders pages at twice the resolution, so the live view is sharp on HiDPI
 	// screens, at four times the pixels for the browser to render and stream. Off by
 	// default, and fixed once the browser is created.
