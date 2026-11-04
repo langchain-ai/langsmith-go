@@ -5952,7 +5952,7 @@ func (r TimedeltaInputParam) MarshalJSON() (data []byte, err error) {
 type TracerSession struct {
 	ID                   string                          `json:"id" api:"required" format:"uuid"`
 	TenantID             string                          `json:"tenant_id" api:"required" format:"uuid"`
-	CompletionCost       string                          `json:"completion_cost" api:"nullable"`
+	CompletionCost       float64                         `json:"completion_cost" api:"nullable"`
 	CompletionTokens     int64                           `json:"completion_tokens" api:"nullable"`
 	DefaultDatasetID     string                          `json:"default_dataset_id" api:"nullable" format:"uuid"`
 	Description          string                          `json:"description" api:"nullable"`
@@ -5968,7 +5968,7 @@ type TracerSession struct {
 	LatencyP50           float64                         `json:"latency_p50" api:"nullable"`
 	LatencyP99           float64                         `json:"latency_p99" api:"nullable"`
 	Name                 string                          `json:"name"`
-	PromptCost           string                          `json:"prompt_cost" api:"nullable"`
+	PromptCost           float64                         `json:"prompt_cost" api:"nullable"`
 	PromptTokens         int64                           `json:"prompt_tokens" api:"nullable"`
 	ReferenceDatasetID   string                          `json:"reference_dataset_id" api:"nullable" format:"uuid"`
 	RunCount             int64                           `json:"run_count" api:"nullable"`
@@ -5977,7 +5977,7 @@ type TracerSession struct {
 	StartTime            time.Time                       `json:"start_time" format:"date-time"`
 	StreamingRate        float64                         `json:"streaming_rate" api:"nullable"`
 	TestRunNumber        int64                           `json:"test_run_number" api:"nullable"`
-	TotalCost            string                          `json:"total_cost" api:"nullable"`
+	TotalCost            float64                         `json:"total_cost" api:"nullable"`
 	TotalTokens          int64                           `json:"total_tokens" api:"nullable"`
 	TraceTier            TracerSessionTraceTier          `json:"trace_tier" api:"nullable"`
 	JSON                 tracerSessionJSON               `json:"-"`
