@@ -521,6 +521,9 @@ type EvaluatorNewDecisionModelParams struct {
 	DatasetID param.Field[string] `json:"dataset_id" format:"uuid"`
 	// Only evaluate runs that match this filter.
 	Filter param.Field[string] `json:"filter"`
+	// Set to thread_id to evaluate each thread once it goes idle, instead of each run.
+	// Requires session_id. Decision models don't support trajectory_id.
+	GroupBy param.Field[EvaluatorNewDecisionModelParamsGroupBy] `json:"group_by"`
 	// How many times to retry a failed model call. openai_decisions only.
 	MaxRetries param.Field[int64] `json:"max_retries"`
 	// Defaults to jev-latest for typesafe and gpt-6-luna for openai_decisions. Use
@@ -604,6 +607,22 @@ func (r EvaluatorNewDecisionModelParamsQuestionsOptionsArray) implementsEvaluato
 type EvaluatorNewDecisionModelParamsQuestionsOptionsMap map[string]string
 
 func (r EvaluatorNewDecisionModelParamsQuestionsOptionsMap) implementsEvaluatorNewDecisionModelParamsQuestionsOptionsUnion() {
+}
+
+// Set to thread_id to evaluate each thread once it goes idle, instead of each run.
+// Requires session_id. Decision models don't support trajectory_id.
+type EvaluatorNewDecisionModelParamsGroupBy string
+
+const (
+	EvaluatorNewDecisionModelParamsGroupByThreadID EvaluatorNewDecisionModelParamsGroupBy = "thread_id"
+)
+
+func (r EvaluatorNewDecisionModelParamsGroupBy) IsKnown() bool {
+	switch r {
+	case EvaluatorNewDecisionModelParamsGroupByThreadID:
+		return true
+	}
+	return false
 }
 
 // typesafe for Jev and SemIf, typesafe_compatible for a TypeSafe-compatible

@@ -76,6 +76,7 @@ func TestEvaluatorNewDecisionModelWithOptionalParams(t *testing.T) {
 		BaseURL:    langsmith.F("base_url"),
 		DatasetID:  langsmith.F("182bd5e5-6e1a-4fe4-a799-aa6d9a6ab26e"),
 		Filter:     langsmith.F("filter"),
+		GroupBy:    langsmith.F(langsmith.EvaluatorNewDecisionModelParamsGroupByThreadID),
 		MaxRetries: langsmith.F(int64(0)),
 		Model:      langsmith.F("model"),
 		ModelHeaders: langsmith.F(map[string]string{
