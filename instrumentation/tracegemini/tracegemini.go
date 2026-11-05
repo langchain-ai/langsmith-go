@@ -60,6 +60,7 @@ type Option func(*clientOptions)
 type clientOptions struct {
 	tracerProvider trace.TracerProvider
 	runName        string
+	withoutContent bool
 }
 
 // WithTracerProvider returns an Option that sets the tracer provider.
@@ -74,6 +75,15 @@ func WithTracerProvider(tp trace.TracerProvider) Option {
 func WithRunName(name string) Option {
 	return func(opts *clientOptions) {
 		opts.runName = name
+	}
+}
+
+// WithoutContent omits request and response content (gen_ai.prompt,
+// gen_ai.completion) from spans. Model, usage, timing, and status are still
+// recorded. Use instrumentation.WithoutContent to omit content per request.
+func WithoutContent() Option {
+	return func(opts *clientOptions) {
+		opts.withoutContent = true
 	}
 }
 
@@ -98,7 +108,7 @@ func WrapClient(client *http.Client, opts ...Option) *http.Client {
 	if transport == nil {
 		transport = http.DefaultTransport
 	}
-	client.Transport = newRoundTripper(transport, options.tracerProvider, options.runName)
+	client.Transport = newRoundTripper(transport, options.tracerProvider, options.runName, options.withoutContent)
 	return client
 }
 
@@ -106,13 +116,15 @@ type roundTripper struct {
 	base           http.RoundTripper
 	tracerProvider trace.TracerProvider
 	runName        string
+	withoutContent bool
 }
 
-func newRoundTripper(base http.RoundTripper, tp trace.TracerProvider, runName string) http.RoundTripper {
+func newRoundTripper(base http.RoundTripper, tp trace.TracerProvider, runName string, withoutContent bool) http.RoundTripper {
 	return &roundTripper{
 		base:           base,
 		tracerProvider: tp,
 		runName:        runName,
+		withoutContent: withoutContent,
 	}
 }
 
@@ -180,6 +192,7 @@ func (rt *roundTripper) RoundTrip(req *http.Request) (*http.Response, error) {
 			genaiattr.HTTPURLKey.String(spanURL),
 		),
 	)
+	withoutContent := rt.withoutContent || traceutil.IsWithoutContent(ctx)
 	if model != "" {
 		span.SetAttributes(semconv.GenAIRequestModel(model))
 	}
@@ -199,7 +212,7 @@ func (rt *roundTripper) RoundTrip(req *http.Request) (*http.Response, error) {
 	}
 
 	if len(requestBody) > 0 {
-		extractRequestAttributes(span, requestBody)
+		extractRequestAttributes(span, requestBody, withoutContent)
 	}
 
 	otel.GetTextMapPropagator().Inject(ctx, propagation.HeaderCarrier(req.Header))
@@ -213,7 +226,7 @@ func (rt *roundTripper) RoundTrip(req *http.Request) (*http.Response, error) {
 		return resp, err
 	}
 
-	var geminiAcc geminiStreamAccumulator
+	geminiAcc := geminiStreamAccumulator{withoutContent: withoutContent}
 	var streamErr error
 
 	br := traceutil.NewBufferedReader(resp.Body, func(buf *bytes.Buffer, readErr error) {
@@ -250,12 +263,12 @@ func (rt *roundTripper) RoundTrip(req *http.Request) (*http.Response, error) {
 		switch {
 		case streaming && resp.StatusCode < 400:
 			if streamErr == nil {
-				processResponse(span, geminiAcc.merged(), parentSpan)
+				processResponse(span, geminiAcc.merged(), parentSpan, withoutContent)
 			}
 		case streaming:
-			extractStreamingResponseAttributes(span, data, parentSpan)
+			extractStreamingResponseAttributes(span, data, parentSpan, withoutContent)
 		default:
-			extractResponseAttributes(span, data, parentSpan)
+			extractResponseAttributes(span, data, parentSpan, withoutContent)
 		}
 		if resp.StatusCode < 400 && !incompleteStream {
 			span.SetStatus(codes.Ok, "")
@@ -341,7 +354,8 @@ func parseModelAction(path string) (model, action string) {
 
 // extractRequestAttributes extracts attributes from the Gemini request body
 // and sets them on the span. Handles contents, systemInstruction, and generationConfig.
-func extractRequestAttributes(span trace.Span, body []byte) {
+// withoutContent skips gen_ai.prompt.
+func extractRequestAttributes(span trace.Span, body []byte, withoutContent bool) {
 	var req map[string]any
 	if err := json.Unmarshal(body, &req); err != nil {
 		return
@@ -357,6 +371,10 @@ func extractRequestAttributes(span trace.Span, body []byte) {
 		if topP, ok := cfg["topP"].(float64); ok {
 			span.SetAttributes(semconv.GenAIRequestTopP(topP))
 		}
+	}
+
+	if withoutContent {
+		return
 	}
 
 	var messages []any
@@ -498,22 +516,22 @@ func mapGeminiRole(role any) string {
 }
 
 // extractResponseAttributes extracts attributes from a non-streaming Gemini response body.
-func extractResponseAttributes(span trace.Span, body []byte, parentSpan trace.Span) {
+func extractResponseAttributes(span trace.Span, body []byte, parentSpan trace.Span, withoutContent bool) {
 	var resp map[string]any
 	if err := json.Unmarshal(body, &resp); err != nil {
 		return
 	}
-	processResponse(span, resp, parentSpan)
+	processResponse(span, resp, parentSpan, withoutContent)
 }
 
 // extractStreamingResponseAttributes merges SSE chunks into a single
 // synthetic response and processes it through the same path as non-streaming.
-func extractStreamingResponseAttributes(span trace.Span, data []byte, parentSpan trace.Span) {
-	var acc geminiStreamAccumulator
+func extractStreamingResponseAttributes(span trace.Span, data []byte, parentSpan trace.Span, withoutContent bool) {
+	acc := geminiStreamAccumulator{withoutContent: withoutContent}
 	if err := traceutil.ParseSSEChunksFunc(bytes.NewReader(data), acc.feed); err != nil {
 		return
 	}
-	processResponse(span, acc.merged(), parentSpan)
+	processResponse(span, acc.merged(), parentSpan, withoutContent)
 }
 
 // geminiStreamAccumulator folds SSE chunks (each a GenerateContentResponse)
@@ -529,6 +547,8 @@ type geminiStreamAccumulator struct {
 	text         strings.Builder
 	otherParts   []any
 	finishReason string
+	// withoutContent skips buffering parts, so no completion is recorded.
+	withoutContent bool
 }
 
 // feed merges one decoded chunk into the running response.
@@ -561,7 +581,7 @@ func (a *geminiStreamAccumulator) feed(chunk map[string]any) {
 		return
 	}
 	parts, ok := content["parts"].([]any)
-	if !ok {
+	if !ok || a.withoutContent {
 		return
 	}
 	for _, raw := range parts {
@@ -604,7 +624,8 @@ func (a *geminiStreamAccumulator) merged() map[string]any {
 }
 
 // processResponse sets span attributes from a (possibly merged) Gemini response.
-func processResponse(span trace.Span, resp map[string]any, parentSpan trace.Span) {
+// withoutContent skips gen_ai.completion.
+func processResponse(span trace.Span, resp map[string]any, parentSpan trace.Span, withoutContent bool) {
 	if mv, ok := resp["modelVersion"].(string); ok {
 		span.SetAttributes(semconv.GenAIResponseModel(mv))
 	}
@@ -612,11 +633,14 @@ func processResponse(span trace.Span, resp map[string]any, parentSpan trace.Span
 		span.SetAttributes(semconv.GenAIResponseID(rid))
 	}
 
-	if completion, finishReason := buildCompletion(resp); completion != "" {
+	// The stop reason is recorded even when there is no completion, e.g. for a
+	// SAFETY-blocked candidate or when withoutContent is set.
+	completion, finishReason := buildCompletion(resp, withoutContent)
+	if completion != "" {
 		span.SetAttributes(genaiattr.CompletionKey.String(completion))
-		if finishReason != "" {
-			span.SetAttributes(genaiattr.StopReasonKey.String(finishReason))
-		}
+	}
+	if finishReason != "" {
+		span.SetAttributes(genaiattr.StopReasonKey.String(finishReason))
 	}
 
 	if usage, ok := resp["usageMetadata"].(map[string]any); ok {
@@ -626,7 +650,8 @@ func processResponse(span trace.Span, resp map[string]any, parentSpan trace.Span
 
 // buildCompletion builds a {"messages":[...]} JSON string from candidates,
 // using OpenAI-compatible format for tool calls.
-func buildCompletion(resp map[string]any) (completion, finishReason string) {
+// withoutContent returns only the finish reason.
+func buildCompletion(resp map[string]any, withoutContent bool) (completion, finishReason string) {
 	candidates, ok := resp["candidates"].([]any)
 	if !ok || len(candidates) == 0 {
 		return "", ""
@@ -636,6 +661,9 @@ func buildCompletion(resp map[string]any) (completion, finishReason string) {
 		return "", ""
 	}
 	finishReason, _ = candidate["finishReason"].(string)
+	if withoutContent {
+		return "", finishReason
+	}
 
 	content, ok := candidate["content"].(map[string]any)
 	if !ok {

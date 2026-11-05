@@ -22,6 +22,8 @@ import (
 	"net/http"
 
 	"go.opentelemetry.io/otel/trace"
+
+	"github.com/langchain-ai/langsmith-go/internal/traceutil"
 )
 
 type contextKey struct{ name string }
@@ -44,6 +46,7 @@ type Option func(*clientOptions)
 type clientOptions struct {
 	tracerProvider trace.TracerProvider
 	runName        string
+	withoutContent bool
 }
 
 // WithTracerProvider returns an Option that sets the tracer provider.
@@ -58,6 +61,15 @@ func WithTracerProvider(tp trace.TracerProvider) Option {
 func WithRunName(name string) Option {
 	return func(opts *clientOptions) {
 		opts.runName = name
+	}
+}
+
+// WithoutContent omits request and response content (gen_ai.prompt,
+// gen_ai.completion) from spans. Model, usage, timing, and status are still
+// recorded. Use instrumentation.WithoutContent to omit content per request.
+func WithoutContent() Option {
+	return func(opts *clientOptions) {
+		opts.withoutContent = true
 	}
 }
 
@@ -82,7 +94,7 @@ func WrapClient(client *http.Client, opts ...Option) *http.Client {
 	if transport == nil {
 		transport = http.DefaultTransport
 	}
-	client.Transport = newRoundTripper(transport, options.tracerProvider, options.runName)
+	client.Transport = newRoundTripper(transport, options.tracerProvider, options.runName, options.withoutContent)
 	return client
 }
 
@@ -90,13 +102,15 @@ type roundTripper struct {
 	base           http.RoundTripper
 	tracerProvider trace.TracerProvider
 	runName        string
+	withoutContent bool
 }
 
-func newRoundTripper(base http.RoundTripper, tp trace.TracerProvider, runName string) http.RoundTripper {
+func newRoundTripper(base http.RoundTripper, tp trace.TracerProvider, runName string, withoutContent bool) http.RoundTripper {
 	return &roundTripper{
 		base:           base,
 		tracerProvider: tp,
 		runName:        runName,
+		withoutContent: withoutContent,
 	}
 }
 
@@ -106,6 +120,10 @@ func (rt *roundTripper) RoundTrip(req *http.Request) (*http.Response, error) {
 	// Prefer run name from context (per-request); fall back to client option.
 	if v := ctx.Value(ctxKeyRunName); v == nil && rt.runName != "" {
 		ctx = context.WithValue(ctx, ctxKeyRunName, rt.runName)
+		req = req.WithContext(ctx)
+	}
+	if rt.withoutContent {
+		ctx = traceutil.WithoutContent(ctx)
 		req = req.WithContext(ctx)
 	}
 	next := func(r *http.Request) (*http.Response, error) {

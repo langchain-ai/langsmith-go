@@ -15,6 +15,8 @@ import (
 	"go.opentelemetry.io/otel/codes"
 	sdktrace "go.opentelemetry.io/otel/sdk/trace"
 	"go.opentelemetry.io/otel/sdk/trace/tracetest"
+
+	"github.com/langchain-ai/langsmith-go/instrumentation"
 )
 
 // fakeTransport returns a canned response, capturing the request for inspection.
@@ -146,6 +148,37 @@ func (e *errStatusTransport) RoundTrip(req *http.Request) (*http.Response, error
 		Header:     make(http.Header),
 		Request:    req,
 	}, nil
+}
+
+// A streamed HTTP error body is still parsed, so content capture must keep any
+// completion found in it off the span.
+func TestRoundTrip_StreamingHTTPErrorWithoutContent(t *testing.T) {
+	sse := `data: {"choices":[{"index":0,"delta":{"content":"secret answer"}}]}` + "\n\ndata: [DONE]\n\n"
+	exporter := tracetest.NewInMemoryExporter()
+	tp := sdktrace.NewTracerProvider(sdktrace.WithSyncer(exporter))
+	client := WrapClient(&http.Client{Transport: &errStatusTransport{body: []byte(sse)}}, WithTracerProvider(tp), WithoutContent())
+
+	body := `{"model":"gpt-4","messages":[{"role":"user","content":"secret question"}],"stream":true}`
+	req, _ := http.NewRequestWithContext(context.Background(), http.MethodPost,
+		"https://api.openai.com/v1/chat/completions", strings.NewReader(body))
+	resp, err := client.Do(req)
+	if err != nil {
+		t.Fatal(err)
+	}
+	if _, err := io.ReadAll(resp.Body); err != nil {
+		t.Fatal(err)
+	}
+	resp.Body.Close()
+
+	spans := exporter.GetSpans()
+	if len(spans) != 1 {
+		t.Fatalf("got %d spans, want 1", len(spans))
+	}
+	for _, attr := range spans[0].Attributes {
+		if attr.Key == "gen_ai.prompt" || attr.Key == "gen_ai.completion" {
+			t.Errorf("%s recorded without content capture", attr.Key)
+		}
+	}
 }
 
 func TestRoundTrip_StreamingHTTPErrorDoesNotEmitNewToken(t *testing.T) {
@@ -436,7 +469,7 @@ func TestGetOperationName(t *testing.T) {
 
 func TestParseRequestBody_ChatCompletion(t *testing.T) {
 	body := `{"model":"gpt-4","messages":[{"role":"user","content":"hello"}],"stream":true}`
-	fields := parseRequestBody([]byte(body))
+	fields := parseRequestBody([]byte(body), false)
 
 	if fields.model != "gpt-4" {
 		t.Errorf("model = %q, want gpt-4", fields.model)
@@ -454,7 +487,7 @@ func TestParseRequestBody_ChatCompletion(t *testing.T) {
 
 func TestParseRequestBody_ResponsesAPI(t *testing.T) {
 	body := `{"model":"gpt-4","input":"What is Go?"}`
-	fields := parseRequestBody([]byte(body))
+	fields := parseRequestBody([]byte(body), false)
 
 	if fields.model != "gpt-4" {
 		t.Errorf("model = %q, want gpt-4", fields.model)
@@ -469,7 +502,7 @@ func TestParseRequestBody_ResponsesAPI(t *testing.T) {
 
 func TestParseRequestBody_LegacyCompletion(t *testing.T) {
 	body := `{"model":"text-davinci-003","prompt":"Once upon a time"}`
-	fields := parseRequestBody([]byte(body))
+	fields := parseRequestBody([]byte(body), false)
 
 	if fields.model != "text-davinci-003" {
 		t.Errorf("model = %q, want text-davinci-003", fields.model)
@@ -480,7 +513,7 @@ func TestParseRequestBody_LegacyCompletion(t *testing.T) {
 }
 
 func TestParseRequestBody_InvalidJSON(t *testing.T) {
-	fields := parseRequestBody([]byte("not json"))
+	fields := parseRequestBody([]byte("not json"), false)
 	if fields.model != "" || fields.streaming || fields.inputMessages != "" {
 		t.Errorf("expected empty fields for invalid JSON, got %+v", fields)
 	}
@@ -506,7 +539,7 @@ func TestExtractCompletionFromResponse_ChatCompletion(t *testing.T) {
 		"choices": [{"message": {"role": "assistant", "content": "Hello!"}}],
 		"usage": {"prompt_tokens": 10, "completion_tokens": 5}
 	}`
-	completion, usage := extractCompletionFromResponse([]byte(body))
+	completion, usage := extractCompletionFromResponse([]byte(body), false)
 
 	if !strings.Contains(completion, "Hello!") {
 		t.Errorf("completion should contain 'Hello!': %s", completion)
@@ -524,7 +557,7 @@ func TestExtractCompletionFromResponse_WithToolCalls(t *testing.T) {
 		"choices": [{"message": {"role": "assistant", "content": null, "tool_calls": [{"id": "call_1", "type": "function", "function": {"name": "get_weather", "arguments": "{\"city\":\"SF\"}"}}]}}],
 		"usage": {"prompt_tokens": 15, "completion_tokens": 8}
 	}`
-	completion, usage := extractCompletionFromResponse([]byte(body))
+	completion, usage := extractCompletionFromResponse([]byte(body), false)
 
 	if !strings.Contains(completion, "get_weather") {
 		t.Errorf("completion should contain tool call: %s", completion)
@@ -539,7 +572,7 @@ func TestExtractCompletionFromResponse_LegacyCompletion(t *testing.T) {
 		"choices": [{"text": "Once upon a time"}],
 		"usage": {"prompt_tokens": 5, "completion_tokens": 4}
 	}`
-	completion, _ := extractCompletionFromResponse([]byte(body))
+	completion, _ := extractCompletionFromResponse([]byte(body), false)
 
 	if !strings.Contains(completion, "Once upon a time") {
 		t.Errorf("completion should contain text: %s", completion)
@@ -547,7 +580,7 @@ func TestExtractCompletionFromResponse_LegacyCompletion(t *testing.T) {
 }
 
 func TestExtractCompletionFromResponse_InvalidJSON(t *testing.T) {
-	completion, usage := extractCompletionFromResponse([]byte("bad"))
+	completion, usage := extractCompletionFromResponse([]byte("bad"), false)
 	if completion != "" {
 		t.Errorf("expected empty completion, got %q", completion)
 	}
@@ -604,7 +637,7 @@ func TestExtractResponsesCompletion(t *testing.T) {
 		"output": [{"type": "message", "content": [{"type": "output_text", "text": "Hi there"}]}],
 		"usage": {"input_tokens": 3, "output_tokens": 2}
 	}`
-	completion, usage, _ := extractResponsesCompletion([]byte(body))
+	completion, usage, _ := extractResponsesCompletion([]byte(body), false)
 
 	if !strings.Contains(completion, "Hi there") {
 		t.Errorf("completion should contain 'Hi there': %s", completion)
@@ -622,7 +655,7 @@ func TestExtractResponsesCompletion_FunctionCall(t *testing.T) {
 		"output": [{"type": "function_call", "name": "search", "arguments": "{\"q\":\"Go\"}", "call_id": "fc_1"}],
 		"usage": {"input_tokens": 1, "output_tokens": 1}
 	}`
-	completion, _, _ := extractResponsesCompletion([]byte(body))
+	completion, _, _ := extractResponsesCompletion([]byte(body), false)
 
 	if !strings.Contains(completion, "search") {
 		t.Errorf("completion should contain function name: %s", completion)
@@ -647,7 +680,7 @@ func TestExtractResponsesCompletion_Compaction(t *testing.T) {
 			"total_tokens": 577
 		}
 	}`
-	completion, usage, _ := extractResponsesCompletion([]byte(body))
+	completion, usage, _ := extractResponsesCompletion([]byte(body), false)
 
 	wantCompletion := `{"messages":[{"content":"Create a simple landing page for a dog petting cafe.","role":"user"}]}`
 	if completion != wantCompletion {
@@ -1099,7 +1132,7 @@ func TestParseRequestBody_ResponsesAPI_ArrayInput(t *testing.T) {
 			{"role": "user", "content": "What is 2+2?"}
 		]
 	}`)
-	fields := parseRequestBody(body)
+	fields := parseRequestBody(body, false)
 	if fields.model != "gpt-4o" {
 		t.Errorf("model = %q, want gpt-4o", fields.model)
 	}
@@ -1128,7 +1161,7 @@ func TestParseRequestBody_ResponsesAPI_MultiTurnWithToolCalls(t *testing.T) {
 			{"role": "user", "content": "Thanks!"}
 		]
 	}`)
-	fields := parseRequestBody(body)
+	fields := parseRequestBody(body, false)
 
 	if !strings.Contains(fields.inputMessages, "What is the weather in SF?") {
 		t.Errorf("should contain user message: %s", fields.inputMessages)
@@ -1486,7 +1519,7 @@ func TestResponsesAPI_RoundTrip(t *testing.T) {
 		]
 	}`)
 
-	fields := parseRequestBody(reqBody)
+	fields := parseRequestBody(reqBody, false)
 	if fields.model != "gpt-5.5" {
 		t.Errorf("model = %q, want gpt-5.5", fields.model)
 	}
@@ -1843,7 +1876,7 @@ func TestServiceTier_Propagated(t *testing.T) {
 				"completion_tokens_details": {"reasoning_tokens": 64}
 			}
 		}`
-		_, got := extractCompletionFromResponse([]byte(body))
+		_, got := extractCompletionFromResponse([]byte(body), false)
 
 		want := usageInfo{
 			InputTokens:  1000,
@@ -1877,7 +1910,7 @@ func TestServiceTier_Propagated(t *testing.T) {
 			"choices": [{"message": {"role": "assistant", "content": "ok"}}],
 			"usage": {"prompt_tokens": 10, "completion_tokens": 5}
 		}`
-		_, usage := extractCompletionFromResponse([]byte(body))
+		_, usage := extractCompletionFromResponse([]byte(body), false)
 		if usage.ServiceTier != "" {
 			t.Errorf("ServiceTier = %q, want empty", usage.ServiceTier)
 		}
@@ -2029,7 +2062,7 @@ func TestResponsesFailure(t *testing.T) {
 	}
 	for _, tt := range tests {
 		t.Run(tt.name, func(t *testing.T) {
-			_, _, failure := extractResponsesCompletion([]byte(tt.body))
+			_, _, failure := extractResponsesCompletion([]byte(tt.body), false)
 			if tt.wantMsg == "" {
 				if failure != nil {
 					t.Fatalf("failure = %v, want nil", failure)
@@ -2184,5 +2217,103 @@ func TestRoundTrip_ResponsesSpanStatus(t *testing.T) {
 				t.Errorf("description = %q, want %q", span.Status.Description, tt.wantMsg)
 			}
 		})
+	}
+}
+
+func TestRoundTrip_WithoutContent(t *testing.T) {
+	endpoints := []struct {
+		name, path, reqBody, respBody string
+		stream                        bool
+	}{
+		{
+			"chat",
+			"/v1/chat/completions",
+			`{"model":"gpt-4o-mini","messages":[{"role":"user","content":"secret question"}]}`,
+			`{"model":"gpt-4o-mini","choices":[{"index":0,"message":{"role":"assistant","content":"secret answer"},"finish_reason":"stop"}],"usage":{"prompt_tokens":3,"completion_tokens":2,"total_tokens":5}}`,
+			false,
+		},
+		{
+			"chat stream",
+			"/v1/chat/completions",
+			`{"model":"gpt-4o-mini","stream":true,"messages":[{"role":"user","content":"secret question"}]}`,
+			`data: {"choices":[{"index":0,"delta":{"content":"secret answer"}}]}` + "\n\n" +
+				`data: {"choices":[{"index":0,"delta":{"tool_calls":[{"index":0,"id":"call_1","type":"function","function":{"name":"lookup","arguments":"{\"q\":\"secret\"}"}}]}}]}` + "\n\n" +
+				`data: {"choices":[],"usage":{"prompt_tokens":3,"completion_tokens":2,"total_tokens":5}}` + "\n\n" +
+				"data: [DONE]\n\n",
+			true,
+		},
+		{
+			"responses stream",
+			"/v1/responses",
+			`{"model":"gpt-4o-mini","stream":true,"instructions":"secret system","input":"secret question"}`,
+			`data: {"type":"response.output_text.delta","delta":"secret answer"}` + "\n\n" +
+				`data: {"type":"response.completed","response":{"id":"resp_1","object":"response","status":"completed","model":"gpt-4o-mini","output":[{"type":"message","role":"assistant","content":[{"type":"output_text","text":"secret answer"}]}],"usage":{"input_tokens":3,"output_tokens":2,"total_tokens":5}}}` + "\n\n",
+			true,
+		},
+		{
+			"responses",
+			"/v1/responses",
+			`{"model":"gpt-4o-mini","instructions":"secret system","input":"secret question"}`,
+			`{"id":"resp_1","object":"response","status":"completed","model":"gpt-4o-mini","output":[{"type":"message","role":"assistant","content":[{"type":"output_text","text":"secret answer"}]}],"usage":{"input_tokens":3,"output_tokens":2,"total_tokens":5}}`,
+			false,
+		},
+	}
+	tests := []struct {
+		name        string
+		opts        []Option
+		ctx         context.Context
+		wantContent bool
+	}{
+		{"default", nil, context.Background(), true},
+		{"client option", []Option{WithoutContent()}, context.Background(), false},
+		{"context", nil, instrumentation.WithoutContent(context.Background()), false},
+	}
+	for _, tt := range tests {
+		for _, ep := range endpoints {
+			t.Run(tt.name+"/"+ep.name, func(t *testing.T) {
+				exporter := tracetest.NewInMemoryExporter()
+				tp := sdktrace.NewTracerProvider(sdktrace.WithSyncer(exporter))
+				client := WrapClient(&http.Client{Transport: &fakeTransport{body: []byte(ep.respBody)}}, append([]Option{WithTracerProvider(tp)}, tt.opts...)...)
+				req, err := http.NewRequestWithContext(tt.ctx, http.MethodPost, "https://api.openai.com"+ep.path, strings.NewReader(ep.reqBody))
+				if err != nil {
+					t.Fatal(err)
+				}
+				resp, err := client.Do(req)
+				if err != nil {
+					t.Fatal(err)
+				}
+				if _, err := io.ReadAll(resp.Body); err != nil {
+					t.Fatal(err)
+				}
+				resp.Body.Close()
+
+				spans := exporter.GetSpans()
+				if len(spans) != 1 {
+					t.Fatalf("got %d spans, want 1", len(spans))
+				}
+				if spans[0].Status.Code != codes.Ok {
+					t.Errorf("status = %v, want Ok", spans[0].Status)
+				}
+				if got := hasEvent(spans, "new_token"); got != ep.stream {
+					t.Errorf("new_token event = %v, want %v", got, ep.stream)
+				}
+				attrs := map[string]bool{}
+				for _, attr := range spans[0].Attributes {
+					attrs[string(attr.Key)] = true
+				}
+				want := map[string]bool{
+					"gen_ai.prompt":              tt.wantContent,
+					"gen_ai.completion":          tt.wantContent,
+					"gen_ai.request.model":       true,
+					"langsmith.usage_metadata":   true,
+					"gen_ai.usage.output_tokens": true,
+				}
+				for key, w := range want {
+					if attrs[key] != w {
+						t.Errorf("%s present = %v, want %v", key, attrs[key], w)
+					}
+				}
+			})
+		}
 	}
 }

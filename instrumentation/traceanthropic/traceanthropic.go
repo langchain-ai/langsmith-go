@@ -59,6 +59,7 @@ type Option func(*clientOptions)
 type clientOptions struct {
 	tracerProvider trace.TracerProvider
 	runName        string
+	withoutContent bool
 }
 
 // WithTracerProvider returns an Option that sets the tracer provider.
@@ -73,6 +74,15 @@ func WithTracerProvider(tp trace.TracerProvider) Option {
 func WithRunName(name string) Option {
 	return func(opts *clientOptions) {
 		opts.runName = name
+	}
+}
+
+// WithoutContent omits request and response content (gen_ai.prompt,
+// gen_ai.completion) from spans. Model, usage, timing, and status are still
+// recorded. Use instrumentation.WithoutContent to omit content per request.
+func WithoutContent() Option {
+	return func(opts *clientOptions) {
+		opts.withoutContent = true
 	}
 }
 
@@ -97,7 +107,7 @@ func WrapClient(client *http.Client, opts ...Option) *http.Client {
 	if transport == nil {
 		transport = http.DefaultTransport
 	}
-	client.Transport = newRoundTripper(transport, options.tracerProvider, options.runName)
+	client.Transport = newRoundTripper(transport, options.tracerProvider, options.runName, options.withoutContent)
 	return client
 }
 
@@ -105,13 +115,15 @@ type roundTripper struct {
 	base           http.RoundTripper
 	tracerProvider trace.TracerProvider
 	runName        string
+	withoutContent bool
 }
 
-func newRoundTripper(base http.RoundTripper, tp trace.TracerProvider, runName string) http.RoundTripper {
+func newRoundTripper(base http.RoundTripper, tp trace.TracerProvider, runName string, withoutContent bool) http.RoundTripper {
 	return &roundTripper{
 		base:           base,
 		tracerProvider: tp,
 		runName:        runName,
+		withoutContent: withoutContent,
 	}
 }
 
@@ -154,6 +166,7 @@ func (rt *roundTripper) RoundTrip(req *http.Request) (*http.Response, error) {
 			attribute.String("http.url", req.URL.String()),
 		),
 	)
+	withoutContent := rt.withoutContent || traceutil.IsWithoutContent(ctx)
 
 	// Read request body if present
 	var requestBody []byte
@@ -174,7 +187,7 @@ func (rt *roundTripper) RoundTrip(req *http.Request) (*http.Response, error) {
 	if bedrock {
 		span.SetAttributes(attribute.String("gen_ai.request.model", model))
 	}
-	if len(requestBody) > 0 && extractRequestAttributes(span, requestBody) {
+	if len(requestBody) > 0 && extractRequestAttributes(span, requestBody, withoutContent) {
 		streaming = true
 	}
 
@@ -191,7 +204,7 @@ func (rt *roundTripper) RoundTrip(req *http.Request) (*http.Response, error) {
 		return resp, err
 	}
 
-	var anthropicAcc anthropicStreamAccumulator
+	anthropicAcc := anthropicStreamAccumulator{withoutContent: withoutContent}
 	var streamErr error
 
 	br := traceutil.NewBufferedReader(resp.Body, func(buf *bytes.Buffer, readErr error) {
@@ -238,9 +251,9 @@ func (rt *roundTripper) RoundTrip(req *http.Request) (*http.Response, error) {
 				anthropicAcc.apply(span, parentSpan)
 			}
 		case streaming:
-			extractStreamingResponseAttributes(span, data, parentSpan)
+			extractStreamingResponseAttributes(span, data, parentSpan, withoutContent)
 		default:
-			extractResponseAttributes(span, data, parentSpan)
+			extractResponseAttributes(span, data, parentSpan, withoutContent)
 		}
 		if resp.StatusCode < 400 && !incompleteStream && !streamFailed {
 			span.SetStatus(codes.Ok, "")
@@ -343,7 +356,8 @@ func getOperationName(path string) string {
 
 // extractRequestAttributes extracts attributes from the Anthropic request body
 // and returns whether the request is streaming.
-func extractRequestAttributes(span trace.Span, body []byte) (streaming bool) {
+// withoutContent skips gen_ai.prompt.
+func extractRequestAttributes(span trace.Span, body []byte, withoutContent bool) (streaming bool) {
 	var req map[string]any
 	if err := json.Unmarshal(body, &req); err != nil {
 		return false
@@ -366,6 +380,10 @@ func extractRequestAttributes(span trace.Span, body []byte) (streaming bool) {
 
 	// Streaming flag
 	streaming, _ = req["stream"].(bool)
+
+	if withoutContent {
+		return streaming
+	}
 
 	// Build input messages — system prepended, all roles preserved
 	var messages []any
@@ -413,6 +431,8 @@ type anthropicStreamAccumulator struct {
 	model      string
 	stopReason string
 	sawStop    bool
+	// withoutContent skips content blocks, so apply records no completion.
+	withoutContent bool
 }
 
 // feed merges one decoded event into the running message.
@@ -421,6 +441,9 @@ func (a *anthropicStreamAccumulator) feed(chunk map[string]any) {
 		a.usage = make(map[string]any)
 	}
 	eventType, _ := chunk["type"].(string)
+	if a.withoutContent && (eventType == "content_block_start" || eventType == "content_block_delta") {
+		return
+	}
 
 	switch eventType {
 	case "message_start":
@@ -553,8 +576,8 @@ func (a *anthropicStreamAccumulator) apply(span trace.Span, parentSpan trace.Spa
 
 // extractStreamingResponseAttributes parses a whole SSE response body through
 // the same accumulator the streaming path feeds incrementally.
-func extractStreamingResponseAttributes(span trace.Span, data []byte, parentSpan trace.Span) {
-	var acc anthropicStreamAccumulator
+func extractStreamingResponseAttributes(span trace.Span, data []byte, parentSpan trace.Span, withoutContent bool) {
+	acc := anthropicStreamAccumulator{withoutContent: withoutContent}
 	if err := traceutil.ParseSSEChunksFunc(bytes.NewReader(data), acc.feed); err != nil {
 		return
 	}
@@ -562,7 +585,8 @@ func extractStreamingResponseAttributes(span trace.Span, data []byte, parentSpan
 }
 
 // extractResponseAttributes extracts attributes from Anthropic response body.
-func extractResponseAttributes(span trace.Span, body []byte, parentSpan trace.Span) {
+// withoutContent skips gen_ai.completion.
+func extractResponseAttributes(span trace.Span, body []byte, parentSpan trace.Span, withoutContent bool) {
 	var resp map[string]interface{}
 	if err := json.Unmarshal(body, &resp); err != nil {
 		return
@@ -584,7 +608,7 @@ func extractResponseAttributes(span trace.Span, body []byte, parentSpan trace.Sp
 	}
 
 	// Extract output — wrap full content array in an assistant message
-	if content, ok := resp["content"].([]any); ok && len(content) > 0 {
+	if content, ok := resp["content"].([]any); ok && len(content) > 0 && !withoutContent {
 		msg := map[string]any{"messages": []any{
 			map[string]any{"role": "assistant", "content": content},
 		}}

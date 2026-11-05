@@ -5,6 +5,7 @@ import (
 	"context"
 	"encoding/binary"
 	"encoding/json"
+	"fmt"
 	"hash/crc32"
 	"io"
 	"net/http"
@@ -16,6 +17,8 @@ import (
 	"go.opentelemetry.io/otel/codes"
 	sdktrace "go.opentelemetry.io/otel/sdk/trace"
 	"go.opentelemetry.io/otel/sdk/trace/tracetest"
+
+	"github.com/langchain-ai/langsmith-go/instrumentation"
 )
 
 // fakeTransport returns a canned response, capturing the request for inspection.
@@ -493,7 +496,7 @@ func TestExtractRequestAttributes_BasicMessage(t *testing.T) {
 	span, _ := startTestSpan(t)
 	body := `{"model":"claude-sonnet-4-20250514","messages":[{"role":"user","content":"hi"}],"max_tokens":1024,"temperature":0.7,"stream":false}`
 
-	streaming := extractRequestAttributes(span, []byte(body))
+	streaming := extractRequestAttributes(span, []byte(body), false)
 	if streaming {
 		t.Error("expected streaming=false")
 	}
@@ -518,7 +521,7 @@ func TestExtractRequestAttributes_StreamingWithSystem(t *testing.T) {
 	span, _ := startTestSpan(t)
 	body := `{"model":"claude-3-haiku","system":"You are helpful","messages":[{"role":"user","content":"hello"}],"stream":true}`
 
-	streaming := extractRequestAttributes(span, []byte(body))
+	streaming := extractRequestAttributes(span, []byte(body), false)
 	if !streaming {
 		t.Error("expected streaming=true")
 	}
@@ -538,7 +541,7 @@ func TestExtractRequestAttributes_StreamingWithSystem(t *testing.T) {
 
 func TestExtractRequestAttributes_InvalidJSON(t *testing.T) {
 	span, _ := startTestSpan(t)
-	streaming := extractRequestAttributes(span, []byte("not json"))
+	streaming := extractRequestAttributes(span, []byte("not json"), false)
 	if streaming {
 		t.Error("expected streaming=false for invalid JSON")
 	}
@@ -555,7 +558,7 @@ func TestExtractResponseAttributes(t *testing.T) {
 		"stop_reason": "end_turn"
 	}`
 
-	extractResponseAttributes(span, []byte(body), parentSpan)
+	extractResponseAttributes(span, []byte(body), parentSpan, false)
 
 	if v, ok := getAttr(span, "gen_ai.response.model"); !ok || v.AsString() != "claude-sonnet-4-20250514" {
 		t.Errorf("model attr: got %v, ok=%v", v, ok)
@@ -579,7 +582,7 @@ func TestExtractResponseAttributes(t *testing.T) {
 func TestExtractResponseAttributes_InvalidJSON(t *testing.T) {
 	span, _ := startTestSpan(t)
 	parentSpan, _ := startTestSpan(t)
-	extractResponseAttributes(span, []byte("nope"), parentSpan)
+	extractResponseAttributes(span, []byte("nope"), parentSpan, false)
 	if _, ok := getAttr(span, "gen_ai.response.model"); ok {
 		t.Error("should not set attributes for invalid JSON")
 	}
@@ -595,7 +598,7 @@ func TestExtractStreamingResponseAttributes_TextContent(t *testing.T) {
 		"data: {\"type\":\"content_block_delta\",\"index\":0,\"delta\":{\"type\":\"text_delta\",\"text\":\" world\"}}\n" +
 		"data: {\"type\":\"message_delta\",\"delta\":{\"stop_reason\":\"end_turn\"},\"usage\":{\"output_tokens\":8}}\n"
 
-	extractStreamingResponseAttributes(span, []byte(sse), parentSpan)
+	extractStreamingResponseAttributes(span, []byte(sse), parentSpan, false)
 
 	if v, ok := getAttr(span, "gen_ai.response.model"); !ok || v.AsString() != "claude-sonnet-4-20250514" {
 		t.Errorf("model: got %v, ok=%v", v, ok)
@@ -626,7 +629,7 @@ func TestExtractStreamingResponseAttributes_ToolUse(t *testing.T) {
 		"data: {\"type\":\"content_block_delta\",\"index\":0,\"delta\":{\"type\":\"input_json_delta\",\"partial_json\":\": \\\"SF\\\"}\"}}\n" +
 		"data: {\"type\":\"message_delta\",\"delta\":{\"stop_reason\":\"tool_use\"},\"usage\":{\"output_tokens\":12}}\n"
 
-	extractStreamingResponseAttributes(span, []byte(sse), parentSpan)
+	extractStreamingResponseAttributes(span, []byte(sse), parentSpan, false)
 
 	v, ok := getAttr(span, "gen_ai.completion")
 	if !ok {
@@ -644,7 +647,7 @@ func TestExtractStreamingResponseAttributes_ToolUse(t *testing.T) {
 func TestExtractStreamingResponseAttributes_Empty(t *testing.T) {
 	span, _ := startTestSpan(t)
 	parentSpan, _ := startTestSpan(t)
-	extractStreamingResponseAttributes(span, []byte(""), parentSpan)
+	extractStreamingResponseAttributes(span, []byte(""), parentSpan, false)
 	if _, ok := getAttr(span, "gen_ai.completion"); ok {
 		t.Error("should not set completion for empty data")
 	}
@@ -741,7 +744,7 @@ func TestExtractResponseAttributes_FullRoundTrip(t *testing.T) {
 		"stop_reason": "tool_use",
 	}
 	body, _ := json.Marshal(resp)
-	extractResponseAttributes(span, body, parentSpan)
+	extractResponseAttributes(span, body, parentSpan, false)
 
 	v, ok := getAttr(span, "gen_ai.completion")
 	if !ok {
@@ -930,5 +933,80 @@ func TestBuildUsageMetadata(t *testing.T) {
 				t.Errorf("usage_metadata mismatch:\n got: %#v\nwant: %#v", um, tt.wantUM)
 			}
 		})
+	}
+}
+
+func TestRoundTrip_WithoutContent(t *testing.T) {
+	responses := []struct {
+		stream bool
+		body   string
+	}{
+		{false, `{"model":"claude-sonnet-4-20250514","content":[{"type":"text","text":"secret answer"}],"usage":{"input_tokens":3,"output_tokens":2},"stop_reason":"end_turn"}`},
+		{true, `data: {"type":"message_start","message":{"model":"claude-sonnet-4-20250514","usage":{"input_tokens":3}}}` + "\n" +
+			`data: {"type":"content_block_start","index":0,"content_block":{"type":"text","text":""}}` + "\n" +
+			`data: {"type":"content_block_delta","index":0,"delta":{"type":"text_delta","text":"secret answer"}}` + "\n" +
+			`data: {"type":"content_block_start","index":1,"content_block":{"type":"tool_use","id":"toolu_1","name":"get_weather","input":{}}}` + "\n" +
+			`data: {"type":"content_block_delta","index":1,"delta":{"type":"input_json_delta","partial_json":"{\"city\":\"SF\"}"}}` + "\n" +
+			`data: {"type":"message_delta","delta":{"stop_reason":"tool_use"},"usage":{"output_tokens":2}}` + "\n" +
+			`data: {"type":"message_stop"}` + "\n"},
+	}
+	tests := []struct {
+		name        string
+		opts        []Option
+		ctx         context.Context
+		wantContent bool
+	}{
+		{"default", nil, context.Background(), true},
+		{"client option", []Option{WithoutContent()}, context.Background(), false},
+		{"context", nil, instrumentation.WithoutContent(context.Background()), false},
+	}
+	for _, tt := range tests {
+		for _, r := range responses {
+			t.Run(fmt.Sprintf("%s/stream=%v", tt.name, r.stream), func(t *testing.T) {
+				exporter := tracetest.NewInMemoryExporter()
+				tp := sdktrace.NewTracerProvider(sdktrace.WithSyncer(exporter))
+				client := WrapClient(&http.Client{Transport: &fakeTransport{body: []byte(r.body)}}, append([]Option{WithTracerProvider(tp)}, tt.opts...)...)
+				body := fmt.Sprintf(`{"model":"claude-sonnet-4-20250514","messages":[{"role":"user","content":"secret question"}],"max_tokens":16,"stream":%v}`, r.stream)
+				req, err := http.NewRequestWithContext(tt.ctx, http.MethodPost, "https://api.anthropic.com/v1/messages", strings.NewReader(body))
+				if err != nil {
+					t.Fatal(err)
+				}
+				resp, err := client.Do(req)
+				if err != nil {
+					t.Fatal(err)
+				}
+				if _, err := io.ReadAll(resp.Body); err != nil {
+					t.Fatal(err)
+				}
+				resp.Body.Close()
+
+				spans := exporter.GetSpans()
+				if len(spans) != 1 {
+					t.Fatalf("got %d spans, want 1", len(spans))
+				}
+				if spans[0].Status.Code != codes.Ok {
+					t.Errorf("status = %v %q, want Ok", spans[0].Status.Code, spans[0].Status.Description)
+				}
+				if got := hasEvent(spans, "new_token"); got != r.stream {
+					t.Errorf("new_token event = %v, want %v", got, r.stream)
+				}
+				attrs := map[string]bool{}
+				for _, attr := range spans[0].Attributes {
+					attrs[string(attr.Key)] = true
+				}
+				want := map[string]bool{
+					"gen_ai.prompt":                  tt.wantContent,
+					"gen_ai.completion":              tt.wantContent,
+					"gen_ai.response.model":          true,
+					"langsmith.usage_metadata":       true,
+					"langsmith.metadata.stop_reason": true,
+				}
+				for key, w := range want {
+					if attrs[key] != w {
+						t.Errorf("%s present = %v, want %v", key, attrs[key], w)
+					}
+				}
+			})
+		}
 	}
 }

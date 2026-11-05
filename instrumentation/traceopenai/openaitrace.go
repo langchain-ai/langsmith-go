@@ -129,6 +129,7 @@ func MiddlewareWithTracerProvider(req *http.Request, next MiddlewareNext, tp tra
 
 	// Start span (child span)
 	ctx, span := tracer.Start(ctx, spanName, trace.WithAttributes(spanAttrs...))
+	withoutContent := traceutil.IsWithoutContent(ctx)
 
 	// Read request body if present
 	var requestBody []byte
@@ -147,7 +148,7 @@ func MiddlewareWithTracerProvider(req *http.Request, next MiddlewareNext, tp tra
 	// Extract request attributes
 	var streaming bool
 	if len(requestBody) > 0 {
-		reqFields := parseRequestBody(requestBody)
+		reqFields := parseRequestBody(requestBody, withoutContent)
 		if reqFields.inputMessages != "" {
 			span.SetAttributes(attribute.String("gen_ai.prompt", reqFields.inputMessages))
 		}
@@ -172,8 +173,8 @@ func MiddlewareWithTracerProvider(req *http.Request, next MiddlewareNext, tp tra
 		return resp, err
 	}
 
-	var chatAcc chatCompletionAccumulator
-	var respTerminal responsesTerminal
+	chatAcc := chatCompletionAccumulator{withoutContent: withoutContent}
+	respTerminal := responsesTerminal{withoutContent: withoutContent}
 	var chatSawDone bool
 	var streamErr error
 
@@ -236,7 +237,7 @@ func MiddlewareWithTracerProvider(req *http.Request, next MiddlewareNext, tp tra
 			case streaming:
 				completion, usage, responseFailure = extractStreamingResponsesCompletion(data)
 			default:
-				completion, usage, responseFailure = extractResponsesCompletion(data)
+				completion, usage, responseFailure = extractResponsesCompletion(data, withoutContent)
 			}
 		} else if streamingLive {
 			// A malformed line invalidates the whole body, as in the batch form.
@@ -246,10 +247,12 @@ func MiddlewareWithTracerProvider(req *http.Request, next MiddlewareNext, tp tra
 		} else if streaming {
 			completion, usage = extractStreamingCompletion(data)
 		} else {
-			completion, usage = extractCompletionFromResponse(data)
+			completion, usage = extractCompletionFromResponse(data, withoutContent)
 		}
 
-		if completion != "" {
+		// The streaming extractors above only parse HTTP error bodies and don't
+		// take withoutContent, so this check keeps their output off the span.
+		if completion != "" && !withoutContent {
 			span.SetAttributes(attribute.String("gen_ai.completion", completion))
 		}
 		if usage.Model != "" {
@@ -417,7 +420,8 @@ type requestFields struct {
 
 // parseRequestBody extracts input messages, model, and streaming flag from
 // the request body.
-func parseRequestBody(body []byte) requestFields {
+// withoutContent skips the input messages.
+func parseRequestBody(body []byte, withoutContent bool) requestFields {
 	var req map[string]any
 	if err := json.Unmarshal(body, &req); err != nil {
 		return requestFields{}
@@ -430,6 +434,10 @@ func parseRequestBody(body []byte) requestFields {
 
 	// Streaming
 	fields.streaming, _ = req["stream"].(bool)
+
+	if withoutContent {
+		return fields
+	}
 
 	// Input messages — chat completions
 	if messages, ok := req["messages"].([]any); ok && len(messages) > 0 {
@@ -787,6 +795,9 @@ type chatCompletionAccumulator struct {
 	toolCalls []*chatToolCallAcc
 	usage     usageInfo
 	model     string
+	// withoutContent skips choice deltas, so no text or tool calls are
+	// accumulated and spanContent returns only usage.
+	withoutContent bool
 }
 
 // chatToolCallAcc accumulates one tool call across deltas: id, type and
@@ -800,7 +811,7 @@ type chatToolCallAcc struct {
 
 // feed merges one decoded chunk into the running message.
 func (a *chatCompletionAccumulator) feed(chunk map[string]any) {
-	if choices, ok := chunk["choices"].([]any); ok && len(choices) > 0 {
+	if choices, ok := chunk["choices"].([]any); ok && len(choices) > 0 && !a.withoutContent {
 		if choice, ok := choices[0].(map[string]any); ok {
 			if delta, ok := choice["delta"].(map[string]any); ok {
 				// Aggregate text a.content
@@ -1060,13 +1071,17 @@ func buildOpenAIUsage(usageMap map[string]any, serviceTier string) usageInfo {
 
 // extractCompletionFromResponse extracts the assistant message and usage from
 // an OpenAI response. Returns a {"messages":[message]} JSON string.
-func extractCompletionFromResponse(body []byte) (string, usageInfo) {
+// withoutContent skips the message and returns only usage.
+func extractCompletionFromResponse(body []byte, withoutContent bool) (string, usageInfo) {
 	var resp map[string]any
 	if err := json.Unmarshal(body, &resp); err != nil {
 		return "", usageInfo{}
 	}
 
 	usage := extractResponsesUsage(resp)
+	if withoutContent {
+		return "", usage
+	}
 
 	if choices, ok := resp["choices"].([]any); ok && len(choices) > 0 {
 		if choice, ok := choices[0].(map[string]any); ok {
@@ -1088,10 +1103,14 @@ func extractCompletionFromResponse(body []byte) (string, usageInfo) {
 
 // extractResponsesCompletion extracts completion, usage, and any response-level
 // failure from a non-streaming Responses API response.
-func extractResponsesCompletion(body []byte) (string, usageInfo, error) {
+// withoutContent skips the completion.
+func extractResponsesCompletion(body []byte, withoutContent bool) (string, usageInfo, error) {
 	var resp map[string]any
 	if err := json.Unmarshal(body, &resp); err != nil {
 		return "", usageInfo{}, nil
+	}
+	if withoutContent {
+		return "", extractResponsesUsage(resp), responsesFailure(resp, "")
 	}
 	if object, _ := resp["object"].(string); object == "response.compaction" {
 		return extractResponsesCompactOutput(resp), extractResponsesUsage(resp), responsesFailure(resp, "")
@@ -1119,6 +1138,9 @@ func extractStreamingResponsesCompletion(data []byte) (string, usageInfo, error)
 type responsesTerminal struct {
 	response map[string]any
 	status   string
+	// withoutContent skips the completion; usage and failure status are still
+	// reported.
+	withoutContent bool
 }
 
 // feed keeps the first terminal event and ignores later ones.
@@ -1298,6 +1320,9 @@ func extractResponsesCompactOutput(resp map[string]any) string {
 func (t *responsesTerminal) spanContent() (string, usageInfo, error) {
 	if t.response == nil {
 		return "", usageInfo{}, nil
+	}
+	if t.withoutContent {
+		return "", extractResponsesUsage(t.response), responsesFailure(t.response, t.status)
 	}
 	return extractResponsesOutput(t.response), extractResponsesUsage(t.response), responsesFailure(t.response, t.status)
 }

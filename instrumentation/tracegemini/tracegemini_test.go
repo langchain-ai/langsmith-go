@@ -11,8 +11,11 @@ import (
 	"testing"
 
 	"go.opentelemetry.io/otel/attribute"
+	"go.opentelemetry.io/otel/codes"
 	sdktrace "go.opentelemetry.io/otel/sdk/trace"
 	"go.opentelemetry.io/otel/sdk/trace/tracetest"
+
+	"github.com/langchain-ai/langsmith-go/instrumentation"
 )
 
 type fakeTransport struct {
@@ -440,7 +443,7 @@ func TestExtractRequestAttributes_BasicContents(t *testing.T) {
 		"contents": [{"role": "user", "parts": [{"text": "hello"}]}],
 		"generationConfig": {"temperature": 0.7, "maxOutputTokens": 1024, "topP": 0.9}
 	}`
-	extractRequestAttributes(span, []byte(body))
+	extractRequestAttributes(span, []byte(body), false)
 
 	if v, ok := getAttr(span, "gen_ai.request.temperature"); !ok || v.AsFloat64() != 0.7 {
 		t.Errorf("temperature: got %v", v)
@@ -464,7 +467,7 @@ func TestExtractRequestAttributes_SystemInstruction(t *testing.T) {
 		"systemInstruction": {"parts": [{"text": "You are helpful"}]},
 		"contents": [{"role": "user", "parts": [{"text": "hi"}]}]
 	}`
-	extractRequestAttributes(span, []byte(body))
+	extractRequestAttributes(span, []byte(body), false)
 
 	v, ok := getAttr(span, "gen_ai.prompt")
 	if !ok {
@@ -502,7 +505,7 @@ func TestExtractRequestAttributes_MultiTurnConversation(t *testing.T) {
 			{"role": "user", "parts": [{"text": "And times 3?"}]}
 		]
 	}`
-	extractRequestAttributes(span, []byte(body))
+	extractRequestAttributes(span, []byte(body), false)
 
 	v, ok := getAttr(span, "gen_ai.prompt")
 	if !ok {
@@ -534,7 +537,7 @@ func TestExtractRequestAttributes_FunctionCall(t *testing.T) {
 			{"role": "function", "parts": [{"functionResponse": {"name": "get_weather", "response": {"temp": 20}}}]}
 		]
 	}`
-	extractRequestAttributes(span, []byte(body))
+	extractRequestAttributes(span, []byte(body), false)
 
 	v, ok := getAttr(span, "gen_ai.prompt")
 	if !ok {
@@ -590,7 +593,7 @@ func TestExtractRequestAttributes_FunctionCall(t *testing.T) {
 
 func TestExtractRequestAttributes_InvalidJSON(t *testing.T) {
 	span, _ := startTestSpan(t)
-	extractRequestAttributes(span, []byte("not json"))
+	extractRequestAttributes(span, []byte("not json"), false)
 	if _, ok := getAttr(span, "gen_ai.prompt"); ok {
 		t.Error("should not set prompt for invalid JSON")
 	}
@@ -608,7 +611,7 @@ func TestExtractResponseAttributes(t *testing.T) {
 		"responseId": "resp-123",
 		"usageMetadata": {"promptTokenCount": 10, "candidatesTokenCount": 5}
 	}`
-	extractResponseAttributes(span, []byte(body), parentSpan)
+	extractResponseAttributes(span, []byte(body), parentSpan, false)
 
 	if v, ok := getAttr(span, "gen_ai.response.model"); !ok || v.AsString() != "gemini-2.0-flash-001" {
 		t.Errorf("model: %v", v)
@@ -644,7 +647,7 @@ func TestExtractResponseAttributes_FunctionCall(t *testing.T) {
 		}],
 		"usageMetadata": {"promptTokenCount": 15, "candidatesTokenCount": 8}
 	}`
-	extractResponseAttributes(span, []byte(body), parentSpan)
+	extractResponseAttributes(span, []byte(body), parentSpan, false)
 
 	v, ok := getAttr(span, "gen_ai.completion")
 	if !ok {
@@ -678,7 +681,7 @@ func TestExtractResponseAttributes_FunctionCall(t *testing.T) {
 func TestExtractResponseAttributes_InvalidJSON(t *testing.T) {
 	span, _ := startTestSpan(t)
 	parentSpan, _ := startTestSpan(t)
-	extractResponseAttributes(span, []byte("nope"), parentSpan)
+	extractResponseAttributes(span, []byte("nope"), parentSpan, false)
 	if _, ok := getAttr(span, "gen_ai.response.model"); ok {
 		t.Error("should not set attributes for invalid JSON")
 	}
@@ -694,7 +697,7 @@ func TestExtractResponseAttributes_MultipleTextParts(t *testing.T) {
 			"finishReason": "STOP"
 		}]
 	}`
-	extractResponseAttributes(span, []byte(body), parentSpan)
+	extractResponseAttributes(span, []byte(body), parentSpan, false)
 
 	v, ok := getAttr(span, "gen_ai.completion")
 	if !ok {
@@ -714,7 +717,7 @@ func TestExtractStreamingResponseAttributes_TextContent(t *testing.T) {
 	sse := "data: {\"candidates\":[{\"content\":{\"parts\":[{\"text\":\"Hello\"}],\"role\":\"model\"}}],\"modelVersion\":\"gemini-2.0-flash-001\"}\n" +
 		"data: {\"candidates\":[{\"content\":{\"parts\":[{\"text\":\" world\"}],\"role\":\"model\"},\"finishReason\":\"STOP\"}],\"usageMetadata\":{\"promptTokenCount\":10,\"candidatesTokenCount\":5},\"modelVersion\":\"gemini-2.0-flash-001\",\"responseId\":\"resp-xyz\"}\n"
 
-	extractStreamingResponseAttributes(span, []byte(sse), parentSpan)
+	extractStreamingResponseAttributes(span, []byte(sse), parentSpan, false)
 
 	if v, ok := getAttr(span, "gen_ai.response.model"); !ok || v.AsString() != "gemini-2.0-flash-001" {
 		t.Errorf("model: %v", v)
@@ -742,7 +745,7 @@ func TestExtractStreamingResponseAttributes_FunctionCall(t *testing.T) {
 
 	sse := "data: {\"candidates\":[{\"content\":{\"parts\":[{\"functionCall\":{\"name\":\"get_weather\",\"args\":{\"city\":\"Paris\"}}}],\"role\":\"model\"},\"finishReason\":\"STOP\"}],\"usageMetadata\":{\"promptTokenCount\":20,\"candidatesTokenCount\":12}}\n"
 
-	extractStreamingResponseAttributes(span, []byte(sse), parentSpan)
+	extractStreamingResponseAttributes(span, []byte(sse), parentSpan, false)
 
 	v, ok := getAttr(span, "gen_ai.completion")
 	if !ok {
@@ -769,7 +772,7 @@ func TestExtractStreamingResponseAttributes_FunctionCall(t *testing.T) {
 func TestExtractStreamingResponseAttributes_Empty(t *testing.T) {
 	span, _ := startTestSpan(t)
 	parentSpan, _ := startTestSpan(t)
-	extractStreamingResponseAttributes(span, []byte(""), parentSpan)
+	extractStreamingResponseAttributes(span, []byte(""), parentSpan, false)
 	if _, ok := getAttr(span, "gen_ai.completion"); ok {
 		t.Error("should not set completion for empty data")
 	}
@@ -1050,6 +1053,80 @@ func TestMapGeminiRole(t *testing.T) {
 	for _, tt := range tests {
 		if got := mapGeminiRole(tt.input); got != tt.want {
 			t.Errorf("mapGeminiRole(%v) = %q, want %q", tt.input, got, tt.want)
+		}
+	}
+}
+
+func TestRoundTrip_WithoutContent(t *testing.T) {
+	responses := []struct {
+		name, action, body string
+		stream             bool
+	}{
+		{"unary", "generateContent", `{
+			"candidates": [{"content": {"parts": [{"text": "secret answer"}], "role": "model"}, "finishReason": "STOP"}],
+			"modelVersion": "gemini-2.0-flash-001",
+			"usageMetadata": {"promptTokenCount": 10, "candidatesTokenCount": 5}
+		}`, false},
+		{"stream", "streamGenerateContent", `data: {"candidates":[{"content":{"parts":[{"text":"secret "}],"role":"model"}}],"modelVersion":"gemini-2.0-flash-001"}` + "\n\n" +
+			`data: {"candidates":[{"content":{"parts":[{"text":"answer"},{"functionCall":{"name":"lookup","args":{"q":"secret"}}}],"role":"model"},"finishReason":"STOP"}],"usageMetadata":{"promptTokenCount":10,"candidatesTokenCount":5}}` + "\n\n", true},
+	}
+	reqBody := `{"systemInstruction":{"parts":[{"text":"secret system"}]},"contents":[{"role":"user","parts":[{"text":"secret question"}]}]}`
+	tests := []struct {
+		name        string
+		opts        []Option
+		ctx         context.Context
+		wantContent bool
+	}{
+		{"default", nil, context.Background(), true},
+		{"client option", []Option{WithoutContent()}, context.Background(), false},
+		{"context", nil, instrumentation.WithoutContent(context.Background()), false},
+	}
+	for _, tt := range tests {
+		for _, r := range responses {
+			t.Run(tt.name+"/"+r.name, func(t *testing.T) {
+				exporter := tracetest.NewInMemoryExporter()
+				tp := sdktrace.NewTracerProvider(sdktrace.WithSyncer(exporter))
+				client := WrapClient(&http.Client{Transport: &fakeTransport{body: []byte(r.body)}}, append([]Option{WithTracerProvider(tp)}, tt.opts...)...)
+				req, err := http.NewRequestWithContext(tt.ctx, http.MethodPost, "https://generativelanguage.googleapis.com/v1beta/models/gemini-2.0-flash:"+r.action, strings.NewReader(reqBody))
+				if err != nil {
+					t.Fatal(err)
+				}
+				resp, err := client.Do(req)
+				if err != nil {
+					t.Fatal(err)
+				}
+				if _, err := io.ReadAll(resp.Body); err != nil {
+					t.Fatal(err)
+				}
+				resp.Body.Close()
+
+				spans := exporter.GetSpans()
+				if len(spans) != 1 {
+					t.Fatalf("got %d spans, want 1", len(spans))
+				}
+				if spans[0].Status.Code != codes.Ok {
+					t.Errorf("status = %v, want Ok", spans[0].Status)
+				}
+				if got := hasEvent(spans, "new_token"); got != r.stream {
+					t.Errorf("new_token event = %v, want %v", got, r.stream)
+				}
+				attrs := map[string]bool{}
+				for _, attr := range spans[0].Attributes {
+					attrs[string(attr.Key)] = true
+				}
+				want := map[string]bool{
+					"gen_ai.prompt":                  tt.wantContent,
+					"gen_ai.completion":              tt.wantContent,
+					"gen_ai.response.model":          true,
+					"langsmith.metadata.stop_reason": true,
+					"gen_ai.usage.output_tokens":     true,
+				}
+				for key, w := range want {
+					if attrs[key] != w {
+						t.Errorf("%s present = %v, want %v", key, attrs[key], w)
+					}
+				}
+			})
 		}
 	}
 }
