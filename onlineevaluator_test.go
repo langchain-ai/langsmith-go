@@ -51,6 +51,9 @@ func TestOnlineEvaluatorNewWithOptionalParams(t *testing.T) {
 				PromptRepoHandle:     langsmith.F("prompt_repo_handle"),
 				VariableMapping:      langsmith.F[any](map[string]interface{}{}),
 			}),
+			Metadata: langsmith.F(map[string]interface{}{
+				"foo": "bar",
+			}),
 			Name: langsmith.F("name"),
 			Type: langsmith.F(langsmith.OnlineEvaluatorTypeLlm),
 		},
@@ -129,6 +132,9 @@ func TestOnlineEvaluatorUpdateWithOptionalParams(t *testing.T) {
 					PromptRepoHandle:      langsmith.F("prompt_repo_handle"),
 					UseCorrectionsDataset: langsmith.F(true),
 					VariableMapping:       langsmith.F[any](map[string]interface{}{}),
+				}),
+				Metadata: langsmith.F(map[string]interface{}{
+					"foo": "bar",
 				}),
 				Name: langsmith.F("name"),
 			},

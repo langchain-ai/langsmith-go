@@ -250,6 +250,7 @@ func (r CreateOnlineCodeEvaluatorRequestManagedCodeEvaluatorSettingParam) Marsha
 type CreateOnlineEvaluatorRequestParam struct {
 	CodeEvaluator param.Field[CreateOnlineCodeEvaluatorRequestParam] `json:"code_evaluator"`
 	LlmEvaluator  param.Field[CreateOnlineLlmEvaluatorRequestParam]  `json:"llm_evaluator"`
+	Metadata      param.Field[map[string]interface{}]                `json:"metadata"`
 	Name          param.Field[string]                                `json:"name"`
 	Type          param.Field[OnlineEvaluatorType]                   `json:"type"`
 }
@@ -453,6 +454,7 @@ type OnlineEvaluator struct {
 	IsManaged bool `json:"is_managed"`
 	// Embedded child evaluator (populated based on type)
 	LlmEvaluator OnlineLlmEvaluator       `json:"llm_evaluator"`
+	Metadata     map[string]interface{}   `json:"metadata"`
 	Name         string                   `json:"name"`
 	RunRules     []OnlineEvaluatorRunRule `json:"run_rules"`
 	TenantID     string                   `json:"tenant_id"`
@@ -470,6 +472,7 @@ type onlineEvaluatorJSON struct {
 	FeedbackKeys  apijson.Field
 	IsManaged     apijson.Field
 	LlmEvaluator  apijson.Field
+	Metadata      apijson.Field
 	Name          apijson.Field
 	RunRules      apijson.Field
 	TenantID      apijson.Field
@@ -742,6 +745,7 @@ func (r UpdateOnlineCodeEvaluatorRequestManagedCodeEvaluatorSettingParam) Marsha
 type UpdateOnlineEvaluatorRequestParam struct {
 	CodeEvaluator param.Field[UpdateOnlineCodeEvaluatorRequestParam] `json:"code_evaluator"`
 	LlmEvaluator  param.Field[UpdateOnlineLlmEvaluatorRequestParam]  `json:"llm_evaluator"`
+	Metadata      param.Field[map[string]interface{}]                `json:"metadata"`
 	Name          param.Field[string]                                `json:"name"`
 }
 
