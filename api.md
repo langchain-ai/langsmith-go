@@ -196,9 +196,14 @@ Methods:
 
 ## Examples
 
+Response Types:
+
+- <a href="https://pkg.go.dev/github.com/langchain-ai/langsmith-go">langsmith</a>.<a href="https://pkg.go.dev/github.com/langchain-ai/langsmith-go#DatasetExampleUpdateMetadataResponse">DatasetExampleUpdateMetadataResponse</a>
+
 Methods:
 
 - <code title="delete /api/v1/platform/datasets/{dataset_id}/examples/{example_id}">client.Datasets.Examples.<a href="https://pkg.go.dev/github.com/langchain-ai/langsmith-go#DatasetExampleService.Delete">Delete</a>(ctx <a href="https://pkg.go.dev/context">context</a>.<a href="https://pkg.go.dev/context#Context">Context</a>, datasetID <a href="https://pkg.go.dev/builtin#string">string</a>, exampleID <a href="https://pkg.go.dev/builtin#string">string</a>) <a href="https://pkg.go.dev/builtin#error">error</a></code>
+- <code title="patch /api/v1/platform/datasets/{dataset_id}/examples/metadata">client.Datasets.Examples.<a href="https://pkg.go.dev/github.com/langchain-ai/langsmith-go#DatasetExampleService.UpdateMetadata">UpdateMetadata</a>(ctx <a href="https://pkg.go.dev/context">context</a>.<a href="https://pkg.go.dev/context#Context">Context</a>, datasetID <a href="https://pkg.go.dev/builtin#string">string</a>, body <a href="https://pkg.go.dev/github.com/langchain-ai/langsmith-go">langsmith</a>.<a href="https://pkg.go.dev/github.com/langchain-ai/langsmith-go#DatasetExampleUpdateMetadataParams">DatasetExampleUpdateMetadataParams</a>) (\*<a href="https://pkg.go.dev/github.com/langchain-ai/langsmith-go">langsmith</a>.<a href="https://pkg.go.dev/github.com/langchain-ai/langsmith-go#DatasetExampleUpdateMetadataResponse">DatasetExampleUpdateMetadataResponse</a>, <a href="https://pkg.go.dev/builtin#error">error</a>)</code>
 
 ## Versions
 
