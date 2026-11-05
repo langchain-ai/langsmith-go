@@ -812,6 +812,8 @@ type OnlineEvaluatorListParams struct {
 	FeedbackKey param.Field[string] `query:"feedback_key"`
 	// Maximum number of results (1-100)
 	Limit param.Field[int64] `query:"limit"`
+	// Filter by metadata containment using a JSON object
+	Metadata param.Field[string] `query:"metadata"`
 	// Filter by name substring (also searches creator names)
 	NameContains param.Field[string] `query:"name_contains"`
 	// Offset for pagination

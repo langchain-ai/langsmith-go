@@ -167,6 +167,7 @@ func TestOnlineEvaluatorListWithOptionalParams(t *testing.T) {
 		AgentID:      langsmith.F("agent_id"),
 		FeedbackKey:  langsmith.F("feedback_key"),
 		Limit:        langsmith.F(int64(0)),
+		Metadata:     langsmith.F("metadata"),
 		NameContains: langsmith.F("name_contains"),
 		Offset:       langsmith.F(int64(0)),
 		ResourceID:   langsmith.F([]string{"string"}),
