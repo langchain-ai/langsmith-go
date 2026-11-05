@@ -25,6 +25,12 @@ var (
 	sharedIntegrationProjectOnce sync.Once
 )
 
+// testRunStart bounds every run query to runs created by this test process.
+// LangSmith rate-limits API-key /runs/query calls without a start_time to a
+// few per workspace every ten seconds, and concurrent CI jobs share that
+// budget. The five-minute margin absorbs clock skew between runner and server.
+var testRunStart = time.Now().Add(-5 * time.Minute)
+
 // getSharedIntegrationProject returns one project name for the whole test run.
 func getSharedIntegrationProject() string {
 	sharedIntegrationProjectOnce.Do(func() {
@@ -248,9 +254,10 @@ func pollForRunsUntil(t *testing.T, projectName string, minRuns int, runName str
 	for time.Now().Before(deadline) {
 		time.Sleep(wait)
 		result, err := client.Runs.Query(ctx, langsmith.RunQueryParams{
-			Session: langsmith.F([]string{sessionID}),
-			Limit:   langsmith.F(int64(100)),
-			Select:  langsmith.F(selectFields),
+			StartTime: langsmith.F(testRunStart),
+			Session:   langsmith.F([]string{sessionID}),
+			Limit:     langsmith.F(int64(100)),
+			Select:    langsmith.F(selectFields),
 		})
 		if err != nil {
 			t.Logf("poll runs: %v", err)

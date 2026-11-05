@@ -219,7 +219,8 @@ func TestRunIngestAndQuery(t *testing.T) {
 	for i := 0; i < 10; i++ {
 		time.Sleep(2 * time.Second)
 		result, err := client.Runs.Query(ctx, langsmith.RunQueryParams{
-			ID: langsmith.F([]string{runID}),
+			StartTime: langsmith.F(testRunStart),
+			ID:        langsmith.F([]string{runID}),
 		})
 		if err != nil {
 			continue
@@ -315,7 +316,8 @@ func TestRunCreateAndUpdate(t *testing.T) {
 	for i := 0; i < pollAttempts; i++ {
 		time.Sleep(pollInterval)
 		result, err := client.Runs.Query(ctx, langsmith.RunQueryParams{
-			ID: langsmith.F([]string{runID}),
+			StartTime: langsmith.F(testRunStart),
+			ID:        langsmith.F([]string{runID}),
 		})
 		if err != nil {
 			continue
@@ -446,7 +448,8 @@ func TestRunBatchIngestRoundTrip(t *testing.T) {
 	for i := 0; i < 10; i++ {
 		time.Sleep(2 * time.Second)
 		result, err := client.Runs.Query(ctx, langsmith.RunQueryParams{
-			ID: langsmith.F([]string{run1ID, run2ID, run3ID}),
+			StartTime: langsmith.F(testRunStart),
+			ID:        langsmith.F([]string{run1ID, run2ID, run3ID}),
 		})
 		if err != nil {
 			continue
@@ -566,7 +569,8 @@ func TestRunIngestWithChildRuns(t *testing.T) {
 	for i := 0; i < 10; i++ {
 		time.Sleep(2 * time.Second)
 		result, err := client.Runs.Query(ctx, langsmith.RunQueryParams{
-			ID: langsmith.F([]string{parentID, childID}),
+			StartTime: langsmith.F(testRunStart),
+			ID:        langsmith.F([]string{parentID, childID}),
 		})
 		if err != nil {
 			continue
