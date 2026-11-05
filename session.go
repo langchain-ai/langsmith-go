@@ -78,32 +78,6 @@ func (r *SessionService) Update(ctx context.Context, sessionID string, body Sess
 	return res, err
 }
 
-// List all projects.
-func (r *SessionService) List(ctx context.Context, params SessionListParams, opts ...option.RequestOption) (res *pagination.OffsetPaginationTopLevelArray[TracerSession], err error) {
-	var raw *http.Response
-	if params.Accept.Present {
-		opts = append(opts, option.WithHeader("accept", fmt.Sprintf("%v", params.Accept)))
-	}
-	opts = slices.Concat(r.Options, opts)
-	opts = append([]option.RequestOption{option.WithResponseInto(&raw)}, opts...)
-	path := "api/v1/sessions"
-	cfg, err := requestconfig.NewRequestConfig(ctx, http.MethodGet, path, params, &res, opts...)
-	if err != nil {
-		return nil, err
-	}
-	err = cfg.Execute()
-	if err != nil {
-		return nil, err
-	}
-	res.SetPageConfig(cfg, raw)
-	return res, nil
-}
-
-// List all projects.
-func (r *SessionService) ListAutoPaging(ctx context.Context, params SessionListParams, opts ...option.RequestOption) *pagination.OffsetPaginationTopLevelArrayAutoPager[TracerSession] {
-	return pagination.NewOffsetPaginationTopLevelArrayAutoPager(r.List(ctx, params, opts...))
-}
-
 // Delete a specific project.
 //
 // Returns 202 when deletion is accepted. Cleanup runs asynchronously. Location
@@ -140,6 +114,73 @@ func (r *SessionService) Dashboard(ctx context.Context, sessionID string, params
 	return res, err
 }
 
+// List all projects.
+//
+// Deprecated: use GET /api/v2/sessions, which pages with a cursor. Will be removed
+// after Jun 1, 2027.
+//
+// Deprecated: Deprecated: use ListV2 instead, which calls GET /api/v2/sessions and
+// pages with a cursor. Will be removed after Apr 1, 2027.
+func (r *SessionService) ListV1(ctx context.Context, params SessionListV1Params, opts ...option.RequestOption) (res *pagination.OffsetPaginationTopLevelArray[TracerSession], err error) {
+	var raw *http.Response
+	if params.Accept.Present {
+		opts = append(opts, option.WithHeader("accept", fmt.Sprintf("%v", params.Accept)))
+	}
+	opts = slices.Concat(r.Options, opts)
+	opts = append([]option.RequestOption{option.WithResponseInto(&raw)}, opts...)
+	path := "api/v1/sessions"
+	cfg, err := requestconfig.NewRequestConfig(ctx, http.MethodGet, path, params, &res, opts...)
+	if err != nil {
+		return nil, err
+	}
+	err = cfg.Execute()
+	if err != nil {
+		return nil, err
+	}
+	res.SetPageConfig(cfg, raw)
+	return res, nil
+}
+
+// List all projects.
+//
+// Deprecated: use GET /api/v2/sessions, which pages with a cursor. Will be removed
+// after Jun 1, 2027.
+//
+// Deprecated: Deprecated: use ListV2 instead, which calls GET /api/v2/sessions and
+// pages with a cursor. Will be removed after Apr 1, 2027.
+func (r *SessionService) ListV1AutoPaging(ctx context.Context, params SessionListV1Params, opts ...option.RequestOption) *pagination.OffsetPaginationTopLevelArrayAutoPager[TracerSession] {
+	return pagination.NewOffsetPaginationTopLevelArrayAutoPager(r.ListV1(ctx, params, opts...))
+}
+
+// Returns a page of the workspace's tracing projects and experiments. Pass the
+// response's next_cursor as cursor to fetch the next page; next_cursor is null on
+// the last page. A cursor is valid only with the same query parameters as the
+// request that returned it.
+func (r *SessionService) ListV2(ctx context.Context, query SessionListV2Params, opts ...option.RequestOption) (res *pagination.ItemsCursorGetPagination[Session], err error) {
+	var raw *http.Response
+	opts = slices.Concat(r.Options, opts)
+	opts = append([]option.RequestOption{option.WithResponseInto(&raw)}, opts...)
+	path := "api/v2/sessions"
+	cfg, err := requestconfig.NewRequestConfig(ctx, http.MethodGet, path, query, &res, opts...)
+	if err != nil {
+		return nil, err
+	}
+	err = cfg.Execute()
+	if err != nil {
+		return nil, err
+	}
+	res.SetPageConfig(cfg, raw)
+	return res, nil
+}
+
+// Returns a page of the workspace's tracing projects and experiments. Pass the
+// response's next_cursor as cursor to fetch the next page; next_cursor is null on
+// the last page. A cursor is valid only with the same query parameters as the
+// request that returned it.
+func (r *SessionService) ListV2AutoPaging(ctx context.Context, query SessionListV2Params, opts ...option.RequestOption) *pagination.ItemsCursorGetPaginationAutoPager[Session] {
+	return pagination.NewItemsCursorGetPaginationAutoPager(r.ListV2(ctx, query, opts...))
+}
+
 // Returns the tracing project (session) an address names. An address is an AGENT
 // (`id` and `environment`), an EXPERIMENT (`id`), or an EVALUATOR (no `id`:
 // evaluator traces share one project per workspace). Send `kind` and `environment`
@@ -153,6 +194,38 @@ func (r *SessionService) Resolve(ctx context.Context, query SessionResolveParams
 	path := "api/v1/sessions/resolutions"
 	err = requestconfig.ExecuteNewRequest(ctx, http.MethodGet, path, query, &res, opts...)
 	return res, err
+}
+
+// List all projects.
+//
+// Deprecated: use GET /api/v2/sessions, which pages with a cursor. Will be removed
+// after Jun 1, 2027.
+func (r *SessionService) List(ctx context.Context, params SessionListParams, opts ...option.RequestOption) (res *pagination.OffsetPaginationTopLevelArray[TracerSession], err error) {
+	var raw *http.Response
+	if params.Accept.Present {
+		opts = append(opts, option.WithHeader("accept", fmt.Sprintf("%v", params.Accept)))
+	}
+	opts = slices.Concat(r.Options, opts)
+	opts = append([]option.RequestOption{option.WithResponseInto(&raw)}, opts...)
+	path := "api/v1/sessions"
+	cfg, err := requestconfig.NewRequestConfig(ctx, http.MethodGet, path, params, &res, opts...)
+	if err != nil {
+		return nil, err
+	}
+	err = cfg.Execute()
+	if err != nil {
+		return nil, err
+	}
+	res.SetPageConfig(cfg, raw)
+	return res, nil
+}
+
+// List all projects.
+//
+// Deprecated: use GET /api/v2/sessions, which pages with a cursor. Will be removed
+// after Jun 1, 2027.
+func (r *SessionService) ListAutoPaging(ctx context.Context, params SessionListParams, opts ...option.RequestOption) *pagination.OffsetPaginationTopLevelArrayAutoPager[TracerSession] {
+	return pagination.NewOffsetPaginationTopLevelArrayAutoPager(r.List(ctx, params, opts...))
 }
 
 type CustomChartsSection struct {
@@ -5917,6 +5990,195 @@ func (r RunStatsGroupByAttribute) IsKnown() bool {
 	return false
 }
 
+// TracerSession schema.
+type Session struct {
+	ID                 string                    `json:"id" api:"required" format:"uuid"`
+	Name               string                    `json:"name" api:"required"`
+	StartTime          time.Time                 `json:"start_time" api:"required" format:"date-time"`
+	TenantID           string                    `json:"tenant_id" api:"required" format:"uuid"`
+	CompletionCost     float64                   `json:"completion_cost" api:"nullable"`
+	CompletionTokens   int64                     `json:"completion_tokens" api:"nullable"`
+	DefaultDatasetID   string                    `json:"default_dataset_id" api:"nullable" format:"uuid"`
+	Description        string                    `json:"description" api:"nullable"`
+	EndTime            time.Time                 `json:"end_time" api:"nullable" format:"date-time"`
+	ErrorRate          float64                   `json:"error_rate" api:"nullable"`
+	ExperimentProgress SessionExperimentProgress `json:"experiment_progress" api:"nullable"`
+	Extra              map[string]interface{}    `json:"extra" api:"nullable"`
+	// Feedback on the session's runs, by feedback key.
+	FeedbackStats        map[string]SessionFeedbackStat `json:"feedback_stats" api:"nullable"`
+	FirstTokenP50        float64                        `json:"first_token_p50" api:"nullable"`
+	FirstTokenP99        float64                        `json:"first_token_p99" api:"nullable"`
+	LastRunStartTime     time.Time                      `json:"last_run_start_time" api:"nullable" format:"date-time"`
+	LastRunStartTimeLive time.Time                      `json:"last_run_start_time_live" api:"nullable" format:"date-time"`
+	LatencyP50           float64                        `json:"latency_p50" api:"nullable"`
+	LatencyP99           float64                        `json:"latency_p99" api:"nullable"`
+	PromptCost           float64                        `json:"prompt_cost" api:"nullable"`
+	PromptTokens         int64                          `json:"prompt_tokens" api:"nullable"`
+	ReferenceDatasetID   string                         `json:"reference_dataset_id" api:"nullable" format:"uuid"`
+	RunCount             int64                          `json:"run_count" api:"nullable"`
+	RunFacets            []map[string]interface{}       `json:"run_facets" api:"nullable"`
+	// Feedback on the session itself, by feedback key.
+	SessionFeedbackStats map[string]SessionFeedbackStat `json:"session_feedback_stats" api:"nullable"`
+	StreamingRate        float64                        `json:"streaming_rate" api:"nullable"`
+	TestRunNumber        int64                          `json:"test_run_number" api:"nullable"`
+	TotalCost            float64                        `json:"total_cost" api:"nullable"`
+	TotalTokens          int64                          `json:"total_tokens" api:"nullable"`
+	TraceTier            SessionTraceTier               `json:"trace_tier" api:"nullable"`
+	JSON                 sessionJSON                    `json:"-"`
+}
+
+// sessionJSON contains the JSON metadata for the struct [Session]
+type sessionJSON struct {
+	ID                   apijson.Field
+	Name                 apijson.Field
+	StartTime            apijson.Field
+	TenantID             apijson.Field
+	CompletionCost       apijson.Field
+	CompletionTokens     apijson.Field
+	DefaultDatasetID     apijson.Field
+	Description          apijson.Field
+	EndTime              apijson.Field
+	ErrorRate            apijson.Field
+	ExperimentProgress   apijson.Field
+	Extra                apijson.Field
+	FeedbackStats        apijson.Field
+	FirstTokenP50        apijson.Field
+	FirstTokenP99        apijson.Field
+	LastRunStartTime     apijson.Field
+	LastRunStartTimeLive apijson.Field
+	LatencyP50           apijson.Field
+	LatencyP99           apijson.Field
+	PromptCost           apijson.Field
+	PromptTokens         apijson.Field
+	ReferenceDatasetID   apijson.Field
+	RunCount             apijson.Field
+	RunFacets            apijson.Field
+	SessionFeedbackStats apijson.Field
+	StreamingRate        apijson.Field
+	TestRunNumber        apijson.Field
+	TotalCost            apijson.Field
+	TotalTokens          apijson.Field
+	TraceTier            apijson.Field
+	raw                  string
+	ExtraFields          map[string]apijson.Field
+}
+
+func (r *Session) UnmarshalJSON(data []byte) (err error) {
+	return apijson.UnmarshalRoot(data, r)
+}
+
+func (r sessionJSON) RawJSON() string {
+	return r.raw
+}
+
+type SessionExperimentProgress struct {
+	EvaluatorProgress map[string]float64            `json:"evaluator_progress" api:"required"`
+	ExpectedRunCount  int64                         `json:"expected_run_count" api:"required"`
+	RunProgress       float64                       `json:"run_progress" api:"required"`
+	JSON              sessionExperimentProgressJSON `json:"-"`
+}
+
+// sessionExperimentProgressJSON contains the JSON metadata for the struct
+// [SessionExperimentProgress]
+type sessionExperimentProgressJSON struct {
+	EvaluatorProgress apijson.Field
+	ExpectedRunCount  apijson.Field
+	RunProgress       apijson.Field
+	raw               string
+	ExtraFields       map[string]apijson.Field
+}
+
+func (r *SessionExperimentProgress) UnmarshalJSON(data []byte) (err error) {
+	return apijson.UnmarshalRoot(data, r)
+}
+
+func (r sessionExperimentProgressJSON) RawJSON() string {
+	return r.raw
+}
+
+type SessionTraceTier string
+
+const (
+	SessionTraceTierLongLived  SessionTraceTier = "LONG_LIVED"
+	SessionTraceTierShortLived SessionTraceTier = "SHORT_LIVED"
+)
+
+func (r SessionTraceTier) IsKnown() bool {
+	switch r {
+	case SessionTraceTierLongLived, SessionTraceTierShortLived:
+		return true
+	}
+	return false
+}
+
+// Aggregate feedback for one feedback key.
+type SessionFeedbackStat struct {
+	// Mean numeric score.
+	Avg float64 `json:"avg" api:"required,nullable"`
+	// Whether any feedback was left on a thread.
+	ContainsThreadFeedback bool `json:"contains_thread_feedback" api:"required"`
+	// Number of feedback entries recorded as errors.
+	Errors int64 `json:"errors" api:"required"`
+	// Highest numeric score.
+	Max float64 `json:"max" api:"required,nullable"`
+	// Median numeric score.
+	Median float64 `json:"median" api:"required,nullable"`
+	// Lowest numeric score.
+	Min float64 `json:"min" api:"required,nullable"`
+	// Number of feedback scores for this key.
+	N int64 `json:"n" api:"required"`
+	// Standard deviation of numeric scores.
+	Stdev float64 `json:"stdev" api:"required,nullable"`
+	// `PRIMARY` for recorded feedback, `COMPOSITE` for a score computed from other
+	// feedback keys.
+	Type SessionFeedbackStatType `json:"type" api:"required"`
+	// Count of each categorical value.
+	Values map[string]int64        `json:"values" api:"required"`
+	JSON   sessionFeedbackStatJSON `json:"-"`
+}
+
+// sessionFeedbackStatJSON contains the JSON metadata for the struct
+// [SessionFeedbackStat]
+type sessionFeedbackStatJSON struct {
+	Avg                    apijson.Field
+	ContainsThreadFeedback apijson.Field
+	Errors                 apijson.Field
+	Max                    apijson.Field
+	Median                 apijson.Field
+	Min                    apijson.Field
+	N                      apijson.Field
+	Stdev                  apijson.Field
+	Type                   apijson.Field
+	Values                 apijson.Field
+	raw                    string
+	ExtraFields            map[string]apijson.Field
+}
+
+func (r *SessionFeedbackStat) UnmarshalJSON(data []byte) (err error) {
+	return apijson.UnmarshalRoot(data, r)
+}
+
+func (r sessionFeedbackStatJSON) RawJSON() string {
+	return r.raw
+}
+
+// `PRIMARY` for recorded feedback, `COMPOSITE` for a score computed from other
+// feedback keys.
+type SessionFeedbackStatType string
+
+const (
+	SessionFeedbackStatTypePrimary   SessionFeedbackStatType = "PRIMARY"
+	SessionFeedbackStatTypeComposite SessionFeedbackStatType = "COMPOSITE"
+)
+
+func (r SessionFeedbackStatType) IsKnown() bool {
+	switch r {
+	case SessionFeedbackStatTypePrimary, SessionFeedbackStatTypeComposite:
+		return true
+	}
+	return false
+}
+
 type SessionSortableColumns string
 
 const (
@@ -6235,54 +6497,6 @@ func (r SessionUpdateParamsTraceTier) IsKnown() bool {
 	return false
 }
 
-type SessionListParams struct {
-	ID                   param.Field[[]string]                              `query:"id" format:"uuid"`
-	DatasetVersion       param.Field[string]                                `query:"dataset_version"`
-	Facets               param.Field[bool]                                  `query:"facets"`
-	Filter               param.Field[string]                                `query:"filter"`
-	IncludeStats         param.Field[bool]                                  `query:"include_stats"`
-	Limit                param.Field[int64]                                 `query:"limit"`
-	Metadata             param.Field[string]                                `query:"metadata"`
-	Name                 param.Field[string]                                `query:"name"`
-	NameContains         param.Field[string]                                `query:"name_contains"`
-	Offset               param.Field[int64]                                 `query:"offset"`
-	ReferenceDataset     param.Field[[]string]                              `query:"reference_dataset" format:"uuid"`
-	ReferenceFree        param.Field[bool]                                  `query:"reference_free"`
-	SortBy               param.Field[SessionSortableColumns]                `query:"sort_by"`
-	SortByDesc           param.Field[bool]                                  `query:"sort_by_desc"`
-	SortByFeedbackKey    param.Field[string]                                `query:"sort_by_feedback_key"`
-	SortByFeedbackSource param.Field[SessionListParamsSortByFeedbackSource] `query:"sort_by_feedback_source"`
-	StatsFilter          param.Field[string]                                `query:"stats_filter"`
-	StatsSelect          param.Field[[]string]                              `query:"stats_select"`
-	StatsStartTime       param.Field[time.Time]                             `query:"stats_start_time" format:"date-time"`
-	TagValueID           param.Field[[]string]                              `query:"tag_value_id" format:"uuid"`
-	UseApproxStats       param.Field[bool]                                  `query:"use_approx_stats"`
-	Accept               param.Field[string]                                `header:"accept"`
-}
-
-// URLQuery serializes [SessionListParams]'s query parameters as `url.Values`.
-func (r SessionListParams) URLQuery() (v url.Values) {
-	return apiquery.MarshalWithSettings(r, apiquery.QuerySettings{
-		ArrayFormat:  apiquery.ArrayQueryFormatRepeat,
-		NestedFormat: apiquery.NestedQueryFormatBrackets,
-	})
-}
-
-type SessionListParamsSortByFeedbackSource string
-
-const (
-	SessionListParamsSortByFeedbackSourceSession SessionListParamsSortByFeedbackSource = "session"
-	SessionListParamsSortByFeedbackSourceRun     SessionListParamsSortByFeedbackSource = "run"
-)
-
-func (r SessionListParamsSortByFeedbackSource) IsKnown() bool {
-	switch r {
-	case SessionListParamsSortByFeedbackSourceSession, SessionListParamsSortByFeedbackSourceRun:
-		return true
-	}
-	return false
-}
-
 type SessionDashboardParams struct {
 	CustomChartsSectionRequest CustomChartsSectionRequestParam `json:"custom_charts_section_request" api:"required"`
 	Accept                     param.Field[string]             `header:"accept"`
@@ -6290,6 +6504,161 @@ type SessionDashboardParams struct {
 
 func (r SessionDashboardParams) MarshalJSON() (data []byte, err error) {
 	return apijson.MarshalRoot(r.CustomChartsSectionRequest)
+}
+
+type SessionListV1Params struct {
+	ID                   param.Field[[]string]                                `query:"id" format:"uuid"`
+	DatasetVersion       param.Field[string]                                  `query:"dataset_version"`
+	Facets               param.Field[bool]                                    `query:"facets"`
+	Filter               param.Field[string]                                  `query:"filter"`
+	IncludeStats         param.Field[bool]                                    `query:"include_stats"`
+	Limit                param.Field[int64]                                   `query:"limit"`
+	Metadata             param.Field[string]                                  `query:"metadata"`
+	Name                 param.Field[string]                                  `query:"name"`
+	NameContains         param.Field[string]                                  `query:"name_contains"`
+	Offset               param.Field[int64]                                   `query:"offset"`
+	ReferenceDataset     param.Field[[]string]                                `query:"reference_dataset" format:"uuid"`
+	ReferenceFree        param.Field[bool]                                    `query:"reference_free"`
+	SortBy               param.Field[SessionSortableColumns]                  `query:"sort_by"`
+	SortByDesc           param.Field[bool]                                    `query:"sort_by_desc"`
+	SortByFeedbackKey    param.Field[string]                                  `query:"sort_by_feedback_key"`
+	SortByFeedbackSource param.Field[SessionListV1ParamsSortByFeedbackSource] `query:"sort_by_feedback_source"`
+	StatsFilter          param.Field[string]                                  `query:"stats_filter"`
+	StatsSelect          param.Field[[]string]                                `query:"stats_select"`
+	StatsStartTime       param.Field[time.Time]                               `query:"stats_start_time" format:"date-time"`
+	TagValueID           param.Field[[]string]                                `query:"tag_value_id" format:"uuid"`
+	UseApproxStats       param.Field[bool]                                    `query:"use_approx_stats"`
+	Accept               param.Field[string]                                  `header:"accept"`
+}
+
+// URLQuery serializes [SessionListV1Params]'s query parameters as `url.Values`.
+func (r SessionListV1Params) URLQuery() (v url.Values) {
+	return apiquery.MarshalWithSettings(r, apiquery.QuerySettings{
+		ArrayFormat:  apiquery.ArrayQueryFormatRepeat,
+		NestedFormat: apiquery.NestedQueryFormatBrackets,
+	})
+}
+
+type SessionListV1ParamsSortByFeedbackSource string
+
+const (
+	SessionListV1ParamsSortByFeedbackSourceSession SessionListV1ParamsSortByFeedbackSource = "session"
+	SessionListV1ParamsSortByFeedbackSourceRun     SessionListV1ParamsSortByFeedbackSource = "run"
+)
+
+func (r SessionListV1ParamsSortByFeedbackSource) IsKnown() bool {
+	switch r {
+	case SessionListV1ParamsSortByFeedbackSourceSession, SessionListV1ParamsSortByFeedbackSourceRun:
+		return true
+	}
+	return false
+}
+
+type SessionListV2Params struct {
+	// Only return projects with these IDs
+	ID param.Field[[]string] `query:"id"`
+	// next_cursor from the previous page; omit for the first page
+	Cursor param.Field[string] `query:"cursor"`
+	// Only return experiments run against this dataset version (RFC 3339 timestamp)
+	DatasetVersion param.Field[time.Time] `query:"dataset_version" format:"date-time"`
+	// Filter expression, for example eq(name, \
+	Filter param.Field[string] `query:"filter"`
+	// Include run facets
+	IncludeFacets param.Field[bool] `query:"include_facets"`
+	// Include run statistics
+	IncludeStats param.Field[bool] `query:"include_stats"`
+	// JSON object the project metadata must contain
+	Metadata param.Field[string] `query:"metadata"`
+	// Only return the project with this exact name
+	Name param.Field[string] `query:"name"`
+	// Only return projects whose name contains this substring
+	NameContains param.Field[string] `query:"name_contains"`
+	// Number of projects per page
+	PageSize param.Field[int64] `query:"page_size"`
+	// Only return experiments run against these dataset IDs
+	ReferenceDatasetID param.Field[[]string] `query:"reference_dataset_id"`
+	// true for tracing projects only, false for experiments only
+	ReferenceFree param.Field[bool] `query:"reference_free"`
+	// Sort column. FEEDBACK requires reference_dataset_id
+	SortBy param.Field[SessionListV2ParamsSortBy] `query:"sort_by"`
+	// Feedback key to sort by; required when sort_by is FEEDBACK
+	SortByFeedbackKey param.Field[string] `query:"sort_by_feedback_key"`
+	// Where the sort feedback is recorded; defaults to RUN when sort_by is FEEDBACK
+	SortByFeedbackSource param.Field[SessionListV2ParamsSortByFeedbackSource] `query:"sort_by_feedback_source"`
+	// Sort direction
+	SortOrder param.Field[SessionListV2ParamsSortOrder] `query:"sort_order"`
+	// Run filter expression that scopes the statistics
+	StatsFilter param.Field[string] `query:"stats_filter"`
+	// Statistics to include when include_stats is true; defaults to all
+	StatsSelect param.Field[[]string] `query:"stats_select"`
+	// Only aggregate statistics at or after this time, within the last 31 days
+	StatsStartTime param.Field[time.Time] `query:"stats_start_time" format:"date-time"`
+	// Only return projects tagged with all of these tag value IDs
+	TagValueID param.Field[[]string] `query:"tag_value_id"`
+	// Compute statistics from pre-aggregated data, which is faster but up to an hour
+	// stale
+	UseApproxStats param.Field[bool] `query:"use_approx_stats"`
+}
+
+// URLQuery serializes [SessionListV2Params]'s query parameters as `url.Values`.
+func (r SessionListV2Params) URLQuery() (v url.Values) {
+	return apiquery.MarshalWithSettings(r, apiquery.QuerySettings{
+		ArrayFormat:  apiquery.ArrayQueryFormatRepeat,
+		NestedFormat: apiquery.NestedQueryFormatBrackets,
+	})
+}
+
+// Sort column. FEEDBACK requires reference_dataset_id
+type SessionListV2ParamsSortBy string
+
+const (
+	SessionListV2ParamsSortByName             SessionListV2ParamsSortBy = "NAME"
+	SessionListV2ParamsSortByStartTime        SessionListV2ParamsSortBy = "START_TIME"
+	SessionListV2ParamsSortByLastRunStartTime SessionListV2ParamsSortBy = "LAST_RUN_START_TIME"
+	SessionListV2ParamsSortByErrorRate        SessionListV2ParamsSortBy = "ERROR_RATE"
+	SessionListV2ParamsSortByLatencyP50       SessionListV2ParamsSortBy = "LATENCY_P50"
+	SessionListV2ParamsSortByLatencyP99       SessionListV2ParamsSortBy = "LATENCY_P99"
+	SessionListV2ParamsSortByFeedback         SessionListV2ParamsSortBy = "FEEDBACK"
+)
+
+func (r SessionListV2ParamsSortBy) IsKnown() bool {
+	switch r {
+	case SessionListV2ParamsSortByName, SessionListV2ParamsSortByStartTime, SessionListV2ParamsSortByLastRunStartTime, SessionListV2ParamsSortByErrorRate, SessionListV2ParamsSortByLatencyP50, SessionListV2ParamsSortByLatencyP99, SessionListV2ParamsSortByFeedback:
+		return true
+	}
+	return false
+}
+
+// Where the sort feedback is recorded; defaults to RUN when sort_by is FEEDBACK
+type SessionListV2ParamsSortByFeedbackSource string
+
+const (
+	SessionListV2ParamsSortByFeedbackSourceRun     SessionListV2ParamsSortByFeedbackSource = "RUN"
+	SessionListV2ParamsSortByFeedbackSourceSession SessionListV2ParamsSortByFeedbackSource = "SESSION"
+)
+
+func (r SessionListV2ParamsSortByFeedbackSource) IsKnown() bool {
+	switch r {
+	case SessionListV2ParamsSortByFeedbackSourceRun, SessionListV2ParamsSortByFeedbackSourceSession:
+		return true
+	}
+	return false
+}
+
+// Sort direction
+type SessionListV2ParamsSortOrder string
+
+const (
+	SessionListV2ParamsSortOrderAsc  SessionListV2ParamsSortOrder = "asc"
+	SessionListV2ParamsSortOrderDesc SessionListV2ParamsSortOrder = "desc"
+)
+
+func (r SessionListV2ParamsSortOrder) IsKnown() bool {
+	switch r {
+	case SessionListV2ParamsSortOrderAsc, SessionListV2ParamsSortOrderDesc:
+		return true
+	}
+	return false
 }
 
 type SessionResolveParams struct {
@@ -6340,6 +6709,54 @@ const (
 func (r SessionResolveParamsEnvironment) IsKnown() bool {
 	switch r {
 	case SessionResolveParamsEnvironmentLocal, SessionResolveParamsEnvironmentDevelopment, SessionResolveParamsEnvironmentStaging, SessionResolveParamsEnvironmentProduction:
+		return true
+	}
+	return false
+}
+
+type SessionListParams struct {
+	ID                   param.Field[[]string]                              `query:"id" format:"uuid"`
+	DatasetVersion       param.Field[string]                                `query:"dataset_version"`
+	Facets               param.Field[bool]                                  `query:"facets"`
+	Filter               param.Field[string]                                `query:"filter"`
+	IncludeStats         param.Field[bool]                                  `query:"include_stats"`
+	Limit                param.Field[int64]                                 `query:"limit"`
+	Metadata             param.Field[string]                                `query:"metadata"`
+	Name                 param.Field[string]                                `query:"name"`
+	NameContains         param.Field[string]                                `query:"name_contains"`
+	Offset               param.Field[int64]                                 `query:"offset"`
+	ReferenceDataset     param.Field[[]string]                              `query:"reference_dataset" format:"uuid"`
+	ReferenceFree        param.Field[bool]                                  `query:"reference_free"`
+	SortBy               param.Field[SessionSortableColumns]                `query:"sort_by"`
+	SortByDesc           param.Field[bool]                                  `query:"sort_by_desc"`
+	SortByFeedbackKey    param.Field[string]                                `query:"sort_by_feedback_key"`
+	SortByFeedbackSource param.Field[SessionListParamsSortByFeedbackSource] `query:"sort_by_feedback_source"`
+	StatsFilter          param.Field[string]                                `query:"stats_filter"`
+	StatsSelect          param.Field[[]string]                              `query:"stats_select"`
+	StatsStartTime       param.Field[time.Time]                             `query:"stats_start_time" format:"date-time"`
+	TagValueID           param.Field[[]string]                              `query:"tag_value_id" format:"uuid"`
+	UseApproxStats       param.Field[bool]                                  `query:"use_approx_stats"`
+	Accept               param.Field[string]                                `header:"accept"`
+}
+
+// URLQuery serializes [SessionListParams]'s query parameters as `url.Values`.
+func (r SessionListParams) URLQuery() (v url.Values) {
+	return apiquery.MarshalWithSettings(r, apiquery.QuerySettings{
+		ArrayFormat:  apiquery.ArrayQueryFormatRepeat,
+		NestedFormat: apiquery.NestedQueryFormatBrackets,
+	})
+}
+
+type SessionListParamsSortByFeedbackSource string
+
+const (
+	SessionListParamsSortByFeedbackSourceSession SessionListParamsSortByFeedbackSource = "session"
+	SessionListParamsSortByFeedbackSourceRun     SessionListParamsSortByFeedbackSource = "run"
+)
+
+func (r SessionListParamsSortByFeedbackSource) IsKnown() bool {
+	switch r {
+	case SessionListParamsSortByFeedbackSourceSession, SessionListParamsSortByFeedbackSourceRun:
 		return true
 	}
 	return false

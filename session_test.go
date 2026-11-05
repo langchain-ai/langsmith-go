@@ -125,53 +125,6 @@ func TestSessionUpdateWithOptionalParams(t *testing.T) {
 	}
 }
 
-func TestSessionListWithOptionalParams(t *testing.T) {
-	t.Skip("Mock server tests are disabled")
-	baseURL := "http://localhost:4010"
-	if envURL, ok := os.LookupEnv("TEST_API_BASE_URL"); ok {
-		baseURL = envURL
-	}
-	if !testutil.CheckTestServer(t, baseURL) {
-		return
-	}
-	client := langsmith.NewClient(
-		option.WithBaseURL(baseURL),
-		option.WithAPIKey("My API Key"),
-		option.WithTenantID("My Tenant ID"),
-	)
-	_, err := client.Sessions.List(context.TODO(), langsmith.SessionListParams{
-		ID:                   langsmith.F([]string{"182bd5e5-6e1a-4fe4-a799-aa6d9a6ab26e", "182bd5e5-6e1a-4fe4-a799-aa6d9a6ab26e"}),
-		DatasetVersion:       langsmith.F("dataset_version"),
-		Facets:               langsmith.F(true),
-		Filter:               langsmith.F("filter"),
-		IncludeStats:         langsmith.F(true),
-		Limit:                langsmith.F(int64(1)),
-		Metadata:             langsmith.F("metadata"),
-		Name:                 langsmith.F("name"),
-		NameContains:         langsmith.F("name_contains"),
-		Offset:               langsmith.F(int64(0)),
-		ReferenceDataset:     langsmith.F([]string{"182bd5e5-6e1a-4fe4-a799-aa6d9a6ab26e", "182bd5e5-6e1a-4fe4-a799-aa6d9a6ab26e"}),
-		ReferenceFree:        langsmith.F(true),
-		SortBy:               langsmith.F(langsmith.SessionSortableColumnsName),
-		SortByDesc:           langsmith.F(true),
-		SortByFeedbackKey:    langsmith.F("sort_by_feedback_key"),
-		SortByFeedbackSource: langsmith.F(langsmith.SessionListParamsSortByFeedbackSourceSession),
-		StatsFilter:          langsmith.F("stats_filter"),
-		StatsSelect:          langsmith.F([]string{"string", "string"}),
-		StatsStartTime:       langsmith.F(time.Now()),
-		TagValueID:           langsmith.F([]string{"182bd5e5-6e1a-4fe4-a799-aa6d9a6ab26e", "182bd5e5-6e1a-4fe4-a799-aa6d9a6ab26e"}),
-		UseApproxStats:       langsmith.F(true),
-		Accept:               langsmith.F("accept"),
-	})
-	if err != nil {
-		var apierr *langsmith.Error
-		if errors.As(err, &apierr) {
-			t.Log(string(apierr.DumpRequest(true)))
-		}
-		t.Fatalf("err should be nil: %s", err.Error())
-	}
-}
-
 func TestSessionDelete(t *testing.T) {
 	t.Skip("Mock server tests are disabled")
 	baseURL := "http://localhost:4010"
@@ -242,6 +195,99 @@ func TestSessionDashboardWithOptionalParams(t *testing.T) {
 	}
 }
 
+func TestSessionListV1WithOptionalParams(t *testing.T) {
+	t.Skip("Mock server tests are disabled")
+	baseURL := "http://localhost:4010"
+	if envURL, ok := os.LookupEnv("TEST_API_BASE_URL"); ok {
+		baseURL = envURL
+	}
+	if !testutil.CheckTestServer(t, baseURL) {
+		return
+	}
+	client := langsmith.NewClient(
+		option.WithBaseURL(baseURL),
+		option.WithAPIKey("My API Key"),
+		option.WithTenantID("My Tenant ID"),
+	)
+	_, err := client.Sessions.ListV1(context.TODO(), langsmith.SessionListV1Params{
+		ID:                   langsmith.F([]string{"182bd5e5-6e1a-4fe4-a799-aa6d9a6ab26e", "182bd5e5-6e1a-4fe4-a799-aa6d9a6ab26e"}),
+		DatasetVersion:       langsmith.F("dataset_version"),
+		Facets:               langsmith.F(true),
+		Filter:               langsmith.F("filter"),
+		IncludeStats:         langsmith.F(true),
+		Limit:                langsmith.F(int64(1)),
+		Metadata:             langsmith.F("metadata"),
+		Name:                 langsmith.F("name"),
+		NameContains:         langsmith.F("name_contains"),
+		Offset:               langsmith.F(int64(0)),
+		ReferenceDataset:     langsmith.F([]string{"182bd5e5-6e1a-4fe4-a799-aa6d9a6ab26e", "182bd5e5-6e1a-4fe4-a799-aa6d9a6ab26e"}),
+		ReferenceFree:        langsmith.F(true),
+		SortBy:               langsmith.F(langsmith.SessionSortableColumnsName),
+		SortByDesc:           langsmith.F(true),
+		SortByFeedbackKey:    langsmith.F("sort_by_feedback_key"),
+		SortByFeedbackSource: langsmith.F(langsmith.SessionListV1ParamsSortByFeedbackSourceSession),
+		StatsFilter:          langsmith.F("stats_filter"),
+		StatsSelect:          langsmith.F([]string{"string", "string"}),
+		StatsStartTime:       langsmith.F(time.Now()),
+		TagValueID:           langsmith.F([]string{"182bd5e5-6e1a-4fe4-a799-aa6d9a6ab26e", "182bd5e5-6e1a-4fe4-a799-aa6d9a6ab26e"}),
+		UseApproxStats:       langsmith.F(true),
+		Accept:               langsmith.F("accept"),
+	})
+	if err != nil {
+		var apierr *langsmith.Error
+		if errors.As(err, &apierr) {
+			t.Log(string(apierr.DumpRequest(true)))
+		}
+		t.Fatalf("err should be nil: %s", err.Error())
+	}
+}
+
+func TestSessionListV2WithOptionalParams(t *testing.T) {
+	t.Skip("Mock server tests are disabled")
+	baseURL := "http://localhost:4010"
+	if envURL, ok := os.LookupEnv("TEST_API_BASE_URL"); ok {
+		baseURL = envURL
+	}
+	if !testutil.CheckTestServer(t, baseURL) {
+		return
+	}
+	client := langsmith.NewClient(
+		option.WithBaseURL(baseURL),
+		option.WithAPIKey("My API Key"),
+		option.WithTenantID("My Tenant ID"),
+	)
+	_, err := client.Sessions.ListV2(context.TODO(), langsmith.SessionListV2Params{
+		ID:                   langsmith.F([]string{"string"}),
+		Cursor:               langsmith.F("cursor"),
+		DatasetVersion:       langsmith.F(time.Now()),
+		Filter:               langsmith.F("filter"),
+		IncludeFacets:        langsmith.F(true),
+		IncludeStats:         langsmith.F(true),
+		Metadata:             langsmith.F("metadata"),
+		Name:                 langsmith.F("name"),
+		NameContains:         langsmith.F("name_contains"),
+		PageSize:             langsmith.F(int64(1)),
+		ReferenceDatasetID:   langsmith.F([]string{"string"}),
+		ReferenceFree:        langsmith.F(true),
+		SortBy:               langsmith.F(langsmith.SessionListV2ParamsSortByName),
+		SortByFeedbackKey:    langsmith.F("sort_by_feedback_key"),
+		SortByFeedbackSource: langsmith.F(langsmith.SessionListV2ParamsSortByFeedbackSourceRun),
+		SortOrder:            langsmith.F(langsmith.SessionListV2ParamsSortOrderAsc),
+		StatsFilter:          langsmith.F("stats_filter"),
+		StatsSelect:          langsmith.F([]string{"string"}),
+		StatsStartTime:       langsmith.F(time.Now()),
+		TagValueID:           langsmith.F([]string{"string"}),
+		UseApproxStats:       langsmith.F(true),
+	})
+	if err != nil {
+		var apierr *langsmith.Error
+		if errors.As(err, &apierr) {
+			t.Log(string(apierr.DumpRequest(true)))
+		}
+		t.Fatalf("err should be nil: %s", err.Error())
+	}
+}
+
 func TestSessionResolveWithOptionalParams(t *testing.T) {
 	t.Skip("Mock server tests are disabled")
 	baseURL := "http://localhost:4010"
@@ -260,6 +306,53 @@ func TestSessionResolveWithOptionalParams(t *testing.T) {
 		Kind:        langsmith.F(langsmith.SessionResolveParamsKindAgent),
 		ID:          langsmith.F("id"),
 		Environment: langsmith.F(langsmith.SessionResolveParamsEnvironmentLocal),
+	})
+	if err != nil {
+		var apierr *langsmith.Error
+		if errors.As(err, &apierr) {
+			t.Log(string(apierr.DumpRequest(true)))
+		}
+		t.Fatalf("err should be nil: %s", err.Error())
+	}
+}
+
+func TestSessionListWithOptionalParams(t *testing.T) {
+	t.Skip("Mock server tests are disabled")
+	baseURL := "http://localhost:4010"
+	if envURL, ok := os.LookupEnv("TEST_API_BASE_URL"); ok {
+		baseURL = envURL
+	}
+	if !testutil.CheckTestServer(t, baseURL) {
+		return
+	}
+	client := langsmith.NewClient(
+		option.WithBaseURL(baseURL),
+		option.WithAPIKey("My API Key"),
+		option.WithTenantID("My Tenant ID"),
+	)
+	_, err := client.Sessions.List(context.TODO(), langsmith.SessionListParams{
+		ID:                   langsmith.F([]string{"182bd5e5-6e1a-4fe4-a799-aa6d9a6ab26e", "182bd5e5-6e1a-4fe4-a799-aa6d9a6ab26e"}),
+		DatasetVersion:       langsmith.F("dataset_version"),
+		Facets:               langsmith.F(true),
+		Filter:               langsmith.F("filter"),
+		IncludeStats:         langsmith.F(true),
+		Limit:                langsmith.F(int64(1)),
+		Metadata:             langsmith.F("metadata"),
+		Name:                 langsmith.F("name"),
+		NameContains:         langsmith.F("name_contains"),
+		Offset:               langsmith.F(int64(0)),
+		ReferenceDataset:     langsmith.F([]string{"182bd5e5-6e1a-4fe4-a799-aa6d9a6ab26e", "182bd5e5-6e1a-4fe4-a799-aa6d9a6ab26e"}),
+		ReferenceFree:        langsmith.F(true),
+		SortBy:               langsmith.F(langsmith.SessionSortableColumnsName),
+		SortByDesc:           langsmith.F(true),
+		SortByFeedbackKey:    langsmith.F("sort_by_feedback_key"),
+		SortByFeedbackSource: langsmith.F(langsmith.SessionListParamsSortByFeedbackSourceSession),
+		StatsFilter:          langsmith.F("stats_filter"),
+		StatsSelect:          langsmith.F([]string{"string", "string"}),
+		StatsStartTime:       langsmith.F(time.Now()),
+		TagValueID:           langsmith.F([]string{"182bd5e5-6e1a-4fe4-a799-aa6d9a6ab26e", "182bd5e5-6e1a-4fe4-a799-aa6d9a6ab26e"}),
+		UseApproxStats:       langsmith.F(true),
+		Accept:               langsmith.F("accept"),
 	})
 	if err != nil {
 		var apierr *langsmith.Error
