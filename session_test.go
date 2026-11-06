@@ -270,7 +270,6 @@ func TestSessionListV2WithOptionalParams(t *testing.T) {
 		NameContains:         langsmith.F("name_contains"),
 		PageSize:             langsmith.F(int64(1)),
 		ReferenceDatasetID:   langsmith.F([]string{"string"}),
-		ReferenceFree:        langsmith.F(true),
 		SortBy:               langsmith.F(langsmith.SessionListV2ParamsSortByName),
 		SortByFeedbackKey:    langsmith.F("sort_by_feedback_key"),
 		SortByFeedbackSource: langsmith.F(langsmith.SessionListV2ParamsSortByFeedbackSourceRun),
@@ -279,6 +278,7 @@ func TestSessionListV2WithOptionalParams(t *testing.T) {
 		StatsSelect:          langsmith.F([]string{"string"}),
 		StatsStartTime:       langsmith.F(time.Now()),
 		TagValueID:           langsmith.F([]string{"string"}),
+		Type:                 langsmith.F([]langsmith.SessionListV2ParamsType{langsmith.SessionListV2ParamsTypeProject}),
 		UseApproxStats:       langsmith.F(true),
 	})
 	if err != nil {

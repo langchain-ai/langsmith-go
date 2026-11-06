@@ -5992,10 +5992,13 @@ func (r RunStatsGroupByAttribute) IsKnown() bool {
 
 // TracerSession schema.
 type Session struct {
-	ID                 string                    `json:"id" api:"required" format:"uuid"`
-	Name               string                    `json:"name" api:"required"`
-	StartTime          time.Time                 `json:"start_time" api:"required" format:"date-time"`
-	TenantID           string                    `json:"tenant_id" api:"required" format:"uuid"`
+	ID        string    `json:"id" api:"required" format:"uuid"`
+	Name      string    `json:"name" api:"required"`
+	StartTime time.Time `json:"start_time" api:"required" format:"date-time"`
+	TenantID  string    `json:"tenant_id" api:"required" format:"uuid"`
+	// `PROJECT` for a tracing project, `AGENT` for an Agent's tracing project, or
+	// `EXPERIMENT` for an evaluation run against a dataset.
+	Type               SessionType               `json:"type" api:"required"`
 	CompletionCost     float64                   `json:"completion_cost" api:"nullable"`
 	CompletionTokens   int64                     `json:"completion_tokens" api:"nullable"`
 	DefaultDatasetID   string                    `json:"default_dataset_id" api:"nullable" format:"uuid"`
@@ -6038,6 +6041,7 @@ type sessionJSON struct {
 	Name                 apijson.Field
 	StartTime            apijson.Field
 	TenantID             apijson.Field
+	Type                 apijson.Field
 	CompletionCost       apijson.Field
 	CompletionTokens     apijson.Field
 	DefaultDatasetID     apijson.Field
@@ -6075,6 +6079,24 @@ func (r *Session) UnmarshalJSON(data []byte) (err error) {
 
 func (r sessionJSON) RawJSON() string {
 	return r.raw
+}
+
+// `PROJECT` for a tracing project, `AGENT` for an Agent's tracing project, or
+// `EXPERIMENT` for an evaluation run against a dataset.
+type SessionType string
+
+const (
+	SessionTypeProject    SessionType = "PROJECT"
+	SessionTypeAgent      SessionType = "AGENT"
+	SessionTypeExperiment SessionType = "EXPERIMENT"
+)
+
+func (r SessionType) IsKnown() bool {
+	switch r {
+	case SessionTypeProject, SessionTypeAgent, SessionTypeExperiment:
+		return true
+	}
+	return false
 }
 
 type SessionExperimentProgress struct {
@@ -6590,7 +6612,7 @@ type SessionListV2Params struct {
 	Cursor param.Field[string] `query:"cursor"`
 	// Only return experiments run against this dataset version (RFC 3339 timestamp)
 	DatasetVersion param.Field[time.Time] `query:"dataset_version" format:"date-time"`
-	// Filter expression, for example eq(name, \
+	// Filter expression, for example eq(name, 'my-project')
 	Filter param.Field[string] `query:"filter"`
 	// Include run facets
 	IncludeFacets param.Field[bool] `query:"include_facets"`
@@ -6606,8 +6628,6 @@ type SessionListV2Params struct {
 	PageSize param.Field[int64] `query:"page_size"`
 	// Only return experiments run against these dataset IDs
 	ReferenceDatasetID param.Field[[]string] `query:"reference_dataset_id"`
-	// true for tracing projects only, false for experiments only
-	ReferenceFree param.Field[bool] `query:"reference_free"`
 	// Sort column. FEEDBACK requires reference_dataset_id
 	SortBy param.Field[SessionListV2ParamsSortBy] `query:"sort_by"`
 	// Feedback key to sort by; required when sort_by is FEEDBACK
@@ -6624,6 +6644,8 @@ type SessionListV2Params struct {
 	StatsStartTime param.Field[time.Time] `query:"stats_start_time" format:"date-time"`
 	// Only return projects tagged with all of these tag value IDs
 	TagValueID param.Field[[]string] `query:"tag_value_id"`
+	// Only return projects of these types
+	Type param.Field[[]SessionListV2ParamsType] `query:"type"`
 	// Compute statistics from pre-aggregated data, which is faster but up to an hour
 	// stale
 	UseApproxStats param.Field[bool] `query:"use_approx_stats"`
@@ -6685,6 +6707,22 @@ const (
 func (r SessionListV2ParamsSortOrder) IsKnown() bool {
 	switch r {
 	case SessionListV2ParamsSortOrderAsc, SessionListV2ParamsSortOrderDesc:
+		return true
+	}
+	return false
+}
+
+type SessionListV2ParamsType string
+
+const (
+	SessionListV2ParamsTypeProject    SessionListV2ParamsType = "PROJECT"
+	SessionListV2ParamsTypeAgent      SessionListV2ParamsType = "AGENT"
+	SessionListV2ParamsTypeExperiment SessionListV2ParamsType = "EXPERIMENT"
+)
+
+func (r SessionListV2ParamsType) IsKnown() bool {
+	switch r {
+	case SessionListV2ParamsTypeProject, SessionListV2ParamsTypeAgent, SessionListV2ParamsTypeExperiment:
 		return true
 	}
 	return false
