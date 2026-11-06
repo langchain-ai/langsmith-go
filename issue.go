@@ -113,17 +113,20 @@ type Issue struct {
 	ProposedPromptFixes  []interface{}      `json:"proposed_prompt_fixes"`
 	// RecurrencesSinceWatching counts linked traces whose run start_time is after
 	// watching_since — i.e. recurrences observed during the current watch period.
-	RecurrencesSinceWatching int64                 `json:"recurrences_since_watching"`
-	SessionID                string                `json:"session_id"`
-	Severity                 IssueSeverity         `json:"severity"`
-	Status                   IssueStatus           `json:"status"`
-	Tags                     []string              `json:"tags"`
-	TenantID                 string                `json:"tenant_id"`
-	Traces                   interface{}           `json:"traces"`
-	UpdatedAt                string                `json:"updated_at"`
-	ValidationResult         IssueValidationResult `json:"validation_result"`
-	WatchingSince            string                `json:"watching_since"`
-	JSON                     issueJSON             `json:"-"`
+	RecurrencesSinceWatching int64         `json:"recurrences_since_watching"`
+	SessionID                string        `json:"session_id"`
+	Severity                 IssueSeverity `json:"severity"`
+	Status                   IssueStatus   `json:"status"`
+	Tags                     []string      `json:"tags"`
+	TenantID                 string        `json:"tenant_id"`
+	Traces                   interface{}   `json:"traces"`
+	// "actionable" (there is something to do; it may carry PRs or LangSmith assets) or
+	// "finding" (an observation only). Defaults to "actionable".
+	Type             IssueType             `json:"type"`
+	UpdatedAt        string                `json:"updated_at"`
+	ValidationResult IssueValidationResult `json:"validation_result"`
+	WatchingSince    string                `json:"watching_since"`
+	JSON             issueJSON             `json:"-"`
 }
 
 // issueJSON contains the JSON metadata for the struct [Issue]
@@ -157,6 +160,7 @@ type issueJSON struct {
 	Tags                     apijson.Field
 	TenantID                 apijson.Field
 	Traces                   apijson.Field
+	Type                     apijson.Field
 	UpdatedAt                apijson.Field
 	ValidationResult         apijson.Field
 	WatchingSince            apijson.Field
@@ -889,6 +893,23 @@ const (
 func (r IssueStatus) IsKnown() bool {
 	switch r {
 	case IssueStatusOpen, IssueStatusFixing, IssueStatusWatching, IssueStatusCompleted, IssueStatusIgnored:
+		return true
+	}
+	return false
+}
+
+// "actionable" (there is something to do; it may carry PRs or LangSmith assets) or
+// "finding" (an observation only). Defaults to "actionable".
+type IssueType string
+
+const (
+	IssueTypeActionable IssueType = "actionable"
+	IssueTypeFinding    IssueType = "finding"
+)
+
+func (r IssueType) IsKnown() bool {
+	switch r {
+	case IssueTypeActionable, IssueTypeFinding:
 		return true
 	}
 	return false
