@@ -6012,10 +6012,10 @@ type Session struct {
 	LastRunStartTimeLive time.Time                      `json:"last_run_start_time_live" api:"nullable" format:"date-time"`
 	LatencyP50           float64                        `json:"latency_p50" api:"nullable"`
 	LatencyP99           float64                        `json:"latency_p99" api:"nullable"`
-	// Retention in days for traces while trace_tier is longlived. One of 30, 60, 90,
-	// 120, 150, 180, 240, 300, 365 or 400, up to the maximum of the deployment.
-	// Self-hosted also accepts its configured retention. The value is kept while
-	// trace_tier is shortlived. Null means the project uses the workspace retention.
+	// Retention in days for traces while trace_tier is longlived. One of the
+	// deployment's allowed values (allowed_longlived_ttl_days in /info), up to the
+	// maximum of the deployment. The value is kept while trace_tier is shortlived.
+	// Null means the project uses the workspace retention.
 	LonglivedTtlDays   int64                    `json:"longlived_ttl_days" api:"nullable"`
 	PromptCost         float64                  `json:"prompt_cost" api:"nullable"`
 	PromptTokens       int64                    `json:"prompt_tokens" api:"nullable"`
@@ -6235,10 +6235,10 @@ type TracerSession struct {
 	LastRunStartTimeLive time.Time                       `json:"last_run_start_time_live" api:"nullable" format:"date-time"`
 	LatencyP50           float64                         `json:"latency_p50" api:"nullable"`
 	LatencyP99           float64                         `json:"latency_p99" api:"nullable"`
-	// Retention in days for traces while trace_tier is longlived. One of 30, 60, 90,
-	// 120, 150, 180, 240, 300, 365 or 400, up to the maximum of the deployment.
-	// Self-hosted also accepts its configured retention. The value is kept while
-	// trace_tier is shortlived. Null means the project uses the workspace retention.
+	// Retention in days for traces while trace_tier is longlived. One of the
+	// deployment's allowed values (allowed_longlived_ttl_days in /info), up to the
+	// maximum of the deployment. The value is kept while trace_tier is shortlived.
+	// Null means the project uses the workspace retention.
 	LonglivedTtlDays     int64                    `json:"longlived_ttl_days" api:"nullable"`
 	Name                 string                   `json:"name"`
 	PromptCost           float64                  `json:"prompt_cost" api:"nullable"`
@@ -6352,10 +6352,10 @@ type TracerSessionWithoutVirtualFields struct {
 	EndTime              time.Time              `json:"end_time" api:"nullable" format:"date-time"`
 	Extra                map[string]interface{} `json:"extra" api:"nullable"`
 	LastRunStartTimeLive time.Time              `json:"last_run_start_time_live" api:"nullable" format:"date-time"`
-	// Retention in days for traces while trace_tier is longlived. One of 30, 60, 90,
-	// 120, 150, 180, 240, 300, 365 or 400, up to the maximum of the deployment.
-	// Self-hosted also accepts its configured retention. The value is kept while
-	// trace_tier is shortlived. Null means the project uses the workspace retention.
+	// Retention in days for traces while trace_tier is longlived. One of the
+	// deployment's allowed values (allowed_longlived_ttl_days in /info), up to the
+	// maximum of the deployment. The value is kept while trace_tier is shortlived.
+	// Null means the project uses the workspace retention.
 	LonglivedTtlDays   int64                                      `json:"longlived_ttl_days" api:"nullable"`
 	Name               string                                     `json:"name"`
 	ReferenceDatasetID string                                     `json:"reference_dataset_id" api:"nullable" format:"uuid"`
@@ -6437,10 +6437,10 @@ type SessionNewParams struct {
 	EvaluatorKeys    param.Field[[]string]               `json:"evaluator_keys"`
 	Extra            param.Field[map[string]interface{}] `json:"extra"`
 	KickedOffBy      param.Field[string]                 `json:"kicked_off_by"`
-	// Retention in days for traces while trace_tier is longlived. One of 30, 60, 90,
-	// 120, 150, 180, 240, 300, 365 or 400, up to the maximum of the deployment.
-	// Self-hosted also accepts its configured retention. The value is kept while
-	// trace_tier is shortlived. Null means the project uses the workspace retention.
+	// Retention in days for traces while trace_tier is longlived. One of the
+	// deployment's allowed values (allowed_longlived_ttl_days in /info), up to the
+	// maximum of the deployment. The value is kept while trace_tier is shortlived.
+	// Null means the project uses the workspace retention.
 	LonglivedTtlDays   param.Field[int64]                     `json:"longlived_ttl_days"`
 	Name               param.Field[string]                    `json:"name"`
 	NumExamples        param.Field[int64]                     `json:"num_examples"`
@@ -6497,11 +6497,11 @@ type SessionUpdateParams struct {
 	Description      param.Field[string]                 `json:"description"`
 	EndTime          param.Field[time.Time]              `json:"end_time" format:"date-time"`
 	Extra            param.Field[map[string]interface{}] `json:"extra"`
-	// Retention in days for traces while trace_tier is longlived. One of 30, 60, 90,
-	// 120, 150, 180, 240, 300, 365 or 400, up to the maximum of the deployment.
-	// Self-hosted also accepts its configured retention. The value is kept while
-	// trace_tier is shortlived. Null means the project uses the workspace retention.
-	// Omit the field to keep the current value.
+	// Retention in days for traces while trace_tier is longlived. One of the
+	// deployment's allowed values (allowed_longlived_ttl_days in /info), up to the
+	// maximum of the deployment. The value is kept while trace_tier is shortlived.
+	// Null means the project uses the workspace retention. Omit the field to keep the
+	// current value.
 	LonglivedTtlDays param.Field[int64]                        `json:"longlived_ttl_days"`
 	Name             param.Field[string]                       `json:"name"`
 	TraceTier        param.Field[SessionUpdateParamsTraceTier] `json:"trace_tier"`
