@@ -32,37 +32,58 @@ func NewSettingService(opts ...option.RequestOption) (r *SettingService) {
 	return
 }
 
-// Get settings.
-func (r *SettingService) List(ctx context.Context, opts ...option.RequestOption) (res *AppHubCrudTenantsTenant, err error) {
+// Get the current workspace.
+func (r *SettingService) List(ctx context.Context, opts ...option.RequestOption) (res *SettingListResponse, err error) {
 	opts = slices.Concat(r.Options, opts)
 	path := "api/v1/settings"
 	err = requestconfig.ExecuteNewRequest(ctx, http.MethodGet, path, nil, &res, opts...)
 	return res, err
 }
 
-type AppHubCrudTenantsTenant struct {
-	ID           string                      `json:"id" api:"required" format:"uuid"`
-	CreatedAt    time.Time                   `json:"created_at" api:"required" format:"date-time"`
-	DisplayName  string                      `json:"display_name" api:"required"`
-	TenantHandle string                      `json:"tenant_handle" api:"nullable"`
-	JSON         appHubCrudTenantsTenantJSON `json:"-"`
+type SettingListResponse struct {
+	ID              string    `json:"id" api:"required" format:"uuid"`
+	CreatedAt       time.Time `json:"created_at" api:"required" format:"date-time"`
+	DisplayName     string    `json:"display_name" api:"required"`
+	IsDeleted       bool      `json:"is_deleted" api:"required"`
+	IsPersonal      bool      `json:"is_personal" api:"required"`
+	DataPlaneName   string    `json:"data_plane_name" api:"nullable"`
+	DataPlaneRegion string    `json:"data_plane_region" api:"nullable"`
+	DataPlaneURL    string    `json:"data_plane_url" api:"nullable"`
+	OrganizationID  string    `json:"organization_id" api:"nullable" format:"uuid"`
+	Permissions     []string  `json:"permissions" api:"nullable"`
+	// Deprecated: deprecated
+	ReadOnly     bool                    `json:"read_only"`
+	RoleID       string                  `json:"role_id" api:"nullable" format:"uuid"`
+	RoleName     string                  `json:"role_name" api:"nullable"`
+	TenantHandle string                  `json:"tenant_handle" api:"nullable"`
+	JSON         settingListResponseJSON `json:"-"`
 }
 
-// appHubCrudTenantsTenantJSON contains the JSON metadata for the struct
-// [AppHubCrudTenantsTenant]
-type appHubCrudTenantsTenantJSON struct {
-	ID           apijson.Field
-	CreatedAt    apijson.Field
-	DisplayName  apijson.Field
-	TenantHandle apijson.Field
-	raw          string
-	ExtraFields  map[string]apijson.Field
+// settingListResponseJSON contains the JSON metadata for the struct
+// [SettingListResponse]
+type settingListResponseJSON struct {
+	ID              apijson.Field
+	CreatedAt       apijson.Field
+	DisplayName     apijson.Field
+	IsDeleted       apijson.Field
+	IsPersonal      apijson.Field
+	DataPlaneName   apijson.Field
+	DataPlaneRegion apijson.Field
+	DataPlaneURL    apijson.Field
+	OrganizationID  apijson.Field
+	Permissions     apijson.Field
+	ReadOnly        apijson.Field
+	RoleID          apijson.Field
+	RoleName        apijson.Field
+	TenantHandle    apijson.Field
+	raw             string
+	ExtraFields     map[string]apijson.Field
 }
 
-func (r *AppHubCrudTenantsTenant) UnmarshalJSON(data []byte) (err error) {
+func (r *SettingListResponse) UnmarshalJSON(data []byte) (err error) {
 	return apijson.UnmarshalRoot(data, r)
 }
 
-func (r appHubCrudTenantsTenantJSON) RawJSON() string {
+func (r settingListResponseJSON) RawJSON() string {
 	return r.raw
 }

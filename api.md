@@ -724,11 +724,11 @@ Methods:
 
 Response Types:
 
-- <a href="https://pkg.go.dev/github.com/langchain-ai/langsmith-go">langsmith</a>.<a href="https://pkg.go.dev/github.com/langchain-ai/langsmith-go#AppHubCrudTenantsTenant">AppHubCrudTenantsTenant</a>
+- <a href="https://pkg.go.dev/github.com/langchain-ai/langsmith-go">langsmith</a>.<a href="https://pkg.go.dev/github.com/langchain-ai/langsmith-go#SettingListResponse">SettingListResponse</a>
 
 Methods:
 
-- <code title="get /api/v1/settings">client.Settings.<a href="https://pkg.go.dev/github.com/langchain-ai/langsmith-go#SettingService.List">List</a>(ctx <a href="https://pkg.go.dev/context">context</a>.<a href="https://pkg.go.dev/context#Context">Context</a>) (\*<a href="https://pkg.go.dev/github.com/langchain-ai/langsmith-go">langsmith</a>.<a href="https://pkg.go.dev/github.com/langchain-ai/langsmith-go#AppHubCrudTenantsTenant">AppHubCrudTenantsTenant</a>, <a href="https://pkg.go.dev/builtin#error">error</a>)</code>
+- <code title="get /api/v1/settings">client.Settings.<a href="https://pkg.go.dev/github.com/langchain-ai/langsmith-go#SettingService.List">List</a>(ctx <a href="https://pkg.go.dev/context">context</a>.<a href="https://pkg.go.dev/context#Context">Context</a>) (\*<a href="https://pkg.go.dev/github.com/langchain-ai/langsmith-go">langsmith</a>.<a href="https://pkg.go.dev/github.com/langchain-ai/langsmith-go#SettingListResponse">SettingListResponse</a>, <a href="https://pkg.go.dev/builtin#error">error</a>)</code>
 
 # Issues
 
