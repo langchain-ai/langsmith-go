@@ -132,8 +132,11 @@ func (r *AgentService) Delete(ctx context.Context, agentID string, opts ...optio
 }
 
 type Agent struct {
-	ID           string             `json:"id" api:"required"`
-	AgentType    AgentAgentType     `json:"agent_type" api:"required"`
+	ID        string         `json:"id" api:"required"`
+	AgentType AgentAgentType `json:"agent_type" api:"required"`
+	// The agent's permanent identifier, assigned by LangSmith and never reused;
+	// workload identity subjects name the agent by it.
+	AgentUuid    string             `json:"agent_uuid" api:"required" format:"uuid"`
 	CreatedAt    time.Time          `json:"created_at" api:"required" format:"date-time"`
 	Environments []AgentEnvironment `json:"environments" api:"required"`
 	Name         string             `json:"name" api:"required"`
@@ -152,6 +155,7 @@ type Agent struct {
 type agentJSON struct {
 	ID           apijson.Field
 	AgentType    apijson.Field
+	AgentUuid    apijson.Field
 	CreatedAt    apijson.Field
 	Environments apijson.Field
 	Name         apijson.Field
