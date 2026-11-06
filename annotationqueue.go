@@ -8,7 +8,6 @@ import (
 	"fmt"
 	"net/http"
 	"net/url"
-	"reflect"
 	"slices"
 	"time"
 
@@ -18,8 +17,6 @@ import (
 	"github.com/langchain-ai/langsmith-go/internal/requestconfig"
 	"github.com/langchain-ai/langsmith-go/option"
 	"github.com/langchain-ai/langsmith-go/packages/pagination"
-	"github.com/langchain-ai/langsmith-go/shared"
-	"github.com/tidwall/gjson"
 )
 
 // AnnotationQueueService contains methods and other services that help with
@@ -227,18 +224,18 @@ func (r *AnnotationQueueService) GetTotalSize(ctx context.Context, queueID strin
 }
 
 type AnnotationQueueRubricItemSchema struct {
-	FeedbackKey       string                                             `json:"feedback_key" api:"required"`
-	Description       string                                             `json:"description" api:"nullable"`
-	FeedbackConfig    AnnotationQueueRubricItemSchemaFeedbackConfig      `json:"feedback_config" api:"nullable"`
-	FeedbackConfigID  string                                             `json:"feedback_config_id" api:"nullable" format:"uuid"`
-	IsAssertion       bool                                               `json:"is_assertion" api:"nullable"`
-	IsRequired        bool                                               `json:"is_required" api:"nullable"`
-	RegexValidator    AnnotationQueueRubricItemSchemaRegexValidatorUnion `json:"regex_validator" api:"nullable"`
-	RequiredIf        AnnotationQueueRubricItemSchemaRequiredIf          `json:"required_if" api:"nullable"`
-	ScoreDescriptions map[string]string                                  `json:"score_descriptions" api:"nullable"`
-	ValueDescriptions map[string]string                                  `json:"value_descriptions" api:"nullable"`
-	VisibleIf         AnnotationQueueRubricItemSchemaVisibleIf           `json:"visible_if" api:"nullable"`
-	JSON              annotationQueueRubricItemSchemaJSON                `json:"-"`
+	FeedbackKey       string                                        `json:"feedback_key" api:"required"`
+	Description       string                                        `json:"description" api:"nullable"`
+	FeedbackConfig    AnnotationQueueRubricItemSchemaFeedbackConfig `json:"feedback_config" api:"nullable"`
+	FeedbackConfigID  string                                        `json:"feedback_config_id" api:"nullable" format:"uuid"`
+	IsAssertion       bool                                          `json:"is_assertion" api:"nullable"`
+	IsRequired        bool                                          `json:"is_required" api:"nullable"`
+	RegexValidator    string                                        `json:"regex_validator" api:"nullable"`
+	RequiredIf        AnnotationQueueRubricItemSchemaRequiredIf     `json:"required_if" api:"nullable"`
+	ScoreDescriptions map[string]string                             `json:"score_descriptions" api:"nullable"`
+	ValueDescriptions map[string]string                             `json:"value_descriptions" api:"nullable"`
+	VisibleIf         AnnotationQueueRubricItemSchemaVisibleIf      `json:"visible_if" api:"nullable"`
+	JSON              annotationQueueRubricItemSchemaJSON           `json:"-"`
 }
 
 // annotationQueueRubricItemSchemaJSON contains the JSON metadata for the struct
@@ -376,26 +373,6 @@ func (r *AnnotationQueueRubricItemSchemaFeedbackConfigFeedbackConfigCategory) Un
 
 func (r annotationQueueRubricItemSchemaFeedbackConfigFeedbackConfigCategoryJSON) RawJSON() string {
 	return r.raw
-}
-
-// Union satisfied by [shared.UnionString] or [Missing].
-type AnnotationQueueRubricItemSchemaRegexValidatorUnion interface {
-	ImplementsAnnotationQueueRubricItemSchemaRegexValidatorUnion()
-}
-
-func init() {
-	apijson.RegisterUnion(
-		reflect.TypeOf((*AnnotationQueueRubricItemSchemaRegexValidatorUnion)(nil)).Elem(),
-		"",
-		apijson.UnionVariant{
-			TypeFilter: gjson.String,
-			Type:       reflect.TypeOf(shared.UnionString("")),
-		},
-		apijson.UnionVariant{
-			TypeFilter: gjson.JSON,
-			Type:       reflect.TypeOf(Missing{}),
-		},
-	)
 }
 
 type AnnotationQueueRubricItemSchemaRequiredIf struct {
@@ -559,17 +536,17 @@ func (r AnnotationQueueRubricItemSchemaVisibleIfRulesOp) IsKnown() bool {
 }
 
 type AnnotationQueueRubricItemSchemaParam struct {
-	FeedbackKey       param.Field[string]                                                  `json:"feedback_key" api:"required"`
-	Description       param.Field[string]                                                  `json:"description"`
-	FeedbackConfig    param.Field[AnnotationQueueRubricItemSchemaFeedbackConfigParam]      `json:"feedback_config"`
-	FeedbackConfigID  param.Field[string]                                                  `json:"feedback_config_id" format:"uuid"`
-	IsAssertion       param.Field[bool]                                                    `json:"is_assertion"`
-	IsRequired        param.Field[bool]                                                    `json:"is_required"`
-	RegexValidator    param.Field[AnnotationQueueRubricItemSchemaRegexValidatorUnionParam] `json:"regex_validator"`
-	RequiredIf        param.Field[AnnotationQueueRubricItemSchemaRequiredIfParam]          `json:"required_if"`
-	ScoreDescriptions param.Field[map[string]string]                                       `json:"score_descriptions"`
-	ValueDescriptions param.Field[map[string]string]                                       `json:"value_descriptions"`
-	VisibleIf         param.Field[AnnotationQueueRubricItemSchemaVisibleIfParam]           `json:"visible_if"`
+	FeedbackKey       param.Field[string]                                             `json:"feedback_key" api:"required"`
+	Description       param.Field[string]                                             `json:"description"`
+	FeedbackConfig    param.Field[AnnotationQueueRubricItemSchemaFeedbackConfigParam] `json:"feedback_config"`
+	FeedbackConfigID  param.Field[string]                                             `json:"feedback_config_id" format:"uuid"`
+	IsAssertion       param.Field[bool]                                               `json:"is_assertion"`
+	IsRequired        param.Field[bool]                                               `json:"is_required"`
+	RegexValidator    param.Field[string]                                             `json:"regex_validator"`
+	RequiredIf        param.Field[AnnotationQueueRubricItemSchemaRequiredIfParam]     `json:"required_if"`
+	ScoreDescriptions param.Field[map[string]string]                                  `json:"score_descriptions"`
+	ValueDescriptions param.Field[map[string]string]                                  `json:"value_descriptions"`
+	VisibleIf         param.Field[AnnotationQueueRubricItemSchemaVisibleIfParam]      `json:"visible_if"`
 }
 
 func (r AnnotationQueueRubricItemSchemaParam) MarshalJSON() (data []byte, err error) {
@@ -614,11 +591,6 @@ type AnnotationQueueRubricItemSchemaFeedbackConfigFeedbackConfigCategoryParam st
 
 func (r AnnotationQueueRubricItemSchemaFeedbackConfigFeedbackConfigCategoryParam) MarshalJSON() (data []byte, err error) {
 	return apijson.MarshalRoot(r)
-}
-
-// Satisfied by [shared.UnionString], [MissingParam].
-type AnnotationQueueRubricItemSchemaRegexValidatorUnionParam interface {
-	ImplementsAnnotationQueueRubricItemSchemaRegexValidatorUnionParam()
 }
 
 type AnnotationQueueRubricItemSchemaRequiredIfParam struct {
@@ -1143,15 +1115,15 @@ type AnnotationQueueUpdateParams struct {
 	// New description.
 	Description param.Field[string] `json:"description"`
 	// Whether a reviewer reserves a run while reviewing it, so others skip it.
-	EnableReservations param.Field[AnnotationQueueUpdateParamsEnableReservationsUnion] `json:"enable_reservations"`
+	EnableReservations param.Field[bool] `json:"enable_reservations"`
 	// Metadata to store on the queue. Replaces the existing metadata.
-	Metadata param.Field[AnnotationQueueUpdateParamsMetadataUnion] `json:"metadata"`
+	Metadata param.Field[map[string]interface{}] `json:"metadata"`
 	// New name for the queue.
 	Name param.Field[string] `json:"name"`
 	// How many reviewers must review each run.
-	NumReviewersPerItem param.Field[AnnotationQueueUpdateParamsNumReviewersPerItemUnion] `json:"num_reviewers_per_item"`
+	NumReviewersPerItem param.Field[int64] `json:"num_reviewers_per_item"`
 	// How long a reservation lasts, in minutes.
-	ReservationMinutes param.Field[AnnotationQueueUpdateParamsReservationMinutesUnion] `json:"reservation_minutes"`
+	ReservationMinutes param.Field[int64] `json:"reservation_minutes"`
 	// Who completes a run: any (one reviewer is enough) or assigned (every assigned
 	// reviewer must submit).
 	ReviewerAccessMode param.Field[AnnotationQueueUpdateParamsReviewerAccessMode] `json:"reviewer_access_mode"`
@@ -1163,39 +1135,6 @@ type AnnotationQueueUpdateParams struct {
 
 func (r AnnotationQueueUpdateParams) MarshalJSON() (data []byte, err error) {
 	return apijson.MarshalRoot(r)
-}
-
-// Whether a reviewer reserves a run while reviewing it, so others skip it.
-//
-// Satisfied by [shared.UnionBool], [MissingParam].
-type AnnotationQueueUpdateParamsEnableReservationsUnion interface {
-	ImplementsAnnotationQueueUpdateParamsEnableReservationsUnion()
-}
-
-// Metadata to store on the queue. Replaces the existing metadata.
-//
-// Satisfied by [AnnotationQueueUpdateParamsMetadataMap], [MissingParam].
-type AnnotationQueueUpdateParamsMetadataUnion interface {
-	implementsAnnotationQueueUpdateParamsMetadataUnion()
-}
-
-type AnnotationQueueUpdateParamsMetadataMap map[string]interface{}
-
-func (r AnnotationQueueUpdateParamsMetadataMap) implementsAnnotationQueueUpdateParamsMetadataUnion() {
-}
-
-// How many reviewers must review each run.
-//
-// Satisfied by [shared.UnionInt], [MissingParam].
-type AnnotationQueueUpdateParamsNumReviewersPerItemUnion interface {
-	ImplementsAnnotationQueueUpdateParamsNumReviewersPerItemUnion()
-}
-
-// How long a reservation lasts, in minutes.
-//
-// Satisfied by [shared.UnionInt], [MissingParam].
-type AnnotationQueueUpdateParamsReservationMinutesUnion interface {
-	ImplementsAnnotationQueueUpdateParamsReservationMinutesUnion()
 }
 
 // Who completes a run: any (one reviewer is enough) or assigned (every assigned

@@ -12,7 +12,6 @@ import (
 	"github.com/langchain-ai/langsmith-go"
 	"github.com/langchain-ai/langsmith-go/internal/testutil"
 	"github.com/langchain-ai/langsmith-go/option"
-	"github.com/langchain-ai/langsmith-go/shared"
 )
 
 func TestAnnotationQueueGet(t *testing.T) {
@@ -59,13 +58,13 @@ func TestAnnotationQueueUpdateWithOptionalParams(t *testing.T) {
 		langsmith.AnnotationQueueUpdateParams{
 			DefaultDataset:     langsmith.F("182bd5e5-6e1a-4fe4-a799-aa6d9a6ab26e"),
 			Description:        langsmith.F("description"),
-			EnableReservations: langsmith.F[langsmith.AnnotationQueueUpdateParamsEnableReservationsUnion](shared.UnionBool(true)),
-			Metadata: langsmith.F[langsmith.AnnotationQueueUpdateParamsMetadataUnion](langsmith.AnnotationQueueUpdateParamsMetadataMap(map[string]interface{}{
+			EnableReservations: langsmith.F(true),
+			Metadata: langsmith.F(map[string]interface{}{
 				"foo": "bar",
-			})),
+			}),
 			Name:                langsmith.F("name"),
-			NumReviewersPerItem: langsmith.F[langsmith.AnnotationQueueUpdateParamsNumReviewersPerItemUnion](shared.UnionInt(int64(0))),
-			ReservationMinutes:  langsmith.F[langsmith.AnnotationQueueUpdateParamsReservationMinutesUnion](shared.UnionInt(int64(0))),
+			NumReviewersPerItem: langsmith.F(int64(0)),
+			ReservationMinutes:  langsmith.F(int64(0)),
 			ReviewerAccessMode:  langsmith.F(langsmith.AnnotationQueueUpdateParamsReviewerAccessModeAny),
 			RubricInstructions:  langsmith.F("rubric_instructions"),
 			RubricItems: langsmith.F([]langsmith.AnnotationQueueRubricItemSchemaParam{{
@@ -94,7 +93,7 @@ func TestAnnotationQueueUpdateWithOptionalParams(t *testing.T) {
 				FeedbackConfigID: langsmith.F("182bd5e5-6e1a-4fe4-a799-aa6d9a6ab26e"),
 				IsAssertion:      langsmith.F(true),
 				IsRequired:       langsmith.F(true),
-				RegexValidator:   langsmith.F[langsmith.AnnotationQueueRubricItemSchemaRegexValidatorUnionParam](shared.UnionString("string")),
+				RegexValidator:   langsmith.F("regex_validator"),
 				RequiredIf: langsmith.F(langsmith.AnnotationQueueRubricItemSchemaRequiredIfParam{
 					Join: langsmith.F(langsmith.AnnotationQueueRubricItemSchemaRequiredIfJoinAll),
 					Rules: langsmith.F([]langsmith.AnnotationQueueRubricItemSchemaRequiredIfRuleParam{{
@@ -207,7 +206,7 @@ func TestAnnotationQueueAnnotationQueuesWithOptionalParams(t *testing.T) {
 			FeedbackConfigID: langsmith.F("182bd5e5-6e1a-4fe4-a799-aa6d9a6ab26e"),
 			IsAssertion:      langsmith.F(true),
 			IsRequired:       langsmith.F(true),
-			RegexValidator:   langsmith.F[langsmith.AnnotationQueueRubricItemSchemaRegexValidatorUnionParam](shared.UnionString("string")),
+			RegexValidator:   langsmith.F("regex_validator"),
 			RequiredIf: langsmith.F(langsmith.AnnotationQueueRubricItemSchemaRequiredIfParam{
 				Join: langsmith.F(langsmith.AnnotationQueueRubricItemSchemaRequiredIfJoinAll),
 				Rules: langsmith.F([]langsmith.AnnotationQueueRubricItemSchemaRequiredIfRuleParam{{

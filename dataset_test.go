@@ -104,18 +104,18 @@ func TestDatasetUpdateWithOptionalParams(t *testing.T) {
 		context.TODO(),
 		"182bd5e5-6e1a-4fe4-a799-aa6d9a6ab26e",
 		langsmith.DatasetUpdateParams{
-			BaselineExperimentID: langsmith.F[langsmith.DatasetUpdateParamsBaselineExperimentIDUnion](shared.UnionString("182bd5e5-6e1a-4fe4-a799-aa6d9a6ab26e")),
-			Description:          langsmith.F[langsmith.DatasetUpdateParamsDescriptionUnion](shared.UnionString("string")),
-			InputsSchemaDefinition: langsmith.F[langsmith.DatasetUpdateParamsInputsSchemaDefinitionUnion](langsmith.DatasetUpdateParamsInputsSchemaDefinitionMap(map[string]interface{}{
+			BaselineExperimentID: langsmith.F("182bd5e5-6e1a-4fe4-a799-aa6d9a6ab26e"),
+			Description:          langsmith.F("description"),
+			InputsSchemaDefinition: langsmith.F(map[string]interface{}{
 				"foo": "bar",
-			})),
-			Metadata: langsmith.F[langsmith.DatasetUpdateParamsMetadataUnion](langsmith.DatasetUpdateParamsMetadataMap(map[string]interface{}{
+			}),
+			Metadata: langsmith.F(map[string]interface{}{
 				"foo": "bar",
-			})),
-			Name: langsmith.F[langsmith.DatasetUpdateParamsNameUnion](shared.UnionString("string")),
-			OutputsSchemaDefinition: langsmith.F[langsmith.DatasetUpdateParamsOutputsSchemaDefinitionUnion](langsmith.DatasetUpdateParamsOutputsSchemaDefinitionMap(map[string]interface{}{
+			}),
+			Name: langsmith.F("name"),
+			OutputsSchemaDefinition: langsmith.F(map[string]interface{}{
 				"foo": "bar",
-			})),
+			}),
 			PatchExamples: langsmith.F(map[string]langsmith.DatasetUpdateParamsPatchExamples{
 				"foo": {
 					AttachmentsOperations: langsmith.F(langsmith.AttachmentsOperationsParam{
@@ -138,10 +138,10 @@ func TestDatasetUpdateWithOptionalParams(t *testing.T) {
 					Split:     langsmith.F[langsmith.DatasetUpdateParamsPatchExamplesSplitUnion](langsmith.DatasetUpdateParamsPatchExamplesSplitArray([]string{"string"})),
 				},
 			}),
-			Transformations: langsmith.F[langsmith.DatasetUpdateParamsTransformationsUnion](langsmith.DatasetUpdateParamsTransformationsArray([]langsmith.DatasetTransformationParam{{
+			Transformations: langsmith.F([]langsmith.DatasetTransformationParam{{
 				Path:               langsmith.F([]string{"string"}),
 				TransformationType: langsmith.F(langsmith.DatasetTransformationTransformationTypeConvertToOpenAIMessage),
-			}})),
+			}}),
 		},
 	)
 	if err != nil {
