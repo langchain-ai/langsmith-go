@@ -487,7 +487,8 @@ func (r AnnotationQueueItemGetPlacementResponseSection) IsKnown() bool {
 }
 
 type AnnotationQueueItemNewParams struct {
-	// Extend trace retention for added run items
+	// Defaults to false. When true, upgrade the traces of added runs from base to
+	// extended retention. Thread items are not upgraded.
 	ExtendTraceRetention param.Field[bool]                               `query:"extend_trace_retention"`
 	Items                param.Field[[]AnnotationQueueItemNewParamsItem] `json:"items"`
 }
