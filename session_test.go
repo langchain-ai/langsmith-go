@@ -39,6 +39,7 @@ func TestSessionNewWithOptionalParams(t *testing.T) {
 			"foo": "bar",
 		}),
 		KickedOffBy:        langsmith.F("kicked_off_by"),
+		LonglivedTtlDays:   langsmith.F(int64(0)),
 		Name:               langsmith.F("name"),
 		NumExamples:        langsmith.F(int64(0)),
 		NumRepetitions:     langsmith.F(int64(0)),
@@ -112,8 +113,9 @@ func TestSessionUpdateWithOptionalParams(t *testing.T) {
 			Extra: langsmith.F(map[string]interface{}{
 				"foo": "bar",
 			}),
-			Name:      langsmith.F("name"),
-			TraceTier: langsmith.F(langsmith.SessionUpdateParamsTraceTierLonglived),
+			LonglivedTtlDays: langsmith.F(int64(0)),
+			Name:             langsmith.F("name"),
+			TraceTier:        langsmith.F(langsmith.SessionUpdateParamsTraceTierLonglived),
 		},
 	)
 	if err != nil {

@@ -6012,11 +6012,16 @@ type Session struct {
 	LastRunStartTimeLive time.Time                      `json:"last_run_start_time_live" api:"nullable" format:"date-time"`
 	LatencyP50           float64                        `json:"latency_p50" api:"nullable"`
 	LatencyP99           float64                        `json:"latency_p99" api:"nullable"`
-	PromptCost           float64                        `json:"prompt_cost" api:"nullable"`
-	PromptTokens         int64                          `json:"prompt_tokens" api:"nullable"`
-	ReferenceDatasetID   string                         `json:"reference_dataset_id" api:"nullable" format:"uuid"`
-	RunCount             int64                          `json:"run_count" api:"nullable"`
-	RunFacets            []map[string]interface{}       `json:"run_facets" api:"nullable"`
+	// Retention in days for traces while trace_tier is longlived. One of 30, 60, 90,
+	// 120, 150, 180, 240, 300, 365 or 400, up to the maximum of the deployment.
+	// Self-hosted also accepts its configured retention. The value is kept while
+	// trace_tier is shortlived. Null means the project uses the workspace retention.
+	LonglivedTtlDays   int64                    `json:"longlived_ttl_days" api:"nullable"`
+	PromptCost         float64                  `json:"prompt_cost" api:"nullable"`
+	PromptTokens       int64                    `json:"prompt_tokens" api:"nullable"`
+	ReferenceDatasetID string                   `json:"reference_dataset_id" api:"nullable" format:"uuid"`
+	RunCount           int64                    `json:"run_count" api:"nullable"`
+	RunFacets          []map[string]interface{} `json:"run_facets" api:"nullable"`
 	// Feedback on the session itself, by feedback key.
 	SessionFeedbackStats map[string]SessionFeedbackStat `json:"session_feedback_stats" api:"nullable"`
 	StreamingRate        float64                        `json:"streaming_rate" api:"nullable"`
@@ -6048,6 +6053,7 @@ type sessionJSON struct {
 	LastRunStartTimeLive apijson.Field
 	LatencyP50           apijson.Field
 	LatencyP99           apijson.Field
+	LonglivedTtlDays     apijson.Field
 	PromptCost           apijson.Field
 	PromptTokens         apijson.Field
 	ReferenceDatasetID   apijson.Field
@@ -6229,20 +6235,25 @@ type TracerSession struct {
 	LastRunStartTimeLive time.Time                       `json:"last_run_start_time_live" api:"nullable" format:"date-time"`
 	LatencyP50           float64                         `json:"latency_p50" api:"nullable"`
 	LatencyP99           float64                         `json:"latency_p99" api:"nullable"`
-	Name                 string                          `json:"name"`
-	PromptCost           float64                         `json:"prompt_cost" api:"nullable"`
-	PromptTokens         int64                           `json:"prompt_tokens" api:"nullable"`
-	ReferenceDatasetID   string                          `json:"reference_dataset_id" api:"nullable" format:"uuid"`
-	RunCount             int64                           `json:"run_count" api:"nullable"`
-	RunFacets            []map[string]interface{}        `json:"run_facets" api:"nullable"`
-	SessionFeedbackStats map[string]interface{}          `json:"session_feedback_stats" api:"nullable"`
-	StartTime            time.Time                       `json:"start_time" format:"date-time"`
-	StreamingRate        float64                         `json:"streaming_rate" api:"nullable"`
-	TestRunNumber        int64                           `json:"test_run_number" api:"nullable"`
-	TotalCost            float64                         `json:"total_cost" api:"nullable"`
-	TotalTokens          int64                           `json:"total_tokens" api:"nullable"`
-	TraceTier            TracerSessionTraceTier          `json:"trace_tier" api:"nullable"`
-	JSON                 tracerSessionJSON               `json:"-"`
+	// Retention in days for traces while trace_tier is longlived. One of 30, 60, 90,
+	// 120, 150, 180, 240, 300, 365 or 400, up to the maximum of the deployment.
+	// Self-hosted also accepts its configured retention. The value is kept while
+	// trace_tier is shortlived. Null means the project uses the workspace retention.
+	LonglivedTtlDays     int64                    `json:"longlived_ttl_days" api:"nullable"`
+	Name                 string                   `json:"name"`
+	PromptCost           float64                  `json:"prompt_cost" api:"nullable"`
+	PromptTokens         int64                    `json:"prompt_tokens" api:"nullable"`
+	ReferenceDatasetID   string                   `json:"reference_dataset_id" api:"nullable" format:"uuid"`
+	RunCount             int64                    `json:"run_count" api:"nullable"`
+	RunFacets            []map[string]interface{} `json:"run_facets" api:"nullable"`
+	SessionFeedbackStats map[string]interface{}   `json:"session_feedback_stats" api:"nullable"`
+	StartTime            time.Time                `json:"start_time" format:"date-time"`
+	StreamingRate        float64                  `json:"streaming_rate" api:"nullable"`
+	TestRunNumber        int64                    `json:"test_run_number" api:"nullable"`
+	TotalCost            float64                  `json:"total_cost" api:"nullable"`
+	TotalTokens          int64                    `json:"total_tokens" api:"nullable"`
+	TraceTier            TracerSessionTraceTier   `json:"trace_tier" api:"nullable"`
+	JSON                 tracerSessionJSON        `json:"-"`
 }
 
 // tracerSessionJSON contains the JSON metadata for the struct [TracerSession]
@@ -6264,6 +6275,7 @@ type tracerSessionJSON struct {
 	LastRunStartTimeLive apijson.Field
 	LatencyP50           apijson.Field
 	LatencyP99           apijson.Field
+	LonglivedTtlDays     apijson.Field
 	Name                 apijson.Field
 	PromptCost           apijson.Field
 	PromptTokens         apijson.Field
@@ -6333,18 +6345,23 @@ func (r TracerSessionTraceTier) IsKnown() bool {
 //
 // Deprecated: deprecated
 type TracerSessionWithoutVirtualFields struct {
-	ID                   string                                     `json:"id" api:"required" format:"uuid"`
-	TenantID             string                                     `json:"tenant_id" api:"required" format:"uuid"`
-	DefaultDatasetID     string                                     `json:"default_dataset_id" api:"nullable" format:"uuid"`
-	Description          string                                     `json:"description" api:"nullable"`
-	EndTime              time.Time                                  `json:"end_time" api:"nullable" format:"date-time"`
-	Extra                map[string]interface{}                     `json:"extra" api:"nullable"`
-	LastRunStartTimeLive time.Time                                  `json:"last_run_start_time_live" api:"nullable" format:"date-time"`
-	Name                 string                                     `json:"name"`
-	ReferenceDatasetID   string                                     `json:"reference_dataset_id" api:"nullable" format:"uuid"`
-	StartTime            time.Time                                  `json:"start_time" format:"date-time"`
-	TraceTier            TracerSessionWithoutVirtualFieldsTraceTier `json:"trace_tier" api:"nullable"`
-	JSON                 tracerSessionWithoutVirtualFieldsJSON      `json:"-"`
+	ID                   string                 `json:"id" api:"required" format:"uuid"`
+	TenantID             string                 `json:"tenant_id" api:"required" format:"uuid"`
+	DefaultDatasetID     string                 `json:"default_dataset_id" api:"nullable" format:"uuid"`
+	Description          string                 `json:"description" api:"nullable"`
+	EndTime              time.Time              `json:"end_time" api:"nullable" format:"date-time"`
+	Extra                map[string]interface{} `json:"extra" api:"nullable"`
+	LastRunStartTimeLive time.Time              `json:"last_run_start_time_live" api:"nullable" format:"date-time"`
+	// Retention in days for traces while trace_tier is longlived. One of 30, 60, 90,
+	// 120, 150, 180, 240, 300, 365 or 400, up to the maximum of the deployment.
+	// Self-hosted also accepts its configured retention. The value is kept while
+	// trace_tier is shortlived. Null means the project uses the workspace retention.
+	LonglivedTtlDays   int64                                      `json:"longlived_ttl_days" api:"nullable"`
+	Name               string                                     `json:"name"`
+	ReferenceDatasetID string                                     `json:"reference_dataset_id" api:"nullable" format:"uuid"`
+	StartTime          time.Time                                  `json:"start_time" format:"date-time"`
+	TraceTier          TracerSessionWithoutVirtualFieldsTraceTier `json:"trace_tier" api:"nullable"`
+	JSON               tracerSessionWithoutVirtualFieldsJSON      `json:"-"`
 }
 
 // tracerSessionWithoutVirtualFieldsJSON contains the JSON metadata for the struct
@@ -6357,6 +6374,7 @@ type tracerSessionWithoutVirtualFieldsJSON struct {
 	EndTime              apijson.Field
 	Extra                apijson.Field
 	LastRunStartTimeLive apijson.Field
+	LonglivedTtlDays     apijson.Field
 	Name                 apijson.Field
 	ReferenceDatasetID   apijson.Field
 	StartTime            apijson.Field
@@ -6411,14 +6429,19 @@ func (r sessionResolveResponseJSON) RawJSON() string {
 }
 
 type SessionNewParams struct {
-	Upsert             param.Field[bool]                      `query:"upsert"`
-	ID                 param.Field[string]                    `json:"id" format:"uuid"`
-	DefaultDatasetID   param.Field[string]                    `json:"default_dataset_id" format:"uuid"`
-	Description        param.Field[string]                    `json:"description"`
-	EndTime            param.Field[time.Time]                 `json:"end_time" format:"date-time"`
-	EvaluatorKeys      param.Field[[]string]                  `json:"evaluator_keys"`
-	Extra              param.Field[map[string]interface{}]    `json:"extra"`
-	KickedOffBy        param.Field[string]                    `json:"kicked_off_by"`
+	Upsert           param.Field[bool]                   `query:"upsert"`
+	ID               param.Field[string]                 `json:"id" format:"uuid"`
+	DefaultDatasetID param.Field[string]                 `json:"default_dataset_id" format:"uuid"`
+	Description      param.Field[string]                 `json:"description"`
+	EndTime          param.Field[time.Time]              `json:"end_time" format:"date-time"`
+	EvaluatorKeys    param.Field[[]string]               `json:"evaluator_keys"`
+	Extra            param.Field[map[string]interface{}] `json:"extra"`
+	KickedOffBy      param.Field[string]                 `json:"kicked_off_by"`
+	// Retention in days for traces while trace_tier is longlived. One of 30, 60, 90,
+	// 120, 150, 180, 240, 300, 365 or 400, up to the maximum of the deployment.
+	// Self-hosted also accepts its configured retention. The value is kept while
+	// trace_tier is shortlived. Null means the project uses the workspace retention.
+	LonglivedTtlDays   param.Field[int64]                     `json:"longlived_ttl_days"`
 	Name               param.Field[string]                    `json:"name"`
 	NumExamples        param.Field[int64]                     `json:"num_examples"`
 	NumRepetitions     param.Field[int64]                     `json:"num_repetitions"`
@@ -6470,10 +6493,16 @@ func (r SessionGetParams) URLQuery() (v url.Values) {
 }
 
 type SessionUpdateParams struct {
-	DefaultDatasetID param.Field[string]                       `json:"default_dataset_id" format:"uuid"`
-	Description      param.Field[string]                       `json:"description"`
-	EndTime          param.Field[time.Time]                    `json:"end_time" format:"date-time"`
-	Extra            param.Field[map[string]interface{}]       `json:"extra"`
+	DefaultDatasetID param.Field[string]                 `json:"default_dataset_id" format:"uuid"`
+	Description      param.Field[string]                 `json:"description"`
+	EndTime          param.Field[time.Time]              `json:"end_time" format:"date-time"`
+	Extra            param.Field[map[string]interface{}] `json:"extra"`
+	// Retention in days for traces while trace_tier is longlived. One of 30, 60, 90,
+	// 120, 150, 180, 240, 300, 365 or 400, up to the maximum of the deployment.
+	// Self-hosted also accepts its configured retention. The value is kept while
+	// trace_tier is shortlived. Null means the project uses the workspace retention.
+	// Omit the field to keep the current value.
+	LonglivedTtlDays param.Field[int64]                        `json:"longlived_ttl_days"`
 	Name             param.Field[string]                       `json:"name"`
 	TraceTier        param.Field[SessionUpdateParamsTraceTier] `json:"trace_tier"`
 }
