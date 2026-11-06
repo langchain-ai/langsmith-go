@@ -96,29 +96,6 @@ func (r *DatasetService) Update(ctx context.Context, datasetID string, body Data
 	return res, err
 }
 
-// Get all datasets by query params and owner.
-func (r *DatasetService) List(ctx context.Context, query DatasetListParams, opts ...option.RequestOption) (res *pagination.OffsetPaginationTopLevelArray[Dataset], err error) {
-	var raw *http.Response
-	opts = slices.Concat(r.Options, opts)
-	opts = append([]option.RequestOption{option.WithResponseInto(&raw)}, opts...)
-	path := "api/v1/datasets"
-	cfg, err := requestconfig.NewRequestConfig(ctx, http.MethodGet, path, query, &res, opts...)
-	if err != nil {
-		return nil, err
-	}
-	err = cfg.Execute()
-	if err != nil {
-		return nil, err
-	}
-	res.SetPageConfig(cfg, raw)
-	return res, nil
-}
-
-// Get all datasets by query params and owner.
-func (r *DatasetService) ListAutoPaging(ctx context.Context, query DatasetListParams, opts ...option.RequestOption) *pagination.OffsetPaginationTopLevelArrayAutoPager[Dataset] {
-	return pagination.NewOffsetPaginationTopLevelArrayAutoPager(r.List(ctx, query, opts...))
-}
-
 // Delete a specific dataset.
 func (r *DatasetService) Delete(ctx context.Context, datasetID string, opts ...option.RequestOption) (res *DatasetDeleteResponse, err error) {
 	opts = slices.Concat(r.Options, opts)
@@ -145,6 +122,62 @@ func (r *DatasetService) Clone(ctx context.Context, body DatasetCloneParams, opt
 	path := "api/v1/datasets/clone"
 	err = requestconfig.ExecuteNewRequest(ctx, http.MethodPost, path, body, &res, opts...)
 	return res, err
+}
+
+// Get all datasets by query params and owner.
+//
+// Deprecated: Use ListV2 instead, which calls GET /api/v2/datasets and pages with
+// a cursor.
+func (r *DatasetService) ListV1(ctx context.Context, query DatasetListV1Params, opts ...option.RequestOption) (res *pagination.OffsetPaginationTopLevelArray[Dataset], err error) {
+	var raw *http.Response
+	opts = slices.Concat(r.Options, opts)
+	opts = append([]option.RequestOption{option.WithResponseInto(&raw)}, opts...)
+	path := "api/v1/datasets"
+	cfg, err := requestconfig.NewRequestConfig(ctx, http.MethodGet, path, query, &res, opts...)
+	if err != nil {
+		return nil, err
+	}
+	err = cfg.Execute()
+	if err != nil {
+		return nil, err
+	}
+	res.SetPageConfig(cfg, raw)
+	return res, nil
+}
+
+// Get all datasets by query params and owner.
+//
+// Deprecated: Use ListV2 instead, which calls GET /api/v2/datasets and pages with
+// a cursor.
+func (r *DatasetService) ListV1AutoPaging(ctx context.Context, query DatasetListV1Params, opts ...option.RequestOption) *pagination.OffsetPaginationTopLevelArrayAutoPager[Dataset] {
+	return pagination.NewOffsetPaginationTopLevelArrayAutoPager(r.ListV1(ctx, query, opts...))
+}
+
+// Returns one page of the datasets in the workspace, filtered and sorted by the
+// query parameters. Pass the next_cursor of a response as cursor, with the same
+// filters and sort, to get the next page. next_cursor is null on the last page.
+func (r *DatasetService) ListV2(ctx context.Context, query DatasetListV2Params, opts ...option.RequestOption) (res *pagination.ItemsCursorGetPagination[Dataset], err error) {
+	var raw *http.Response
+	opts = slices.Concat(r.Options, opts)
+	opts = append([]option.RequestOption{option.WithResponseInto(&raw)}, opts...)
+	path := "api/v2/datasets"
+	cfg, err := requestconfig.NewRequestConfig(ctx, http.MethodGet, path, query, &res, opts...)
+	if err != nil {
+		return nil, err
+	}
+	err = cfg.Execute()
+	if err != nil {
+		return nil, err
+	}
+	res.SetPageConfig(cfg, raw)
+	return res, nil
+}
+
+// Returns one page of the datasets in the workspace, filtered and sorted by the
+// query parameters. Pass the next_cursor of a response as cursor, with the same
+// filters and sort, to get the next page. next_cursor is null on the last page.
+func (r *DatasetService) ListV2AutoPaging(ctx context.Context, query DatasetListV2Params, opts ...option.RequestOption) *pagination.ItemsCursorGetPaginationAutoPager[Dataset] {
+	return pagination.NewItemsCursorGetPaginationAutoPager(r.ListV2(ctx, query, opts...))
 }
 
 // Download a dataset as CSV format.
@@ -232,6 +265,29 @@ func (r *DatasetService) Upload(ctx context.Context, body DatasetUploadParams, o
 	return res, err
 }
 
+// Get all datasets by query params and owner.
+func (r *DatasetService) List(ctx context.Context, body DatasetListParams, opts ...option.RequestOption) (res *pagination.OffsetPaginationTopLevelArray[Dataset], err error) {
+	var raw *http.Response
+	opts = slices.Concat(r.Options, opts)
+	opts = append([]option.RequestOption{option.WithResponseInto(&raw)}, opts...)
+	path := "api/v1/datasets"
+	cfg, err := requestconfig.NewRequestConfig(ctx, http.MethodGet, path, body, &res, opts...)
+	if err != nil {
+		return nil, err
+	}
+	err = cfg.Execute()
+	if err != nil {
+		return nil, err
+	}
+	res.SetPageConfig(cfg, raw)
+	return res, nil
+}
+
+// Get all datasets by query params and owner.
+func (r *DatasetService) ListAutoPaging(ctx context.Context, body DatasetListParams, opts ...option.RequestOption) *pagination.OffsetPaginationTopLevelArrayAutoPager[Dataset] {
+	return pagination.NewOffsetPaginationTopLevelArrayAutoPager(r.List(ctx, body, opts...))
+}
+
 // Enum for dataset data types.
 type DataType string
 
@@ -248,6 +304,8 @@ func (r DataType) IsKnown() bool {
 	}
 	return false
 }
+
+func (r DataType) implementsDatasetListV1ParamsDataTypeUnion() {}
 
 func (r DataType) implementsDatasetListParamsDataTypeUnion() {}
 
@@ -709,56 +767,6 @@ type DatasetUpdateParamsTransformationsArray []DatasetTransformationParam
 func (r DatasetUpdateParamsTransformationsArray) implementsDatasetUpdateParamsTransformationsUnion() {
 }
 
-type DatasetListParams struct {
-	ID param.Field[[]string] `query:"id" format:"uuid"`
-	// Enum for dataset data types.
-	Datatype                   param.Field[DatasetListParamsDataTypeUnion] `query:"data_type"`
-	Exclude                    param.Field[[]DatasetListParamsExclude]     `query:"exclude"`
-	ExcludeCorrectionsDatasets param.Field[bool]                           `query:"exclude_corrections_datasets"`
-	Limit                      param.Field[int64]                          `query:"limit"`
-	Metadata                   param.Field[string]                         `query:"metadata"`
-	Name                       param.Field[string]                         `query:"name"`
-	NameContains               param.Field[string]                         `query:"name_contains"`
-	Offset                     param.Field[int64]                          `query:"offset"`
-	// Enum for available dataset columns to sort by.
-	SortBy     param.Field[SortByDatasetColumn] `query:"sort_by"`
-	SortByDesc param.Field[bool]                `query:"sort_by_desc"`
-	TagValueID param.Field[[]string]            `query:"tag_value_id" format:"uuid"`
-}
-
-// URLQuery serializes [DatasetListParams]'s query parameters as `url.Values`.
-func (r DatasetListParams) URLQuery() (v url.Values) {
-	return apiquery.MarshalWithSettings(r, apiquery.QuerySettings{
-		ArrayFormat:  apiquery.ArrayQueryFormatRepeat,
-		NestedFormat: apiquery.NestedQueryFormatBrackets,
-	})
-}
-
-// Enum for dataset data types.
-//
-// Satisfied by [DatasetListParamsDataTypeArray], [DataType].
-type DatasetListParamsDataTypeUnion interface {
-	implementsDatasetListParamsDataTypeUnion()
-}
-
-type DatasetListParamsDataTypeArray []DataType
-
-func (r DatasetListParamsDataTypeArray) implementsDatasetListParamsDataTypeUnion() {}
-
-type DatasetListParamsExclude string
-
-const (
-	DatasetListParamsExcludeExampleCount DatasetListParamsExclude = "example_count"
-)
-
-func (r DatasetListParamsExclude) IsKnown() bool {
-	switch r {
-	case DatasetListParamsExcludeExampleCount:
-		return true
-	}
-	return false
-}
-
 type DatasetCloneParams struct {
 	// ID of the dataset in this workspace to copy examples from. It is not modified.
 	SourceDatasetID param.Field[string] `json:"source_dataset_id" api:"required" format:"uuid"`
@@ -803,6 +811,127 @@ type DatasetCloneParamsSplitUnion interface {
 type DatasetCloneParamsSplitArray []string
 
 func (r DatasetCloneParamsSplitArray) ImplementsDatasetCloneParamsSplitUnion() {}
+
+type DatasetListV1Params struct {
+	ID param.Field[[]string] `query:"id" format:"uuid"`
+	// Enum for dataset data types.
+	Datatype                   param.Field[DatasetListV1ParamsDataTypeUnion] `query:"data_type"`
+	Exclude                    param.Field[[]DatasetListV1ParamsExclude]     `query:"exclude"`
+	ExcludeCorrectionsDatasets param.Field[bool]                             `query:"exclude_corrections_datasets"`
+	Limit                      param.Field[int64]                            `query:"limit"`
+	Metadata                   param.Field[string]                           `query:"metadata"`
+	Name                       param.Field[string]                           `query:"name"`
+	NameContains               param.Field[string]                           `query:"name_contains"`
+	Offset                     param.Field[int64]                            `query:"offset"`
+	// Enum for available dataset columns to sort by.
+	SortBy     param.Field[SortByDatasetColumn] `query:"sort_by"`
+	SortByDesc param.Field[bool]                `query:"sort_by_desc"`
+	TagValueID param.Field[[]string]            `query:"tag_value_id" format:"uuid"`
+}
+
+// URLQuery serializes [DatasetListV1Params]'s query parameters as `url.Values`.
+func (r DatasetListV1Params) URLQuery() (v url.Values) {
+	return apiquery.MarshalWithSettings(r, apiquery.QuerySettings{
+		ArrayFormat:  apiquery.ArrayQueryFormatRepeat,
+		NestedFormat: apiquery.NestedQueryFormatBrackets,
+	})
+}
+
+// Enum for dataset data types.
+//
+// Satisfied by [DatasetListV1ParamsDataTypeArray], [DataType].
+type DatasetListV1ParamsDataTypeUnion interface {
+	implementsDatasetListV1ParamsDataTypeUnion()
+}
+
+type DatasetListV1ParamsDataTypeArray []DataType
+
+func (r DatasetListV1ParamsDataTypeArray) implementsDatasetListV1ParamsDataTypeUnion() {}
+
+type DatasetListV1ParamsExclude string
+
+const (
+	DatasetListV1ParamsExcludeExampleCount DatasetListV1ParamsExclude = "example_count"
+)
+
+func (r DatasetListV1ParamsExclude) IsKnown() bool {
+	switch r {
+	case DatasetListV1ParamsExcludeExampleCount:
+		return true
+	}
+	return false
+}
+
+type DatasetListV2Params struct {
+	// Return only the datasets with these IDs. Repeat the parameter for several IDs.
+	ID param.Field[[]string] `query:"id" format:"uuid"`
+	// The next_cursor of the previous response. Omit it for the first page.
+	Cursor param.Field[string] `query:"cursor"`
+	// Return only datasets of these data types. Repeat the parameter for several
+	// types.
+	DataType param.Field[[]DataType] `query:"data_type"`
+	// Fields to leave out of each dataset. An excluded example_count is returned as
+	// null and makes the response faster.
+	Exclude param.Field[[]DatasetListV2ParamsExclude] `query:"exclude"`
+	// Leave out datasets that store corrections for an evaluator.
+	ExcludeCorrectionsDatasets param.Field[bool] `query:"exclude_corrections_datasets"`
+	// A JSON object. Return only datasets whose metadata contains every key and value
+	// in it.
+	Metadata param.Field[string] `query:"metadata"`
+	// Return only the dataset with exactly this name.
+	Name param.Field[string] `query:"name"`
+	// Return only datasets whose name contains this text, ignoring case.
+	NameContains param.Field[string] `query:"name_contains"`
+	// Maximum number of datasets to return.
+	PageSize param.Field[int64] `query:"page_size"`
+	// Field to sort by. last_session_start_time is the start time of the most recent
+	// experiment on the dataset. Datasets without a value come last in both orders.
+	// While a sort value changes, for example when an experiment starts, a dataset can
+	// be skipped or listed twice across pages. Sort by created_at for a stable walk.
+	SortBy param.Field[SortByDatasetColumn] `query:"sort_by"`
+	// Sort direction.
+	SortOrder param.Field[DatasetListV2ParamsSortOrder] `query:"sort_order"`
+	// Return only datasets tagged with all of these tag value IDs.
+	TagValueID param.Field[[]string] `query:"tag_value_id" format:"uuid"`
+}
+
+// URLQuery serializes [DatasetListV2Params]'s query parameters as `url.Values`.
+func (r DatasetListV2Params) URLQuery() (v url.Values) {
+	return apiquery.MarshalWithSettings(r, apiquery.QuerySettings{
+		ArrayFormat:  apiquery.ArrayQueryFormatRepeat,
+		NestedFormat: apiquery.NestedQueryFormatBrackets,
+	})
+}
+
+type DatasetListV2ParamsExclude string
+
+const (
+	DatasetListV2ParamsExcludeExampleCount DatasetListV2ParamsExclude = "example_count"
+)
+
+func (r DatasetListV2ParamsExclude) IsKnown() bool {
+	switch r {
+	case DatasetListV2ParamsExcludeExampleCount:
+		return true
+	}
+	return false
+}
+
+// Sort direction.
+type DatasetListV2ParamsSortOrder string
+
+const (
+	DatasetListV2ParamsSortOrderAsc  DatasetListV2ParamsSortOrder = "asc"
+	DatasetListV2ParamsSortOrderDesc DatasetListV2ParamsSortOrder = "desc"
+)
+
+func (r DatasetListV2ParamsSortOrder) IsKnown() bool {
+	switch r {
+	case DatasetListV2ParamsSortOrderAsc, DatasetListV2ParamsSortOrderDesc:
+		return true
+	}
+	return false
+}
 
 type DatasetGetCsvParams struct {
 	// Only modifications made on or before this time are included. If None, the latest
@@ -939,4 +1068,54 @@ func (r DatasetUploadParams) MarshalMultipart() (data []byte, contentType string
 		return nil, "", err
 	}
 	return buf.Bytes(), writer.FormDataContentType(), nil
+}
+
+type DatasetListParams struct {
+	ID param.Field[[]string] `query:"id" format:"uuid"`
+	// Enum for dataset data types.
+	Datatype                   param.Field[DatasetListParamsDataTypeUnion] `query:"data_type"`
+	Exclude                    param.Field[[]DatasetListParamsExclude]     `query:"exclude"`
+	ExcludeCorrectionsDatasets param.Field[bool]                           `query:"exclude_corrections_datasets"`
+	Limit                      param.Field[int64]                          `query:"limit"`
+	Metadata                   param.Field[string]                         `query:"metadata"`
+	Name                       param.Field[string]                         `query:"name"`
+	NameContains               param.Field[string]                         `query:"name_contains"`
+	Offset                     param.Field[int64]                          `query:"offset"`
+	// Enum for available dataset columns to sort by.
+	SortBy     param.Field[SortByDatasetColumn] `query:"sort_by"`
+	SortByDesc param.Field[bool]                `query:"sort_by_desc"`
+	TagValueID param.Field[[]string]            `query:"tag_value_id" format:"uuid"`
+}
+
+// URLQuery serializes [DatasetListParams]'s query parameters as `url.Values`.
+func (r DatasetListParams) URLQuery() (v url.Values) {
+	return apiquery.MarshalWithSettings(r, apiquery.QuerySettings{
+		ArrayFormat:  apiquery.ArrayQueryFormatRepeat,
+		NestedFormat: apiquery.NestedQueryFormatBrackets,
+	})
+}
+
+// Enum for dataset data types.
+//
+// Satisfied by [DatasetListParamsDataTypeArray], [DataType].
+type DatasetListParamsDataTypeUnion interface {
+	implementsDatasetListParamsDataTypeUnion()
+}
+
+type DatasetListParamsDataTypeArray []DataType
+
+func (r DatasetListParamsDataTypeArray) implementsDatasetListParamsDataTypeUnion() {}
+
+type DatasetListParamsExclude string
+
+const (
+	DatasetListParamsExcludeExampleCount DatasetListParamsExclude = "example_count"
+)
+
+func (r DatasetListParamsExclude) IsKnown() bool {
+	switch r {
+	case DatasetListParamsExcludeExampleCount:
+		return true
+	}
+	return false
 }

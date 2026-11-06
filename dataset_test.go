@@ -153,43 +153,6 @@ func TestDatasetUpdateWithOptionalParams(t *testing.T) {
 	}
 }
 
-func TestDatasetListWithOptionalParams(t *testing.T) {
-	t.Skip("Mock server tests are disabled")
-	baseURL := "http://localhost:4010"
-	if envURL, ok := os.LookupEnv("TEST_API_BASE_URL"); ok {
-		baseURL = envURL
-	}
-	if !testutil.CheckTestServer(t, baseURL) {
-		return
-	}
-	client := langsmith.NewClient(
-		option.WithBaseURL(baseURL),
-		option.WithAPIKey("My API Key"),
-		option.WithTenantID("My Tenant ID"),
-	)
-	_, err := client.Datasets.List(context.TODO(), langsmith.DatasetListParams{
-		ID:                         langsmith.F([]string{"182bd5e5-6e1a-4fe4-a799-aa6d9a6ab26e", "182bd5e5-6e1a-4fe4-a799-aa6d9a6ab26e"}),
-		Datatype:                   langsmith.F[langsmith.DatasetListParamsDataTypeUnion](langsmith.DataType(langsmith.DataTypeKv)),
-		Exclude:                    langsmith.F([]langsmith.DatasetListParamsExclude{langsmith.DatasetListParamsExcludeExampleCount, langsmith.DatasetListParamsExcludeExampleCount}),
-		ExcludeCorrectionsDatasets: langsmith.F(true),
-		Limit:                      langsmith.F(int64(1)),
-		Metadata:                   langsmith.F("metadata"),
-		Name:                       langsmith.F("name"),
-		NameContains:               langsmith.F("name_contains"),
-		Offset:                     langsmith.F(int64(0)),
-		SortBy:                     langsmith.F(langsmith.SortByDatasetColumnName),
-		SortByDesc:                 langsmith.F(true),
-		TagValueID:                 langsmith.F([]string{"182bd5e5-6e1a-4fe4-a799-aa6d9a6ab26e", "182bd5e5-6e1a-4fe4-a799-aa6d9a6ab26e"}),
-	})
-	if err != nil {
-		var apierr *langsmith.Error
-		if errors.As(err, &apierr) {
-			t.Log(string(apierr.DumpRequest(true)))
-		}
-		t.Fatalf("err should be nil: %s", err.Error())
-	}
-}
-
 func TestDatasetDelete(t *testing.T) {
 	t.Skip("Mock server tests are disabled")
 	baseURL := "http://localhost:4010"
@@ -235,6 +198,80 @@ func TestDatasetCloneWithOptionalParams(t *testing.T) {
 		Examples:        langsmith.F([]string{"182bd5e5-6e1a-4fe4-a799-aa6d9a6ab26e"}),
 		Split:           langsmith.F[langsmith.DatasetCloneParamsSplitUnion](shared.UnionString("string")),
 		TagValueIDs:     langsmith.F([]string{"182bd5e5-6e1a-4fe4-a799-aa6d9a6ab26e"}),
+	})
+	if err != nil {
+		var apierr *langsmith.Error
+		if errors.As(err, &apierr) {
+			t.Log(string(apierr.DumpRequest(true)))
+		}
+		t.Fatalf("err should be nil: %s", err.Error())
+	}
+}
+
+func TestDatasetListV1WithOptionalParams(t *testing.T) {
+	t.Skip("Mock server tests are disabled")
+	baseURL := "http://localhost:4010"
+	if envURL, ok := os.LookupEnv("TEST_API_BASE_URL"); ok {
+		baseURL = envURL
+	}
+	if !testutil.CheckTestServer(t, baseURL) {
+		return
+	}
+	client := langsmith.NewClient(
+		option.WithBaseURL(baseURL),
+		option.WithAPIKey("My API Key"),
+		option.WithTenantID("My Tenant ID"),
+	)
+	_, err := client.Datasets.ListV1(context.TODO(), langsmith.DatasetListV1Params{
+		ID:                         langsmith.F([]string{"182bd5e5-6e1a-4fe4-a799-aa6d9a6ab26e", "182bd5e5-6e1a-4fe4-a799-aa6d9a6ab26e"}),
+		Datatype:                   langsmith.F[langsmith.DatasetListV1ParamsDataTypeUnion](langsmith.DataType(langsmith.DataTypeKv)),
+		Exclude:                    langsmith.F([]langsmith.DatasetListV1ParamsExclude{langsmith.DatasetListV1ParamsExcludeExampleCount, langsmith.DatasetListV1ParamsExcludeExampleCount}),
+		ExcludeCorrectionsDatasets: langsmith.F(true),
+		Limit:                      langsmith.F(int64(1)),
+		Metadata:                   langsmith.F("metadata"),
+		Name:                       langsmith.F("name"),
+		NameContains:               langsmith.F("name_contains"),
+		Offset:                     langsmith.F(int64(0)),
+		SortBy:                     langsmith.F(langsmith.SortByDatasetColumnName),
+		SortByDesc:                 langsmith.F(true),
+		TagValueID:                 langsmith.F([]string{"182bd5e5-6e1a-4fe4-a799-aa6d9a6ab26e", "182bd5e5-6e1a-4fe4-a799-aa6d9a6ab26e"}),
+	})
+	if err != nil {
+		var apierr *langsmith.Error
+		if errors.As(err, &apierr) {
+			t.Log(string(apierr.DumpRequest(true)))
+		}
+		t.Fatalf("err should be nil: %s", err.Error())
+	}
+}
+
+func TestDatasetListV2WithOptionalParams(t *testing.T) {
+	t.Skip("Mock server tests are disabled")
+	baseURL := "http://localhost:4010"
+	if envURL, ok := os.LookupEnv("TEST_API_BASE_URL"); ok {
+		baseURL = envURL
+	}
+	if !testutil.CheckTestServer(t, baseURL) {
+		return
+	}
+	client := langsmith.NewClient(
+		option.WithBaseURL(baseURL),
+		option.WithAPIKey("My API Key"),
+		option.WithTenantID("My Tenant ID"),
+	)
+	_, err := client.Datasets.ListV2(context.TODO(), langsmith.DatasetListV2Params{
+		ID:                         langsmith.F([]string{"182bd5e5-6e1a-4fe4-a799-aa6d9a6ab26e"}),
+		Cursor:                     langsmith.F("cursor"),
+		DataType:                   langsmith.F([]langsmith.DataType{langsmith.DataTypeKv}),
+		Exclude:                    langsmith.F([]langsmith.DatasetListV2ParamsExclude{langsmith.DatasetListV2ParamsExcludeExampleCount}),
+		ExcludeCorrectionsDatasets: langsmith.F(true),
+		Metadata:                   langsmith.F("metadata"),
+		Name:                       langsmith.F("name"),
+		NameContains:               langsmith.F("name_contains"),
+		PageSize:                   langsmith.F(int64(1)),
+		SortBy:                     langsmith.F(langsmith.SortByDatasetColumnName),
+		SortOrder:                  langsmith.F(langsmith.DatasetListV2ParamsSortOrderAsc),
+		TagValueID:                 langsmith.F([]string{"182bd5e5-6e1a-4fe4-a799-aa6d9a6ab26e"}),
 	})
 	if err != nil {
 		var apierr *langsmith.Error
@@ -456,6 +493,43 @@ func TestDatasetUploadWithOptionalParams(t *testing.T) {
 		OutputsSchemaDefinition: langsmith.F("outputs_schema_definition"),
 		TagValueIDs:             langsmith.F("tag_value_ids"),
 		Transformations:         langsmith.F("transformations"),
+	})
+	if err != nil {
+		var apierr *langsmith.Error
+		if errors.As(err, &apierr) {
+			t.Log(string(apierr.DumpRequest(true)))
+		}
+		t.Fatalf("err should be nil: %s", err.Error())
+	}
+}
+
+func TestDatasetListWithOptionalParams(t *testing.T) {
+	t.Skip("Mock server tests are disabled")
+	baseURL := "http://localhost:4010"
+	if envURL, ok := os.LookupEnv("TEST_API_BASE_URL"); ok {
+		baseURL = envURL
+	}
+	if !testutil.CheckTestServer(t, baseURL) {
+		return
+	}
+	client := langsmith.NewClient(
+		option.WithBaseURL(baseURL),
+		option.WithAPIKey("My API Key"),
+		option.WithTenantID("My Tenant ID"),
+	)
+	_, err := client.Datasets.List(context.TODO(), langsmith.DatasetListParams{
+		ID:                         langsmith.F([]string{"182bd5e5-6e1a-4fe4-a799-aa6d9a6ab26e", "182bd5e5-6e1a-4fe4-a799-aa6d9a6ab26e"}),
+		Datatype:                   langsmith.F[langsmith.DatasetListParamsDataTypeUnion](langsmith.DataType(langsmith.DataTypeKv)),
+		Exclude:                    langsmith.F([]langsmith.DatasetListParamsExclude{langsmith.DatasetListParamsExcludeExampleCount, langsmith.DatasetListParamsExcludeExampleCount}),
+		ExcludeCorrectionsDatasets: langsmith.F(true),
+		Limit:                      langsmith.F(int64(1)),
+		Metadata:                   langsmith.F("metadata"),
+		Name:                       langsmith.F("name"),
+		NameContains:               langsmith.F("name_contains"),
+		Offset:                     langsmith.F(int64(0)),
+		SortBy:                     langsmith.F(langsmith.SortByDatasetColumnName),
+		SortByDesc:                 langsmith.F(true),
+		TagValueID:                 langsmith.F([]string{"182bd5e5-6e1a-4fe4-a799-aa6d9a6ab26e", "182bd5e5-6e1a-4fe4-a799-aa6d9a6ab26e"}),
 	})
 	if err != nil {
 		var apierr *langsmith.Error
