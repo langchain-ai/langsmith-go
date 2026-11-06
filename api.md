@@ -3,6 +3,16 @@
 - <a href="https://pkg.go.dev/github.com/langchain-ai/langsmith-go/shared">shared</a>.<a href="https://pkg.go.dev/github.com/langchain-ai/langsmith-go/shared#QueryPatchEvent">QueryPatchEvent</a>
 - <a href="https://pkg.go.dev/github.com/langchain-ai/langsmith-go/shared">shared</a>.<a href="https://pkg.go.dev/github.com/langchain-ai/langsmith-go/shared#QueryPatchOperation">QueryPatchOperation</a>
 
+# Sql
+
+Response Types:
+
+- <a href="https://pkg.go.dev/github.com/langchain-ai/langsmith-go">langsmith</a>.<a href="https://pkg.go.dev/github.com/langchain-ai/langsmith-go#SqlQueryResponse">SqlQueryResponse</a>
+
+Methods:
+
+- <code title="post /v2/sql/query">client.Sql.<a href="https://pkg.go.dev/github.com/langchain-ai/langsmith-go#SqlService.Query">Query</a>(ctx <a href="https://pkg.go.dev/context">context</a>.<a href="https://pkg.go.dev/context#Context">Context</a>, body <a href="https://pkg.go.dev/github.com/langchain-ai/langsmith-go">langsmith</a>.<a href="https://pkg.go.dev/github.com/langchain-ai/langsmith-go#SqlQueryParams">SqlQueryParams</a>) (\*<a href="https://pkg.go.dev/github.com/langchain-ai/langsmith-go">langsmith</a>.<a href="https://pkg.go.dev/github.com/langchain-ai/langsmith-go#SqlQueryResponse">SqlQueryResponse</a>, <a href="https://pkg.go.dev/builtin#error">error</a>)</code>
+
 # ProductFeedback
 
 Response Types:
