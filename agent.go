@@ -420,11 +420,15 @@ type AgentListParams struct {
 	ID param.Field[[]string] `query:"id"`
 	// Opaque pagination cursor
 	Cursor param.Field[string] `query:"cursor"`
-	// Case-insensitive partial Agent name
+	// Deprecated: use search. Case-insensitive partial Agent name. Ignored when search
+	// is provided.
 	Name param.Field[string] `query:"name"`
 	// Maximum number of Agents to return
 	PageSize param.Field[int64] `query:"page_size"`
-	// Field to sort by. When name is set, exact name matches still come first.
+	// Case-insensitive partial Agent name or ID, ignoring hyphens and spaces. When
+	// provided, name is ignored.
+	Search param.Field[string] `query:"search"`
+	// Field to sort by. When name or search is set, exact matches still come first.
 	SortBy param.Field[AgentListParamsSortBy] `query:"sort_by"`
 	// Sort direction
 	SortOrder param.Field[AgentListParamsSortOrder] `query:"sort_order"`
@@ -440,7 +444,7 @@ func (r AgentListParams) URLQuery() (v url.Values) {
 	})
 }
 
-// Field to sort by. When name is set, exact name matches still come first.
+// Field to sort by. When name or search is set, exact matches still come first.
 type AgentListParamsSortBy string
 
 const (

@@ -180,6 +180,7 @@ func TestAgentListWithOptionalParams(t *testing.T) {
 		Cursor:     langsmith.F("cursor"),
 		Name:       langsmith.F("name"),
 		PageSize:   langsmith.F(int64(1)),
+		Search:     langsmith.F("search"),
 		SortBy:     langsmith.F(langsmith.AgentListParamsSortByLastRunStartTime),
 		SortOrder:  langsmith.F(langsmith.AgentListParamsSortOrderAsc),
 		SourceType: langsmith.F(langsmith.AgentListParamsSourceTypeLsd),
