@@ -1,5 +1,40 @@
 # Changelog
 
+## [0.31.0](https://github.com/langchain-ai/langsmith-go/compare/v0.30.0...v0.31.0) (2026-11-06)
+
+
+### ⚠ BREAKING CHANGES
+
+* **sessions:** filter GET /api/v2/sessions by session type
+* **api:** hide the Missing sentinel from annotation queue and chart PATCH schemas
+
+### Features
+
+* add evaluator metadata field ([b24761a](https://github.com/langchain-ai/langsmith-go/commit/b24761aeed2faea4b9b8dd7b93da7e2aaa3f2894))
+* **agent-platform:** expose the agent's UUID on agent responses ([270aff0](https://github.com/langchain-ai/langsmith-go/commit/270aff02d9faad6da37b5891dcbcbb81f32a3454))
+* **datasets:** deprecate PUT /datasets/{dataset_id}/splits ([dac6713](https://github.com/langchain-ai/langsmith-go/commit/dac6713e94d563ac6840dcc7e6f4d72b56d3a67d))
+* **engine:** add issue type (actionable | finding) ([03e7a91](https://github.com/langchain-ai/langsmith-go/commit/03e7a919430d8f3041ae61e04feeb66f60ef9b1a))
+* filter evaluators by metadata ([b89169b](https://github.com/langchain-ai/langsmith-go/commit/b89169b2bbf2edba9393ef0cc8349180afa08252))
+* generate SQL query SDK clients ([f70902c](https://github.com/langchain-ai/langsmith-go/commit/f70902c7da8e7db07e63e84ed23a556a710b7bf8))
+* llm-gateway: add option to exclude content in traces to langsmith-go ([123299d](https://github.com/langchain-ai/langsmith-go/commit/123299d4127f3479cc827f5cca0c8f4c78e9f493))
+* **run-rules:** thread-level decision-model rules ([b1f94f3](https://github.com/langchain-ai/langsmith-go/commit/b1f94f3c2a316fc4fad735e26a64d5ada9c847d3))
+* **sdk:** add datasets.listV2 for GET /api/v2/datasets ([5a7df1d](https://github.com/langchain-ai/langsmith-go/commit/5a7df1df33545fb8c8454610483fc83c1d5dc315))
+* **sessions:** accept longlived_ttl_days on POST and PATCH /sessions ([b8581ea](https://github.com/langchain-ai/langsmith-go/commit/b8581ea87050b58729bcc0d993fd3e9aeb1eb6cf))
+* **sessions:** add cursor-paginated GET /api/v2/sessions ([175de58](https://github.com/langchain-ai/langsmith-go/commit/175de5837628c2f75430c367c8996b0e918742cb))
+* **sessions:** filter GET /api/v2/sessions by session type ([2a39935](https://github.com/langchain-ai/langsmith-go/commit/2a3993528b8d3767f264d25c86071169dc6a3699))
+* **ttl:** make the allowed long-lived retention days configurable ([b3525e7](https://github.com/langchain-ai/langsmith-go/commit/b3525e7c4cb6872cb3f18596cda8aca8ff74b0d6))
+
+
+### Bug Fixes
+
+* **api:** hide the Missing sentinel from annotation queue and chart PATCH schemas ([be9bb9a](https://github.com/langchain-ai/langsmith-go/commit/be9bb9afbd3b5aedcb14cee6d9c580224b986664))
+* **api:** return the canonical workspace model from GET /api/v1/settings ([14923b6](https://github.com/langchain-ai/langsmith-go/commit/14923b6d791a049e922f613179e8161356b3e83c))
+
+
+### Documentation
+
+* **annotation-queues:** document extend_trace_retention default on add items ([c43b66a](https://github.com/langchain-ai/langsmith-go/commit/c43b66a897bbb5df3af8415a4b8693e774e9f707))
+
 ## [0.30.0](https://github.com/langchain-ai/langsmith-go/compare/v0.29.3...v0.30.0) (2026-11-05)
 
 
