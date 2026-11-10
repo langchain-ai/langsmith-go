@@ -59,7 +59,7 @@ func TestRepoCRUD(t *testing.T) {
 	}
 
 	// Update repo
-	_, err = retryOn429(t, func() (*langsmith.CreateRepoResponse, error) {
+	_, err = retryOn429(t, func() (*langsmith.GetRepoResponse, error) {
 		return client.Repos.Update(ctx, owner, handle, langsmith.RepoUpdateParams{
 			Description: langsmith.F("Updated description"),
 		})

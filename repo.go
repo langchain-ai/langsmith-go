@@ -65,7 +65,7 @@ func (r *RepoService) Get(ctx context.Context, owner string, repo string, opts .
 }
 
 // Update a repo.
-func (r *RepoService) Update(ctx context.Context, owner string, repo string, body RepoUpdateParams, opts ...option.RequestOption) (res *CreateRepoResponse, err error) {
+func (r *RepoService) Update(ctx context.Context, owner string, repo string, body RepoUpdateParams, opts ...option.RequestOption) (res *GetRepoResponse, err error) {
 	opts = slices.Concat(r.Options, opts)
 	if owner == "" {
 		err = errors.New("missing required owner parameter")
