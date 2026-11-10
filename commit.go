@@ -192,8 +192,8 @@ type CommitWithLookups struct {
 	FullName string `json:"full_name"`
 	// The manifest of the commit
 	Manifest interface{} `json:"manifest"`
-	// The SHA of the manifest
-	ManifestSha []int64 `json:"manifest_sha"`
+	// The base64-encoded SHA-256 of the manifest
+	ManifestSha string `json:"manifest_sha" format:"byte"`
 	// Number of API downloads
 	NumDownloads int64 `json:"num_downloads"`
 	// Number of web views
@@ -322,8 +322,8 @@ func (r commitGetResponseExampleJSON) RawJSON() string {
 }
 
 type CommitNewParams struct {
+	Manifest     param.Field[interface{}] `json:"manifest" api:"required"`
 	Description  param.Field[string]      `json:"description"`
-	Manifest     param.Field[interface{}] `json:"manifest"`
 	ParentCommit param.Field[string]      `json:"parent_commit"`
 	// SkipWebhooks allows skipping webhook notifications. Can be true (boolean) to
 	// skip all, or an array of webhook UUIDs to skip specific ones.

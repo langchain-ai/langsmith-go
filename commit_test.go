@@ -32,8 +32,8 @@ func TestCommitNewWithOptionalParams(t *testing.T) {
 		"owner",
 		"repo",
 		langsmith.CommitNewParams{
-			Description:  langsmith.F("description"),
 			Manifest:     langsmith.F[any](map[string]interface{}{}),
+			Description:  langsmith.F("description"),
 			ParentCommit: langsmith.F("parent_commit"),
 			SkipWebhooks: langsmith.F[any](map[string]interface{}{}),
 		},
