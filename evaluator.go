@@ -167,6 +167,7 @@ type Evaluator struct {
 	SessionName                         string                       `json:"session_name" api:"nullable"`
 	SpendLimit                          EvaluatorSpendLimit          `json:"spend_limit" api:"nullable"`
 	SpendUsd                            float64                      `json:"spend_usd" api:"nullable"`
+	ThreadFilter                        string                       `json:"thread_filter" api:"nullable"`
 	TraceCount                          int64                        `json:"trace_count" api:"nullable"`
 	TraceFilter                         string                       `json:"trace_filter" api:"nullable"`
 	Transient                           bool                         `json:"transient"`
@@ -223,6 +224,7 @@ type evaluatorJSON struct {
 	SessionName                         apijson.Field
 	SpendLimit                          apijson.Field
 	SpendUsd                            apijson.Field
+	ThreadFilter                        apijson.Field
 	TraceCount                          apijson.Field
 	TraceFilter                         apijson.Field
 	Transient                           apijson.Field
