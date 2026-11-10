@@ -38,12 +38,17 @@ const (
 // Instead of storing the key, a profile can name where it lives: api_key_env
 // is an environment variable, and api_key_cmd is a shell command that prints
 // the key. api_key wins over api_key_env, which wins over api_key_cmd.
+//
+// A secret_store of "keychain" means api_key and the OAuth access and refresh
+// tokens are kept in the OS keychain instead of the file (see
+// config_keychain.go); they are read into the profile when it is loaded.
 type configProfile struct {
 	APIKey      string      `json:"api_key,omitempty"`
 	APIKeyEnv   string      `json:"api_key_env,omitempty"`
 	APIKeyCmd   string      `json:"api_key_cmd,omitempty"`
 	APIURL      string      `json:"api_url,omitempty"`
 	WorkspaceID string      `json:"workspace_id,omitempty"`
+	SecretStore string      `json:"secret_store,omitempty"`
 	OAuth       configOAuth `json:"oauth,omitempty"`
 }
 
@@ -131,6 +136,11 @@ func loadProfileOptionsForProfile(profileName string, explicit bool) ([]option.R
 	envAuthSet := os.Getenv("LANGSMITH_API_KEY") != ""
 	envTenantSet := os.Getenv("LANGSMITH_TENANT_ID") != "" || os.Getenv("LANGSMITH_WORKSPACE_ID") != ""
 	envEndpointSet := os.Getenv("LANGSMITH_ENDPOINT") != ""
+	var secretsErr error
+	if !envAuthSet {
+		secretsErr = fillProfileSecrets(state.path, state.profileName, &p)
+		state.cfg.Profiles[state.profileName] = p
+	}
 	hasOAuth := p.OAuth.AccessToken != "" || p.OAuth.RefreshToken != ""
 
 	var opts []option.RequestOption
@@ -143,6 +153,8 @@ func loadProfileOptionsForProfile(profileName string, explicit bool) ([]option.R
 	}
 	if !envAuthSet {
 		switch {
+		case secretsErr != nil:
+			opts = append(opts, withProfileSecretsError(secretsErr, explicit))
 		case hasOAuth:
 			opts = append(opts, withProfileAuth(&profileAuth{state: state, override: explicit}))
 		case p.APIKey != "":
@@ -310,6 +322,33 @@ func withProfileAPIKeyRef(profileName string, p configProfile, override bool) op
 				forgetAPIKeyCmd(p.APIKeyCmd, key)
 			}
 			return resp, err
+		}
+		if !override {
+			return r.Apply(option.WithMiddleware(mw))
+		}
+		r.APIKey = ""
+		r.OAuthAccessToken = ""
+		for _, name := range []string{"X-API-Key", "Authorization", "X-User-Id"} {
+			r.Request.Header.Del(name)
+		}
+		r.Middlewares = append([]option.Middleware{mw}, r.Middlewares...)
+		return nil
+	})
+}
+
+// withProfileSecretsError fails requests that would have used a profile's
+// keychain credentials when the keychain could not be read, rather than
+// sending them unauthenticated. A request the caller authenticates itself, for
+// example with an API key set after this option, is sent as usual. Like
+// withProfileAPIKeyRef, an explicitly selected profile clears earlier
+// credentials and puts its middleware first.
+func withProfileSecretsError(err error, override bool) option.RequestOption {
+	return requestconfig.RequestOptionFunc(func(r *requestconfig.RequestConfig) error {
+		mw := func(req *http.Request, next option.MiddlewareNext) (*http.Response, error) {
+			if req.Header.Get("X-API-Key") != "" || req.Header.Get("Authorization") != "" {
+				return next(req)
+			}
+			return nil, err
 		}
 		if !override {
 			return r.Apply(option.WithMiddleware(mw))
@@ -563,7 +602,7 @@ func refreshProfileLocked(ctx context.Context, path, profileName, rejected strin
 		return cfg, p, err
 	}
 	applyTokenResponse(&p, token, time.Now())
-	if err := saveProfileOAuth(path, profileName, p.OAuth); err != nil {
+	if err := saveProfileOAuth(path, profileName, p); err != nil {
 		return cfg, p, fmt.Errorf("saving refreshed OAuth token: %w", err)
 	}
 	cfg.Profiles[profileName] = p
@@ -584,6 +623,10 @@ func loadProfileConfigFromPath(path, profileName string) (configFile, configProf
 	if !ok {
 		return configFile{}, configProfile{}, fmt.Errorf("LangSmith profile not found: %s", profileName)
 	}
+	if err := fillProfileSecrets(path, profileName, &p); err != nil {
+		return configFile{}, configProfile{}, err
+	}
+	cfg.Profiles[profileName] = p
 	return cfg, p, nil
 }
 
@@ -734,11 +777,19 @@ func applyTokenResponse(p *configProfile, token *oauthTokenResponse, now time.Ti
 	}
 }
 
-// saveProfileOAuth writes a profile's rotated tokens back to the config file.
-// It patches the raw JSON rather than re-encoding configFile so fields the SDK
-// does not model survive, and replaces the file atomically so a concurrent
-// reader never sees it truncated.
-func saveProfileOAuth(path, profileName string, oauth configOAuth) error {
+// saveProfileOAuth writes a profile's rotated tokens back to the config file,
+// or to the OS keychain for a keychain-backed profile. It patches the raw JSON
+// rather than re-encoding configFile so fields the SDK does not model survive,
+// and replaces the file atomically so a concurrent reader never sees it
+// truncated.
+//
+// Tokens go back where they were read from: a keychain-backed profile whose
+// file still holds its tokens keeps them there, so a client that reads only
+// the file, such as an older CLI, does not lose them. When the keychain cannot
+// be written, the profile's secrets go to the file and its secret_store is
+// dropped: the server has already retired the old refresh token, so losing the
+// new one would force the user to log in again.
+func saveProfileOAuth(path, profileName string, p configProfile) error {
 	data, err := os.ReadFile(path)
 	if err != nil {
 		return err
@@ -761,11 +812,47 @@ func saveProfileOAuth(path, profileName string, oauth configOAuth) error {
 			return err
 		}
 	}
-	for key, value := range map[string]string{
-		"access_token":  oauth.AccessToken,
-		"refresh_token": oauth.RefreshToken,
-		"expires_at":    oauth.ExpiresAt,
-	} {
+	values := map[string]string{
+		"access_token":  p.OAuth.AccessToken,
+		"refresh_token": p.OAuth.RefreshToken,
+		"expires_at":    p.OAuth.ExpiresAt,
+	}
+	var store string
+	if raw, ok := profile["secret_store"]; ok {
+		_ = json.Unmarshal(raw, &store)
+	}
+	// Each token is saved where it was read from: the file if it holds it,
+	// otherwise the keychain.
+	_, accessInFile := fields["access_token"]
+	_, refreshInFile := fields["refresh_token"]
+	movedOutOfKeychain := false
+	if store == secretStoreKeychain && (!accessInFile || !refreshInFile) {
+		err := updateProfileSecrets(path, profileName, func(secrets *profileSecrets) {
+			if !accessInFile {
+				secrets.AccessToken = p.OAuth.AccessToken
+			}
+			if !refreshInFile {
+				secrets.RefreshToken = p.OAuth.RefreshToken
+			}
+		})
+		if err == nil {
+			if !accessInFile {
+				values["access_token"] = ""
+			}
+			if !refreshInFile {
+				values["refresh_token"] = ""
+			}
+		} else {
+			movedOutOfKeychain = true
+			delete(profile, "secret_store")
+			if p.APIKey != "" {
+				if profile["api_key"], err = json.Marshal(p.APIKey); err != nil {
+					return err
+				}
+			}
+		}
+	}
+	for key, value := range values {
 		if value == "" {
 			delete(fields, key)
 			continue
@@ -787,7 +874,13 @@ func saveProfileOAuth(path, profileName string, oauth configOAuth) error {
 	if err != nil {
 		return err
 	}
-	return writeFileAtomic(path, append(out, '\n'), 0600)
+	if err := writeFileAtomic(path, append(out, '\n'), 0600); err != nil {
+		return err
+	}
+	if movedOutOfKeychain {
+		deleteProfileSecrets(path, profileName)
+	}
+	return nil
 }
 
 func writeFileAtomic(path string, data []byte, perm os.FileMode) error {

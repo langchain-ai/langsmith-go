@@ -16,6 +16,7 @@ import (
 
 	"github.com/langchain-ai/langsmith-go/internal/requestconfig"
 	"github.com/langchain-ai/langsmith-go/option"
+	"github.com/zalando/go-keyring"
 )
 
 // writeOAuthProfileConfig writes a config with one OAuth profile whose access
@@ -53,6 +54,52 @@ func writeOAuthProfileConfig(t *testing.T, apiURL, issuer string) string {
 	t.Setenv("LANGSMITH_CONFIG_FILE", path)
 	t.Setenv("LANGSMITH_PROFILE", "")
 	return path
+}
+
+// useMockKeychain replaces the OS keychain with an empty in-memory one, so a
+// test never reads or writes the developer's real keychain.
+func useMockKeychain(t *testing.T) {
+	t.Helper()
+	keyring.MockInit()
+	t.Cleanup(keyring.MockInit)
+}
+
+// moveProfileToKeychain rewrites profileName in the config at path the way the
+// CLI stores a keychain-backed profile: its api_key and OAuth tokens move to
+// the keychain and secret_store is set.
+func moveProfileToKeychain(t *testing.T, path, profileName string) {
+	t.Helper()
+	cfg := readConfigMap(t, path)
+	p := cfg["profiles"].(map[string]any)[profileName].(map[string]any)
+	var secrets profileSecrets
+	secrets.APIKey, _ = p["api_key"].(string)
+	delete(p, "api_key")
+	if oauth, ok := p["oauth"].(map[string]any); ok {
+		secrets.AccessToken, _ = oauth["access_token"].(string)
+		secrets.RefreshToken, _ = oauth["refresh_token"].(string)
+		delete(oauth, "access_token")
+		delete(oauth, "refresh_token")
+	}
+	p["secret_store"] = secretStoreKeychain
+	data, err := json.Marshal(cfg)
+	if err != nil {
+		t.Fatal(err)
+	}
+	if err := os.WriteFile(path, data, 0600); err != nil {
+		t.Fatal(err)
+	}
+	if err := writeProfileSecrets(path, profileName, secrets); err != nil {
+		t.Fatal(err)
+	}
+}
+
+func readKeychainSecrets(t *testing.T, path, profileName string) profileSecrets {
+	t.Helper()
+	secrets, err := readProfileSecrets(path, profileName)
+	if err != nil {
+		t.Fatal(err)
+	}
+	return secrets
 }
 
 func readConfigMap(t *testing.T, path string) map[string]any {
@@ -103,10 +150,114 @@ func rotateTo(accessToken, refreshToken string) func(http.ResponseWriter, *http.
 }
 
 func TestRefreshPreservesFieldsTheSDKDoesNotModel(t *testing.T) {
+	// "keychain-api-key" is a keychain profile whose OAuth tokens are still in
+	// the file, as an older CLI leaves them; they must stay there.
+	// "keychain-refresh-token" keeps only the refresh token in the keychain;
+	// each token must go back where it came from.
+	for _, store := range []string{"config", secretStoreKeychain, "keychain-api-key", "keychain-refresh-token"} {
+		t.Run(store, func(t *testing.T) {
+			clearAuthEnv(t)
+			useMockKeychain(t)
+			var tokenRequests atomic.Int32
+			ts := tokenServer(t, &tokenRequests, rotateTo("new-access-token", "new-refresh-token"))
+			path := writeOAuthProfileConfig(t, ts.URL, ts.URL)
+			switch store {
+			case secretStoreKeychain:
+				moveProfileToKeychain(t, path, "default")
+			case "keychain-api-key":
+				cfg := readConfigMap(t, path)
+				cfg["profiles"].(map[string]any)["default"].(map[string]any)["secret_store"] = secretStoreKeychain
+				data, _ := json.Marshal(cfg)
+				if err := os.WriteFile(path, data, 0600); err != nil {
+					t.Fatal(err)
+				}
+				if err := writeProfileSecrets(path, "default", profileSecrets{APIKey: "keychain-key"}); err != nil {
+					t.Fatal(err)
+				}
+			case "keychain-refresh-token":
+				cfg := readConfigMap(t, path)
+				p := cfg["profiles"].(map[string]any)["default"].(map[string]any)
+				p["secret_store"] = secretStoreKeychain
+				delete(p["oauth"].(map[string]any), "refresh_token")
+				data, _ := json.Marshal(cfg)
+				if err := os.WriteFile(path, data, 0600); err != nil {
+					t.Fatal(err)
+				}
+				if err := writeProfileSecrets(path, "default", profileSecrets{APIKey: "keychain-key", RefreshToken: "old-refresh-token"}); err != nil {
+					t.Fatal(err)
+				}
+			}
+
+			var out map[string]string
+			if err := requestconfig.ExecuteNewRequest(context.Background(), http.MethodGet, "/info", nil, &out, loadProfileOptions()...); err != nil {
+				t.Fatal(err)
+			}
+			if out["auth"] != "Bearer new-access-token" {
+				t.Fatalf("expected refreshed token on request, got %q", out["auth"])
+			}
+
+			cfg := readConfigMap(t, path)
+			if cfg["future_top_level"] != "keep-me" || cfg["current_profile"] != "default" {
+				t.Fatalf("top-level fields not preserved: %v", cfg)
+			}
+			profiles := cfg["profiles"].(map[string]any)
+			if other := profiles["other"].(map[string]any); other["api_key"] != "other-key" {
+				t.Fatalf("other profile not preserved: %v", other)
+			}
+			p := profiles["default"].(map[string]any)
+			if p["future_profile"] != "keep-me-too" {
+				t.Fatalf("profile field not preserved: %v", p)
+			}
+			oauth := p["oauth"].(map[string]any)
+			if oauth["issuer"] != ts.URL {
+				t.Fatalf("expected issuer %q to survive refresh, got %v", ts.URL, oauth["issuer"])
+			}
+			if oauth["expires_at"] == nil {
+				t.Fatalf("expected the new expiry saved in the config, got %v", oauth)
+			}
+			if store == secretStoreKeychain {
+				if p["secret_store"] != secretStoreKeychain || oauth["access_token"] != nil || oauth["refresh_token"] != nil {
+					t.Fatalf("expected tokens kept out of the keychain profile's config, got %v", p)
+				}
+				if got := readKeychainSecrets(t, path, "default"); got.AccessToken != "new-access-token" || got.RefreshToken != "new-refresh-token" {
+					t.Fatalf("expected rotated tokens saved in the keychain, got %+v", got)
+				}
+			} else if store != "keychain-refresh-token" && (oauth["access_token"] != "new-access-token" || oauth["refresh_token"] != "new-refresh-token") {
+				t.Fatalf("expected rotated tokens saved, got %v", oauth)
+			}
+			if store == "keychain-refresh-token" {
+				if p["secret_store"] != secretStoreKeychain || oauth["access_token"] != "new-access-token" || oauth["refresh_token"] != nil {
+					t.Fatalf("expected the access token in the file and the refresh token out of it, got %v", p)
+				}
+				if got := readKeychainSecrets(t, path, "default"); got != (profileSecrets{APIKey: "keychain-key", RefreshToken: "new-refresh-token"}) {
+					t.Fatalf("expected the rotated refresh token in the keychain, got %+v", got)
+				}
+			}
+			if store == "keychain-api-key" {
+				if got := readKeychainSecrets(t, path, "default"); got != (profileSecrets{APIKey: "keychain-key"}) {
+					t.Fatalf("expected the keychain entry unchanged, got %+v", got)
+				}
+			}
+			info, err := os.Stat(path)
+			if err != nil {
+				t.Fatal(err)
+			}
+			if perm := info.Mode().Perm(); perm != 0600 {
+				t.Fatalf("expected config mode 0600, got %#o", perm)
+			}
+		})
+	}
+}
+
+func TestRefreshSavesTokensInConfigWhenKeychainWriteFails(t *testing.T) {
 	clearAuthEnv(t)
+	useMockKeychain(t)
 	var tokenRequests atomic.Int32
 	ts := tokenServer(t, &tokenRequests, rotateTo("new-access-token", "new-refresh-token"))
 	path := writeOAuthProfileConfig(t, ts.URL, ts.URL)
+	moveProfileToKeychain(t, path, "default")
+	keyringSet = func(string, string, string) error { return errors.New("keychain is locked") }
+	t.Cleanup(func() { keyringSet = keyring.Set })
 
 	var out map[string]string
 	if err := requestconfig.ExecuteNewRequest(context.Background(), http.MethodGet, "/info", nil, &out, profileOptions()...); err != nil {
@@ -115,32 +266,13 @@ func TestRefreshPreservesFieldsTheSDKDoesNotModel(t *testing.T) {
 	if out["auth"] != "Bearer new-access-token" {
 		t.Fatalf("expected refreshed token on request, got %q", out["auth"])
 	}
-
-	cfg := readConfigMap(t, path)
-	if cfg["future_top_level"] != "keep-me" || cfg["current_profile"] != "default" {
-		t.Fatalf("top-level fields not preserved: %v", cfg)
-	}
-	profiles := cfg["profiles"].(map[string]any)
-	if other := profiles["other"].(map[string]any); other["api_key"] != "other-key" {
-		t.Fatalf("other profile not preserved: %v", other)
-	}
-	p := profiles["default"].(map[string]any)
-	if p["future_profile"] != "keep-me-too" {
-		t.Fatalf("profile field not preserved: %v", p)
-	}
+	p := readConfigMap(t, path)["profiles"].(map[string]any)["default"].(map[string]any)
 	oauth := p["oauth"].(map[string]any)
-	if oauth["issuer"] != ts.URL {
-		t.Fatalf("expected issuer %q to survive refresh, got %v", ts.URL, oauth["issuer"])
+	if p["secret_store"] != nil || oauth["access_token"] != "new-access-token" || oauth["refresh_token"] != "new-refresh-token" {
+		t.Fatalf("expected the rotated tokens saved in the config instead of the keychain, got %v", p)
 	}
-	if oauth["access_token"] != "new-access-token" || oauth["refresh_token"] != "new-refresh-token" {
-		t.Fatalf("expected rotated tokens saved, got %v", oauth)
-	}
-	info, err := os.Stat(path)
-	if err != nil {
-		t.Fatal(err)
-	}
-	if perm := info.Mode().Perm(); perm != 0600 {
-		t.Fatalf("expected config mode 0600, got %#o", perm)
+	if _, err := readProfileSecrets(path, "default"); err == nil {
+		t.Fatal("expected the stale keychain entry removed")
 	}
 }
 

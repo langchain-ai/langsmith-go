@@ -810,7 +810,7 @@ func TestSaveProfileOAuthWhileConfigIsOpen(t *testing.T) {
 	})
 	t.Cleanup(func() { <-closed })
 
-	if err := saveProfileOAuth(path, "dev", configOAuth{AccessToken: "new-access-token", RefreshToken: "new-refresh-token"}); err != nil {
+	if err := saveProfileOAuth(path, "dev", configProfile{OAuth: configOAuth{AccessToken: "new-access-token", RefreshToken: "new-refresh-token"}}); err != nil {
 		t.Fatal(err)
 	}
 	_, p, err := loadProfileConfigFromPath(path, "dev")
@@ -1457,6 +1457,55 @@ func TestProfileAPIKeyEnvIsReadAtRequestTime(t *testing.T) {
 	}
 	if apiKey, _ := got(); apiKey != "env-ref-key" {
 		t.Fatalf("expected key from api_key_env, got %q", apiKey)
+	}
+}
+
+func TestProfileAPIKeyFromKeychain(t *testing.T) {
+	clearAuthEnv(t)
+	useMockKeychain(t)
+	ts, got := apiKeyRefServer(t)
+	writeProfileConfig(t, `{"current_profile": "prod", "profiles": {"prod": {"api_key": "keychain-key", "workspace_id": "ws-prod"}}}`)
+	path := os.Getenv("LANGSMITH_CONFIG_FILE")
+	moveProfileToKeychain(t, path, "prod")
+	if data, _ := os.ReadFile(path); strings.Contains(string(data), "keychain-key") {
+		t.Fatalf("expected no API key in the config, got %s", data)
+	}
+
+	// LANGSMITH_API_KEY is set (to empty) here, which NewClient would apply
+	// over the profile's key, so apply the profile options directly.
+	opts := append(loadProfileOptions(), option.WithBaseURL(ts.URL))
+	if err := requestconfig.ExecuteNewRequest(context.Background(), http.MethodGet, "/info", nil, nil, opts...); err != nil {
+		t.Fatal(err)
+	}
+	if apiKey, _ := got(); apiKey != "keychain-key" {
+		t.Fatalf("expected key from the keychain, got %q", apiKey)
+	}
+}
+
+func TestProfileMissingKeychainEntryFailsRequest(t *testing.T) {
+	clearAuthEnv(t)
+	useMockKeychain(t)
+	ts, _ := apiKeyRefServer(t)
+	writeProfileConfig(t, `{"current_profile": "prod", "profiles": {"prod": {"secret_store": "keychain"}}}`)
+
+	client := NewClient(option.WithBaseURL(ts.URL), option.WithMaxRetries(0))
+	_, err := client.Info.List(context.Background())
+	if err == nil || !strings.Contains(err.Error(), "no entry was found; run 'langsmith auth login --profile prod'") {
+		t.Fatalf("expected missing keychain entry error, got %v", err)
+	}
+	if _, err := client.Info.List(context.Background(), option.WithAPIKey("caller-key")); err != nil {
+		t.Fatalf("expected a caller's API key to still work, got %v", err)
+	}
+
+	// An explicitly selected profile defers the error too, so a caller's key
+	// set after it still works.
+	explicit := NewClient(option.WithBaseURL(ts.URL), option.WithMaxRetries(0), WithProfile("prod"))
+	if _, err := explicit.Info.List(context.Background()); err == nil || !strings.Contains(err.Error(), "OS keychain") {
+		t.Fatalf("expected WithProfile requests to report the keychain error, got %v", err)
+	}
+	withKey := NewClient(option.WithBaseURL(ts.URL), option.WithMaxRetries(0), WithProfile("prod"), option.WithAPIKey("caller-key"))
+	if _, err := withKey.Info.List(context.Background()); err != nil {
+		t.Fatalf("expected a caller's API key after WithProfile to work, got %v", err)
 	}
 }
 
