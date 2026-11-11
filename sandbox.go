@@ -161,24 +161,29 @@ func (r proxyConfigAccessControlJSON) RawJSON() string {
 }
 
 type ProxyConfigCallback struct {
-	MatchHosts     []string                            `json:"match_hosts" api:"required"`
-	TtlSeconds     int64                               `json:"ttl_seconds" api:"required"`
-	URL            string                              `json:"url" api:"required"`
-	FullRequest    bool                                `json:"full_request"`
-	RequestHeaders []ProxyConfigCallbacksRequestHeader `json:"request_headers"`
-	JSON           proxyConfigCallbackJSON             `json:"-"`
+	TtlSeconds int64  `json:"ttl_seconds" api:"required"`
+	URL        string `json:"url" api:"required"`
+	// AttributionHeaders selects required all-egress response headers instead of
+	// destination credentials; omit match_hosts and full_request, and return
+	// expires_at with the headers.
+	AttributionHeaders []string                            `json:"attribution_headers"`
+	FullRequest        bool                                `json:"full_request"`
+	MatchHosts         []string                            `json:"match_hosts"`
+	RequestHeaders     []ProxyConfigCallbacksRequestHeader `json:"request_headers"`
+	JSON               proxyConfigCallbackJSON             `json:"-"`
 }
 
 // proxyConfigCallbackJSON contains the JSON metadata for the struct
 // [ProxyConfigCallback]
 type proxyConfigCallbackJSON struct {
-	MatchHosts     apijson.Field
-	TtlSeconds     apijson.Field
-	URL            apijson.Field
-	FullRequest    apijson.Field
-	RequestHeaders apijson.Field
-	raw            string
-	ExtraFields    map[string]apijson.Field
+	TtlSeconds         apijson.Field
+	URL                apijson.Field
+	AttributionHeaders apijson.Field
+	FullRequest        apijson.Field
+	MatchHosts         apijson.Field
+	RequestHeaders     apijson.Field
+	raw                string
+	ExtraFields        map[string]apijson.Field
 }
 
 func (r *ProxyConfigCallback) UnmarshalJSON(data []byte) (err error) {
@@ -283,8 +288,12 @@ type ProxyConfigRule struct {
 	// and a matched host never falls back to a direct connection.
 	RelayID string                  `json:"relay_id" format:"uuid"`
 	Rewrite ProxyConfigRulesRewrite `json:"rewrite"`
-	Type    string                  `json:"type"`
-	JSON    proxyConfigRuleJSON     `json:"-"`
+	// Type selects the rule action; attribution adds up to 16 literal plaintext X-
+	// metadata headers to every proxy-handled HTTP(S) destination, independently of
+	// credential rules. At most one attribution rule is allowed, without matching,
+	// provider, relay, rewrite or environment fields.
+	Type string              `json:"type"`
+	JSON proxyConfigRuleJSON `json:"-"`
 }
 
 // proxyConfigRuleJSON contains the JSON metadata for the struct [ProxyConfigRule]
@@ -1185,11 +1194,15 @@ func (r ProxyConfigAccessControlParam) MarshalJSON() (data []byte, err error) {
 }
 
 type ProxyConfigCallbackParam struct {
-	MatchHosts     param.Field[[]string]                                 `json:"match_hosts" api:"required"`
-	TtlSeconds     param.Field[int64]                                    `json:"ttl_seconds" api:"required"`
-	URL            param.Field[string]                                   `json:"url" api:"required"`
-	FullRequest    param.Field[bool]                                     `json:"full_request"`
-	RequestHeaders param.Field[[]ProxyConfigCallbacksRequestHeaderParam] `json:"request_headers"`
+	TtlSeconds param.Field[int64]  `json:"ttl_seconds" api:"required"`
+	URL        param.Field[string] `json:"url" api:"required"`
+	// AttributionHeaders selects required all-egress response headers instead of
+	// destination credentials; omit match_hosts and full_request, and return
+	// expires_at with the headers.
+	AttributionHeaders param.Field[[]string]                                 `json:"attribution_headers"`
+	FullRequest        param.Field[bool]                                     `json:"full_request"`
+	MatchHosts         param.Field[[]string]                                 `json:"match_hosts"`
+	RequestHeaders     param.Field[[]ProxyConfigCallbacksRequestHeaderParam] `json:"request_headers"`
 }
 
 func (r ProxyConfigCallbackParam) MarshalJSON() (data []byte, err error) {
@@ -1258,7 +1271,11 @@ type ProxyConfigRuleParam struct {
 	// and a matched host never falls back to a direct connection.
 	RelayID param.Field[string]                       `json:"relay_id" format:"uuid"`
 	Rewrite param.Field[ProxyConfigRulesRewriteParam] `json:"rewrite"`
-	Type    param.Field[string]                       `json:"type"`
+	// Type selects the rule action; attribution adds up to 16 literal plaintext X-
+	// metadata headers to every proxy-handled HTTP(S) destination, independently of
+	// credential rules. At most one attribution rule is allowed, without matching,
+	// provider, relay, rewrite or environment fields.
+	Type param.Field[string] `json:"type"`
 }
 
 func (r ProxyConfigRuleParam) MarshalJSON() (data []byte, err error) {

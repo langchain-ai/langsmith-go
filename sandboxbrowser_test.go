@@ -39,10 +39,11 @@ func TestSandboxBrowserNewWithOptionalParams(t *testing.T) {
 				DenyList:  langsmith.F([]string{"string"}),
 			}),
 			Callbacks: langsmith.F([]langsmith.ProxyConfigCallbackParam{{
-				MatchHosts:  langsmith.F([]string{"string"}),
-				TtlSeconds:  langsmith.F(int64(60)),
-				URL:         langsmith.F("url"),
-				FullRequest: langsmith.F(true),
+				TtlSeconds:         langsmith.F(int64(60)),
+				URL:                langsmith.F("url"),
+				AttributionHeaders: langsmith.F([]string{"string"}),
+				FullRequest:        langsmith.F(true),
+				MatchHosts:         langsmith.F([]string{"string"}),
 				RequestHeaders: langsmith.F([]langsmith.ProxyConfigCallbacksRequestHeaderParam{{
 					Name:  langsmith.F("name"),
 					Type:  langsmith.F(langsmith.ProxyConfigCallbacksRequestHeadersTypePlaintext),
