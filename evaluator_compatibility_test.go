@@ -182,14 +182,6 @@ func TestEvaluatorListV1Compatibility(t *testing.T) {
 				})
 			},
 		},
-		{
-			name: "explicit ListV1 signature and route",
-			call: func(ctx context.Context, service *langsmith.EvaluatorService) (*[]langsmith.Evaluator, error) {
-				return service.ListV1(ctx, langsmith.EvaluatorListV1Params{
-					ID: langsmith.F(ruleListIDs), TagValueID: langsmith.F(ruleListTags), SessionID: langsmith.F(ruleListProject),
-				})
-			},
-		},
 	}
 	for _, test := range tests {
 		t.Run(test.name, func(t *testing.T) {

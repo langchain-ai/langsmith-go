@@ -37,6 +37,11 @@ func NewEvaluatorService(opts ...option.RequestOption) (r *EvaluatorService) {
 }
 
 // List all run rules.
+//
+// Deprecated: use GET /api/v2/runs/rules, which returns cursor-paginated results.
+//
+// Deprecated: Use ListV2 instead, which calls GET /api/v2/runs/rules and returns
+// cursor-paginated results. Will be removed on Apr 1, 2027.
 func (r *EvaluatorService) List(ctx context.Context, query EvaluatorListParams, opts ...option.RequestOption) (res *[]Evaluator, err error) {
 	opts = slices.Concat(r.Options, opts)
 	path := "api/v1/runs/rules"
@@ -79,14 +84,6 @@ func (r *EvaluatorService) ListV2(ctx context.Context, query EvaluatorListV2Para
 // changes can affect later pages.
 func (r *EvaluatorService) ListV2AutoPaging(ctx context.Context, query EvaluatorListV2Params, opts ...option.RequestOption) *pagination.ItemsCursorGetPaginationAutoPager[Rule] {
 	return pagination.NewItemsCursorGetPaginationAutoPager(r.ListV2(ctx, query, opts...))
-}
-
-// List all run rules.
-func (r *EvaluatorService) ListV1(ctx context.Context, body EvaluatorListV1Params, opts ...option.RequestOption) (res *[]Evaluator, err error) {
-	opts = slices.Concat(r.Options, opts)
-	path := "api/v1/runs/rules"
-	err = requestconfig.ExecuteNewRequest(ctx, http.MethodGet, path, body, &res, opts...)
-	return res, err
 }
 
 type CodeEvaluatorTopLevel struct {
@@ -1142,40 +1139,6 @@ const (
 func (r EvaluatorListV2ParamsType) IsKnown() bool {
 	switch r {
 	case EvaluatorListV2ParamsTypeProject, EvaluatorListV2ParamsTypeDataset:
-		return true
-	}
-	return false
-}
-
-type EvaluatorListV1Params struct {
-	ID                      param.Field[[]string]                  `query:"id" format:"uuid"`
-	DatasetID               param.Field[string]                    `query:"dataset_id" format:"uuid"`
-	EvaluatorID             param.Field[string]                    `query:"evaluator_id" format:"uuid"`
-	IncludeBackfillProgress param.Field[bool]                      `query:"include_backfill_progress"`
-	NameContains            param.Field[string]                    `query:"name_contains"`
-	SessionID               param.Field[string]                    `query:"session_id" format:"uuid"`
-	TagValueID              param.Field[[]string]                  `query:"tag_value_id" format:"uuid"`
-	Type                    param.Field[EvaluatorListV1ParamsType] `query:"type"`
-}
-
-// URLQuery serializes [EvaluatorListV1Params]'s query parameters as `url.Values`.
-func (r EvaluatorListV1Params) URLQuery() (v url.Values) {
-	return apiquery.MarshalWithSettings(r, apiquery.QuerySettings{
-		ArrayFormat:  apiquery.ArrayQueryFormatRepeat,
-		NestedFormat: apiquery.NestedQueryFormatBrackets,
-	})
-}
-
-type EvaluatorListV1ParamsType string
-
-const (
-	EvaluatorListV1ParamsTypeSession EvaluatorListV1ParamsType = "session"
-	EvaluatorListV1ParamsTypeDataset EvaluatorListV1ParamsType = "dataset"
-)
-
-func (r EvaluatorListV1ParamsType) IsKnown() bool {
-	switch r {
-	case EvaluatorListV1ParamsTypeSession, EvaluatorListV1ParamsTypeDataset:
 		return true
 	}
 	return false
