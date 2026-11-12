@@ -95,6 +95,10 @@ type SandboxCommandStartParams struct {
 	TTLSeconds         param.Field[int64]  `json:"ttl_seconds"`
 	Pty                param.Field[bool]   `json:"pty"`
 	SSHAgentForward    param.Field[bool]   `json:"ssh_agent_forward"`
+	// CommandID identifies the command within the sandbox. If the sandbox
+	// already has a command with this ID, the start attaches to it instead of
+	// running the command again. Unset, a new random ID is used.
+	CommandID param.Field[string] `json:"command_id"`
 }
 
 func (r SandboxCommandStartParams) MarshalJSON() (data []byte, err error) {
@@ -234,11 +238,13 @@ func (r *SandboxBoxService) startCommandWithDataplaneURL(ctx context.Context, da
 	}
 
 	// The daemon does get-or-create on command_id, so a re-issue reattaches instead of spawning a second command.
-	commandID, err := uuid.NewV7()
-	if err != nil {
-		return nil, fmt.Errorf("langsmith: failed to generate sandbox command id: %w", err)
+	if !payload.CommandID.Present {
+		commandID, err := uuid.NewV7()
+		if err != nil {
+			return nil, fmt.Errorf("langsmith: failed to generate sandbox command id: %w", err)
+		}
+		payload.CommandID = F(commandID.String())
 	}
-	payload.CommandID = F(commandID.String())
 
 	deadline := time.Now().Add(sandboxCommandConnectBudget)
 	for attempt := 0; ; attempt++ {
@@ -477,6 +483,12 @@ func normalizeSandboxCommandStartParams(body SandboxCommandStartParams) (sandbox
 	}
 	if ok {
 		out.Command = F(command)
+	}
+	if body.CommandID.Present {
+		if body.CommandID.Value == "" {
+			return sandboxCommandStartRequest{}, errors.New("langsmith: CommandID must not be empty")
+		}
+		out.CommandID = body.CommandID
 	}
 	return out, nil
 }

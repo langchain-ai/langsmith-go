@@ -60,6 +60,45 @@ func TestSandboxCommandStartRetriesStreamEndedBeforeStarted(t *testing.T) {
 	assert.Equal(t, first, handle.CommandID)
 }
 
+func TestSandboxCommandStartUsesTheCallersCommandID(t *testing.T) {
+	var attempts atomic.Int32
+	commandIDs := make(chan string, 4)
+
+	srv := httptest.NewServer(websocket.Handler(func(ws *websocket.Conn) {
+		var msg map[string]any
+		if err := websocket.JSON.Receive(ws, &msg); err != nil {
+			return
+		}
+		commandID, _ := msg["command_id"].(string)
+		commandIDs <- commandID
+		if attempts.Add(1) == 1 {
+			_ = ws.Close()
+			return
+		}
+		_ = websocket.Message.Send(ws, `{"type":"started","command_id":"`+commandID+`","pid":7}`)
+		_ = websocket.Message.Send(ws, `{"type":"exit","exit_code":0}`)
+	}))
+	defer srv.Close()
+
+	handle, err := retryTestClient().Sandboxes.Boxes.StartCommandWithDataplaneURL(
+		context.Background(),
+		srv.URL,
+		langsmith.SandboxCommandStartParams{Command: langsmith.String("echo hi"), CommandID: langsmith.String("job-42")},
+	)
+	require.NoError(t, err)
+	assert.Equal(t, "job-42", <-commandIDs)
+	assert.Equal(t, "job-42", <-commandIDs, "a retried start keeps the caller's command_id")
+	assert.Equal(t, "job-42", handle.CommandID)
+
+	_, err = retryTestClient().Sandboxes.Boxes.StartCommandWithDataplaneURL(
+		context.Background(),
+		srv.URL,
+		langsmith.SandboxCommandStartParams{Command: langsmith.String("echo hi"), CommandID: langsmith.String("")},
+	)
+	require.Error(t, err, "an empty command ID is rejected before dialing")
+	assert.EqualValues(t, 2, attempts.Load())
+}
+
 func TestSandboxCommandStartDoesNotRetryRejectedHandshake(t *testing.T) {
 	var attempts atomic.Int32
 
