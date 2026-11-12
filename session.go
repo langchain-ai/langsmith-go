@@ -44,6 +44,12 @@ func NewSessionService(opts ...option.RequestOption) (r *SessionService) {
 }
 
 // Create a new project.
+//
+// Deprecated: use POST /api/v2/sessions. The v1 endpoint is scheduled for removal
+// on Jul 1, 2027.
+//
+// Deprecated: Deprecated: use NewV2 instead, which calls POST /api/v2/sessions.
+// The v1 endpoint is scheduled for removal on Jul 1, 2027.
 func (r *SessionService) New(ctx context.Context, params SessionNewParams, opts ...option.RequestOption) (res *TracerSessionWithoutVirtualFields, err error) {
 	opts = slices.Concat(r.Options, opts)
 	path := "api/v1/sessions"
@@ -52,6 +58,13 @@ func (r *SessionService) New(ctx context.Context, params SessionNewParams, opts 
 }
 
 // Get a specific project.
+//
+// Deprecated: use GET /api/v2/sessions/{session_id}. The v1 endpoint is scheduled
+// for removal on Jul 1, 2027.
+//
+// Deprecated: Deprecated: use GetV2 instead, which calls GET
+// /api/v2/sessions/{session_id}. The v1 endpoint is scheduled for removal on Jul
+// 1, 2027.
 func (r *SessionService) Get(ctx context.Context, sessionID string, params SessionGetParams, opts ...option.RequestOption) (res *TracerSession, err error) {
 	if params.Accept.Present {
 		opts = append(opts, option.WithHeader("accept", fmt.Sprintf("%v", params.Accept)))
@@ -67,6 +80,13 @@ func (r *SessionService) Get(ctx context.Context, sessionID string, params Sessi
 }
 
 // Update a project.
+//
+// Deprecated: use PATCH /api/v2/sessions/{session_id}. The v1 endpoint is
+// scheduled for removal on Jul 1, 2027.
+//
+// Deprecated: Deprecated: use UpdateV2 instead, which calls PATCH
+// /api/v2/sessions/{session_id}. The v1 endpoint is scheduled for removal on Jul
+// 1, 2027.
 func (r *SessionService) Update(ctx context.Context, sessionID string, body SessionUpdateParams, opts ...option.RequestOption) (res *TracerSessionWithoutVirtualFields, err error) {
 	opts = slices.Concat(r.Options, opts)
 	if sessionID == "" {
@@ -126,11 +146,11 @@ func (r *SessionService) Dashboard(ctx context.Context, sessionID string, params
 
 // List all projects.
 //
-// Deprecated: use GET /api/v2/sessions, which pages with a cursor. Will be removed
-// after Jun 1, 2027.
+// Deprecated: use GET /api/v2/sessions, which pages with a cursor. The v1 endpoint
+// is scheduled for removal on Jul 1, 2027.
 //
 // Deprecated: Deprecated: use ListV2 instead, which calls GET /api/v2/sessions and
-// pages with a cursor. Will be removed after Apr 1, 2027.
+// pages with a cursor. The v1 endpoint is scheduled for removal on Jul 1, 2027.
 func (r *SessionService) ListV1(ctx context.Context, params SessionListV1Params, opts ...option.RequestOption) (res *pagination.OffsetPaginationTopLevelArray[TracerSession], err error) {
 	var raw *http.Response
 	if params.Accept.Present {
@@ -153,11 +173,11 @@ func (r *SessionService) ListV1(ctx context.Context, params SessionListV1Params,
 
 // List all projects.
 //
-// Deprecated: use GET /api/v2/sessions, which pages with a cursor. Will be removed
-// after Jun 1, 2027.
+// Deprecated: use GET /api/v2/sessions, which pages with a cursor. The v1 endpoint
+// is scheduled for removal on Jul 1, 2027.
 //
 // Deprecated: Deprecated: use ListV2 instead, which calls GET /api/v2/sessions and
-// pages with a cursor. Will be removed after Apr 1, 2027.
+// pages with a cursor. The v1 endpoint is scheduled for removal on Jul 1, 2027.
 func (r *SessionService) ListV1AutoPaging(ctx context.Context, params SessionListV1Params, opts ...option.RequestOption) *pagination.OffsetPaginationTopLevelArrayAutoPager[TracerSession] {
 	return pagination.NewOffsetPaginationTopLevelArrayAutoPager(r.ListV1(ctx, params, opts...))
 }
@@ -236,8 +256,8 @@ func (r *SessionService) UpdateV2(ctx context.Context, sessionID string, body Se
 
 // List all projects.
 //
-// Deprecated: use GET /api/v2/sessions, which pages with a cursor. Will be removed
-// after Jun 1, 2027.
+// Deprecated: use GET /api/v2/sessions, which pages with a cursor. The v1 endpoint
+// is scheduled for removal on Jul 1, 2027.
 func (r *SessionService) List(ctx context.Context, params SessionListParams, opts ...option.RequestOption) (res *pagination.OffsetPaginationTopLevelArray[TracerSession], err error) {
 	var raw *http.Response
 	if params.Accept.Present {
@@ -260,8 +280,8 @@ func (r *SessionService) List(ctx context.Context, params SessionListParams, opt
 
 // List all projects.
 //
-// Deprecated: use GET /api/v2/sessions, which pages with a cursor. Will be removed
-// after Jun 1, 2027.
+// Deprecated: use GET /api/v2/sessions, which pages with a cursor. The v1 endpoint
+// is scheduled for removal on Jul 1, 2027.
 func (r *SessionService) ListAutoPaging(ctx context.Context, params SessionListParams, opts ...option.RequestOption) *pagination.OffsetPaginationTopLevelArrayAutoPager[TracerSession] {
 	return pagination.NewOffsetPaginationTopLevelArrayAutoPager(r.List(ctx, params, opts...))
 }
