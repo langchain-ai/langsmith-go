@@ -46,7 +46,7 @@ func TestSandboxBoxNewWithOptionalParams(t *testing.T) {
 	)
 	_, err := client.Sandboxes.Boxes.New(context.TODO(), langsmith.SandboxBoxNewParams{
 		AccessDelegation: langsmith.F(langsmith.SandboxBoxNewParamsAccessDelegation{
-			Mode:        langsmith.F(langsmith.SandboxBoxNewParamsAccessDelegationModeInherit),
+			Mode:        langsmith.F(langsmith.SandboxBoxNewParamsAccessDelegationModeExplicit),
 			Permissions: langsmith.F([]string{"string"}),
 		}),
 		CPUMillicores:          langsmith.F(int64(0)),

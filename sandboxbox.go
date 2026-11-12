@@ -405,7 +405,7 @@ func (r SandboxBoxNewParams) MarshalJSON() (data []byte, err error) {
 // with at most the permissions granted here. Omit for no access.
 type SandboxBoxNewParamsAccessDelegation struct {
 	Mode        param.Field[SandboxBoxNewParamsAccessDelegationMode] `json:"mode" api:"required"`
-	Permissions param.Field[[]string]                                `json:"permissions"`
+	Permissions param.Field[[]string]                                `json:"permissions" api:"required"`
 }
 
 func (r SandboxBoxNewParamsAccessDelegation) MarshalJSON() (data []byte, err error) {
@@ -415,13 +415,12 @@ func (r SandboxBoxNewParamsAccessDelegation) MarshalJSON() (data []byte, err err
 type SandboxBoxNewParamsAccessDelegationMode string
 
 const (
-	SandboxBoxNewParamsAccessDelegationModeInherit  SandboxBoxNewParamsAccessDelegationMode = "INHERIT"
 	SandboxBoxNewParamsAccessDelegationModeExplicit SandboxBoxNewParamsAccessDelegationMode = "EXPLICIT"
 )
 
 func (r SandboxBoxNewParamsAccessDelegationMode) IsKnown() bool {
 	switch r {
-	case SandboxBoxNewParamsAccessDelegationModeInherit, SandboxBoxNewParamsAccessDelegationModeExplicit:
+	case SandboxBoxNewParamsAccessDelegationModeExplicit:
 		return true
 	}
 	return false

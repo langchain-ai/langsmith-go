@@ -5004,7 +5004,7 @@ func (r sandboxResponseJSON) RawJSON() string {
 // it has none. It is reported exactly as it was requested at create.
 type SandboxResponseAccessDelegation struct {
 	Mode        SandboxResponseAccessDelegationMode `json:"mode" api:"required"`
-	Permissions []string                            `json:"permissions"`
+	Permissions []string                            `json:"permissions" api:"required"`
 	JSON        sandboxResponseAccessDelegationJSON `json:"-"`
 }
 
@@ -5028,13 +5028,12 @@ func (r sandboxResponseAccessDelegationJSON) RawJSON() string {
 type SandboxResponseAccessDelegationMode string
 
 const (
-	SandboxResponseAccessDelegationModeInherit  SandboxResponseAccessDelegationMode = "INHERIT"
 	SandboxResponseAccessDelegationModeExplicit SandboxResponseAccessDelegationMode = "EXPLICIT"
 )
 
 func (r SandboxResponseAccessDelegationMode) IsKnown() bool {
 	switch r {
-	case SandboxResponseAccessDelegationModeInherit, SandboxResponseAccessDelegationModeExplicit:
+	case SandboxResponseAccessDelegationModeExplicit:
 		return true
 	}
 	return false
