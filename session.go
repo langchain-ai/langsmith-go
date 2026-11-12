@@ -98,6 +98,16 @@ func (r *SessionService) Delete(ctx context.Context, sessionID string, opts ...o
 	return err
 }
 
+// Create a session, or update an existing session with the same name when upsert
+// is true. Returns the refreshed session representation without optional run
+// statistics.
+func (r *SessionService) NewV2(ctx context.Context, params SessionNewV2Params, opts ...option.RequestOption) (res *Session, err error) {
+	opts = slices.Concat(r.Options, opts)
+	path := "api/v2/sessions"
+	err = requestconfig.ExecuteNewRequest(ctx, http.MethodPost, path, params, &res, opts...)
+	return res, err
+}
+
 // GET with body payload — no resources created. Returns the prebuilt dashboard for
 // the tracing project matching the query passed as the request payload.
 func (r *SessionService) Dashboard(ctx context.Context, sessionID string, params SessionDashboardParams, opts ...option.RequestOption) (res *CustomChartsSection, err error) {
@@ -193,6 +203,34 @@ func (r *SessionService) Resolve(ctx context.Context, query SessionResolveParams
 	opts = slices.Concat(r.Options, opts)
 	path := "api/v1/sessions/resolutions"
 	err = requestconfig.ExecuteNewRequest(ctx, http.MethodGet, path, query, &res, opts...)
+	return res, err
+}
+
+// Returns one tracing project or experiment by ID. Pass include_stats=true to
+// include run statistics.
+func (r *SessionService) GetV2(ctx context.Context, sessionID string, query SessionGetV2Params, opts ...option.RequestOption) (res *Session, err error) {
+	opts = slices.Concat(r.Options, opts)
+	if sessionID == "" {
+		err = errors.New("missing required session_id parameter")
+		return nil, err
+	}
+	path := fmt.Sprintf("api/v2/sessions/%s", sessionID)
+	err = requestconfig.ExecuteNewRequest(ctx, http.MethodGet, path, query, &res, opts...)
+	return res, err
+}
+
+// Updates supplied fields and returns the refreshed resource without optional run
+// statistics. Omitted fields remain unchanged. Null clears description,
+// default_dataset_id, end_time, or extra. Extra merges top-level keys; null values
+// remove keys.
+func (r *SessionService) UpdateV2(ctx context.Context, sessionID string, body SessionUpdateV2Params, opts ...option.RequestOption) (res *Session, err error) {
+	opts = slices.Concat(r.Options, opts)
+	if sessionID == "" {
+		err = errors.New("missing required session_id parameter")
+		return nil, err
+	}
+	path := fmt.Sprintf("api/v2/sessions/%s", sessionID)
+	err = requestconfig.ExecuteNewRequest(ctx, http.MethodPatch, path, body, &res, opts...)
 	return res, err
 }
 
@@ -6548,6 +6586,74 @@ func (r SessionUpdateParamsTraceTier) IsKnown() bool {
 	return false
 }
 
+type SessionNewV2Params struct {
+	// Type identifies a tracing project, Agent tracing project, or experiment.
+	Type param.Field[SessionNewV2ParamsType] `json:"type" api:"required"`
+	// Update an existing session with the same name
+	Upsert           param.Field[bool]                   `query:"upsert"`
+	ID               param.Field[string]                 `json:"id" format:"uuid"`
+	DefaultDatasetID param.Field[string]                 `json:"default_dataset_id" format:"uuid"`
+	Description      param.Field[string]                 `json:"description"`
+	EndTime          param.Field[time.Time]              `json:"end_time" format:"date-time"`
+	EvaluatorKeys    param.Field[[]string]               `json:"evaluator_keys"`
+	Extra            param.Field[map[string]interface{}] `json:"extra"`
+	KickedOffBy      param.Field[string]                 `json:"kicked_off_by"`
+	// LonglivedTTLDays overrides long-lived trace retention. Null restores the
+	// workspace default.
+	LonglivedTtlDays   param.Field[int64]                       `json:"longlived_ttl_days"`
+	Name               param.Field[string]                      `json:"name"`
+	NumExamples        param.Field[int64]                       `json:"num_examples"`
+	NumRepetitions     param.Field[int64]                       `json:"num_repetitions"`
+	ReferenceDatasetID param.Field[string]                      `json:"reference_dataset_id" format:"uuid"`
+	StartTime          param.Field[time.Time]                   `json:"start_time" format:"date-time"`
+	TagValueIDs        param.Field[[]string]                    `json:"tag_value_ids"`
+	TraceTier          param.Field[SessionNewV2ParamsTraceTier] `json:"trace_tier"`
+}
+
+func (r SessionNewV2Params) MarshalJSON() (data []byte, err error) {
+	return apijson.MarshalRoot(r)
+}
+
+// URLQuery serializes [SessionNewV2Params]'s query parameters as `url.Values`.
+func (r SessionNewV2Params) URLQuery() (v url.Values) {
+	return apiquery.MarshalWithSettings(r, apiquery.QuerySettings{
+		ArrayFormat:  apiquery.ArrayQueryFormatRepeat,
+		NestedFormat: apiquery.NestedQueryFormatBrackets,
+	})
+}
+
+// Type identifies a tracing project, Agent tracing project, or experiment.
+type SessionNewV2ParamsType string
+
+const (
+	SessionNewV2ParamsTypeProject    SessionNewV2ParamsType = "PROJECT"
+	SessionNewV2ParamsTypeAgent      SessionNewV2ParamsType = "AGENT"
+	SessionNewV2ParamsTypeExperiment SessionNewV2ParamsType = "EXPERIMENT"
+)
+
+func (r SessionNewV2ParamsType) IsKnown() bool {
+	switch r {
+	case SessionNewV2ParamsTypeProject, SessionNewV2ParamsTypeAgent, SessionNewV2ParamsTypeExperiment:
+		return true
+	}
+	return false
+}
+
+type SessionNewV2ParamsTraceTier string
+
+const (
+	SessionNewV2ParamsTraceTierLongLived  SessionNewV2ParamsTraceTier = "LONG_LIVED"
+	SessionNewV2ParamsTraceTierShortLived SessionNewV2ParamsTraceTier = "SHORT_LIVED"
+)
+
+func (r SessionNewV2ParamsTraceTier) IsKnown() bool {
+	switch r {
+	case SessionNewV2ParamsTraceTierLongLived, SessionNewV2ParamsTraceTierShortLived:
+		return true
+	}
+	return false
+}
+
 type SessionDashboardParams struct {
 	CustomChartsSectionRequest CustomChartsSectionRequestParam `json:"custom_charts_section_request" api:"required"`
 	Accept                     param.Field[string]             `header:"accept"`
@@ -6776,6 +6882,50 @@ const (
 func (r SessionResolveParamsEnvironment) IsKnown() bool {
 	switch r {
 	case SessionResolveParamsEnvironmentLocal, SessionResolveParamsEnvironmentDevelopment, SessionResolveParamsEnvironmentStaging, SessionResolveParamsEnvironmentProduction:
+		return true
+	}
+	return false
+}
+
+type SessionGetV2Params struct {
+	// Include run statistics
+	IncludeStats param.Field[bool] `query:"include_stats"`
+	// Only aggregate statistics at or after this time, within the last 31 days
+	StatsStartTime param.Field[time.Time] `query:"stats_start_time" format:"date-time"`
+}
+
+// URLQuery serializes [SessionGetV2Params]'s query parameters as `url.Values`.
+func (r SessionGetV2Params) URLQuery() (v url.Values) {
+	return apiquery.MarshalWithSettings(r, apiquery.QuerySettings{
+		ArrayFormat:  apiquery.ArrayQueryFormatRepeat,
+		NestedFormat: apiquery.NestedQueryFormatBrackets,
+	})
+}
+
+type SessionUpdateV2Params struct {
+	DefaultDatasetID param.Field[string]                         `json:"default_dataset_id" format:"uuid"`
+	Description      param.Field[string]                         `json:"description"`
+	EndTime          param.Field[time.Time]                      `json:"end_time" format:"date-time"`
+	Extra            param.Field[interface{}]                    `json:"extra"`
+	LonglivedTtlDays param.Field[int64]                          `json:"longlived_ttl_days"`
+	Name             param.Field[string]                         `json:"name"`
+	TraceTier        param.Field[SessionUpdateV2ParamsTraceTier] `json:"trace_tier"`
+}
+
+func (r SessionUpdateV2Params) MarshalJSON() (data []byte, err error) {
+	return apijson.MarshalRoot(r)
+}
+
+type SessionUpdateV2ParamsTraceTier string
+
+const (
+	SessionUpdateV2ParamsTraceTierLongLived  SessionUpdateV2ParamsTraceTier = "LONG_LIVED"
+	SessionUpdateV2ParamsTraceTierShortLived SessionUpdateV2ParamsTraceTier = "SHORT_LIVED"
+)
+
+func (r SessionUpdateV2ParamsTraceTier) IsKnown() bool {
+	switch r {
+	case SessionUpdateV2ParamsTraceTierLongLived, SessionUpdateV2ParamsTraceTierShortLived:
 		return true
 	}
 	return false
