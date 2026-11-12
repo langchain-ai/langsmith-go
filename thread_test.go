@@ -105,6 +105,7 @@ func TestThreadQueryWithOptionalParams(t *testing.T) {
 		MinStartTime: langsmith.F(time.Now()),
 		PageSize:     langsmith.F(int64(20)),
 		ProjectID:    langsmith.F("0190a1b2-c3d4-7ef0-a5b6-6ea3a82e9328"),
+		SemFilter:    langsmith.F("x"),
 		ThreadFilter: langsmith.F("gte(turn_count, 3)"),
 		TraceFilter:  langsmith.F(`eq(status, "error")`),
 		TreeFilter:   langsmith.F(`has(tags, "production")`),

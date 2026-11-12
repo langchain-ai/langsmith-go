@@ -48,9 +48,14 @@ func NewTraceStreamingService(opts ...option.RequestOption) (r *TraceStreamingSe
 // Supports filters (`trace_filter`, `tree_filter`), cursor pagination (`cursor`),
 // and field projection (`selects`).
 //
-// When `ai_search` is set, `Accept: text/event-stream` is required; requests
-// without it return 406. AI search is unavailable on deployments that route
-// queries to the v1 backend and returns 501 there.
+// `ai_search` cannot be combined with `sem_filter`. With full AI search enabled,
+// `ai_search` translates natural language into query filters and time bounds and
+// cannot be combined with explicit filter expressions. Otherwise, `ai_search`
+// retains legacy semantic-only behavior. Use `sem_filter` for semantic-only
+// matching combined with structured filters. AI search requires organization
+// consent. When semantic matching is needed, `Accept: text/event-stream` is
+// required; requests without it return 406. AI search is unavailable on
+// deployments that route queries to the v1 backend and returns 501 there.
 //
 // Self-hosted deployments require LangSmith `v0.16` or later.
 func (r *TraceStreamingService) QueryStreaming(ctx context.Context, params TraceStreamingQueryParams, opts ...option.RequestOption) (stream *ssestream.Stream[shared.QueryPatchEvent]) {
@@ -119,10 +124,11 @@ func (r traceStreamingQueryResponseJSON) RawJSON() string {
 }
 
 type TraceStreamingQueryParams struct {
-	// `ai_search` is a plain-language criterion evaluated against the messages from
-	// the agent trajectory scoped to the trace. AND-ed with the ordinary filters.
-	// Requires semantic filtering enabled for the deployment. Must contain nonempty
-	// text of at most 2000 UTF-8 bytes.
+	// `ai_search` translates natural language into structured filters, semantic
+	// criteria and time bounds. Cannot be combined with sem_filter. With full AI
+	// search enabled, also cannot be combined with explicit filter expressions;
+	// otherwise retains legacy semantic-only behavior. Must contain nonempty text of
+	// at most 2000 UTF-8 bytes.
 	AISearch param.Field[string] `json:"ai_search"`
 	// `cursor` is the opaque string returned in a previous response's `next_cursor`.
 	Cursor param.Field[string] `json:"cursor"`
@@ -155,6 +161,9 @@ type TraceStreamingQueryParams struct {
 	// `trace_aggregates`; everything else appears under `root_run`. If omitted, only
 	// `id` is returned on `root_run`.
 	Selects param.Field[[]RunSelectField] `json:"selects"`
+	// SemFilter evaluates a plain-language criterion against trajectory messages,
+	// AND-ed with structured filters.
+	SemFilter param.Field[string] `json:"sem_filter"`
 	// `trace_filter` narrows results to traces whose root run matches this LangSmith
 	// filter expression. This filter targets root runs only — `is_root = true` is
 	// implied. See

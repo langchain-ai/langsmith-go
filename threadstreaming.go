@@ -40,9 +40,14 @@ func NewThreadStreamingService(opts ...option.RequestOption) (r *ThreadStreaming
 // project matching the query passed as the request payload. Results are filtered
 // by the given time range and optional filters, with cursor-based pagination.
 //
-// When `ai_search` is set, `Accept: text/event-stream` is required; requests
-// without it return 406. AI search is unavailable on deployments that route
-// queries to the v1 backend and returns 501 there.
+// `ai_search` cannot be combined with `sem_filter`. With full AI search enabled,
+// `ai_search` translates natural language into query filters and time bounds and
+// cannot be combined with explicit filter expressions. Otherwise, `ai_search`
+// retains legacy semantic-only behavior. Use `sem_filter` for semantic-only
+// matching combined with structured filters. AI search requires organization
+// consent. When semantic matching is needed, `Accept: text/event-stream` is
+// required; requests without it return 406. AI search is unavailable on
+// deployments that route queries to the v1 backend and returns 501 there.
 //
 // Self-hosted deployments require LangSmith `v0.16` or later.
 func (r *ThreadStreamingService) QueryStreaming(ctx context.Context, params ThreadStreamingQueryParams, opts ...option.RequestOption) (stream *ssestream.Stream[shared.QueryPatchEvent]) {
@@ -113,10 +118,11 @@ func (r threadStreamingQueryResponseJSON) RawJSON() string {
 }
 
 type ThreadStreamingQueryParams struct {
-	// `ai_search` is a plain-language criterion evaluated against the messages from
-	// the agent trajectory scoped to the thread. AND-ed with the ordinary filters.
-	// Requires semantic filtering enabled for the deployment. Must contain nonempty
-	// text of at most 2000 UTF-8 bytes.
+	// `ai_search` translates natural language into structured filters, semantic
+	// criteria and time bounds. Cannot be combined with sem_filter. With full AI
+	// search enabled, also cannot be combined with explicit filter expressions;
+	// otherwise retains legacy semantic-only behavior. Must contain nonempty text of
+	// at most 2000 UTF-8 bytes.
 	AISearch param.Field[string] `json:"ai_search"`
 	// `cursor` is the opaque string from a previous response's `next_cursor`. Omit on
 	// the first request; pass the returned cursor to fetch the next page.
@@ -140,6 +146,9 @@ type ThreadStreamingQueryParams struct {
 	PageSize param.Field[int64] `json:"page_size"`
 	// `project_id` is the tracing project UUID.
 	ProjectID param.Field[string] `json:"project_id" format:"uuid"`
+	// SemFilter evaluates a plain-language criterion against trajectory messages,
+	// AND-ed with structured filters.
+	SemFilter param.Field[string] `json:"sem_filter"`
 	// `thread_filter` narrows results using a LangSmith filter expression evaluated
 	// against each complete thread summary. Self-hosted deployments require LangSmith
 	// v0.17 or later; unsupported deployments return 501. See

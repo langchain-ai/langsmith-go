@@ -73,6 +73,7 @@ func TestTraceQueryWithOptionalParams(t *testing.T) {
 		PageSize:              langsmith.F(int64(20)),
 		ProjectID:             langsmith.F("018e4c7e-a9fb-7ef0-a5b6-6ea3a82e9327"),
 		Selects:               langsmith.F([]langsmith.RunSelectField{langsmith.RunSelectFieldID, langsmith.RunSelectFieldName, langsmith.RunSelectFieldStartTime, langsmith.RunSelectFieldStatus, langsmith.RunSelectFieldTotalTokens, langsmith.RunSelectFieldTotalCost, langsmith.RunSelectFieldFirstTokenTime}),
+		SemFilter:             langsmith.F("x"),
 		TraceFilter:           langsmith.F(`eq(status, "error")`),
 		TraceIDs:              langsmith.F([]string{"182bd5e5-6e1a-4fe4-a799-aa6d9a6ab26e"}),
 		TreeFilter:            langsmith.F(`has(tags, "production")`),
