@@ -176,14 +176,15 @@ func TestAgentListWithOptionalParams(t *testing.T) {
 		option.WithTenantID("My Tenant ID"),
 	)
 	_, err := client.Agents.List(context.TODO(), langsmith.AgentListParams{
-		ID:         langsmith.F([]string{"string"}),
-		Cursor:     langsmith.F("cursor"),
-		Name:       langsmith.F("name"),
-		PageSize:   langsmith.F(int64(1)),
-		Search:     langsmith.F("search"),
-		SortBy:     langsmith.F(langsmith.AgentListParamsSortByLastRunStartTime),
-		SortOrder:  langsmith.F(langsmith.AgentListParamsSortOrderAsc),
-		SourceType: langsmith.F(langsmith.AgentListParamsSourceTypeLsd),
+		ID:           langsmith.F([]string{"string"}),
+		Cursor:       langsmith.F("cursor"),
+		IncludeCount: langsmith.F(true),
+		Name:         langsmith.F("name"),
+		PageSize:     langsmith.F(int64(1)),
+		Search:       langsmith.F("search"),
+		SortBy:       langsmith.F(langsmith.AgentListParamsSortByLastRunStartTime),
+		SortOrder:    langsmith.F(langsmith.AgentListParamsSortOrderAsc),
+		SourceType:   langsmith.F(langsmith.AgentListParamsSourceTypeLsd),
 	})
 	if err != nil {
 		var apierr *langsmith.Error

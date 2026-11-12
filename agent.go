@@ -421,6 +421,9 @@ type AgentListParams struct {
 	ID param.Field[[]string] `query:"id"`
 	// Opaque pagination cursor
 	Cursor param.Field[string] `query:"cursor"`
+	// Include the total number of visible Agents matching the filters, independent of
+	// pagination
+	IncludeCount param.Field[bool] `query:"include_count"`
 	// Deprecated: use search. Case-insensitive partial Agent name. Ignored when search
 	// is provided.
 	Name param.Field[string] `query:"name"`
