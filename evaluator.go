@@ -14,6 +14,7 @@ import (
 	"github.com/langchain-ai/langsmith-go/internal/param"
 	"github.com/langchain-ai/langsmith-go/internal/requestconfig"
 	"github.com/langchain-ai/langsmith-go/option"
+	"github.com/langchain-ai/langsmith-go/packages/pagination"
 )
 
 // EvaluatorService contains methods and other services that help with interacting
@@ -50,6 +51,41 @@ func (r *EvaluatorService) NewDecisionModel(ctx context.Context, body EvaluatorN
 	opts = slices.Concat(r.Options, opts)
 	path := "api/v1/runs/rules/decision-models"
 	err = requestconfig.ExecuteNewRequest(ctx, http.MethodPost, path, body, &res, opts...)
+	return res, err
+}
+
+// List workspace rules in descending updated_at and id order. Filters combine with
+// AND. Pass next_cursor unchanged with the same filters to continue; concurrent
+// changes can affect later pages.
+func (r *EvaluatorService) ListV2(ctx context.Context, query EvaluatorListV2Params, opts ...option.RequestOption) (res *pagination.ItemsCursorGetPagination[Rule], err error) {
+	var raw *http.Response
+	opts = slices.Concat(r.Options, opts)
+	opts = append([]option.RequestOption{option.WithResponseInto(&raw)}, opts...)
+	path := "api/v2/runs/rules"
+	cfg, err := requestconfig.NewRequestConfig(ctx, http.MethodGet, path, query, &res, opts...)
+	if err != nil {
+		return nil, err
+	}
+	err = cfg.Execute()
+	if err != nil {
+		return nil, err
+	}
+	res.SetPageConfig(cfg, raw)
+	return res, nil
+}
+
+// List workspace rules in descending updated_at and id order. Filters combine with
+// AND. Pass next_cursor unchanged with the same filters to continue; concurrent
+// changes can affect later pages.
+func (r *EvaluatorService) ListV2AutoPaging(ctx context.Context, query EvaluatorListV2Params, opts ...option.RequestOption) *pagination.ItemsCursorGetPaginationAutoPager[Rule] {
+	return pagination.NewItemsCursorGetPaginationAutoPager(r.ListV2(ctx, query, opts...))
+}
+
+// List all run rules.
+func (r *EvaluatorService) ListV1(ctx context.Context, body EvaluatorListV1Params, opts ...option.RequestOption) (res *[]Evaluator, err error) {
+	opts = slices.Concat(r.Options, opts)
+	path := "api/v1/runs/rules"
+	err = requestconfig.ExecuteNewRequest(ctx, http.MethodGet, path, body, &res, opts...)
 	return res, err
 }
 
@@ -474,6 +510,410 @@ func (r evaluatorWebhookJSON) RawJSON() string {
 	return r.raw
 }
 
+type Rule struct {
+	ID                                  string                  `json:"id" api:"required" format:"uuid"`
+	AddToDatasetPreferCorrection        bool                    `json:"add_to_dataset_prefer_correction" api:"required"`
+	CreatedAt                           time.Time               `json:"created_at" api:"required" format:"date-time"`
+	DisplayName                         string                  `json:"display_name" api:"required"`
+	EvaluatorVersion                    int64                   `json:"evaluator_version" api:"required"`
+	ExtendOnly                          bool                    `json:"extend_only" api:"required"`
+	IncludeExtendedStats                bool                    `json:"include_extended_stats" api:"required"`
+	IsEnabled                           bool                    `json:"is_enabled" api:"required"`
+	IsManagedEvaluator                  bool                    `json:"is_managed_evaluator" api:"required"`
+	IsTracingDisabled                   bool                    `json:"is_tracing_disabled" api:"required"`
+	SamplingRate                        float64                 `json:"sampling_rate" api:"required"`
+	TenantID                            string                  `json:"tenant_id" api:"required" format:"uuid"`
+	Transient                           bool                    `json:"transient" api:"required"`
+	UpdatedAt                           time.Time               `json:"updated_at" api:"required" format:"date-time"`
+	UseCorrectionsDataset               bool                    `json:"use_corrections_dataset" api:"required"`
+	AddToAnnotationQueueID              string                  `json:"add_to_annotation_queue_id" format:"uuid"`
+	AddToAnnotationQueueName            string                  `json:"add_to_annotation_queue_name"`
+	AddToDatasetID                      string                  `json:"add_to_dataset_id" format:"uuid"`
+	AddToDatasetName                    string                  `json:"add_to_dataset_name"`
+	Alerts                              []RuleAlert             `json:"alerts"`
+	AlignmentAnnotationQueueID          string                  `json:"alignment_annotation_queue_id" format:"uuid"`
+	BackfillCompletedAt                 time.Time               `json:"backfill_completed_at" format:"date-time"`
+	BackfillError                       string                  `json:"backfill_error"`
+	BackfillFrom                        time.Time               `json:"backfill_from" format:"date-time"`
+	BackfillID                          string                  `json:"backfill_id" format:"uuid"`
+	BackfillProgress                    float64                 `json:"backfill_progress"`
+	BackfillStatus                      string                  `json:"backfill_status"`
+	CodeEvaluators                      []RuleCodeEvaluator     `json:"code_evaluators"`
+	CorrectionsDatasetID                string                  `json:"corrections_dataset_id" format:"uuid"`
+	DatasetID                           string                  `json:"dataset_id" format:"uuid"`
+	DatasetName                         string                  `json:"dataset_name"`
+	EffectiveSpendLimit                 RuleEffectiveSpendLimit `json:"effective_spend_limit"`
+	EvaluatorID                         string                  `json:"evaluator_id" format:"uuid"`
+	EvaluatorName                       string                  `json:"evaluator_name"`
+	EvaluatorType                       string                  `json:"evaluator_type"`
+	Evaluators                          []RuleEvaluator         `json:"evaluators"`
+	ExtendAnnotationQueueTraceRetention bool                    `json:"extend_annotation_queue_trace_retention"`
+	ExtendDatasetTraceRetention         bool                    `json:"extend_dataset_trace_retention"`
+	ExtendEvaluatorTraceRetention       bool                    `json:"extend_evaluator_trace_retention"`
+	ExtendWebhookTraceRetention         bool                    `json:"extend_webhook_trace_retention"`
+	Filter                              string                  `json:"filter"`
+	GroupBy                             RuleGroupBy             `json:"group_by"`
+	NumFewShotExamples                  int64                   `json:"num_few_shot_examples"`
+	ProjectID                           string                  `json:"project_id" format:"uuid"`
+	ProjectName                         string                  `json:"project_name"`
+	SpendLimit                          RuleSpendLimit          `json:"spend_limit"`
+	SpendUsd                            float64                 `json:"spend_usd"`
+	ThreadFilter                        string                  `json:"thread_filter"`
+	TraceCount                          int64                   `json:"trace_count"`
+	TraceFilter                         string                  `json:"trace_filter"`
+	TreeFilter                          string                  `json:"tree_filter"`
+	Webhooks                            []RuleWebhook           `json:"webhooks"`
+	JSON                                ruleJSON                `json:"-"`
+}
+
+// ruleJSON contains the JSON metadata for the struct [Rule]
+type ruleJSON struct {
+	ID                                  apijson.Field
+	AddToDatasetPreferCorrection        apijson.Field
+	CreatedAt                           apijson.Field
+	DisplayName                         apijson.Field
+	EvaluatorVersion                    apijson.Field
+	ExtendOnly                          apijson.Field
+	IncludeExtendedStats                apijson.Field
+	IsEnabled                           apijson.Field
+	IsManagedEvaluator                  apijson.Field
+	IsTracingDisabled                   apijson.Field
+	SamplingRate                        apijson.Field
+	TenantID                            apijson.Field
+	Transient                           apijson.Field
+	UpdatedAt                           apijson.Field
+	UseCorrectionsDataset               apijson.Field
+	AddToAnnotationQueueID              apijson.Field
+	AddToAnnotationQueueName            apijson.Field
+	AddToDatasetID                      apijson.Field
+	AddToDatasetName                    apijson.Field
+	Alerts                              apijson.Field
+	AlignmentAnnotationQueueID          apijson.Field
+	BackfillCompletedAt                 apijson.Field
+	BackfillError                       apijson.Field
+	BackfillFrom                        apijson.Field
+	BackfillID                          apijson.Field
+	BackfillProgress                    apijson.Field
+	BackfillStatus                      apijson.Field
+	CodeEvaluators                      apijson.Field
+	CorrectionsDatasetID                apijson.Field
+	DatasetID                           apijson.Field
+	DatasetName                         apijson.Field
+	EffectiveSpendLimit                 apijson.Field
+	EvaluatorID                         apijson.Field
+	EvaluatorName                       apijson.Field
+	EvaluatorType                       apijson.Field
+	Evaluators                          apijson.Field
+	ExtendAnnotationQueueTraceRetention apijson.Field
+	ExtendDatasetTraceRetention         apijson.Field
+	ExtendEvaluatorTraceRetention       apijson.Field
+	ExtendWebhookTraceRetention         apijson.Field
+	Filter                              apijson.Field
+	GroupBy                             apijson.Field
+	NumFewShotExamples                  apijson.Field
+	ProjectID                           apijson.Field
+	ProjectName                         apijson.Field
+	SpendLimit                          apijson.Field
+	SpendUsd                            apijson.Field
+	ThreadFilter                        apijson.Field
+	TraceCount                          apijson.Field
+	TraceFilter                         apijson.Field
+	TreeFilter                          apijson.Field
+	Webhooks                            apijson.Field
+	raw                                 string
+	ExtraFields                         map[string]apijson.Field
+}
+
+func (r *Rule) UnmarshalJSON(data []byte) (err error) {
+	return apijson.UnmarshalRoot(data, r)
+}
+
+func (r ruleJSON) RawJSON() string {
+	return r.raw
+}
+
+type RuleAlert struct {
+	RoutingKey string             `json:"routing_key" api:"required"`
+	Severity   RuleAlertsSeverity `json:"severity"`
+	Summary    string             `json:"summary"`
+	Type       RuleAlertsType     `json:"type"`
+	JSON       ruleAlertJSON      `json:"-"`
+}
+
+// ruleAlertJSON contains the JSON metadata for the struct [RuleAlert]
+type ruleAlertJSON struct {
+	RoutingKey  apijson.Field
+	Severity    apijson.Field
+	Summary     apijson.Field
+	Type        apijson.Field
+	raw         string
+	ExtraFields map[string]apijson.Field
+}
+
+func (r *RuleAlert) UnmarshalJSON(data []byte) (err error) {
+	return apijson.UnmarshalRoot(data, r)
+}
+
+func (r ruleAlertJSON) RawJSON() string {
+	return r.raw
+}
+
+type RuleAlertsSeverity string
+
+const (
+	RuleAlertsSeverityCritical RuleAlertsSeverity = "CRITICAL"
+	RuleAlertsSeverityWarning  RuleAlertsSeverity = "WARNING"
+	RuleAlertsSeverityError    RuleAlertsSeverity = "ERROR"
+	RuleAlertsSeverityInfo     RuleAlertsSeverity = "INFO"
+)
+
+func (r RuleAlertsSeverity) IsKnown() bool {
+	switch r {
+	case RuleAlertsSeverityCritical, RuleAlertsSeverityWarning, RuleAlertsSeverityError, RuleAlertsSeverityInfo:
+		return true
+	}
+	return false
+}
+
+type RuleAlertsType string
+
+const (
+	RuleAlertsTypePagerduty RuleAlertsType = "PAGERDUTY"
+)
+
+func (r RuleAlertsType) IsKnown() bool {
+	switch r {
+	case RuleAlertsTypePagerduty:
+		return true
+	}
+	return false
+}
+
+type RuleCodeEvaluator struct {
+	Code                    string                               `json:"code" api:"required"`
+	RequireAttachments      bool                                 `json:"require_attachments" api:"required"`
+	AdvancedFeaturesEnabled bool                                 `json:"advanced_features_enabled"`
+	CodeEvaluatorInput      RuleCodeEvaluatorsCodeEvaluatorInput `json:"code_evaluator_input"`
+	Language                RuleCodeEvaluatorsLanguage           `json:"language"`
+	JSON                    ruleCodeEvaluatorJSON                `json:"-"`
+}
+
+// ruleCodeEvaluatorJSON contains the JSON metadata for the struct
+// [RuleCodeEvaluator]
+type ruleCodeEvaluatorJSON struct {
+	Code                    apijson.Field
+	RequireAttachments      apijson.Field
+	AdvancedFeaturesEnabled apijson.Field
+	CodeEvaluatorInput      apijson.Field
+	Language                apijson.Field
+	raw                     string
+	ExtraFields             map[string]apijson.Field
+}
+
+func (r *RuleCodeEvaluator) UnmarshalJSON(data []byte) (err error) {
+	return apijson.UnmarshalRoot(data, r)
+}
+
+func (r ruleCodeEvaluatorJSON) RawJSON() string {
+	return r.raw
+}
+
+type RuleCodeEvaluatorsCodeEvaluatorInput string
+
+const (
+	RuleCodeEvaluatorsCodeEvaluatorInputThread           RuleCodeEvaluatorsCodeEvaluatorInput = "THREAD"
+	RuleCodeEvaluatorsCodeEvaluatorInputAllMessages      RuleCodeEvaluatorsCodeEvaluatorInput = "ALL_MESSAGES"
+	RuleCodeEvaluatorsCodeEvaluatorInputHumanAIPairs     RuleCodeEvaluatorsCodeEvaluatorInput = "HUMAN_AI_PAIRS"
+	RuleCodeEvaluatorsCodeEvaluatorInputFirstHumanLastAI RuleCodeEvaluatorsCodeEvaluatorInput = "FIRST_HUMAN_LAST_AI"
+	RuleCodeEvaluatorsCodeEvaluatorInputTrajectory       RuleCodeEvaluatorsCodeEvaluatorInput = "TRAJECTORY"
+)
+
+func (r RuleCodeEvaluatorsCodeEvaluatorInput) IsKnown() bool {
+	switch r {
+	case RuleCodeEvaluatorsCodeEvaluatorInputThread, RuleCodeEvaluatorsCodeEvaluatorInputAllMessages, RuleCodeEvaluatorsCodeEvaluatorInputHumanAIPairs, RuleCodeEvaluatorsCodeEvaluatorInputFirstHumanLastAI, RuleCodeEvaluatorsCodeEvaluatorInputTrajectory:
+		return true
+	}
+	return false
+}
+
+type RuleCodeEvaluatorsLanguage string
+
+const (
+	RuleCodeEvaluatorsLanguagePython     RuleCodeEvaluatorsLanguage = "PYTHON"
+	RuleCodeEvaluatorsLanguageJavascript RuleCodeEvaluatorsLanguage = "JAVASCRIPT"
+)
+
+func (r RuleCodeEvaluatorsLanguage) IsKnown() bool {
+	switch r {
+	case RuleCodeEvaluatorsLanguagePython, RuleCodeEvaluatorsLanguageJavascript:
+		return true
+	}
+	return false
+}
+
+type RuleEffectiveSpendLimit struct {
+	LimitUsd string                        `json:"limit_usd" api:"required"`
+	Window   RuleEffectiveSpendLimitWindow `json:"window" api:"required"`
+	JSON     ruleEffectiveSpendLimitJSON   `json:"-"`
+}
+
+// ruleEffectiveSpendLimitJSON contains the JSON metadata for the struct
+// [RuleEffectiveSpendLimit]
+type ruleEffectiveSpendLimitJSON struct {
+	LimitUsd    apijson.Field
+	Window      apijson.Field
+	raw         string
+	ExtraFields map[string]apijson.Field
+}
+
+func (r *RuleEffectiveSpendLimit) UnmarshalJSON(data []byte) (err error) {
+	return apijson.UnmarshalRoot(data, r)
+}
+
+func (r ruleEffectiveSpendLimitJSON) RawJSON() string {
+	return r.raw
+}
+
+type RuleEffectiveSpendLimitWindow string
+
+const (
+	RuleEffectiveSpendLimitWindowWeekly RuleEffectiveSpendLimitWindow = "WEEKLY"
+)
+
+func (r RuleEffectiveSpendLimitWindow) IsKnown() bool {
+	switch r {
+	case RuleEffectiveSpendLimitWindowWeekly:
+		return true
+	}
+	return false
+}
+
+type RuleEvaluator struct {
+	Structured RuleEvaluatorsStructured `json:"structured" api:"required"`
+	JSON       ruleEvaluatorJSON        `json:"-"`
+}
+
+// ruleEvaluatorJSON contains the JSON metadata for the struct [RuleEvaluator]
+type ruleEvaluatorJSON struct {
+	Structured  apijson.Field
+	raw         string
+	ExtraFields map[string]apijson.Field
+}
+
+func (r *RuleEvaluator) UnmarshalJSON(data []byte) (err error) {
+	return apijson.UnmarshalRoot(data, r)
+}
+
+func (r ruleEvaluatorJSON) RawJSON() string {
+	return r.raw
+}
+
+type RuleEvaluatorsStructured struct {
+	HubRef               string                       `json:"hub_ref"`
+	Model                map[string]interface{}       `json:"model"`
+	PlaygroundSettingsID string                       `json:"playground_settings_id"`
+	Prompt               [][]string                   `json:"prompt"`
+	Schema               map[string]interface{}       `json:"schema"`
+	TemplateFormat       string                       `json:"template_format"`
+	VariableMapping      map[string]string            `json:"variable_mapping"`
+	JSON                 ruleEvaluatorsStructuredJSON `json:"-"`
+}
+
+// ruleEvaluatorsStructuredJSON contains the JSON metadata for the struct
+// [RuleEvaluatorsStructured]
+type ruleEvaluatorsStructuredJSON struct {
+	HubRef               apijson.Field
+	Model                apijson.Field
+	PlaygroundSettingsID apijson.Field
+	Prompt               apijson.Field
+	Schema               apijson.Field
+	TemplateFormat       apijson.Field
+	VariableMapping      apijson.Field
+	raw                  string
+	ExtraFields          map[string]apijson.Field
+}
+
+func (r *RuleEvaluatorsStructured) UnmarshalJSON(data []byte) (err error) {
+	return apijson.UnmarshalRoot(data, r)
+}
+
+func (r ruleEvaluatorsStructuredJSON) RawJSON() string {
+	return r.raw
+}
+
+type RuleGroupBy string
+
+const (
+	RuleGroupByThreadID     RuleGroupBy = "THREAD_ID"
+	RuleGroupByTrajectoryID RuleGroupBy = "TRAJECTORY_ID"
+)
+
+func (r RuleGroupBy) IsKnown() bool {
+	switch r {
+	case RuleGroupByThreadID, RuleGroupByTrajectoryID:
+		return true
+	}
+	return false
+}
+
+type RuleSpendLimit struct {
+	LimitUsd string               `json:"limit_usd" api:"required"`
+	Window   RuleSpendLimitWindow `json:"window" api:"required"`
+	JSON     ruleSpendLimitJSON   `json:"-"`
+}
+
+// ruleSpendLimitJSON contains the JSON metadata for the struct [RuleSpendLimit]
+type ruleSpendLimitJSON struct {
+	LimitUsd    apijson.Field
+	Window      apijson.Field
+	raw         string
+	ExtraFields map[string]apijson.Field
+}
+
+func (r *RuleSpendLimit) UnmarshalJSON(data []byte) (err error) {
+	return apijson.UnmarshalRoot(data, r)
+}
+
+func (r ruleSpendLimitJSON) RawJSON() string {
+	return r.raw
+}
+
+type RuleSpendLimitWindow string
+
+const (
+	RuleSpendLimitWindowWeekly RuleSpendLimitWindow = "WEEKLY"
+)
+
+func (r RuleSpendLimitWindow) IsKnown() bool {
+	switch r {
+	case RuleSpendLimitWindowWeekly:
+		return true
+	}
+	return false
+}
+
+type RuleWebhook struct {
+	URL     string            `json:"url" api:"required"`
+	Headers map[string]string `json:"headers"`
+	JSON    ruleWebhookJSON   `json:"-"`
+}
+
+// ruleWebhookJSON contains the JSON metadata for the struct [RuleWebhook]
+type ruleWebhookJSON struct {
+	URL         apijson.Field
+	Headers     apijson.Field
+	raw         string
+	ExtraFields map[string]apijson.Field
+}
+
+func (r *RuleWebhook) UnmarshalJSON(data []byte) (err error) {
+	return apijson.UnmarshalRoot(data, r)
+}
+
+func (r ruleWebhookJSON) RawJSON() string {
+	return r.raw
+}
+
 type EvaluatorListParams struct {
 	ID                      param.Field[[]string]                `query:"id" format:"uuid"`
 	DatasetID               param.Field[string]                  `query:"dataset_id" format:"uuid"`
@@ -655,6 +1095,87 @@ const (
 func (r EvaluatorNewDecisionModelParamsTemplateFormat) IsKnown() bool {
 	switch r {
 	case EvaluatorNewDecisionModelParamsTemplateFormatMustache, EvaluatorNewDecisionModelParamsTemplateFormatFString:
+		return true
+	}
+	return false
+}
+
+type EvaluatorListV2Params struct {
+	// Rule UUIDs
+	ID param.Field[[]string] `query:"id" format:"uuid"`
+	// Cursor from the previous page
+	Cursor param.Field[string] `query:"cursor"`
+	// Source dataset UUID
+	DatasetID param.Field[string] `query:"dataset_id" format:"uuid"`
+	// Linked evaluator UUID
+	EvaluatorID param.Field[string] `query:"evaluator_id" format:"uuid"`
+	// Include backfill progress
+	IncludeBackfillProgress param.Field[bool] `query:"include_backfill_progress"`
+	// Case-insensitive display-name pattern
+	NameContains param.Field[string] `query:"name_contains"`
+	// Page size
+	PageSize param.Field[int64] `query:"page_size"`
+	// Source project UUID
+	ProjectID param.Field[string] `query:"project_id" format:"uuid"`
+	// Source must have every tag UUID
+	TagValueID param.Field[[]string] `query:"tag_value_id" format:"uuid"`
+	// Rule source type
+	Type param.Field[EvaluatorListV2ParamsType] `query:"type"`
+}
+
+// URLQuery serializes [EvaluatorListV2Params]'s query parameters as `url.Values`.
+func (r EvaluatorListV2Params) URLQuery() (v url.Values) {
+	return apiquery.MarshalWithSettings(r, apiquery.QuerySettings{
+		ArrayFormat:  apiquery.ArrayQueryFormatRepeat,
+		NestedFormat: apiquery.NestedQueryFormatBrackets,
+	})
+}
+
+// Rule source type
+type EvaluatorListV2ParamsType string
+
+const (
+	EvaluatorListV2ParamsTypeProject EvaluatorListV2ParamsType = "PROJECT"
+	EvaluatorListV2ParamsTypeDataset EvaluatorListV2ParamsType = "DATASET"
+)
+
+func (r EvaluatorListV2ParamsType) IsKnown() bool {
+	switch r {
+	case EvaluatorListV2ParamsTypeProject, EvaluatorListV2ParamsTypeDataset:
+		return true
+	}
+	return false
+}
+
+type EvaluatorListV1Params struct {
+	ID                      param.Field[[]string]                  `query:"id" format:"uuid"`
+	DatasetID               param.Field[string]                    `query:"dataset_id" format:"uuid"`
+	EvaluatorID             param.Field[string]                    `query:"evaluator_id" format:"uuid"`
+	IncludeBackfillProgress param.Field[bool]                      `query:"include_backfill_progress"`
+	NameContains            param.Field[string]                    `query:"name_contains"`
+	SessionID               param.Field[string]                    `query:"session_id" format:"uuid"`
+	TagValueID              param.Field[[]string]                  `query:"tag_value_id" format:"uuid"`
+	Type                    param.Field[EvaluatorListV1ParamsType] `query:"type"`
+}
+
+// URLQuery serializes [EvaluatorListV1Params]'s query parameters as `url.Values`.
+func (r EvaluatorListV1Params) URLQuery() (v url.Values) {
+	return apiquery.MarshalWithSettings(r, apiquery.QuerySettings{
+		ArrayFormat:  apiquery.ArrayQueryFormatRepeat,
+		NestedFormat: apiquery.NestedQueryFormatBrackets,
+	})
+}
+
+type EvaluatorListV1ParamsType string
+
+const (
+	EvaluatorListV1ParamsTypeSession EvaluatorListV1ParamsType = "session"
+	EvaluatorListV1ParamsTypeDataset EvaluatorListV1ParamsType = "dataset"
+)
+
+func (r EvaluatorListV1ParamsType) IsKnown() bool {
+	switch r {
+	case EvaluatorListV1ParamsTypeSession, EvaluatorListV1ParamsTypeDataset:
 		return true
 	}
 	return false
