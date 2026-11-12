@@ -177,6 +177,8 @@ func TestSandboxBoxNewWithOptionalParams(t *testing.T) {
 				MatchHeaders: langsmith.F([]string{"string"}),
 				MatchHosts:   langsmith.F([]string{"string"}),
 				MatchPaths:   langsmith.F([]string{"string"}),
+				MatchPort:    langsmith.F(int64(1)),
+				MatchScheme:  langsmith.F(langsmith.ProxyConfigRulesMatchSchemeHTTPS),
 				RelayID:      langsmith.F("182bd5e5-6e1a-4fe4-a799-aa6d9a6ab26e"),
 				Rewrite: langsmith.F(langsmith.ProxyConfigRulesRewriteParam{
 					Port:        langsmith.F(int64(1)),
@@ -318,6 +320,8 @@ func TestSandboxBoxUpdateWithOptionalParams(t *testing.T) {
 					MatchHeaders: langsmith.F([]string{"string"}),
 					MatchHosts:   langsmith.F([]string{"string"}),
 					MatchPaths:   langsmith.F([]string{"string"}),
+					MatchPort:    langsmith.F(int64(1)),
+					MatchScheme:  langsmith.F(langsmith.ProxyConfigRulesMatchSchemeHTTPS),
 					RelayID:      langsmith.F("182bd5e5-6e1a-4fe4-a799-aa6d9a6ab26e"),
 					Rewrite: langsmith.F(langsmith.ProxyConfigRulesRewriteParam{
 						Port:        langsmith.F(int64(1)),

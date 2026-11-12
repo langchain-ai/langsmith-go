@@ -280,7 +280,9 @@ type ProxyConfigRule struct {
 	// `/v1/xruns`); or `*` alone for every path. A wildcard in the middle of a path is
 	// not supported. An empty list matches every path. Rules are evaluated in order
 	// and the first match wins. Rejected on aws, gcp, azure, and relay rules.
-	MatchPaths []string `json:"match_paths"`
+	MatchPaths  []string                    `json:"match_paths"`
+	MatchPort   int64                       `json:"match_port"`
+	MatchScheme ProxyConfigRulesMatchScheme `json:"match_scheme"`
 	// RelayID is the ID of the LangSmith relay (a connection of kind relay) that
 	// carries connections to match_hosts when type is relay. Those connections leave
 	// from the relay's connector, and its network and IP, instead of the sandbox host.
@@ -309,6 +311,8 @@ type proxyConfigRuleJSON struct {
 	MatchHeaders apijson.Field
 	MatchHosts   apijson.Field
 	MatchPaths   apijson.Field
+	MatchPort    apijson.Field
+	MatchScheme  apijson.Field
 	RelayID      apijson.Field
 	Rewrite      apijson.Field
 	Type         apijson.Field
@@ -1115,6 +1119,20 @@ func (r ProxyConfigRulesHeadersType) IsKnown() bool {
 	return false
 }
 
+type ProxyConfigRulesMatchScheme string
+
+const (
+	ProxyConfigRulesMatchSchemeHTTPS ProxyConfigRulesMatchScheme = "https"
+)
+
+func (r ProxyConfigRulesMatchScheme) IsKnown() bool {
+	switch r {
+	case ProxyConfigRulesMatchSchemeHTTPS:
+		return true
+	}
+	return false
+}
+
 type ProxyConfigRulesRewrite struct {
 	Port int64 `json:"port" api:"required"`
 	// Credentials is what happens to credential headers the sandbox sent, such as
@@ -1263,7 +1281,9 @@ type ProxyConfigRuleParam struct {
 	// `/v1/xruns`); or `*` alone for every path. A wildcard in the middle of a path is
 	// not supported. An empty list matches every path. Rules are evaluated in order
 	// and the first match wins. Rejected on aws, gcp, azure, and relay rules.
-	MatchPaths param.Field[[]string] `json:"match_paths"`
+	MatchPaths  param.Field[[]string]                    `json:"match_paths"`
+	MatchPort   param.Field[int64]                       `json:"match_port"`
+	MatchScheme param.Field[ProxyConfigRulesMatchScheme] `json:"match_scheme"`
 	// RelayID is the ID of the LangSmith relay (a connection of kind relay) that
 	// carries connections to match_hosts when type is relay. Those connections leave
 	// from the relay's connector, and its network and IP, instead of the sandbox host.
