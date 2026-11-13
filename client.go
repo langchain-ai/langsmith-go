@@ -41,6 +41,7 @@ type Client struct {
 	PromptWebhooks   *PromptWebhookService
 	Info             *InfoService
 	Workspaces       *WorkspaceService
+	WorkspaceSecrets *WorkspaceSecretService
 	Repos            *RepoService
 	Commits          *CommitService
 	Settings         *SettingService
@@ -114,6 +115,7 @@ func NewClient(opts ...option.RequestOption) (r *Client) {
 	r.PromptWebhooks = NewPromptWebhookService(opts...)
 	r.Info = NewInfoService(opts...)
 	r.Workspaces = NewWorkspaceService(opts...)
+	r.WorkspaceSecrets = NewWorkspaceSecretService(opts...)
 	r.Repos = NewRepoService(opts...)
 	r.Commits = NewCommitService(opts...)
 	r.Settings = NewSettingService(opts...)

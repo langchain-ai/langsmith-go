@@ -691,6 +691,18 @@ Methods:
 - <code title="get /api/v1/workspaces">client.Workspaces.<a href="https://pkg.go.dev/github.com/langchain-ai/langsmith-go#WorkspaceService.List">List</a>(ctx <a href="https://pkg.go.dev/context">context</a>.<a href="https://pkg.go.dev/context#Context">Context</a>, query <a href="https://pkg.go.dev/github.com/langchain-ai/langsmith-go">langsmith</a>.<a href="https://pkg.go.dev/github.com/langchain-ai/langsmith-go#WorkspaceListParams">WorkspaceListParams</a>) (\*[]<a href="https://pkg.go.dev/github.com/langchain-ai/langsmith-go">langsmith</a>.<a href="https://pkg.go.dev/github.com/langchain-ai/langsmith-go#WorkspaceListResponse">WorkspaceListResponse</a>, <a href="https://pkg.go.dev/builtin#error">error</a>)</code>
 - <code title="delete /api/v1/workspaces/{workspace_id}">client.Workspaces.<a href="https://pkg.go.dev/github.com/langchain-ai/langsmith-go#WorkspaceService.Delete">Delete</a>(ctx <a href="https://pkg.go.dev/context">context</a>.<a href="https://pkg.go.dev/context#Context">Context</a>, workspaceID <a href="https://pkg.go.dev/builtin#string">string</a>) (\*<a href="https://pkg.go.dev/github.com/langchain-ai/langsmith-go">langsmith</a>.<a href="https://pkg.go.dev/github.com/langchain-ai/langsmith-go#WorkspaceDeleteResponse">WorkspaceDeleteResponse</a>, <a href="https://pkg.go.dev/builtin#error">error</a>)</code>
 
+# WorkspaceSecrets
+
+Response Types:
+
+- <a href="https://pkg.go.dev/github.com/langchain-ai/langsmith-go">langsmith</a>.<a href="https://pkg.go.dev/github.com/langchain-ai/langsmith-go#WorkspaceSecret">WorkspaceSecret</a>
+
+Methods:
+
+- <code title="get /api/v1/workspaces/current/secrets">client.WorkspaceSecrets.<a href="https://pkg.go.dev/github.com/langchain-ai/langsmith-go#WorkspaceSecretService.List">List</a>(ctx <a href="https://pkg.go.dev/context">context</a>.<a href="https://pkg.go.dev/context#Context">Context</a>, query <a href="https://pkg.go.dev/github.com/langchain-ai/langsmith-go">langsmith</a>.<a href="https://pkg.go.dev/github.com/langchain-ai/langsmith-go#WorkspaceSecretListParams">WorkspaceSecretListParams</a>) (\*[]<a href="https://pkg.go.dev/github.com/langchain-ai/langsmith-go">langsmith</a>.<a href="https://pkg.go.dev/github.com/langchain-ai/langsmith-go#WorkspaceSecret">WorkspaceSecret</a>, <a href="https://pkg.go.dev/builtin#error">error</a>)</code>
+- <code title="delete /api/v1/workspaces/current/secrets/{key}">client.WorkspaceSecrets.<a href="https://pkg.go.dev/github.com/langchain-ai/langsmith-go#WorkspaceSecretService.Delete">Delete</a>(ctx <a href="https://pkg.go.dev/context">context</a>.<a href="https://pkg.go.dev/context#Context">Context</a>, key <a href="https://pkg.go.dev/builtin#string">string</a>) <a href="https://pkg.go.dev/builtin#error">error</a></code>
+- <code title="put /api/v1/workspaces/current/secrets/{key}">client.WorkspaceSecrets.<a href="https://pkg.go.dev/github.com/langchain-ai/langsmith-go#WorkspaceSecretService.Upsert">Upsert</a>(ctx <a href="https://pkg.go.dev/context">context</a>.<a href="https://pkg.go.dev/context#Context">Context</a>, key <a href="https://pkg.go.dev/builtin#string">string</a>, body <a href="https://pkg.go.dev/github.com/langchain-ai/langsmith-go">langsmith</a>.<a href="https://pkg.go.dev/github.com/langchain-ai/langsmith-go#WorkspaceSecretUpsertParams">WorkspaceSecretUpsertParams</a>) (\*<a href="https://pkg.go.dev/github.com/langchain-ai/langsmith-go">langsmith</a>.<a href="https://pkg.go.dev/github.com/langchain-ai/langsmith-go#WorkspaceSecret">WorkspaceSecret</a>, <a href="https://pkg.go.dev/builtin#error">error</a>)</code>
+
 # Repos
 
 Response Types:
