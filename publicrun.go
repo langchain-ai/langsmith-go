@@ -59,8 +59,9 @@ func (r *PublicRunService) Get(ctx context.Context, shareToken string, runID str
 	return res, err
 }
 
-// Returns all runs within the trace identified by the share token. The share token
-// supplies the tenant, project, and trace scope.
+// GET with body payload — no resources created. Returns all runs within the trace
+// identified by the share token. The share token supplies the tenant, project, and
+// trace scope.
 //
 // Self-hosted deployments require LangSmith `v0.16` or later.
 func (r *PublicRunService) Query(ctx context.Context, shareToken string, params PublicRunQueryParams, opts ...option.RequestOption) (res *PublicRunQueryResponse, err error) {
