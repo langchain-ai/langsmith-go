@@ -81,7 +81,9 @@ func (r *FeedbackService) Update(ctx context.Context, feedbackID string, body Fe
 	return res, err
 }
 
-// List all Feedback by query params.
+// List feedback, newest first.
+//
+// At least one of run, key, or session is required.
 func (r *FeedbackService) List(ctx context.Context, query FeedbackListParams, opts ...option.RequestOption) (res *pagination.OffsetPaginationTopLevelArray[FeedbackSchema], err error) {
 	var raw *http.Response
 	opts = slices.Concat(r.Options, opts)
@@ -99,7 +101,9 @@ func (r *FeedbackService) List(ctx context.Context, query FeedbackListParams, op
 	return res, nil
 }
 
-// List all Feedback by query params.
+// List feedback, newest first.
+//
+// At least one of run, key, or session is required.
 func (r *FeedbackService) ListAutoPaging(ctx context.Context, query FeedbackListParams, opts ...option.RequestOption) *pagination.OffsetPaginationTopLevelArrayAutoPager[FeedbackSchema] {
 	return pagination.NewOffsetPaginationTopLevelArrayAutoPager(r.List(ctx, query, opts...))
 }
@@ -196,8 +200,11 @@ func (r AutoEvalFeedbackSourceType) IsKnown() bool {
 
 // Schema used for creating feedback.
 type FeedbackCreateSchemaParam struct {
+	// The feedback key: the metric, tag, or aspect being scored, for example
+	// correctness.
 	Key param.Field[string] `json:"key" api:"required"`
-	ID  param.Field[string] `json:"id" format:"uuid"`
+	// The ID to give the feedback. Defaults to a new random UUID.
+	ID param.Field[string] `json:"id" format:"uuid"`
 	// Addresses the tracing project through an Agent environment, as
 	// lrn:agents/{id}/environments/{environment}, instead of session_id. The id is 1
 	// to 63 lowercase ASCII letters, digits, or hyphens, starting with a letter and
@@ -205,18 +212,27 @@ type FeedbackCreateSchemaParam struct {
 	// or production, matched case-insensitively. Never combined with session_id. The
 	// Agent and the environment must already exist; sending feedback does not create
 	// them. Self-hosted deployments need LangSmith v0.18 or later.
-	Address                 param.Field[string]                                   `json:"address"`
-	Comment                 param.Field[string]                                   `json:"comment"`
-	ComparativeExperimentID param.Field[string]                                   `json:"comparative_experiment_id" format:"uuid"`
-	Correction              param.Field[FeedbackCreateSchemaCorrectionUnionParam] `json:"correction"`
-	CreatedAt               param.Field[time.Time]                                `json:"created_at" format:"date-time"`
-	// Deprecated. Use `extra.error` instead. If both values are provided, `error`
-	// takes precedence.
+	Address param.Field[string] `json:"address"`
+	// A free-text comment explaining the feedback. Truncated at the feedback size
+	// limit.
+	Comment param.Field[string] `json:"comment"`
+	// The ID of the comparative (pairwise) experiment this feedback was written for.
+	ComparativeExperimentID param.Field[string] `json:"comparative_experiment_id" format:"uuid"`
+	// The corrected output for the run, as a string or a JSON object. Dropped if it
+	// exceeds the feedback size limit.
+	Correction param.Field[FeedbackCreateSchemaCorrectionUnionParam] `json:"correction"`
+	// When the feedback was created, as an ISO 8601 timestamp. Defaults to now.
+	CreatedAt param.Field[time.Time] `json:"created_at" format:"date-time"`
+	// Deprecated. Use extra.error instead. If both values are provided, error takes
+	// precedence.
 	//
 	// Deprecated: deprecated
-	Error                param.Field[bool]                   `json:"error"`
-	ExtendTraceRetention param.Field[bool]                   `json:"extend_trace_retention"`
-	Extra                param.Field[map[string]interface{}] `json:"extra"`
+	Error param.Field[bool] `json:"error"`
+	// Whether writing this feedback may upgrade the trace to extended retention.
+	// Defaults to true.
+	ExtendTraceRetention param.Field[bool] `json:"extend_trace_retention"`
+	// Additional metadata to store with the feedback, as a JSON object.
+	Extra param.Field[map[string]interface{}] `json:"extra"`
 	// The scale the score is checked against. If the feedback key already has a
 	// feedback config, this must match it exactly or the request is rejected; if it
 	// has none, this becomes the key's feedback config.
@@ -227,25 +243,44 @@ type FeedbackCreateSchemaParam struct {
 	// If omitted, the server may record the key's enforced feedback config, or the one
 	// created for the key by this request.
 	FeedbackConfigID param.Field[string] `json:"feedback_config_id" format:"uuid"`
-	FeedbackGroupID  param.Field[string] `json:"feedback_group_id" format:"uuid"`
-	// Feedback from the LangChainPlus App.
-	FeedbackSource   param.Field[FeedbackCreateSchemaFeedbackSourceUnionParam] `json:"feedback_source"`
-	FeedbackThreadID param.Field[string]                                       `json:"feedback_thread_id"`
-	ModifiedAt       param.Field[time.Time]                                    `json:"modified_at" format:"date-time"`
-	RunID            param.Field[string]                                       `json:"run_id" format:"uuid"`
-	Score            param.Field[FeedbackCreateSchemaScoreUnionParam]          `json:"score"`
+	// Groups feedback written together, such as one comparison in a pairwise
+	// experiment.
+	FeedbackGroupID param.Field[string] `json:"feedback_group_id" format:"uuid"`
+	// Where the feedback came from, as an object whose type is api, app, model, or
+	// auto_eval.
+	FeedbackSource param.Field[FeedbackCreateSchemaFeedbackSourceUnionParam] `json:"feedback_source"`
+	// The ID of the thread the feedback is about. Requires session_id (or address) and
+	// cannot be combined with run_id.
+	FeedbackThreadID param.Field[string] `json:"feedback_thread_id"`
+	// When the feedback was last modified, as an ISO 8601 timestamp. Defaults to now.
+	ModifiedAt param.Field[time.Time] `json:"modified_at" format:"date-time"`
+	// The ID of the run the feedback is about. Omit it for feedback on a whole tracing
+	// project or a thread.
+	RunID param.Field[string] `json:"run_id" format:"uuid"`
+	// The numeric or boolean score. Numbers must be between -99999.9999 and 99999.9999
+	// with at most 4 decimal places.
+	Score param.Field[FeedbackCreateSchemaScoreUnionParam] `json:"score"`
 	// Required unless the feedback is addressed by address. The ID of the tracing
 	// project (session) the feedback belongs to.
-	SessionID param.Field[string]                              `json:"session_id" format:"uuid"`
-	StartTime param.Field[time.Time]                           `json:"start_time" format:"date-time"`
-	TraceID   param.Field[string]                              `json:"trace_id" format:"uuid"`
-	Value     param.Field[FeedbackCreateSchemaValueUnionParam] `json:"value"`
+	SessionID param.Field[string] `json:"session_id" format:"uuid"`
+	// The start time of run_id, as an ISO 8601 timestamp. With session_id and
+	// trace_id, it lets the server write run feedback without looking the run up.
+	StartTime param.Field[time.Time] `json:"start_time" format:"date-time"`
+	// The ID of the trace that contains run_id. With session_id and start_time, it
+	// lets the server write run feedback without looking the run up.
+	TraceID param.Field[string] `json:"trace_id" format:"uuid"`
+	// A non-numeric value, such as a category label or a JSON object. Dropped if it
+	// exceeds the feedback size limit.
+	Value param.Field[FeedbackCreateSchemaValueUnionParam] `json:"value"`
 }
 
 func (r FeedbackCreateSchemaParam) MarshalJSON() (data []byte, err error) {
 	return apijson.MarshalRoot(r)
 }
 
+// The corrected output for the run, as a string or a JSON object. Dropped if it
+// exceeds the feedback size limit.
+//
 // Satisfied by [FeedbackCreateSchemaCorrectionMapParam], [shared.UnionString].
 type FeedbackCreateSchemaCorrectionUnionParam interface {
 	ImplementsFeedbackCreateSchemaCorrectionUnionParam()
@@ -300,7 +335,8 @@ func (r FeedbackCreateSchemaFeedbackConfigCategoryParam) MarshalJSON() (data []b
 	return apijson.MarshalRoot(r)
 }
 
-// Feedback from the LangChainPlus App.
+// Where the feedback came from, as an object whose type is api, app, model, or
+// auto_eval.
 type FeedbackCreateSchemaFeedbackSourceParam struct {
 	Metadata param.Field[interface{}]                            `json:"metadata"`
 	Type     param.Field[FeedbackCreateSchemaFeedbackSourceType] `json:"type"`
@@ -313,7 +349,8 @@ func (r FeedbackCreateSchemaFeedbackSourceParam) MarshalJSON() (data []byte, err
 func (r FeedbackCreateSchemaFeedbackSourceParam) implementsFeedbackCreateSchemaFeedbackSourceUnionParam() {
 }
 
-// Feedback from the LangChainPlus App.
+// Where the feedback came from, as an object whose type is api, app, model, or
+// auto_eval.
 //
 // Satisfied by [AppFeedbackSourceParam], [APIFeedbackSourceParam],
 // [ModelFeedbackSourceParam], [AutoEvalFeedbackSourceParam],
@@ -339,11 +376,17 @@ func (r FeedbackCreateSchemaFeedbackSourceType) IsKnown() bool {
 	return false
 }
 
+// The numeric or boolean score. Numbers must be between -99999.9999 and 99999.9999
+// with at most 4 decimal places.
+//
 // Satisfied by [shared.UnionFloat], [shared.UnionBool].
 type FeedbackCreateSchemaScoreUnionParam interface {
 	ImplementsFeedbackCreateSchemaScoreUnionParam()
 }
 
+// A non-numeric value, such as a category label or a JSON object. Dropped if it
+// exceeds the feedback size limit.
+//
 // Satisfied by [shared.UnionFloat], [shared.UnionBool], [shared.UnionString],
 // [FeedbackCreateSchemaValueMapParam].
 type FeedbackCreateSchemaValueUnionParam interface {
@@ -354,7 +397,8 @@ type FeedbackCreateSchemaValueMapParam map[string]interface{}
 
 func (r FeedbackCreateSchemaValueMapParam) ImplementsFeedbackCreateSchemaValueUnionParam() {}
 
-// Enum for feedback levels.
+// Feedback level: run for feedback on a run, session for feedback on a whole
+// tracing project (session level requires a session filter).
 type FeedbackLevel string
 
 const (
@@ -372,26 +416,44 @@ func (r FeedbackLevel) IsKnown() bool {
 
 // Schema for getting feedback.
 type FeedbackSchema struct {
-	ID                      string                        `json:"id" api:"required" format:"uuid"`
-	Key                     string                        `json:"key" api:"required"`
-	Comment                 string                        `json:"comment" api:"nullable"`
-	ComparativeExperimentID string                        `json:"comparative_experiment_id" api:"nullable" format:"uuid"`
-	Correction              FeedbackSchemaCorrectionUnion `json:"correction" api:"nullable"`
-	CreatedAt               time.Time                     `json:"created_at" format:"date-time"`
-	Extra                   map[string]interface{}        `json:"extra" api:"nullable"`
-	FeedbackGroupID         string                        `json:"feedback_group_id" api:"nullable" format:"uuid"`
+	ID string `json:"id" api:"required" format:"uuid"`
+	// The feedback key: the metric, tag, or aspect being scored, for example
+	// correctness.
+	Key string `json:"key" api:"required"`
+	// A free-text comment explaining the feedback. Truncated at the feedback size
+	// limit.
+	Comment string `json:"comment" api:"nullable"`
+	// The ID of the comparative (pairwise) experiment this feedback was written for.
+	ComparativeExperimentID string `json:"comparative_experiment_id" api:"nullable" format:"uuid"`
+	// The corrected output for the run, as a string or a JSON object. Dropped if it
+	// exceeds the feedback size limit.
+	Correction FeedbackSchemaCorrectionUnion `json:"correction" api:"nullable"`
+	// When the feedback was created, as an ISO 8601 timestamp. Defaults to now.
+	CreatedAt time.Time              `json:"created_at" format:"date-time"`
+	Extra     map[string]interface{} `json:"extra" api:"nullable"`
+	// Groups feedback written together, such as one comparison in a pairwise
+	// experiment.
+	FeedbackGroupID string `json:"feedback_group_id" api:"nullable" format:"uuid"`
 	// The feedback source loaded from the database.
 	FeedbackSource   FeedbackSchemaFeedbackSource `json:"feedback_source" api:"nullable"`
 	FeedbackThreadID string                       `json:"feedback_thread_id" api:"nullable"`
 	IsRoot           bool                         `json:"is_root"`
-	ModifiedAt       time.Time                    `json:"modified_at" format:"date-time"`
-	RunID            string                       `json:"run_id" api:"nullable" format:"uuid"`
-	Score            FeedbackSchemaScoreUnion     `json:"score" api:"nullable"`
-	SessionID        string                       `json:"session_id" api:"nullable" format:"uuid"`
-	StartTime        time.Time                    `json:"start_time" api:"nullable" format:"date-time"`
-	TraceID          string                       `json:"trace_id" api:"nullable" format:"uuid"`
-	Value            FeedbackSchemaValueUnion     `json:"value" api:"nullable"`
-	JSON             feedbackSchemaJSON           `json:"-"`
+	// When the feedback was last modified, as an ISO 8601 timestamp. Defaults to now.
+	ModifiedAt time.Time `json:"modified_at" format:"date-time"`
+	// The ID of the run the feedback is about. Omit it for feedback on a whole tracing
+	// project or a thread.
+	RunID string `json:"run_id" api:"nullable" format:"uuid"`
+	// The numeric or boolean score. Numbers must be between -99999.9999 and 99999.9999
+	// with at most 4 decimal places.
+	Score FeedbackSchemaScoreUnion `json:"score" api:"nullable"`
+	// The ID of the tracing project (session) the feedback belongs to.
+	SessionID string    `json:"session_id" api:"nullable" format:"uuid"`
+	StartTime time.Time `json:"start_time" api:"nullable" format:"date-time"`
+	TraceID   string    `json:"trace_id" api:"nullable" format:"uuid"`
+	// A non-numeric value, such as a category label or a JSON object. Dropped if it
+	// exceeds the feedback size limit.
+	Value FeedbackSchemaValueUnion `json:"value" api:"nullable"`
+	JSON  feedbackSchemaJSON       `json:"-"`
 }
 
 // feedbackSchemaJSON contains the JSON metadata for the struct [FeedbackSchema]
@@ -426,6 +488,9 @@ func (r feedbackSchemaJSON) RawJSON() string {
 	return r.raw
 }
 
+// The corrected output for the run, as a string or a JSON object. Dropped if it
+// exceeds the feedback size limit.
+//
 // Union satisfied by [FeedbackSchemaCorrectionMap] or [shared.UnionString].
 type FeedbackSchemaCorrectionUnion interface {
 	ImplementsFeedbackSchemaCorrectionUnion()
@@ -480,6 +545,9 @@ func (r feedbackSchemaFeedbackSourceJSON) RawJSON() string {
 	return r.raw
 }
 
+// The numeric or boolean score. Numbers must be between -99999.9999 and 99999.9999
+// with at most 4 decimal places.
+//
 // Union satisfied by [shared.UnionFloat] or [shared.UnionBool].
 type FeedbackSchemaScoreUnion interface {
 	ImplementsFeedbackSchemaScoreUnion()
@@ -504,6 +572,9 @@ func init() {
 	)
 }
 
+// A non-numeric value, such as a category label or a JSON object. Dropped if it
+// exceeds the feedback size limit.
+//
 // Union satisfied by [shared.UnionFloat], [shared.UnionBool], [shared.UnionString]
 // or [FeedbackSchemaValueMap].
 type FeedbackSchemaValueUnion interface {
@@ -686,22 +757,39 @@ type FeedbackUpdateParamsValueMap map[string]interface{}
 func (r FeedbackUpdateParamsValueMap) ImplementsFeedbackUpdateParamsValueUnion() {}
 
 type FeedbackListParams struct {
-	ComparativeExperimentID param.Field[string]   `query:"comparative_experiment_id" format:"uuid"`
-	FeedbackThreadID        param.Field[string]   `query:"feedback_thread_id"`
-	HasComment              param.Field[bool]     `query:"has_comment"`
-	HasScore                param.Field[bool]     `query:"has_score"`
-	IncludeUserNames        param.Field[bool]     `query:"include_user_names"`
-	Key                     param.Field[[]string] `query:"key"`
-	// Enum for feedback levels.
-	Level        param.Field[FeedbackLevel]                  `query:"level"`
-	Limit        param.Field[int64]                          `query:"limit"`
-	MaxCreatedAt param.Field[time.Time]                      `query:"max_created_at" format:"date-time"`
-	MinCreatedAt param.Field[time.Time]                      `query:"min_created_at" format:"date-time"`
-	Offset       param.Field[int64]                          `query:"offset"`
-	Run          param.Field[FeedbackListParamsRunUnion]     `query:"run" format:"uuid"`
-	Session      param.Field[FeedbackListParamsSessionUnion] `query:"session" format:"uuid"`
-	Source       param.Field[[]SourceType]                   `query:"source"`
-	User         param.Field[[]string]                       `query:"user" format:"uuid"`
+	// Only feedback written for this comparative (pairwise) experiment.
+	ComparativeExperimentID param.Field[string] `query:"comparative_experiment_id" format:"uuid"`
+	// Only feedback on this thread. Requires exactly one session and cannot be
+	// combined with run.
+	FeedbackThreadID param.Field[string] `query:"feedback_thread_id"`
+	// true returns only feedback with a non-empty comment; false only feedback without
+	// one.
+	HasComment param.Field[bool] `query:"has_comment"`
+	// true returns only feedback with a score; false only feedback without one.
+	HasScore param.Field[bool] `query:"has_score"`
+	// Whether to add the author's name to each feedback's source.
+	IncludeUserNames param.Field[bool] `query:"include_user_names"`
+	// Only feedback with these keys.
+	Key param.Field[[]string] `query:"key"`
+	// run returns only feedback on a run; session returns only feedback on a whole
+	// tracing project, and requires session.
+	Level param.Field[FeedbackLevel] `query:"level"`
+	// The maximum number of feedback to return, 1 to 100.
+	Limit param.Field[int64] `query:"limit"`
+	// Only feedback created at or before this ISO 8601 time.
+	MaxCreatedAt param.Field[time.Time] `query:"max_created_at" format:"date-time"`
+	// Only feedback created at or after this ISO 8601 time.
+	MinCreatedAt param.Field[time.Time] `query:"min_created_at" format:"date-time"`
+	// The number of feedback to skip, for paging.
+	Offset param.Field[int64] `query:"offset"`
+	// Only feedback on these run IDs.
+	Run param.Field[FeedbackListParamsRunUnion] `query:"run" format:"uuid"`
+	// Only feedback in these tracing project (session) IDs.
+	Session param.Field[FeedbackListParamsSessionUnion] `query:"session" format:"uuid"`
+	// Only feedback from these source types: api, model, app, or auto_eval.
+	Source param.Field[[]SourceType] `query:"source"`
+	// Only feedback written by these user IDs.
+	User param.Field[[]string] `query:"user" format:"uuid"`
 }
 
 // URLQuery serializes [FeedbackListParams]'s query parameters as `url.Values`.
@@ -712,6 +800,8 @@ func (r FeedbackListParams) URLQuery() (v url.Values) {
 	})
 }
 
+// Only feedback on these run IDs.
+//
 // Satisfied by [FeedbackListParamsRunArray], [shared.UnionString].
 type FeedbackListParamsRunUnion interface {
 	ImplementsFeedbackListParamsRunUnion()
@@ -721,6 +811,8 @@ type FeedbackListParamsRunArray []string
 
 func (r FeedbackListParamsRunArray) ImplementsFeedbackListParamsRunUnion() {}
 
+// Only feedback in these tracing project (session) IDs.
+//
 // Satisfied by [FeedbackListParamsSessionArray], [shared.UnionString].
 type FeedbackListParamsSessionUnion interface {
 	ImplementsFeedbackListParamsSessionUnion()

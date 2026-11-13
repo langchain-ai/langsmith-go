@@ -71,7 +71,8 @@ type PublicGetFeedbacksParams struct {
 	HasComment param.Field[bool]     `query:"has_comment"`
 	HasScore   param.Field[bool]     `query:"has_score"`
 	Key        param.Field[[]string] `query:"key"`
-	// Enum for feedback levels.
+	// Feedback level: run for feedback on a run, session for feedback on a whole
+	// tracing project (session level requires a session filter).
 	Level   param.Field[FeedbackLevel] `query:"level"`
 	Limit   param.Field[int64]         `query:"limit"`
 	Offset  param.Field[int64]         `query:"offset"`
