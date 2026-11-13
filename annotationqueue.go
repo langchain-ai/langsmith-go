@@ -1029,6 +1029,7 @@ type AnnotationQueueGetAnnotationQueuesResponse struct {
 	NumReviewersPerItem int64                                                        `json:"num_reviewers_per_item" api:"nullable"`
 	ReservationMinutes  int64                                                        `json:"reservation_minutes" api:"nullable"`
 	ReviewerAccessMode  string                                                       `json:"reviewer_access_mode"`
+	RubricKeys          []string                                                     `json:"rubric_keys"`
 	RunRuleID           string                                                       `json:"run_rule_id" api:"nullable" format:"uuid"`
 	SourceRuleID        string                                                       `json:"source_rule_id" api:"nullable" format:"uuid"`
 	UpdatedAt           time.Time                                                    `json:"updated_at" format:"date-time"`
@@ -1052,6 +1053,7 @@ type annotationQueueGetAnnotationQueuesResponseJSON struct {
 	NumReviewersPerItem apijson.Field
 	ReservationMinutes  apijson.Field
 	ReviewerAccessMode  apijson.Field
+	RubricKeys          apijson.Field
 	RunRuleID           apijson.Field
 	SourceRuleID        apijson.Field
 	UpdatedAt           apijson.Field
@@ -1209,17 +1211,18 @@ func (r AnnotationQueuePopulateParams) MarshalJSON() (data []byte, err error) {
 }
 
 type AnnotationQueueGetAnnotationQueuesParams struct {
-	AssignedToMe param.Field[bool]                                              `query:"assigned_to_me"`
-	DatasetID    param.Field[string]                                            `query:"dataset_id" format:"uuid"`
-	IDs          param.Field[[]string]                                          `query:"ids" format:"uuid"`
-	Limit        param.Field[int64]                                             `query:"limit"`
-	Name         param.Field[string]                                            `query:"name"`
-	NameContains param.Field[string]                                            `query:"name_contains"`
-	Offset       param.Field[int64]                                             `query:"offset"`
-	QueueType    param.Field[AnnotationQueueGetAnnotationQueuesParamsQueueType] `query:"queue_type"`
-	SortBy       param.Field[string]                                            `query:"sort_by"`
-	SortByDesc   param.Field[bool]                                              `query:"sort_by_desc"`
-	TagValueID   param.Field[[]string]                                          `query:"tag_value_id" format:"uuid"`
+	AssignedToMe      param.Field[bool]                                              `query:"assigned_to_me"`
+	DatasetID         param.Field[string]                                            `query:"dataset_id" format:"uuid"`
+	IDs               param.Field[[]string]                                          `query:"ids" format:"uuid"`
+	IncludeRubricKeys param.Field[bool]                                              `query:"include_rubric_keys"`
+	Limit             param.Field[int64]                                             `query:"limit"`
+	Name              param.Field[string]                                            `query:"name"`
+	NameContains      param.Field[string]                                            `query:"name_contains"`
+	Offset            param.Field[int64]                                             `query:"offset"`
+	QueueType         param.Field[AnnotationQueueGetAnnotationQueuesParamsQueueType] `query:"queue_type"`
+	SortBy            param.Field[string]                                            `query:"sort_by"`
+	SortByDesc        param.Field[bool]                                              `query:"sort_by_desc"`
+	TagValueID        param.Field[[]string]                                          `query:"tag_value_id" format:"uuid"`
 }
 
 // URLQuery serializes [AnnotationQueueGetAnnotationQueuesParams]'s query
