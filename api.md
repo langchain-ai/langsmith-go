@@ -422,6 +422,16 @@ Methods:
 
 - <code title="post /api/v2/traces/query">client.Traces.Streaming.<a href="https://pkg.go.dev/github.com/langchain-ai/langsmith-go#TraceStreamingService.Query">Query</a>(ctx <a href="https://pkg.go.dev/context">context</a>.<a href="https://pkg.go.dev/context#Context">Context</a>, params <a href="https://pkg.go.dev/github.com/langchain-ai/langsmith-go">langsmith</a>.<a href="https://pkg.go.dev/github.com/langchain-ai/langsmith-go#TraceStreamingQueryParams">TraceStreamingQueryParams</a>) (\*<a href="https://pkg.go.dev/github.com/langchain-ai/langsmith-go">langsmith</a>.<a href="https://pkg.go.dev/github.com/langchain-ai/langsmith-go#TraceStreamingQueryResponse">TraceStreamingQueryResponse</a>, <a href="https://pkg.go.dev/builtin#error">error</a>)</code>
 
+# AISearch
+
+Response Types:
+
+- <a href="https://pkg.go.dev/github.com/langchain-ai/langsmith-go">langsmith</a>.<a href="https://pkg.go.dev/github.com/langchain-ai/langsmith-go#AISearchParseResponse">AISearchParseResponse</a>
+
+Methods:
+
+- <code title="post /api/v2/ai-search/parse">client.AISearch.<a href="https://pkg.go.dev/github.com/langchain-ai/langsmith-go#AISearchService.Parse">Parse</a>(ctx <a href="https://pkg.go.dev/context">context</a>.<a href="https://pkg.go.dev/context#Context">Context</a>, body <a href="https://pkg.go.dev/github.com/langchain-ai/langsmith-go">langsmith</a>.<a href="https://pkg.go.dev/github.com/langchain-ai/langsmith-go#AISearchParseParams">AISearchParseParams</a>) (\*<a href="https://pkg.go.dev/github.com/langchain-ai/langsmith-go">langsmith</a>.<a href="https://pkg.go.dev/github.com/langchain-ai/langsmith-go#AISearchParseResponse">AISearchParseResponse</a>, <a href="https://pkg.go.dev/builtin#error">error</a>)</code>
+
 # Evaluators
 
 Response Types:

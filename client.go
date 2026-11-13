@@ -32,6 +32,7 @@ type Client struct {
 	Threads          *ThreadService
 	Charts           *ChartService
 	Traces           *TraceService
+	AISearch         *AISearchService
 	Evaluators       *EvaluatorService
 	OnlineEvaluators *OnlineEvaluatorService
 	Feedback         *FeedbackService
@@ -104,6 +105,7 @@ func NewClient(opts ...option.RequestOption) (r *Client) {
 	r.Threads = NewThreadService(opts...)
 	r.Charts = NewChartService(opts...)
 	r.Traces = NewTraceService(opts...)
+	r.AISearch = NewAISearchService(opts...)
 	r.Evaluators = NewEvaluatorService(opts...)
 	r.OnlineEvaluators = NewOnlineEvaluatorService(opts...)
 	r.Feedback = NewFeedbackService(opts...)
