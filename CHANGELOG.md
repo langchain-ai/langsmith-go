@@ -1,5 +1,40 @@
 # Changelog
 
+## [0.32.0](https://github.com/langchain-ai/langsmith-go/compare/v0.31.0...v0.32.0) (2026-11-13)
+
+
+### ⚠ BREAKING CHANGES
+
+* **sessions:** publish v2 write APIs and SDK methods
+* **sandboxes:** require explicit permissions for sandbox access delegation
+* **sandboxes:** add literal and callback proxy attribution
+* **api:** document commit manifest_sha as base64 and require manifest on create
+
+### Features
+
+* **cli,sdk-go:** store profile secrets in the OS keychain ([ae21a23](https://github.com/langchain-ai/langsmith-go/commit/ae21a232c4fff65aa63a58a96a7aabf0f3832950))
+* expose AI search parse in the public API and SDKs ([ff649ac](https://github.com/langchain-ai/langsmith-go/commit/ff649acba41481d4295b0b3f3837a538d0298a05))
+* parse AI search in query endpoints ([e02bdb4](https://github.com/langchain-ai/langsmith-go/commit/e02bdb434d2ab4ef5be334dac9cd15e120f3d4ae))
+* **rules:** deprecate GET /api/v1/runs/rules and index run_rules for V2 paging ([8d4c563](https://github.com/langchain-ai/langsmith-go/commit/8d4c563387a16163f2b3dde7e697cd3d0edbc850))
+* **run-rules:** accept v2 filters for thread evaluators ([2361be7](https://github.com/langchain-ai/langsmith-go/commit/2361be759676ccfa00cfe8ada00fa79f5fba0310))
+* **sandboxes:** add literal and callback proxy attribution ([0743f5c](https://github.com/langchain-ai/langsmith-go/commit/0743f5c04d7270c09a10b6b1509f81f172202b0d))
+* **sandboxes:** require explicit permissions for sandbox access delegation ([e2379f8](https://github.com/langchain-ai/langsmith-go/commit/e2379f8e915593292b0e4badb1f8e2529b370746))
+* **sandboxes:** restrict header rules to an exact scheme and port ([e1047f2](https://github.com/langchain-ai/langsmith-go/commit/e1047f2a976f51a9245db3c6df4ad3761fac16c7))
+* **sdks:** add paginated V2 rule-list methods ([f63ed2f](https://github.com/langchain-ai/langsmith-go/commit/f63ed2f72125cc071bbe512bb028c45f366183fc))
+* **sdks:** let a Go sandbox command start take the caller's command ID ([18f7cc0](https://github.com/langchain-ai/langsmith-go/commit/18f7cc0919d4e566f5dd1523d8c9561dc0d7d27c))
+* search agents by normalized name or ID ([0e0cb6c](https://github.com/langchain-ai/langsmith-go/commit/0e0cb6cdd2a647bc6ee4ab7e725e87d026664148))
+* **sessions:** publish v2 write APIs and SDK methods ([6997ebf](https://github.com/langchain-ai/langsmith-go/commit/6997ebf044c3e8d79bdf80eb62065cad6400496b))
+* show total agent count in the table header ([307d192](https://github.com/langchain-ai/langsmith-go/commit/307d1925678209bd937202644150b302be054801))
+
+
+### Bug Fixes
+
+* **api:** document commit manifest_sha as base64 and require manifest on create ([4603d9c](https://github.com/langchain-ai/langsmith-go/commit/4603d9c4f25a9f5bf27215647731127b292969dc))
+* enable changing Studio no-code agent owners ([4855949](https://github.com/langchain-ai/langsmith-go/commit/4855949a0bbedba6fc74ca709659e336d52cad85))
+* **hub:** return the canonical repo model from PATCH /api/v1/repos ([ed09e78](https://github.com/langchain-ai/langsmith-go/commit/ed09e780fd3d6578e41fa63c782299dfca99cce9))
+* **sandboxes:** relaunch Chrome when an extension it launched with is removed ([eb63f41](https://github.com/langchain-ai/langsmith-go/commit/eb63f4127481f471678c601d656007e11f5478fe))
+* **sessions:** align v1 endpoint sunset notices to July 1, 2027 ([ff428dc](https://github.com/langchain-ai/langsmith-go/commit/ff428dc9a96f9fdfb098e70e38868ffb3e209a92))
+
 ## [0.31.0](https://github.com/langchain-ai/langsmith-go/compare/v0.30.0...v0.31.0) (2026-11-06)
 
 
