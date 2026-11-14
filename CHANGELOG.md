@@ -1,5 +1,28 @@
 # Changelog
 
+## [0.33.0](https://github.com/langchain-ai/langsmith-go/compare/v0.32.0...v0.33.0) (2026-11-14)
+
+
+### ⚠ BREAKING CHANGES
+
+* **api:** return the full workspace from create and rename
+
+### Features
+
+* **annotation-queues:** return rubric keys from the queue list behind include_rubric_keys ([eb30caf](https://github.com/langchain-ai/langsmith-go/commit/eb30caf5d70c83cf69c76c32d83af9e27ea2a41b))
+* **cli:** expose feedback list and create ([729289f](https://github.com/langchain-ai/langsmith-go/commit/729289f471e210686606d41b0e9b8ec5291b3883))
+* **sdk:** generate workspace secrets list ([c9c6337](https://github.com/langchain-ai/langsmith-go/commit/c9c633799b5e17255c4fc38147313da5250a15cf))
+
+
+### Bug Fixes
+
+* **api:** return the full workspace from create and rename ([2a86fc1](https://github.com/langchain-ai/langsmith-go/commit/2a86fc17bfa40149115cc17562d7ebd0245624e0))
+
+
+### Documentation
+
+* clarify public trace query read semantics ([752cbee](https://github.com/langchain-ai/langsmith-go/commit/752cbeebdd57070e0cb8561b750298df33892ef2))
+
 ## [0.32.0](https://github.com/langchain-ai/langsmith-go/compare/v0.31.0...v0.32.0) (2026-11-13)
 
 
