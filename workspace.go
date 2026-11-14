@@ -97,19 +97,23 @@ func (r *WorkspaceService) Delete(ctx context.Context, workspaceID string, opts 
 	return res, err
 }
 
-// Tenant schema.
 type WorkspaceNewResponse struct {
-	ID              string                   `json:"id" api:"required" format:"uuid"`
-	CreatedAt       time.Time                `json:"created_at" api:"required" format:"date-time"`
-	DisplayName     string                   `json:"display_name" api:"required"`
-	IsDeleted       bool                     `json:"is_deleted" api:"required"`
-	IsPersonal      bool                     `json:"is_personal" api:"required"`
-	DataPlaneName   string                   `json:"data_plane_name" api:"nullable"`
-	DataPlaneRegion string                   `json:"data_plane_region" api:"nullable"`
-	DataPlaneURL    string                   `json:"data_plane_url" api:"nullable"`
-	OrganizationID  string                   `json:"organization_id" api:"nullable" format:"uuid"`
-	TenantHandle    string                   `json:"tenant_handle" api:"nullable"`
-	JSON            workspaceNewResponseJSON `json:"-"`
+	ID              string    `json:"id" api:"required" format:"uuid"`
+	CreatedAt       time.Time `json:"created_at" api:"required" format:"date-time"`
+	DisplayName     string    `json:"display_name" api:"required"`
+	IsDeleted       bool      `json:"is_deleted" api:"required"`
+	IsPersonal      bool      `json:"is_personal" api:"required"`
+	DataPlaneName   string    `json:"data_plane_name" api:"nullable"`
+	DataPlaneRegion string    `json:"data_plane_region" api:"nullable"`
+	DataPlaneURL    string    `json:"data_plane_url" api:"nullable"`
+	OrganizationID  string    `json:"organization_id" api:"nullable" format:"uuid"`
+	Permissions     []string  `json:"permissions" api:"nullable"`
+	// Deprecated: deprecated
+	ReadOnly     bool                     `json:"read_only"`
+	RoleID       string                   `json:"role_id" api:"nullable" format:"uuid"`
+	RoleName     string                   `json:"role_name" api:"nullable"`
+	TenantHandle string                   `json:"tenant_handle" api:"nullable"`
+	JSON         workspaceNewResponseJSON `json:"-"`
 }
 
 // workspaceNewResponseJSON contains the JSON metadata for the struct
@@ -124,6 +128,10 @@ type workspaceNewResponseJSON struct {
 	DataPlaneRegion apijson.Field
 	DataPlaneURL    apijson.Field
 	OrganizationID  apijson.Field
+	Permissions     apijson.Field
+	ReadOnly        apijson.Field
+	RoleID          apijson.Field
+	RoleName        apijson.Field
 	TenantHandle    apijson.Field
 	raw             string
 	ExtraFields     map[string]apijson.Field
@@ -185,19 +193,23 @@ func (r workspaceGetResponseJSON) RawJSON() string {
 	return r.raw
 }
 
-// Tenant schema.
 type WorkspaceUpdateResponse struct {
-	ID              string                      `json:"id" api:"required" format:"uuid"`
-	CreatedAt       time.Time                   `json:"created_at" api:"required" format:"date-time"`
-	DisplayName     string                      `json:"display_name" api:"required"`
-	IsDeleted       bool                        `json:"is_deleted" api:"required"`
-	IsPersonal      bool                        `json:"is_personal" api:"required"`
-	DataPlaneName   string                      `json:"data_plane_name" api:"nullable"`
-	DataPlaneRegion string                      `json:"data_plane_region" api:"nullable"`
-	DataPlaneURL    string                      `json:"data_plane_url" api:"nullable"`
-	OrganizationID  string                      `json:"organization_id" api:"nullable" format:"uuid"`
-	TenantHandle    string                      `json:"tenant_handle" api:"nullable"`
-	JSON            workspaceUpdateResponseJSON `json:"-"`
+	ID              string    `json:"id" api:"required" format:"uuid"`
+	CreatedAt       time.Time `json:"created_at" api:"required" format:"date-time"`
+	DisplayName     string    `json:"display_name" api:"required"`
+	IsDeleted       bool      `json:"is_deleted" api:"required"`
+	IsPersonal      bool      `json:"is_personal" api:"required"`
+	DataPlaneName   string    `json:"data_plane_name" api:"nullable"`
+	DataPlaneRegion string    `json:"data_plane_region" api:"nullable"`
+	DataPlaneURL    string    `json:"data_plane_url" api:"nullable"`
+	OrganizationID  string    `json:"organization_id" api:"nullable" format:"uuid"`
+	Permissions     []string  `json:"permissions" api:"nullable"`
+	// Deprecated: deprecated
+	ReadOnly     bool                        `json:"read_only"`
+	RoleID       string                      `json:"role_id" api:"nullable" format:"uuid"`
+	RoleName     string                      `json:"role_name" api:"nullable"`
+	TenantHandle string                      `json:"tenant_handle" api:"nullable"`
+	JSON         workspaceUpdateResponseJSON `json:"-"`
 }
 
 // workspaceUpdateResponseJSON contains the JSON metadata for the struct
@@ -212,6 +224,10 @@ type workspaceUpdateResponseJSON struct {
 	DataPlaneRegion apijson.Field
 	DataPlaneURL    apijson.Field
 	OrganizationID  apijson.Field
+	Permissions     apijson.Field
+	ReadOnly        apijson.Field
+	RoleID          apijson.Field
+	RoleName        apijson.Field
 	TenantHandle    apijson.Field
 	raw             string
 	ExtraFields     map[string]apijson.Field
