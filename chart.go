@@ -1705,22 +1705,25 @@ func (r ChartPreviewParamsChartSeriesMetricDefinitionType) IsKnown() bool {
 type ChartPreviewParamsChartSeriesProjectMetric string
 
 const (
-	ChartPreviewParamsChartSeriesProjectMetricMemoryUsage             ChartPreviewParamsChartSeriesProjectMetric = "memory_usage"
-	ChartPreviewParamsChartSeriesProjectMetricCPUUsage                ChartPreviewParamsChartSeriesProjectMetric = "cpu_usage"
-	ChartPreviewParamsChartSeriesProjectMetricDiskUsage               ChartPreviewParamsChartSeriesProjectMetric = "disk_usage"
-	ChartPreviewParamsChartSeriesProjectMetricRestartCount            ChartPreviewParamsChartSeriesProjectMetric = "restart_count"
-	ChartPreviewParamsChartSeriesProjectMetricReplicaCount            ChartPreviewParamsChartSeriesProjectMetric = "replica_count"
-	ChartPreviewParamsChartSeriesProjectMetricWorkerCount             ChartPreviewParamsChartSeriesProjectMetric = "worker_count"
-	ChartPreviewParamsChartSeriesProjectMetricLgRunCount              ChartPreviewParamsChartSeriesProjectMetric = "lg_run_count"
-	ChartPreviewParamsChartSeriesProjectMetricResponsesPerSecond      ChartPreviewParamsChartSeriesProjectMetric = "responses_per_second"
-	ChartPreviewParamsChartSeriesProjectMetricErrorResponsesPerSecond ChartPreviewParamsChartSeriesProjectMetric = "error_responses_per_second"
-	ChartPreviewParamsChartSeriesProjectMetricP95Latency              ChartPreviewParamsChartSeriesProjectMetric = "p95_latency"
-	ChartPreviewParamsChartSeriesProjectMetricRunQueueWaitTime        ChartPreviewParamsChartSeriesProjectMetric = "run_queue_wait_time"
+	ChartPreviewParamsChartSeriesProjectMetricMemoryUsage                    ChartPreviewParamsChartSeriesProjectMetric = "memory_usage"
+	ChartPreviewParamsChartSeriesProjectMetricCPUUsage                       ChartPreviewParamsChartSeriesProjectMetric = "cpu_usage"
+	ChartPreviewParamsChartSeriesProjectMetricDiskUsage                      ChartPreviewParamsChartSeriesProjectMetric = "disk_usage"
+	ChartPreviewParamsChartSeriesProjectMetricRestartCount                   ChartPreviewParamsChartSeriesProjectMetric = "restart_count"
+	ChartPreviewParamsChartSeriesProjectMetricReplicaCount                   ChartPreviewParamsChartSeriesProjectMetric = "replica_count"
+	ChartPreviewParamsChartSeriesProjectMetricWorkerCount                    ChartPreviewParamsChartSeriesProjectMetric = "worker_count"
+	ChartPreviewParamsChartSeriesProjectMetricLgRunCount                     ChartPreviewParamsChartSeriesProjectMetric = "lg_run_count"
+	ChartPreviewParamsChartSeriesProjectMetricResponsesPerSecond             ChartPreviewParamsChartSeriesProjectMetric = "responses_per_second"
+	ChartPreviewParamsChartSeriesProjectMetricErrorResponsesPerSecond        ChartPreviewParamsChartSeriesProjectMetric = "error_responses_per_second"
+	ChartPreviewParamsChartSeriesProjectMetricP95Latency                     ChartPreviewParamsChartSeriesProjectMetric = "p95_latency"
+	ChartPreviewParamsChartSeriesProjectMetricRunQueueWaitTime               ChartPreviewParamsChartSeriesProjectMetric = "run_queue_wait_time"
+	ChartPreviewParamsChartSeriesProjectMetricStartableRunsWaitMaxByPriority ChartPreviewParamsChartSeriesProjectMetric = "startable_runs_wait_max_by_priority"
+	ChartPreviewParamsChartSeriesProjectMetricStartableRunsByPriority        ChartPreviewParamsChartSeriesProjectMetric = "startable_runs_by_priority"
+	ChartPreviewParamsChartSeriesProjectMetricRunningRunsByPriority          ChartPreviewParamsChartSeriesProjectMetric = "running_runs_by_priority"
 )
 
 func (r ChartPreviewParamsChartSeriesProjectMetric) IsKnown() bool {
 	switch r {
-	case ChartPreviewParamsChartSeriesProjectMetricMemoryUsage, ChartPreviewParamsChartSeriesProjectMetricCPUUsage, ChartPreviewParamsChartSeriesProjectMetricDiskUsage, ChartPreviewParamsChartSeriesProjectMetricRestartCount, ChartPreviewParamsChartSeriesProjectMetricReplicaCount, ChartPreviewParamsChartSeriesProjectMetricWorkerCount, ChartPreviewParamsChartSeriesProjectMetricLgRunCount, ChartPreviewParamsChartSeriesProjectMetricResponsesPerSecond, ChartPreviewParamsChartSeriesProjectMetricErrorResponsesPerSecond, ChartPreviewParamsChartSeriesProjectMetricP95Latency, ChartPreviewParamsChartSeriesProjectMetricRunQueueWaitTime:
+	case ChartPreviewParamsChartSeriesProjectMetricMemoryUsage, ChartPreviewParamsChartSeriesProjectMetricCPUUsage, ChartPreviewParamsChartSeriesProjectMetricDiskUsage, ChartPreviewParamsChartSeriesProjectMetricRestartCount, ChartPreviewParamsChartSeriesProjectMetricReplicaCount, ChartPreviewParamsChartSeriesProjectMetricWorkerCount, ChartPreviewParamsChartSeriesProjectMetricLgRunCount, ChartPreviewParamsChartSeriesProjectMetricResponsesPerSecond, ChartPreviewParamsChartSeriesProjectMetricErrorResponsesPerSecond, ChartPreviewParamsChartSeriesProjectMetricP95Latency, ChartPreviewParamsChartSeriesProjectMetricRunQueueWaitTime, ChartPreviewParamsChartSeriesProjectMetricStartableRunsWaitMaxByPriority, ChartPreviewParamsChartSeriesProjectMetricStartableRunsByPriority, ChartPreviewParamsChartSeriesProjectMetricRunningRunsByPriority:
 		return true
 	}
 	return false
