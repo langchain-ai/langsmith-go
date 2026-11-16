@@ -305,6 +305,7 @@ func (r AnnotationQueueItemUpdateResponseItemType) IsKnown() bool {
 type AnnotationQueueItemListResponse struct {
 	ID               string                                  `json:"id"`
 	AddedAt          string                                  `json:"added_at"`
+	AssignedTo       []string                                `json:"assigned_to"`
 	CompletedBy      []string                                `json:"completed_by"`
 	EffectiveAddedAt string                                  `json:"effective_added_at"`
 	ItemType         AnnotationQueueItemListResponseItemType `json:"item_type"`
@@ -325,6 +326,7 @@ type AnnotationQueueItemListResponse struct {
 type annotationQueueItemListResponseJSON struct {
 	ID                      apijson.Field
 	AddedAt                 apijson.Field
+	AssignedTo              apijson.Field
 	CompletedBy             apijson.Field
 	EffectiveAddedAt        apijson.Field
 	ItemType                apijson.Field
