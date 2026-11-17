@@ -209,13 +209,15 @@ func TestAnnotationQueueCRUD(t *testing.T) {
 		t.Error("expected at least one annotation queue")
 	}
 
-	// Get size
-	size, err := client.AnnotationQueues.GetSize(ctx, queue.ID, langsmith.AnnotationQueueGetSizeParams{})
+	// Count the items waiting for review
+	count, err := client.AnnotationQueues.Items.GetCount(ctx, queue.ID, langsmith.AnnotationQueueItemGetCountParams{
+		Status: langsmith.F("needs_my_review"),
+	})
 	if err != nil {
-		t.Fatalf("get queue size: %v", err)
+		t.Fatalf("count queue items: %v", err)
 	}
-	if size.Size != 0 {
-		t.Errorf("expected empty queue, got size %d", size.Size)
+	if count.Count != 0 {
+		t.Errorf("expected empty queue, got %d items", count.Count)
 	}
 
 	// Delete queue

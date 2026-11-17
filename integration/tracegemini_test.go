@@ -108,7 +108,7 @@ func TestGemini_NonStreaming(t *testing.T) {
 		} else {
 			assertLangSmithRunFields(t, &runs[0], LangSmithRunAssertions{
 				WantName:    expectedRunName,
-				WantRunType: langsmith.RunTypeEnumLlm,
+				WantRunType: langsmith.RunTypeLlm,
 				WantInputs:  true,
 				WantOutputs: true,
 			})
@@ -181,7 +181,7 @@ func TestGemini_Streaming(t *testing.T) {
 		} else {
 			assertLangSmithRunFields(t, &runs[0], LangSmithRunAssertions{
 				WantName:    expectedRunName,
-				WantRunType: langsmith.RunTypeEnumLlm,
+				WantRunType: langsmith.RunTypeLlm,
 				WantInputs:  true,
 				WantOutputs: true,
 			})
@@ -223,7 +223,7 @@ func TestGemini_ErrorHandling(t *testing.T) {
 		} else {
 			assertLangSmithRunFields(t, &runs[0], LangSmithRunAssertions{
 				WantName:    expectedRunName,
-				WantRunType: langsmith.RunTypeEnumLlm,
+				WantRunType: langsmith.RunTypeLlm,
 				ExpectError: true,
 			})
 		}
@@ -302,7 +302,7 @@ func TestGemini_ToolCalling_NonStreaming(t *testing.T) {
 		} else {
 			assertLangSmithRunFields(t, &runs[0], LangSmithRunAssertions{
 				WantName:                expectedRunName,
-				WantRunType:             langsmith.RunTypeEnumLlm,
+				WantRunType:             langsmith.RunTypeLlm,
 				WantInputs:              true,
 				WantOutputs:             true,
 				WantOutputsContainTools: true,
@@ -380,7 +380,7 @@ func TestGemini_ToolCalling_Streaming(t *testing.T) {
 		} else {
 			assertLangSmithRunFields(t, &runs[0], LangSmithRunAssertions{
 				WantName:                expectedRunName,
-				WantRunType:             langsmith.RunTypeEnumLlm,
+				WantRunType:             langsmith.RunTypeLlm,
 				WantInputs:              true,
 				WantOutputs:             true,
 				WantOutputsContainTools: true,
@@ -426,7 +426,7 @@ func TestGemini_SystemMessage(t *testing.T) {
 		} else {
 			assertLangSmithRunFields(t, &runs[0], LangSmithRunAssertions{
 				WantName:                expectedRunName,
-				WantRunType:             langsmith.RunTypeEnumLlm,
+				WantRunType:             langsmith.RunTypeLlm,
 				WantInputs:              true,
 				WantOutputs:             true,
 				WantInputsContainSystem: true,
@@ -490,7 +490,7 @@ func TestGemini_MultipleMessages(t *testing.T) {
 		} else {
 			assertLangSmithRunFields(t, &runs[0], LangSmithRunAssertions{
 				WantName:               expectedRunName,
-				WantRunType:            langsmith.RunTypeEnumLlm,
+				WantRunType:            langsmith.RunTypeLlm,
 				WantInputs:             true,
 				WantOutputs:            true,
 				WantInputsMessageCount: 4,
@@ -535,7 +535,7 @@ func TestGemini_TokenUsage_NonStreaming(t *testing.T) {
 		} else {
 			assertLangSmithRunFields(t, &runs[0], LangSmithRunAssertions{
 				WantName:    expectedRunName,
-				WantRunType: langsmith.RunTypeEnumLlm,
+				WantRunType: langsmith.RunTypeLlm,
 				WantInputs:  true,
 				WantOutputs: true,
 				WantUsage:   true,
@@ -576,7 +576,7 @@ func TestGemini_TokenUsage_Streaming(t *testing.T) {
 		} else {
 			assertLangSmithRunFields(t, &runs[0], LangSmithRunAssertions{
 				WantName:    expectedRunName,
-				WantRunType: langsmith.RunTypeEnumLlm,
+				WantRunType: langsmith.RunTypeLlm,
 				WantInputs:  true,
 				WantOutputs: true,
 				WantUsage:   true,
@@ -615,7 +615,7 @@ func TestGemini_StopReason(t *testing.T) {
 		} else {
 			assertLangSmithRunFields(t, &runs[0], LangSmithRunAssertions{
 				WantName:    expectedRunName,
-				WantRunType: langsmith.RunTypeEnumLlm,
+				WantRunType: langsmith.RunTypeLlm,
 				WantInputs:  true,
 				WantOutputs: true,
 			})

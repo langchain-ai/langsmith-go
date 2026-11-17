@@ -5,6 +5,7 @@ package integration
 import (
 	"context"
 	"fmt"
+	"strings"
 	"testing"
 	"time"
 
@@ -215,18 +216,15 @@ func TestRunIngestAndQuery(t *testing.T) {
 	}
 
 	// Query with retries (runs may take a moment to be queryable), then assert round-trip like Python read_run
-	var run *langsmith.RunSchema
+	var run *langsmith.Run
 	for i := 0; i < 10; i++ {
 		time.Sleep(2 * time.Second)
-		result, err := client.Runs.Query(ctx, langsmith.RunQueryParams{
-			StartTime: langsmith.F(testRunStart),
-			ID:        langsmith.F([]string{runID}),
-		})
+		runs, err := queryRunsByID(ctx, client, sessionName, runID)
 		if err != nil {
 			continue
 		}
-		if len(result.Runs) > 0 {
-			run = &result.Runs[0]
+		if len(runs) > 0 {
+			run = &runs[0]
 			break
 		}
 	}
@@ -254,7 +252,7 @@ func TestRunIngestAndQuery(t *testing.T) {
 	if v, ok := run.Outputs["output"]; !ok || v != "world" {
 		t.Errorf("stored_run.outputs[output] = %v, want 'world'", run.Outputs["output"])
 	}
-	if run.RunType != langsmith.RunTypeEnumChain {
+	if !strings.EqualFold(string(run.RunType), string(langsmith.RunTypeChain)) {
 		t.Errorf("stored_run.run_type = %q, want 'chain'", run.RunType)
 	}
 }
@@ -309,23 +307,20 @@ func TestRunCreateAndUpdate(t *testing.T) {
 	}
 
 	// Poll until run is visible and patch has been applied (eventual consistency)
-	var stored *langsmith.RunSchema
+	var stored *langsmith.Run
 	patchVisible := false
 	const pollAttempts = 25
 	const pollInterval = 2 * time.Second
 	for i := 0; i < pollAttempts; i++ {
 		time.Sleep(pollInterval)
-		result, err := client.Runs.Query(ctx, langsmith.RunQueryParams{
-			StartTime: langsmith.F(testRunStart),
-			ID:        langsmith.F([]string{runID}),
-		})
+		runs, err := queryRunsByID(ctx, client, sessionName, runID)
 		if err != nil {
 			continue
 		}
-		if len(result.Runs) == 0 {
+		if len(runs) == 0 {
 			continue
 		}
-		r := &result.Runs[0]
+		r := &runs[0]
 		stored = r
 		// Patch applied when outputs contain updated values
 		if r.Outputs != nil {
@@ -444,18 +439,15 @@ func TestRunBatchIngestRoundTrip(t *testing.T) {
 	}
 
 	// Query by run IDs (shared project has many runs; we only need our three)
-	var runs []langsmith.RunSchema
+	var runs []langsmith.Run
 	for i := 0; i < 10; i++ {
 		time.Sleep(2 * time.Second)
-		result, err := client.Runs.Query(ctx, langsmith.RunQueryParams{
-			StartTime: langsmith.F(testRunStart),
-			ID:        langsmith.F([]string{run1ID, run2ID, run3ID}),
-		})
+		result, err := queryRunsByID(ctx, client, sessionName, run1ID, run2ID, run3ID)
 		if err != nil {
 			continue
 		}
-		if len(result.Runs) >= 3 {
-			runs = result.Runs
+		if len(result) >= 3 {
+			runs = result
 			break
 		}
 	}
@@ -463,7 +455,7 @@ func TestRunBatchIngestRoundTrip(t *testing.T) {
 		t.Fatalf("expected exactly 3 runs, got %d", len(runs))
 	}
 
-	byID := make(map[string]langsmith.RunSchema)
+	byID := make(map[string]langsmith.Run)
 	for _, r := range runs {
 		byID[r.ID] = r
 	}
@@ -565,18 +557,15 @@ func TestRunIngestWithChildRuns(t *testing.T) {
 		t.Fatalf("ingest batch with child: %v", err)
 	}
 
-	var parentRun, childRun *langsmith.RunSchema
+	var parentRun, childRun *langsmith.Run
 	for i := 0; i < 10; i++ {
 		time.Sleep(2 * time.Second)
-		result, err := client.Runs.Query(ctx, langsmith.RunQueryParams{
-			StartTime: langsmith.F(testRunStart),
-			ID:        langsmith.F([]string{parentID, childID}),
-		})
+		result, err := queryRunsByID(ctx, client, sessionName, parentID, childID)
 		if err != nil {
 			continue
 		}
-		for i := range result.Runs {
-			r := &result.Runs[i]
+		for i := range result {
+			r := &result[i]
 			if r.ID == parentID {
 				parentRun = r
 			}
@@ -596,16 +585,16 @@ func TestRunIngestWithChildRuns(t *testing.T) {
 	}
 
 	// Nested run structure (like Python test_nested_runs)
-	if parentRun.ParentRunID != "" {
-		t.Errorf("parent parent_run_id = %q, want empty (root)", parentRun.ParentRunID)
+	if len(parentRun.ParentRunIDs) > 0 {
+		t.Errorf("parent parent_run_ids = %v, want empty (root)", parentRun.ParentRunIDs)
 	}
-	if childRun.ParentRunID != parentID {
-		t.Errorf("child parent_run_id = %q, want %q", childRun.ParentRunID, parentID)
+	if n := len(childRun.ParentRunIDs); n == 0 || childRun.ParentRunIDs[n-1] != parentID {
+		t.Errorf("child parent_run_ids = %v, want to end with %q", childRun.ParentRunIDs, parentID)
 	}
-	if parentRun.RunType != langsmith.RunTypeEnumChain {
+	if !strings.EqualFold(string(parentRun.RunType), string(langsmith.RunTypeChain)) {
 		t.Errorf("parent run_type = %q, want 'chain'", parentRun.RunType)
 	}
-	if childRun.RunType != langsmith.RunTypeEnumLlm {
+	if !strings.EqualFold(string(childRun.RunType), string(langsmith.RunTypeLlm)) {
 		t.Errorf("child run_type = %q, want 'llm'", childRun.RunType)
 	}
 	if parentRun.Name != "parent-chain" {
@@ -668,12 +657,24 @@ func TestFeedbackCRUD(t *testing.T) {
 	// Wait for run to be available
 	time.Sleep(3 * time.Second)
 
+	// Feedback on a run needs the ID of the project (session) that owns the run
+	sessions, err := client.Sessions.List(ctx, langsmith.SessionListParams{
+		Name: langsmith.F(sessionName),
+	})
+	if err != nil {
+		t.Fatalf("list sessions: %v", err)
+	}
+	if len(sessions.Items) == 0 {
+		t.Fatalf("session %q not found", sessionName)
+	}
+
 	// Create feedback
 	fb, err := client.Feedback.New(ctx, langsmith.FeedbackNewParams{
 		FeedbackCreateSchema: langsmith.FeedbackCreateSchemaParam{
-			Key:   langsmith.F("correctness"),
-			RunID: langsmith.F(runID),
-			Score: langsmith.F[langsmith.FeedbackCreateSchemaScoreUnionParam](shared.UnionFloat(0.9)),
+			Key:       langsmith.F("correctness"),
+			RunID:     langsmith.F(runID),
+			SessionID: langsmith.F(sessions.Items[0].ID),
+			Score:     langsmith.F[langsmith.FeedbackCreateSchemaScoreUnionParam](shared.UnionFloat(0.9)),
 		},
 	})
 	if err != nil {

@@ -181,7 +181,49 @@ func isTooManyRequests(err error) bool {
 	return errors.As(err, &apiErr) && apiErr.StatusCode == http.StatusTooManyRequests
 }
 
-func pollForRuns(t *testing.T, projectName string, minRuns int, runName string) []langsmith.RunSchema {
+// runSelects are the run fields the tests assert on. The v2 runs query returns
+// only the run ID unless fields are selected.
+var runSelects = []langsmith.RunSelectField{
+	langsmith.RunSelectFieldID,
+	langsmith.RunSelectFieldName,
+	langsmith.RunSelectFieldRunType,
+	langsmith.RunSelectFieldStartTime,
+	langsmith.RunSelectFieldEndTime,
+	langsmith.RunSelectFieldParentRunIDs,
+	langsmith.RunSelectFieldError,
+	langsmith.RunSelectFieldStatus,
+	langsmith.RunSelectFieldInputs,
+	langsmith.RunSelectFieldOutputs,
+	langsmith.RunSelectFieldTags,
+	langsmith.RunSelectFieldPromptTokens,
+	langsmith.RunSelectFieldCompletionTokens,
+	langsmith.RunSelectFieldTotalTokens,
+}
+
+// queryRunsByID returns the runs with the given IDs in projectName that started
+// since the test run began. The v2 runs query needs the project ID, and the
+// project exists only once its first run is ingested, so a missing project
+// returns no runs.
+func queryRunsByID(ctx context.Context, client *langsmith.Client, projectName string, ids ...string) ([]langsmith.Run, error) {
+	sessions, err := client.Sessions.List(ctx, langsmith.SessionListParams{
+		Name: langsmith.F(projectName),
+	})
+	if err != nil || len(sessions.Items) == 0 {
+		return nil, err
+	}
+	result, err := client.Runs.QueryV2(ctx, langsmith.RunQueryV2Params{
+		ProjectIDs:   langsmith.F([]string{sessions.Items[0].ID}),
+		IDs:          langsmith.F(ids),
+		MinStartTime: langsmith.F(testRunStart),
+		Selects:      langsmith.F(runSelects),
+	})
+	if err != nil {
+		return nil, err
+	}
+	return result.Items, nil
+}
+
+func pollForRuns(t *testing.T, projectName string, minRuns int, runName string) []langsmith.Run {
 	t.Helper()
 	return pollForRunsUntil(t, projectName, minRuns, runName, nil)
 }
@@ -189,9 +231,9 @@ func pollForRuns(t *testing.T, projectName string, minRuns int, runName string) 
 // pollForRunsWithUsage is pollForRuns but keeps polling until every matched run
 // has token counts. Usage is populated after the run itself becomes queryable,
 // so a run found on the first poll can still report zero tokens.
-func pollForRunsWithUsage(t *testing.T, projectName string, minRuns int, runName string) []langsmith.RunSchema {
+func pollForRunsWithUsage(t *testing.T, projectName string, minRuns int, runName string) []langsmith.Run {
 	t.Helper()
-	return pollForRunsUntil(t, projectName, minRuns, runName, func(r langsmith.RunSchema) bool {
+	return pollForRunsUntil(t, projectName, minRuns, runName, func(r langsmith.Run) bool {
 		return r.PromptTokens > 0 && r.CompletionTokens > 0
 	})
 }
@@ -200,7 +242,7 @@ func pollForRunsWithUsage(t *testing.T, projectName string, minRuns int, runName
 // ready is non-nil, every matched run satisfies ready. If the runs exist but
 // never become ready, the last matched runs are returned so the caller's
 // assertions report what is missing.
-func pollForRunsUntil(t *testing.T, projectName string, minRuns int, runName string, ready func(langsmith.RunSchema) bool) []langsmith.RunSchema {
+func pollForRunsUntil(t *testing.T, projectName string, minRuns int, runName string, ready func(langsmith.Run) bool) []langsmith.Run {
 	t.Helper()
 	client := langsmith.NewClient()
 	ctx := context.Background()
@@ -228,41 +270,25 @@ func pollForRunsUntil(t *testing.T, projectName string, minRuns int, runName str
 		return nil
 	}
 
-	selectFields := []langsmith.RunQueryParamsSelect{
-		langsmith.RunQueryParamsSelectID,
-		langsmith.RunQueryParamsSelectName,
-		langsmith.RunQueryParamsSelectRunType,
-		langsmith.RunQueryParamsSelectStartTime,
-		langsmith.RunQueryParamsSelectEndTime,
-		langsmith.RunQueryParamsSelectParentRunID,
-		langsmith.RunQueryParamsSelectError,
-		langsmith.RunQueryParamsSelectStatus,
-		langsmith.RunQueryParamsSelectInputs,
-		langsmith.RunQueryParamsSelectOutputs,
-		langsmith.RunQueryParamsSelectPromptTokens,
-		langsmith.RunQueryParamsSelectCompletionTokens,
-		langsmith.RunQueryParamsSelectTotalTokens,
-		langsmith.RunQueryParamsSelectMessages,
-	}
 	runBudget := pollBudget
 	if ready != nil {
 		runBudget = 30 * time.Second
 	}
-	var lastRuns []langsmith.RunSchema
+	var lastRuns []langsmith.Run
 	deadline = time.Now().Add(runBudget)
 	wait = 500 * time.Millisecond
 	for time.Now().Before(deadline) {
 		time.Sleep(wait)
-		result, err := client.Runs.Query(ctx, langsmith.RunQueryParams{
-			StartTime: langsmith.F(testRunStart),
-			Session:   langsmith.F([]string{sessionID}),
-			Limit:     langsmith.F(int64(100)),
-			Select:    langsmith.F(selectFields),
+		result, err := client.Runs.QueryV2(ctx, langsmith.RunQueryV2Params{
+			ProjectIDs:   langsmith.F([]string{sessionID}),
+			MinStartTime: langsmith.F(testRunStart),
+			PageSize:     langsmith.F(int64(100)),
+			Selects:      langsmith.F(runSelects),
 		})
 		if err != nil {
 			t.Logf("poll runs: %v", err)
 		} else {
-			runs := result.Runs
+			runs := result.Items
 			if runName != "" {
 				filtered := runs[:0]
 				for _, r := range runs {
@@ -293,7 +319,7 @@ func pollForRunsUntil(t *testing.T, projectName string, minRuns int, runName str
 	return nil
 }
 
-func allRunsReady(runs []langsmith.RunSchema, ready func(langsmith.RunSchema) bool) bool {
+func allRunsReady(runs []langsmith.Run, ready func(langsmith.Run) bool) bool {
 	for _, r := range runs {
 		if !ready(r) {
 			return false
@@ -304,11 +330,11 @@ func allRunsReady(runs []langsmith.RunSchema, ready func(langsmith.RunSchema) bo
 
 type LangSmithRunAssertions struct {
 	WantName    string
-	WantRunType langsmith.RunTypeEnum
-	ExpectError bool   // if true, run.Error should be non-empty (e.g. exception raised → SDK patches run with error)
-	WantStatus  string // if non-empty, assert run.Status equals this (e.g. "error" when call fails)
-	WantInputs  bool   // assert run has non-empty inputs when backend populates
-	WantOutputs bool   // assert run has non-empty outputs when backend populates
+	WantRunType langsmith.RunType
+	ExpectError bool                // if true, run.Error should be non-empty (e.g. exception raised → SDK patches run with error)
+	WantStatus  langsmith.RunStatus // if non-empty, assert run.Status equals this (e.g. langsmith.RunStatusError when call fails)
+	WantInputs  bool                // assert run has non-empty inputs when backend populates
+	WantOutputs bool                // assert run has non-empty outputs when backend populates
 
 	// Content assertions (run contents match expected behaviors)
 	WantUsage               bool   // run has PromptTokens and CompletionTokens > 0
@@ -319,9 +345,9 @@ type LangSmithRunAssertions struct {
 }
 
 // assertLangSmithRunFields asserts on id, name, run_type, start_time, end_time,
-// parent_run_id, inputs, outputs, error, and tags where relevant (like Python
+// parent_run_ids, inputs, outputs, error, and tags where relevant (like Python
 // integration tests). revision_id is not in the Go run schema.
-func assertLangSmithRunFields(t *testing.T, r *langsmith.RunSchema, a LangSmithRunAssertions) {
+func assertLangSmithRunFields(t *testing.T, r *langsmith.Run, a LangSmithRunAssertions) {
 	t.Helper()
 	if r == nil {
 		t.Fatal("run is nil")
@@ -332,7 +358,8 @@ func assertLangSmithRunFields(t *testing.T, r *langsmith.RunSchema, a LangSmithR
 	if r.Name != a.WantName {
 		t.Errorf("run.name = %q, want %q", r.Name, a.WantName)
 	}
-	if r.RunType != a.WantRunType {
+	// v2 returns run_type and status as stored (lowercase), not as the uppercase enum.
+	if !strings.EqualFold(string(r.RunType), string(a.WantRunType)) {
 		t.Errorf("run.run_type = %q, want %q", r.RunType, a.WantRunType)
 	}
 	if r.StartTime.IsZero() {
@@ -341,11 +368,11 @@ func assertLangSmithRunFields(t *testing.T, r *langsmith.RunSchema, a LangSmithR
 	if r.EndTime.IsZero() {
 		t.Error("run.end_time should be set")
 	}
-	if r.ParentRunID != "" {
-		t.Errorf("run.parent_run_id = %q, want empty (root run)", r.ParentRunID)
+	if len(r.ParentRunIDs) > 0 {
+		t.Errorf("run.parent_run_ids = %v, want empty (root run)", r.ParentRunIDs)
 	}
 	if a.WantStatus != "" {
-		if r.Status != a.WantStatus {
+		if !strings.EqualFold(string(r.Status), string(a.WantStatus)) {
 			t.Errorf("run.status = %q, want %q", r.Status, a.WantStatus)
 		}
 	}
@@ -422,15 +449,12 @@ func mapToJSONString(m map[string]interface{}) string {
 	return string(b)
 }
 
-// runInputsMessageCount returns the number of messages in run inputs (Inputs["messages"] or run.Messages).
-func runInputsMessageCount(r *langsmith.RunSchema) int {
+// runInputsMessageCount returns the number of messages in run inputs (Inputs["messages"]).
+func runInputsMessageCount(r *langsmith.Run) int {
 	if r.Inputs != nil {
 		if msgs, ok := r.Inputs["messages"].([]interface{}); ok {
 			return len(msgs)
 		}
-	}
-	if len(r.Messages) > 0 {
-		return len(r.Messages)
 	}
 	return 0
 }
