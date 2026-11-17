@@ -1,5 +1,37 @@
 # Changelog
 
+## [0.33.0](https://github.com/langchain-ai/langsmith-go/compare/v0.32.0...v0.33.0) (2026-11-17)
+
+
+### ⚠ BREAKING CHANGES
+
+* **api:** return the full workspace from create and rename
+
+### Features
+
+* **annotation-queues:** return rubric keys from the queue list behind include_rubric_keys ([eb30caf](https://github.com/langchain-ai/langsmith-go/commit/eb30caf5d70c83cf69c76c32d83af9e27ea2a41b))
+* **cli:** expose feedback list and create ([729289f](https://github.com/langchain-ai/langsmith-go/commit/729289f471e210686606d41b0e9b8ec5291b3883))
+* per-priority queue charts on the deployment metrics page ([247a375](https://github.com/langchain-ai/langsmith-go/commit/247a3752aee5e5c3eba8d338caa706591259b8f3))
+* scope roster queue review to dealt assignments ([b9814a8](https://github.com/langchain-ai/langsmith-go/commit/b9814a88fbd140d85b9a2c8427ed24fce8004082))
+* **sdk:** generate workspace secrets list ([c9c6337](https://github.com/langchain-ai/langsmith-go/commit/c9c633799b5e17255c4fc38147313da5250a15cf))
+* **sdks:** move internal methods off deprecated endpoints ([360fc57](https://github.com/langchain-ai/langsmith-go/commit/360fc57be74f19f8af98462b7ec5568181ec7195))
+
+
+### Bug Fixes
+
+* **api:** return the full workspace from create and rename ([2a86fc1](https://github.com/langchain-ai/langsmith-go/commit/2a86fc17bfa40149115cc17562d7ebd0245624e0))
+* **sandboxes:** never attach proxy credentials to non-canonical paths ([f7ed626](https://github.com/langchain-ai/langsmith-go/commit/f7ed626332f5b045a955789e016143ef6cbb2c83))
+
+
+### Chores
+
+* **deps:** bump the minor-and-patch group across 2 directories with 13 updates ([226fa59](https://github.com/langchain-ai/langsmith-go/commit/226fa590cb9d953b42968775e09e381ded644e0e))
+
+
+### Documentation
+
+* clarify public trace query read semantics ([752cbee](https://github.com/langchain-ai/langsmith-go/commit/752cbeebdd57070e0cb8561b750298df33892ef2))
+
 ## [0.32.0](https://github.com/langchain-ai/langsmith-go/compare/v0.31.0...v0.32.0) (2026-11-13)
 
 
