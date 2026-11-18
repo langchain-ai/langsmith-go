@@ -257,7 +257,7 @@ func TestRunIngestAndQuery(t *testing.T) {
 	}
 }
 
-// TestRunCreateAndUpdate mirrors Python: create run, update run (patch), then read_run and assert.
+// TestRunCreateAndUpdate verifies a pending run is stored before its completion patch replaces outputs.
 func TestRunCreateAndUpdate(t *testing.T) {
 	client := newClient(t)
 	ctx := context.Background()
@@ -278,7 +278,6 @@ func TestRunCreateAndUpdate(t *testing.T) {
 				RunType:     langsmith.F(langsmith.RunIngestRunTypeChain),
 				SessionName: langsmith.F(sessionName),
 				StartTime:   langsmith.F(nowStr),
-				EndTime:     langsmith.F(nowStr),
 				Inputs:      langsmith.F(map[string]interface{}{"x": 1}),
 				Outputs:     langsmith.F(map[string]interface{}{"y": 2}),
 			},
@@ -286,6 +285,16 @@ func TestRunCreateAndUpdate(t *testing.T) {
 	})
 	if err != nil {
 		t.Fatalf("ingest run: %v", err)
+	}
+
+	created := pollForRunsUntil(t, sessionName, 1, "create-update-run", func(run langsmith.Run) bool {
+		return run.ID == runID && run.Outputs["y"] == float64(2)
+	})
+	if len(created) != 1 || created[0].ID != runID || created[0].Outputs["y"] != float64(2) {
+		t.Fatalf("expected the created run with original outputs before updating, got %+v", created)
+	}
+	if !created[0].EndTime.IsZero() {
+		t.Fatal("created run should still be pending before its completion patch")
 	}
 
 	// Update run (patch) with new outputs (trace_id, dotted_order, end_time required by batch patch API)
@@ -355,6 +364,9 @@ func TestRunCreateAndUpdate(t *testing.T) {
 	}
 	if stored.StartTime.IsZero() {
 		t.Error("stored_run.start_time should be set")
+	}
+	if stored.EndTime.IsZero() {
+		t.Error("updated run should be completed")
 	}
 	if !patchVisible {
 		t.Fatalf("patch not visible after %d polls (%v); got outputs[y]=%v, outputs[z]=%v (eventual consistency may need longer)",
