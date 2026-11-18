@@ -36,6 +36,9 @@ func NewTraceStreamingService(opts ...option.RequestOption) (r *TraceStreamingSe
 	return
 }
 
+// GET with body payload — no resources created. Returns the traces matching the
+// query passed as the request payload.
+//
 // Returns a paginated list of traces (root runs) for a single tracing project.
 // Each item carries the trace's root run plus optional trace-wide aggregates
 // (`total_tokens`, `total_cost`, `first_token_time`) under `trace_aggregates`, so
