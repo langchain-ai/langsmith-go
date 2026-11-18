@@ -103,13 +103,15 @@ func TestAnnotationQueueItemListWithOptionalParams(t *testing.T) {
 		context.TODO(),
 		"queue_id",
 		langsmith.AnnotationQueueItemListParams{
-			Status:       langsmith.F(langsmith.AnnotationQueueItemListParamsStatusNeedsMyReview),
-			Cursor:       langsmith.F("cursor"),
-			Direction:    langsmith.F(langsmith.AnnotationQueueItemListParamsDirectionForward),
-			ItemType:     langsmith.F(langsmith.AnnotationQueueItemListParamsItemTypeRun),
-			MaxStartTime: langsmith.F(time.Now()),
-			MinStartTime: langsmith.F(time.Now()),
-			PageSize:     langsmith.F(int64(0)),
+			Status:            langsmith.F(langsmith.AnnotationQueueItemListParamsStatusNeedsMyReview),
+			Agreement:         langsmith.F(langsmith.AnnotationQueueItemListParamsAgreementDisagreed),
+			Cursor:            langsmith.F("cursor"),
+			Direction:         langsmith.F(langsmith.AnnotationQueueItemListParamsDirectionForward),
+			HasUnresolvedKeys: langsmith.F(true),
+			ItemType:          langsmith.F(langsmith.AnnotationQueueItemListParamsItemTypeRun),
+			MaxStartTime:      langsmith.F(time.Now()),
+			MinStartTime:      langsmith.F(time.Now()),
+			PageSize:          langsmith.F(int64(0)),
 		},
 	)
 	if err != nil {
@@ -200,11 +202,13 @@ func TestAnnotationQueueItemGetCountWithOptionalParams(t *testing.T) {
 		context.TODO(),
 		"queue_id",
 		langsmith.AnnotationQueueItemGetCountParams{
-			Status:       langsmith.F("status"),
-			EndTime:      langsmith.F("end_time"),
-			MaxStartTime: langsmith.F(time.Now()),
-			MinStartTime: langsmith.F(time.Now()),
-			StartTime:    langsmith.F("start_time"),
+			Status:            langsmith.F("status"),
+			Agreement:         langsmith.F(langsmith.AnnotationQueueItemGetCountParamsAgreementDisagreed),
+			EndTime:           langsmith.F("end_time"),
+			HasUnresolvedKeys: langsmith.F(true),
+			MaxStartTime:      langsmith.F(time.Now()),
+			MinStartTime:      langsmith.F(time.Now()),
+			StartTime:         langsmith.F("start_time"),
 		},
 	)
 	if err != nil {

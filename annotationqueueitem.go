@@ -303,12 +303,18 @@ func (r AnnotationQueueItemUpdateResponseItemType) IsKnown() bool {
 }
 
 type AnnotationQueueItemListResponse struct {
-	ID               string                                  `json:"id"`
-	AddedAt          string                                  `json:"added_at"`
-	AssignedTo       []string                                `json:"assigned_to"`
-	CompletedBy      []string                                `json:"completed_by"`
-	EffectiveAddedAt string                                  `json:"effective_added_at"`
-	ItemType         AnnotationQueueItemListResponseItemType `json:"item_type"`
+	ID      string `json:"id"`
+	AddedAt string `json:"added_at"`
+	// Whether the item's reviewers agreed across its rubric keys.
+	AgreementState   AnnotationQueueItemListResponseAgreementState `json:"agreement_state"`
+	AssignedTo       []string                                      `json:"assigned_to"`
+	CompletedBy      []string                                      `json:"completed_by"`
+	EffectiveAddedAt string                                        `json:"effective_added_at"`
+	// True while a key the reviewers disagreed on has no final answer.
+	HasUnresolvedKeys bool                                    `json:"has_unresolved_keys"`
+	ItemType          AnnotationQueueItemListResponseItemType `json:"item_type"`
+	// The reviewers' result for each rubric key.
+	KeyAgreements map[string]AnnotationQueueItemListResponseKeyAgreement `json:"key_agreements"`
 	// LastReviewedTime is always present on the wire (null until reviewed).
 	LastReviewedTime        string                              `json:"last_reviewed_time"`
 	ProjectID               string                              `json:"project_id"`
@@ -326,10 +332,13 @@ type AnnotationQueueItemListResponse struct {
 type annotationQueueItemListResponseJSON struct {
 	ID                      apijson.Field
 	AddedAt                 apijson.Field
+	AgreementState          apijson.Field
 	AssignedTo              apijson.Field
 	CompletedBy             apijson.Field
 	EffectiveAddedAt        apijson.Field
+	HasUnresolvedKeys       apijson.Field
 	ItemType                apijson.Field
+	KeyAgreements           apijson.Field
 	LastReviewedTime        apijson.Field
 	ProjectID               apijson.Field
 	QueueID                 apijson.Field
@@ -350,6 +359,23 @@ func (r annotationQueueItemListResponseJSON) RawJSON() string {
 	return r.raw
 }
 
+// Whether the item's reviewers agreed across its rubric keys.
+type AnnotationQueueItemListResponseAgreementState string
+
+const (
+	AnnotationQueueItemListResponseAgreementStateAgreed    AnnotationQueueItemListResponseAgreementState = "agreed"
+	AnnotationQueueItemListResponseAgreementStateDisagreed AnnotationQueueItemListResponseAgreementState = "disagreed"
+	AnnotationQueueItemListResponseAgreementStateNone      AnnotationQueueItemListResponseAgreementState = "none"
+)
+
+func (r AnnotationQueueItemListResponseAgreementState) IsKnown() bool {
+	switch r {
+	case AnnotationQueueItemListResponseAgreementStateAgreed, AnnotationQueueItemListResponseAgreementStateDisagreed, AnnotationQueueItemListResponseAgreementStateNone:
+		return true
+	}
+	return false
+}
+
 type AnnotationQueueItemListResponseItemType string
 
 const (
@@ -360,6 +386,74 @@ const (
 func (r AnnotationQueueItemListResponseItemType) IsKnown() bool {
 	switch r {
 	case AnnotationQueueItemListResponseItemTypeRun, AnnotationQueueItemListResponseItemTypeThread:
+		return true
+	}
+	return false
+}
+
+type AnnotationQueueItemListResponseKeyAgreement struct {
+	Answer   AnnotationQueueItemListResponseKeyAgreementsAnswer `json:"answer"`
+	HasFinal bool                                               `json:"has_final"`
+	State    AnnotationQueueItemListResponseKeyAgreementsState  `json:"state"`
+	JSON     annotationQueueItemListResponseKeyAgreementJSON    `json:"-"`
+}
+
+// annotationQueueItemListResponseKeyAgreementJSON contains the JSON metadata for
+// the struct [AnnotationQueueItemListResponseKeyAgreement]
+type annotationQueueItemListResponseKeyAgreementJSON struct {
+	Answer      apijson.Field
+	HasFinal    apijson.Field
+	State       apijson.Field
+	raw         string
+	ExtraFields map[string]apijson.Field
+}
+
+func (r *AnnotationQueueItemListResponseKeyAgreement) UnmarshalJSON(data []byte) (err error) {
+	return apijson.UnmarshalRoot(data, r)
+}
+
+func (r annotationQueueItemListResponseKeyAgreementJSON) RawJSON() string {
+	return r.raw
+}
+
+type AnnotationQueueItemListResponseKeyAgreementsAnswer struct {
+	Score  float64                                                `json:"score"`
+	Scores []float64                                              `json:"scores"`
+	Value  string                                                 `json:"value"`
+	Values []string                                               `json:"values"`
+	JSON   annotationQueueItemListResponseKeyAgreementsAnswerJSON `json:"-"`
+}
+
+// annotationQueueItemListResponseKeyAgreementsAnswerJSON contains the JSON
+// metadata for the struct [AnnotationQueueItemListResponseKeyAgreementsAnswer]
+type annotationQueueItemListResponseKeyAgreementsAnswerJSON struct {
+	Score       apijson.Field
+	Scores      apijson.Field
+	Value       apijson.Field
+	Values      apijson.Field
+	raw         string
+	ExtraFields map[string]apijson.Field
+}
+
+func (r *AnnotationQueueItemListResponseKeyAgreementsAnswer) UnmarshalJSON(data []byte) (err error) {
+	return apijson.UnmarshalRoot(data, r)
+}
+
+func (r annotationQueueItemListResponseKeyAgreementsAnswerJSON) RawJSON() string {
+	return r.raw
+}
+
+type AnnotationQueueItemListResponseKeyAgreementsState string
+
+const (
+	AnnotationQueueItemListResponseKeyAgreementsStateAgreed    AnnotationQueueItemListResponseKeyAgreementsState = "agreed"
+	AnnotationQueueItemListResponseKeyAgreementsStateDisagreed AnnotationQueueItemListResponseKeyAgreementsState = "disagreed"
+	AnnotationQueueItemListResponseKeyAgreementsStateNone      AnnotationQueueItemListResponseKeyAgreementsState = "none"
+)
+
+func (r AnnotationQueueItemListResponseKeyAgreementsState) IsKnown() bool {
+	switch r {
+	case AnnotationQueueItemListResponseKeyAgreementsStateAgreed, AnnotationQueueItemListResponseKeyAgreementsStateDisagreed, AnnotationQueueItemListResponseKeyAgreementsStateNone:
 		return true
 	}
 	return false
@@ -553,10 +647,19 @@ func (r AnnotationQueueItemUpdateParams) MarshalJSON() (data []byte, err error) 
 type AnnotationQueueItemListParams struct {
 	// Review section: needs_my_review, needs_others_review, or archived
 	Status param.Field[AnnotationQueueItemListParamsStatus] `query:"status" api:"required"`
+	// Only completed items whose reviewers disagreed on at least one rubric key.
+	// Returns 501 unless multi-reviewer queues are on for the workspace. Requires
+	// status=archived
+	Agreement param.Field[AnnotationQueueItemListParamsAgreement] `query:"agreement"`
 	// Opaque pagination cursor
 	Cursor param.Field[string] `query:"cursor"`
 	// Pagination direction. backward requires cursor
 	Direction param.Field[AnnotationQueueItemListParamsDirection] `query:"direction"`
+	// Only completed items that do (true) or do not (false) still have a disagreed
+	// rubric key with no final answer. Items with no agreement result match neither
+	// value. Returns 501 unless multi-reviewer queues are on for the workspace.
+	// Requires status=archived
+	HasUnresolvedKeys param.Field[bool] `query:"has_unresolved_keys"`
 	// Filter to RUN or THREAD
 	ItemType param.Field[AnnotationQueueItemListParamsItemType] `query:"item_type"`
 	// Only items whose trace start time is at or before this timestamp. Omit or send
@@ -590,6 +693,23 @@ const (
 func (r AnnotationQueueItemListParamsStatus) IsKnown() bool {
 	switch r {
 	case AnnotationQueueItemListParamsStatusNeedsMyReview, AnnotationQueueItemListParamsStatusNeedsOthersReview, AnnotationQueueItemListParamsStatusArchived:
+		return true
+	}
+	return false
+}
+
+// Only completed items whose reviewers disagreed on at least one rubric key.
+// Returns 501 unless multi-reviewer queues are on for the workspace. Requires
+// status=archived
+type AnnotationQueueItemListParamsAgreement string
+
+const (
+	AnnotationQueueItemListParamsAgreementDisagreed AnnotationQueueItemListParamsAgreement = "disagreed"
+)
+
+func (r AnnotationQueueItemListParamsAgreement) IsKnown() bool {
+	switch r {
+	case AnnotationQueueItemListParamsAgreementDisagreed:
 		return true
 	}
 	return false
@@ -662,8 +782,17 @@ func (r AnnotationQueueItemDeleteAllParams) MarshalJSON() (data []byte, err erro
 type AnnotationQueueItemGetCountParams struct {
 	// Count bucket: all, needs_my_review, needs_others_review, or archived.
 	Status param.Field[string] `query:"status" api:"required"`
+	// Count only completed items whose reviewers disagreed on at least one rubric key.
+	// Returns 501 unless multi-reviewer queues are on for the workspace. Requires
+	// status=archived
+	Agreement param.Field[AnnotationQueueItemGetCountParamsAgreement] `query:"agreement"`
 	// Archived strictly before this time. Only used when status=archived
 	EndTime param.Field[string] `query:"end_time"`
+	// Count only completed items that do (true) or do not (false) still have a
+	// disagreed rubric key with no final answer. Items with no agreement result match
+	// neither value. Returns 501 unless multi-reviewer queues are on for the
+	// workspace. Requires status=archived
+	HasUnresolvedKeys param.Field[bool] `query:"has_unresolved_keys"`
 	// Trace started at or before this time
 	MaxStartTime param.Field[time.Time] `query:"max_start_time" format:"date-time"`
 	// Trace started at or after this time
@@ -679,4 +808,21 @@ func (r AnnotationQueueItemGetCountParams) URLQuery() (v url.Values) {
 		ArrayFormat:  apiquery.ArrayQueryFormatRepeat,
 		NestedFormat: apiquery.NestedQueryFormatBrackets,
 	})
+}
+
+// Count only completed items whose reviewers disagreed on at least one rubric key.
+// Returns 501 unless multi-reviewer queues are on for the workspace. Requires
+// status=archived
+type AnnotationQueueItemGetCountParamsAgreement string
+
+const (
+	AnnotationQueueItemGetCountParamsAgreementDisagreed AnnotationQueueItemGetCountParamsAgreement = "disagreed"
+)
+
+func (r AnnotationQueueItemGetCountParamsAgreement) IsKnown() bool {
+	switch r {
+	case AnnotationQueueItemGetCountParamsAgreementDisagreed:
+		return true
+	}
+	return false
 }
