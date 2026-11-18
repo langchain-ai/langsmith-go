@@ -113,11 +113,12 @@ type ProductFeedbackNewResponseSource string
 
 const (
 	ProductFeedbackNewResponseSourceLangsmithCli ProductFeedbackNewResponseSource = "LANGSMITH_CLI"
+	ProductFeedbackNewResponseSourceLangsmithMcp ProductFeedbackNewResponseSource = "LANGSMITH_MCP"
 )
 
 func (r ProductFeedbackNewResponseSource) IsKnown() bool {
 	switch r {
-	case ProductFeedbackNewResponseSourceLangsmithCli:
+	case ProductFeedbackNewResponseSourceLangsmithCli, ProductFeedbackNewResponseSourceLangsmithMcp:
 		return true
 	}
 	return false
@@ -201,11 +202,12 @@ type ProductFeedbackGetResponseSource string
 
 const (
 	ProductFeedbackGetResponseSourceLangsmithCli ProductFeedbackGetResponseSource = "LANGSMITH_CLI"
+	ProductFeedbackGetResponseSourceLangsmithMcp ProductFeedbackGetResponseSource = "LANGSMITH_MCP"
 )
 
 func (r ProductFeedbackGetResponseSource) IsKnown() bool {
 	switch r {
-	case ProductFeedbackGetResponseSourceLangsmithCli:
+	case ProductFeedbackGetResponseSourceLangsmithCli, ProductFeedbackGetResponseSourceLangsmithMcp:
 		return true
 	}
 	return false
@@ -270,11 +272,12 @@ type ProductFeedbackNewParamsSource string
 
 const (
 	ProductFeedbackNewParamsSourceLangsmithCli ProductFeedbackNewParamsSource = "LANGSMITH_CLI"
+	ProductFeedbackNewParamsSourceLangsmithMcp ProductFeedbackNewParamsSource = "LANGSMITH_MCP"
 )
 
 func (r ProductFeedbackNewParamsSource) IsKnown() bool {
 	switch r {
-	case ProductFeedbackNewParamsSourceLangsmithCli:
+	case ProductFeedbackNewParamsSourceLangsmithCli, ProductFeedbackNewParamsSourceLangsmithMcp:
 		return true
 	}
 	return false
