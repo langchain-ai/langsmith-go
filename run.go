@@ -211,7 +211,8 @@ func (r *RunService) GetV2(ctx context.Context, runID string, params RunGetV2Par
 	return res, err
 }
 
-// Get all runs by query in body payload.
+// GET with body payload — no resources created. Returns the run statistics
+// matching the query passed as the request payload.
 func (r *RunService) Stats(ctx context.Context, body RunStatsParams, opts ...option.RequestOption) (res *RunStatsResponseUnion, err error) {
 	var env apijson.UnionUnmarshaler[RunStatsResponseUnion]
 	opts = slices.Concat(r.Options, opts)
@@ -1166,6 +1167,9 @@ func (r runIngestBatchResponseItemJSON) RawJSON() string {
 	return r.raw
 }
 
+// Run statistics: one object for an ungrouped query, or an object keyed by group
+// value or bucket start time when the query groups or buckets runs.
+//
 // Union satisfied by [RunStatsResponseRunStats] or [RunStatsResponseMap].
 type RunStatsResponseUnion interface {
 	implementsRunStatsResponseUnion()
