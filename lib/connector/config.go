@@ -1,9 +1,11 @@
 package connector
 
 import (
+	"context"
 	"errors"
 	"fmt"
 	"net"
+	"net/http"
 	"net/url"
 	"os"
 	"strings"
@@ -29,8 +31,9 @@ type Config struct {
 	ConnectionID uuid.UUID
 	Targets      TargetMap
 
-	apiKey     string
-	apiKeyFile string
+	apiKey      string
+	apiKeyFile  string
+	authHeaders func(context.Context) (http.Header, error)
 }
 
 // Settings are a connector's settings before validation.
@@ -42,9 +45,14 @@ type Settings struct {
 	ConnectionID string
 	// APIKey is the API key itself. APIKeyFile is instead a file holding it,
 	// read again on every carrier attempt so a rotated key needs no restart.
-	// Set exactly one.
-	APIKey     string
-	APIKeyFile string
+	// AuthHeaders instead returns the headers that authenticate a request,
+	// such as langsmith.Client.AuthHeaders, and is called on every carrier
+	// attempt so an OAuth access token can be refreshed between them. The
+	// connector sends its Authorization or X-Api-Key. Set exactly one of the
+	// three.
+	APIKey      string
+	APIKeyFile  string
+	AuthHeaders func(context.Context) (http.Header, error)
 	// Targets maps target names to host:port for raw TCP, or to an
 	// http(s)://host:port URL for an HTTP service, for a tunnel.
 	Targets map[string]string
@@ -57,8 +65,9 @@ type Settings struct {
 }
 
 var (
-	errAPIKeyRequired       = errors.New("an API key is required")
-	errAPIKeySourceConflict = errors.New("set an API key or an API key file, not both")
+	errAPIKeyRequired       = errors.New("an API key or auth headers are required")
+	errAPIKeySourceConflict = errors.New("set one of an API key, an API key file or auth headers")
+	errNoCredentialHeader   = errors.New("auth headers carry no Authorization or X-Api-Key")
 	errRelayRulesNeedRelay  = errors.New("relay allow and deny rules require relay mode")
 )
 
@@ -87,15 +96,24 @@ func NewConfig(settings Settings) (Config, error) {
 		Targets:      targets,
 		apiKey:       strings.TrimSpace(settings.APIKey),
 		apiKeyFile:   settings.APIKeyFile,
+		authHeaders:  settings.AuthHeaders,
+	}
+	sources := 0
+	for _, set := range []bool{config.apiKey != "", config.apiKeyFile != "", config.authHeaders != nil} {
+		if set {
+			sources++
+		}
 	}
 	switch {
-	case config.apiKey != "" && config.apiKeyFile != "":
+	case sources > 1:
 		return Config{}, errAPIKeySourceConflict
-	case config.apiKey == "" && config.apiKeyFile == "":
+	case sources == 0:
 		return Config{}, errAPIKeyRequired
 	}
-	if _, err := config.ReadAPIKey(); err != nil {
-		return Config{}, err
+	if config.authHeaders == nil {
+		if _, err := config.ReadAPIKey(); err != nil {
+			return Config{}, err
+		}
 	}
 	return config, nil
 }
@@ -134,6 +152,34 @@ func (c Config) ReadAPIKey() (string, error) {
 		return "", fmt.Errorf("API key file is empty")
 	}
 	return apiKey, nil
+}
+
+// credentialHeaders returns the header that authenticates one carrier attempt:
+// X-Api-Key, or Authorization when it comes from AuthHeaders and carries one.
+func (c Config) credentialHeaders(ctx context.Context) (http.Header, error) {
+	headers := http.Header{}
+	if c.authHeaders == nil {
+		apiKey, err := c.ReadAPIKey()
+		if err != nil {
+			return nil, err
+		}
+		headers.Set("X-Api-Key", apiKey)
+		return headers, nil
+	}
+	resolved, err := c.authHeaders(ctx)
+	if err != nil {
+		return nil, fmt.Errorf("resolve auth headers: %w", err)
+	}
+	// An API key wins over a bearer, as it does for LangSmith API requests.
+	if apiKey := strings.TrimSpace(resolved.Get("X-Api-Key")); apiKey != "" {
+		headers.Set("X-Api-Key", apiKey)
+		return headers, nil
+	}
+	if authorization := strings.TrimSpace(resolved.Get("Authorization")); authorization != "" {
+		headers.Set("Authorization", authorization)
+		return headers, nil
+	}
+	return nil, errNoCredentialHeader
 }
 
 // carrierEndpoint turns a LangSmith API URL into the carrier URL to dial,

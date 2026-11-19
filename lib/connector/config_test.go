@@ -1,6 +1,9 @@
 package connector
 
 import (
+	"context"
+	"errors"
+	"net/http"
 	"os"
 	"path/filepath"
 	"testing"
@@ -63,8 +66,11 @@ func TestNewConfigRejectsInvalidSettings(t *testing.T) {
 		"nil connection ID":     func(s *Settings) { s.ConnectionID = uuid.Nil.String() },
 		"no credential":         func(s *Settings) { s.APIKeyFile = "" },
 		"both credentials":      func(s *Settings) { s.APIKey = "inline-placeholder" },
-		"no targets":            func(s *Settings) { s.Targets = nil },
-		"empty targets":         func(s *Settings) { s.Targets = map[string]string{} },
+		"key file and auth headers": func(s *Settings) {
+			s.AuthHeaders = func(context.Context) (http.Header, error) { return nil, nil }
+		},
+		"no targets":    func(s *Settings) { s.Targets = nil },
+		"empty targets": func(s *Settings) { s.Targets = map[string]string{} },
 		"relay rules without relay mode": func(s *Settings) {
 			s.RelayDeny = []string{"*.example.com"}
 		},
@@ -139,6 +145,52 @@ func TestReadAPIKeyReadsFileOnEveryCall(t *testing.T) {
 	apiKey, err := config.ReadAPIKey()
 	require.NoError(t, err)
 	require.Equal(t, "rotated-placeholder", apiKey)
+}
+
+func TestCredentialHeadersFromAuthHeaders(t *testing.T) {
+	t.Parallel()
+
+	tests := map[string]struct {
+		resolved http.Header
+		err      error
+		want     http.Header
+	}{
+		"OAuth bearer": {
+			resolved: http.Header{"Authorization": {"Bearer token"}, "X-Tenant-Id": {"workspace"}, "X-User-Id": {"user"}},
+			want:     http.Header{"Authorization": {"Bearer token"}},
+		},
+		"API key wins over a bearer": {
+			resolved: http.Header{"Authorization": {"Bearer token"}, "X-Api-Key": {"key"}},
+			want:     http.Header{"X-Api-Key": {"key"}},
+		},
+		"no credential":  {resolved: http.Header{"X-Tenant-Id": {"workspace"}}},
+		"resolver error": {err: errors.New("refresh failed")},
+	}
+	for name, tt := range tests {
+		t.Run(name, func(t *testing.T) {
+			t.Parallel()
+
+			calls := 0
+			settings := validSettings(t)
+			settings.APIKeyFile = ""
+			settings.AuthHeaders = func(context.Context) (http.Header, error) {
+				calls++
+				return tt.resolved, tt.err
+			}
+			config, err := NewConfig(settings)
+			require.NoError(t, err)
+			require.Zero(t, calls, "auth headers resolve per carrier attempt, not at config time")
+
+			got, err := config.credentialHeaders(context.Background())
+			if tt.want == nil {
+				require.Error(t, err)
+				return
+			}
+			require.NoError(t, err)
+			require.Equal(t, tt.want, got)
+			require.Equal(t, 1, calls)
+		})
+	}
 }
 
 // TestCarrierEndpointDerivesTunnelURLFromAPIURL: callers configure the same

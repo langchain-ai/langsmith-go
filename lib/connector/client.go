@@ -142,10 +142,12 @@ func NewClient(config Config, options ...ClientOption) (*Client, error) {
 	if len(config.Targets.Names()) == 0 {
 		return nil, fmt.Errorf("connector targets are required")
 	}
-	// The credential may come from a file or directly from the environment;
-	// either way it must resolve before a carrier is attempted.
-	if _, err := config.ReadAPIKey(); err != nil {
-		return nil, err
+	// A key from a file or directly from the environment must resolve before a
+	// carrier is attempted. Auth headers are resolved on each attempt.
+	if config.authHeaders == nil {
+		if _, err := config.ReadAPIKey(); err != nil {
+			return nil, err
+		}
 	}
 
 	dialer := &websocket.Dialer{
@@ -214,7 +216,7 @@ func NewClient(config Config, options ...ClientOption) (*Client, error) {
 }
 
 func (c *Client) runCarrier(ctx context.Context) (*carrierSession, error) {
-	apiKey, err := c.config.ReadAPIKey()
+	credential, err := c.config.credentialHeaders(ctx)
 	if err != nil {
 		return nil, err
 	}
@@ -222,7 +224,7 @@ func (c *Client) runCarrier(ctx context.Context) (*carrierSession, error) {
 	if err != nil {
 		return nil, fmt.Errorf("generate connector session ID: %w", err)
 	}
-	session, carrierTransport, err := c.dialCarrier(ctx, apiKey, sessionID)
+	session, carrierTransport, err := c.dialCarrier(ctx, credential, sessionID)
 	if err != nil {
 		return nil, err
 	}
@@ -282,17 +284,17 @@ func (c *Client) serveCarrier(ctx context.Context, carrier *carrierSession) erro
 
 func (c *Client) dialCarrier(
 	ctx context.Context,
-	apiKey string,
+	credential http.Header,
 	sessionID uuid.UUID,
 ) (*yamux.Session, io.ReadWriteCloser, error) {
-	headers := http.Header{}
-	headers.Set("X-Api-Key", apiKey)
+	headers := credential.Clone()
 	headers.Set(transport.HeaderConnectionID, c.config.ConnectionID.String())
 	headers.Set(transport.HeaderConnectorInstanceID, c.connectorInstanceID.String())
 	headers.Set(transport.HeaderSessionID, sessionID.String())
 	headers.Set(transport.HeaderConnectorKind, c.config.Targets.Kind())
 	ws, response, err := c.webSocketDialer.DialContext(ctx, c.config.Endpoint, headers)
 	headers.Del("X-Api-Key")
+	headers.Del("Authorization")
 	if err != nil {
 		if response == nil {
 			return nil, nil, fmt.Errorf("connect carrier websocket: %w", err)
