@@ -111,6 +111,29 @@ func (r *AnnotationQueueItemService) ListAutoPaging(ctx context.Context, queueID
 	return pagination.NewItemsCursorGetPaginationAutoPager(r.List(ctx, queueID, query, opts...))
 }
 
+// Remove the final for one rubric key. The key's answer goes back to the
+// reviewers' majority, or null when they disagreed. Clearing a key that has no
+// final succeeds.
+func (r *AnnotationQueueItemService) ClearFinal(ctx context.Context, queueID string, itemID string, key string, opts ...option.RequestOption) (err error) {
+	opts = slices.Concat(r.Options, opts)
+	opts = append([]option.RequestOption{option.WithHeader("Accept", "*/*")}, opts...)
+	if queueID == "" {
+		err = errors.New("missing required queue_id parameter")
+		return err
+	}
+	if itemID == "" {
+		err = errors.New("missing required item_id parameter")
+		return err
+	}
+	if key == "" {
+		err = errors.New("missing required key parameter")
+		return err
+	}
+	path := fmt.Sprintf("api/v1/platform/annotation-queues/%s/items/%s/finals/%s", queueID, itemID, key)
+	err = requestconfig.ExecuteNewRequest(ctx, http.MethodDelete, path, nil, nil, opts...)
+	return err
+}
+
 // Log the caller's reviewer status for a RUN or THREAD annotation queue item. A
 // null status re-shows the item for this reviewer.
 func (r *AnnotationQueueItemService) NewStatus(ctx context.Context, queueItemID string, body AnnotationQueueItemNewStatusParams, opts ...option.RequestOption) (res *AnnotationQueueItemNewStatusResponse, err error) {
@@ -168,6 +191,29 @@ func (r *AnnotationQueueItemService) GetPlacement(ctx context.Context, queueID s
 	}
 	path := fmt.Sprintf("api/v1/platform/annotation-queues/%s/items/%s/placement", queueID, itemID)
 	err = requestconfig.ExecuteNewRequest(ctx, http.MethodGet, path, nil, &res, opts...)
+	return res, err
+}
+
+// Set the answer downstream uses for one rubric key when the item's reviewers
+// disagreed. A key that already has a final can be changed even after reviewers
+// come to agree. Multi-select keys take a list of category labels in values.
+// final_set_by is empty for API key callers.
+func (r *AnnotationQueueItemService) SetFinal(ctx context.Context, queueID string, itemID string, key string, body AnnotationQueueItemSetFinalParams, opts ...option.RequestOption) (res *AnnotationQueueItemSetFinalResponse, err error) {
+	opts = slices.Concat(r.Options, opts)
+	if queueID == "" {
+		err = errors.New("missing required queue_id parameter")
+		return nil, err
+	}
+	if itemID == "" {
+		err = errors.New("missing required item_id parameter")
+		return nil, err
+	}
+	if key == "" {
+		err = errors.New("missing required key parameter")
+		return nil, err
+	}
+	path := fmt.Sprintf("api/v1/platform/annotation-queues/%s/items/%s/finals/%s", queueID, itemID, key)
+	err = requestconfig.ExecuteNewRequest(ctx, http.MethodPut, path, body, &res, opts...)
 	return res, err
 }
 
@@ -582,6 +628,109 @@ func (r AnnotationQueueItemGetPlacementResponseSection) IsKnown() bool {
 	return false
 }
 
+type AnnotationQueueItemSetFinalResponse struct {
+	Answer     AnnotationQueueItemSetFinalResponseAnswer `json:"answer"`
+	Final      AnnotationQueueItemSetFinalResponseFinal  `json:"final"`
+	FinalSetAt time.Time                                 `json:"final_set_at" format:"date-time"`
+	FinalSetBy string                                    `json:"final_set_by"`
+	HasFinal   bool                                      `json:"has_final"`
+	Key        string                                    `json:"key"`
+	State      AnnotationQueueItemSetFinalResponseState  `json:"state"`
+	JSON       annotationQueueItemSetFinalResponseJSON   `json:"-"`
+}
+
+// annotationQueueItemSetFinalResponseJSON contains the JSON metadata for the
+// struct [AnnotationQueueItemSetFinalResponse]
+type annotationQueueItemSetFinalResponseJSON struct {
+	Answer      apijson.Field
+	Final       apijson.Field
+	FinalSetAt  apijson.Field
+	FinalSetBy  apijson.Field
+	HasFinal    apijson.Field
+	Key         apijson.Field
+	State       apijson.Field
+	raw         string
+	ExtraFields map[string]apijson.Field
+}
+
+func (r *AnnotationQueueItemSetFinalResponse) UnmarshalJSON(data []byte) (err error) {
+	return apijson.UnmarshalRoot(data, r)
+}
+
+func (r annotationQueueItemSetFinalResponseJSON) RawJSON() string {
+	return r.raw
+}
+
+type AnnotationQueueItemSetFinalResponseAnswer struct {
+	Score  float64                                       `json:"score"`
+	Scores []float64                                     `json:"scores"`
+	Value  string                                        `json:"value"`
+	Values []string                                      `json:"values"`
+	JSON   annotationQueueItemSetFinalResponseAnswerJSON `json:"-"`
+}
+
+// annotationQueueItemSetFinalResponseAnswerJSON contains the JSON metadata for the
+// struct [AnnotationQueueItemSetFinalResponseAnswer]
+type annotationQueueItemSetFinalResponseAnswerJSON struct {
+	Score       apijson.Field
+	Scores      apijson.Field
+	Value       apijson.Field
+	Values      apijson.Field
+	raw         string
+	ExtraFields map[string]apijson.Field
+}
+
+func (r *AnnotationQueueItemSetFinalResponseAnswer) UnmarshalJSON(data []byte) (err error) {
+	return apijson.UnmarshalRoot(data, r)
+}
+
+func (r annotationQueueItemSetFinalResponseAnswerJSON) RawJSON() string {
+	return r.raw
+}
+
+type AnnotationQueueItemSetFinalResponseFinal struct {
+	Score  float64                                      `json:"score"`
+	Scores []float64                                    `json:"scores"`
+	Value  string                                       `json:"value"`
+	Values []string                                     `json:"values"`
+	JSON   annotationQueueItemSetFinalResponseFinalJSON `json:"-"`
+}
+
+// annotationQueueItemSetFinalResponseFinalJSON contains the JSON metadata for the
+// struct [AnnotationQueueItemSetFinalResponseFinal]
+type annotationQueueItemSetFinalResponseFinalJSON struct {
+	Score       apijson.Field
+	Scores      apijson.Field
+	Value       apijson.Field
+	Values      apijson.Field
+	raw         string
+	ExtraFields map[string]apijson.Field
+}
+
+func (r *AnnotationQueueItemSetFinalResponseFinal) UnmarshalJSON(data []byte) (err error) {
+	return apijson.UnmarshalRoot(data, r)
+}
+
+func (r annotationQueueItemSetFinalResponseFinalJSON) RawJSON() string {
+	return r.raw
+}
+
+type AnnotationQueueItemSetFinalResponseState string
+
+const (
+	AnnotationQueueItemSetFinalResponseStateAgreed    AnnotationQueueItemSetFinalResponseState = "agreed"
+	AnnotationQueueItemSetFinalResponseStateDisagreed AnnotationQueueItemSetFinalResponseState = "disagreed"
+	AnnotationQueueItemSetFinalResponseStateNone      AnnotationQueueItemSetFinalResponseState = "none"
+)
+
+func (r AnnotationQueueItemSetFinalResponseState) IsKnown() bool {
+	switch r {
+	case AnnotationQueueItemSetFinalResponseStateAgreed, AnnotationQueueItemSetFinalResponseStateDisagreed, AnnotationQueueItemSetFinalResponseStateNone:
+		return true
+	}
+	return false
+}
+
 type AnnotationQueueItemNewParams struct {
 	// Defaults to false. When true, upgrade the traces of added runs from base to
 	// extended retention. Thread items are not upgraded.
@@ -825,4 +974,14 @@ func (r AnnotationQueueItemGetCountParamsAgreement) IsKnown() bool {
 		return true
 	}
 	return false
+}
+
+type AnnotationQueueItemSetFinalParams struct {
+	Score  param.Field[float64]  `json:"score"`
+	Value  param.Field[string]   `json:"value"`
+	Values param.Field[[]string] `json:"values"`
+}
+
+func (r AnnotationQueueItemSetFinalParams) MarshalJSON() (data []byte, err error) {
+	return apijson.MarshalRoot(r)
 }
