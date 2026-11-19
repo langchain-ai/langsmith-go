@@ -124,6 +124,9 @@ func (r *RunService) QueryV1AutoPaging(ctx context.Context, body RunQueryV1Param
 	return pagination.NewCursorPaginationAutoPager(r.QueryV1(ctx, body, opts...))
 }
 
+// GET with body payload — no resources created. Returns the runs matching the
+// query passed as the request payload.
+//
 // Returns a paginated list of runs for the given projects within min/max
 // start_time. Supports filters, cursor pagination, and `selects` to select fields
 // to return.
@@ -158,6 +161,9 @@ func (r *RunService) QueryV2(ctx context.Context, params RunQueryV2Params, opts 
 	return res, nil
 }
 
+// GET with body payload — no resources created. Returns the runs matching the
+// query passed as the request payload.
+//
 // Returns a paginated list of runs for the given projects within min/max
 // start_time. Supports filters, cursor pagination, and `selects` to select fields
 // to return.
