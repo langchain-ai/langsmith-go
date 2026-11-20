@@ -452,14 +452,17 @@ func (r evaluatorTopLevelJSON) RawJSON() string {
 
 // Evaluator structured output schema.
 type EvaluatorTopLevelStructured struct {
-	HubRef               string                          `json:"hub_ref" api:"nullable"`
-	Model                map[string]interface{}          `json:"model" api:"nullable"`
-	PlaygroundSettingsID string                          `json:"playground_settings_id" api:"nullable"`
-	Prompt               [][]interface{}                 `json:"prompt" api:"nullable"`
-	Schema               map[string]interface{}          `json:"schema" api:"nullable"`
-	TemplateFormat       string                          `json:"template_format" api:"nullable"`
-	VariableMapping      map[string]string               `json:"variable_mapping" api:"nullable"`
-	JSON                 evaluatorTopLevelStructuredJSON `json:"-"`
+	HubRef               string                 `json:"hub_ref" api:"nullable"`
+	Model                map[string]interface{} `json:"model" api:"nullable"`
+	PlaygroundSettingsID string                 `json:"playground_settings_id" api:"nullable"`
+	Prompt               [][]interface{}        `json:"prompt" api:"nullable"`
+	// Output schema for the evaluator's feedback. Not accepted for decision-model
+	// (TypeSafe or OpenAI Decisions) evaluators, whose schema comes from their
+	// questions.
+	Schema          map[string]interface{}          `json:"schema" api:"nullable"`
+	TemplateFormat  string                          `json:"template_format" api:"nullable"`
+	VariableMapping map[string]string               `json:"variable_mapping" api:"nullable"`
+	JSON            evaluatorTopLevelStructuredJSON `json:"-"`
 }
 
 // evaluatorTopLevelStructuredJSON contains the JSON metadata for the struct
