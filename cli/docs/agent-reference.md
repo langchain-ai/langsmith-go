@@ -876,7 +876,7 @@ Every command in this version of the CLI. Run `langsmith <command> --help` for i
 | `langsmith sandboxes registries retrieve` | Get a sandbox registry by name. |
 | `langsmith sandboxes registries update` | Update a sandbox registry's name and/or credentials. |
 | `langsmith sandboxes service-url` | Generate an authenticated URL for a sandbox HTTP service |
-| `langsmith sandboxes snapshot build` | Build a snapshot from a Docker image |
+| `langsmith sandboxes snapshot build` | Build a snapshot from a Docker image or a local Dockerfile |
 | `langsmith sandboxes snapshot capture` | Capture a snapshot from a running sandbox |
 | `langsmith sandboxes snapshot delete` | Delete a snapshot by ID or Docker-style reference |
 | `langsmith sandboxes snapshot get` | Get a snapshot by ID or Docker-style reference |

@@ -15,6 +15,7 @@ require (
 	github.com/itchyny/gojq v0.12.20
 	github.com/itchyny/json2yaml v0.1.5
 	github.com/klauspost/compress v1.20.3
+	github.com/moby/patternmatcher v0.6.1
 	github.com/muesli/reflow v0.3.0
 	github.com/olekukonko/tablewriter v1.1.5
 	github.com/pelletier/go-toml/v2 v2.4.3
