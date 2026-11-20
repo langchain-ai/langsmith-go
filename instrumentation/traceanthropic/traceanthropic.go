@@ -407,12 +407,51 @@ func extractRequestAttributes(span trace.Span, body []byte, withoutContent bool)
 }
 
 // contentBlock tracks one streamed content block by index, so a multi-block
-// message can be reconstructed. blockType is "text" or "tool_use".
+// message can be reconstructed. fields holds the block as content_block_start
+// sent it; deltas fill in the parts Anthropic streams separately.
 type contentBlock struct {
-	blockType string
-	id        string // tool_use id
-	name      string // tool_use function name
-	buf       strings.Builder
+	fields               map[string]any
+	text                 strings.Builder // text_delta
+	thinking             strings.Builder // thinking_delta
+	inputJSON            strings.Builder // input_json_delta (tool_use, server_tool_use, ...)
+	citations            []any           // citations_delta
+	hasText, hasThinking bool
+}
+
+// setDefaultType names the block type from its first delta when no
+// content_block_start was seen.
+func (b *contentBlock) setDefaultType(blockType string) {
+	if _, ok := b.fields["type"].(string); !ok {
+		b.fields["type"] = blockType
+	}
+}
+
+// message returns the block in the shape a non-streaming response carries it.
+func (b *contentBlock) message() map[string]any {
+	out := make(map[string]any, len(b.fields)+1)
+	for k, v := range b.fields {
+		out[k] = v
+	}
+	if b.hasText {
+		out["text"] = b.text.String()
+	}
+	if b.hasThinking {
+		out["thinking"] = b.thinking.String()
+	}
+	if len(b.citations) > 0 {
+		out["citations"] = b.citations
+	}
+	// Anthropic sends an empty input_json_delta for a tool called with no
+	// arguments; the start event's input ({}) already holds that.
+	if b.inputJSON.Len() > 0 {
+		var input any
+		if err := json.Unmarshal([]byte(b.inputJSON.String()), &input); err == nil {
+			out["input"] = input
+		} else {
+			out["input"] = b.inputJSON.String()
+		}
+	}
+	return out
 }
 
 // anthropicStreamAccumulator folds Anthropic SSE events into one assistant
@@ -421,8 +460,9 @@ type contentBlock struct {
 //
 // Events of interest:
 //   - message_start       — message.usage (input, cache tokens, cache_creation)
-//   - content_block_start — initialises a block (text or tool_use)
-//   - content_block_delta — text_delta or input_json_delta carries the data
+//   - content_block_start — the block, whole for types that have no deltas
+//     (such as web_search_tool_result), otherwise its fixed fields
+//   - content_block_delta — text, thinking, signature, citation or tool input
 //   - message_delta       — usage.output_tokens plus stop_reason
 //   - message_stop        — the stream ended cleanly
 type anthropicStreamAccumulator struct {
@@ -433,6 +473,22 @@ type anthropicStreamAccumulator struct {
 	sawStop    bool
 	// withoutContent skips content blocks, so apply records no completion.
 	withoutContent bool
+}
+
+// block returns the block at the event's index, creating it if needed.
+func (a *anthropicStreamAccumulator) block(chunk map[string]any) *contentBlock {
+	idxF, ok := chunk["index"].(float64)
+	if !ok || idxF < 0 {
+		return nil
+	}
+	idx := int(idxF)
+	for len(a.blocks) <= idx {
+		a.blocks = append(a.blocks, nil)
+	}
+	if a.blocks[idx] == nil {
+		a.blocks[idx] = &contentBlock{fields: map[string]any{}}
+	}
+	return a.blocks[idx]
 }
 
 // feed merges one decoded event into the running message.
@@ -459,50 +515,45 @@ func (a *anthropicStreamAccumulator) feed(chunk map[string]any) {
 		}
 
 	case "content_block_start":
-		idxF, ok := chunk["index"].(float64)
-		if !ok {
+		block := a.block(chunk)
+		if block == nil {
 			return
 		}
-		idx := int(idxF)
-		for len(a.blocks) <= idx {
-			a.blocks = append(a.blocks, nil)
-		}
-		block := &contentBlock{}
 		if cb, ok := chunk["content_block"].(map[string]any); ok {
-			block.blockType, _ = cb["type"].(string)
-			block.id, _ = cb["id"].(string)
-			block.name, _ = cb["name"].(string)
+			block.fields = cb
 		}
-		a.blocks[idx] = block
 
 	case "content_block_delta":
-		idxF, ok := chunk["index"].(float64)
-		if !ok {
+		block := a.block(chunk)
+		if block == nil {
 			return
 		}
-		idx := int(idxF)
-		for len(a.blocks) <= idx {
-			a.blocks = append(a.blocks, nil)
-		}
-		if a.blocks[idx] == nil {
-			a.blocks[idx] = &contentBlock{}
-		}
-		if delta, ok := chunk["delta"].(map[string]any); ok {
-			switch deltaType, _ := delta["type"].(string); deltaType {
-			case "text_delta":
-				if text, ok := delta["text"].(string); ok {
-					a.blocks[idx].buf.WriteString(text)
-					if a.blocks[idx].blockType == "" {
-						a.blocks[idx].blockType = "text"
-					}
-				}
-			case "input_json_delta":
-				if partialJSON, ok := delta["partial_json"].(string); ok {
-					a.blocks[idx].buf.WriteString(partialJSON)
-					if a.blocks[idx].blockType == "" {
-						a.blocks[idx].blockType = "tool_use"
-					}
-				}
+		delta, _ := chunk["delta"].(map[string]any)
+		switch deltaType, _ := delta["type"].(string); deltaType {
+		case "text_delta":
+			if text, ok := delta["text"].(string); ok {
+				block.text.WriteString(text)
+				block.hasText = true
+				block.setDefaultType("text")
+			}
+		case "input_json_delta":
+			if partialJSON, ok := delta["partial_json"].(string); ok {
+				block.inputJSON.WriteString(partialJSON)
+				block.setDefaultType("tool_use")
+			}
+		case "thinking_delta":
+			if thinking, ok := delta["thinking"].(string); ok {
+				block.thinking.WriteString(thinking)
+				block.hasThinking = true
+				block.setDefaultType("thinking")
+			}
+		case "signature_delta":
+			if signature, ok := delta["signature"].(string); ok {
+				block.fields["signature"] = signature
+			}
+		case "citations_delta":
+			if citation, ok := delta["citation"]; ok {
+				block.citations = append(block.citations, citation)
 			}
 		}
 
@@ -532,32 +583,16 @@ func (a *anthropicStreamAccumulator) apply(span trace.Span, parentSpan trace.Spa
 		span.SetAttributes(attribute.String("langsmith.metadata.stop_reason", a.stopReason))
 	}
 
-	// Reconstruct content a.blocks into an assistant message
+	// Reconstruct the content blocks into an assistant message
 	var contentBlocks []map[string]any
 	for _, b := range a.blocks {
 		if b == nil {
 			continue
 		}
-		switch b.blockType {
-		case "text":
-			contentBlocks = append(contentBlocks, map[string]any{
-				"type": "text",
-				"text": b.buf.String(),
-			})
-		case "tool_use":
-			block := map[string]any{
-				"type": "tool_use",
-				"id":   b.id,
-				"name": b.name,
-			}
-			var input any
-			if err := json.Unmarshal([]byte(b.buf.String()), &input); err == nil {
-				block["input"] = input
-			} else {
-				block["input"] = b.buf.String()
-			}
-			contentBlocks = append(contentBlocks, block)
+		if _, ok := b.fields["type"].(string); !ok {
+			continue
 		}
+		contentBlocks = append(contentBlocks, b.message())
 	}
 
 	if len(contentBlocks) > 0 {

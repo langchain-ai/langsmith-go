@@ -619,28 +619,78 @@ func TestExtractStreamingResponseAttributes_TextContent(t *testing.T) {
 	}
 }
 
-func TestExtractStreamingResponseAttributes_ToolUse(t *testing.T) {
-	span, _ := startTestSpan(t)
-	parentSpan, _ := startTestSpan(t)
-
-	sse := "data: {\"type\":\"message_start\",\"message\":{\"model\":\"claude-sonnet-4-20250514\",\"usage\":{\"input_tokens\":20}}}\n" +
-		"data: {\"type\":\"content_block_start\",\"index\":0,\"content_block\":{\"type\":\"tool_use\",\"id\":\"toolu_1\",\"name\":\"get_weather\"}}\n" +
-		"data: {\"type\":\"content_block_delta\",\"index\":0,\"delta\":{\"type\":\"input_json_delta\",\"partial_json\":\"{\\\"city\\\"\"}}\n" +
-		"data: {\"type\":\"content_block_delta\",\"index\":0,\"delta\":{\"type\":\"input_json_delta\",\"partial_json\":\": \\\"SF\\\"}\"}}\n" +
-		"data: {\"type\":\"message_delta\",\"delta\":{\"stop_reason\":\"tool_use\"},\"usage\":{\"output_tokens\":12}}\n"
-
-	extractStreamingResponseAttributes(span, []byte(sse), parentSpan, false)
-
-	v, ok := getAttr(span, "gen_ai.completion")
-	if !ok {
-		t.Fatal("expected gen_ai.completion")
+// A streamed response must trace the same completion as the same message
+// returned whole, for every block type Anthropic streams.
+func TestExtractStreamingResponseAttributes_MatchesNonStreaming(t *testing.T) {
+	citation := `{"type":"web_search_result_location","url":"https://example.com/gateway","title":"Gateway","encrypted_index":"idx","cited_text":"routes model calls"}`
+	searchResult := `{"type":"web_search_tool_result","tool_use_id":"srvtoolu_1","content":[{"type":"web_search_result","url":"https://example.com/gateway","title":"Gateway","encrypted_content":"enc","page_age":null}]}`
+	message := `{"model":"claude-sonnet-4-20250514","stop_reason":"tool_use","usage":{"input_tokens":20,"output_tokens":12},"content":[` +
+		`{"type":"thinking","thinking":"Search first.","signature":"sig"},` +
+		`{"type":"redacted_thinking","data":"opaque"},` +
+		`{"type":"server_tool_use","id":"srvtoolu_1","name":"web_search","input":{"query":"llm gateway"}},` +
+		searchResult + `,` +
+		`{"type":"text","text":"It routes model calls.","citations":[` + citation + `]},` +
+		`{"type":"tool_use","id":"toolu_1","name":"get_weather","input":{"city":"SF"}},` +
+		`{"type":"tool_use","id":"toolu_2","name":"list_files","input":{}}]}`
+	events := []string{
+		`{"type":"message_start","message":{"model":"claude-sonnet-4-20250514","content":[],"usage":{"input_tokens":20}}}`,
+		`{"type":"content_block_start","index":0,"content_block":{"type":"thinking","thinking":""}}`,
+		`{"type":"content_block_delta","index":0,"delta":{"type":"thinking_delta","thinking":"Search "}}`,
+		`{"type":"content_block_delta","index":0,"delta":{"type":"thinking_delta","thinking":"first."}}`,
+		`{"type":"content_block_delta","index":0,"delta":{"type":"signature_delta","signature":"sig"}}`,
+		`{"type":"content_block_stop","index":0}`,
+		`{"type":"content_block_start","index":1,"content_block":{"type":"redacted_thinking","data":"opaque"}}`,
+		`{"type":"content_block_stop","index":1}`,
+		`{"type":"content_block_start","index":2,"content_block":{"type":"server_tool_use","id":"srvtoolu_1","name":"web_search","input":{}}}`,
+		`{"type":"content_block_delta","index":2,"delta":{"type":"input_json_delta","partial_json":"{\"query\":"}}`,
+		`{"type":"content_block_delta","index":2,"delta":{"type":"input_json_delta","partial_json":"\"llm gateway\"}"}}`,
+		`{"type":"content_block_stop","index":2}`,
+		`{"type":"content_block_start","index":3,"content_block":` + searchResult + `}`,
+		`{"type":"content_block_stop","index":3}`,
+		`{"type":"content_block_start","index":4,"content_block":{"type":"text","text":""}}`,
+		`{"type":"content_block_delta","index":4,"delta":{"type":"citations_delta","citation":` + citation + `}}`,
+		`{"type":"content_block_delta","index":4,"delta":{"type":"text_delta","text":"It routes "}}`,
+		`{"type":"content_block_delta","index":4,"delta":{"type":"text_delta","text":"model calls."}}`,
+		`{"type":"content_block_stop","index":4}`,
+		`{"type":"content_block_start","index":5,"content_block":{"type":"tool_use","id":"toolu_1","name":"get_weather","input":{}}}`,
+		`{"type":"content_block_delta","index":5,"delta":{"type":"input_json_delta","partial_json":"{\"city\": \"SF\"}"}}`,
+		`{"type":"content_block_stop","index":5}`,
+		`{"type":"content_block_start","index":6,"content_block":{"type":"tool_use","id":"toolu_2","name":"list_files","input":{}}}`,
+		`{"type":"content_block_delta","index":6,"delta":{"type":"input_json_delta","partial_json":""}}`,
+		`{"type":"content_block_stop","index":6}`,
+		`{"type":"message_delta","delta":{"stop_reason":"tool_use"},"usage":{"output_tokens":12}}`,
+		`{"type":"message_stop"}`,
 	}
-	completion := v.AsString()
-	if !strings.Contains(completion, "tool_use") {
-		t.Errorf("completion should contain tool_use: %s", completion)
+	var sse strings.Builder
+	for _, event := range events {
+		sse.WriteString("data: " + event + "\n")
 	}
-	if !strings.Contains(completion, "get_weather") {
-		t.Errorf("completion should contain function name: %s", completion)
+
+	completion := func(extract func(span, parent sdktrace.ReadWriteSpan)) any {
+		t.Helper()
+		span, _ := startTestSpan(t)
+		parent, _ := startTestSpan(t)
+		extract(span, parent)
+		v, ok := getAttr(span, "gen_ai.completion")
+		if !ok {
+			t.Fatal("expected gen_ai.completion")
+		}
+		var out any
+		if err := json.Unmarshal([]byte(v.AsString()), &out); err != nil {
+			t.Fatalf("gen_ai.completion is not JSON: %v", err)
+		}
+		return out
+	}
+	want := completion(func(span, parent sdktrace.ReadWriteSpan) {
+		extractResponseAttributes(span, []byte(message), parent, false)
+	})
+	got := completion(func(span, parent sdktrace.ReadWriteSpan) {
+		extractStreamingResponseAttributes(span, []byte(sse.String()), parent, false)
+	})
+	if !reflect.DeepEqual(got, want) {
+		gotJSON, _ := json.Marshal(got)
+		wantJSON, _ := json.Marshal(want)
+		t.Errorf("streamed completion:\n%s\nwant:\n%s", gotJSON, wantJSON)
 	}
 }
 
