@@ -1,5 +1,32 @@
 # Changelog
 
+## [0.33.1](https://github.com/langchain-ai/langsmith-go/compare/v0.33.0...v0.33.1) (2026-11-20)
+
+
+### Features
+
+* **annotation-queues:** return agreement on the items list and count ([d75c9dc](https://github.com/langchain-ai/langsmith-go/commit/d75c9dc2cf367588c7e42b5141245f4e157005d8))
+* **annotation-queues:** set and clear a final answer on a completed item ([40560a9](https://github.com/langchain-ai/langsmith-go/commit/40560a9540be7b1cdd2a066fa82813d977f466ee))
+* **connections:** accept OAuth bearer tokens from connectors ([4adf996](https://github.com/langchain-ai/langsmith-go/commit/4adf996b8311391d216ba42ffdcc618c174b6567))
+* **host:** chart Postgres out-of-memory restarts for Cloud SQL deployments ([2686488](https://github.com/langchain-ai/langsmith-go/commit/26864881b21ab49ccbb228c5e63c9b36f5892d8c))
+* let LangSmith MCP agents report product feedback ([6f0932b](https://github.com/langchain-ai/langsmith-go/commit/6f0932b13f6515d8a52668527abaf9862e2a2abd))
+* **runs:** add stride to /v2/threads/stats and return thread feedback stats ([c5e4f8d](https://github.com/langchain-ai/langsmith-go/commit/c5e4f8d1719bc815719a27e0671bc37d239a5e22))
+* **sdk:** add sandbox volumes, batch delete and usage to the SDKs ([53f965c](https://github.com/langchain-ai/langsmith-go/commit/53f965cc33c1414bb660c2b05eaabdb16840ae7d))
+* **sdk:** generate workspace resource tag keys and values ([b1ace42](https://github.com/langchain-ai/langsmith-go/commit/b1ace42f95797cc03178b0d42d182bd567fba7a7))
+
+
+### Bug Fixes
+
+* **run-rules:** apply all filters together in GET /runs/rules ([dd36ad5](https://github.com/langchain-ai/langsmith-go/commit/dd36ad538cfba0153bb1a447b6663e2112e5b1fa))
+* **run-rules:** return backfill_id on create and list every outcomes page in backfill logs ([1a70022](https://github.com/langchain-ai/langsmith-go/commit/1a70022893d76256ed662f0bd8c96af57e0904c5))
+* **runs:** gate standard runs/query page limits behind FF_RUNS_QUERY_PAGE_LIMITS [closes LSO-5052] ([846a774](https://github.com/langchain-ai/langsmith-go/commit/846a77475bebdd989d36c7269bd44d232c4a3af6))
+* **runs:** name the /runs/stats response and gate problem-details 422s [closes LSO-5054] ([ff5f944](https://github.com/langchain-ai/langsmith-go/commit/ff5f9443b97b2331eec110f8a54bb051e014f377))
+
+
+### Documentation
+
+* **runs:** mark POST /v2/traces/query as a read [closes LSO-5053] ([dace1e0](https://github.com/langchain-ai/langsmith-go/commit/dace1e0eb9eb0257c008c4c857039580f6834929))
+
 ## [0.33.0](https://github.com/langchain-ai/langsmith-go/compare/v0.32.0...v0.33.0) (2026-11-17)
 
 
