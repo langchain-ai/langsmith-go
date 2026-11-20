@@ -14,7 +14,11 @@ if [ -n "$GITHUB_ACTIONS" ]; then
   echo "==> Building library and examples"
   go build ./...
   echo "==> Running tests (unit + integration)"
-  go test -tags=integration ./... -count=1 -timeout 300s -v "$@"
+  # The CLI's integration tests target a dev workspace and run by hand
+  # (make test-integration in cli/).
+  go test -tags=integration $(go list ./... | grep -v '/cli/') -count=1 -timeout 300s -v "$@"
+  echo "==> Running CLI unit tests"
+  go test ./cli/... -count=1 -timeout 300s "$@"
   exit 0
 fi
 
