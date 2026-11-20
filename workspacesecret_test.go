@@ -28,7 +28,9 @@ func TestWorkspaceSecretListWithOptionalParams(t *testing.T) {
 		option.WithTenantID("My Tenant ID"),
 	)
 	_, err := client.WorkspaceSecrets.List(context.TODO(), langsmith.WorkspaceSecretListParams{
+		Cursor:         langsmith.F("cursor"),
 		IncludeConfigs: langsmith.F(true),
+		PageSize:       langsmith.F(int64(1)),
 	})
 	if err != nil {
 		var apierr *langsmith.Error

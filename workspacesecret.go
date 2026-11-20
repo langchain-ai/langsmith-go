@@ -16,6 +16,7 @@ import (
 	"github.com/langchain-ai/langsmith-go/internal/param"
 	"github.com/langchain-ai/langsmith-go/internal/requestconfig"
 	"github.com/langchain-ai/langsmith-go/option"
+	"github.com/langchain-ai/langsmith-go/packages/pagination"
 )
 
 // WorkspaceSecretService contains methods and other services that help with
@@ -37,12 +38,35 @@ func NewWorkspaceSecretService(opts ...option.RequestOption) (r *WorkspaceSecret
 	return
 }
 
-// List the current workspace's secret keys. Values are never returned.
-func (r *WorkspaceSecretService) List(ctx context.Context, query WorkspaceSecretListParams, opts ...option.RequestOption) (res *[]WorkspaceSecret, err error) {
+// List the current workspace's secret keys in ascending key order. Secret values
+// are never returned. Set include_configs to include allowed hosts and header
+// configuration. Pass next_cursor as cursor to retrieve the next page, keeping
+// include_configs unchanged. Pagination reflects the current secrets on each
+// request, rather than a snapshot.
+func (r *WorkspaceSecretService) List(ctx context.Context, query WorkspaceSecretListParams, opts ...option.RequestOption) (res *pagination.ItemsCursorGetPagination[WorkspaceSecret], err error) {
+	var raw *http.Response
 	opts = slices.Concat(r.Options, opts)
-	path := "api/v1/workspaces/current/secrets"
-	err = requestconfig.ExecuteNewRequest(ctx, http.MethodGet, path, query, &res, opts...)
-	return res, err
+	opts = append([]option.RequestOption{option.WithResponseInto(&raw)}, opts...)
+	path := "api/v2/workspaces/current/secrets"
+	cfg, err := requestconfig.NewRequestConfig(ctx, http.MethodGet, path, query, &res, opts...)
+	if err != nil {
+		return nil, err
+	}
+	err = cfg.Execute()
+	if err != nil {
+		return nil, err
+	}
+	res.SetPageConfig(cfg, raw)
+	return res, nil
+}
+
+// List the current workspace's secret keys in ascending key order. Secret values
+// are never returned. Set include_configs to include allowed hosts and header
+// configuration. Pass next_cursor as cursor to retrieve the next page, keeping
+// include_configs unchanged. Pagination reflects the current secrets on each
+// request, rather than a snapshot.
+func (r *WorkspaceSecretService) ListAutoPaging(ctx context.Context, query WorkspaceSecretListParams, opts ...option.RequestOption) *pagination.ItemsCursorGetPaginationAutoPager[WorkspaceSecret] {
+	return pagination.NewItemsCursorGetPaginationAutoPager(r.List(ctx, query, opts...))
 }
 
 // Delete a workspace secret and its allowed hosts.
@@ -160,8 +184,12 @@ func (r WorkspaceSecretConfigsSource) IsKnown() bool {
 }
 
 type WorkspaceSecretListParams struct {
-	// If true, include the hosts each secret may be sent to.
+	// Opaque cursor from a previous response
+	Cursor param.Field[string] `query:"cursor"`
+	// Include the hosts each secret may be sent to
 	IncludeConfigs param.Field[bool] `query:"include_configs"`
+	// Number of secrets per page
+	PageSize param.Field[int64] `query:"page_size"`
 }
 
 // URLQuery serializes [WorkspaceSecretListParams]'s query parameters as
