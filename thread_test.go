@@ -34,6 +34,10 @@ func TestThreadAggregateStatsWithOptionalParams(t *testing.T) {
 		Filter:       langsmith.F(`eq(status, "error")`),
 		MaxStartTime: langsmith.F(time.Now()),
 		MinStartTime: langsmith.F(time.Now()),
+		Stride: langsmith.F(langsmith.ThreadAggregateStatsParamsStride{
+			Unit:  langsmith.F(langsmith.ThreadAggregateStatsParamsStrideUnitHour),
+			Value: langsmith.F(int64(1)),
+		}),
 		ThreadFilter: langsmith.F("gte(turn_count, 3)"),
 		TraceFilter:  langsmith.F(`eq(status, "error")`),
 		TreeFilter:   langsmith.F(`has(tags, "production")`),
