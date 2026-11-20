@@ -42,6 +42,7 @@ type Client struct {
 	Info             *InfoService
 	Workspaces       *WorkspaceService
 	WorkspaceSecrets *WorkspaceSecretService
+	WorkspaceTags    *WorkspaceTagService
 	Repos            *RepoService
 	Commits          *CommitService
 	Settings         *SettingService
@@ -116,6 +117,7 @@ func NewClient(opts ...option.RequestOption) (r *Client) {
 	r.Info = NewInfoService(opts...)
 	r.Workspaces = NewWorkspaceService(opts...)
 	r.WorkspaceSecrets = NewWorkspaceSecretService(opts...)
+	r.WorkspaceTags = NewWorkspaceTagService(opts...)
 	r.Repos = NewRepoService(opts...)
 	r.Commits = NewCommitService(opts...)
 	r.Settings = NewSettingService(opts...)
