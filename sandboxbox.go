@@ -120,6 +120,14 @@ func (r *SandboxBoxService) Delete(ctx context.Context, name string, opts ...opt
 	return err
 }
 
+// Delete multiple sandboxes by name or UUID in a single request.
+func (r *SandboxBoxService) BatchDelete(ctx context.Context, body SandboxBoxBatchDeleteParams, opts ...option.RequestOption) (res *SandboxBoxBatchDeleteResponse, err error) {
+	opts = slices.Concat(r.Options, opts)
+	path := "api/v2/sandboxes/boxes/batch-delete"
+	err = requestconfig.ExecuteNewRequest(ctx, http.MethodPost, path, body, &res, opts...)
+	return res, err
+}
+
 // Create a snapshot by capturing the current state of a sandbox or promoting an
 // existing checkpoint.
 func (r *SandboxBoxService) NewSnapshot(ctx context.Context, name string, body SandboxBoxNewSnapshotParams, opts ...option.RequestOption) (res *SnapshotResponse, err error) {
@@ -272,6 +280,52 @@ func (r *SandboxBoxService) Stop(ctx context.Context, name string, opts ...optio
 	path := fmt.Sprintf("api/v2/sandboxes/boxes/%s/stop", name)
 	err = requestconfig.ExecuteNewRequest(ctx, http.MethodPost, path, nil, nil, opts...)
 	return err
+}
+
+type SandboxBoxBatchDeleteResponse struct {
+	Deleted []string                               `json:"deleted"`
+	Skipped []SandboxBoxBatchDeleteResponseSkipped `json:"skipped"`
+	JSON    sandboxBoxBatchDeleteResponseJSON      `json:"-"`
+}
+
+// sandboxBoxBatchDeleteResponseJSON contains the JSON metadata for the struct
+// [SandboxBoxBatchDeleteResponse]
+type sandboxBoxBatchDeleteResponseJSON struct {
+	Deleted     apijson.Field
+	Skipped     apijson.Field
+	raw         string
+	ExtraFields map[string]apijson.Field
+}
+
+func (r *SandboxBoxBatchDeleteResponse) UnmarshalJSON(data []byte) (err error) {
+	return apijson.UnmarshalRoot(data, r)
+}
+
+func (r sandboxBoxBatchDeleteResponseJSON) RawJSON() string {
+	return r.raw
+}
+
+type SandboxBoxBatchDeleteResponseSkipped struct {
+	Name   string                                   `json:"name"`
+	Reason string                                   `json:"reason"`
+	JSON   sandboxBoxBatchDeleteResponseSkippedJSON `json:"-"`
+}
+
+// sandboxBoxBatchDeleteResponseSkippedJSON contains the JSON metadata for the
+// struct [SandboxBoxBatchDeleteResponseSkipped]
+type sandboxBoxBatchDeleteResponseSkippedJSON struct {
+	Name        apijson.Field
+	Reason      apijson.Field
+	raw         string
+	ExtraFields map[string]apijson.Field
+}
+
+func (r *SandboxBoxBatchDeleteResponseSkipped) UnmarshalJSON(data []byte) (err error) {
+	return apijson.UnmarshalRoot(data, r)
+}
+
+func (r sandboxBoxBatchDeleteResponseSkippedJSON) RawJSON() string {
+	return r.raw
 }
 
 type SandboxBoxListServiceURLsResponse struct {
@@ -522,6 +576,14 @@ func (r SandboxBoxListParams) URLQuery() (v url.Values) {
 		ArrayFormat:  apiquery.ArrayQueryFormatRepeat,
 		NestedFormat: apiquery.NestedQueryFormatBrackets,
 	})
+}
+
+type SandboxBoxBatchDeleteParams struct {
+	Names param.Field[[]string] `json:"names"`
+}
+
+func (r SandboxBoxBatchDeleteParams) MarshalJSON() (data []byte, err error) {
+	return apijson.MarshalRoot(r)
 }
 
 type SandboxBoxNewSnapshotParams struct {

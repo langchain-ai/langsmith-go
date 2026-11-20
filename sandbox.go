@@ -28,6 +28,7 @@ import (
 type SandboxService struct {
 	Options    []option.RequestOption
 	Boxes      *SandboxBoxService
+	Volumes    *SandboxVolumeService
 	Registries *SandboxRegistryService
 	Snapshots  *SandboxSnapshotService
 	Browsers   *SandboxBrowserService
@@ -40,6 +41,7 @@ func NewSandboxService(opts ...option.RequestOption) (r *SandboxService) {
 	r = &SandboxService{}
 	r.Options = opts
 	r.Boxes = NewSandboxBoxService(opts...)
+	r.Volumes = NewSandboxVolumeService(opts...)
 	r.Registries = NewSandboxRegistryService(opts...)
 	r.Snapshots = NewSandboxSnapshotService(opts...)
 	r.Browsers = NewSandboxBrowserService(opts...)
@@ -79,6 +81,14 @@ func (r *SandboxService) ListUsageCosts(ctx context.Context, query SandboxListUs
 // have no items and a non-null next_cursor; continue until next_cursor is null.
 func (r *SandboxService) ListUsageCostsAutoPaging(ctx context.Context, query SandboxListUsageCostsParams, opts ...option.RequestOption) *pagination.ItemsCursorGetPaginationAutoPager[SandboxListUsageCostsResponse] {
 	return pagination.NewItemsCursorGetPaginationAutoPager(r.ListUsageCosts(ctx, query, opts...))
+}
+
+// Get current sandbox resource usage and quota limits for the workspace
+func (r *SandboxService) GetUsage(ctx context.Context, opts ...option.RequestOption) (res *SandboxGetUsageResponse, err error) {
+	opts = slices.Concat(r.Options, opts)
+	path := "api/v2/sandboxes/usage"
+	err = requestconfig.ExecuteNewRequest(ctx, http.MethodGet, path, nil, &res, opts...)
+	return res, err
 }
 
 type DownloadURLResponse struct {
@@ -5409,6 +5419,53 @@ func (r SandboxListUsageCostsResponseResourceType) IsKnown() bool {
 		return true
 	}
 	return false
+}
+
+type SandboxGetUsageResponse struct {
+	CPULimitMillicores       int64                       `json:"cpu_limit_millicores"`
+	CPUUsedMillicores        int64                       `json:"cpu_used_millicores"`
+	MemoryLimitBytes         int64                       `json:"memory_limit_bytes"`
+	MemoryUsedBytes          int64                       `json:"memory_used_bytes"`
+	PoolsCount               int64                       `json:"pools_count"`
+	RegistriesCount          int64                       `json:"registries_count"`
+	SandboxDirectCount       int64                       `json:"sandbox_direct_count"`
+	SandboxPoolReplicasCount int64                       `json:"sandbox_pool_replicas_count"`
+	SandboxRunningCount      int64                       `json:"sandbox_running_count"`
+	SandboxStoppedCount      int64                       `json:"sandbox_stopped_count"`
+	SandboxesLimit           int64                       `json:"sandboxes_limit"`
+	SandboxesUsed            int64                       `json:"sandboxes_used"`
+	SnapshotsCount           int64                       `json:"snapshots_count"`
+	TemplatesCount           int64                       `json:"templates_count"`
+	JSON                     sandboxGetUsageResponseJSON `json:"-"`
+}
+
+// sandboxGetUsageResponseJSON contains the JSON metadata for the struct
+// [SandboxGetUsageResponse]
+type sandboxGetUsageResponseJSON struct {
+	CPULimitMillicores       apijson.Field
+	CPUUsedMillicores        apijson.Field
+	MemoryLimitBytes         apijson.Field
+	MemoryUsedBytes          apijson.Field
+	PoolsCount               apijson.Field
+	RegistriesCount          apijson.Field
+	SandboxDirectCount       apijson.Field
+	SandboxPoolReplicasCount apijson.Field
+	SandboxRunningCount      apijson.Field
+	SandboxStoppedCount      apijson.Field
+	SandboxesLimit           apijson.Field
+	SandboxesUsed            apijson.Field
+	SnapshotsCount           apijson.Field
+	TemplatesCount           apijson.Field
+	raw                      string
+	ExtraFields              map[string]apijson.Field
+}
+
+func (r *SandboxGetUsageResponse) UnmarshalJSON(data []byte) (err error) {
+	return apijson.UnmarshalRoot(data, r)
+}
+
+func (r sandboxGetUsageResponseJSON) RawJSON() string {
+	return r.raw
 }
 
 type SandboxListUsageCostsParams struct {
