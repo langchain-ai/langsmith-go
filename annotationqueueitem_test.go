@@ -277,6 +277,34 @@ func TestAnnotationQueueItemGetPlacement(t *testing.T) {
 	}
 }
 
+func TestAnnotationQueueItemGetReviews(t *testing.T) {
+	t.Skip("Mock server tests are disabled")
+	baseURL := "http://localhost:4010"
+	if envURL, ok := os.LookupEnv("TEST_API_BASE_URL"); ok {
+		baseURL = envURL
+	}
+	if !testutil.CheckTestServer(t, baseURL) {
+		return
+	}
+	client := langsmith.NewClient(
+		option.WithBaseURL(baseURL),
+		option.WithAPIKey("My API Key"),
+		option.WithTenantID("My Tenant ID"),
+	)
+	_, err := client.AnnotationQueues.Items.GetReviews(
+		context.TODO(),
+		"queue_id",
+		"item_id",
+	)
+	if err != nil {
+		var apierr *langsmith.Error
+		if errors.As(err, &apierr) {
+			t.Log(string(apierr.DumpRequest(true)))
+		}
+		t.Fatalf("err should be nil: %s", err.Error())
+	}
+}
+
 func TestAnnotationQueueItemSetFinalWithOptionalParams(t *testing.T) {
 	t.Skip("Mock server tests are disabled")
 	baseURL := "http://localhost:4010"
@@ -297,6 +325,40 @@ func TestAnnotationQueueItemSetFinalWithOptionalParams(t *testing.T) {
 		"item_id",
 		"key",
 		langsmith.AnnotationQueueItemSetFinalParams{
+			Score:  langsmith.F(0.000000),
+			Value:  langsmith.F("value"),
+			Values: langsmith.F([]string{"string"}),
+		},
+	)
+	if err != nil {
+		var apierr *langsmith.Error
+		if errors.As(err, &apierr) {
+			t.Log(string(apierr.DumpRequest(true)))
+		}
+		t.Fatalf("err should be nil: %s", err.Error())
+	}
+}
+
+func TestAnnotationQueueItemSetReviewWithOptionalParams(t *testing.T) {
+	t.Skip("Mock server tests are disabled")
+	baseURL := "http://localhost:4010"
+	if envURL, ok := os.LookupEnv("TEST_API_BASE_URL"); ok {
+		baseURL = envURL
+	}
+	if !testutil.CheckTestServer(t, baseURL) {
+		return
+	}
+	client := langsmith.NewClient(
+		option.WithBaseURL(baseURL),
+		option.WithAPIKey("My API Key"),
+		option.WithTenantID("My Tenant ID"),
+	)
+	_, err := client.AnnotationQueues.Items.SetReview(
+		context.TODO(),
+		"queue_id",
+		"item_id",
+		"key",
+		langsmith.AnnotationQueueItemSetReviewParams{
 			Score:  langsmith.F(0.000000),
 			Value:  langsmith.F("value"),
 			Values: langsmith.F([]string{"string"}),

@@ -194,6 +194,25 @@ func (r *AnnotationQueueItemService) GetPlacement(ctx context.Context, queueID s
 	return res, err
 }
 
+// For each rubric key: whether the reviewers agreed, the final if one is set, and
+// each reviewer's answer. Reviewers are listed in the order they completed the
+// item. Their name and email are empty when the caller cannot see other workspace
+// members. Returns 404 unless the item is completed.
+func (r *AnnotationQueueItemService) GetReviews(ctx context.Context, queueID string, itemID string, opts ...option.RequestOption) (res *AnnotationQueueItemGetReviewsResponse, err error) {
+	opts = slices.Concat(r.Options, opts)
+	if queueID == "" {
+		err = errors.New("missing required queue_id parameter")
+		return nil, err
+	}
+	if itemID == "" {
+		err = errors.New("missing required item_id parameter")
+		return nil, err
+	}
+	path := fmt.Sprintf("api/v1/platform/annotation-queues/%s/items/%s/reviews", queueID, itemID)
+	err = requestconfig.ExecuteNewRequest(ctx, http.MethodGet, path, nil, &res, opts...)
+	return res, err
+}
+
 // Set the answer downstream uses for one rubric key when the item's reviewers
 // disagreed. A key that already has a final can be changed even after reviewers
 // come to agree. Multi-select keys take a list of category labels in values.
@@ -215,6 +234,130 @@ func (r *AnnotationQueueItemService) SetFinal(ctx context.Context, queueID strin
 	path := fmt.Sprintf("api/v1/platform/annotation-queues/%s/items/%s/finals/%s", queueID, itemID, key)
 	err = requestconfig.ExecuteNewRequest(ctx, http.MethodPut, path, body, &res, opts...)
 	return res, err
+}
+
+// Replace your own answer on one rubric key and update the item's agreement. Only
+// a reviewer who completed the item can edit their answer. Multi-select keys take
+// a list of category labels in values; free-text keys take text in value. An empty
+// body clears your answer.
+func (r *AnnotationQueueItemService) SetReview(ctx context.Context, queueID string, itemID string, key string, body AnnotationQueueItemSetReviewParams, opts ...option.RequestOption) (res *AnnotationQueueItemKeyReviews, err error) {
+	opts = slices.Concat(r.Options, opts)
+	if queueID == "" {
+		err = errors.New("missing required queue_id parameter")
+		return nil, err
+	}
+	if itemID == "" {
+		err = errors.New("missing required item_id parameter")
+		return nil, err
+	}
+	if key == "" {
+		err = errors.New("missing required key parameter")
+		return nil, err
+	}
+	path := fmt.Sprintf("api/v1/platform/annotation-queues/%s/items/%s/reviews/%s", queueID, itemID, key)
+	err = requestconfig.ExecuteNewRequest(ctx, http.MethodPut, path, body, &res, opts...)
+	return res, err
+}
+
+type AnnotationQueueItemAgreementState string
+
+const (
+	AnnotationQueueItemAgreementStateAgreed    AnnotationQueueItemAgreementState = "agreed"
+	AnnotationQueueItemAgreementStateDisagreed AnnotationQueueItemAgreementState = "disagreed"
+	AnnotationQueueItemAgreementStateNone      AnnotationQueueItemAgreementState = "none"
+)
+
+func (r AnnotationQueueItemAgreementState) IsKnown() bool {
+	switch r {
+	case AnnotationQueueItemAgreementStateAgreed, AnnotationQueueItemAgreementStateDisagreed, AnnotationQueueItemAgreementStateNone:
+		return true
+	}
+	return false
+}
+
+type AnnotationQueueItemAnswer struct {
+	Score  float64                       `json:"score"`
+	Scores []float64                     `json:"scores"`
+	Value  string                        `json:"value"`
+	Values []string                      `json:"values"`
+	JSON   annotationQueueItemAnswerJSON `json:"-"`
+}
+
+// annotationQueueItemAnswerJSON contains the JSON metadata for the struct
+// [AnnotationQueueItemAnswer]
+type annotationQueueItemAnswerJSON struct {
+	Score       apijson.Field
+	Scores      apijson.Field
+	Value       apijson.Field
+	Values      apijson.Field
+	raw         string
+	ExtraFields map[string]apijson.Field
+}
+
+func (r *AnnotationQueueItemAnswer) UnmarshalJSON(data []byte) (err error) {
+	return apijson.UnmarshalRoot(data, r)
+}
+
+func (r annotationQueueItemAnswerJSON) RawJSON() string {
+	return r.raw
+}
+
+type AnnotationQueueItemKeyReviews struct {
+	Answer     AnnotationQueueItemAnswer             `json:"answer"`
+	Final      AnnotationQueueItemAnswer             `json:"final"`
+	FinalSetAt time.Time                             `json:"final_set_at" format:"date-time"`
+	FinalSetBy string                                `json:"final_set_by"`
+	HasFinal   bool                                  `json:"has_final"`
+	Key        string                                `json:"key"`
+	Reviews    []AnnotationQueueItemKeyReviewsReview `json:"reviews"`
+	State      AnnotationQueueItemAgreementState     `json:"state"`
+	JSON       annotationQueueItemKeyReviewsJSON     `json:"-"`
+}
+
+// annotationQueueItemKeyReviewsJSON contains the JSON metadata for the struct
+// [AnnotationQueueItemKeyReviews]
+type annotationQueueItemKeyReviewsJSON struct {
+	Answer      apijson.Field
+	Final       apijson.Field
+	FinalSetAt  apijson.Field
+	FinalSetBy  apijson.Field
+	HasFinal    apijson.Field
+	Key         apijson.Field
+	Reviews     apijson.Field
+	State       apijson.Field
+	raw         string
+	ExtraFields map[string]apijson.Field
+}
+
+func (r *AnnotationQueueItemKeyReviews) UnmarshalJSON(data []byte) (err error) {
+	return apijson.UnmarshalRoot(data, r)
+}
+
+func (r annotationQueueItemKeyReviewsJSON) RawJSON() string {
+	return r.raw
+}
+
+type AnnotationQueueItemKeyReviewsReview struct {
+	Answer   AnnotationQueueItemAnswer               `json:"answer"`
+	LsUserID string                                  `json:"ls_user_id"`
+	JSON     annotationQueueItemKeyReviewsReviewJSON `json:"-"`
+}
+
+// annotationQueueItemKeyReviewsReviewJSON contains the JSON metadata for the
+// struct [AnnotationQueueItemKeyReviewsReview]
+type annotationQueueItemKeyReviewsReviewJSON struct {
+	Answer      apijson.Field
+	LsUserID    apijson.Field
+	raw         string
+	ExtraFields map[string]apijson.Field
+}
+
+func (r *AnnotationQueueItemKeyReviewsReview) UnmarshalJSON(data []byte) (err error) {
+	return apijson.UnmarshalRoot(data, r)
+}
+
+func (r annotationQueueItemKeyReviewsReviewJSON) RawJSON() string {
+	return r.raw
 }
 
 type AnnotationQueueItemNewResponse struct {
@@ -352,10 +495,10 @@ type AnnotationQueueItemListResponse struct {
 	ID      string `json:"id"`
 	AddedAt string `json:"added_at"`
 	// Whether the item's reviewers agreed across its rubric keys.
-	AgreementState   AnnotationQueueItemListResponseAgreementState `json:"agreement_state"`
-	AssignedTo       []string                                      `json:"assigned_to"`
-	CompletedBy      []string                                      `json:"completed_by"`
-	EffectiveAddedAt string                                        `json:"effective_added_at"`
+	AgreementState   AnnotationQueueItemAgreementState `json:"agreement_state"`
+	AssignedTo       []string                          `json:"assigned_to"`
+	CompletedBy      []string                          `json:"completed_by"`
+	EffectiveAddedAt string                            `json:"effective_added_at"`
 	// True while a key the reviewers disagreed on has no final answer.
 	HasUnresolvedKeys bool                                    `json:"has_unresolved_keys"`
 	ItemType          AnnotationQueueItemListResponseItemType `json:"item_type"`
@@ -405,23 +548,6 @@ func (r annotationQueueItemListResponseJSON) RawJSON() string {
 	return r.raw
 }
 
-// Whether the item's reviewers agreed across its rubric keys.
-type AnnotationQueueItemListResponseAgreementState string
-
-const (
-	AnnotationQueueItemListResponseAgreementStateAgreed    AnnotationQueueItemListResponseAgreementState = "agreed"
-	AnnotationQueueItemListResponseAgreementStateDisagreed AnnotationQueueItemListResponseAgreementState = "disagreed"
-	AnnotationQueueItemListResponseAgreementStateNone      AnnotationQueueItemListResponseAgreementState = "none"
-)
-
-func (r AnnotationQueueItemListResponseAgreementState) IsKnown() bool {
-	switch r {
-	case AnnotationQueueItemListResponseAgreementStateAgreed, AnnotationQueueItemListResponseAgreementStateDisagreed, AnnotationQueueItemListResponseAgreementStateNone:
-		return true
-	}
-	return false
-}
-
 type AnnotationQueueItemListResponseItemType string
 
 const (
@@ -438,10 +564,10 @@ func (r AnnotationQueueItemListResponseItemType) IsKnown() bool {
 }
 
 type AnnotationQueueItemListResponseKeyAgreement struct {
-	Answer   AnnotationQueueItemListResponseKeyAgreementsAnswer `json:"answer"`
-	HasFinal bool                                               `json:"has_final"`
-	State    AnnotationQueueItemListResponseKeyAgreementsState  `json:"state"`
-	JSON     annotationQueueItemListResponseKeyAgreementJSON    `json:"-"`
+	Answer   AnnotationQueueItemAnswer                       `json:"answer"`
+	HasFinal bool                                            `json:"has_final"`
+	State    AnnotationQueueItemAgreementState               `json:"state"`
+	JSON     annotationQueueItemListResponseKeyAgreementJSON `json:"-"`
 }
 
 // annotationQueueItemListResponseKeyAgreementJSON contains the JSON metadata for
@@ -460,49 +586,6 @@ func (r *AnnotationQueueItemListResponseKeyAgreement) UnmarshalJSON(data []byte)
 
 func (r annotationQueueItemListResponseKeyAgreementJSON) RawJSON() string {
 	return r.raw
-}
-
-type AnnotationQueueItemListResponseKeyAgreementsAnswer struct {
-	Score  float64                                                `json:"score"`
-	Scores []float64                                              `json:"scores"`
-	Value  string                                                 `json:"value"`
-	Values []string                                               `json:"values"`
-	JSON   annotationQueueItemListResponseKeyAgreementsAnswerJSON `json:"-"`
-}
-
-// annotationQueueItemListResponseKeyAgreementsAnswerJSON contains the JSON
-// metadata for the struct [AnnotationQueueItemListResponseKeyAgreementsAnswer]
-type annotationQueueItemListResponseKeyAgreementsAnswerJSON struct {
-	Score       apijson.Field
-	Scores      apijson.Field
-	Value       apijson.Field
-	Values      apijson.Field
-	raw         string
-	ExtraFields map[string]apijson.Field
-}
-
-func (r *AnnotationQueueItemListResponseKeyAgreementsAnswer) UnmarshalJSON(data []byte) (err error) {
-	return apijson.UnmarshalRoot(data, r)
-}
-
-func (r annotationQueueItemListResponseKeyAgreementsAnswerJSON) RawJSON() string {
-	return r.raw
-}
-
-type AnnotationQueueItemListResponseKeyAgreementsState string
-
-const (
-	AnnotationQueueItemListResponseKeyAgreementsStateAgreed    AnnotationQueueItemListResponseKeyAgreementsState = "agreed"
-	AnnotationQueueItemListResponseKeyAgreementsStateDisagreed AnnotationQueueItemListResponseKeyAgreementsState = "disagreed"
-	AnnotationQueueItemListResponseKeyAgreementsStateNone      AnnotationQueueItemListResponseKeyAgreementsState = "none"
-)
-
-func (r AnnotationQueueItemListResponseKeyAgreementsState) IsKnown() bool {
-	switch r {
-	case AnnotationQueueItemListResponseKeyAgreementsStateAgreed, AnnotationQueueItemListResponseKeyAgreementsStateDisagreed, AnnotationQueueItemListResponseKeyAgreementsStateNone:
-		return true
-	}
-	return false
 }
 
 type AnnotationQueueItemNewStatusResponse struct {
@@ -628,15 +711,67 @@ func (r AnnotationQueueItemGetPlacementResponseSection) IsKnown() bool {
 	return false
 }
 
+type AnnotationQueueItemGetReviewsResponse struct {
+	Keys      []AnnotationQueueItemKeyReviews                 `json:"keys"`
+	Reviewers []AnnotationQueueItemGetReviewsResponseReviewer `json:"reviewers"`
+	JSON      annotationQueueItemGetReviewsResponseJSON       `json:"-"`
+}
+
+// annotationQueueItemGetReviewsResponseJSON contains the JSON metadata for the
+// struct [AnnotationQueueItemGetReviewsResponse]
+type annotationQueueItemGetReviewsResponseJSON struct {
+	Keys        apijson.Field
+	Reviewers   apijson.Field
+	raw         string
+	ExtraFields map[string]apijson.Field
+}
+
+func (r *AnnotationQueueItemGetReviewsResponse) UnmarshalJSON(data []byte) (err error) {
+	return apijson.UnmarshalRoot(data, r)
+}
+
+func (r annotationQueueItemGetReviewsResponseJSON) RawJSON() string {
+	return r.raw
+}
+
+type AnnotationQueueItemGetReviewsResponseReviewer struct {
+	CompletedAt time.Time                                         `json:"completed_at" format:"date-time"`
+	Email       string                                            `json:"email"`
+	IdentityID  string                                            `json:"identity_id"`
+	LsUserID    string                                            `json:"ls_user_id"`
+	Name        string                                            `json:"name"`
+	JSON        annotationQueueItemGetReviewsResponseReviewerJSON `json:"-"`
+}
+
+// annotationQueueItemGetReviewsResponseReviewerJSON contains the JSON metadata for
+// the struct [AnnotationQueueItemGetReviewsResponseReviewer]
+type annotationQueueItemGetReviewsResponseReviewerJSON struct {
+	CompletedAt apijson.Field
+	Email       apijson.Field
+	IdentityID  apijson.Field
+	LsUserID    apijson.Field
+	Name        apijson.Field
+	raw         string
+	ExtraFields map[string]apijson.Field
+}
+
+func (r *AnnotationQueueItemGetReviewsResponseReviewer) UnmarshalJSON(data []byte) (err error) {
+	return apijson.UnmarshalRoot(data, r)
+}
+
+func (r annotationQueueItemGetReviewsResponseReviewerJSON) RawJSON() string {
+	return r.raw
+}
+
 type AnnotationQueueItemSetFinalResponse struct {
-	Answer     AnnotationQueueItemSetFinalResponseAnswer `json:"answer"`
-	Final      AnnotationQueueItemSetFinalResponseFinal  `json:"final"`
-	FinalSetAt time.Time                                 `json:"final_set_at" format:"date-time"`
-	FinalSetBy string                                    `json:"final_set_by"`
-	HasFinal   bool                                      `json:"has_final"`
-	Key        string                                    `json:"key"`
-	State      AnnotationQueueItemSetFinalResponseState  `json:"state"`
-	JSON       annotationQueueItemSetFinalResponseJSON   `json:"-"`
+	Answer     AnnotationQueueItemAnswer               `json:"answer"`
+	Final      AnnotationQueueItemAnswer               `json:"final"`
+	FinalSetAt time.Time                               `json:"final_set_at" format:"date-time"`
+	FinalSetBy string                                  `json:"final_set_by"`
+	HasFinal   bool                                    `json:"has_final"`
+	Key        string                                  `json:"key"`
+	State      AnnotationQueueItemAgreementState       `json:"state"`
+	JSON       annotationQueueItemSetFinalResponseJSON `json:"-"`
 }
 
 // annotationQueueItemSetFinalResponseJSON contains the JSON metadata for the
@@ -659,76 +794,6 @@ func (r *AnnotationQueueItemSetFinalResponse) UnmarshalJSON(data []byte) (err er
 
 func (r annotationQueueItemSetFinalResponseJSON) RawJSON() string {
 	return r.raw
-}
-
-type AnnotationQueueItemSetFinalResponseAnswer struct {
-	Score  float64                                       `json:"score"`
-	Scores []float64                                     `json:"scores"`
-	Value  string                                        `json:"value"`
-	Values []string                                      `json:"values"`
-	JSON   annotationQueueItemSetFinalResponseAnswerJSON `json:"-"`
-}
-
-// annotationQueueItemSetFinalResponseAnswerJSON contains the JSON metadata for the
-// struct [AnnotationQueueItemSetFinalResponseAnswer]
-type annotationQueueItemSetFinalResponseAnswerJSON struct {
-	Score       apijson.Field
-	Scores      apijson.Field
-	Value       apijson.Field
-	Values      apijson.Field
-	raw         string
-	ExtraFields map[string]apijson.Field
-}
-
-func (r *AnnotationQueueItemSetFinalResponseAnswer) UnmarshalJSON(data []byte) (err error) {
-	return apijson.UnmarshalRoot(data, r)
-}
-
-func (r annotationQueueItemSetFinalResponseAnswerJSON) RawJSON() string {
-	return r.raw
-}
-
-type AnnotationQueueItemSetFinalResponseFinal struct {
-	Score  float64                                      `json:"score"`
-	Scores []float64                                    `json:"scores"`
-	Value  string                                       `json:"value"`
-	Values []string                                     `json:"values"`
-	JSON   annotationQueueItemSetFinalResponseFinalJSON `json:"-"`
-}
-
-// annotationQueueItemSetFinalResponseFinalJSON contains the JSON metadata for the
-// struct [AnnotationQueueItemSetFinalResponseFinal]
-type annotationQueueItemSetFinalResponseFinalJSON struct {
-	Score       apijson.Field
-	Scores      apijson.Field
-	Value       apijson.Field
-	Values      apijson.Field
-	raw         string
-	ExtraFields map[string]apijson.Field
-}
-
-func (r *AnnotationQueueItemSetFinalResponseFinal) UnmarshalJSON(data []byte) (err error) {
-	return apijson.UnmarshalRoot(data, r)
-}
-
-func (r annotationQueueItemSetFinalResponseFinalJSON) RawJSON() string {
-	return r.raw
-}
-
-type AnnotationQueueItemSetFinalResponseState string
-
-const (
-	AnnotationQueueItemSetFinalResponseStateAgreed    AnnotationQueueItemSetFinalResponseState = "agreed"
-	AnnotationQueueItemSetFinalResponseStateDisagreed AnnotationQueueItemSetFinalResponseState = "disagreed"
-	AnnotationQueueItemSetFinalResponseStateNone      AnnotationQueueItemSetFinalResponseState = "none"
-)
-
-func (r AnnotationQueueItemSetFinalResponseState) IsKnown() bool {
-	switch r {
-	case AnnotationQueueItemSetFinalResponseStateAgreed, AnnotationQueueItemSetFinalResponseStateDisagreed, AnnotationQueueItemSetFinalResponseStateNone:
-		return true
-	}
-	return false
 }
 
 type AnnotationQueueItemNewParams struct {
@@ -983,5 +1048,15 @@ type AnnotationQueueItemSetFinalParams struct {
 }
 
 func (r AnnotationQueueItemSetFinalParams) MarshalJSON() (data []byte, err error) {
+	return apijson.MarshalRoot(r)
+}
+
+type AnnotationQueueItemSetReviewParams struct {
+	Score  param.Field[float64]  `json:"score"`
+	Value  param.Field[string]   `json:"value"`
+	Values param.Field[[]string] `json:"values"`
+}
+
+func (r AnnotationQueueItemSetReviewParams) MarshalJSON() (data []byte, err error) {
 	return apijson.MarshalRoot(r)
 }
