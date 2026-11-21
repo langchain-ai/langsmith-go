@@ -1,5 +1,28 @@
 # Changelog
 
+## [0.34.0](https://github.com/langchain-ai/langsmith-go/compare/v0.33.1...v0.34.0) (2026-11-21)
+
+
+### ⚠ BREAKING CHANGES
+
+* add cursor-paginated workspace secrets listing
+
+### Features
+
+* add cursor-paginated workspace secrets listing ([923b09c](https://github.com/langchain-ai/langsmith-go/commit/923b09c0206f4de48a2be6fe911edaa0356990c5))
+* **feedback:** delete feedback from Go ([d45b1ed](https://github.com/langchain-ai/langsmith-go/commit/d45b1edf942b5915ba065b9fc1523a72ebe32189))
+* **sdks:** build sandbox snapshots from a local Dockerfile in the Go SDK and CLI ([3406937](https://github.com/langchain-ai/langsmith-go/commit/3406937da920478fb575f3403ccbfa8316ff0a21))
+
+
+### Bug Fixes
+
+* **traceanthropic:** keep every block type in streamed completions ([6b825a7](https://github.com/langchain-ai/langsmith-go/commit/6b825a7aa5b5be353d0d1ee7572ffa359989015e))
+
+
+### Refactors
+
+* **cli:** move the CLI's code into the Go SDK module ([e672053](https://github.com/langchain-ai/langsmith-go/commit/e672053fefa0799848b61d2eb92df461431e6674))
+
 ## [0.33.1](https://github.com/langchain-ai/langsmith-go/compare/v0.33.0...v0.33.1) (2026-11-20)
 
 
