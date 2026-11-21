@@ -211,12 +211,15 @@ func (r volumeResponseAttachmentJSON) RawJSON() string {
 }
 
 type SandboxVolumeNewParams struct {
-	// Name is unique within the workspace.
+	// Name of the volume, unique within the workspace.
 	Name param.Field[string] `json:"name" api:"required"`
-	// SizeBytes is the volume's capacity, rounded up to a whole GiB.
-	SizeBytes   param.Field[int64]             `json:"size_bytes" api:"required"`
-	Description param.Field[string]            `json:"description"`
-	Labels      param.Field[map[string]string] `json:"labels"`
+	// Capacity in bytes, rounded up to a whole GiB.
+	SizeBytes param.Field[int64] `json:"size_bytes" api:"required"`
+	// Free-text description, at most 1024 characters.
+	Description param.Field[string] `json:"description"`
+	// Labels to filter and identify the volume by. Keys are lowercase letters, digits,
+	// dots and hyphens.
+	Labels param.Field[map[string]string] `json:"labels"`
 }
 
 func (r SandboxVolumeNewParams) MarshalJSON() (data []byte, err error) {
@@ -254,9 +257,11 @@ func (r SandboxVolumeListParams) URLQuery() (v url.Values) {
 
 type SandboxVolumeCloneParams struct {
 	// Name of the new volume, unique within the workspace.
-	Name        param.Field[string]            `json:"name" api:"required"`
-	Description param.Field[string]            `json:"description"`
-	Labels      param.Field[map[string]string] `json:"labels"`
+	Name param.Field[string] `json:"name" api:"required"`
+	// Free-text description of the new volume, at most 1024 characters.
+	Description param.Field[string] `json:"description"`
+	// Labels for the new volume. Keys are lowercase letters, digits, dots and hyphens.
+	Labels param.Field[map[string]string] `json:"labels"`
 }
 
 func (r SandboxVolumeCloneParams) MarshalJSON() (data []byte, err error) {

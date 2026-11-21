@@ -126,6 +126,8 @@ func TestSnapshotBuildRejectsInvalidFlagCombinations(t *testing.T) {
 		{name: "build arg with image", args: []string{"--docker-image", "ubuntu:24.04", "--build-arg", "A=1"}, wantErr: "--build-arg applies to --dockerfile only"},
 		{name: "vcpus with image", args: []string{"--docker-image", "ubuntu:24.04", "--vcpus", "2"}, wantErr: "--vcpus applies to --dockerfile only"},
 		{name: "registry with dockerfile", args: []string{"--dockerfile", "Dockerfile", "--registry-id", "reg-1"}, wantErr: "--registry-id applies to --docker-image only"},
+		{name: "label with dockerfile", args: []string{"--dockerfile", "Dockerfile", "--label", "team=infra"}, wantErr: "--label applies to --docker-image only"},
+		{name: "run config with dockerfile", args: []string{"--dockerfile", "Dockerfile", "--user", "app"}, wantErr: "--user applies to --docker-image only"},
 		{name: "bad memory", args: []string{"--dockerfile", "Dockerfile", "--memory", "lots"}, wantErr: "invalid --memory"},
 		{name: "bad build arg", args: []string{"--dockerfile", "Dockerfile", "--build-arg", "=1"}, wantErr: "invalid --build-arg"},
 	}

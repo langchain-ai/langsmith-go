@@ -2,6 +2,7 @@ package structured
 
 import (
 	"fmt"
+	"sort"
 	"strings"
 	"text/template"
 	"time"
@@ -13,6 +14,7 @@ func templateFuncs() template.FuncMap {
 		"formatBytes":       formatBytes,
 		"formatBytesOrDash": formatBytesOrDash,
 		"formatCount":       formatCount,
+		"formatKV":          formatKV,
 		"formatTime":        formatTime,
 		"joinOrDash":        joinOrDash,
 		"shortID":           shortID,
@@ -24,6 +26,23 @@ func joinOrDash(items []string) string {
 		return "-"
 	}
 	return strings.Join(items, ", ")
+}
+
+// formatKV renders a map as sorted "key=value" pairs, or "" when empty.
+func formatKV(m map[string]string) string {
+	if len(m) == 0 {
+		return ""
+	}
+	keys := make([]string, 0, len(m))
+	for k := range m {
+		keys = append(keys, k)
+	}
+	sort.Strings(keys)
+	pairs := make([]string, 0, len(keys))
+	for _, k := range keys {
+		pairs = append(pairs, k+"="+m[k])
+	}
+	return strings.Join(pairs, ", ")
 }
 
 func dash(s string) string {

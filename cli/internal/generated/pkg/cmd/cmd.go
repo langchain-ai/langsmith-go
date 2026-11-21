@@ -430,6 +430,19 @@ func init() {
 				},
 			},
 			{
+				Name:     "sandboxes:volumes",
+				Category: "API RESOURCE",
+				Suggest:  true,
+				Commands: []*cli.Command{
+					&sandboxesVolumesCreate,
+					&sandboxesVolumesRetrieve,
+					&sandboxesVolumesUpdate,
+					&sandboxesVolumesList,
+					&sandboxesVolumesDelete,
+					&sandboxesVolumesClone,
+				},
+			},
+			{
 				Name:     "sandboxes:registries",
 				Category: "API RESOURCE",
 				Suggest:  true,

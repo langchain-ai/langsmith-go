@@ -25,6 +25,16 @@ Common workflows:
   # Run a command inside the sandbox
   langsmith sandboxes exec my-vm -- uname -a
 
+  # Copy files in and out
+  langsmith sandboxes cp ./app.tar.gz my-vm:/tmp/
+  langsmith sandboxes cp my-vm:/tmp/report.pdf .
+
+  # Keep memory across stops, so a restart resumes running processes
+  langsmith sandboxes create my-vm --preserve-memory-on-stop
+
+  # Capture a snapshot with memory, so new sandboxes resume from it
+  langsmith sandboxes snapshot capture warm --from my-vm --include-memory --wait
+
   # Open an interactive shell
   langsmith sandboxes console my-vm
 
@@ -48,6 +58,7 @@ Common workflows:
 	cmd.AddCommand(sandboxGetCommand.Cobra())
 	cmd.AddCommand(sandboxUpdateCommand.Cobra())
 	cmd.AddCommand(sandboxDeleteCommand.Cobra())
+	cmd.AddCommand(sandboxUsageCommand.Cobra())
 	cmd.AddCommand(sandboxStartCommand.Cobra())
 	cmd.AddCommand(sandboxStopCommand.Cobra())
 
@@ -56,6 +67,8 @@ Common workflows:
 	cmd.AddCommand(newSandboxConsoleCmd())
 	cmd.AddCommand(sandboxServiceURLCommand.Cobra())
 	cmd.AddCommand(sandboxDownloadURLCommand.Cobra())
+	cmd.AddCommand(sandboxCopyCommand.Cobra())
+	cmd.AddCommand(sandboxListFilesCommand.Cobra())
 	cmd.AddCommand(newSandboxTunnelCmd())
 	cmd.AddCommand(newSandboxSSHSetupCmd())
 

@@ -863,13 +863,15 @@ Every command in this version of the CLI. Run `langsmith <command> --help` for i
 | `langsmith sandboxes browsers load-extensions` | Beta: bring the browser's Chrome in line with the unpacked extensions in its /var/lib/browserd/extensions (one per directory). |
 | `langsmith sandboxes browsers retrieve` | Beta: get a browser and the windows attached to it. |
 | `langsmith sandboxes console` | Open an interactive shell inside a sandbox |
+| `langsmith sandboxes cp` | Copy a file to or from a sandbox |
 | `langsmith sandboxes create` | Create a sandbox VM |
-| `langsmith sandboxes delete` | Delete a sandbox |
+| `langsmith sandboxes delete` | Delete one or more sandboxes |
 | `langsmith sandboxes exec` | Execute a command inside a sandbox |
 | `langsmith sandboxes generate-download-url` | Generate a link that downloads a sandbox file without credentials |
 | `langsmith sandboxes get` | Get a sandbox by name |
-| `langsmith sandboxes list` | List all sandboxes |
+| `langsmith sandboxes list` | List sandboxes |
 | `langsmith sandboxes list-usage-costs` | Returns priced usage per sandbox or snapshot and UTC hour in the half-open requested interval. |
+| `langsmith sandboxes ls` | List files in a sandbox |
 | `langsmith sandboxes registries create` | Create a sandbox registry for pulling private images. |
 | `langsmith sandboxes registries delete` | Delete a sandbox registry by name. *(confirms)* |
 | `langsmith sandboxes registries list` | List sandbox registries for pulling private images. |
@@ -877,16 +879,23 @@ Every command in this version of the CLI. Run `langsmith <command> --help` for i
 | `langsmith sandboxes registries update` | Update a sandbox registry's name and/or credentials. |
 | `langsmith sandboxes service-url` | Generate an authenticated URL for a sandbox HTTP service |
 | `langsmith sandboxes snapshot build` | Build a snapshot from a Docker image or a local Dockerfile |
-| `langsmith sandboxes snapshot capture` | Capture a snapshot from a running sandbox |
+| `langsmith sandboxes snapshot capture` | Capture a snapshot from a sandbox |
 | `langsmith sandboxes snapshot delete` | Delete a snapshot by ID or Docker-style reference |
 | `langsmith sandboxes snapshot get` | Get a snapshot by ID or Docker-style reference |
-| `langsmith sandboxes snapshot list` | List all snapshots |
+| `langsmith sandboxes snapshot list` | List snapshots |
 | `langsmith sandboxes snapshots retrieve-by-name` | Get a snapshot name and every tag under it, with the snapshot each tag resolves to. |
 | `langsmith sandboxes ssh-setup` | Upload your SSH public key and configure ~/.ssh/config for a sandbox |
 | `langsmith sandboxes start` | Start a stopped sandbox |
 | `langsmith sandboxes stop` | Stop a running sandbox (preserves data) |
 | `langsmith sandboxes tunnel` | Create a TCP tunnel to a service inside a sandbox |
-| `langsmith sandboxes update` | Update sandbox resources (takes effect on next start) |
+| `langsmith sandboxes update` | Update sandbox settings |
+| `langsmith sandboxes usage` | Show the workspace's sandbox usage against its limits |
+| `langsmith sandboxes volumes clone` | **Beta:** This API is in active development and may change without notice. |
+| `langsmith sandboxes volumes create` | **Beta:** This API is in active development and may change without notice. |
+| `langsmith sandboxes volumes delete` | **Beta:** This API is in active development and may change without notice. *(confirms)* |
+| `langsmith sandboxes volumes list` | **Beta:** This API is in active development and may change without notice. |
+| `langsmith sandboxes volumes retrieve` | **Beta:** This API is in active development and may change without notice. |
+| `langsmith sandboxes volumes update` | **Beta:** This API is in active development and may change without notice. |
 | `langsmith self-update` | Update langsmith to the latest version |
 | `langsmith settings list` | Get the current workspace. |
 | `langsmith setup` | Install LangSmith skills and the LangSmith MCP server into your coding agents |

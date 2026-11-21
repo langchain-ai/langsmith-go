@@ -302,8 +302,8 @@ func TestSandboxBoxDetailRenderSupportsSDKResponseTypes(t *testing.T) {
 				IdleTtlSeconds:  900,
 				CreatedAt:       "2026-05-11T12:00:00Z",
 			},
-			wantID:  "ID:        box-new",
-			wantTTL: "Idle TTL:  900s",
+			wantID:  `ID:\s+box-new\n`,
+			wantTTL: `Idle TTL:\s+900s\n`,
 		},
 		{
 			name: "get response",
@@ -319,8 +319,8 @@ func TestSandboxBoxDetailRenderSupportsSDKResponseTypes(t *testing.T) {
 				IdleTtlSeconds:  1800,
 				CreatedAt:       "2026-05-11T12:00:00Z",
 			},
-			wantID:  "ID:        box-get",
-			wantTTL: "Idle TTL:  1800s",
+			wantID:  `ID:\s+box-get\n`,
+			wantTTL: `Idle TTL:\s+1800s\n`,
 		},
 		{
 			name: "update response",
@@ -336,8 +336,8 @@ func TestSandboxBoxDetailRenderSupportsSDKResponseTypes(t *testing.T) {
 				IdleTtlSeconds:  3600,
 				CreatedAt:       "2026-05-11T12:00:00Z",
 			},
-			wantID:  "ID:        box-update",
-			wantTTL: "Idle TTL:  3600s",
+			wantID:  `ID:\s+box-update\n`,
+			wantTTL: `Idle TTL:\s+3600s\n`,
 		},
 	}
 
@@ -348,9 +348,9 @@ func TestSandboxBoxDetailRenderSupportsSDKResponseTypes(t *testing.T) {
 			err := sandboxBoxDetailRender.RenderText(&out, tc.model)
 
 			require.NoError(t, err)
-			require.Contains(t, out.String(), tc.wantID)
+			require.Regexp(t, tc.wantID, out.String())
 			require.Contains(t, out.String(), "Size:")
-			require.Contains(t, out.String(), tc.wantTTL)
+			require.Regexp(t, tc.wantTTL, out.String())
 		})
 	}
 }
