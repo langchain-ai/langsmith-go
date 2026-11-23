@@ -834,6 +834,24 @@ func TestSupportsTraceFeedbackWindow(t *testing.T) {
 	}
 }
 
+func TestSupportsSessionsListV2(t *testing.T) {
+	cases := []struct {
+		version string
+		want    bool
+	}{
+		{"dev", true},
+		{"0.18.23", true},
+		{"0.19.0", true},
+		{"0.18.22", false},
+		{"0.16.1", false},
+	}
+	for _, tc := range cases {
+		if got := supportsSessionsListV2(tc.version); got != tc.want {
+			t.Errorf("supportsSessionsListV2(%q) = %v, want %v", tc.version, got, tc.want)
+		}
+	}
+}
+
 func TestUseV2API(t *testing.T) {
 	cases := []struct {
 		version string

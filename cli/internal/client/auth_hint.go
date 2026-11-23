@@ -1,6 +1,7 @@
 package client
 
 import (
+	"context"
 	"fmt"
 	"io"
 	"net/http"
@@ -21,7 +22,18 @@ type authHint struct {
 
 const regionAdvice = "EU keys need https://eu.api.smith.langchain.com (set LANGSMITH_ENDPOINT, --api-url, or the selected profile's API URL)"
 
+type expectForbiddenKey struct{}
+
+// ExpectForbidden marks requests made with ctx as ones whose 403 the caller
+// handles, so a 403 on them doesn't print the credentials hint.
+func ExpectForbidden(ctx context.Context) context.Context {
+	return context.WithValue(ctx, expectForbiddenKey{}, true)
+}
+
 func (h *authHint) check(req *http.Request, res *http.Response) {
+	if res.StatusCode == http.StatusForbidden && req.Context().Value(expectForbiddenKey{}) != nil {
+		return
+	}
 	var msg string
 	switch res.StatusCode {
 	case http.StatusUnauthorized:

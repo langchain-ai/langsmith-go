@@ -14,15 +14,22 @@ import (
 
 func TestAuthHintOption(t *testing.T) {
 	tests := []struct {
-		status int
-		want   string
+		status          int
+		expectForbidden bool
+		want            string
 	}{
 		{status: http.StatusUnauthorized, want: "rejected these credentials (HTTP 401)"},
 		{status: http.StatusForbidden, want: "lacks permission for this workspace"},
+		{status: http.StatusForbidden, expectForbidden: true},
+		{status: http.StatusUnauthorized, expectForbidden: true, want: "rejected these credentials (HTTP 401)"},
 		{status: http.StatusNotFound},
 	}
 	for _, tt := range tests {
-		t.Run(http.StatusText(tt.status), func(t *testing.T) {
+		name := http.StatusText(tt.status)
+		if tt.expectForbidden {
+			name += " expected"
+		}
+		t.Run(name, func(t *testing.T) {
 			ts := httptest.NewServer(http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
 				w.Header().Set("Content-Type", "application/json")
 				w.WriteHeader(tt.status)
@@ -33,8 +40,12 @@ func TestAuthHintOption(t *testing.T) {
 			hint := &authHint{w: &stderr}
 			sdk := langsmith.NewClient(option.WithBaseURL(ts.URL), option.WithAPIKey("k"), option.WithMaxRetries(0), hint.option())
 
+			ctx := context.Background()
+			if tt.expectForbidden {
+				ctx = ExpectForbidden(ctx)
+			}
 			for range 2 {
-				_, _ = sdk.Sessions.List(context.Background(), langsmith.SessionListParams{})
+				_, _ = sdk.Sessions.List(ctx, langsmith.SessionListParams{})
 			}
 
 			wantCount := 0

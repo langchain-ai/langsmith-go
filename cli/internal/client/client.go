@@ -142,6 +142,9 @@ const minSelfHostedV2Minor = 16
 // 0.18.15.
 const minTraceFeedbackWindowMinor, minTraceFeedbackWindowPatch = 18, 15
 
+// Self-hosted serves GET /api/v2/sessions with the type filter from 0.18.23.
+const minSessionsListV2Minor, minSessionsListV2Patch = 18, 23
+
 // deploymentVersion returns the version from GET /info, fetched once and cached.
 func (c *Client) deploymentVersion(ctx context.Context) (string, error) {
 	if c.cachedVersion != nil {
@@ -190,16 +193,37 @@ func useV2API(version string) bool {
 	return minor >= minSelfHostedV2Minor
 }
 
+// SupportsSessionsListV2 reports whether GET /api/v2/sessions, with its type
+// filter, is available.
+func (c *Client) SupportsSessionsListV2(ctx context.Context) (bool, error) {
+	v, err := c.deploymentVersion(ctx)
+	if err != nil {
+		return false, err
+	}
+	return supportsSessionsListV2(v), nil
+}
+
 // supportsTraceFeedbackWindow is true for non-release versions and >= 0.18.15.
 func supportsTraceFeedbackWindow(version string) bool {
+	return atLeastRelease(version, minTraceFeedbackWindowMinor, minTraceFeedbackWindowPatch)
+}
+
+// supportsSessionsListV2 is true for non-release versions and >= 0.18.23.
+func supportsSessionsListV2(version string) bool {
+	return atLeastRelease(version, minSessionsListV2Minor, minSessionsListV2Patch)
+}
+
+// atLeastRelease reports whether version is a non-release version, a major
+// version above 0, or 0.minor.patch or later.
+func atLeastRelease(version string, minMinor, minPatch int) bool {
 	major, minor, patch, ok := parseReleaseVersion(version)
 	if !ok || major != 0 {
 		return true
 	}
-	if minor != minTraceFeedbackWindowMinor {
-		return minor > minTraceFeedbackWindowMinor
+	if minor != minMinor {
+		return minor > minMinor
 	}
-	return patch >= minTraceFeedbackWindowPatch
+	return patch >= minPatch
 }
 
 // parseReleaseVersion pulls major.minor.patch from a release version like

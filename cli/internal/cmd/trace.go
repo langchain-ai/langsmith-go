@@ -211,11 +211,11 @@ func newTraceGetCmd() *cobra.Command {
 		Long: `Fetch every run in a single trace.
 
 --project and --project-id are optional. Without them (or $LANGSMITH_PROJECT)
-the trace is looked up by ID across the current workspace, through the runs
-query. That lookup only finds traces whose root run started in the last 7 days
-unless --since or --last-n-minutes is set; pass the project to skip it, and
-on deployments that serve runs only from SmithDB, where the lookup is
-unavailable.
+the trace is looked up by ID across the current workspace's projects and
+experiments. That lookup only finds traces whose root run started in the last
+7 days unless --since or --last-n-minutes is set, searches projects that were
+active or created in that window (at most 1,000 of each), and skips projects
+whose runs you can't read; pass the project to skip it.
 
 LangSmith Cloud and self-hosted >= 0.16 then read the whole trace through
 /v2/traces/{trace_id}/runs. Older self-hosted deployments read it through the
@@ -274,9 +274,9 @@ v1 runs query, which keeps the same 7-day default window.`,
 // traceGetRuns returns every run in traceID, oldest first, or an error when the
 // trace has no runs in scope. Without a project it searches the current
 // workspace. The v1 runs query filters by trace alone; every v2 runs and trace
-// endpoint needs a project, so on v2 the trace's project is first read from the
-// v1 runs query (see traceProjectID) and the trace is then fetched from
-// /v2/traces/{trace_id}/runs.
+// endpoint needs a project, so on v2 the trace's project is first found among
+// the workspace's recently active projects (see traceProjectID) and the trace
+// is then fetched from /v2/traces/{trace_id}/runs.
 func traceGetRuns(ctx context.Context, c *client.Client, project, projectID, traceID, since string, lastNMinutes int, v1Select []langsmith.RunQueryParamsSelect, v2Selects []langsmith.RunSelectField) ([]langsmith.RunSchema, error) {
 	useV2, err := c.UseV2API(ctx)
 	if err != nil {
@@ -319,18 +319,169 @@ func traceGetRuns(ctx context.Context, c *client.Client, project, projectID, tra
 	return runs, nil
 }
 
-// traceProjectID returns the project (session) ID of traceID from its root
-// run, searching the whole workspace; "" when the root run did not start at or
-// after start.
+// traceLookupPageSize is how many projects traceProjectID lists, and then
+// searches for the trace, per request.
+const traceLookupPageSize = 100
+
+// traceLookupMaxPages bounds each pass of the workspace lookup to
+// traceLookupMaxPages*traceLookupPageSize projects.
+const traceLookupMaxPages = 10
+
+// traceLookupActivityLag is how far a project's last_run_start_time may trail
+// its newest run. The server updates it asynchronously, so a project that just
+// received a run can still report an older time.
+const traceLookupActivityLag = time.Hour
+
+// traceProjectID returns the project (session) ID of traceID, searching the
+// current workspace; "" when no root run of traceID started at or after start.
 //
-// It uses the v1 runs query because no v2 endpoint looks a run or trace up
-// without a project. That endpoint is deprecated with a 2027-01-31 sunset, so
-// this lookup needs a v2 replacement before then. The server ignores limit
-// when filtering by trace, so is_root keeps the response to one row instead of
-// the whole trace. Deployments without ClickHouse querying (SmithDB only)
-// reject the v1 query with 501; the error then asks for the project, which
-// lets the v2 read run without this lookup.
+// Every v2 runs and trace endpoint needs a project. Where the deployment lists
+// projects through /v2/sessions, the lookup searches, page by page:
+//  1. tracing projects, most recently active first, until their last run
+//     started more than traceLookupActivityLag before start;
+//  2. projects and experiments with no recorded activity yet (new projects,
+//     and experiments, which have none), newest first, until one was created
+//     more than traceLookupActivityLag before start.
+//
+// Older self-hosted deployments use the v1 runs query instead.
 func traceProjectID(ctx context.Context, c *client.Client, traceID string, start time.Time) (string, error) {
+	ok, err := c.SupportsSessionsListV2(ctx)
+	if err != nil {
+		return "", err
+	}
+	if !ok {
+		return traceProjectIDV1(ctx, c, traceID, start)
+	}
+
+	cutoff := start.Add(-traceLookupActivityLag)
+	searched := map[string]bool{}
+	active := langsmith.SessionListV2Params{
+		Type: langsmith.F([]langsmith.SessionListV2ParamsType{
+			langsmith.SessionListV2ParamsTypeProject,
+			langsmith.SessionListV2ParamsTypeAgent,
+		}),
+		SortBy: langsmith.F(langsmith.SessionListV2ParamsSortByLastRunStartTime),
+	}
+	id, activeCapped, err := traceSearchProjects(ctx, c, traceID, start, active, searched, func(s langsmith.Session) (search, done bool) {
+		if !s.LastRunStartTime.IsZero() && s.LastRunStartTime.Before(cutoff) {
+			return false, true
+		}
+		return true, false
+	})
+	if err != nil || id != "" {
+		return id, err
+	}
+	unrecorded := langsmith.SessionListV2Params{
+		Type: langsmith.F([]langsmith.SessionListV2ParamsType{
+			langsmith.SessionListV2ParamsTypeProject,
+			langsmith.SessionListV2ParamsTypeAgent,
+			langsmith.SessionListV2ParamsTypeExperiment,
+		}),
+		SortBy: langsmith.F(langsmith.SessionListV2ParamsSortByStartTime),
+	}
+	id, newCapped, err := traceSearchProjects(ctx, c, traceID, start, unrecorded, searched, func(s langsmith.Session) (search, done bool) {
+		if s.StartTime.Before(cutoff) {
+			return false, true
+		}
+		return s.LastRunStartTime.IsZero(), false
+	})
+	if err != nil || id != "" {
+		return id, err
+	}
+	if activeCapped || newCapped {
+		return "", fmt.Errorf("trace %s not found in the %d most recently active projects; pass --project or --project-id",
+			traceID, traceLookupMaxPages*traceLookupPageSize)
+	}
+	return "", nil
+}
+
+// traceSearchProjects pages through the projects params lists, newest first,
+// and searches each page's projects that pick selects and searched doesn't
+// hold yet. It stops at the first project pick marks done. capped reports that
+// it stopped at traceLookupMaxPages with more projects left.
+func traceSearchProjects(
+	ctx context.Context,
+	c *client.Client,
+	traceID string,
+	start time.Time,
+	params langsmith.SessionListV2Params,
+	searched map[string]bool,
+	pick func(langsmith.Session) (search, done bool),
+) (projectID string, capped bool, err error) {
+	params.SortOrder = langsmith.F(langsmith.SessionListV2ParamsSortOrderDesc)
+	params.PageSize = langsmith.F(int64(traceLookupPageSize))
+	for page := 0; page < traceLookupMaxPages; page++ {
+		resp, err := c.SDK.Sessions.ListV2(ctx, params)
+		if err != nil {
+			return "", false, fmt.Errorf("looking up trace %s in the workspace: listing projects: %w", traceID, err)
+		}
+		var ids []string
+		done := false
+		for _, s := range resp.Items {
+			search, stop := pick(s)
+			if stop {
+				done = true
+				break
+			}
+			if search && !searched[s.ID] {
+				searched[s.ID] = true
+				ids = append(ids, s.ID)
+			}
+		}
+		if len(ids) > 0 {
+			sessionID, err := traceRootProjectID(ctx, c, traceID, ids, start)
+			if err != nil || sessionID != "" {
+				return sessionID, false, err
+			}
+		}
+		if done || resp.NextCursor == "" {
+			return "", false, nil
+		}
+		params.Cursor = langsmith.F(resp.NextCursor)
+	}
+	return "", true, nil
+}
+
+// traceRootProjectID returns the project of traceID's root run among
+// projectIDs, or "" when none of them has a root run of the trace that started
+// at or after start. The runs query rejects the whole request when the caller
+// can't read runs in any one project, so a rejected batch is split in half and
+// projects whose runs can't be read are skipped.
+func traceRootProjectID(ctx context.Context, c *client.Client, traceID string, projectIDs []string, start time.Time) (string, error) {
+	page, err := c.SDK.Runs.QueryV2(client.ExpectForbidden(ctx), langsmith.RunQueryV2Params{
+		ProjectIDs:   langsmith.F(projectIDs),
+		TraceID:      langsmith.F(traceID),
+		IsRoot:       langsmith.F(true),
+		MinStartTime: langsmith.F(start),
+		PageSize:     langsmith.F(int64(1)),
+		Selects:      langsmith.F([]langsmith.RunSelectField{langsmith.RunSelectFieldID, langsmith.RunSelectFieldProjectID}),
+	})
+	if isHTTPStatus(err, http.StatusForbidden) {
+		if len(projectIDs) == 1 {
+			return "", nil
+		}
+		mid := len(projectIDs) / 2
+		if id, err := traceRootProjectID(ctx, c, traceID, projectIDs[:mid], start); err != nil || id != "" {
+			return id, err
+		}
+		return traceRootProjectID(ctx, c, traceID, projectIDs[mid:], start)
+	}
+	if err != nil {
+		return "", fmt.Errorf("looking up trace %s in the workspace: %w", traceID, err)
+	}
+	if len(page.Items) == 0 {
+		return "", nil
+	}
+	return page.Items[0].ProjectID, nil
+}
+
+// traceProjectIDV1 is traceProjectID for self-hosted deployments that predate
+// the v2 project list. It reads the root run's project from the v1 runs query,
+// which filters by trace alone. The server ignores limit when filtering by
+// trace, so is_root keeps the response to one row. Deployments without
+// ClickHouse querying (SmithDB only) reject the v1 query with 501; the error
+// then asks for the project.
+func traceProjectIDV1(ctx context.Context, c *client.Client, traceID string, start time.Time) (string, error) {
 	params := langsmith.RunQueryParams{
 		Trace:     langsmith.F(traceID),
 		IsRoot:    langsmith.F(true),
