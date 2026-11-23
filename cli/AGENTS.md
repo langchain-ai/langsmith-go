@@ -66,4 +66,4 @@ Agents and scripts depend on command names, flags, and output, so the CLI follow
 
 ## Releasing
 
-A change here ships in the next `langsmith-go` release. langsmith-cli then releases it once `cli/go.mod` requires that release (Dependabot opens the bump): release-please keeps a release PR open there, and merging it tags the release and publishes the binaries. See [Releasing](https://github.com/langchain-ai/langsmith-cli#releasing).
+After merge, Copybara exports a change here to `langsmith-go` main, and the export's `pin-cli` job pins langsmith-cli to that commit with the change's title in its commit message; no `langsmith-go` release is needed. release-please keeps a release PR open on langsmith-cli, and merging it tags the release and publishes the binaries. The PR title is the changelog entry, so give it the conventional type and `!` the CLI release should get. See [Releasing](https://github.com/langchain-ai/langsmith-cli#releasing).
