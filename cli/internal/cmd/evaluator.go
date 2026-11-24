@@ -31,7 +31,7 @@ have many rules, and a rule's name can differ from its evaluator's name.
 
   list, get, delete   Act on evaluators
   rule                Act on rules (list, get, delete)
-  upload              Create a code evaluator rule from a Python or JavaScript/TypeScript file
+  upload              Upload a Python or JavaScript/TypeScript code evaluator file
   create-llm          Create an LLM-as-judge evaluator rule (--model-config required)
 
 Examples:
@@ -40,7 +40,7 @@ Examples:
   langsmith evaluator delete <evaluator-id> --delete-rules --yes
   langsmith evaluator rule list --project my-app
   langsmith evaluator rule delete accuracy --project my-app --yes
-  langsmith evaluator upload eval.py --name accuracy --function check_accuracy --dataset my-eval-set
+  langsmith evaluator upload eval.py --name accuracy --dataset my-eval-set
   langsmith evaluator create-llm --name relevance --project my-app --prompt prompt.json --schema schema.json --model-config model.json`,
 	}
 
@@ -382,17 +382,59 @@ func newEvaluatorUploadCmd() *cobra.Command {
 		traceFilter     string
 		replace         bool
 		yes             bool
+		advanced        bool
+		noWait          bool
+		ignoreCreds     bool
+		ignoreImports   bool
+		dependencies    string
+		secrets         []string
+		input           string
 	)
 
 	cmd := &cobra.Command{
 		Use:   "upload EVALUATOR_FILE",
-		Short: "Upload an evaluator function to LangSmith",
-		Args:  cobra.ExactArgs(1),
+		Short: "Upload a code evaluator file to LangSmith",
+		Long: `Upload a Python or JavaScript/TypeScript file as a code evaluator and attach
+it to a project (online) or dataset (offline).
+
+The file is sent unchanged, so imports and helper functions are kept. It must
+define the entry point itself: evaluate(ctx) for advanced evaluators, or
+perform_eval (Python) / performEval (JavaScript). The server checks the code
+and reports any problem.
+
+Uploaded code can be read by anyone in the workspace, so the command refuses a
+file or dependencies file that contains what looks like a hardcoded credential,
+such as an API key or a password in a URL; --ignore-credential-check uploads
+it anyway, with a warning. It also refuses an advanced evaluator that imports
+modules from the file's own folder, which are not uploaded;
+--ignore-import-check uploads it anyway, with a warning.
+
+--advanced creates an advanced evaluator. It runs in a sandbox, can install
+--dependencies (a requirements.txt or package.json, sent as is), use
+--workspace-secret, and take thread or trajectory --input. The command waits
+for its build to finish and exits non-zero if it fails; --no-wait returns right
+after the upload.
+
+--replace updates the evaluator matched by --name on the target and keeps its
+mode (advanced or not) unless --advanced is set. Rule settings such as filters,
+webhooks and actions are kept.
+
+Examples:
+  langsmith evaluator upload eval.py --name accuracy --project my-app
+  langsmith evaluator upload eval.py --name accuracy --dataset my-eval-set --advanced --dependencies requirements.txt
+  langsmith evaluator upload eval.py --name accuracy --project my-app --advanced --input thread --workspace-secret OPENAI_KEY
+  langsmith evaluator upload eval.py --name accuracy --project my-app --replace --yes`,
+		Args: cobra.ExactArgs(1),
 		RunE: func(cmd *cobra.Command, args []string) error {
 			evaluatorFile := args[0]
 
 			if err := validateEvaluatorTargetFlags(targetDataset, targetProject, targetProjectID); err != nil {
 				return err
+			}
+			if funcName != "" {
+				if err := checkFunctionFlagCombination(cmd); err != nil {
+					return err
+				}
 			}
 
 			c := MustGetClient()
@@ -412,6 +454,16 @@ func newEvaluatorUploadCmd() *cobra.Command {
 					ExitErrorf("%v", err)
 				}
 				projectID = sid
+			}
+
+			if funcName == "" {
+				return uploadWholeFile(ctx, cmd, c, wholeFileUpload{
+					file: evaluatorFile, name: name,
+					target:       evaluatorTarget{datasetID: datasetID, projectID: projectID},
+					samplingRate: samplingRate, traceFilter: traceFilter,
+					replace: replace, yes: yes, advanced: advanced, noWait: noWait, ignoreCredentials: ignoreCreds, ignoreImports: ignoreImports,
+					dependenciesFile: dependencies, workspaceSecrets: secrets, input: input,
+				})
 			}
 
 			// Read and prepare function source
@@ -440,6 +492,9 @@ func newEvaluatorUploadCmd() *cobra.Command {
 					ExitErrorf("function %q not found in %s", funcName, evaluatorFile)
 				}
 				sourceStr = renameJSFunction(sourceStr, funcName)
+			}
+			if err := checkForSecrets(evaluatorFile, sourceStr, ignoreCreds); err != nil {
+				return err
 			}
 
 			payload := map[string]any{
@@ -470,6 +525,9 @@ func newEvaluatorUploadCmd() *cobra.Command {
 
 			var result map[string]any
 			if existing != nil {
+				if err := refuseFunctionReplaceOfAdvanced(ctx, c, *existing); err != nil {
+					return err
+				}
 				if err := keepRuleSettings(payload, *existing, replaceOverridesFromFlags(cmd)); err != nil {
 					return err
 				}
@@ -495,7 +553,7 @@ func newEvaluatorUploadCmd() *cobra.Command {
 	}
 
 	cmd.Flags().StringVar(&name, "name", "", "Evaluator name (required); --replace matches an existing rule on the target by rule or evaluator name")
-	cmd.Flags().StringVar(&funcName, "function", "", "Name of the function to upload (required)")
+	cmd.Flags().StringVar(&funcName, "function", "", "Upload only this function, renamed to perform_eval/performEval")
 	cmd.Flags().StringVar(&targetDataset, "dataset", "", "Target dataset name (offline evaluator)")
 	cmd.Flags().StringVar(&targetProject, "project", "", "Target project name (online evaluator)")
 	cmd.Flags().StringVar(&targetProjectID, "project-id", "", "Target project (session) UUID; skips the name lookup")
@@ -504,8 +562,18 @@ func newEvaluatorUploadCmd() *cobra.Command {
 	cmd.Flags().StringVar(&traceFilter, "trace-filter", "", "Filter expression for which runs to evaluate; --replace keeps the rule's current filter unless this is set")
 	cmd.Flags().BoolVar(&replace, "replace", false, "Update the existing evaluator rule matched by --name on this target")
 	cmd.Flags().BoolVar(&yes, "yes", false, "Skip confirmation prompt when replacing")
+	cmd.Flags().BoolVar(&advanced, "advanced", false, "Create an advanced evaluator, which runs in a sandbox, or switch the evaluator to one with --replace")
+	cmd.Flags().StringVar(&dependencies, "dependencies", "", "requirements.txt or package.json to install in the sandbox, sent as is")
+	cmd.Flags().StringArrayVar(&secrets, "workspace-secret", nil, "Workspace secret the advanced evaluator may use (repeatable)")
+	cmd.Flags().StringVar(&input, "input", "", "Thread or trajectory input mode: thread, all_messages, human_ai_pairs, first_human_last_ai, or trajectory")
+	cmd.Flags().BoolVar(&noWait, "no-wait", false, "Return without waiting for the advanced evaluator's build to finish")
+	cmd.Flags().BoolVar(&ignoreCreds, "ignore-credential-check", false, "Upload even if the code or dependencies file looks like it contains a hardcoded credential")
+	cmd.Flags().BoolVar(&ignoreImports, "ignore-import-check", false, "Upload an advanced evaluator even if it imports modules from its own folder")
 	_ = cmd.MarkFlagRequired("name")
-	_ = cmd.MarkFlagRequired("function")
+	deprecateFlag(cmd, "function", Deprecation{
+		RemovedIn:   "1.0.0",
+		Replacement: "a whole-file upload (omit --function; the file defines perform_eval, performEval or evaluate)",
+	})
 
 	return cmd
 }

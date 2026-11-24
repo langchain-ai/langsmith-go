@@ -226,6 +226,53 @@ func TestEvaluatorUploadReplaceKeepsRuleSettings(t *testing.T) {
 	}
 }
 
+func TestEvaluatorUploadWholeFileReplaceKeepsRuleSettings(t *testing.T) {
+	rule := codeRule()
+	delete(rule, "code_evaluators")
+	rule["evaluator_id"] = testEvaluatorID
+	srv := &fullReplaceRuleServer{rule: rule}
+	var evaluatorUpdate map[string]any
+	evaluators := func(next http.HandlerFunc) http.HandlerFunc {
+		return func(w http.ResponseWriter, r *http.Request) {
+			if r.URL.Path != "/api/v1/platform/evaluators/"+testEvaluatorID {
+				next(w, r)
+				return
+			}
+			w.Header().Set("Content-Type", "application/json")
+			if r.Method == http.MethodGet {
+				_ = json.NewEncoder(w).Encode(map[string]any{"id": testEvaluatorID, "type": "code", "code_evaluator": map[string]any{"code": "old", "language": "python"}})
+				return
+			}
+			_ = json.NewDecoder(r.Body).Decode(&evaluatorUpdate)
+			_ = json.NewEncoder(w).Encode(map[string]any{"evaluator": map[string]any{"id": testEvaluatorID, "type": "code"}})
+		}
+	}
+	evaluatorFile := t.TempDir() + "/eval.py"
+	if err := os.WriteFile(evaluatorFile, []byte(wholeFileSource), 0o600); err != nil {
+		t.Fatal(err)
+	}
+	ts := newTestServer(t, evaluators(srv.handler(t)))
+	cleanup := setupTestEnv(t, ts.URL)
+	defer cleanup()
+	flagOutputFormat = "json"
+	cmd := newEvaluatorUploadCmd()
+	for k, v := range map[string]string{"name": "accuracy", "dataset": "eval-set", "replace": "true", "yes": "true"} {
+		_ = cmd.Flags().Set(k, v)
+	}
+	captureStdout(t, func() {
+		if err := runTestCommand(t, cmd, []string{evaluatorFile}); err != nil {
+			t.Errorf("unexpected error: %v", err)
+		}
+	})
+	if srv.patchBody == nil {
+		t.Fatal("expected a PATCH of the existing rule")
+	}
+	assertRuleSettingsKept(t, srv, 0.1)
+	if code, _ := evaluatorUpdate["code_evaluator"].(map[string]any); code["code"] != wholeFileSource {
+		t.Errorf("evaluator update = %#v, want the whole file", evaluatorUpdate)
+	}
+}
+
 func TestEvaluatorCreateLLMReplaceKeepsRuleSettings(t *testing.T) {
 	srv := &fullReplaceRuleServer{rule: llmRule()}
 	runCreateLLMReplace(t, srv, nil)

@@ -558,21 +558,30 @@ Usage: `langsmith evaluators create-llm [flags]`
 
 ### `langsmith evaluators upload`
 
-Upload an evaluator function to LangSmith
+Upload a code evaluator file to LangSmith
 
 Usage: `langsmith evaluators upload EVALUATOR_FILE [flags]`
 
 | Flag | Description |
 |---|---|
 | `--name string` | Evaluator name (required); --replace matches an existing rule on the target by rule or evaluator name |
-| `--function string` | Name of the function to upload (required) |
 | `--project string` | Target project name (online evaluator) |
 | `--dataset string` | Target dataset name (offline evaluator) |
 | `--sampling-rate float64` | Fraction of runs to evaluate (0.0-1.0); --replace keeps the rule's current rate unless this is set |
 | `--replace` | Update the existing evaluator rule matched by --name on this target |
+| `--advanced` | Create an advanced evaluator, which runs in a sandbox, or switch the evaluator to one with --replace |
+| `--dependencies string` | requirements.txt or package.json to install in the sandbox, sent as is |
+| `--workspace-secret stringArray` | Workspace secret the advanced evaluator may use (repeatable) |
+| `--input string` | Thread or trajectory input mode: thread, all_messages, human_ai_pairs, first_human_last_ai, or trajectory |
+| `--no-wait` | Return without waiting for the advanced evaluator's build to finish |
+| `--ignore-credential-check` | Upload even if the code or dependencies file looks like it contains a hardcoded credential |
+| `--ignore-import-check` | Upload an advanced evaluator even if it imports modules from its own folder |
+
+The file is sent unchanged and must define `perform_eval` / `performEval`, or `evaluate(ctx)` with `--advanced`. Advanced uploads wait for the build and exit non-zero with the build error if it fails. `--replace` keeps the evaluator's advanced mode unless `--advanced` is passed. Files with hardcoded credentials are refused unless `--ignore-credential-check` is passed, and advanced evaluators that import from their own folder are refused unless `--ignore-import-check` is passed; use `--workspace-secret` for keys. `--function` is deprecated.
 
 ```bash
-langsmith evaluators upload evaluators.py --function exact_match --name exact-match --dataset my-dataset
+langsmith evaluators upload evaluators.py --name exact-match --dataset my-dataset
+langsmith evaluators upload evaluators.py --name exact-match --project my-app --advanced --dependencies requirements.txt
 ```
 
 ### `langsmith evaluators rule list`
@@ -761,7 +770,7 @@ Every command in this version of the CLI. Run `langsmith <command> --help` for i
 | `langsmith evaluators rule delete` | Delete one evaluator rule; the evaluator itself is kept *(confirms)* |
 | `langsmith evaluators rule get` | Get an evaluator rule by ID |
 | `langsmith evaluators rule list` | List evaluator rules, optionally for one project, dataset, or evaluator |
-| `langsmith evaluators upload` | Upload an evaluator function to LangSmith |
+| `langsmith evaluators upload` | Upload a code evaluator file to LangSmith |
 | `langsmith examples bulk create` | Create bulk examples. |
 | `langsmith examples create` | Create a new example in a dataset |
 | `langsmith examples delete` | Delete an example by its UUID *(confirms)* |

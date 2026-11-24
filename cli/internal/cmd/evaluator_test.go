@@ -2,14 +2,20 @@ package cmd
 
 import (
 	"encoding/json"
+	"errors"
 	"fmt"
+	"maps"
 	"net/http"
 	"net/url"
 	"os"
+	"path/filepath"
+	"reflect"
 	"slices"
 	"strconv"
 	"strings"
+	"sync"
 	"testing"
+	"time"
 
 	langsmith "github.com/langchain-ai/langsmith-go"
 )
@@ -529,14 +535,20 @@ func TestEvaluatorListCmd_Flags(t *testing.T) {
 func TestEvaluatorUploadCmd_Flags(t *testing.T) {
 	cmd := newEvaluatorUploadCmd()
 	flags := map[string]string{
-		"name":          "",
-		"function":      "",
-		"dataset":       "",
-		"project":       "",
-		"sampling-rate": "1",
-		"trace-filter":  "",
-		"replace":       "false",
-		"yes":           "false",
+		"name":                    "",
+		"function":                "",
+		"dataset":                 "",
+		"project":                 "",
+		"sampling-rate":           "1",
+		"trace-filter":            "",
+		"replace":                 "false",
+		"yes":                     "false",
+		"advanced":                "false",
+		"dependencies":            "",
+		"input":                   "",
+		"no-wait":                 "false",
+		"ignore-credential-check": "false",
+		"ignore-import-check":     "false",
 	}
 	for name, defVal := range flags {
 		f := cmd.Flags().Lookup(name)
@@ -552,19 +564,56 @@ func TestEvaluatorUploadCmd_Flags(t *testing.T) {
 
 func TestEvaluatorUploadCmd_RequiredFlags(t *testing.T) {
 	cmd := newEvaluatorUploadCmd()
-	for _, name := range []string{"name", "function"} {
-		f := cmd.Flags().Lookup(name)
-		if f == nil {
-			t.Fatalf("flag --%s not found", name)
-		}
-		ann := f.Annotations
-		if ann == nil {
-			t.Errorf("flag --%s has no annotations (not marked required)", name)
-			continue
-		}
-		if _, ok := ann["cobra_annotation_bash_completion_one_required_flag"]; !ok {
-			t.Errorf("flag --%s not marked as required", name)
-		}
+	required := func(name string) bool {
+		_, ok := cmd.Flags().Lookup(name).Annotations["cobra_annotation_bash_completion_one_required_flag"]
+		return ok
+	}
+	if !required("name") {
+		t.Error("flag --name not marked as required")
+	}
+	function := cmd.Flags().Lookup("function")
+	if required("function") {
+		t.Error("flag --function should be optional")
+	}
+	if _, ok := function.Annotations[deprecationAnnotation]; !ok || !function.Hidden {
+		t.Error("flag --function should be deprecated and hidden")
+	}
+}
+
+func TestEvaluatorUploadFunctionWarnsDeprecated(t *testing.T) {
+	cmd := newEvaluatorUploadCmd()
+	_ = cmd.Flags().Set("function", "grade")
+	var buf strings.Builder
+	warnDeprecated(&buf, cmd, nil, nil, true)
+	var warning deprecationWarning
+	if err := json.Unmarshal([]byte(buf.String()), &warning); err != nil {
+		t.Fatalf("expected one JSON warning, got %q: %v", buf.String(), err)
+	}
+	if warning.Name != "--function" || warning.RemovedIn != "1.0.0" {
+		t.Errorf("unexpected warning %+v", warning)
+	}
+}
+
+func TestEvaluatorUploadFunctionRejectsWholeFileFlags(t *testing.T) {
+	for _, flag := range [][2]string{
+		{"advanced", "true"}, {"ignore-import-check", "true"}, {"dependencies", "requirements.txt"}, {"workspace-secret", "KEY"},
+		{"input", "thread"}, {"no-wait", "true"},
+	} {
+		t.Run(flag[0], func(t *testing.T) {
+			ts := newTestServer(t, func(w http.ResponseWriter, r *http.Request) {
+				t.Errorf("unexpected request %s %s", r.Method, r.URL.Path)
+			})
+			cleanup := setupTestEnv(t, ts.URL)
+			defer cleanup()
+			cmd := newEvaluatorUploadCmd()
+			for k, v := range map[string]string{"name": "accuracy", "function": "grade", "project-id": testSessionID, flag[0]: flag[1]} {
+				_ = cmd.Flags().Set(k, v)
+			}
+			err := runTestCommand(t, cmd, []string{"eval.py"})
+			if err == nil || !strings.Contains(err.Error(), "--"+flag[0]+" cannot be combined with --function") {
+				t.Fatalf("expected combination error, got %v", err)
+			}
+		})
 	}
 }
 
@@ -1489,6 +1538,8 @@ func TestEvaluatorUploadReplaceMatchesRenamedEvaluator(t *testing.T) {
 		case r.URL.Path == "/api/v1/runs/rules" && r.Method == http.MethodPost:
 			sawPost = true
 			http.Error(w, "should not create", http.StatusInternalServerError)
+		case r.URL.Path == "/api/v1/platform/evaluators/"+testEvaluatorID && r.Method == http.MethodGet:
+			_ = json.NewEncoder(w).Encode(map[string]any{"id": testEvaluatorID, "type": "code", "code_evaluator": map[string]any{"code": "def perform_eval(run, example): ..."}})
 		case r.Method == http.MethodPatch:
 			patchedPath = r.URL.Path
 			_ = json.NewDecoder(r.Body).Decode(&patchBody)
@@ -1556,8 +1607,674 @@ func TestEvaluatorUploadWithoutReplaceRefusesRenamedEvaluator(t *testing.T) {
 	}
 }
 
+// ---------- whole-file upload ----------
+
+// wholeFileServer fakes the evaluators API and the rules endpoint for uploads
+// without --function. An advanced evaluator's build reports buildPolls BUILDING
+// responses before it settles on finalStatus.
+type wholeFileServer struct {
+	mu            sync.Mutex
+	evaluator     map[string]any // stored evaluator, nil until created
+	createBody    map[string]any
+	updateBody    map[string]any
+	ruleBody      map[string]any
+	rulePatch     map[string]any
+	rules         []map[string]any
+	ruleCreateErr bool
+	buildPolls    int
+	finalStatus   string
+	buildError    string
+	gets          int
+	deletes       int
+	updates       int
+	noRebuild     bool // updates keep the stored build status, as when nothing changed
+}
+
+func (s *wholeFileServer) codeEvaluator() map[string]any {
+	ce, _ := s.evaluator["code_evaluator"].(map[string]any)
+	return ce
+}
+
+func (s *wholeFileServer) store(body map[string]any) {
+	ce, _ := body["code_evaluator"].(map[string]any)
+	stored := map[string]any{}
+	if s.evaluator != nil {
+		stored = s.codeEvaluator()
+	}
+	for k, v := range ce {
+		stored[k] = v
+	}
+	if stored["advanced_features_enabled"] == true && !s.noRebuild {
+		stored["evaluator_build_status"] = "ENQUEUED"
+	}
+	s.evaluator = map[string]any{"id": testEvaluatorID, "name": "accuracy", "type": "code", "code_evaluator": stored}
+}
+
+func (s *wholeFileServer) handler(t *testing.T) http.HandlerFunc {
+	return func(w http.ResponseWriter, r *http.Request) {
+		s.mu.Lock()
+		defer s.mu.Unlock()
+		w.Header().Set("Content-Type", "application/json")
+		evaluatorPath := "/api/v1/platform/evaluators/" + testEvaluatorID
+		decode := func() map[string]any {
+			var body map[string]any
+			if err := json.NewDecoder(r.Body).Decode(&body); err != nil {
+				t.Errorf("decoding %s %s: %v", r.Method, r.URL.Path, err)
+			}
+			return body
+		}
+		switch {
+		case r.URL.Path == "/api/v2/runs/rules" && r.Method == http.MethodGet:
+			_ = writeRulePage(w, s.rules)
+		case r.URL.Path == "/api/v1/platform/evaluators" && r.Method == http.MethodPost:
+			s.createBody = decode()
+			s.store(s.createBody)
+			_ = json.NewEncoder(w).Encode(map[string]any{"evaluator": s.evaluator})
+		case r.URL.Path == evaluatorPath && r.Method == http.MethodPatch:
+			s.updates++
+			if s.evaluator != nil && buildInProgress(langsmith.OnlineCodeEvaluatorEvaluatorBuildStatus(fmt.Sprint(s.codeEvaluator()["evaluator_build_status"]))) {
+				w.WriteHeader(http.StatusConflict)
+				_ = json.NewEncoder(w).Encode(map[string]any{"detail": "Cannot update evaluator: a build is in progress; retry when status is READY or FAILED"})
+				return
+			}
+			s.updateBody = decode()
+			s.store(s.updateBody)
+			_ = json.NewEncoder(w).Encode(map[string]any{"evaluator": s.evaluator})
+		case r.URL.Path == evaluatorPath && r.Method == http.MethodGet:
+			s.gets++
+			ce := s.codeEvaluator()
+			if buildInProgress(langsmith.OnlineCodeEvaluatorEvaluatorBuildStatus(fmt.Sprint(ce["evaluator_build_status"]))) {
+				if s.buildPolls > 0 {
+					s.buildPolls--
+					ce["evaluator_build_status"] = "BUILDING"
+				} else {
+					ce["evaluator_build_status"] = s.finalStatus
+					ce["evaluator_build_error"] = s.buildError
+				}
+			}
+			_ = json.NewEncoder(w).Encode(s.evaluator)
+		case r.URL.Path == evaluatorPath && r.Method == http.MethodDelete:
+			s.deletes++
+			w.WriteHeader(http.StatusNoContent)
+		case r.URL.Path == "/api/v1/runs/rules" && r.Method == http.MethodPost:
+			s.ruleBody = decode()
+			if s.ruleCreateErr {
+				w.WriteHeader(http.StatusUnprocessableEntity)
+				_ = json.NewEncoder(w).Encode(map[string]any{"detail": "code_evaluator_input=trajectory requires group_by=trajectory_id"})
+				return
+			}
+			_ = json.NewEncoder(w).Encode(map[string]any{"id": testRuleID, "evaluator_id": testEvaluatorID})
+		case r.URL.Path == "/api/v1/runs/rules/"+testRuleID && r.Method == http.MethodPatch:
+			s.rulePatch = decode()
+			_ = json.NewEncoder(w).Encode(map[string]any{"id": testRuleID})
+		default:
+			t.Errorf("unexpected request %s %s", r.Method, r.URL.Path)
+			http.Error(w, "not found", http.StatusNotFound)
+		}
+	}
+}
+
+const wholeFileSource = "import json\n\nTHRESHOLD = 0.5\n\n\ndef _score(text):\n    return len(text) > 3\n\n\ndef perform_eval(run, example):\n    return {\"score\": _score(json.dumps(run))}\n"
+
+// runWholeFileUpload uploads wholeFileSource without --function and returns
+// the parsed output and the command's error.
+func runWholeFileUpload(t *testing.T, srv *wholeFileServer, flags map[string]string) (map[string]any, error) {
+	t.Helper()
+	return runWholeFileUploadSource(t, srv, wholeFileSource, flags)
+}
+
+// runWholeFileUploadSource is runWholeFileUpload with the given file contents.
+func runWholeFileUploadSource(t *testing.T, srv *wholeFileServer, source string, flags map[string]string) (map[string]any, error) {
+	t.Helper()
+	prevInterval := evaluatorBuildPollInterval
+	evaluatorBuildPollInterval = time.Millisecond
+	t.Cleanup(func() { evaluatorBuildPollInterval = prevInterval })
+
+	dir := t.TempDir()
+	evaluatorFile := dir + "/eval.py"
+	if err := os.WriteFile(evaluatorFile, []byte(source), 0o600); err != nil {
+		t.Fatal(err)
+	}
+	ts := newTestServer(t, srv.handler(t))
+	cleanup := setupTestEnv(t, ts.URL)
+	defer cleanup()
+	flagOutputFormat = "json"
+
+	cmd := newEvaluatorUploadCmd()
+	for k, v := range map[string]string{"name": "accuracy", "project-id": testSessionID} {
+		_ = cmd.Flags().Set(k, v)
+	}
+	for k, v := range flags {
+		if k == "dependencies" {
+			path := dir + "/requirements.txt"
+			if err := os.WriteFile(path, []byte(v), 0o600); err != nil {
+				t.Fatal(err)
+			}
+			v = path
+		}
+		items := []string{v}
+		if k == "workspace-secret" {
+			items = strings.Split(v, ",")
+		}
+		for _, item := range items {
+			if err := cmd.Flags().Set(k, item); err != nil {
+				t.Fatalf("setting --%s: %v", k, err)
+			}
+		}
+	}
+	var runErr error
+	out := captureStdout(t, func() { runErr = runTestCommand(t, cmd, []string{evaluatorFile}) })
+	var result map[string]any
+	if runErr == nil {
+		if err := json.Unmarshal([]byte(out), &result); err != nil {
+			t.Fatalf("parsing output %q: %v", out, err)
+		}
+	}
+	return result, runErr
+}
+
+func TestEvaluatorUploadWholeFileSendsFileUnchanged(t *testing.T) {
+	srv := &wholeFileServer{}
+	result, err := runWholeFileUpload(t, srv, map[string]string{"sampling-rate": "0.5", "trace-filter": "eq(is_root, true)"})
+	if err != nil {
+		t.Fatalf("unexpected error: %v", err)
+	}
+	if srv.createBody["name"] != "accuracy" || srv.createBody["type"] != "code" {
+		t.Errorf("evaluator create body = %#v", srv.createBody)
+	}
+	ce, _ := srv.createBody["code_evaluator"].(map[string]any)
+	want := map[string]any{"code": wholeFileSource, "language": "python"}
+	if !reflect.DeepEqual(ce, want) {
+		t.Errorf("code_evaluator = %#v, want exactly %#v (no advanced_features_enabled without --advanced)", ce, want)
+	}
+	wantRule := map[string]any{
+		"display_name": "accuracy", "sampling_rate": 0.5, "is_enabled": true, "include_extended_stats": false,
+		"evaluator_id": testEvaluatorID, "evaluator_version": float64(3), "session_id": testSessionID,
+		"trace_filter": "eq(is_root, true)",
+	}
+	if !reflect.DeepEqual(srv.ruleBody, wantRule) {
+		t.Errorf("rule body = %#v, want %#v", srv.ruleBody, wantRule)
+	}
+	if srv.gets != 0 {
+		t.Errorf("a non-advanced upload should not poll the build, got %d GETs", srv.gets)
+	}
+	if result["rule_id"] != testRuleID || result["evaluator_id"] != testEvaluatorID || result["advanced"] != false {
+		t.Errorf("unexpected output %#v", result)
+	}
+}
+
+func TestEvaluatorUploadWholeFileAdvancedWaitsForBuild(t *testing.T) {
+	srv := &wholeFileServer{buildPolls: 2, finalStatus: "READY"}
+	result, err := runWholeFileUpload(t, srv, map[string]string{
+		"advanced": "true", "dependencies": "requests==2.32.3\n", "workspace-secret": "OPENAI_KEY,SERP_KEY", "input": "trajectory",
+	})
+	if err != nil {
+		t.Fatalf("unexpected error: %v", err)
+	}
+	ce, _ := srv.createBody["code_evaluator"].(map[string]any)
+	want := map[string]any{
+		"code": wholeFileSource, "language": "python", "advanced_features_enabled": true,
+		"dependencies": "requests==2.32.3\n", "workspace_secrets_keys": []any{"OPENAI_KEY", "SERP_KEY"},
+		"code_evaluator_input": "trajectory",
+	}
+	if !reflect.DeepEqual(ce, want) {
+		t.Errorf("code_evaluator = %#v, want %#v", ce, want)
+	}
+	if srv.ruleBody["group_by"] != "trajectory_id" || srv.ruleBody["evaluator_id"] != testEvaluatorID {
+		t.Errorf("rule body = %#v, want group_by trajectory_id and the evaluator ID", srv.ruleBody)
+	}
+	if srv.gets != 3 {
+		t.Errorf("expected 3 build polls, got %d", srv.gets)
+	}
+	if result["build_status"] != "READY" || result["advanced"] != true {
+		t.Errorf("unexpected output %#v", result)
+	}
+}
+
+func TestEvaluatorUploadWholeFileAdvancedBuildFailed(t *testing.T) {
+	srv := &wholeFileServer{finalStatus: "FAILED", buildError: "pip install failed: No matching distribution found for nosuchpkg"}
+	_, err := runWholeFileUpload(t, srv, map[string]string{"advanced": "true", "dependencies": "nosuchpkg\n"})
+	if err == nil || !strings.Contains(err.Error(), "build failed: pip install failed: No matching distribution") {
+		t.Fatalf("expected the build error, got %v", err)
+	}
+	if srv.deletes != 0 {
+		t.Error("a failed build should keep the evaluator so it can be fixed with --replace")
+	}
+}
+
+func TestEvaluatorUploadWholeFileNoWaitSkipsBuild(t *testing.T) {
+	srv := &wholeFileServer{finalStatus: "FAILED"}
+	result, err := runWholeFileUpload(t, srv, map[string]string{"advanced": "true", "no-wait": "true"})
+	if err != nil {
+		t.Fatalf("unexpected error: %v", err)
+	}
+	if srv.gets != 0 {
+		t.Errorf("--no-wait should not poll the build, got %d GETs", srv.gets)
+	}
+	if result["build_status"] != "ENQUEUED" {
+		t.Errorf("build_status = %v, want ENQUEUED", result["build_status"])
+	}
+}
+
+func TestEvaluatorUploadWholeFileDeletesEvaluatorWhenRuleFails(t *testing.T) {
+	srv := &wholeFileServer{ruleCreateErr: true}
+	_, err := runWholeFileUpload(t, srv, nil)
+	if err == nil || !strings.Contains(err.Error(), "requires group_by=trajectory_id") {
+		t.Fatalf("expected the server's rule error, got %v", err)
+	}
+	if srv.deletes != 1 {
+		t.Errorf("expected the new evaluator to be deleted once, got %d deletes", srv.deletes)
+	}
+	if !strings.Contains(err.Error(), "evaluator "+testEvaluatorID+" was deleted") {
+		t.Errorf("expected the error to say the evaluator was deleted, got %v", err)
+	}
+}
+
+func TestEvaluatorUploadWholeFileReplace(t *testing.T) {
+	existingRule := map[string]any{
+		"id": testRuleID, "display_name": "accuracy", "project_id": testSessionID,
+		"evaluator_id": testEvaluatorID, "evaluator_name": "accuracy", "sampling_rate": 0.2,
+		"filter": "eq(is_root, true)", "is_enabled": true,
+	}
+	t.Run("keeps mode", func(t *testing.T) {
+		srv := &wholeFileServer{rules: []map[string]any{existingRule}}
+		srv.store(map[string]any{"code_evaluator": map[string]any{"code": "old", "language": "python"}})
+		if _, err := runWholeFileUpload(t, srv, map[string]string{"replace": "true", "yes": "true"}); err != nil {
+			t.Fatalf("unexpected error: %v", err)
+		}
+		ce, _ := srv.updateBody["code_evaluator"].(map[string]any)
+		if want := (map[string]any{"code": wholeFileSource, "language": "python"}); !reflect.DeepEqual(ce, want) {
+			t.Errorf("update code_evaluator = %#v, want %#v", ce, want)
+		}
+		if srv.createBody != nil || srv.ruleBody != nil {
+			t.Error("--replace should update, not create")
+		}
+		if srv.rulePatch["sampling_rate"] != 0.2 || srv.rulePatch["filter"] != "eq(is_root, true)" || srv.rulePatch["session_id"] != testSessionID {
+			t.Errorf("rule PATCH should keep the rule's settings, got %#v", srv.rulePatch)
+		}
+		for _, key := range []string{"code_evaluators", "evaluator_id"} {
+			if _, ok := srv.rulePatch[key]; ok {
+				t.Errorf("rule PATCH should not send %s", key)
+			}
+		}
+	})
+	t.Run("advanced waits for the running build", func(t *testing.T) {
+		srv := &wholeFileServer{rules: []map[string]any{existingRule}, buildPolls: 1, finalStatus: "READY"}
+		srv.store(map[string]any{"code_evaluator": map[string]any{"code": "old", "language": "python", "advanced_features_enabled": true}})
+		result, err := runWholeFileUpload(t, srv, map[string]string{"replace": "true", "yes": "true"})
+		if err != nil {
+			t.Fatalf("unexpected error: %v", err)
+		}
+		if srv.updates < 2 || srv.updateBody == nil {
+			t.Errorf("expected the update to be retried after the build, got %d attempts", srv.updates)
+		}
+		if _, ok := srv.updateBody["code_evaluator"].(map[string]any)["advanced_features_enabled"]; ok {
+			t.Error("replace without --advanced should keep the stored mode")
+		}
+		if result["advanced"] != true || result["build_status"] != "READY" {
+			t.Errorf("unexpected output %#v", result)
+		}
+	})
+	t.Run("unchanged advanced evaluator reports its failed build", func(t *testing.T) {
+		srv := &wholeFileServer{rules: []map[string]any{existingRule}, noRebuild: true}
+		srv.store(map[string]any{"code_evaluator": map[string]any{
+			"code": wholeFileSource, "language": "python", "advanced_features_enabled": true,
+			"evaluator_build_status": "FAILED", "evaluator_build_error": "pip install failed",
+		}})
+		_, err := runWholeFileUpload(t, srv, map[string]string{"replace": "true", "yes": "true"})
+		if err == nil || !strings.Contains(err.Error(), "build failed: pip install failed") {
+			t.Fatalf("expected the stored build error, got %v", err)
+		}
+	})
+	t.Run("refusals leave the evaluator unchanged", func(t *testing.T) {
+		withAlerts := maps.Clone(existingRule)
+		withAlerts["alerts"] = []any{map[string]any{"routing_key": "k", "type": "pagerduty"}}
+		for name, tc := range map[string]struct {
+			rule  map[string]any
+			flags map[string]string
+			want  string
+		}{
+			"alerts":          {withAlerts, nil, "alert"},
+			"to trajectory":   {existingRule, map[string]string{"input": "trajectory"}, "trajectory input"},
+			"from trajectory": {map[string]any{"id": testRuleID, "display_name": "accuracy", "project_id": testSessionID, "evaluator_id": testEvaluatorID, "evaluator_name": "accuracy", "group_by": "trajectory_id"}, map[string]string{"input": "thread"}, "trajectory input"},
+		} {
+			t.Run(name, func(t *testing.T) {
+				srv := &wholeFileServer{rules: []map[string]any{tc.rule}}
+				srv.store(map[string]any{"code_evaluator": map[string]any{"code": "old", "language": "python"}})
+				flags := map[string]string{"replace": "true", "yes": "true"}
+				maps.Copy(flags, tc.flags)
+				_, err := runWholeFileUpload(t, srv, flags)
+				if err == nil || !strings.Contains(err.Error(), tc.want) {
+					t.Fatalf("expected a refusal mentioning %q, got %v", tc.want, err)
+				}
+				if srv.updates != 0 || srv.rulePatch != nil {
+					t.Errorf("expected no writes, got %d evaluator updates and rule PATCH %#v", srv.updates, srv.rulePatch)
+				}
+			})
+		}
+	})
+	t.Run("--advanced switches mode", func(t *testing.T) {
+		srv := &wholeFileServer{rules: []map[string]any{existingRule}, finalStatus: "READY"}
+		srv.store(map[string]any{"code_evaluator": map[string]any{"code": "old", "language": "python"}})
+		if _, err := runWholeFileUpload(t, srv, map[string]string{"replace": "true", "yes": "true", "advanced": "true"}); err != nil {
+			t.Fatalf("unexpected error: %v", err)
+		}
+		if srv.updateBody["code_evaluator"].(map[string]any)["advanced_features_enabled"] != true {
+			t.Errorf("update body = %#v, want advanced_features_enabled", srv.updateBody)
+		}
+	})
+}
+
+func TestEvaluatorUploadFunctionReplaceRefusesAdvancedEvaluator(t *testing.T) {
+	srv := &wholeFileServer{rules: []map[string]any{{
+		"id": testRuleID, "display_name": "accuracy", "project_id": testSessionID,
+		"evaluator_id": testEvaluatorID, "evaluator_name": "accuracy",
+	}}}
+	srv.store(map[string]any{"code_evaluator": map[string]any{"code": "x", "language": "python", "advanced_features_enabled": true}})
+	_, err := runWholeFileUpload(t, srv, map[string]string{"function": "perform_eval", "replace": "true", "yes": "true"})
+	if err == nil || !strings.Contains(err.Error(), "advanced evaluator") {
+		t.Fatalf("expected refusal, got %v", err)
+	}
+	if srv.rulePatch != nil || srv.updateBody != nil {
+		t.Error("expected no update")
+	}
+}
+
+// The deprecated --function path sends the extracted, renamed function inline
+// to the rules endpoint, exactly as before whole-file uploads.
+func TestEvaluatorUploadFunctionSendsRuleWithInlineCode(t *testing.T) {
+	evaluatorFile := t.TempDir() + "/eval.py"
+	if err := os.WriteFile(evaluatorFile, []byte(wholeFileSource+"\n\ndef grade(run, example):\n    return {\"score\": 1}\n"), 0o600); err != nil {
+		t.Fatal(err)
+	}
+	var body map[string]any
+	ts := newTestServer(t, func(w http.ResponseWriter, r *http.Request) {
+		w.Header().Set("Content-Type", "application/json")
+		switch {
+		case r.URL.Path == "/api/v2/runs/rules" && r.Method == http.MethodGet:
+			_ = writeRulePage(w, []map[string]any{})
+		case r.URL.Path == "/api/v1/runs/rules" && r.Method == http.MethodPost:
+			_ = json.NewDecoder(r.Body).Decode(&body)
+			_ = json.NewEncoder(w).Encode(map[string]any{"id": testRuleID, "evaluator_id": testEvaluatorID})
+		default:
+			t.Errorf("unexpected request %s %s", r.Method, r.URL.Path)
+		}
+	})
+	cleanup := setupTestEnv(t, ts.URL)
+	defer cleanup()
+	flagOutputFormat = "json"
+
+	out := captureStdout(t, func() {
+		cmd := newEvaluatorUploadCmd()
+		for k, v := range map[string]string{"name": "accuracy", "function": "grade", "project-id": testSessionID} {
+			_ = cmd.Flags().Set(k, v)
+		}
+		if err := runTestCommand(t, cmd, []string{evaluatorFile}); err != nil {
+			t.Errorf("unexpected error: %v", err)
+		}
+	})
+	want := map[string]any{
+		"display_name": "accuracy", "sampling_rate": 1.0, "is_enabled": true, "include_extended_stats": false,
+		"session_id": testSessionID,
+		"code_evaluators": []any{map[string]any{
+			"code": "def perform_eval(run, example):\n    return {\"score\": 1}\n", "language": "python",
+		}},
+	}
+	if !reflect.DeepEqual(body, want) {
+		t.Errorf("rule body = %#v, want %#v", body, want)
+	}
+	var result map[string]any
+	_ = json.Unmarshal([]byte(out), &result)
+	wantOut := map[string]any{"status": "uploaded", "rule_id": testRuleID, "evaluator_id": testEvaluatorID, "name": "accuracy", "target": "project"}
+	if !reflect.DeepEqual(result, wantOut) {
+		t.Errorf("output = %#v, want %#v", result, wantOut)
+	}
+}
+
 // ==================== helper ====================
 
 func contains(s, substr string) bool {
 	return strings.Contains(s, substr)
+}
+
+func TestEvaluatorUploadRefusesHardcodedSecrets(t *testing.T) {
+	key := fakeKey("sk-proj-", 32)
+	source := "import json\n\nOPENAI_KEY = \"" + key + "\"\n\ndef perform_eval(run, example):\n    return {}\n"
+	for name, tc := range map[string]struct {
+		source string
+		flags  map[string]string
+	}{
+		"in the code":              {source, nil},
+		"in the dependencies file": {wholeFileSource, map[string]string{"advanced": "true", "dependencies": "--index-url https://user:hunter2@pypi.example.com/simple\nrequests\n"}},
+		"with --function": {
+			"def perform_eval(run, example):\n    client = OpenAI(api_key=\"" + key + "\")\n    return {}\n",
+			map[string]string{"function": "perform_eval"},
+		},
+	} {
+		t.Run(name, func(t *testing.T) {
+			srv := &wholeFileServer{}
+			var err error
+			out := captureStdout(t, func() { _, err = runWholeFileUploadSource(t, srv, tc.source, tc.flags) })
+			if err == nil || !strings.Contains(err.Error(), "hardcoded credential") {
+				t.Fatalf("expected a credential refusal, got %v", err)
+			}
+			if strings.Contains(err.Error()+out, key) || strings.Contains(err.Error(), "hunter2") {
+				t.Errorf("the error should not repeat the credential: %v", err)
+			}
+			if srv.createBody != nil || srv.ruleBody != nil {
+				t.Error("expected nothing to be uploaded")
+			}
+		})
+	}
+}
+
+func TestEvaluatorUploadIgnoreCredentialCheck(t *testing.T) {
+	source := "def perform_eval(run, example):\n    key = \"" + fakeKey("sk-proj-", 32) + "\"\n    return {}\n"
+	for name, flags := range map[string]map[string]string{
+		"whole file": {"ignore-credential-check": "true"},
+		"--function": {"ignore-credential-check": "true", "function": "perform_eval"},
+	} {
+		t.Run(name, func(t *testing.T) {
+			srv := &wholeFileServer{}
+			if _, err := runWholeFileUploadSource(t, srv, source, flags); err != nil {
+				t.Fatalf("unexpected error: %v", err)
+			}
+			if srv.createBody == nil && srv.ruleBody == nil {
+				t.Error("expected the upload to go ahead")
+			}
+		})
+	}
+}
+
+func TestEvaluatorUploadLocalImports(t *testing.T) {
+	const source = "from .helpers import score\n\ndef evaluate(ctx):\n    return score(ctx)\n"
+	t.Run("advanced upload is refused", func(t *testing.T) {
+		srv := &wholeFileServer{}
+		_, err := runWholeFileUploadSource(t, srv, source, map[string]string{"advanced": "true"})
+		if !errors.Is(err, errLocalImports) || !strings.Contains(err.Error(), `".helpers"`) {
+			t.Fatalf("expected a local import refusal naming .helpers, got %v", err)
+		}
+		if srv.createBody != nil {
+			t.Error("expected nothing to be uploaded")
+		}
+	})
+	t.Run("replace of an advanced evaluator is refused", func(t *testing.T) {
+		srv := &wholeFileServer{rules: []map[string]any{{
+			"id": testRuleID, "display_name": "accuracy", "project_id": testSessionID,
+			"evaluator_id": testEvaluatorID, "evaluator_name": "accuracy",
+		}}}
+		srv.store(map[string]any{"code_evaluator": map[string]any{"code": "old", "language": "python", "advanced_features_enabled": true}})
+		_, err := runWholeFileUploadSource(t, srv, source, map[string]string{"replace": "true", "yes": "true"})
+		if !errors.Is(err, errLocalImports) {
+			t.Fatalf("expected a local import refusal, got %v", err)
+		}
+		if srv.updates != 0 {
+			t.Error("expected no evaluator update")
+		}
+	})
+	t.Run("legacy upload is left to the server", func(t *testing.T) {
+		srv := &wholeFileServer{}
+		if _, err := runWholeFileUploadSource(t, srv, source, nil); err != nil {
+			t.Fatalf("unexpected error: %v", err)
+		}
+	})
+}
+
+func TestCheckLocalImports(t *testing.T) {
+	dir := t.TempDir()
+	for _, p := range []string{"helpers.py", "pkg/__init__.py", "alone/json.py", "data/notes.txt"} {
+		if err := os.MkdirAll(filepath.Dir(filepath.Join(dir, p)), 0o700); err != nil {
+			t.Fatal(err)
+		}
+		if err := os.WriteFile(filepath.Join(dir, p), nil, 0o600); err != nil {
+			t.Fatal(err)
+		}
+	}
+	for name, tc := range map[string]struct {
+		file, code string
+		want       []string // modules named in the error; none means accepted
+	}{
+		"python packages":           {"eval.py", "import json, re\nfrom rapidfuzz import fuzz\nimport numpy as np\n", nil},
+		"python relative":           {"eval.py", "from . import utils\nfrom .lib.x import y\n", []string{`"."`, `".lib.x"`}},
+		"python sibling module":     {"eval.py", "import json, helpers as h\nfrom pkg.sub import thing\n", []string{`"helpers"`, `"pkg.sub"`}},
+		"python indented import":    {"eval.py", "def evaluate(ctx):\n    import helpers\n    return {}\n", []string{`"helpers"`}},
+		"js packages":               {"eval.js", "import fuzz from 'fuzzball';\nconst _ = require(\"lodash\");\n", nil},
+		"js relative":               {"eval.ts", "import { score } from './score.js';\nexport * from \"../shared\";\nconst cfg = require('./cfg.json');\nconst m = await import(`./lazy`);\n", []string{`"./score.js"`, `"../shared"`, `"./cfg.json"`, `"./lazy"`}},
+		"js side-effect import":     {"eval.mjs", "import './setup.js';\n", []string{`"./setup.js"`}},
+		"js commented imports":      {"eval.js", "// import { score } from './score.js';\n/* const x = require('./x');\n*/\nconst u = 'https://example.com';\n", nil},
+		"python docstring example":  {"eval.py", "\"\"\"Usage:\n\nfrom .helpers import score\nimport helpers\n\"\"\"\nimport json\n", nil},
+		"python after docstring":    {"eval.py", "'''Doc.'''\nfrom .helpers import score\n", []string{`".helpers"`}},
+		"python file named json":    {"alone/json.py", "import json\n", nil},
+		"python non-code folder":    {"eval.py", "import data\n", nil},
+		"js Buffer.from":            {"eval.js", "const b = Buffer.from('./expected');\nconst a = Array.from(\"./x\");\n", nil},
+		"js regex with quote":       {"eval.js", "const q = /['\"]/g;\nimport { score } from './score.js';\n", []string{`"./score.js"`}},
+		"js regex with comment":     {"eval.js", "const ok = /[/*]/.test(s);\nconst h = require('./helpers');\n", []string{`"./helpers"`}},
+		"js division not regex":     {"eval.js", "const r = a / b / c;\nconst h = require('./helpers');\n", []string{`"./helpers"`}},
+		"js import in ${}":          {"eval.js", "const msg = `score: ${require('./score').value}`;\n", []string{`"./score"`}},
+		"js nested template":        {"eval.js", "const s = `a ${`b ${import('./deep')}`} c`;\nconst x = require('lodash');\n", []string{`"./deep"`}},
+		"js spread require":         {"eval.js", "const cfg = { ...require('./defaults'), x: 1 };\n", []string{`"./defaults"`}},
+		"js separate expressions":   {"eval.js", "const s = `${from} ${'./not-a-module'}`;\n", nil},
+		"js /* in a string":         {"eval.js", "const glob = 'src/*.js';\nimport { score } from './score.js';\nconst end = '*/';\n", []string{`"./score.js"`}},
+		"js import text in string":  {"eval.js", "const hint = \"import x from './x'\";\nconst r = require(`lodash`);\n", nil},
+		"js import in template":     {"eval.js", "const cfg = await import(`./cfg.js`);\n", []string{`"./cfg.js"`}},
+		"python prompt with quotes": {"eval.py", "PROMPT = 'Wrap code in \"\"\" fences'\nfrom .helpers import score\n", []string{`".helpers"`}},
+		"python escaped quote":      {"eval.py", "\"\"\"Say \\\"\"\" hi.\"\"\"\nfrom .helpers import score\n", []string{`".helpers"`}},
+		"python import in string":   {"eval.py", "EXAMPLE = \"from .helpers import score\"\nimport json\n", nil},
+		"python import in comment":  {"eval.py", "# from .helpers import score\nimport json  # import helpers\n", nil},
+	} {
+		t.Run(name, func(t *testing.T) {
+			language, _ := detectLanguage(tc.file)
+			err := checkLocalImports(filepath.Join(dir, tc.file), tc.code, language)
+			if len(tc.want) == 0 {
+				if err != nil {
+					t.Fatalf("unexpected error: %v", err)
+				}
+				return
+			}
+			if err == nil {
+				t.Fatalf("expected an error naming %v", tc.want)
+			}
+			for _, m := range tc.want {
+				if !strings.Contains(err.Error(), m) {
+					t.Errorf("error %q does not name %s", err, m)
+				}
+			}
+		})
+	}
+}
+
+// fakeKey builds a credential-shaped test value at run time, so the source
+// holds no string that secret scanners read as a real key.
+func fakeKey(prefix string, n int) string {
+	const chars = "ABCDEFGHJKLMNPQRSTUVWXYZ23456789"
+	b := []byte(prefix)
+	for i := range n {
+		b = append(b, chars[(i*7+3)%len(chars)])
+	}
+	return string(b)
+}
+
+func TestCheckForSecrets(t *testing.T) {
+	for name, tc := range map[string]struct {
+		line string
+		kind string // empty means accepted
+	}{
+		"langsmith":        {`KEY = "` + fakeKey("lsv2_pt_", 34) + `"`, "LangSmith API key"},
+		"anthropic":        {`key = "` + fakeKey("sk-ant-api03-", 26) + `"`, "Anthropic API key"},
+		"openai":           {`openai.api_key = '` + fakeKey("sk-", 30) + `'`, "OpenAI API key"},
+		"aws":              {`AWS = "` + fakeKey("AKIA", 16) + `"`, "AWS access key ID"},
+		"google":           {`g = "` + fakeKey("AIza", 35) + `"`, "Google API key"},
+		"github":           {`t = "` + fakeKey("ghp_", 36) + `"`, "GitHub token"},
+		"slack":            {`s = "` + fakeKey("xoxb-", 24) + `"`, "Slack token"},
+		"stripe":           {`s = "` + fakeKey("sk_"+"live_", 24) + `"`, "Stripe secret key"},
+		"private key":      {"-----BEGIN RSA " + "PRIVATE KEY-----", "private key"},
+		"url password":     {`DB = "postgres://admin:s3cret@db.internal:5432/app"`, "password in a URL"},
+		"env lookup":       {`key = os.environ["OPENAI_API_KEY"]`, ""},
+		"placeholder":      {`# set OPENAI_API_KEY to sk-...`, ""},
+		"url without pw":   {`URL = "https://user@example.com/path"`, ""},
+		"f-string url":     {`url = f"postgresql://{user}:{password}@{host}/db"`, ""},
+		"template url":     {"const u = `https://${user}:${token}@api.example.com`;", ""},
+		"%-format url":     {`u = "https://%s:%s@host" % (a, b)`, ""},
+		"encoded password": {`DB = "postgres://admin:p%40ss%21word@db.internal/app"`, "password in a URL"},
+		"ordinary string":  {`label = "task-classification-for-long-thread-names"`, ""},
+	} {
+		t.Run(name, func(t *testing.T) {
+			err := checkForSecrets("eval.py", "import os\n"+tc.line+"\n", false)
+			if tc.kind == "" {
+				if err != nil {
+					t.Fatalf("unexpected error: %v", err)
+				}
+				return
+			}
+			if err == nil || !strings.Contains(err.Error(), "eval.py:2: looks like a "+tc.kind) {
+				t.Fatalf("expected eval.py:2 flagged as a %s, got %v", tc.kind, err)
+			}
+		})
+	}
+}
+
+func TestEvaluatorUploadIgnoreImportCheck(t *testing.T) {
+	const source = "from .helpers import score\n\ndef evaluate(ctx):\n    return score(ctx)\n"
+	srv := &wholeFileServer{finalStatus: "READY"}
+	if _, err := runWholeFileUploadSource(t, srv, source, map[string]string{"advanced": "true", "ignore-import-check": "true"}); err != nil {
+		t.Fatalf("unexpected error: %v", err)
+	}
+	if srv.createBody == nil {
+		t.Error("expected the upload to go ahead")
+	}
+}
+
+func TestWithEntryPointHint(t *testing.T) {
+	serverErr := errors.New(`400 Bad Request: code must define a function named "perform_eval"`)
+	for name, tc := range map[string]struct {
+		code, language string
+		input          string
+		want           string // empty means no hint
+	}{
+		"thread input": {"def check_thread(run):\n    return {}\n", "python", "thread", "needs the file to define evaluate(ctx); it defines check_thread, so rename the one that scores to evaluate"},
+		"python":       {"import json\n\ndef _helper():\n    pass\n\nasync def check_accuracy(run, example):\n    return {}\n", "python", "", "it defines check_accuracy, so rename the one that scores to perform_eval"},
+		"javascript":   {"export function grade(run) {}\nconst score = (run) => 1;\nconst x = 1;\n", "javascript", "", "it defines grade, score"},
+		"no functions": {"X = 1\n", "python", "", "the file must define perform_eval(run, example)"},
+		"other errors": {"def f(): pass\n", "python", "", ""},
+	} {
+		t.Run(name, func(t *testing.T) {
+			in := serverErr
+			if tc.want == "" {
+				in = errors.New("500 Internal Server Error")
+			}
+			got := withEntryPointHint(in, tc.code, tc.language, tc.input)
+			if !errors.Is(got, in) {
+				t.Errorf("the server's error should be kept, got %v", got)
+			}
+			if tc.want == "" {
+				if got.Error() != in.Error() {
+					t.Errorf("expected no hint, got %v", got)
+				}
+				return
+			}
+			if !strings.Contains(got.Error(), tc.want) {
+				t.Errorf("hint %q does not contain %q", got, tc.want)
+			}
+		})
+	}
 }

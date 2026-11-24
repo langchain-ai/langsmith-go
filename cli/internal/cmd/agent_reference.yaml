@@ -183,9 +183,11 @@ sections:
         flags: [--name, --project, --dataset, --prompt, --hub-ref, --model-config, --schema, --variable-mapping, --sampling-rate, --trace-filter, --replace]
         note: "`--replace` updates the existing rule with the same `--name` on that target and asks for confirmation unless `--yes` is passed."
       - path: evaluators upload
-        flags: [--name, --function, --project, --dataset, --sampling-rate, --replace]
+        flags: [--name, --project, --dataset, --sampling-rate, --replace, --advanced, --dependencies, --workspace-secret, --input, --no-wait, --ignore-credential-check, --ignore-import-check]
+        note: "The file is sent unchanged and must define `perform_eval` / `performEval`, or `evaluate(ctx)` with `--advanced`. Advanced uploads wait for the build and exit non-zero with the build error if it fails. `--replace` keeps the evaluator's advanced mode unless `--advanced` is passed. Files with hardcoded credentials are refused unless `--ignore-credential-check` is passed, and advanced evaluators that import from their own folder are refused unless `--ignore-import-check` is passed; use `--workspace-secret` for keys. `--function` is deprecated."
         examples:
-          - langsmith evaluators upload evaluators.py --function exact_match --name exact-match --dataset my-dataset
+          - langsmith evaluators upload evaluators.py --name exact-match --dataset my-dataset
+          - langsmith evaluators upload evaluators.py --name exact-match --project my-app --advanced --dependencies requirements.txt
       - path: evaluators rule list
         flags: [--project, --dataset, --evaluator-id, --all]
         examples:

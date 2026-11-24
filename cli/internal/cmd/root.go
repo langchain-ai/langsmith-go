@@ -63,7 +63,7 @@ Common workflows:
     langsmith runs list --project my-app --error --include-io --limit 20
     langsmith datasets create --name my-eval-dataset
     langsmith examples create --dataset my-eval-dataset --inputs '{"question": "..."}' --outputs '{"answer": "..."}'
-    langsmith evaluators upload evals.py --function correctness --name correctness --dataset my-eval-dataset
+    langsmith evaluators upload evals.py --name correctness --dataset my-eval-dataset
     langsmith experiments list --dataset my-eval-dataset
     langsmith experiments get my-experiment
 

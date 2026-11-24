@@ -282,6 +282,18 @@ func TestIntegrationEvaluatorUploadKeepsRuleSettings(t *testing.T) {
 	mustRunCLI(t, "evaluator", "upload", writeEvaluatorFile(t, 2),
 		"--name", seed.name, "--function", "grade", "--dataset", datasetName, "--replace", "--yes", "--sampling-rate", "0.5")
 	assertSeededSettings(t, c, ctx, seed, 0.5)
+
+	// A whole-file upload updates the evaluator's code and keeps the rule's settings.
+	wholeFile := filepath.Join(t.TempDir(), "eval.py")
+	src := "SCORE = 3\n\n\ndef _score():\n    return SCORE\n\n\ndef perform_eval(run, example):\n    return {\"score\": _score()}\n"
+	if err := os.WriteFile(wholeFile, []byte(src), 0o600); err != nil {
+		t.Fatal(err)
+	}
+	mustRunCLI(t, "evaluator", "upload", wholeFile, "--name", seed.name, "--dataset", datasetName, "--replace", "--yes")
+	rule = assertSeededSettings(t, c, ctx, seed, 0.5)
+	if len(rule.CodeEvaluators) != 1 || rule.CodeEvaluators[0].Code != src {
+		t.Errorf("expected the whole file, got %+v", rule.CodeEvaluators)
+	}
 }
 
 func TestIntegrationEvaluatorUploadCreatesRule(t *testing.T) {
