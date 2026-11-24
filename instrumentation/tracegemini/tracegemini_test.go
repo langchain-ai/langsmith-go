@@ -151,6 +151,8 @@ func TestIsGeminiEndpoint(t *testing.T) {
 		// Embeddings
 		{"/v1beta/models/gemini-embedding-001:embedContent", true},
 		{"/v1/projects/my-proj/locations/global/publishers/google/models/gemini-embedding-2:batchEmbedContents", true},
+		{"/v1/projects/my-proj/locations/us-central1/publishers/google/models/text-embedding-005:predict", true},
+		{"/v1/projects/my-proj/locations/us-central1/publishers/google/models/imagen-4.0-generate-001:predict", false},
 		{"", false},
 	}
 	for _, tt := range tests {
@@ -270,6 +272,53 @@ func TestRoundTrip_BatchEmbedContents(t *testing.T) {
 		t.Errorf("gen_ai.operation.name = %q, want 'embedding'", v)
 	}
 	if v, ok := getSpanAttr(spans, "gen_ai.request.model"); !ok || v != "gemini-embedding-2" {
+		t.Errorf("gen_ai.request.model = %q", v)
+	}
+	if v, ok := getSpanAttr(spans, "gen_ai.prompt"); !ok ||
+		!strings.Contains(v, "Name 5 colours") || !strings.Contains(v, "Name 5 animals") {
+		t.Errorf("gen_ai.prompt should contain both inputs: %q", v)
+	}
+	if _, ok := getSpanAttr(spans, "gen_ai.completion"); ok {
+		t.Error("embedding span should not record a completion")
+	}
+	if v, ok := getSpanAttrInt(spans, "gen_ai.usage.input_tokens"); !ok || v != 7 {
+		t.Errorf("input_tokens = %d, want 7", v)
+	}
+}
+
+func TestRoundTrip_PredictEmbeddings(t *testing.T) {
+	respBody := `{"predictions": [
+		{"embeddings": {"values": [0.1, 0.2], "statistics": {"truncated": false, "token_count": 4}}},
+		{"embeddings": {"values": [0.3, 0.4], "statistics": {"truncated": false, "token_count": 3}}}
+	]}`
+	client, exporter := newTracedClient(t, []byte(respBody))
+	body := `{"instances":[
+		{"content":"Name 5 colours","task_type":"RETRIEVAL_DOCUMENT"},
+		{"content":"Name 5 animals"}
+	]}`
+	req, err := http.NewRequestWithContext(context.Background(), http.MethodPost,
+		"https://us-central1-aiplatform.googleapis.com/v1/projects/p/locations/us-central1/publishers/google/models/gemini-embedding-001:predict",
+		strings.NewReader(body))
+	if err != nil {
+		t.Fatal(err)
+	}
+	resp, err := client.Do(req)
+	if err != nil {
+		t.Fatal(err)
+	}
+	if _, err := io.ReadAll(resp.Body); err != nil {
+		t.Fatal(err)
+	}
+	resp.Body.Close()
+
+	spans := exporter.GetSpans()
+	if len(spans) == 0 {
+		t.Fatal("expected at least one span")
+	}
+	if v, ok := getSpanAttr(spans, "gen_ai.operation.name"); !ok || v != "embedding" {
+		t.Errorf("gen_ai.operation.name = %q, want 'embedding'", v)
+	}
+	if v, ok := getSpanAttr(spans, "gen_ai.request.model"); !ok || v != "gemini-embedding-001" {
 		t.Errorf("gen_ai.request.model = %q", v)
 	}
 	if v, ok := getSpanAttr(spans, "gen_ai.prompt"); !ok ||

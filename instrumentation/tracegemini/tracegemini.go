@@ -154,7 +154,7 @@ func (rt *roundTripper) RoundTrip(req *http.Request) (*http.Response, error) {
 
 	model, action := parseModelAction(req.URL.Path)
 	streaming := action == "streamGenerateContent"
-	embedding := embedActions[action]
+	embedding := isEmbedding(model, action)
 
 	spanName := "gemini." + action
 	if v := ctx.Value(ctxKeyRunName); v != nil {
@@ -338,14 +338,22 @@ var embedActions = map[string]bool{
 	"batchEmbedContents": true,
 }
 
+// predictAction is Vertex's older embeddings action. It also serves non-embedding
+// models such as Imagen, so it is traced only for embedding models.
+const predictAction = "predict"
+
+func isEmbedding(model, action string) bool {
+	return embedActions[action] || (action == predictAction && strings.Contains(model, "embedding"))
+}
+
 // isGeminiEndpoint returns true if the path matches a Gemini generateContent,
 // streamGenerateContent, or embedding endpoint.
 func isGeminiEndpoint(path string) bool {
 	if !strings.Contains(path, "/models/") {
 		return false
 	}
-	_, action := parseModelAction(path)
-	return action == "generateContent" || action == "streamGenerateContent" || embedActions[action]
+	model, action := parseModelAction(path)
+	return action == "generateContent" || action == "streamGenerateContent" || isEmbedding(model, action)
 }
 
 // parseModelAction extracts the model name and action from a Gemini API path.
@@ -364,8 +372,8 @@ func parseModelAction(path string) (model, action string) {
 
 // extractRequestAttributes extracts attributes from the Gemini request body
 // and sets them on the span. Handles contents, systemInstruction, and
-// generationConfig, and the content of embedContent and batchEmbedContents
-// requests.
+// generationConfig, and the texts of embedContent, batchEmbedContents and
+// predict requests.
 // withoutContent skips gen_ai.prompt.
 func extractRequestAttributes(span trace.Span, body []byte, withoutContent bool) {
 	var req map[string]any
@@ -424,6 +432,19 @@ func extractRequestAttributes(span trace.Span, body []byte, withoutContent bool)
 			}
 			if cm, ok := rm["content"].(map[string]any); ok {
 				messages = append(messages, contentToMessages(cm)...)
+			}
+		}
+	}
+
+	// predict carries one text per instance.
+	if instances, ok := req["instances"].([]any); ok {
+		for _, instance := range instances {
+			im, ok := instance.(map[string]any)
+			if !ok {
+				continue
+			}
+			if text, ok := im["content"].(string); ok {
+				messages = append(messages, map[string]any{"role": "user", "content": text})
 			}
 		}
 	}
@@ -673,7 +694,30 @@ func processResponse(span trace.Span, resp map[string]any, parentSpan trace.Span
 
 	if usage, ok := resp["usageMetadata"].(map[string]any); ok {
 		setUsageAttributes(span, usage, parentSpan)
+	} else if tokens, ok := predictTokenCount(resp); ok {
+		setUsageAttributes(span, map[string]any{"promptTokenCount": tokens, "totalTokenCount": tokens}, parentSpan)
 	}
+}
+
+// predictTokenCount sums the per-instance token counts of a predict embeddings
+// response, which has no usageMetadata.
+func predictTokenCount(resp map[string]any) (float64, bool) {
+	predictions, ok := resp["predictions"].([]any)
+	if !ok {
+		return 0, false
+	}
+	var total float64
+	found := false
+	for _, prediction := range predictions {
+		pm, _ := prediction.(map[string]any)
+		embeddings, _ := pm["embeddings"].(map[string]any)
+		statistics, _ := embeddings["statistics"].(map[string]any)
+		if count, ok := statistics["token_count"].(float64); ok {
+			total += count
+			found = true
+		}
+	}
+	return total, found
 }
 
 // buildCompletion builds a {"messages":[...]} JSON string from candidates,
