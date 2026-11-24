@@ -219,7 +219,7 @@ func forwardGenerated(cmd *cobra.Command, resource *cli.Command, path string, ar
 			}
 		}
 	}
-	return runGenerated(cmd, resource, rest, flags, jq, ifNotExists)
+	return runGenerated(cmd, resource, path, rest, flags, jq, ifNotExists)
 }
 
 // generatedFlagRenames maps an old flag name of a generated operation to its
@@ -485,7 +485,7 @@ func applyGeneratedJSONFlag(args []string, valueFlags map[string]bool) ([]string
 // With ifNotExists, a create operation the API rejects with 409 instead runs
 // its lookup from generatedIfNotExists and prints the existing resource. When
 // the lookup fails too, the 409 is reported.
-func runGenerated(cmd *cobra.Command, resource *cli.Command, rest []string, flags globalFlags, jq string, ifNotExists bool) error {
+func runGenerated(cmd *cobra.Command, resource *cli.Command, path string, rest []string, flags globalFlags, jq string, ifNotExists bool) error {
 	argv := []string{"langsmith"}
 	help := isHelpInvocation(rest)
 	if !help {
@@ -541,6 +541,9 @@ func runGenerated(cmd *cobra.Command, resource *cli.Command, rest []string, flag
 	}
 	if err != nil {
 		printGeneratedError(cmd.ErrOrStderr(), err)
+		if hint := generatedNotFoundHint(cmd.Root(), err, resource, path, rest); hint != "" {
+			fmt.Fprintln(cmd.ErrOrStderr(), "hint: "+hint)
+		}
 		code := 1
 		var exitErr cli.ExitCoder
 		if errors.As(err, &exitErr) {
@@ -605,6 +608,65 @@ func translateGlobalFlags(args []string) (rest []string, flags globalFlags, err 
 		*target = value
 	}
 	return rest, flags, nil
+}
+
+// generatedNotFoundHint names the list command that finds valid IDs when an
+// operation other than list gets a 404. path is the command path the
+// resource's operations are mounted under; the list command there may be
+// generated or hand-written. A generated list's required flags are spelled
+// out so the command runs as printed.
+func generatedNotFoundHint(root *cobra.Command, err error, resource *cli.Command, path string, args []string) string {
+	if !isHTTP404(err) || operationName(resource, args, generatedValueFlags()) == "list" {
+		return ""
+	}
+	list, _, findErr := root.Find(append(strings.Fields(path)[1:], "list"))
+	if findErr != nil {
+		return ""
+	}
+	// A resource mounted under a group has a cobra child for each operation;
+	// a standalone one is a single forwarding command, so look in its
+	// generated operations instead.
+	mounted := list.Name() == "list" && list.Parent().CommandPath() == path
+	standalone := list.CommandPath() == path && slices.ContainsFunc(resource.Commands, func(c *cli.Command) bool { return c.Name == "list" })
+	if !mounted && !standalone {
+		return ""
+	}
+	command := path + " list"
+	if list.Annotations[generatedAnnotation] != "" {
+		command += generatedListRequiredArgs(resource, args)
+	}
+	return fmt.Sprintf("the API found nothing at that ID in this workspace (HTTP 404). Run `%s` to find valid IDs.", command)
+}
+
+// generatedListRequiredArgs spells the flags resource's list operation
+// requires, such as the parent queue ID of a queue item. A flag the failed
+// operation was given keeps its value; any other gets a <name> placeholder.
+func generatedListRequiredArgs(resource *cli.Command, args []string) string {
+	idx := slices.IndexFunc(resource.Commands, func(c *cli.Command) bool { return c.Name == "list" })
+	if idx < 0 {
+		return ""
+	}
+	var b strings.Builder
+	for _, f := range resource.Commands[idx].Flags {
+		required, ok := f.(interface{ IsRequiredAsFlagOrStdin() bool })
+		if !ok || !required.IsRequiredAsFlagOrStdin() {
+			continue
+		}
+		name := f.Names()[0]
+		value := "<" + name + ">"
+		// A value read from a file (@path) is resolved only inside the
+		// generated tree, so the hint can't name it.
+		if _, v, err := extractValueFlag(args, "--"+name); err == nil && v != "" && !strings.HasPrefix(v, "@") {
+			value = v
+			if strings.ContainsFunc(v, func(r rune) bool {
+				return !(r >= 'a' && r <= 'z' || r >= 'A' && r <= 'Z' || r >= '0' && r <= '9' || strings.ContainsRune("-_.:", r))
+			}) {
+				value = shellQuote(v)
+			}
+		}
+		fmt.Fprintf(&b, " --%s %s", name, value)
+	}
+	return b.String()
 }
 
 func printGeneratedError(w io.Writer, err error) {

@@ -13,27 +13,31 @@ import (
 )
 
 func TestAuthHintOption(t *testing.T) {
+	const workspaceBody = `{"error":"org_scoped_key_requires_workspace","message":"This API key is org-scoped and requires workspace specification."}`
 	tests := []struct {
+		name            string
 		status          int
+		body            string
 		expectForbidden bool
 		want            string
 	}{
-		{status: http.StatusUnauthorized, want: "rejected these credentials (HTTP 401)"},
-		{status: http.StatusForbidden, want: "lacks permission for this workspace"},
-		{status: http.StatusForbidden, expectForbidden: true},
-		{status: http.StatusUnauthorized, expectForbidden: true, want: "rejected these credentials (HTTP 401)"},
-		{status: http.StatusNotFound},
+		{name: "401", status: http.StatusUnauthorized, want: "rejected these credentials (HTTP 401)"},
+		{name: "403", status: http.StatusForbidden, want: "run `langsmith auth info`"},
+		{name: "403 without workspace", status: http.StatusForbidden, body: workspaceBody, want: "Run `langsmith workspaces list`"},
+		{name: "403 expected", status: http.StatusForbidden, expectForbidden: true},
+		{name: "401 expected", status: http.StatusUnauthorized, expectForbidden: true, want: "rejected these credentials (HTTP 401)"},
+		{name: "404", status: http.StatusNotFound},
 	}
 	for _, tt := range tests {
-		name := http.StatusText(tt.status)
-		if tt.expectForbidden {
-			name += " expected"
-		}
-		t.Run(name, func(t *testing.T) {
+		t.Run(tt.name, func(t *testing.T) {
+			body := tt.body
+			if body == "" {
+				body = `{"detail":"Invalid token"}`
+			}
 			ts := httptest.NewServer(http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
 				w.Header().Set("Content-Type", "application/json")
 				w.WriteHeader(tt.status)
-				_, _ = w.Write([]byte(`{"detail":"Invalid token"}`))
+				_, _ = w.Write([]byte(body))
 			}))
 			defer ts.Close()
 			var stderr bytes.Buffer
@@ -45,7 +49,11 @@ func TestAuthHintOption(t *testing.T) {
 				ctx = ExpectForbidden(ctx)
 			}
 			for range 2 {
-				_, _ = sdk.Sessions.List(ctx, langsmith.SessionListParams{})
+				_, err := sdk.Sessions.List(ctx, langsmith.SessionListParams{})
+				// The hint reads the body, so the error must still carry it.
+				if err == nil || !strings.Contains(err.Error(), body) {
+					t.Fatalf("err = %v, want it to include the response body", err)
+				}
 			}
 
 			wantCount := 0

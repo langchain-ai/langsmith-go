@@ -614,6 +614,44 @@ func TestGeneratedCommandPrintsJSONWhenPiped(t *testing.T) {
 	}
 }
 
+func TestGeneratedNotFoundNamesListCommand(t *testing.T) {
+	isolateGeneratedAuth(t)
+	ts := httptest.NewServer(http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
+		w.Header().Set("Content-Type", "application/json")
+		w.WriteHeader(http.StatusNotFound)
+		_, _ = w.Write([]byte(`{"detail":"Not found"}`))
+	}))
+	defer ts.Close()
+	for _, tt := range []struct {
+		name     string
+		args     []string
+		wantHint bool
+		hint     string
+	}{
+		{"get by ID", []string{"datasets", "update", "--dataset-id", "11111111-1111-1111-1111-111111111111", "--name", "x"}, true, "Run `langsmith datasets list` to find valid IDs."},
+		{"standalone resource", []string{"prompt-webhooks", "retrieve", "--webhook-id", "11111111-1111-1111-1111-111111111111"}, true, "Run `langsmith prompt-webhooks list` to find valid IDs."},
+		{"list with required flags", []string{"annotation-queues", "items", "update", "--queue-id", "22222222-2222-2222-2222-222222222222", "--item-id", "11111111-1111-1111-1111-111111111111"}, true, "Run `langsmith annotation-queues items list --queue-id 22222222-2222-2222-2222-222222222222 --status <status>` to find valid IDs."},
+		{"list", []string{"prompt-webhooks", "list"}, false, ""},
+	} {
+		t.Run(tt.name, func(t *testing.T) {
+			args := append([]string{"--api-url", ts.URL, "--api-key", "k"}, tt.args...)
+			stderr, exitCode, err := runGeneratedCommand(t, "", args...)
+			if err != nil || exitCode != 1 {
+				t.Fatalf("err = %v, exit code = %d, want exit code 1\nstderr: %s", err, exitCode, stderr)
+			}
+			if !strings.Contains(stderr, "404") {
+				t.Errorf("stderr = %q, want the API error", stderr)
+			}
+			if got := strings.Contains(stderr, "hint: "); got != tt.wantHint {
+				t.Errorf("stderr = %q, want hint %v", stderr, tt.wantHint)
+			}
+			if tt.wantHint && !strings.Contains(stderr, tt.hint) {
+				t.Errorf("stderr = %q, want %q", stderr, tt.hint)
+			}
+		})
+	}
+}
+
 func TestGeneratedCommandJSONFlag(t *testing.T) {
 	isolateGeneratedAuth(t)
 	const body = `{"id":"11111111-1111-1111-1111-111111111111","name":"my-dataset","description":"two\nlines"}`

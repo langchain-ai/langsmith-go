@@ -167,7 +167,7 @@ func newExperimentGetCmd() *cobra.Command {
 					ExitErrorf("fetching experiment: %v", err)
 				}
 				if len(resp.Items) == 0 {
-					ExitErrorf("experiment not found: %s", nameOrID)
+					ExitErrorf("experiment not found: %s (run `langsmith experiments list`)", nameOrID)
 				}
 				p := resp.Items[0]
 				data = experimentData(p.ID, p.Name, p.FeedbackStats,

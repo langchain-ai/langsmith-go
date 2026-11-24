@@ -278,7 +278,7 @@ func getRule(ctx context.Context, c *client.Client, id string) (*langsmith.Rule,
 			return &rules[i], nil
 		}
 	}
-	return nil, fmt.Errorf("evaluator rule %s not found", id)
+	return nil, fmt.Errorf("evaluator rule %s not found (run `langsmith evaluators rule list`)", id)
 }
 
 func findRuleByName(ctx context.Context, c *client.Client, name, project, projectID, dataset string) (*langsmith.Rule, error) {

@@ -273,7 +273,7 @@ func resolveOnlineEvaluatorID(ctx context.Context, c *client.Client, nameOrID st
 	case 0:
 		hints := ruleNameHints(ctx, c, nameOrID, nil)
 		if len(hints) == 0 {
-			return "", fmt.Errorf("evaluator %q not found", nameOrID)
+			return "", fmt.Errorf("evaluator %q not found (run `langsmith evaluators list`)", nameOrID)
 		}
 		return "", fmt.Errorf("no evaluator named %q; that is a rule name, and its rules use evaluator %s", nameOrID, strings.Join(hints, ", "))
 	default:

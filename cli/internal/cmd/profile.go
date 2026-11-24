@@ -247,7 +247,7 @@ func runProfileShow(cmd *cobra.Command, profileName string) error {
 	}
 	profile, ok := cfg.Profiles[profileName]
 	if !ok {
-		return fmt.Errorf("profile %q not found", profileName)
+		return fmt.Errorf("profile %q not found (run `langsmith profiles list`)", profileName)
 	}
 
 	activeName := cfg.ResolveProfileName(flagProfile, profileEnvName())
@@ -279,7 +279,7 @@ func runProfileDelete(cmd *cobra.Command, profileName string) error {
 		return err
 	}
 	if _, ok := cfg.Profiles[profileName]; !ok {
-		return fmt.Errorf("profile %q not found", profileName)
+		return fmt.Errorf("profile %q not found (run `langsmith profiles list`)", profileName)
 	}
 	keychain := cfg.Profiles[profileName].SecretStore == lsconfig.SecretStoreKeychain
 	delete(cfg.Profiles, profileName)
@@ -315,7 +315,7 @@ func runProfileUse(cmd *cobra.Command, profileName string) error {
 		return err
 	}
 	if _, ok := cfg.Profiles[profileName]; !ok {
-		return fmt.Errorf("profile %q not found", profileName)
+		return fmt.Errorf("profile %q not found (run `langsmith profiles list`)", profileName)
 	}
 	cfg.CurrentProfile = profileName
 	if err := cfg.Save(); err != nil {

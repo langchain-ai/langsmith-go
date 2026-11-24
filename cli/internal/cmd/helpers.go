@@ -515,7 +515,7 @@ func resolveDataset(ctx context.Context, c *client.Client, nameOrID string) (*la
 		return nil, fmt.Errorf("searching dataset by name: %w", err)
 	}
 	if len(datasets) == 0 {
-		return nil, fmt.Errorf("dataset not found: %s", nameOrID)
+		return nil, fmt.Errorf("dataset not found: %s (run `langsmith datasets list`)", nameOrID)
 	}
 	return &datasets[0], nil
 }

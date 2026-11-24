@@ -184,7 +184,7 @@ func resolveAuthInfo() (authInfoResult, error) {
 		return result, fmt.Errorf("loading config: %s", result.ConfigError)
 	}
 	if (flagProfile != "" || envProfile != "") && !hasProfile && result.AuthSource != "flag" && result.AuthSource != "env" {
-		return result, fmt.Errorf("profile not found: %s", profileName)
+		return result, fmt.Errorf("profile not found: %s (run `langsmith profiles list`)", profileName)
 	}
 	return result, nil
 }

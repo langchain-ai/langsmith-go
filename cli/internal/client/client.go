@@ -128,7 +128,7 @@ func (c *Client) ResolveSessionID(ctx context.Context, projectName string) (stri
 		return "", fmt.Errorf("resolving project %q: %w", projectName, err)
 	}
 	if len(resp.Items) == 0 {
-		return "", fmt.Errorf("project not found: %s", projectName)
+		return "", fmt.Errorf("project not found: %s (run `langsmith projects list`)", projectName)
 	}
 	id := resp.Items[0].ID
 	c.sessionCache[projectName] = id

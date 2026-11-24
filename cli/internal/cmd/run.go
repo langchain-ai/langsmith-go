@@ -155,7 +155,7 @@ func newRunGetCmd() *cobra.Command {
 				ExitErrorf("fetching run: %v", err)
 			}
 			if len(runs) == 0 {
-				ExitErrorf("run not found: %s", runID)
+				ExitErrorf("run not found: %s (run `langsmith runs list`)", runID)
 			}
 
 			data := extract.ExtractRun(runs[0], includeMetadata, includeIO, includeFeedback)

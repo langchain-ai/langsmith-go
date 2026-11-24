@@ -1,6 +1,7 @@
 package client
 
 import (
+	"bytes"
 	"context"
 	"fmt"
 	"io"
@@ -11,10 +12,11 @@ import (
 	"github.com/langchain-ai/langsmith-go/option"
 )
 
-// authHint prints one hint on the first 401 or 403, so an agent fixes its
-// credentials instead of retrying them on every command. A key from another
-// region (an EU key sent to the US endpoint) is the most common cause, and the
-// API answers it with 403 as well as 401.
+// authHint prints one hint on the first 401 or 403, naming the command that
+// fixes it, so an agent fixes its credentials instead of retrying them on every
+// command. A key from another region (an EU key sent to the US endpoint) is the
+// most common cause, and the API answers it with 403 as well as 401. An
+// org-scoped key sent without a workspace also gets a 403.
 type authHint struct {
 	once sync.Once
 	w    io.Writer
@@ -39,11 +41,33 @@ func (h *authHint) check(req *http.Request, res *http.Response) {
 	case http.StatusUnauthorized:
 		msg = fmt.Sprintf("the API rejected these credentials (HTTP 401) at %s. Check the key hasn't been revoked and belongs to this region: %s. Or run `langsmith auth login`.", req.URL.Host, regionAdvice)
 	case http.StatusForbidden:
-		msg = fmt.Sprintf("the API refused this request (HTTP 403) at %s. Either the key lacks permission for this workspace or action (check its role and LANGSMITH_WORKSPACE_ID), or it belongs to another region: %s.", req.URL.Host, regionAdvice)
+		if requiresWorkspace(res) {
+			msg = "this API key can access more than one workspace, so the request must name one (HTTP 403). Run `langsmith workspaces list` to find its ID, then pass `--workspace <id>` or save it with `langsmith workspaces set-default <id>`."
+			break
+		}
+		msg = fmt.Sprintf("the API refused this request (HTTP 403) at %s. Either the key lacks permission for this workspace or action (run `langsmith auth info` to see the profile and workspace in use, and `langsmith workspaces list` for your role in each), or it belongs to another region: %s.", req.URL.Host, regionAdvice)
 	default:
 		return
 	}
 	h.once.Do(func() { fmt.Fprintf(h.w, "hint: %s\n", msg) })
+}
+
+// orgScopedKeyRequiresWorkspace is the error code the API returns when an
+// org-scoped key sends no workspace.
+const orgScopedKeyRequiresWorkspace = "org_scoped_key_requires_workspace"
+
+// requiresWorkspace reports whether a 403 says the request named no workspace.
+// It reads the start of the body and puts it back for the caller.
+func requiresWorkspace(res *http.Response) bool {
+	if res.Body == nil {
+		return false
+	}
+	head, _ := io.ReadAll(io.LimitReader(res.Body, 4096))
+	res.Body = struct {
+		io.Reader
+		io.Closer
+	}{io.MultiReader(bytes.NewReader(head), res.Body), res.Body}
+	return bytes.Contains(head, []byte(orgScopedKeyRequiresWorkspace))
 }
 
 func (h *authHint) option() option.RequestOption {

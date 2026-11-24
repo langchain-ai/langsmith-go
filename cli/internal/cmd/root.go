@@ -298,7 +298,7 @@ func resolveClientOptionsFor(flags globalFlags) (client.Options, error) {
 		}
 		profileName, profile, hasProfile = cfg.ResolveProfile(flags.Profile, envProfile)
 		if (flags.Profile != "" || envProfile != "") && !hasProfile {
-			return opts, fmt.Errorf("profile not found: %s", profileName)
+			return opts, fmt.Errorf("profile not found: %s (run `langsmith profiles list`)", profileName)
 		}
 	}
 

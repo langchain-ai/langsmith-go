@@ -512,7 +512,7 @@ func traceNotFound(traceID string, inProject bool, since time.Time) error {
 		scope = "the given project"
 	}
 	if since.IsZero() {
-		return fmt.Errorf("trace %s not found in %s", traceID, scope)
+		return fmt.Errorf("trace %s not found in %s (run `langsmith traces list`)", traceID, scope)
 	}
 	return fmt.Errorf("trace %s not found in %s among runs since %s; pass --since with an earlier time if the trace is older",
 		traceID, scope, since.UTC().Format(time.RFC3339))
