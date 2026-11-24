@@ -7,6 +7,7 @@ import (
 	"net/http"
 	"os"
 	"slices"
+	"strconv"
 	"strings"
 
 	"github.com/langchain-ai/langsmith-go"
@@ -186,6 +187,9 @@ func forwardGenerated(cmd *cobra.Command, resource *cli.Command, path string, ar
 		return err
 	}
 	rest = renameGeneratedFlags(resource, rest)
+	if rest, err = applyGeneratedJSONFlag(rest, generatedArgValueFlags(resource, rest)); err != nil {
+		return err
+	}
 	rest, jq, err := extractGeneratedJQ(rest)
 	if err != nil {
 		return err
@@ -395,6 +399,67 @@ func extractFlag(args []string, flag string) ([]string, bool) {
 		rest = append(rest, arg)
 	}
 	return rest, found
+}
+
+// generatedArgValueFlags returns the flags that take a value in args: the
+// generated root's and those of the operation args name.
+func generatedArgValueFlags(resource *cli.Command, args []string) map[string]bool {
+	valueFlags := generatedValueFlags()
+	name := operationName(resource, args, valueFlags)
+	for _, op := range resource.Commands {
+		if op.Name == name {
+			return opValueFlags(op, valueFlags)
+		}
+	}
+	return valueFlags
+}
+
+// applyGeneratedJSONFlag replaces --json in args with --format=json, which the
+// generated tree understands, and rejects --json with any other --format.
+// The value of a flag in valueFlags is never taken for --json.
+func applyGeneratedJSONFlag(args []string, valueFlags map[string]bool) ([]string, error) {
+	end := slices.Index(args, "--")
+	if end < 0 {
+		end = len(args)
+	}
+	rest := make([]string, 0, len(args)+1)
+	found, asJSON, format := false, false, ""
+	for i := 0; i < end; i++ {
+		arg := args[i]
+		name, value, hasValue := strings.Cut(arg, "=")
+		if name == "--json" {
+			found, asJSON = true, true
+			if hasValue {
+				v, err := strconv.ParseBool(value)
+				if err != nil {
+					return nil, fmt.Errorf("invalid argument %q for \"--json\" flag: %w", value, err)
+				}
+				asJSON = v
+			}
+			continue
+		}
+		if !hasValue && valueFlags[name] && i+1 < end {
+			value = args[i+1]
+			rest = append(rest, arg, value)
+			i++
+		} else {
+			rest = append(rest, arg)
+		}
+		if name == "--format" {
+			format = value
+		}
+	}
+	if !found {
+		return args, nil
+	}
+	if asJSON {
+		f, err := cmdutil.ApplyJSONFlag(format, true)
+		if err != nil {
+			return nil, err
+		}
+		rest = append(rest, "--format="+f)
+	}
+	return append(rest, args[end:]...), nil
 }
 
 // runGenerated hands the arguments to the generated command tree. The mounted

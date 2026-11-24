@@ -6,6 +6,7 @@ import (
 	"io"
 	"regexp"
 	"slices"
+	"strconv"
 	"strings"
 
 	"github.com/spf13/cobra"
@@ -173,8 +174,8 @@ func unparsedFlags(cmd *cobra.Command, args []string) map[string]bool {
 	return set
 }
 
-// argsRequestJSON reports whether unparsed args select JSON output: --jq, or
-// a last --format of json.
+// argsRequestJSON reports whether unparsed args select JSON output: --jq,
+// --json, or a last --format of json.
 func argsRequestJSON(args []string) bool {
 	format := ""
 	for i := 0; i < len(args); i++ {
@@ -183,6 +184,12 @@ func argsRequestJSON(args []string) bool {
 			break
 		}
 		name, value, hasValue := strings.Cut(arg, "=")
+		if name == "--json" {
+			if asJSON, err := strconv.ParseBool(value); !hasValue || (err == nil && asJSON) {
+				return true
+			}
+			continue
+		}
 		if name != "--jq" && name != "--format" {
 			continue
 		}

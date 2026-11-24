@@ -9,6 +9,7 @@ import (
 	"github.com/langchain-ai/langsmith-go/cli/internal/client"
 	lsconfig "github.com/langchain-ai/langsmith-go/cli/internal/config"
 	"github.com/spf13/cobra"
+	"github.com/spf13/pflag"
 	"golang.org/x/term"
 )
 
@@ -45,28 +46,27 @@ func DefaultFormat() string {
 	return "pretty"
 }
 
-// getFlagString looks up a string flag by checking Flags() (which includes
-// inherited persistent flags for child commands) and then PersistentFlags()
-// (which covers the root command itself where persistent flags are not yet
-// merged into Flags()).
-func getFlagString(cmd *cobra.Command, name string) string {
+// lookupFlag finds a flag by checking Flags() (which includes inherited
+// persistent flags for child commands) and then PersistentFlags() (which
+// covers the root command itself where persistent flags are not yet merged
+// into Flags()).
+func lookupFlag(cmd *cobra.Command, name string) *pflag.Flag {
 	if f := cmd.Flags().Lookup(name); f != nil {
-		return f.Value.String()
+		return f
 	}
-	if f := cmd.PersistentFlags().Lookup(name); f != nil {
+	return cmd.PersistentFlags().Lookup(name)
+}
+
+func getFlagString(cmd *cobra.Command, name string) string {
+	if f := lookupFlag(cmd, name); f != nil {
 		return f.Value.String()
 	}
 	return ""
 }
 
 func isFlagChanged(cmd *cobra.Command, name string) bool {
-	if f := cmd.Flags().Lookup(name); f != nil {
-		return f.Changed
-	}
-	if f := cmd.PersistentFlags().Lookup(name); f != nil {
-		return f.Changed
-	}
-	return false
+	f := lookupFlag(cmd, name)
+	return f != nil && f.Changed
 }
 
 // ResolveAPIKey reads the API key from cobra's flag tree → env.
@@ -89,20 +89,78 @@ func ResolveAPIURL(cmd *cobra.Command) string {
 }
 
 // ResolveFormat reads the output format from cobra's flag tree. --jq filters
-// JSON, so it implies json; without --format, DefaultFormat applies.
+// JSON, so it implies json, as does --json; without either or --format,
+// DefaultFormat applies.
 func ResolveFormat(cmd *cobra.Command) string {
 	if ResolveJQ(cmd) != "" {
 		return "json"
 	}
-	if v := getFlagString(cmd, "format"); v != "" && FormatChanged(cmd) {
+	// NormalizeFormatFlags rejects --json with a conflicting --format before
+	// any command runs.
+	if jsonFlagSet(cmd) {
+		return "json"
+	}
+	if v := getFlagString(cmd, "format"); v != "" && isFlagChanged(cmd, "format") {
 		return v
 	}
 	return DefaultFormat()
 }
 
-// FormatChanged reports whether --format was given on the command line.
+// FormatChanged reports whether an output format was given on the command
+// line, as --format or --json.
 func FormatChanged(cmd *cobra.Command) bool {
-	return isFlagChanged(cmd, "format")
+	return isFlagChanged(cmd, "format") || jsonFlagSet(cmd)
+}
+
+// JSONFlagUsage is the help text of the global --json flag.
+const JSONFlagUsage = "Shorthand for --format json"
+
+// ApplyJSONFlag returns the output format that --format and --json select
+// together: --json means json, and any other --format conflicts with it. The
+// format name is not case-sensitive.
+// format is "" when --format was not given.
+func ApplyJSONFlag(format string, asJSON bool) (string, error) {
+	if !asJSON {
+		return format, nil
+	}
+	if strings.EqualFold(format, "json") {
+		return "json", nil
+	}
+	if format != "" {
+		return "", fmt.Errorf("--json conflicts with --format %s; pass one of them", format)
+	}
+	return "json", nil
+}
+
+// NormalizeFormatFlags turns --json into --format json on cmd's flags, so
+// everything that reads --format sees the format --json selects. It fails
+// when --json is combined with a --format other than json.
+func NormalizeFormatFlags(cmd *cobra.Command) error {
+	if !jsonFlagSet(cmd) {
+		return nil
+	}
+	format := ""
+	if isFlagChanged(cmd, "format") {
+		format = getFlagString(cmd, "format")
+	}
+	format, err := ApplyJSONFlag(format, true)
+	if err != nil {
+		return err
+	}
+	f := lookupFlag(cmd, "format")
+	if f == nil {
+		return nil
+	}
+	if err := f.Value.Set(format); err != nil {
+		return err
+	}
+	f.Changed = true
+	return nil
+}
+
+// jsonFlagSet reports whether --json was given with a true value.
+func jsonFlagSet(cmd *cobra.Command) bool {
+	return getFlagString(cmd, "json") == "true"
 }
 
 // ResolveJQ reads the jq filter from cobra's flag tree.

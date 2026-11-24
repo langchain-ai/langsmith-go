@@ -170,6 +170,9 @@ func TestPipedPrettyOutputWarnsAboutTheJSONDefault(t *testing.T) {
 		{"terminal", true, nil, false, false},
 		{"piped with --format pretty", false, []string{"--format", "pretty"}, false, false},
 		{"piped with --format json", false, []string{"--format", "json"}, true, false},
+		{"piped with --json", false, []string{"--json"}, true, false},
+		{"terminal with --json", true, []string{"--json"}, true, false},
+		{"--json with --format json", true, []string{"--json", "--format", "json"}, true, false},
 		{"piped with --jq", false, []string{"--jq", "."}, true, false},
 	} {
 		t.Run(tt.name, func(t *testing.T) {
@@ -185,6 +188,54 @@ func TestPipedPrettyOutputWarnsAboutTheJSONDefault(t *testing.T) {
 				t.Fatalf("JSON output = %v, want %v:\n%s", got, tt.wantJSON, out)
 			}
 		})
+	}
+}
+
+func TestJSONFlagMatchesFormatJSON(t *testing.T) {
+	configPath := filepath.Join(t.TempDir(), "config.json")
+	t.Setenv("LANGSMITH_CONFIG_FILE", configPath)
+	t.Setenv("LANGSMITH_PROFILE", "")
+	if err := os.WriteFile(configPath, []byte(`{"current_profile":"dev","profiles":{"dev":{"api_url":"https://dev.example"}}}`), 0600); err != nil {
+		t.Fatal(err)
+	}
+	withStdoutTerminal(t, true)
+	want, err := executeCommand(t, "profile", "list", "--format", "json")
+	if err != nil {
+		t.Fatal(err)
+	}
+	for _, args := range [][]string{
+		{"profile", "list", "--json"},
+		{"--json", "profile", "list"},
+		{"profile", "list", "--json=true"},
+	} {
+		got, err := executeCommand(t, args...)
+		if err != nil {
+			t.Fatalf("%v: %v", args, err)
+		}
+		if got != want {
+			t.Fatalf("%v printed\n%s\nwant the --format json output\n%s", args, got, want)
+		}
+	}
+}
+
+func TestJSONFlagConflictsWithOtherFormats(t *testing.T) {
+	configPath := filepath.Join(t.TempDir(), "config.json")
+	t.Setenv("LANGSMITH_CONFIG_FILE", configPath)
+	t.Setenv("LANGSMITH_PROFILE", "")
+	if err := os.WriteFile(configPath, []byte(`{"current_profile":"dev","profiles":{"dev":{"api_url":"https://dev.example"}}}`), 0600); err != nil {
+		t.Fatal(err)
+	}
+	for _, args := range [][]string{
+		{"--json", "--format", "pretty", "profile", "list"},
+		{"profile", "list", "--format=pretty", "--json"},
+	} {
+		_, err := executeCommand(t, args...)
+		if err == nil || !strings.Contains(err.Error(), "--json conflicts with --format pretty") {
+			t.Fatalf("%v: err = %v, want a --json/--format conflict", args, err)
+		}
+	}
+	if _, err := executeCommand(t, "profile", "list", "--json=false", "--format", "pretty"); err != nil {
+		t.Fatalf("--json=false must not conflict: %v", err)
 	}
 }
 

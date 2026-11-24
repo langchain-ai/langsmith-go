@@ -71,6 +71,7 @@ func TestDeprecationWarningIsJSONWithFormatJSON(t *testing.T) {
 	for _, args := range [][]string{
 		{"old-thing", "--format", "json"},
 		{"old-thing", "--jq", "."},
+		{"old-thing", "--json"},
 	} {
 		stdout, stderr := runWithDeprecations(t, args...)
 
@@ -113,6 +114,12 @@ func TestDeprecatedFlagWarnsWhenFlagParsingIsDisabled(t *testing.T) {
 
 	_, stderr = runWithDeprecations(t, "things", "raw", "--format", "json", "--legacy-global", "x")
 	require.Contains(t, stderr, `{"deprecated":true,"kind":"flag","name":"--legacy-global"`)
+
+	_, stderr = runWithDeprecations(t, "things", "raw", "--json", "--legacy-global", "x")
+	require.Contains(t, stderr, `{"deprecated":true,"kind":"flag","name":"--legacy-global"`)
+
+	_, stderr = runWithDeprecations(t, "things", "raw", "--json=false", "--legacy-global", "x")
+	require.Equal(t, "warning: flag --legacy-global is deprecated and will be removed in 1.0.0.\n", stderr)
 
 	_, stderr = runWithDeprecations(t, "things", "raw", "--legacy-global", "x", "--", "y")
 	require.Equal(t, "warning: flag --legacy-global is deprecated and will be removed in 1.0.0.\n", stderr)

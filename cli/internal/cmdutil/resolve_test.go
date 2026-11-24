@@ -703,3 +703,42 @@ func TestResolveClientOptions_APIURLFlagBeatsProfile(t *testing.T) {
 	require.NoError(t, err)
 	require.Equal(t, "https://flag.example.com", opts.APIURL)
 }
+
+func TestApplyJSONFlag(t *testing.T) {
+	for _, tt := range []struct {
+		format  string
+		asJSON  bool
+		want    string
+		wantErr bool
+	}{
+		{"", false, "", false},
+		{"pretty", false, "pretty", false},
+		{"", true, "json", false},
+		{"json", true, "json", false},
+		{"JSON", true, "json", false},
+		{"pretty", true, "", true},
+		{"yaml", true, "", true},
+	} {
+		got, err := ApplyJSONFlag(tt.format, tt.asJSON)
+		if tt.wantErr {
+			require.ErrorContains(t, err, "--json conflicts with --format "+tt.format)
+			continue
+		}
+		require.NoError(t, err)
+		require.Equal(t, tt.want, got, "format %q, json %v", tt.format, tt.asJSON)
+	}
+}
+
+func TestNormalizeFormatFlagsMakesJSONFlagAFormat(t *testing.T) {
+	root := newTestCmd()
+	root.PersistentFlags().Bool("json", false, "")
+	require.NoError(t, root.PersistentFlags().Set("json", "true"))
+
+	require.NoError(t, NormalizeFormatFlags(root))
+	require.Equal(t, "json", ResolveFormat(root))
+	require.True(t, FormatChanged(root))
+	require.Equal(t, "json", root.PersistentFlags().Lookup("format").Value.String())
+
+	require.NoError(t, root.PersistentFlags().Set("format", "pretty"))
+	require.ErrorContains(t, NormalizeFormatFlags(root), "--json conflicts with --format pretty")
+}

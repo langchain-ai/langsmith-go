@@ -18,6 +18,7 @@ Rules of thumb:
 |---|---|
 | `--api-url string` | LangSmith API URL [env: LANGSMITH_ENDPOINT] |
 | `--format string` | Output format: pretty or json (default pretty; json when piped from 1.0.0) |
+| `--json` | Shorthand for --format json |
 | `--profile string` | Named profile to use [env: LANGSMITH_PROFILE] |
 | `--workspace string` | LangSmith workspace ID [env: LANGSMITH_WORKSPACE_ID] |
 

@@ -45,6 +45,24 @@ func TestRenderStringIsBareUnlessFormatIsGiven(t *testing.T) {
 	require.Equal(t, "\"secret-token\"\n", out.String())
 }
 
+func TestRenderJSONFlagMatchesFormatJSON(t *testing.T) {
+	render := func(flag string, model any) string {
+		var out bytes.Buffer
+		cmd := &cobra.Command{Use: "test"}
+		cmd.PersistentFlags().String("format", "", "")
+		cmd.PersistentFlags().Bool("json", false, "")
+		cmd.Flags().String("jq", "", "")
+		cmd.SetOut(&out)
+		name, value, _ := strings.Cut(flag, "=")
+		require.NoError(t, cmd.PersistentFlags().Set(name, value))
+		require.NoError(t, Render(cmd, model, Template("text\n")))
+		return out.String()
+	}
+	for _, model := range []any{"secret-token", map[string]any{"name": "sandbox"}} {
+		require.Equal(t, render("format=json", model), render("json=true", model))
+	}
+}
+
 func TestCommandCustomOutputSkipsRender(t *testing.T) {
 	var out bytes.Buffer
 	cmd := Command[struct{}]{

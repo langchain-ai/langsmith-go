@@ -613,3 +613,57 @@ func TestGeneratedCommandPrintsJSONWhenPiped(t *testing.T) {
 		t.Fatalf("--format pretty should win over the piped default, got JSON:\n%s", stdout)
 	}
 }
+
+func TestGeneratedCommandJSONFlag(t *testing.T) {
+	isolateGeneratedAuth(t)
+	const body = `{"id":"11111111-1111-1111-1111-111111111111","name":"my-dataset","description":"two\nlines"}`
+	var description any
+	ts := httptest.NewServer(http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
+		var req map[string]any
+		_ = json.NewDecoder(r.Body).Decode(&req)
+		description = req["description"]
+		w.Header().Set("Content-Type", "application/json")
+		_, _ = w.Write([]byte(body))
+	}))
+	defer ts.Close()
+	previousExit := exitGenerated
+	exitGenerated = func(code int) { t.Errorf("unexpected CLI exit: %d", code) }
+	t.Cleanup(func() { exitGenerated = previousExit })
+	run := func(extra ...string) (string, error) {
+		root := NewRootCmd("dev", "dev")
+		root.SetArgs(append([]string{"--api-url", ts.URL, "--api-key", "test-key", "datasets", "update",
+			"--dataset-id", "11111111-1111-1111-1111-111111111111", "--name", "my-dataset"}, extra...))
+		var err error
+		stdout := captureStdout(t, func() { err = root.Execute() })
+		return stdout, err
+	}
+
+	want, err := run("--format", "json")
+	if err != nil {
+		t.Fatal(err)
+	}
+	for _, extra := range [][]string{{"--json"}, {"--json=true"}, {"--format", "json", "--json"}, {"--format", "JSON", "--json"}} {
+		got, err := run(extra...)
+		if err != nil {
+			t.Fatalf("%v: %v", extra, err)
+		}
+		if got != want {
+			t.Fatalf("%v printed\n%s\nwant the --format json output\n%s", extra, got, want)
+		}
+	}
+	for _, extra := range [][]string{{"--json", "--format", "pretty"}, {"--format=yaml", "--json"}} {
+		if _, err := run(extra...); err == nil || !strings.Contains(err.Error(), "--json conflicts with --format") {
+			t.Fatalf("%v: err = %v, want a --json/--format conflict", extra, err)
+		}
+	}
+	if got, err := run("--json=false", "--format", "pretty"); err != nil || json.Valid([]byte(got)) {
+		t.Fatalf("--json=false --format pretty = %q, %v; want pretty output", got, err)
+	}
+	// A flag value spelled --json is the value, not the flag.
+	if got, err := run("--format", "pretty", "--description", "--json"); err != nil || json.Valid([]byte(got)) {
+		t.Fatalf("--description --json = %q, %v; want pretty output", got, err)
+	}
+	if description != "--json" {
+		t.Fatalf("description sent = %v, want --json", description)
+	}
+}

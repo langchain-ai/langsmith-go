@@ -24,6 +24,7 @@ var (
 	flagProfile      string
 	flagWorkspaceID  string
 	flagOutputFormat string
+	flagJSON         bool
 )
 
 const feedbackHintInterval = 24 * time.Hour
@@ -72,6 +73,7 @@ Coding agents: run 'langsmith docs agents' for task-by-task usage.
 	  --format pretty  Human-readable tables, trees, and syntax-highlighted JSON (default).
 	  --format json    Machine-readable JSON for agents and scripts. From 1.0.0 it is
 	                   the default when stdout is piped or redirected.
+	  --json           Shorthand for --format json.
 	  --jq EXPR        Filter JSON output with a jq expression (implies --format json).`,
 		SilenceUsage:  true,
 		SilenceErrors: true,
@@ -79,6 +81,9 @@ Coding agents: run 'langsmith docs agents' for task-by-task usage.
 		PersistentPreRunE: func(cmd *cobra.Command, args []string) error {
 			usage.SetCommand(cmd)
 			cmdutil.ResetFormatWarning(cmd.ErrOrStderr())
+			if err := cmdutil.NormalizeFormatFlags(cmd); err != nil {
+				return err
+			}
 			// Reject a bad --jq before the command does any work.
 			expr := cmdutil.ResolveJQ(cmd)
 			if expr != "" {
@@ -101,6 +106,7 @@ Coding agents: run 'langsmith docs agents' for task-by-task usage.
 	rootCmd.PersistentFlags().StringVar(&flagWorkspaceID, "workspace-id", "", "LangSmith workspace ID [env: LANGSMITH_WORKSPACE_ID]")
 	_ = rootCmd.PersistentFlags().MarkHidden("workspace-id")
 	rootCmd.PersistentFlags().StringVar(&flagOutputFormat, "format", "", "Output format: pretty or json (default pretty; json when piped from 1.0.0)")
+	rootCmd.PersistentFlags().BoolVar(&flagJSON, "json", false, cmdutil.JSONFlagUsage)
 	rootCmd.SetFlagErrorFunc(func(cmd *cobra.Command, err error) error {
 		showFeedbackHint(cmd)
 		return err
@@ -193,7 +199,7 @@ func GetFormat() string {
 func showFeedbackHint(cmd *cobra.Command) {
 	// Flag errors arrive before --format is resolved, so only an explicit
 	// non-pretty format suppresses the hint.
-	if (flagOutputFormat != "" && flagOutputFormat != "pretty") || cmd == nil {
+	if (flagOutputFormat != "" && flagOutputFormat != "pretty") || flagJSON || cmd == nil {
 		return
 	}
 	path := cmd.CommandPath()
