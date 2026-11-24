@@ -73,7 +73,7 @@ sections:
           - langsmith traces stats --project my-app --last-n-minutes 1440 --compare-last-n-minutes 1440 --format json
   - title: Debug a failure
     intro: |
-      Start with `investigate`: one call returns the project's health against a baseline, failures grouped by step and error with evidence trace IDs, related open issues, and the next commands to run (`.next`). After a fix ships, `verify` checks that those failures stopped. To dig in by hand, list failed traces, open one with its inputs, outputs and errors, then drill into the failing run. For a conversation, read the thread's messages.
+      Start with `investigate`: one call returns the project's health against a baseline, failures grouped by step and error with evidence trace IDs, related open issues, and the next commands to run (`.next`). After a fix ships, `verify` checks that those failures stopped. To dig in by hand, list failed traces, open one with its inputs, outputs and errors, then drill into the failing run. For a conversation, read the thread's messages. To keep a failing case as a regression test, add its run to a dataset with `examples create --from-run <run-id> --skip-duplicates` (see [Datasets and examples](#datasets-and-examples)).
     commands:
       - path: investigate
         flags: [--project-id, --last-n-minutes, --since, --baseline, --filter]
@@ -134,9 +134,12 @@ sections:
         examples:
           - langsmith examples list --dataset my-dataset --limit 50 --format json
       - path: examples create
-        flags: [--dataset, --inputs, --outputs, --metadata, --split]
+        flags: [--dataset, --inputs, --outputs, --from-run, --skip-duplicates, --project-id, --metadata, --split]
+        note: "`--from-run` copies a run's inputs, outputs and attachments into a new example linked to that run; repeat it, or pass `--from-run -` to read run IDs from stdin, one per line (for example piped from `runs list --error --format json --jq '.[].run_id'`). It can't be combined with `--inputs` or `--outputs`. `--skip-duplicates` skips runs whose inputs already match an example in the dataset; the JSON output lists `example_ids` and `skipped_run_ids`. For chat and LLM datasets the server converts each run to the dataset's format. Pass `--project`/`--project-id` to read the runs through the v2 API, which deployments without v1 run reads require."
         examples:
           - "langsmith examples create --dataset my-dataset --inputs '{\"question\":\"What is LangSmith?\"}' --outputs '{\"answer\":\"An observability and evaluation platform\"}'"
+          - langsmith examples create --dataset regressions --from-run 0190a3c4-1234-7abc-8def-0123456789ab --skip-duplicates --format json
+          - langsmith examples create --dataset regressions --from-run 0190a3c4-1234-7abc-8def-0123456789ab --from-run 0190a3c4-5678-7abc-8def-0123456789ab --skip-duplicates --format json
       - path: examples update
         flags: [--example-id, --inputs, --outputs, --metadata, --split]
         note: Each of `--inputs`, `--outputs` and `--metadata` replaces the whole field; omit a flag to keep its current value.

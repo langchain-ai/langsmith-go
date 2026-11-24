@@ -156,19 +156,77 @@ func exampleSplitDisplay(metadata map[string]any) string {
 
 func newExampleCreateCmd() *cobra.Command {
 	var (
-		datasetName string
-		inputs      string
-		outputs     string
-		metadata    string
-		split       string
+		datasetName    string
+		inputs         string
+		outputs        string
+		metadata       string
+		split          string
+		fromRuns       []string
+		skipDuplicates bool
+		project        string
+		projectID      string
 	)
 
 	cmd := &cobra.Command{
 		Use:   "create",
-		Short: "Create a new example in a dataset",
+		Short: "Create a new example in a dataset, or one example per run with --from-run",
+		Long: `Create a new example in a dataset.
+
+Pass --inputs (and optionally --outputs) to create one example from JSON, or
+--from-run to copy each run's inputs, outputs and attachments into a new
+example that keeps the run as its source. --from-run is repeatable;
+--from-run - reads run IDs from stdin, one per line. --skip-duplicates skips runs whose inputs already
+match an example in the dataset (or an earlier run in the same call). For
+chat and LLM datasets the server converts each run to the dataset's format.
+Pass --project or --project-id to read the runs through the v2 runs API,
+which deployments without v1 run reads require.
+
+Examples:
+  langsmith examples create --dataset my-dataset --inputs '{"question": "What is LangSmith?"}'
+  langsmith examples create --dataset regressions --from-run <run-id> --skip-duplicates
+  langsmith runs list --project my-app --error --format json --jq '.[].run_id' | langsmith examples create --dataset regressions --from-run - --skip-duplicates`,
 		RunE: func(cmd *cobra.Command, args []string) error {
-			c := MustGetClient()
-			ctx := context.Background()
+			if len(fromRuns) > 0 {
+				if inputs != "" || outputs != "" {
+					return fmt.Errorf("--from-run copies inputs and outputs from the run; it can't be combined with --inputs or --outputs")
+				}
+			} else {
+				if inputs == "" {
+					return fmt.Errorf("one of --inputs or --from-run is required")
+				}
+				if skipDuplicates {
+					return fmt.Errorf("--skip-duplicates requires --from-run")
+				}
+				if project != "" || projectID != "" {
+					return fmt.Errorf("--project and --project-id require --from-run")
+				}
+			}
+
+			var parsedMetadata map[string]any
+			if metadata != "" {
+				if err := json.Unmarshal([]byte(metadata), &parsedMetadata); err != nil {
+					return fmt.Errorf("Invalid JSON for --metadata: %v", err)
+				}
+			}
+
+			if len(fromRuns) > 0 {
+				runIDs, err := collectRunIDs(fromRuns, cmd.InOrStdin())
+				if err != nil {
+					return err
+				}
+				c := MustGetClient()
+				ctx := cmd.Context()
+				if ctx == nil {
+					ctx = context.Background()
+				}
+				var sessionID string
+				if project != "" || projectID != "" {
+					if sessionID, err = resolveSessionID(ctx, c, project, projectID, "examples create"); err != nil {
+						return err
+					}
+				}
+				return createExamplesFromRuns(ctx, c, datasetName, runIDs, sessionID, parsedMetadata, split, skipDuplicates)
+			}
 
 			// Parse JSON inputs
 			var parsedInputs map[string]any
@@ -183,12 +241,8 @@ func newExampleCreateCmd() *cobra.Command {
 				}
 			}
 
-			var parsedMetadata map[string]any
-			if metadata != "" {
-				if err := json.Unmarshal([]byte(metadata), &parsedMetadata); err != nil {
-					return fmt.Errorf("Invalid JSON for --metadata: %v", err)
-				}
-			}
+			c := MustGetClient()
+			ctx := context.Background()
 
 			ds, err := resolveDataset(ctx, c, datasetName)
 			if err != nil {
@@ -211,13 +265,17 @@ func newExampleCreateCmd() *cobra.Command {
 		},
 	}
 
-	cmd.Flags().StringVar(&datasetName, "dataset", "", "Dataset name (required)")
-	cmd.Flags().StringVar(&inputs, "inputs", "", "JSON string of input fields (required)")
+	cmd.Flags().StringVar(&datasetName, "dataset", "", "Dataset name or UUID (required)")
+	cmd.Flags().StringVar(&inputs, "inputs", "", "JSON string of input fields (required unless --from-run is set)")
 	cmd.Flags().StringVar(&outputs, "outputs", "", "JSON string of output fields")
 	cmd.Flags().StringVar(&metadata, "metadata", "", "JSON string of metadata")
 	cmd.Flags().StringVar(&split, "split", "", "Assign to a split (train, test, validation)")
+	cmd.Flags().StringArrayVar(&fromRuns, "from-run", nil, "Run ID to copy into a new example (repeatable; - reads IDs from stdin, one per line)")
+	cmd.Flags().BoolVar(&skipDuplicates, "skip-duplicates", false, "With --from-run, skip runs whose inputs already match an example in the dataset")
+	cmd.Flags().StringVar(&project, "project", "", "With --from-run, name of the project the runs belong to; reads them through the v2 runs API")
+	cmd.Flags().StringVar(&projectID, "project-id", "", "With --from-run, UUID of the project the runs belong to; reads them through the v2 runs API")
+	cmd.MarkFlagsMutuallyExclusive("project", "project-id")
 	_ = cmd.MarkFlagRequired("dataset")
-	_ = cmd.MarkFlagRequired("inputs")
 
 	return cmd
 }

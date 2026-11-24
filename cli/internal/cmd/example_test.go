@@ -153,7 +153,7 @@ func TestExampleCreateCmd_Flags(t *testing.T) {
 
 func TestExampleCreateCmd_RequiredFlags(t *testing.T) {
 	cmd := newExampleCreateCmd()
-	for _, name := range []string{"dataset", "inputs"} {
+	for _, name := range []string{"dataset"} {
 		f := cmd.Flags().Lookup(name)
 		if f == nil {
 			t.Fatalf("flag --%s not found", name)

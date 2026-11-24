@@ -168,7 +168,7 @@ langsmith traces stats --project my-app --last-n-minutes 1440 --compare-last-n-m
 
 ## Debug a failure
 
-Start with `investigate`: one call returns the project's health against a baseline, failures grouped by step and error with evidence trace IDs, related open issues, and the next commands to run (`.next`). After a fix ships, `verify` checks that those failures stopped. To dig in by hand, list failed traces, open one with its inputs, outputs and errors, then drill into the failing run. For a conversation, read the thread's messages.
+Start with `investigate`: one call returns the project's health against a baseline, failures grouped by step and error with evidence trace IDs, related open issues, and the next commands to run (`.next`). After a fix ships, `verify` checks that those failures stopped. To dig in by hand, list failed traces, open one with its inputs, outputs and errors, then drill into the failing run. For a conversation, read the thread's messages. To keep a failing case as a regression test, add its run to a dataset with `examples create --from-run <run-id> --skip-duplicates` (see [Datasets and examples](#datasets-and-examples)).
 
 ### `langsmith investigate`
 
@@ -377,20 +377,27 @@ langsmith examples list --dataset my-dataset --limit 50 --format json
 
 ### `langsmith examples create`
 
-Create a new example in a dataset
+Create a new example in a dataset, or one example per run with --from-run
 
 Usage: `langsmith examples create [flags]`
 
 | Flag | Description |
 |---|---|
-| `--dataset string` | Dataset name (required) |
-| `--inputs string` | JSON string of input fields (required) |
+| `--dataset string` | Dataset name or UUID (required) |
+| `--inputs string` | JSON string of input fields (required unless --from-run is set) |
 | `--outputs string` | JSON string of output fields |
+| `--from-run stringArray` | Run ID to copy into a new example (repeatable; - reads IDs from stdin, one per line) |
+| `--skip-duplicates` | With --from-run, skip runs whose inputs already match an example in the dataset |
+| `--project-id string` | With --from-run, UUID of the project the runs belong to; reads them through the v2 runs API |
 | `--metadata string` | JSON string of metadata |
 | `--split string` | Assign to a split (train, test, validation) |
 
+`--from-run` copies a run's inputs, outputs and attachments into a new example linked to that run; repeat it, or pass `--from-run -` to read run IDs from stdin, one per line (for example piped from `runs list --error --format json --jq '.[].run_id'`). It can't be combined with `--inputs` or `--outputs`. `--skip-duplicates` skips runs whose inputs already match an example in the dataset; the JSON output lists `example_ids` and `skipped_run_ids`. For chat and LLM datasets the server converts each run to the dataset's format. Pass `--project`/`--project-id` to read the runs through the v2 API, which deployments without v1 run reads require.
+
 ```bash
 langsmith examples create --dataset my-dataset --inputs '{"question":"What is LangSmith?"}' --outputs '{"answer":"An observability and evaluation platform"}'
+langsmith examples create --dataset regressions --from-run 0190a3c4-1234-7abc-8def-0123456789ab --skip-duplicates --format json
+langsmith examples create --dataset regressions --from-run 0190a3c4-1234-7abc-8def-0123456789ab --from-run 0190a3c4-5678-7abc-8def-0123456789ab --skip-duplicates --format json
 ```
 
 ### `langsmith examples update`
@@ -777,7 +784,7 @@ Every command in this version of the CLI. Run `langsmith <command> --help` for i
 | `langsmith evaluators rule list` | List evaluator rules, optionally for one project, dataset, or evaluator |
 | `langsmith evaluators upload` | Upload a code evaluator file to LangSmith |
 | `langsmith examples bulk create` | Create bulk examples. |
-| `langsmith examples create` | Create a new example in a dataset |
+| `langsmith examples create` | Create a new example in a dataset, or one example per run with --from-run |
 | `langsmith examples delete` | Delete an example by its UUID *(confirms)* |
 | `langsmith examples delete-all` | Soft delete examples. *(confirms)* |
 | `langsmith examples list` | List examples in a dataset (default: 20) |
