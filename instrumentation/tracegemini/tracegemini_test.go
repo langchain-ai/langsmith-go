@@ -148,6 +148,9 @@ func TestIsGeminiEndpoint(t *testing.T) {
 		{"/v1beta1/publishers/google/models/gemini-2.0-flash:generateContent", true},
 		{"/v1beta1/publishers/google/models/gemini-2.0-flash:streamGenerateContent", true},
 		{"/v1/projects/my-proj/locations/us-central1/publishers/google/models/gemini-2.0-flash:generateContent", true},
+		// Embeddings
+		{"/v1beta/models/gemini-embedding-001:embedContent", true},
+		{"/v1/projects/my-proj/locations/global/publishers/google/models/gemini-embedding-2:batchEmbedContents", true},
 		{"", false},
 	}
 	for _, tt := range tests {
@@ -228,6 +231,56 @@ func TestRoundTrip_NonStreaming(t *testing.T) {
 	}
 	if v, ok := getSpanAttrInt(spans, "gen_ai.usage.output_tokens"); !ok || v != 5 {
 		t.Errorf("output_tokens = %d, want 5", v)
+	}
+}
+
+func TestRoundTrip_BatchEmbedContents(t *testing.T) {
+	respBody := `{
+		"embeddings": [{"values": [0.1, 0.2]}, {"values": [0.3, 0.4]}],
+		"usageMetadata": {"promptTokenCount": 7, "totalTokenCount": 7}
+	}`
+	client, exporter := newTracedClient(t, []byte(respBody))
+	body := `{"requests":[
+		{"content":{"parts":[{"text":"Name 5 colours"}]}},
+		{"content":{"parts":[{"text":"Name 5 animals"}]}}
+	]}`
+	req, err := http.NewRequestWithContext(context.Background(), http.MethodPost,
+		"https://aiplatform.googleapis.com/v1/projects/p/locations/global/publishers/google/models/gemini-embedding-2:batchEmbedContents",
+		strings.NewReader(body))
+	if err != nil {
+		t.Fatal(err)
+	}
+	resp, err := client.Do(req)
+	if err != nil {
+		t.Fatal(err)
+	}
+	if _, err := io.ReadAll(resp.Body); err != nil {
+		t.Fatal(err)
+	}
+	resp.Body.Close()
+
+	spans := exporter.GetSpans()
+	if len(spans) == 0 {
+		t.Fatal("expected at least one span")
+	}
+	if v, ok := getSpanAttr(spans, "gen_ai.provider.name"); !ok || v != "gcp.vertex_ai" {
+		t.Errorf("gen_ai.provider.name = %q, want 'gcp.vertex_ai'", v)
+	}
+	if v, ok := getSpanAttr(spans, "gen_ai.operation.name"); !ok || v != "embedding" {
+		t.Errorf("gen_ai.operation.name = %q, want 'embedding'", v)
+	}
+	if v, ok := getSpanAttr(spans, "gen_ai.request.model"); !ok || v != "gemini-embedding-2" {
+		t.Errorf("gen_ai.request.model = %q", v)
+	}
+	if v, ok := getSpanAttr(spans, "gen_ai.prompt"); !ok ||
+		!strings.Contains(v, "Name 5 colours") || !strings.Contains(v, "Name 5 animals") {
+		t.Errorf("gen_ai.prompt should contain both inputs: %q", v)
+	}
+	if _, ok := getSpanAttr(spans, "gen_ai.completion"); ok {
+		t.Error("embedding span should not record a completion")
+	}
+	if v, ok := getSpanAttrInt(spans, "gen_ai.usage.input_tokens"); !ok || v != 7 {
+		t.Errorf("input_tokens = %d, want 7", v)
 	}
 }
 

@@ -154,6 +154,7 @@ func (rt *roundTripper) RoundTrip(req *http.Request) (*http.Response, error) {
 
 	model, action := parseModelAction(req.URL.Path)
 	streaming := action == "streamGenerateContent"
+	embedding := embedActions[action]
 
 	spanName := "gemini." + action
 	if v := ctx.Value(ctxKeyRunName); v != nil {
@@ -163,8 +164,11 @@ func (rt *roundTripper) RoundTrip(req *http.Request) (*http.Response, error) {
 	}
 
 	opName := "generate_content"
-	if streaming {
+	switch {
+	case streaming:
 		opName = "stream_generate_content"
+	case embedding:
+		opName = "embedding"
 	}
 
 	// Detect Vertex AI vs Gemini API from the request host, matching the
@@ -328,14 +332,20 @@ func isFirstContent(chunk map[string]any) bool {
 	return false
 }
 
-// isGeminiEndpoint returns true if the path matches a Gemini generateContent
-// or streamGenerateContent endpoint.
+// embedActions are the Gemini embedding actions, traced as embedding runs.
+var embedActions = map[string]bool{
+	"embedContent":       true,
+	"batchEmbedContents": true,
+}
+
+// isGeminiEndpoint returns true if the path matches a Gemini generateContent,
+// streamGenerateContent, or embedding endpoint.
 func isGeminiEndpoint(path string) bool {
 	if !strings.Contains(path, "/models/") {
 		return false
 	}
 	_, action := parseModelAction(path)
-	return action == "generateContent" || action == "streamGenerateContent"
+	return action == "generateContent" || action == "streamGenerateContent" || embedActions[action]
 }
 
 // parseModelAction extracts the model name and action from a Gemini API path.
@@ -353,7 +363,9 @@ func parseModelAction(path string) (model, action string) {
 }
 
 // extractRequestAttributes extracts attributes from the Gemini request body
-// and sets them on the span. Handles contents, systemInstruction, and generationConfig.
+// and sets them on the span. Handles contents, systemInstruction, and
+// generationConfig, and the content of embedContent and batchEmbedContents
+// requests.
 // withoutContent skips gen_ai.prompt.
 func extractRequestAttributes(span trace.Span, body []byte, withoutContent bool) {
 	var req map[string]any
@@ -397,6 +409,22 @@ func extractRequestAttributes(span trace.Span, body []byte, withoutContent bool)
 				continue
 			}
 			messages = append(messages, contentToMessages(cm)...)
+		}
+	}
+
+	// embedContent carries one content; batchEmbedContents carries one per request.
+	if cm, ok := req["content"].(map[string]any); ok {
+		messages = append(messages, contentToMessages(cm)...)
+	}
+	if requests, ok := req["requests"].([]any); ok {
+		for _, r := range requests {
+			rm, ok := r.(map[string]any)
+			if !ok {
+				continue
+			}
+			if cm, ok := rm["content"].(map[string]any); ok {
+				messages = append(messages, contentToMessages(cm)...)
+			}
 		}
 	}
 
