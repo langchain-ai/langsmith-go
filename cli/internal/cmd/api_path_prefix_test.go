@@ -18,6 +18,11 @@ var barePath = regexp.MustCompile(`"(/(?:v1|v2|runs|repos|commits|feedback|sessi
 // topology rather than under /api.
 const connectionsAPIPath = "/v1/connections"
 
+// gatewayPaths are exempt: they are requests to the LLM Gateway (gatewayGet),
+// which is its own origin, or <origin>/gateway on self-hosted, rather than
+// the LangSmith API.
+var gatewayPaths = map[string]bool{"/v1/models": true}
+
 // The generated SDK emits paths under /api, but the CLI also builds paths itself
 // for endpoints the SDK does not cover yet and passes them to the Raw* helpers.
 // Single-origin self-hosted deployments serve the API under /api and have no
@@ -41,6 +46,9 @@ func TestHandWrittenPathsCarryAPIPrefix(t *testing.T) {
 		}
 		for _, m := range barePath.FindAllStringSubmatch(string(src), -1) {
 			if m[1] == connectionsAPIPath || strings.HasPrefix(m[1], connectionsAPIPath+"/") {
+				continue
+			}
+			if gatewayPaths[m[1]] && filepath.Base(path) == "gateway.go" {
 				continue
 			}
 			t.Errorf("%s: request path %q is missing the /api prefix; single-origin "+

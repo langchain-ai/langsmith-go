@@ -130,6 +130,7 @@ Coding agents: run 'langsmith docs agents' for task-by-task usage.
 	rootCmd.AddCommand(newAppsCmd())
 	rootCmd.AddCommand(newPromptCmd())
 	rootCmd.AddCommand(authCommand.Cobra())
+	rootCmd.AddCommand(gatewayCommand.Cobra())
 	rootCmd.AddCommand(newProfileCmd())
 	rootCmd.AddCommand(newWorkspaceCmd())
 	rootCmd.AddCommand(newUpdateCmd(rawVersion))

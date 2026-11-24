@@ -779,6 +779,8 @@ Every command in this version of the CLI. Run `langsmith <command> --help` for i
 | `langsmith feedback tokens create` | Create a new feedback ingest token. |
 | `langsmith feedback tokens update` | Submit feedback for the token's run and key. |
 | `langsmith feedback update` | Replace an existing feedback entry with a new, modified entry. |
+| `langsmith gateway models` | List the models the LLM Gateway serves your workspace |
+| `langsmith gateway wrap` | Run a command with its Anthropic and OpenAI requests sent through the LLM Gateway |
 | `langsmith hub delete` | Delete an agent or skill repo (and its owned child repos) *(confirms)* |
 | `langsmith hub get` | Get metadata for a hub repo |
 | `langsmith hub init` | Scaffold a starter agent or skill directory |
