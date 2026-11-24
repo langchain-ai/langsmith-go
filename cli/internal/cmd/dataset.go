@@ -8,6 +8,7 @@ import (
 	"strings"
 
 	langsmith "github.com/langchain-ai/langsmith-go"
+	"github.com/langchain-ai/langsmith-go/cli/internal/client"
 	"github.com/langchain-ai/langsmith-go/cli/internal/output"
 	"github.com/spf13/cobra"
 )
@@ -167,11 +168,16 @@ func newDatasetCreateCmd() *cobra.Command {
 	var (
 		name        string
 		description string
+		ifNotExists bool
 	)
 
 	cmd := &cobra.Command{
 		Use:   "create",
 		Short: "Create a new empty dataset",
+		Long: `Create a new empty dataset.
+
+With --if-not-exists, a dataset that already has the name is returned instead
+of failing with a conflict; its "status" is "exists" rather than "created".`,
 		Run: func(cmd *cobra.Command, args []string) {
 			c := MustGetClient()
 			ctx := context.Background()
@@ -183,13 +189,21 @@ func newDatasetCreateCmd() *cobra.Command {
 				params.Description = langsmith.F(description)
 			}
 
+			status := "created"
 			ds, err := c.SDK.Datasets.New(ctx, params)
 			if err != nil {
-				ExitErrorf("creating dataset: %v", err)
+				var existing *langsmith.Dataset
+				if ifNotExists && isHTTP409(err) {
+					existing = findDatasetByName(ctx, c, name)
+				}
+				if existing == nil {
+					ExitErrorf("creating dataset: %v", err)
+				}
+				ds, status = existing, "exists"
 			}
 
 			if err := output.OutputJSON(map[string]any{
-				"status":      "created",
+				"status":      status,
 				"id":          ds.ID,
 				"name":        ds.Name,
 				"description": nilStr(ds.Description),
@@ -202,9 +216,25 @@ func newDatasetCreateCmd() *cobra.Command {
 
 	cmd.Flags().StringVar(&name, "name", "", "Name for the new dataset (required)")
 	cmd.Flags().StringVar(&description, "description", "", "Optional description")
+	cmd.Flags().BoolVar(&ifNotExists, "if-not-exists", false, "Return the existing dataset with this name instead of failing")
 	_ = cmd.MarkFlagRequired("name")
 
 	return cmd
+}
+
+// findDatasetByName returns the dataset named exactly name, or nil when the
+// lookup fails or finds none.
+func findDatasetByName(ctx context.Context, c *client.Client, name string) *langsmith.Dataset {
+	datasets, err := listDatasets(ctx, c, langsmith.DatasetListV2Params{Name: langsmith.F(name)}, 0)
+	if err != nil {
+		return nil
+	}
+	for i := range datasets {
+		if datasets[i].Name == name {
+			return &datasets[i]
+		}
+	}
+	return nil
 }
 
 func newDatasetDeleteCmd() *cobra.Command {

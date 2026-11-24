@@ -213,11 +213,16 @@ func newPromptCreateCmd() *cobra.Command {
 		description string
 		isPublic    bool
 		tags        []string
+		ifNotExists bool
 	)
 
 	cmd := &cobra.Command{
 		Use:   "create",
 		Short: "Create a new Prompt Hub repo",
+		Long: `Create a new Prompt Hub repo.
+
+With --if-not-exists, a repo in your workspace that already has the handle is
+returned unchanged instead of failing with a conflict.`,
 		Run: func(cmd *cobra.Command, args []string) {
 			c := MustGetClient()
 			ctx := context.Background()
@@ -233,11 +238,22 @@ func newPromptCreateCmd() *cobra.Command {
 				params.Tags = langsmith.F(tags)
 			}
 
+			var repo langsmith.RepoWithLookups
 			resp, err := c.SDK.Repos.New(ctx, params)
-			if err != nil {
+			switch {
+			case err == nil:
+				repo = resp.Repo
+			case ifNotExists && isHTTP409(err):
+				// "-" is the current workspace, where the repo would have been created.
+				existing, getErr := c.SDK.Repos.Get(ctx, "-", name)
+				if getErr != nil {
+					ExitErrorf("creating prompt: %v", err)
+				}
+				repo = existing.Repo
+			default:
 				ExitErrorf("creating prompt: %v", err)
 			}
-			if err := output.OutputJSON(repoToMap(resp.Repo), ""); err != nil {
+			if err := output.OutputJSON(repoToMap(repo), ""); err != nil {
 				ExitErrorf("%v", err)
 			}
 		},
@@ -247,6 +263,7 @@ func newPromptCreateCmd() *cobra.Command {
 	cmd.Flags().StringVar(&description, "description", "", "Optional description")
 	cmd.Flags().BoolVar(&isPublic, "public", false, "Make the repo public")
 	cmd.Flags().StringSliceVar(&tags, "tags", nil, "Tags for the repo (comma-separated)")
+	cmd.Flags().BoolVar(&ifNotExists, "if-not-exists", false, "Return the existing repo with this handle instead of failing")
 	_ = cmd.MarkFlagRequired("name")
 
 	return cmd

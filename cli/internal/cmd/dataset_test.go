@@ -429,3 +429,45 @@ func TestDatasetUploadCmd_UseField(t *testing.T) {
 		t.Errorf("expected Use='upload FILE_PATH', got %q", cmd.Use)
 	}
 }
+
+// With --if-not-exists, a 409 from the create returns the dataset that has
+// the name, in the create output's shape.
+func TestDatasetCreateIfNotExistsReturnsExisting(t *testing.T) {
+	ts := newTestServer(t, func(w http.ResponseWriter, r *http.Request) {
+		w.Header().Set("Content-Type", "application/json")
+		switch {
+		case r.Method == http.MethodPost && r.URL.Path == "/api/v1/datasets":
+			w.Header().Set("retry-after-ms", "1")
+			w.WriteHeader(http.StatusConflict)
+			_, _ = w.Write([]byte(`{"detail":"Dataset with this name already exists."}`))
+		case r.Method == http.MethodGet && r.URL.Path == "/api/v2/datasets":
+			if got := r.URL.Query().Get("name"); got != "qa" {
+				t.Errorf("name filter = %q, want qa", got)
+			}
+			_ = json.NewEncoder(w).Encode(map[string]any{"items": []map[string]any{
+				{"id": "11111111-1111-1111-1111-111111111111", "name": "qa-old"},
+				{"id": "22222222-2222-2222-2222-222222222222", "name": "qa", "description": "existing"},
+			}})
+		default:
+			t.Errorf("unexpected request %s %s", r.Method, r.URL.Path)
+			http.NotFound(w, r)
+		}
+	})
+
+	out := captureStdout(t, func() {
+		if _, err := executeCommand(t, "--api-key", "k", "--api-url", ts.URL,
+			"datasets", "create", "--name", "qa", "--if-not-exists"); err != nil {
+			t.Fatalf("execute: %v", err)
+		}
+	})
+	var got map[string]any
+	if err := json.Unmarshal([]byte(out), &got); err != nil {
+		t.Fatalf("decoding output: %v\n%s", err, out)
+	}
+	if got["status"] != "exists" || got["id"] != "22222222-2222-2222-2222-222222222222" || got["name"] != "qa" || got["description"] != "existing" {
+		t.Errorf("output = %v, want the existing dataset qa with status exists", got)
+	}
+	if _, ok := got["created_at"]; !ok {
+		t.Errorf("output = %v, want the create output's created_at field", got)
+	}
+}

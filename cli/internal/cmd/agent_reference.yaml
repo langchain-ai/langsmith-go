@@ -38,6 +38,8 @@ basics:
       Deletes marked *confirms* in [All commands](#all-commands) print a warning to stderr and wait for `y` on stdin; without an answer they abort. Do not answer the prompt or pipe `y` into it: stop and ask the user. Only after the user approves that specific deletion, rerun the command with `--yes`.
 
       Commands that create or update resources (datasets, examples, prompts, evaluator rules, annotation queues) change shared workspace data. Confirm the target with a `get` or `list` first, and prefer IDs over names when you build a command line.
+
+      To make a create safe to retry, pass `--if-not-exists` to `datasets create`, `prompt create` or `agents create`: when a resource with that name (for agents, that `--id`) already exists, the command prints it in the same output shape and exits 0 instead of failing with a conflict. It never changes the existing resource.
 sections:
   - title: Find traces and runs
     intro: |
@@ -115,9 +117,10 @@ sections:
         examples:
           - langsmith datasets get my-dataset --format json
       - path: datasets create
-        flags: [--name, --description]
+        flags: [--name, --description, --if-not-exists]
         examples:
           - langsmith datasets create --name my-dataset --description "Support questions" --format json
+          - langsmith datasets create --name my-dataset --if-not-exists --format json
       - path: datasets upload
         flags: [--name, --description]
         examples:
@@ -166,7 +169,7 @@ sections:
         examples:
           - langsmith prompt push my-org/support-agent --file manifest.json --description "Tighten refusal wording"
       - path: prompt create
-        flags: [--name, --description, --public, --tags]
+        flags: [--name, --description, --public, --tags, --if-not-exists]
       - path: prompt tag update
   - title: Evaluators and rules
     intro: |

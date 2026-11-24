@@ -242,3 +242,37 @@ func TestPromptDelete_AcceptsJSONAndNoContent(t *testing.T) {
 		})
 	}
 }
+
+// With --if-not-exists, a 409 from the create returns the workspace's repo
+// with that handle, in the create output's shape.
+func TestPromptCreateIfNotExistsReturnsExisting(t *testing.T) {
+	repo := map[string]any{"id": "33333333-3333-3333-3333-333333333333", "repo_handle": "support", "full_name": "acme/support", "owner": "acme"}
+	ts := newTestServer(t, func(w http.ResponseWriter, r *http.Request) {
+		w.Header().Set("Content-Type", "application/json")
+		switch {
+		case r.Method == http.MethodPost && r.URL.Path == "/api/v1/repos":
+			w.Header().Set("retry-after-ms", "1")
+			w.WriteHeader(http.StatusConflict)
+			_, _ = w.Write([]byte(`{"detail":"Prompt not created because a prompt with handle support already exists in owner."}`))
+		case r.Method == http.MethodGet && r.URL.Path == "/api/v1/repos/-/support":
+			_ = json.NewEncoder(w).Encode(map[string]any{"repo": repo})
+		default:
+			t.Errorf("unexpected request %s %s", r.Method, r.URL.Path)
+			http.NotFound(w, r)
+		}
+	})
+
+	out := captureStdout(t, func() {
+		if _, err := executeCommand(t, "--api-key", "k", "--api-url", ts.URL,
+			"prompt", "create", "--name", "support", "--if-not-exists"); err != nil {
+			t.Fatalf("execute: %v", err)
+		}
+	})
+	var got map[string]any
+	if err := json.Unmarshal([]byte(out), &got); err != nil {
+		t.Fatalf("decoding output: %v\n%s", err, out)
+	}
+	if got["id"] != repo["id"] || got["full_name"] != "acme/support" {
+		t.Errorf("output = %v, want the existing repo acme/support", got)
+	}
+}

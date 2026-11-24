@@ -74,6 +74,7 @@ func addGeneratedCommands(root *cobra.Command) {
 	renameGeneratedOperations(resources)
 	addGeneratedProjectFlags(resources)
 	addGeneratedJQFlags(resources)
+	addGeneratedIfNotExistsFlags(resources)
 	mountGeneratedResources(root, resources)
 }
 
@@ -195,6 +196,13 @@ func forwardGenerated(cmd *cobra.Command, resource *cli.Command, path string, ar
 		return err
 	}
 	args, _, _ = extractValueFlag(args, "--jq")
+	rest, ifNotExists := extractGeneratedIfNotExists(resource, rest)
+	if ifNotExists && !hasHelpFlag(rest) {
+		if _, ok := ifNotExistsLookupArgs(resource, rest); !ok {
+			spec := generatedIfNotExists[resource.Name+" "+operationName(resource, rest, generatedValueFlags())]
+			return fmt.Errorf("--if-not-exists needs the id as a literal %s value on the command line, so the existing resource can be looked up", spec.idFlag)
+		}
+	}
 	// --yes belongs to delete operations only; elsewhere the generated tree
 	// rejects it as an unknown flag.
 	if isDeleteInvocation(resource, rest, generatedValueFlags()) {
@@ -211,7 +219,7 @@ func forwardGenerated(cmd *cobra.Command, resource *cli.Command, path string, ar
 			}
 		}
 	}
-	return runGenerated(cmd, resource, rest, flags, jq)
+	return runGenerated(cmd, resource, rest, flags, jq, ifNotExists)
 }
 
 // generatedFlagRenames maps an old flag name of a generated operation to its
@@ -473,7 +481,11 @@ func applyGeneratedJSONFlag(args []string, valueFlags map[string]bool) ([]string
 // authenticates with OAuth is selected through LANGSMITH_PROFILE and the SDK
 // loads its token; the explicit --base-url still pins the host the token is
 // sent to.
-func runGenerated(cmd *cobra.Command, resource *cli.Command, rest []string, flags globalFlags, jq string) error {
+//
+// With ifNotExists, a create operation the API rejects with 409 instead runs
+// its lookup from generatedIfNotExists and prints the existing resource. When
+// the lookup fails too, the 409 is reported.
+func runGenerated(cmd *cobra.Command, resource *cli.Command, rest []string, flags globalFlags, jq string, ifNotExists bool) error {
 	argv := []string{"langsmith"}
 	help := isHelpInvocation(rest)
 	if !help {
@@ -505,19 +517,27 @@ func runGenerated(cmd *cobra.Command, resource *cli.Command, rest []string, flag
 		rest = withJQOutputFlags(rest)
 	}
 	argv = append(argv, resource.Name)
+	base := len(argv)
 	argv = append(argv, rest...)
 
 	defer usage.WrapDefaultTransport()()
 	defer client.WrapDefaultTransportWithAuthHint()()
 
-	generated.CommandErrorBuffer.Reset()
-	run := func() error { return generated.Command.Run(cmd.Context(), argv) }
-	var out []byte
-	var err error
-	if jq != "" {
-		out, err = captureGeneratedStdout(run)
-	} else {
-		err = run()
+	runArgv := func(argv []string) ([]byte, error) {
+		generated.CommandErrorBuffer.Reset()
+		run := func() error { return generated.Command.Run(cmd.Context(), argv) }
+		if jq != "" {
+			return captureGeneratedStdout(run)
+		}
+		return nil, run()
+	}
+	out, err := runArgv(argv)
+	if err != nil && ifNotExists && isHTTP409(err) {
+		if lookup, ok := ifNotExistsLookupArgs(resource, rest); ok {
+			if lookupOut, lookupErr := runArgv(append(slices.Clone(argv[:base]), lookup...)); lookupErr == nil {
+				out, err = lookupOut, nil
+			}
+		}
 	}
 	if err != nil {
 		printGeneratedError(cmd.ErrOrStderr(), err)

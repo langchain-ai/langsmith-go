@@ -52,6 +52,8 @@ Deletes marked *confirms* in [All commands](#all-commands) print a warning to st
 
 Commands that create or update resources (datasets, examples, prompts, evaluator rules, annotation queues) change shared workspace data. Confirm the target with a `get` or `list` first, and prefer IDs over names when you build a command line.
 
+To make a create safe to retry, pass `--if-not-exists` to `datasets create`, `prompt create` or `agents create`: when a resource with that name (for agents, that `--id`) already exists, the command prints it in the same output shape and exits 0 instead of failing with a conflict. It never changes the existing resource.
+
 ## Find traces and runs
 
 A trace is one top-level agent invocation and its tree of runs; a run is one step (LLM call, tool call, chain). Find the project first, then query traces or runs in it. Pass `--project-id` rather than `--project` when you have the UUID.
@@ -320,9 +322,11 @@ Usage: `langsmith datasets create [flags]`
 |---|---|
 | `--name string` | Name for the new dataset (required) |
 | `--description string` | Optional description |
+| `--if-not-exists` | Return the existing dataset with this name instead of failing |
 
 ```bash
 langsmith datasets create --name my-dataset --description "Support questions" --format json
+langsmith datasets create --name my-dataset --if-not-exists --format json
 ```
 
 ### `langsmith datasets upload`
@@ -498,6 +502,7 @@ Usage: `langsmith prompt create [flags]`
 | `--description string` | Optional description |
 | `--public` | Make the repo public |
 | `--tags stringSlice` | Tags for the repo (comma-separated) |
+| `--if-not-exists` | Return the existing repo with this handle instead of failing |
 
 ### `langsmith prompt tag update`
 
