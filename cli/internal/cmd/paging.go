@@ -7,6 +7,7 @@ import (
 	"strconv"
 	"strings"
 
+	"github.com/langchain-ai/langsmith-go/cli/internal/cmdutil"
 	"github.com/spf13/cobra"
 	"github.com/tidwall/gjson"
 )
@@ -169,3 +170,27 @@ func collectHubPages[T any](start string, startOffset, limit int, list func(hubP
 
 // maxHubPageSize is the largest page the hub repo and commit lists accept.
 const maxHubPageSize = 100
+
+// warnTruncated tells a reader of JSON output that the list stopped at the
+// page limit while more items match. Pretty output already gets
+// printNextCursorHint, and with --cursor the next cursor is in the output.
+func warnTruncated(cmd *cobra.Command, next string, limit int) {
+	if next == "" || cmd.Flags().Changed("cursor") {
+		return
+	}
+	cmdutil.Notice(cmdutil.NoticeTruncated, "warning",
+		fmt.Sprintf(`results stop at --limit %d and more match; raise --limit, or pass --cursor "" to get cursors.next for the next page`, limit),
+		noticesAsJSON(), map[string]any{"limit": limit})
+}
+
+// warnDefaultWindow says that a run or trace list only searched the default
+// 7 days because neither --since nor --last-n-minutes was set. It stays quiet
+// when the list filled to its limit, since the window then cut nothing off.
+func warnDefaultWindow(ff *FilterFlags, returned int) {
+	if ff.Since != "" || ff.LastNMinutes > 0 || returned >= ff.Limit {
+		return
+	}
+	cmdutil.Notice(cmdutil.NoticeDefaultWindow, "warning",
+		"only runs started in the last 7 days were searched (the default); pass --since or --last-n-minutes to search a different window",
+		noticesAsJSON(), map[string]any{"window": "7d"})
+}

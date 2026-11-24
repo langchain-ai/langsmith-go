@@ -81,6 +81,7 @@ Coding agents: run 'langsmith docs agents' for task-by-task usage.
 		PersistentPreRunE: func(cmd *cobra.Command, args []string) error {
 			usage.SetCommand(cmd)
 			cmdutil.ResetFormatWarning(cmd.ErrOrStderr())
+			cmdutil.ResetNotices(cmd.ErrOrStderr())
 			if err := cmdutil.NormalizeFormatFlags(cmd); err != nil {
 				return err
 			}
@@ -187,13 +188,19 @@ func GetWorkspaceID() string {
 // GetFormat returns the output format. --jq filters JSON, so it implies json;
 // without either flag, cmdutil.DefaultFormat applies.
 func GetFormat() string {
+	return resolveFormat(cmdutil.DefaultFormat)
+}
+
+// resolveFormat is GetFormat with defaultFormat picking the format when no
+// flag does.
+func resolveFormat(defaultFormat func() string) string {
 	if output.JQ() != "" {
 		return "json"
 	}
 	if flagOutputFormat != "" {
 		return flagOutputFormat
 	}
-	return cmdutil.DefaultFormat()
+	return defaultFormat()
 }
 
 func showFeedbackHint(cmd *cobra.Command) {
@@ -230,7 +237,15 @@ func getClient() (*client.Client, error) {
 	if err != nil {
 		return nil, err
 	}
+	cmdutil.NoteActiveProfile(flagProfile, opts, noticesAsJSON())
 	return client.NewWithOptions(opts), nil
+}
+
+// noticesAsJSON reports whether stderr notices are JSON objects: they are
+// whenever the output is, so they follow GetFormat and its default for
+// output that is not a terminal. It doesn't print the default-format warning.
+func noticesAsJSON() bool {
+	return strings.EqualFold(resolveFormat(cmdutil.DefaultFormatQuiet), "json")
 }
 
 // globalFlags holds the values of langsmith's global auth and routing flags.

@@ -43,6 +43,13 @@ func DefaultFormat() string {
 		formatWarningShown = true
 		fmt.Fprintf(formatWarningOut, "warning: output that is not a terminal defaults to --format json in %s; pass --format pretty to keep this output, or --format json to switch now\n", PipedJSONVersion)
 	}
+	return DefaultFormatQuiet()
+}
+
+// DefaultFormatQuiet is the format DefaultFormat picks, without its warning,
+// for callers that only need to know the format, such as stderr notices that
+// match the output's format.
+func DefaultFormatQuiet() string {
 	return "pretty"
 }
 
@@ -178,6 +185,7 @@ func GetClient(cmd *cobra.Command) (*client.Client, error) {
 	if !opts.HasAuth() {
 		return nil, fmt.Errorf("not authenticated; run 'langsmith auth login', set LANGSMITH_API_KEY, or pass --api-key")
 	}
+	NoteActiveProfile(getFlagString(cmd, "profile"), opts, ResolveJQ(cmd) != "" || (FormatChanged(cmd) && getFlagString(cmd, "format") == "json"))
 	return client.NewWithOptions(opts), nil
 }
 

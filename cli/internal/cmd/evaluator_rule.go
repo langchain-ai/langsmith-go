@@ -139,6 +139,7 @@ Examples:
 				printNextCursorHint(next)
 				return nil
 			}
+			warnTruncated(cmd, next, limit)
 			data := make([]map[string]any, 0, len(rules))
 			for _, r := range rules {
 				data = append(data, ruleEntry(r))

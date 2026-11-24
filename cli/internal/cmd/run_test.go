@@ -1,6 +1,7 @@
 package cmd
 
 import (
+	"bytes"
 	"encoding/json"
 	"net/http"
 	"net/http/httptest"
@@ -244,10 +245,18 @@ func TestRunListCmd_Execute_WithProject_Succeeds(t *testing.T) {
 	defer cleanup()
 	flagOutputFormat = "json"
 
+	stderr := captureNotices(t)
 	cmd := newRunListCmd()
 	_ = cmd.Flags().Set("project", "my-app")
 
 	out := captureStdout(t, func() { cmd.Run(cmd, nil) })
+
+	// Two runs under the default limit of 50, with no --since: the 7-day
+	// default window may have hidden older runs, and stderr says so.
+	var notice map[string]any
+	if err := json.Unmarshal(stderr.Bytes(), &notice); err != nil || notice["notice"] != "default_time_window" {
+		t.Errorf("stderr = %q, want one default_time_window notice", stderr.String())
+	}
 
 	var result []map[string]any
 	if err := json.Unmarshal([]byte(out), &result); err != nil {
@@ -279,7 +288,9 @@ func TestRunListCmd_Cursor(t *testing.T) {
 	defer setupTestEnv(t, ts.URL)()
 	flagOutputFormat = "json"
 
+	var stderr *bytes.Buffer
 	run := func(args ...string) string {
+		stderr = captureNotices(t)
 		cmd := newRunListCmd()
 		cmd.SetArgs(append([]string{"--project-id", "018e4c7e-a9fb-7ef0-a5b6-6ea3a82e9327", "--limit", "2"}, args...))
 		return captureStdout(t, func() {
@@ -303,10 +314,19 @@ func TestRunListCmd_Cursor(t *testing.T) {
 	if len(wrapped.Runs) != 2 || wrapped.Runs[0]["run_id"] != "run-3" || wrapped.Cursors["next"] != "c-next" {
 		t.Errorf("output = %+v, want run-3, run-4 and cursors.next c-next", wrapped)
 	}
+	// The next cursor is already in the output, and the limit was filled.
+	if stderr.Len() != 0 {
+		t.Errorf("with --cursor stderr should be empty, got %q", stderr.String())
+	}
 
 	var bare []map[string]any
 	if out := run(); json.Unmarshal([]byte(out), &bare) != nil || len(bare) != 2 {
 		t.Errorf("without --cursor the output should stay a bare array, got %q", out)
+	}
+	// Without --cursor nothing on stdout says the list was cut off.
+	var notice map[string]any
+	if err := json.Unmarshal(stderr.Bytes(), &notice); err != nil || notice["notice"] != "truncated" || notice["limit"] != float64(2) {
+		t.Errorf("stderr = %q, want one truncated notice with limit 2", stderr.String())
 	}
 }
 

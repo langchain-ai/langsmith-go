@@ -78,12 +78,14 @@ func newRunListCmd() *cobra.Command {
 			}
 
 			fmt_ := GetFormat()
+			warnDefaultWindow(&ff, len(runs))
 
 			if fmt_ == "pretty" {
 				data := extractRunsToMaps(runs, includeMetadata, includeIO, includeFeedback)
 				output.PrintRunsTable(os.Stdout, data, includeMetadata, "Runs")
 				printNextCursorHint(next)
 			} else {
+				warnTruncated(cmd, next, ff.Limit)
 				var data any = extractRunsToMaps(runs, includeMetadata, includeIO, includeFeedback)
 				if cmd.Flags().Changed("cursor") {
 					data = map[string]any{"runs": data, "cursors": cursorsField(next)}

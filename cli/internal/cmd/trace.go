@@ -126,6 +126,7 @@ func newTraceListCmd() *cobra.Command {
 			}
 
 			fmt_ := GetFormat()
+			warnDefaultWindow(&ff, len(runs))
 
 			if fmt_ == "pretty" {
 				if showHierarchy {
@@ -142,6 +143,7 @@ func newTraceListCmd() *cobra.Command {
 				}
 				printNextCursorHint(next)
 			} else {
+				warnTruncated(cmd, next, ff.Limit)
 				withCursors := func(items any) any {
 					if !cmd.Flags().Changed("cursor") {
 						return items

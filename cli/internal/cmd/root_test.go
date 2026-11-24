@@ -1,6 +1,7 @@
 package cmd
 
 import (
+	"bytes"
 	"encoding/json"
 	"net/http"
 	"net/http/httptest"
@@ -10,6 +11,7 @@ import (
 	"testing"
 
 	"github.com/langchain-ai/langsmith-go/cli/internal/cmdutil"
+	"github.com/langchain-ai/langsmith-go/cli/internal/output"
 	"github.com/stretchr/testify/require"
 )
 
@@ -189,6 +191,28 @@ func TestPipedPrettyOutputWarnsAboutTheJSONDefault(t *testing.T) {
 			}
 		})
 	}
+}
+
+func TestNoticesFollowOutputFormat(t *testing.T) {
+	withStdoutTerminal(t, false)
+	prevFormat, prevJQ := flagOutputFormat, output.JQ()
+	t.Cleanup(func() { flagOutputFormat = prevFormat; output.SetJQ(prevJQ) })
+	for _, tt := range []struct {
+		format, jq string
+	}{{"", ""}, {"pretty", ""}, {"json", ""}, {"JSON", ""}, {"", "."}} {
+		flagOutputFormat = tt.format
+		output.SetJQ(tt.jq)
+		var stderr bytes.Buffer
+		cmdutil.ResetFormatWarning(&stderr)
+		got := noticesAsJSON()
+		if stderr.Len() != 0 {
+			t.Errorf("format %q jq %q: noticesAsJSON printed %q", tt.format, tt.jq, stderr.String())
+		}
+		if want := strings.EqualFold(GetFormat(), "json"); got != want {
+			t.Errorf("format %q jq %q: noticesAsJSON = %v, want %v to match the output format", tt.format, tt.jq, got, want)
+		}
+	}
+	cmdutil.ResetFormatWarning(os.Stderr)
 }
 
 func TestJSONFlagMatchesFormatJSON(t *testing.T) {

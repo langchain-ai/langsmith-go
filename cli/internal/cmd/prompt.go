@@ -136,6 +136,7 @@ func newPromptListCmd() *cobra.Command {
 				output.OutputTable(columns, rows, "Prompts")
 				printNextCursorHint(next)
 			} else {
+				warnTruncated(cmd, next, limit)
 				var data []map[string]any
 				for _, r := range repos {
 					data = append(data, repoToMap(r))
@@ -510,6 +511,7 @@ func newPromptCommitsCmd() *cobra.Command {
 				output.OutputTable(columns, rows, fmt.Sprintf("Commits for %s/%s", owner, repo))
 				printNextCursorHint(next)
 			} else {
+				warnTruncated(cmd, next, limit)
 				var data []map[string]any
 				for _, c := range commits {
 					data = append(data, map[string]any{

@@ -10,6 +10,7 @@ import (
 	"os"
 	"testing"
 
+	"github.com/langchain-ai/langsmith-go/cli/internal/cmdutil"
 	"github.com/langchain-ai/langsmith-go/cli/internal/output"
 	"github.com/spf13/cobra"
 )
@@ -143,4 +144,14 @@ func executeCommandTo(ctx context.Context, out io.Writer, args ...string) error 
 	cmd.SetErr(out)
 	cmd.SetArgs(args)
 	return cmd.ExecuteContext(ctx)
+}
+
+// captureNotices sends stderr notices (cmdutil.Notice) to a buffer for the
+// rest of the test.
+func captureNotices(t *testing.T) *bytes.Buffer {
+	t.Helper()
+	var buf bytes.Buffer
+	cmdutil.ResetNotices(&buf)
+	t.Cleanup(func() { cmdutil.ResetNotices(os.Stderr) })
+	return &buf
 }
