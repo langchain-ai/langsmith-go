@@ -26,11 +26,15 @@ import (
 // Coordinates of the LangSmith skills package and the hosted MCP server that
 // `langsmith setup` installs into coding agents.
 const (
-	skillsRepo            = "langchain-ai/langsmith-skills"
-	skillsMarketplaceURL  = "https://github.com/langchain-ai/langsmith-skills.git"
-	skillsClaudePluginRef = "langsmith-skills@langsmith-skills"
-	mcpServerName         = "langsmith"
-	defaultSkillsRef      = "main"
+	skillsRepo            = "langchain-ai/langchain-skills"
+	skillsMarketplaceURL  = "https://github.com/langchain-ai/langchain-skills.git"
+	skillsClaudePluginRef = "langchain-skills@langchain-skills"
+	// The LangSmith skills used to ship from langsmith-skills, which now only
+	// points to langchain-skills. Setup replaces installs of the old package.
+	legacySkillsMarketplace     = "langsmith-skills"
+	legacySkillsClaudePluginRef = "langsmith-skills@langsmith-skills"
+	mcpServerName               = "langsmith"
+	defaultSkillsRef            = "main"
 )
 
 // Step actions reported in the plan and the JSON output.
@@ -70,6 +74,10 @@ type setupPlanEnv struct {
 	noMCP     bool
 	skillsRef string
 	skills    func(context.Context) (*skillsPackage, error)
+	// loadedSkillsRepo is the repository the skills were installed from, set
+	// once planning downloads them. A pinned ref can resolve to the retired
+	// langsmith-skills repository instead of skillsRepo.
+	loadedSkillsRepo string
 	// mcpOwned maps an agent config file to the MCP URL setup last wrote there. An entry
 	// still at that URL is setup's to replace, e.g. after a profile switch.
 	mcpOwned map[string]string
@@ -141,7 +149,7 @@ binaries, shows what it will change, and asks before writing. Running it again
 changes nothing that is already set up. It never replaces an MCP server entry or
 a skill directory it didn't write unless you pass --force.
 
-  Claude Code  skills: the langsmith-skills plugin (via the claude CLI)
+  Claude Code  skills: the langchain-skills plugin (via the claude CLI)
                MCP:    'langsmith' server, user scope (via the claude CLI)
   Cursor       skills: ~/.cursor/skills/<skill>
                MCP:    'langsmith' in ~/.cursor/mcp.json
@@ -195,7 +203,7 @@ LangSmith.
 	cmd.Flags().BoolVar(&noSkills, "no-skills", false, "Skip installing the LangSmith skills")
 	cmd.Flags().BoolVar(&noMCP, "no-mcp", false, "Skip configuring the LangSmith MCP server")
 	cmd.Flags().StringVar(&mcpURL, "mcp-url", "", "LangSmith MCP server URL (default: derived from the API URL)")
-	cmd.Flags().StringVar(&skillsRef, "skills-ref", defaultSkillsRef, "Git ref of "+skillsRepo+" to install skills from (Cursor and Codex; Claude Code uses the published plugin)")
+	cmd.Flags().StringVar(&skillsRef, "skills-ref", defaultSkillsRef, "Git ref of "+skillsRepo+" to install skills from; a ref only in the retired langsmith-skills installs from there (Cursor and Codex; Claude Code uses the published plugin)")
 	return cmd
 }
 
@@ -334,13 +342,24 @@ func runAgentSetup(cmd *cobra.Command, agents []setupAgent, env *setupPlanEnv, y
 	return reportAgentSetup(cmd, agents, env, steps, "applied", false)
 }
 
+// skillsSourceLabel names the skills repository and ref, as
+// github.com/<repo>@<ref>. Runs that never download the skills (Claude Code
+// only) report the default repository.
+func (e *setupPlanEnv) skillsSourceLabel() string {
+	repo := skillsRepo
+	if e.loadedSkillsRepo != "" {
+		repo = e.loadedSkillsRepo
+	}
+	return "github.com/" + repo + "@" + e.skillsRef
+}
+
 func renderSetupPlan(steps []setupStep, env *setupPlanEnv) string {
 	var sb strings.Builder
 	if !env.noMCP {
 		fmt.Fprintf(&sb, "LangSmith MCP server: %s\n", env.mcpURL)
 	}
 	if !env.noSkills {
-		fmt.Fprintf(&sb, "LangSmith skills:     github.com/%s@%s\n", skillsRepo, env.skillsRef)
+		fmt.Fprintf(&sb, "LangSmith skills:     %s\n", env.skillsSourceLabel())
 	}
 	sb.WriteString("\n")
 	tw := tabwriter.NewWriter(&sb, 0, 2, 2, ' ', 0)
@@ -392,7 +411,7 @@ func reportAgentSetup(cmd *cobra.Command, agents []setupAgent, env *setupPlanEnv
 			result["mcp_url"] = env.mcpURL
 		}
 		if !env.noSkills {
-			result["skills_source"] = "github.com/" + skillsRepo + "@" + env.skillsRef
+			result["skills_source"] = env.skillsSourceLabel()
 		}
 		if err := output.WriteJSON(cmd.OutOrStdout(), result); err != nil {
 			return err
@@ -449,12 +468,28 @@ func planClaudeCode(_ context.Context, env *setupPlanEnv) []setupStep {
 	if !env.noSkills {
 		step := setupStep{Agent: agent, Component: "skills", Target: "plugin " + skillsClaudePluginRef}
 		dir, _ := claudeConfigDir()
+		// Both plugins cover the same LangSmith tasks; keeping the old one
+		// would give the agent two overlapping sets of guidance.
+		legacy := claudePluginInstalled(dir, legacySkillsClaudePluginRef)
+		removeLegacyDetail := fmt.Sprintf("%s plugin marketplace remove %s", bin, legacySkillsMarketplace)
+		removeLegacy := func(ctx context.Context) error {
+			if err := runSetupCommand(ctx, bin, "plugin", "marketplace", "remove", legacySkillsMarketplace); err != nil {
+				return fmt.Errorf("%s plugin marketplace remove %s: %w", bin, legacySkillsMarketplace, err)
+			}
+			return nil
+		}
+		installed := claudePluginInstalled(dir, skillsClaudePluginRef)
+		installedDir := !installed && dir != "" && pathExists(filepath.Join(dir, "skills", "langchain-agent-tracing", "SKILL.md"))
 		switch {
-		case claudePluginInstalled(dir, skillsClaudePluginRef):
+		case (installed || installedDir) && legacy && hasBin:
+			step.Action = stepUpdate
+			step.Detail = removeLegacyDetail + " (replaced by " + skillsClaudePluginRef + ")"
+			step.apply = removeLegacy
+		case installed:
 			step.Action = stepUnchanged
-		case dir != "" && pathExists(filepath.Join(dir, "skills", "langsmith-trace", "SKILL.md")):
+		case installedDir:
 			step.Action = stepUnchanged
-			step.Detail = "LangSmith skills already installed in " + filepath.Join(dir, "skills")
+			step.Detail = "LangChain skills already installed in " + filepath.Join(dir, "skills")
 		case env.skillsRef != defaultSkillsRef:
 			step.Action = stepSkip
 			step.Detail = "--skills-ref applies to Cursor and Codex; Claude Code installs the plugin's published version, so rerun without --skills-ref for Claude Code"
@@ -464,12 +499,22 @@ func planClaudeCode(_ context.Context, env *setupPlanEnv) []setupStep {
 		default:
 			step.Action = stepCreate
 			step.Detail = fmt.Sprintf("%s plugin marketplace add %s && %s plugin install %s --scope user", bin, skillsMarketplaceURL, bin, skillsClaudePluginRef)
+			if legacy {
+				step.Action = stepUpdate
+				step.Detail += " && " + removeLegacyDetail
+			}
 			step.apply = func(ctx context.Context) error {
 				if err := runSetupCommand(ctx, bin, "plugin", "marketplace", "add", skillsMarketplaceURL); err != nil {
 					return fmt.Errorf("%s plugin marketplace add: %w", bin, err)
 				}
 				if err := runSetupCommand(ctx, bin, "plugin", "install", skillsClaudePluginRef, "--scope", "user"); err != nil {
 					return fmt.Errorf("%s plugin install: %w", bin, err)
+				}
+				// The old plugin goes only after the new one is in, so a failed
+				// install leaves the user's old skills working. A failed removal
+				// leaves both installed, and the next run removes the old one.
+				if legacy {
+					return removeLegacy(ctx)
 				}
 				return nil
 			}

@@ -18,13 +18,13 @@ import (
 	"github.com/pelletier/go-toml/v2"
 )
 
-// testSkills is the fake langsmith-skills package served to setup tests.
+// testSkills is the fake langchain-skills package served to setup tests.
 var testSkills = map[string]string{
-	"langsmith-trace/SKILL.md":              "---\nname: langsmith-trace\n---\ntrace\n",
-	"langsmith-trace/scripts/query.sh":      "#!/bin/sh\necho hi\n",
-	"langsmith-dataset/SKILL.md":            "---\nname: langsmith-dataset\n---\ndataset\n",
-	"langsmith-dataset/references/extra.md": "more\n",
-	"not-a-skill/README.md":                 "no SKILL.md here\n",
+	"langchain-agent-tracing/SKILL.md":                "---\nname: langchain-agent-tracing\n---\ntrace\n",
+	"langchain-agent-tracing/scripts/query.sh":        "#!/bin/sh\necho hi\n",
+	"langchain-agent-experiments/SKILL.md":            "---\nname: langchain-agent-experiments\n---\ndataset\n",
+	"langchain-agent-experiments/references/extra.md": "more\n",
+	"not-a-skill/README.md":                           "no SKILL.md here\n",
 }
 
 type tarEntry struct {
@@ -71,13 +71,13 @@ func buildTarGz(t *testing.T, entries []tarEntry) []byte {
 
 func testSkillsArchive(t *testing.T) []byte {
 	t.Helper()
-	entries := []tarEntry{{name: "langsmith-skills-abc123/README.md", body: "readme"}}
+	entries := []tarEntry{{name: "langchain-skills-abc123/README.md", body: "readme"}}
 	for rel, body := range testSkills {
 		mode := int64(0o644)
 		if strings.HasSuffix(rel, ".sh") {
 			mode = 0o755
 		}
-		entries = append(entries, tarEntry{name: "langsmith-skills-abc123/config/skills/" + rel, body: body, mode: mode})
+		entries = append(entries, tarEntry{name: "langchain-skills-abc123/skills/" + rel, body: body, mode: mode})
 	}
 	return buildTarGz(t, entries)
 }
@@ -104,7 +104,10 @@ func hermeticAgentSetupEnv(t *testing.T, binaries ...string) string {
 
 	archive := testSkillsArchive(t)
 	oldFetch := fetchSkillsArchive
-	fetchSkillsArchive = func(context.Context, string) (io.ReadCloser, error) {
+	fetchSkillsArchive = func(_ context.Context, repo, _ string) (io.ReadCloser, error) {
+		if repo != skillsRepo {
+			return nil, errors.New("downloading " + repo + ": 404 Not Found")
+		}
 		return io.NopCloser(bytes.NewReader(archive)), nil
 	}
 	t.Cleanup(func() { fetchSkillsArchive = oldFetch })
@@ -138,9 +141,10 @@ func readFile(t *testing.T, path string) string {
 }
 
 type setupResult struct {
-	Status string      `json:"status"`
-	MCPURL string      `json:"mcp_url"`
-	Steps  []setupStep `json:"steps"`
+	Status       string      `json:"status"`
+	MCPURL       string      `json:"mcp_url"`
+	SkillsSource string      `json:"skills_source"`
+	Steps        []setupStep `json:"steps"`
 }
 
 func runSetupJSON(t *testing.T, args ...string) (setupResult, error) {
@@ -227,17 +231,17 @@ func TestAgentSetupCursor(t *testing.T) {
 	}
 
 	skillsDir := filepath.Join(cursorDir, "skills")
-	if got := readFile(t, filepath.Join(skillsDir, "langsmith-trace", "SKILL.md")); got != testSkills["langsmith-trace/SKILL.md"] {
+	if got := readFile(t, filepath.Join(skillsDir, "langchain-agent-tracing", "SKILL.md")); got != testSkills["langchain-agent-tracing/SKILL.md"] {
 		t.Fatalf("SKILL.md = %q", got)
 	}
-	if got := readFile(t, filepath.Join(skillsDir, "langsmith-dataset", "references", "extra.md")); got != "more\n" {
+	if got := readFile(t, filepath.Join(skillsDir, "langchain-agent-experiments", "references", "extra.md")); got != "more\n" {
 		t.Fatalf("nested file = %q", got)
 	}
 	if _, err := os.Stat(filepath.Join(skillsDir, "not-a-skill")); !os.IsNotExist(err) {
 		t.Fatal("directory without SKILL.md must not be installed")
 	}
 	if runtime.GOOS != "windows" {
-		fi, err := os.Stat(filepath.Join(skillsDir, "langsmith-trace", "scripts", "query.sh"))
+		fi, err := os.Stat(filepath.Join(skillsDir, "langchain-agent-tracing", "scripts", "query.sh"))
 		if err != nil || fi.Mode().Perm()&0o100 == 0 {
 			t.Fatalf("script lost its exec bit: %v %v", fi, err)
 		}
@@ -258,7 +262,7 @@ func TestAgentSetupCursor(t *testing.T) {
 
 	// A script that lost its exec bit is put back.
 	if runtime.GOOS != "windows" {
-		script := filepath.Join(skillsDir, "langsmith-trace", "scripts", "query.sh")
+		script := filepath.Join(skillsDir, "langchain-agent-tracing", "scripts", "query.sh")
 		if err := os.Chmod(script, 0o644); err != nil {
 			t.Fatal(err)
 		}
@@ -355,7 +359,7 @@ func TestAgentSetupCodex(t *testing.T) {
 	if got := servers["langsmith"].(map[string]any)["url"]; got != "https://ls.example.com/api/mcp" {
 		t.Fatalf("langsmith url = %v", got)
 	}
-	if !pathExists(filepath.Join(codexDir, "skills", "langsmith-dataset", "SKILL.md")) {
+	if !pathExists(filepath.Join(codexDir, "skills", "langchain-agent-experiments", "SKILL.md")) {
 		t.Fatal("skills not installed into $CODEX_HOME/skills")
 	}
 
@@ -476,28 +480,48 @@ func TestAgentSetupCursorConflictNeedsForce(t *testing.T) {
 func TestAgentSetupSkillOwnership(t *testing.T) {
 	home := hermeticAgentSetupEnv(t)
 	skillsDir := filepath.Join(home, ".cursor", "skills")
-	// The user's own langsmith-trace skill: no setup marker.
-	writeSetupFile(t, filepath.Join(skillsDir, "langsmith-trace", "SKILL.md"), "my own version\n")
+	// The user's own langchain-agent-tracing skill: no setup marker.
+	writeSetupFile(t, filepath.Join(skillsDir, "langchain-agent-tracing", "SKILL.md"), "my own version\n")
 	// A dataset skill setup wrote earlier, now stale, with a file upstream removed.
-	writeSetupFile(t, filepath.Join(skillsDir, "langsmith-dataset", "SKILL.md"), "old\n")
-	writeSetupFile(t, filepath.Join(skillsDir, "langsmith-dataset", "removed.md"), "gone upstream\n")
-	writeSetupFile(t, filepath.Join(skillsDir, "langsmith-dataset", skillMarkerFile), "{}\n")
+	writeSetupFile(t, filepath.Join(skillsDir, "langchain-agent-experiments", "SKILL.md"), "old\n")
+	writeSetupFile(t, filepath.Join(skillsDir, "langchain-agent-experiments", "removed.md"), "gone upstream\n")
+	writeSetupFile(t, filepath.Join(skillsDir, "langchain-agent-experiments", skillMarkerFile), "{}\n")
+	// Skills from the retired langsmith-skills package that setup installed:
+	// one whose successor this run installs, one whose successor is the
+	// user's own skill above, and one whose successor the package lacks.
+	// Plus one with a retired name that the user wrote.
+	for _, name := range []string{"langsmith-dataset", "langsmith-trace", "langsmith-online-eval-engineering"} {
+		writeSetupFile(t, filepath.Join(skillsDir, name, "SKILL.md"), "retired\n")
+		writeSetupFile(t, filepath.Join(skillsDir, name, skillMarkerFile), "{}\n")
+	}
+	writeSetupFile(t, filepath.Join(skillsDir, "langsmith-evaluator", "SKILL.md"), "my own evaluator skill\n")
 
 	res, err := runSetupJSON(t, "--agent", "cursor", "--no-mcp", "--yes")
 	if err != nil {
 		t.Fatalf("setup: %v", err)
 	}
 	s := stepFor(t, res, "cursor", "skills")
-	if s.Action != stepUpdate || !strings.Contains(s.Detail, "skip langsmith-trace") {
+	if s.Action != stepUpdate || !strings.Contains(s.Detail, "skip langchain-agent-tracing") || !strings.Contains(s.Detail, "remove langsmith-dataset (") {
 		t.Fatalf("unexpected skills step: %+v", s)
 	}
-	if got := readFile(t, filepath.Join(skillsDir, "langsmith-trace", "SKILL.md")); got != "my own version\n" {
+	if pathExists(filepath.Join(skillsDir, "langsmith-dataset")) {
+		t.Fatal("retired skill setup installed was left in place")
+	}
+	for _, name := range []string{"langsmith-trace", "langsmith-online-eval-engineering"} {
+		if !pathExists(filepath.Join(skillsDir, name, "SKILL.md")) {
+			t.Fatalf("%s was removed although its successor is not installed", name)
+		}
+	}
+	if got := readFile(t, filepath.Join(skillsDir, "langsmith-evaluator", "SKILL.md")); got != "my own evaluator skill\n" {
+		t.Fatalf("user's retired-name skill was touched: %q", got)
+	}
+	if got := readFile(t, filepath.Join(skillsDir, "langchain-agent-tracing", "SKILL.md")); got != "my own version\n" {
 		t.Fatalf("user's skill was replaced: %q", got)
 	}
-	if got := readFile(t, filepath.Join(skillsDir, "langsmith-dataset", "SKILL.md")); got != testSkills["langsmith-dataset/SKILL.md"] {
+	if got := readFile(t, filepath.Join(skillsDir, "langchain-agent-experiments", "SKILL.md")); got != testSkills["langchain-agent-experiments/SKILL.md"] {
 		t.Fatalf("owned skill not updated: %q", got)
 	}
-	if pathExists(filepath.Join(skillsDir, "langsmith-dataset", "removed.md")) {
+	if pathExists(filepath.Join(skillsDir, "langchain-agent-experiments", "removed.md")) {
 		t.Fatal("stale file left in an owned skill")
 	}
 	entries, _ := os.ReadDir(skillsDir)
@@ -510,8 +534,55 @@ func TestAgentSetupSkillOwnership(t *testing.T) {
 	if _, err := runSetupJSON(t, "--agent", "cursor", "--no-mcp", "--yes", "--force"); err != nil {
 		t.Fatalf("setup --force: %v", err)
 	}
-	if got := readFile(t, filepath.Join(skillsDir, "langsmith-trace", "SKILL.md")); got != testSkills["langsmith-trace/SKILL.md"] {
+	if got := readFile(t, filepath.Join(skillsDir, "langchain-agent-tracing", "SKILL.md")); got != testSkills["langchain-agent-tracing/SKILL.md"] {
 		t.Fatalf("--force did not replace the skill: %q", got)
+	}
+	if pathExists(filepath.Join(skillsDir, "langsmith-trace")) {
+		t.Fatal("retired skill kept after its successor was installed")
+	}
+}
+
+func TestAgentSetupSkillsRefFromLangSmithSkills(t *testing.T) {
+	home := hermeticAgentSetupEnv(t)
+	skillsDir := filepath.Join(home, ".codex", "skills")
+	// langchain-skills v0.1.0 predates its skills/ layout; langsmith-skills
+	// v0.1.0 is what pins of that ref were written against.
+	newRepo := buildTarGz(t, []tarEntry{{name: "langchain-skills-0.1.0/config/skills/langchain-fundamentals/SKILL.md", body: "unrelated\n"}})
+	oldRepo := buildTarGz(t, []tarEntry{{name: "langsmith-skills-0.1.0/config/skills/langsmith-trace/SKILL.md", body: "trace v0.1.0\n"}})
+	fetchSkillsArchive = func(_ context.Context, repo, ref string) (io.ReadCloser, error) {
+		switch {
+		case repo == skillsRepo && ref == "v0.1.0":
+			return io.NopCloser(bytes.NewReader(newRepo)), nil
+		case repo == legacySkillsSource.repo && ref == "v0.1.0":
+			return io.NopCloser(bytes.NewReader(oldRepo)), nil
+		}
+		return nil, errors.New("downloading " + repo + "@" + ref + ": 404 Not Found")
+	}
+
+	res, err := runSetupJSON(t, "--agent", "codex", "--no-mcp", "--yes", "--skills-ref", "v0.1.0")
+	if err != nil {
+		t.Fatalf("setup: %v", err)
+	}
+	if s := stepFor(t, res, "codex", "skills"); s.Action != stepCreate {
+		t.Fatalf("unexpected skills step: %+v", s)
+	}
+	if want := "github.com/" + legacySkillsSource.repo + "@v0.1.0"; res.SkillsSource != want {
+		t.Fatalf("skills_source = %q, want %q", res.SkillsSource, want)
+	}
+	if got := readFile(t, filepath.Join(skillsDir, "langsmith-trace", "SKILL.md")); got != "trace v0.1.0\n" {
+		t.Fatalf("langsmith-skills v0.1.0 not installed: %q", got)
+	}
+	if !strings.Contains(readFile(t, filepath.Join(skillsDir, "langsmith-trace", skillMarkerFile)), legacySkillsSource.repo) {
+		t.Fatal("marker does not name langsmith-skills as the source")
+	}
+	if pathExists(filepath.Join(skillsDir, "langchain-fundamentals")) {
+		t.Fatal("installed the unrelated langchain-skills tag")
+	}
+
+	// A commit only langsmith-skills has falls back the same way; a ref
+	// neither repository has still fails.
+	if _, err := runSetupJSON(t, "--agent", "codex", "--no-mcp", "--yes", "--skills-ref", "v9.9.9"); err == nil {
+		t.Fatal("expected an error for a ref neither repository has")
 	}
 }
 
@@ -566,8 +637,39 @@ func TestAgentSetupClaudeCodeSkillsPlugin(t *testing.T) {
 		t.Fatalf("expected marketplace add + install, got %v", *calls)
 	}
 
+	// The retired langsmith-skills plugin is swapped for the new one.
+	*calls = nil
+	writeSetupFile(t, filepath.Join(home, ".claude", "plugins", "installed_plugins.json"),
+		`{"version":2,"plugins":{"`+legacySkillsClaudePluginRef+`":[{"scope":"user"}]}}`)
+	res, err = runSetupJSON(t, "--no-mcp", "--yes")
+	if err != nil {
+		t.Fatalf("setup with legacy plugin: %v", err)
+	}
+	if s := stepFor(t, res, "claude-code", "skills"); s.Action != stepUpdate {
+		t.Fatalf("expected update over the legacy plugin, got %+v", s)
+	}
+	if len(*calls) != 3 || (*calls)[0][3] != "add" || (*calls)[1][2] != "install" || !slices.Equal((*calls)[2], []string{"claude", "plugin", "marketplace", "remove", legacySkillsMarketplace}) {
+		t.Fatalf("expected add + install, then legacy marketplace remove, got %v", *calls)
+	}
+
+	// With the new plugin already installed, only the old one is removed.
+	*calls = nil
+	writeSetupFile(t, filepath.Join(home, ".claude", "plugins", "installed_plugins.json"),
+		`{"version":2,"plugins":{"`+legacySkillsClaudePluginRef+`":[{"scope":"user"}],"`+skillsClaudePluginRef+`":[{"scope":"user"}]}}`)
+	res, err = runSetupJSON(t, "--no-mcp", "--yes")
+	if err != nil {
+		t.Fatalf("setup with both plugins: %v", err)
+	}
+	if s := stepFor(t, res, "claude-code", "skills"); s.Action != stepUpdate {
+		t.Fatalf("expected cleanup of the legacy plugin, got %+v", s)
+	}
+	if len(*calls) != 1 || !slices.Equal((*calls)[0], []string{"claude", "plugin", "marketplace", "remove", legacySkillsMarketplace}) {
+		t.Fatalf("expected only the legacy marketplace remove, got %v", *calls)
+	}
+
 	// A pinned --skills-ref can't be honored by the marketplace plugin.
 	*calls = nil
+	writeSetupFile(t, filepath.Join(home, ".claude", "plugins", "installed_plugins.json"), `{"version":2,"plugins":{}}`)
 	res, err = runSetupJSON(t, "--no-mcp", "--yes", "--skills-ref", "v1.2.3")
 	if err != nil {
 		t.Fatalf("setup --skills-ref: %v", err)
@@ -685,13 +787,13 @@ func TestAgentSetupMCPURLOverride(t *testing.T) {
 
 func TestParseSkillsArchiveIgnoresUnsafeEntries(t *testing.T) {
 	archive := buildTarGz(t, []tarEntry{
-		{name: "root/config/skills/good/SKILL.md", body: "ok"},
-		{name: "root/config/skills/good/../../../evil", body: "x"},
-		{name: "root/config/skills/good/link", typeflag: tar.TypeSymlink, linkname: "/etc/passwd"},
-		{name: "root/config/skills/good/" + skillMarkerFile, body: "{}"},
-		{name: "root/config/skills/Bad Name/SKILL.md", body: "x"},
+		{name: "root/skills/good/SKILL.md", body: "ok"},
+		{name: "root/skills/good/../../../evil", body: "x"},
+		{name: "root/skills/good/link", typeflag: tar.TypeSymlink, linkname: "/etc/passwd"},
+		{name: "root/skills/good/" + skillMarkerFile, body: "{}"},
+		{name: "root/skills/Bad Name/SKILL.md", body: "x"},
 	})
-	pkg, err := parseSkillsArchive(bytes.NewReader(archive), "main")
+	pkg, err := parseSkillsArchive(bytes.NewReader(archive), currentSkillsSource, "main")
 	if err != nil {
 		t.Fatal(err)
 	}
@@ -702,7 +804,7 @@ func TestParseSkillsArchiveIgnoresUnsafeEntries(t *testing.T) {
 		t.Fatalf("unsafe entries kept: %v", files)
 	}
 
-	if _, err := parseSkillsArchive(bytes.NewReader(buildTarGz(t, []tarEntry{{name: "root/README.md", body: "x"}})), "main"); err == nil {
+	if _, err := parseSkillsArchive(bytes.NewReader(buildTarGz(t, []tarEntry{{name: "root/README.md", body: "x"}})), currentSkillsSource, "main"); err == nil {
 		t.Fatal("expected an error for an archive with no skills")
 	}
 }

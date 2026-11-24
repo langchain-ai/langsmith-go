@@ -10,6 +10,7 @@ import (
 	"fmt"
 	"io"
 	"io/fs"
+	"maps"
 	"net/http"
 	"os"
 	"path"
@@ -32,6 +33,34 @@ const (
 	skillsFileMaxBytes    = 4 << 20
 )
 
+// legacySkillSuccessors maps each skill langsmith-skills shipped to the
+// langchain-skills skill that replaced it. Setup removes a legacy skill it
+// installed only when the same run leaves the successor installed, since older
+// langchain-skills releases lack some successors.
+var legacySkillSuccessors = map[string]string{
+	"langsmith-custom-apps":             "langchain-agent-experiments",
+	"langsmith-dataset":                 "langchain-agent-experiments",
+	"langsmith-evaluator":               "langchain-agent-experiments",
+	"langsmith-experiment-diagnosis":    "langchain-agent-experiments",
+	"langsmith-graph-evaluator":         "langchain-agent-experiments",
+	"langsmith-online-eval-engineering": "langchain-agent-monitoring",
+	"langsmith-trace":                   "langchain-agent-tracing",
+}
+
+// skillsSource is a repository that setup installs skills from, and the
+// directory in its source tree that holds them.
+type skillsSource struct {
+	repo string
+	dir  string
+}
+
+var (
+	currentSkillsSource = skillsSource{repo: skillsRepo, dir: "skills/"}
+	// --skills-ref pins written before the move name refs of langsmith-skills,
+	// which kept its skills under config/skills/.
+	legacySkillsSource = skillsSource{repo: "langchain-ai/langsmith-skills", dir: "config/skills/"}
+)
+
 var (
 	skillNamePattern = regexp.MustCompile(`^[a-z0-9][a-z0-9._-]*$`)
 	skillsRefPattern = regexp.MustCompile(`^[A-Za-z0-9][A-Za-z0-9._/-]*$`)
@@ -44,8 +73,9 @@ type skillFile struct {
 	mode fs.FileMode
 }
 
-// skillsPackage is the set of skills in the langsmith-skills repository.
+// skillsPackage is the set of skills in one ref of a skills repository.
 type skillsPackage struct {
+	source skillsSource
 	ref    string
 	skills map[string]map[string]skillFile
 }
@@ -59,10 +89,10 @@ func (p *skillsPackage) names() []string {
 	return names
 }
 
-// fetchSkillsArchive downloads the langsmith-skills source tarball at ref.
+// fetchSkillsArchive downloads the source tarball of repo at ref.
 // This is a public GitHub download, not a LangSmith API call. Tests replace it.
-var fetchSkillsArchive = func(ctx context.Context, ref string) (io.ReadCloser, error) {
-	u := "https://github.com/" + skillsRepo + "/archive/" + ref + ".tar.gz"
+var fetchSkillsArchive = func(ctx context.Context, repo, ref string) (io.ReadCloser, error) {
+	u := "https://github.com/" + repo + "/archive/" + ref + ".tar.gz"
 	ctx, cancel := context.WithTimeout(ctx, 60*time.Second)
 	req, err := http.NewRequestWithContext(ctx, http.MethodGet, u, nil)
 	if err != nil {
@@ -110,29 +140,39 @@ func cachedSkillsLoader(ref string) func(context.Context) (*skillsPackage, error
 	)
 	return func(ctx context.Context) (*skillsPackage, error) {
 		once.Do(func() {
-			var body io.ReadCloser
-			body, err = fetchSkillsArchive(ctx, ref)
-			if err != nil {
-				return
+			pkg, err = loadSkills(ctx, currentSkillsSource, ref)
+			if err != nil && ref != defaultSkillsRef {
+				// A ref missing from langchain-skills, or one from before its
+				// skills/ layout, is a pin made against langsmith-skills.
+				if legacy, legacyErr := loadSkills(ctx, legacySkillsSource, ref); legacyErr == nil {
+					pkg, err = legacy, nil
+				}
 			}
-			defer body.Close()
-			pkg, err = parseSkillsArchive(body, ref)
 		})
 		return pkg, err
 	}
 }
 
-// parseSkillsArchive reads config/skills/<name>/... out of a GitHub source
+func loadSkills(ctx context.Context, src skillsSource, ref string) (*skillsPackage, error) {
+	body, err := fetchSkillsArchive(ctx, src.repo, ref)
+	if err != nil {
+		return nil, err
+	}
+	defer body.Close()
+	return parseSkillsArchive(body, src, ref)
+}
+
+// parseSkillsArchive reads <src.dir><name>/... out of a GitHub source
 // tarball (whose entries sit under one top-level directory). Only regular
 // files with clean relative paths are kept, and sizes are capped.
-func parseSkillsArchive(r io.Reader, ref string) (*skillsPackage, error) {
+func parseSkillsArchive(r io.Reader, src skillsSource, ref string) (*skillsPackage, error) {
 	gz, err := gzip.NewReader(r)
 	if err != nil {
 		return nil, fmt.Errorf("reading skills archive: %w", err)
 	}
 	defer gz.Close()
 	tr := tar.NewReader(io.LimitReader(gz, skillsArchiveMaxBytes+1))
-	pkg := &skillsPackage{ref: ref, skills: map[string]map[string]skillFile{}}
+	pkg := &skillsPackage{source: src, ref: ref, skills: map[string]map[string]skillFile{}}
 	var total int64
 	for {
 		hdr, err := tr.Next()
@@ -149,7 +189,7 @@ func parseSkillsArchive(r io.Reader, ref string) (*skillsPackage, error) {
 		if len(parts) != 2 {
 			continue
 		}
-		rel, ok := strings.CutPrefix(parts[1], "config/skills/")
+		rel, ok := strings.CutPrefix(parts[1], src.dir)
 		if !ok {
 			continue
 		}
@@ -187,7 +227,7 @@ func parseSkillsArchive(r io.Reader, ref string) (*skillsPackage, error) {
 		}
 	}
 	if len(pkg.skills) == 0 {
-		return nil, fmt.Errorf("no skills found in github.com/%s@%s", skillsRepo, ref)
+		return nil, fmt.Errorf("no skills found in github.com/%s@%s", src.repo, ref)
 	}
 	return pkg, nil
 }
@@ -203,7 +243,8 @@ func planSkillsDir(ctx context.Context, env *setupPlanEnv, agent, root string) s
 		step.Action, step.Error = stepFailed, err.Error()
 		return step
 	}
-	var create, update, conflict []string
+	env.loadedSkillsRepo = pkg.source.repo
+	var create, update, conflict, remove []string
 	for _, name := range pkg.names() {
 		dir := filepath.Join(root, name)
 		state, err := skillDirState(dir, pkg.skills[name])
@@ -225,6 +266,16 @@ func planSkillsDir(ctx context.Context, env *setupPlanEnv, agent, root string) s
 		}
 	}
 
+	for _, name := range slices.Sorted(maps.Keys(legacySkillSuccessors)) {
+		successor := legacySkillSuccessors[name]
+		if _, inPkg := pkg.skills[name]; inPkg || !pathExists(filepath.Join(root, name, skillMarkerFile)) {
+			continue
+		}
+		if _, ok := pkg.skills[successor]; ok && !slices.Contains(conflict, successor) {
+			remove = append(remove, name)
+		}
+	}
+
 	var details []string
 	if len(create) > 0 {
 		details = append(details, "add "+strings.Join(create, ", "))
@@ -232,12 +283,15 @@ func planSkillsDir(ctx context.Context, env *setupPlanEnv, agent, root string) s
 	if len(update) > 0 {
 		details = append(details, "update "+strings.Join(update, ", "))
 	}
+	if len(remove) > 0 {
+		details = append(details, "remove "+strings.Join(remove, ", ")+" (replaced by the langchain-skills skills)")
+	}
 	if len(conflict) > 0 {
 		details = append(details, "skip "+strings.Join(conflict, ", ")+" (directory not written by langsmith setup; pass --force to replace)")
 	}
 	step.Detail = strings.Join(details, "; ")
 	switch {
-	case len(update) > 0:
+	case len(update) > 0 || len(remove) > 0:
 		step.Action = stepUpdate
 	case len(create) > 0:
 		step.Action = stepCreate
@@ -252,6 +306,11 @@ func planSkillsDir(ctx context.Context, env *setupPlanEnv, agent, root string) s
 		for _, name := range writes {
 			if err := installSkillDir(root, name, pkg); err != nil {
 				return err
+			}
+		}
+		for _, name := range remove {
+			if err := os.RemoveAll(filepath.Join(root, name)); err != nil {
+				return fmt.Errorf("removing %s: %w", filepath.Join(root, name), err)
 			}
 		}
 		return nil
@@ -356,7 +415,7 @@ func installSkillDir(root, name string, pkg *skillsPackage) error {
 		}
 	}
 	marker, _ := json.MarshalIndent(map[string]string{
-		"source": "github.com/" + skillsRepo,
+		"source": "github.com/" + pkg.source.repo,
 		"ref":    pkg.ref,
 		"note":   "Installed by `langsmith setup`. Delete this file to keep your own edits from being replaced.",
 	}, "", "  ")
