@@ -19,6 +19,10 @@ import (
 // commandsWithoutJSONOutput are the leaf commands that never print JSON, so
 // they take no --jq. Every other command must accept it.
 var commandsWithoutJSONOutput = []string{
+	"langsmith completion bash",
+	"langsmith completion fish",
+	"langsmith completion powershell",
+	"langsmith completion zsh",
 	"langsmith connector run",
 	"langsmith docs agents",
 	"langsmith relay connect",

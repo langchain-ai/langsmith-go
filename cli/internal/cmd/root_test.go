@@ -3,6 +3,7 @@ package cmd
 import (
 	"bytes"
 	"encoding/json"
+	"fmt"
 	"net/http"
 	"net/http/httptest"
 	"os"
@@ -12,6 +13,7 @@ import (
 
 	"github.com/langchain-ai/langsmith-go/cli/internal/cmdutil"
 	"github.com/langchain-ai/langsmith-go/cli/internal/output"
+	"github.com/spf13/cobra"
 	"github.com/stretchr/testify/require"
 )
 
@@ -700,6 +702,49 @@ func TestRootCmd_UnknownSubcommand(t *testing.T) {
 	if err == nil {
 		t.Error("expected error for unknown subcommand")
 	}
+}
+
+// groupsTakingArgs run something of their own with positional arguments, so an
+// unknown word is not a subcommand to them.
+var groupsTakingArgs = map[string]bool{
+	"langsmith api":          true,
+	"langsmith traces setup": true,
+}
+
+func TestEveryGroupRejectsUnknownSubcommand(t *testing.T) {
+	isolateConfig(t)
+	var groups []string
+	var walk func(c *cobra.Command)
+	walk = func(c *cobra.Command) {
+		if c.HasParent() && c.HasSubCommands() && !groupsTakingArgs[c.CommandPath()] {
+			groups = append(groups, c.CommandPath())
+		}
+		for _, sub := range c.Commands() {
+			walk(sub)
+		}
+	}
+	walk(NewRootCmd("test", "test"))
+	require.Contains(t, groups, "langsmith completion")
+
+	for _, path := range groups {
+		t.Run(path, func(t *testing.T) {
+			args := append(strings.Fields(path)[1:], "no-such-subcommand")
+			_, err := executeCommand(t, args...)
+			require.Error(t, err)
+			require.Contains(t, err.Error(), fmt.Sprintf("unknown command %q for %q", "no-such-subcommand", path))
+		})
+	}
+}
+
+func TestUnknownSubcommandSuggestsCloseMatch(t *testing.T) {
+	_, err := executeCommand(t, "traces", "lst")
+	require.EqualError(t, err, "unknown command \"lst\" for \"langsmith traces\"\n\nDid you mean this?\n\tget\n\tlist")
+}
+
+func TestBareGroupPrintsHelp(t *testing.T) {
+	out, err := executeCommand(t, "traces")
+	require.NoError(t, err)
+	require.Contains(t, out, "Available Commands:")
 }
 
 // ---------- LANGSMITH_ENDPOINT vs explicit --profile ----------

@@ -1,6 +1,7 @@
 package cmd
 
 import (
+	"errors"
 	"fmt"
 	"os"
 	"path/filepath"
@@ -144,9 +145,56 @@ Coding agents: run 'langsmith docs agents' for task-by-task usage.
 	rootCmd.AddCommand(newDocsCmd())
 	rootCmd.AddCommand(api.NewCmd())
 	addGeneratedCommands(rootCmd)
+	// Cobra would add the completion group at Execute time; add it now so the
+	// walk below covers it too. Its commands print shell scripts, not JSON, so
+	// they take no --jq.
+	rootCmd.InitDefaultCompletionCmd()
+	if completion, _, err := rootCmd.Find([]string{"completion"}); err == nil && completion != rootCmd {
+		for _, shell := range completion.Commands() {
+			if shell.Annotations == nil {
+				shell.Annotations = map[string]string{}
+			}
+			shell.Annotations[cmdutil.NoJSONOutputAnnotation] = "true"
+		}
+	}
+	rejectUnknownSubcommands(rootCmd)
 	cmdutil.AddJQFlags(rootCmd)
 
 	return rootCmd
+}
+
+// rejectUnknownSubcommands makes every command group without an action of its
+// own fail on an unknown subcommand, as the root does. Cobra checks subcommand
+// names only at the root; a nested group without Run prints its help and exits
+// 0, which hides a mistyped or invented command. A bare group still prints help.
+func rejectUnknownSubcommands(cmd *cobra.Command) {
+	if cmd.HasParent() && cmd.HasSubCommands() && !cmd.Runnable() {
+		cmd.Args = unknownSubcommandArgs
+		cmd.RunE = func(cmd *cobra.Command, _ []string) error { return cmd.Help() }
+		if cmd.Annotations == nil {
+			cmd.Annotations = map[string]string{}
+		}
+		cmd.Annotations[cmdutil.NoJSONOutputAnnotation] = "true"
+	}
+	for _, c := range cmd.Commands() {
+		rejectUnknownSubcommands(c)
+	}
+}
+
+// unknownSubcommandArgs rejects any positional argument to a command group,
+// with cobra's root-level message and "Did you mean" suggestions.
+func unknownSubcommandArgs(cmd *cobra.Command, args []string) error {
+	if len(args) == 0 {
+		return nil
+	}
+	if cmd.SuggestionsMinimumDistance <= 0 {
+		cmd.SuggestionsMinimumDistance = 2
+	}
+	msg := fmt.Sprintf("unknown command %q for %q", args[0], cmd.CommandPath())
+	if suggestions := cmd.SuggestionsFor(args[0]); len(suggestions) > 0 && !cmd.DisableSuggestions {
+		msg += "\n\nDid you mean this?\n\t" + strings.Join(suggestions, "\n\t")
+	}
+	return errors.New(msg)
 }
 
 // GetAPIKey resolves the API key from flag → env → profile.

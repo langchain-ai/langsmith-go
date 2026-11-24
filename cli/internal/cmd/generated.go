@@ -148,7 +148,7 @@ func mountPoint(parent *cobra.Command, name string, resource *cli.Command) *cobr
 	group := &cobra.Command{
 		Use:         name,
 		Short:       manageShort(name),
-		Args:        cobra.NoArgs,
+		Args:        unknownSubcommandArgs,
 		RunE:        func(cmd *cobra.Command, _ []string) error { return cmd.Help() },
 		Annotations: map[string]string{cmdutil.NoJSONOutputAnnotation: "true"},
 	}
