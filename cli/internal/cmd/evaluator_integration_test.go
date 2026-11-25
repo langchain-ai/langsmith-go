@@ -415,7 +415,7 @@ func TestIntegrationEvaluatorRuleDelete(t *testing.T) {
 	}
 
 	// Without --yes the prompt names the webhook that would go with the rule.
-	res := runCLIExpectFailure(t, "aborted", "evaluator", "rule", "delete", first.id)
+	res := runCLIExpectFailure(t, "rerun the command with --yes", "evaluator", "rule", "delete", first.id)
 	if !strings.Contains(res.stderr, "1 webhook(s)") {
 		t.Errorf("confirmation should mention the webhook, got:\n%s", res.stderr)
 	}
@@ -445,7 +445,7 @@ func TestIntegrationEvaluatorDeleteWithRules(t *testing.T) {
 	runCLIExpectFailure(t, "--delete-rules", "evaluator", "delete", evaluatorID)
 	assertSeededSettings(t, c, ctx, seed, seededSampling)
 
-	res := runCLIExpectFailure(t, "aborted", "evaluator", "delete", evaluatorID, "--delete-rules")
+	res := runCLIExpectFailure(t, "rerun the command with --yes", "evaluator", "delete", evaluatorID, "--delete-rules")
 	if !strings.Contains(res.stderr, "1 webhook(s)") {
 		t.Errorf("confirmation should list the rule's webhook, got:\n%s", res.stderr)
 	}

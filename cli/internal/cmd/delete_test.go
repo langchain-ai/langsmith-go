@@ -9,6 +9,7 @@ import (
 )
 
 func TestConfirmDelete(t *testing.T) {
+	fakeTerminal(t)
 	tests := []struct {
 		name    string
 		input   string

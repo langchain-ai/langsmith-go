@@ -5,7 +5,6 @@ import (
 	"encoding/json"
 	"fmt"
 	"os"
-	"strings"
 
 	langsmith "github.com/langchain-ai/langsmith-go"
 	"github.com/langchain-ai/langsmith-go/cli/internal/client"
@@ -244,40 +243,38 @@ func newDatasetDeleteCmd() *cobra.Command {
 		Use:   "delete NAME_OR_ID",
 		Short: "Delete a dataset by name or UUID",
 		Args:  cobra.ExactArgs(1),
-		Run: func(cmd *cobra.Command, args []string) {
+		RunE: errorsToStderr(func(cmd *cobra.Command, args []string) error {
 			c := MustGetClient()
 			ctx := context.Background()
 
 			ds, err := resolveDataset(ctx, c, args[0])
 			if err != nil {
-				ExitErrorf("%v", err)
+				return err
 			}
 
 			if !yes {
-				fmt.Fprintf(os.Stderr, "Delete dataset '%s' (%s)? [y/N] ", ds.Name, ds.ID)
-				var confirm string
-				_, _ = fmt.Scanln(&confirm)
-				if strings.ToLower(confirm) != "y" {
-					ExitError("aborted")
+				if err := confirmDelete(cmd, deleteConfirmation{
+					acceptsUnterminated: true,
+					target:              "the dataset and all of its examples",
+					identity:            fmt.Sprintf("Dataset: %q (id: %s)", ds.Name, ds.ID),
+				}); err != nil {
+					return err
 				}
 			}
 
-			_, err = c.SDK.Datasets.Delete(ctx, ds.ID)
-			if err != nil {
-				ExitErrorf("deleting dataset: %v", err)
+			if _, err := c.SDK.Datasets.Delete(ctx, ds.ID); err != nil {
+				return fmt.Errorf("deleting dataset: %w", err)
 			}
 
-			if err := output.OutputJSON(map[string]any{
+			return output.OutputJSON(map[string]any{
 				"status": "deleted",
 				"id":     ds.ID,
 				"name":   ds.Name,
-			}, ""); err != nil {
-				ExitErrorf("%v", err)
-			}
-		},
+			}, "")
+		}),
 	}
 
-	cmd.Flags().BoolVar(&yes, "yes", false, "Skip confirmation prompt")
+	addYesFlag(cmd, &yes, "Skip confirmation prompt")
 	return cmd
 }
 

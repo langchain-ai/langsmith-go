@@ -146,6 +146,15 @@ func executeCommandTo(ctx context.Context, out io.Writer, args ...string) error 
 	return cmd.ExecuteContext(ctx)
 }
 
+// fakeTerminal makes confirmDelete treat stdin as a terminal, for tests that
+// answer its prompt.
+func fakeTerminal(t *testing.T) {
+	t.Helper()
+	old := inputIsTerminal
+	inputIsTerminal = func(io.Reader) bool { return true }
+	t.Cleanup(func() { inputIsTerminal = old })
+}
+
 // captureNotices sends stderr notices (cmdutil.Notice) to a buffer for the
 // rest of the test.
 func captureNotices(t *testing.T) *bytes.Buffer {

@@ -101,7 +101,9 @@ func TestHubPull_RejectsAbsolutePath(t *testing.T) {
 	}
 }
 
-func TestHubPull_WipesDestWithMarker(t *testing.T) {
+// A directory pulled before used to be replaced with no prompt. Without a
+// terminal it still is, with a deprecation warning that asks for --yes.
+func TestHubPull_ReplacesPulledDirWithDeprecationWarning(t *testing.T) {
 	srv := newTestServer(t, func(w http.ResponseWriter, r *http.Request) {
 		w.Header().Set("Content-Type", "application/json")
 		_ = json.NewEncoder(w).Encode(map[string]any{
@@ -121,14 +123,20 @@ func TestHubPull_WipesDestWithMarker(t *testing.T) {
 		t.Fatalf("seed stale: %v", err)
 	}
 
+	var stderr strings.Builder
 	captureStdout(t, func() {
 		cmd := newHubCmd()
 		cmd.SetArgs([]string{"pull", "my-skill", "--dir", dir})
+		cmd.SetIn(strings.NewReader(""))
+		cmd.SetErr(&stderr)
 		if err := cmd.Execute(); err != nil {
 			t.Fatalf("execute: %v", err)
 		}
 	})
 
+	if !strings.Contains(stderr.String(), "Pass --yes now") {
+		t.Errorf("expected a deprecation warning asking for --yes, got %q", stderr.String())
+	}
 	if _, err := os.Stat(filepath.Join(dir, "stale.txt")); !os.IsNotExist(err) {
 		t.Errorf("stale.txt should be wiped, got err=%v", err)
 	}
@@ -155,7 +163,7 @@ func TestHubPull_RefusesNonHubDirWithoutYes(t *testing.T) {
 	cmd := newHubCmd()
 	cmd.SetArgs([]string{"pull", "my-skill", "--dir", dir})
 	err := cmd.Execute()
-	if err == nil || !strings.Contains(err.Error(), "not a hub directory") {
+	if err == nil || !strings.Contains(err.Error(), "--yes") {
 		t.Errorf("expected refusal for non-hub dir; got %v", err)
 	}
 	if _, err := os.Stat(filepath.Join(dir, "important.txt")); err != nil {

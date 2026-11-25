@@ -52,7 +52,8 @@ func TestAgentReferenceChecksExamples(t *testing.T) {
 		{"langsmith api sessions?limit=5", true},
 		{"langsmith traces setup claude --yes", true},
 		{"langsmith projects delete my-project --yes", false},
-		{"langsmith sandboxes delete my-box --yes", false},
+		{"langsmith sandboxes delete my-box --yes", true},
+		{"langsmith sandboxes stop my-box --yes", false},
 	} {
 		err := checkExample(root, tc.example)
 		if tc.valid {

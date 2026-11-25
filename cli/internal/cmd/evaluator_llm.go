@@ -3,7 +3,6 @@ package cmd
 import (
 	"context"
 	"encoding/json"
-	"errors"
 	"fmt"
 	"os"
 	"strings"
@@ -149,7 +148,7 @@ func resolveEvaluatorTarget(ctx context.Context, c *client.Client, dataset, proj
 // findRuleToReplace returns the evaluator rule on the target that --name
 // refers to, or nil when there is none and a new one should be created. It
 // errors when one exists and --replace is not set, or the user declines.
-func findRuleToReplace(ctx context.Context, c *client.Client, name string, target evaluatorTarget, replace, yes bool) (*langsmith.Rule, error) {
+func findRuleToReplace(ctx context.Context, cmd *cobra.Command, c *client.Client, name string, target evaluatorTarget, replace, yes bool) (*langsmith.Rule, error) {
 	rules, err := listRules(ctx, c, target.ruleListParams())
 	if err != nil {
 		return nil, fmt.Errorf("checking existing evaluators: %w", err)
@@ -162,11 +161,13 @@ func findRuleToReplace(ctx context.Context, c *client.Client, name string, targe
 		return nil, fmt.Errorf("evaluator %q already exists on this target (rule %q, %s); use --replace to update it", existing.EvaluatorName, existing.DisplayName, existing.ID)
 	}
 	if !yes {
-		fmt.Fprintf(os.Stderr, "Replace evaluator %q (rule %q)? This updates it on every project and dataset it is attached to. [y/N] ", existing.EvaluatorName, existing.DisplayName)
-		var confirm string
-		_, _ = fmt.Scanln(&confirm)
-		if strings.ToLower(confirm) != "y" {
-			return nil, errors.New("aborted")
+		if err := confirmDelete(cmd, deleteConfirmation{
+			acceptsUnterminated: true,
+			verb:                "overwrites",
+			target:              "the evaluator on every project and dataset it is attached to",
+			identity:            fmt.Sprintf("Evaluator: %q (rule %q, id: %s)", existing.EvaluatorName, existing.DisplayName, existing.ID),
+		}); err != nil {
+			return nil, err
 		}
 	}
 	return existing, nil

@@ -226,6 +226,7 @@ func TestInsightsConfigDeleteCmd_DeletesByID(t *testing.T) {
 }
 
 func TestInsightsConfigDeleteCmd_WarnsAboutAssociatedJobsAndReports(t *testing.T) {
+	fakeTerminal(t)
 	const projectID = "0199321d-e2b4-7000-8000-000000000001"
 	const configID = "0199321d-e2b4-7000-8000-000000000002"
 	server := newTestServer(t, func(w http.ResponseWriter, r *http.Request) {

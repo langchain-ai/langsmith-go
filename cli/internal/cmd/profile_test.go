@@ -1,6 +1,7 @@
 package cmd
 
 import (
+	"bytes"
 	"encoding/json"
 	"os"
 	"path/filepath"
@@ -443,7 +444,7 @@ func TestProfileDelete(t *testing.T) {
 		t.Fatal(err)
 	}
 
-	stdout, err := executeCommand(t, "--format=json", "profile", "delete", "dev")
+	stdout, err := executeCommand(t, "--format=json", "profile", "delete", "dev", "--yes")
 	if err != nil {
 		t.Fatalf("profile delete returned error: %v\nstdout: %s", err, stdout)
 	}
@@ -474,15 +475,73 @@ func TestProfileDelete(t *testing.T) {
 	}
 }
 
+// reloadingReader writes a new profile to the config the first time the
+// delete prompt reads its answer, as another process would while it waits.
+type reloadingReader struct {
+	t          *testing.T
+	configPath string
+	answer     *strings.Reader
+	wrote      bool
+}
+
+func (r *reloadingReader) Read(p []byte) (int, error) {
+	if !r.wrote {
+		r.wrote = true
+		cfg, err := lsconfig.LoadFrom(r.configPath)
+		if err != nil {
+			r.t.Fatal(err)
+		}
+		cfg.Profiles["staging"] = lsconfig.Profile{APIKey: "staging-api-key"}
+		if err := cfg.SaveTo(r.configPath); err != nil {
+			r.t.Fatal(err)
+		}
+	}
+	return r.answer.Read(p)
+}
+
+func TestProfileDeleteKeepsProfileSavedDuringPrompt(t *testing.T) {
+	fakeTerminal(t)
+	configPath := filepath.Join(t.TempDir(), "config.json")
+	t.Setenv("LANGSMITH_CONFIG_FILE", configPath)
+	if err := os.WriteFile(configPath, []byte(`{"profiles": {"dev": {"api_key": "dev-api-key"}}}`), 0600); err != nil {
+		t.Fatal(err)
+	}
+
+	root := NewRootCmd("test", "test")
+	var out bytes.Buffer
+	root.SetOut(&out)
+	root.SetErr(&out)
+	root.SetIn(&reloadingReader{t: t, configPath: configPath, answer: strings.NewReader("y\n")})
+	root.SetArgs([]string{"profile", "delete", "dev"})
+	if err := root.Execute(); err != nil {
+		t.Fatalf("profile delete returned error: %v\noutput: %s", err, out.String())
+	}
+
+	cfg, err := lsconfig.LoadFrom(configPath)
+	if err != nil {
+		t.Fatal(err)
+	}
+	if _, ok := cfg.Profiles["dev"]; ok {
+		t.Fatal("expected dev profile to be deleted")
+	}
+	if _, ok := cfg.Profiles["staging"]; !ok {
+		t.Fatal("expected profile saved during the prompt to remain")
+	}
+}
+
 func TestProfileDeleteNotFound(t *testing.T) {
 	t.Setenv("LANGSMITH_CONFIG_FILE", filepath.Join(t.TempDir(), "config.json"))
 
-	_, err := executeCommand(t, "profile", "delete", "missing")
+	// Without --yes too: a missing profile fails before any confirmation.
+	out, err := executeCommand(t, "profile", "delete", "missing")
 	if err == nil {
 		t.Fatal("expected profile not found error")
 	}
 	if !strings.Contains(err.Error(), "not found") {
 		t.Fatalf("expected not found error, got %v", err)
+	}
+	if strings.Contains(out, "WARNING") || strings.Contains(out, "deprecated") {
+		t.Fatalf("expected no confirmation for a missing profile, got %q", out)
 	}
 }
 
@@ -703,7 +762,7 @@ func TestProfileCreateWithKeychain(t *testing.T) {
 		t.Fatalf("unexpected profile show: %+v", shown)
 	}
 
-	if _, err := executeCommand(t, "profile", "delete", "prod"); err != nil {
+	if _, err := executeCommand(t, "profile", "delete", "prod", "--yes"); err != nil {
 		t.Fatalf("profile delete returned error: %v", err)
 	}
 	if err := os.WriteFile(configPath, []byte(`{"profiles": {"prod": {"secret_store": "keychain"}}}`), 0600); err != nil {

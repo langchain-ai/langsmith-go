@@ -212,7 +212,7 @@ Examples:
 	}
 
 	cmd.Flags().BoolVar(&deleteRules, "delete-rules", false, "Also delete the rules that attach the evaluator to projects and datasets")
-	cmd.Flags().BoolVar(&yes, "yes", false, "Skip confirmation prompt")
+	addYesFlag(cmd, &yes, "Skip confirmation prompt")
 	return cmd
 }
 
@@ -518,7 +518,7 @@ Examples:
 
 			// Prepare the new evaluator before touching any existing one. If this is
 			// a replacement, the old evaluator stays in place until the new version is ready.
-			existing, err := findRuleToReplace(ctx, c, name, evaluatorTarget{datasetID: datasetID, projectID: projectID}, replace, yes)
+			existing, err := findRuleToReplace(ctx, cmd, c, name, evaluatorTarget{datasetID: datasetID, projectID: projectID}, replace, yes)
 			if err != nil {
 				return err
 			}
@@ -561,7 +561,7 @@ Examples:
 	cmd.Flags().Float64Var(&samplingRate, "sampling-rate", 1.0, "Fraction of runs to evaluate (0.0-1.0); --replace keeps the rule's current rate unless this is set")
 	cmd.Flags().StringVar(&traceFilter, "trace-filter", "", "Filter expression for which runs to evaluate; --replace keeps the rule's current filter unless this is set")
 	cmd.Flags().BoolVar(&replace, "replace", false, "Update the existing evaluator rule matched by --name on this target")
-	cmd.Flags().BoolVar(&yes, "yes", false, "Skip confirmation prompt when replacing")
+	addYesFlag(cmd, &yes, "Skip confirmation prompt when replacing")
 	cmd.Flags().BoolVar(&advanced, "advanced", false, "Create an advanced evaluator, which runs in a sandbox, or switch the evaluator to one with --replace")
 	cmd.Flags().StringVar(&dependencies, "dependencies", "", "requirements.txt or package.json to install in the sandbox, sent as is")
 	cmd.Flags().StringArrayVar(&secrets, "workspace-secret", nil, "Workspace secret the advanced evaluator may use (repeatable)")
@@ -628,7 +628,7 @@ Examples:
 			if err != nil {
 				ExitErrorf("%v", err)
 			}
-			existing, err := findRuleToReplace(ctx, c, name, target, replace, yes)
+			existing, err := findRuleToReplace(ctx, cmd, c, name, target, replace, yes)
 			if err != nil {
 				return err
 			}
@@ -669,7 +669,7 @@ Examples:
 	cmd.Flags().StringVar(&modelConfigPath, "model-config", "", "Serialized LangChain model JSON (required; copy from UI or GET /runs/rules)")
 	cmd.Flags().StringVar(&variableMapping, "variable-mapping", "", `Map prompt vars to trace paths (JSON or @file.json)`)
 	cmd.Flags().BoolVar(&replace, "replace", false, "Update the existing evaluator rule matched by --name on this target")
-	cmd.Flags().BoolVar(&yes, "yes", false, "Skip confirmation when replacing")
+	addYesFlag(cmd, &yes, "Skip confirmation when replacing")
 	_ = cmd.MarkFlagRequired("name")
 	_ = cmd.MarkFlagRequired("model-config")
 

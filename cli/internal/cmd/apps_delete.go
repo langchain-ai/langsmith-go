@@ -1,9 +1,7 @@
 package cmd
 
 import (
-	"errors"
 	"fmt"
-	"strings"
 
 	"github.com/langchain-ai/langsmith-go/cli/internal/client"
 	"github.com/langchain-ai/langsmith-go/cli/internal/output"
@@ -28,11 +26,12 @@ func newAppsDeleteCmd() *cobra.Command {
 			id, name := app.ID, app.Name
 
 			if !yes {
-				fmt.Fprintf(cmd.ErrOrStderr(), "Delete custom app %q (%s)? [y/N] ", name, id)
-				var confirm string
-				_, _ = fmt.Fscanln(cmd.InOrStdin(), &confirm)
-				if ans := strings.ToLower(strings.TrimSpace(confirm)); ans != "y" && ans != "yes" {
-					return errors.New("aborted")
+				if err := confirmDelete(cmd, deleteConfirmation{
+					acceptsUnterminated: true,
+					target:              "the custom app",
+					identity:            fmt.Sprintf("App: %q (id: %s)", name, id),
+				}); err != nil {
+					return err
 				}
 			}
 
@@ -51,6 +50,6 @@ func newAppsDeleteCmd() *cobra.Command {
 		},
 	}
 
-	cmd.Flags().BoolVar(&yes, "yes", false, "Skip confirmation prompt")
+	addYesFlag(cmd, &yes, "Skip confirmation prompt")
 	return cmd
 }

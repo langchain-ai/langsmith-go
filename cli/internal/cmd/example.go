@@ -4,7 +4,6 @@ import (
 	"context"
 	"encoding/json"
 	"fmt"
-	"os"
 	"strings"
 
 	langsmith "github.com/langchain-ai/langsmith-go"
@@ -312,34 +311,32 @@ func newExampleDeleteCmd() *cobra.Command {
 		Use:   "delete EXAMPLE_ID",
 		Short: "Delete an example by its UUID",
 		Args:  cobra.ExactArgs(1),
-		Run: func(cmd *cobra.Command, args []string) {
+		RunE: errorsToStderr(func(cmd *cobra.Command, args []string) error {
 			exampleID := args[0]
 
 			if !yes {
-				fmt.Fprintf(os.Stderr, "Delete example %s? [y/N] ", exampleID)
-				var confirm string
-				_, _ = fmt.Scanln(&confirm)
-				if strings.ToLower(confirm) != "y" {
-					ExitError("aborted")
+				if err := confirmDelete(cmd, deleteConfirmation{
+					acceptsUnterminated: true,
+					target:              "the example",
+					identity:            "Example: " + exampleID,
+				}); err != nil {
+					return err
 				}
 			}
 
 			c := MustGetClient()
 			ctx := context.Background()
 
-			_, err := c.SDK.Examples.Delete(ctx, exampleID)
-			if err != nil {
-				ExitErrorf("deleting example: %v", err)
+			if _, err := c.SDK.Examples.Delete(ctx, exampleID); err != nil {
+				return fmt.Errorf("deleting example: %w", err)
 			}
-			if err := output.OutputJSON(map[string]any{
+			return output.OutputJSON(map[string]any{
 				"status": "deleted",
 				"id":     exampleID,
-			}, ""); err != nil {
-				ExitErrorf("%v", err)
-			}
-		},
+			}, "")
+		}),
 	}
 
-	cmd.Flags().BoolVar(&yes, "yes", false, "Skip confirmation prompt")
+	addYesFlag(cmd, &yes, "Skip confirmation prompt")
 	return cmd
 }

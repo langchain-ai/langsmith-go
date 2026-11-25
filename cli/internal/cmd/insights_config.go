@@ -258,7 +258,7 @@ func newInsightsConfigDeleteCmd() *cobra.Command {
 	}
 
 	addProjectFlags(cmd, &project, &projectID)
-	cmd.Flags().BoolVar(&yes, "yes", false, "Skip confirmation prompt")
+	addYesFlag(cmd, &yes, "Skip confirmation prompt")
 	return cmd
 }
 

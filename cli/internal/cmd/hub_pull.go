@@ -50,7 +50,7 @@ func newHubPullCmd() *cobra.Command {
 			if err != nil {
 				return fmt.Errorf("decoding files for %s/%s: %w", owner, name, err)
 			}
-			written, linked, err := writeFilesToDirectory(dir, files, yes)
+			written, linked, err := writeFilesToDirectory(cmd, dir, files, yes)
 			if err != nil {
 				return err
 			}
@@ -77,14 +77,14 @@ func newHubPullCmd() *cobra.Command {
 		},
 	}
 
-	cmd.Flags().StringVar(&dir, "dir", "", "Destination directory (required; will be wiped before writing)")
+	cmd.Flags().StringVar(&dir, "dir", "", "Destination directory (required; its contents are replaced)")
 	cmd.Flags().StringVar(&commitRef, "commit", "", "Commit hash or tag name (overrides inline :ref)")
-	cmd.Flags().BoolVar(&yes, "yes", false, "Skip confirmation when wiping a non-hub directory")
+	addYesFlag(cmd, &yes, "Skip confirmation when replacing a non-empty directory")
 	_ = cmd.MarkFlagRequired("dir")
 	return cmd
 }
 
-func writeFilesToDirectory(dest string, files map[string]hubFileEntry, yes bool) (written []string, linked []string, err error) {
+func writeFilesToDirectory(cmd *cobra.Command, dest string, files map[string]hubFileEntry, yes bool) (written []string, linked []string, err error) {
 	for path, entry := range files {
 		if entry.Type != "file" {
 			continue
@@ -94,7 +94,7 @@ func writeFilesToDirectory(dest string, files map[string]hubFileEntry, yes bool)
 		}
 	}
 
-	if err := confirmDirWipe(dest, yes); err != nil {
+	if err := confirmDirWipe(cmd, dest, yes); err != nil {
 		return nil, nil, err
 	}
 
@@ -147,10 +147,12 @@ func validateHubFilePath(p string) error {
 	return nil
 }
 
-// confirmDirWipe gates the destructive os.RemoveAll on dest. Empty/missing dirs
-// proceed silently; dirs with our marker (SKILL.md / AGENTS.md) proceed
-// silently; non-empty unfamiliar dirs prompt unless yes=true.
-func confirmDirWipe(dest string, yes bool) error {
+// confirmDirWipe gates the destructive os.RemoveAll on dest. A missing or
+// empty directory proceeds; any other confirms unless yes is set, including a
+// directory pulled before, since it may hold local edits. A pulled directory
+// (one with SKILL.md or AGENTS.md) used to be replaced with no prompt, so it
+// counts as unprompted.
+func confirmDirWipe(cmd *cobra.Command, dest string, yes bool) error {
 	info, err := os.Stat(dest)
 	if os.IsNotExist(err) {
 		return nil
@@ -165,16 +167,16 @@ func confirmDirWipe(dest string, yes bool) error {
 	if err != nil {
 		return fmt.Errorf("reading %s: %w", dest, err)
 	}
-	if len(entries) == 0 || hasHubMarker(dest) || yes {
+	if len(entries) == 0 || yes {
 		return nil
 	}
-	fmt.Fprintf(os.Stderr, "Wipe non-hub directory %q? [y/N] ", dest)
-	var confirm string
-	_, _ = fmt.Scanln(&confirm)
-	if strings.ToLower(confirm) != "y" {
-		return fmt.Errorf("aborted: %s is not a hub directory (no SKILL.md or AGENTS.md); pass --yes to skip prompt", dest)
-	}
-	return nil
+	return confirmDelete(cmd, deleteConfirmation{
+		acceptsUnterminated: true,
+		verb:                "replaces",
+		target:              "the contents of the destination directory",
+		identity:            fmt.Sprintf("Directory: %s (%d entries)", dest, len(entries)),
+		unprompted:          hasHubMarker(dest),
+	})
 }
 
 func hasHubMarker(dir string) bool {

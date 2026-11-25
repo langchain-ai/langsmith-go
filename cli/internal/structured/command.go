@@ -40,7 +40,10 @@ func (c Command[I]) Cobra() *cobra.Command {
 		input = c.Input(cmd)
 	}
 	if c.CustomOutput {
-		cmd.Annotations = map[string]string{cmdutil.NoJSONOutputAnnotation: "true"}
+		if cmd.Annotations == nil {
+			cmd.Annotations = map[string]string{}
+		}
+		cmd.Annotations[cmdutil.NoJSONOutputAnnotation] = "true"
 	} else {
 		cmd.Flags().String("jq", "", cmdutil.JQFlagUsage)
 	}

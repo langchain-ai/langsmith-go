@@ -114,14 +114,17 @@ func newProfileShowCmd() *cobra.Command {
 }
 
 func newProfileDeleteCmd() *cobra.Command {
-	return &cobra.Command{
+	var yes bool
+	cmd := &cobra.Command{
 		Use:   "delete NAME",
 		Short: "Delete a saved profile",
 		Args:  cobra.ExactArgs(1),
 		RunE: func(cmd *cobra.Command, args []string) error {
-			return runProfileDelete(cmd, args[0])
+			return runProfileDelete(cmd, args[0], yes)
 		},
 	}
+	addYesFlag(cmd, &yes, "Skip confirmation prompt")
+	return cmd
 }
 
 func newProfileUseCmd() *cobra.Command {
@@ -273,13 +276,30 @@ func runProfileShow(cmd *cobra.Command, profileName string) error {
 	return output.WriteJSON(cmd.OutOrStdout(), item)
 }
 
-func runProfileDelete(cmd *cobra.Command, profileName string) error {
+func runProfileDelete(cmd *cobra.Command, profileName string, yes bool) error {
 	cfg, err := lsconfig.Load()
 	if err != nil {
 		return err
 	}
 	if _, ok := cfg.Profiles[profileName]; !ok {
 		return fmt.Errorf("profile %q not found (run `langsmith profiles list`)", profileName)
+	}
+	if !yes {
+		if err := confirmDelete(cmd, deleteConfirmation{
+			target:     "the saved profile and the API key it stores",
+			identity:   "Profile: " + profileName,
+			unprompted: true,
+		}); err != nil {
+			return err
+		}
+		// Reload so profiles saved by another process while the prompt waited
+		// survive the rewrite below.
+		if cfg, err = lsconfig.Load(); err != nil {
+			return err
+		}
+		if _, ok := cfg.Profiles[profileName]; !ok {
+			return fmt.Errorf("profile %q not found", profileName)
+		}
 	}
 	keychain := cfg.Profiles[profileName].SecretStore == lsconfig.SecretStoreKeychain
 	delete(cfg.Profiles, profileName)

@@ -33,9 +33,9 @@ basics:
       These commands page with `--cursor`: {cursor_commands}. Passing `--cursor ""` on the first call adds `cursors.next` to the JSON output (list commands then wrap their items in an object); pass that value to `--cursor` to get the next page. A missing `cursors.next` means there are no more results.
   - title: Safety
     text: |
-      Get the user's explicit approval before running any delete. Some deletes run immediately with no prompt.
+      Get the user's explicit approval before running any command that deletes or overwrites data.
 
-      Deletes marked *confirms* in [All commands](#all-commands) print a warning to stderr and wait for `y` on stdin; without an answer they abort. Do not answer the prompt or pipe `y` into it: stop and ask the user. Only after the user approves that specific deletion, rerun the command with `--yes`.
+      Commands marked *confirms* in [All commands](#all-commands) delete or overwrite data. In a terminal they print a warning to stderr and wait for `y`. When stdin is not a terminal, never pipe `y` into them: stop and ask the user, and only after the user approves that specific change, rerun the command with `--yes` (`apps pull` uses `--force`). `projects delete` has no such flag: ask the user to run it in a terminal. Without a terminal, a piped `y` still confirms and some of these commands still run without asking, with a deprecation warning on stderr; from 1.0.0 they refuse without `--yes`.
 
       Commands that create or update resources (datasets, examples, prompts, evaluator rules, annotation queues) change shared workspace data. Confirm the target with a `get` or `list` first, and prefer IDs over names when you build a command line.
 

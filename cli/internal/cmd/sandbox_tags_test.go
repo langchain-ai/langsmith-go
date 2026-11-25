@@ -111,7 +111,7 @@ func TestSandboxDeleteCmd_SeveralNamesBatchAndReportSkipped(t *testing.T) {
 		_, _ = fmt.Fprintf(w, `{"deleted":%s,"skipped":%s}`, raw, skipped)
 	})
 
-	args := []string{"--api-key", "test-key", "--api-url", ts.URL, "sandbox", "delete"}
+	args := []string{"--api-key", "test-key", "--api-url", ts.URL, "sandbox", "delete", "--yes"}
 	for i := range 51 {
 		args = append(args, fmt.Sprintf("vm-%d", i))
 	}
@@ -133,7 +133,7 @@ func TestSandboxDeleteCmd_OneNameDeletesDirectly(t *testing.T) {
 		w.WriteHeader(http.StatusNoContent)
 	})
 
-	out, err := executeCommand(t, "--api-key", "test-key", "--api-url", ts.URL, "sandbox", "delete", "my-vm")
+	out, err := executeCommand(t, "--api-key", "test-key", "--api-url", ts.URL, "sandbox", "delete", "my-vm", "--yes")
 	require.NoError(t, err)
 	assert.Contains(t, out, "Sandbox deleted.\n")
 }
@@ -170,7 +170,7 @@ func TestSandboxDeleteCmd_ReportsEarlierBatchesWhenALaterOneFails(t *testing.T) 
 		_, _ = fmt.Fprintf(w, `{"deleted":%s,"skipped":[]}`, raw)
 	})
 
-	args := []string{"--api-key", "test-key", "--api-url", ts.URL, "sandbox", "delete"}
+	args := []string{"--api-key", "test-key", "--api-url", ts.URL, "sandbox", "delete", "--yes"}
 	for i := range 52 {
 		args = append(args, fmt.Sprintf("vm-%d", i))
 	}

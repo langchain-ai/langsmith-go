@@ -346,6 +346,7 @@ func runGeneratedCommand(t *testing.T, stdin string, args ...string) (stderr str
 }
 
 func TestGeneratedDeleteConfirmsAfterGeneratedValueFlags(t *testing.T) {
+	fakeTerminal(t)
 	isolateGeneratedAuth(t)
 	var requests []generatedRequest
 	ts := fakeGeneratedAPI(t, &requests)
@@ -516,6 +517,7 @@ func TestGeneratedCommandAuth(t *testing.T) {
 }
 
 func TestGeneratedDeletePromptRedactsAPIKey(t *testing.T) {
+	fakeTerminal(t)
 	isolateGeneratedAuth(t)
 	var requests []generatedRequest
 	ts := fakeGeneratedAPI(t, &requests)

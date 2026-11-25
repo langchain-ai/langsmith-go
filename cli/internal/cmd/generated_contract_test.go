@@ -272,6 +272,11 @@ func runGeneratedContractCase(t *testing.T, resource string, c generatedContract
 	root.SetArgs(args)
 	root.SetIn(strings.NewReader(c.Stdin))
 	root.SetErr(&stderr)
+	// A case's stdin is a person answering the prompt at a terminal. Each case
+	// runs in its own process, so replacing the check is safe.
+	if c.Stdin != "" {
+		inputIsTerminal = func(io.Reader) bool { return true }
+	}
 
 	var execErr error
 	stdout := captureStdout(t, func() { execErr = root.Execute() })

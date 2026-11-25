@@ -210,6 +210,7 @@ func TestAppsPull_SurfacesNoSourceArchive404(t *testing.T) {
 }
 
 func TestAppsPull_RefusesNonEmptyDirWithoutForce(t *testing.T) {
+	fakeTerminal(t)
 	archive := tarGz(t, map[string]string{"src/App.tsx": "fresh"})
 	mux := appsSourceServer(t,
 		[]customApp{{ID: testAppID, Name: "my-app"}},
@@ -251,6 +252,7 @@ func TestAppsPull_RefusesNonEmptyDirWithoutForce(t *testing.T) {
 }
 
 func TestAppsPull_ConfirmedNonEmptyDirProceeds(t *testing.T) {
+	fakeTerminal(t)
 	archive := tarGz(t, map[string]string{"src/App.tsx": "fresh"})
 	mux := appsSourceServer(t,
 		[]customApp{{ID: testAppID, Name: "my-app"}},

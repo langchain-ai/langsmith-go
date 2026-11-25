@@ -620,11 +620,21 @@ var snapshotGetCommand = structured.Command[struct{}]{
 	Render: structured.Template(snapshotDetailTemplate),
 }
 
-var snapshotDeleteCommand = structured.Command[struct{}]{
+var snapshotDeleteCommand = structured.Command[*bool]{
 	Use:   "delete <snapshot-id|name[:tag]>",
 	Short: "Delete a snapshot by ID or Docker-style reference",
 	Args:  cobra.ExactArgs(1),
-	Action: func(ctx context.Context, cmd *cobra.Command, in struct{}, args []string) (any, error) {
+	Input: yesInput,
+	Action: func(ctx context.Context, cmd *cobra.Command, yes *bool, args []string) (any, error) {
+		if !*yes {
+			if err := confirmDelete(cmd, deleteConfirmation{
+				target:     "the snapshot",
+				identity:   "Snapshot: " + args[0],
+				unprompted: true,
+			}); err != nil {
+				return nil, err
+			}
+		}
 		c, err := cmdutil.GetClient(cmd)
 		if err != nil {
 			return nil, err

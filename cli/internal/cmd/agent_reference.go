@@ -127,7 +127,7 @@ func writeAgentReference(w io.Writer, root *cobra.Command) error {
 	}
 
 	b.WriteString("## All commands\n\n")
-	b.WriteString("Every command in this version of the CLI. Run `langsmith <command> --help` for its flags. Commands marked *confirms* ask before deleting; see [Safety](#safety).\n\n")
+	b.WriteString("Every command in this version of the CLI. Run `langsmith <command> --help` for its flags. Commands marked *confirms* ask before deleting or overwriting data; see [Safety](#safety).\n\n")
 	b.WriteString("| Command | Description |\n|---|---|\n")
 	for _, c := range leafCommands(root) {
 		desc := summary(c.short)
@@ -399,14 +399,14 @@ func cursorCommands(root *cobra.Command) []string {
 	return paths
 }
 
-// confirmsDelete reports whether c is a delete that asks for confirmation and
-// takes --yes to skip it. Every generated delete does; a hand-written one does
-// when it defines --yes.
+// confirmsDelete reports whether c deletes or overwrites data and asks first
+// through confirmDelete. Every generated delete does; a hand-written command
+// does when it carries confirmsAnnotation.
 func confirmsDelete(c refCommand) bool {
 	if c.op != nil {
 		return isDeleteOperation(c.op.Name)
 	}
-	return isDeleteOperation(c.cobra.Name()) && c.cobra.LocalFlags().Lookup("yes") != nil
+	return c.cobra.Annotations[confirmsAnnotation] != ""
 }
 
 // maturityNote matches the note that opens a beta or alpha endpoint's

@@ -277,18 +277,19 @@ func newPromptDeleteCmd() *cobra.Command {
 		Use:   "delete OWNER/REPO",
 		Short: "Delete a Prompt Hub repo",
 		Args:  cobra.ExactArgs(1),
-		Run: func(cmd *cobra.Command, args []string) {
+		RunE: errorsToStderr(func(cmd *cobra.Command, args []string) error {
 			owner, repo, _, err := parseOwnerRepo(args[0])
 			if err != nil {
-				ExitErrorf("%v", err)
+				return err
 			}
 
 			if !yes {
-				fmt.Fprintf(os.Stderr, "Delete prompt '%s/%s'? [y/N] ", owner, repo)
-				var confirm string
-				_, _ = fmt.Scanln(&confirm)
-				if strings.ToLower(confirm) != "y" {
-					ExitError("aborted")
+				if err := confirmDelete(cmd, deleteConfirmation{
+					acceptsUnterminated: true,
+					target:              "the prompt and all of its commits",
+					identity:            fmt.Sprintf("Prompt: %s/%s", owner, repo),
+				}); err != nil {
+					return err
 				}
 			}
 
@@ -298,22 +299,19 @@ func newPromptDeleteCmd() *cobra.Command {
 			// The API returns 200 with a JSON body or 204 No Content. Taking the raw
 			// response keeps the SDK from decoding a body that may be empty.
 			var res *http.Response
-			_, err = c.SDK.Repos.Delete(ctx, owner, repo, option.WithResponseBodyInto(&res))
-			if err != nil {
-				ExitErrorf("deleting prompt %s/%s: %v", owner, repo, err)
+			if _, err := c.SDK.Repos.Delete(ctx, owner, repo, option.WithResponseBodyInto(&res)); err != nil {
+				return fmt.Errorf("deleting prompt %s/%s: %w", owner, repo, err)
 			}
 			_ = res.Body.Close()
-			if err := output.OutputJSON(map[string]any{
+			return output.OutputJSON(map[string]any{
 				"status": "deleted",
 				"owner":  owner,
 				"repo":   repo,
-			}, ""); err != nil {
-				ExitErrorf("%v", err)
-			}
-		},
+			}, "")
+		}),
 	}
 
-	cmd.Flags().BoolVar(&yes, "yes", false, "Skip confirmation prompt")
+	addYesFlag(cmd, &yes, "Skip confirmation prompt")
 	return cmd
 }
 

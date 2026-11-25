@@ -2,10 +2,7 @@ package cmd
 
 import (
 	"context"
-	"errors"
 	"fmt"
-	"os"
-	"strings"
 
 	langsmith "github.com/langchain-ai/langsmith-go"
 	"github.com/langchain-ai/langsmith-go/cli/internal/output"
@@ -25,11 +22,12 @@ func newHubDeleteCmd() *cobra.Command {
 				return err
 			}
 			if !yes {
-				fmt.Fprintf(os.Stderr, "Delete hub repo '%s/%s'? [y/N] ", owner, name)
-				var confirm string
-				_, _ = fmt.Scanln(&confirm)
-				if strings.ToLower(confirm) != "y" {
-					return errors.New("aborted")
+				if err := confirmDelete(cmd, deleteConfirmation{
+					acceptsUnterminated: true,
+					target:              "the hub repo and its owned child repos",
+					identity:            fmt.Sprintf("Repo: %s/%s", owner, name),
+				}); err != nil {
+					return err
 				}
 			}
 			c := MustGetClient()
@@ -49,6 +47,6 @@ func newHubDeleteCmd() *cobra.Command {
 			return nil
 		},
 	}
-	cmd.Flags().BoolVar(&yes, "yes", false, "Skip confirmation prompt")
+	addYesFlag(cmd, &yes, "Skip confirmation prompt")
 	return cmd
 }

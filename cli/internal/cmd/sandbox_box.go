@@ -861,7 +861,7 @@ type sandboxDeleteResult struct {
 	Skipped []langsmith.SandboxBoxBatchDeleteResponseSkipped `json:"skipped"`
 }
 
-var sandboxDeleteCommand = structured.Command[struct{}]{
+var sandboxDeleteCommand = structured.Command[*bool]{
 	Use:   "delete <name>...",
 	Short: "Delete one or more sandboxes",
 	Long: `Delete sandboxes by name.
@@ -871,16 +871,29 @@ sandbox that can be deleted is, the rest are listed with the reason they were
 skipped, and the command exits non-zero if any was skipped.
 
 Examples:
-  langsmith sandboxes delete my-vm
-  langsmith sandboxes delete ci-1 ci-2 ci-3
-  langsmith sandboxes list --name-contains ci- --format json --jq '.[].name' | xargs langsmith sandboxes delete`,
+  langsmith sandboxes delete my-vm --yes
+  langsmith sandboxes delete ci-1 ci-2 ci-3 --yes
+  langsmith sandboxes list --name-contains ci- --format json --jq '.[].name' | xargs langsmith sandboxes delete --yes`,
 	Args: cobra.MinimumNArgs(1),
-	Input: func(cmd *cobra.Command) struct{} {
+	Input: func(cmd *cobra.Command) *bool {
 		cmd.Flags().String("jq", "", cmdutil.JQFlagUsage)
-		return struct{}{}
+		return yesInput(cmd)
 	},
 	CustomOutput: true,
-	Action: func(ctx context.Context, cmd *cobra.Command, in struct{}, args []string) (any, error) {
+	Action: func(ctx context.Context, cmd *cobra.Command, yes *bool, args []string) (any, error) {
+		if !*yes {
+			target, identity := "the sandbox and its data", "Sandbox: "+args[0]
+			if len(args) > 1 {
+				target, identity = "the sandboxes and their data", "Sandboxes: "+strings.Join(args, ", ")
+			}
+			if err := confirmDelete(cmd, deleteConfirmation{
+				target:     target,
+				identity:   identity,
+				unprompted: true,
+			}); err != nil {
+				return nil, err
+			}
+		}
 		c, err := cmdutil.GetClient(cmd)
 		if err != nil {
 			return nil, err

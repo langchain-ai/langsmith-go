@@ -334,6 +334,7 @@ func TestEvaluatorReplaceRefusesRuleWithAlerts(t *testing.T) {
 }
 
 func TestEvaluatorRuleDeleteConfirmationListsOtherActions(t *testing.T) {
+	fakeTerminal(t)
 	var sawDelete bool
 	ts := newTestServer(t, func(w http.ResponseWriter, r *http.Request) {
 		if r.Method == http.MethodDelete {

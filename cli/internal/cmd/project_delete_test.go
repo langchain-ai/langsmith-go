@@ -11,6 +11,7 @@ import (
 const deleteTestProjectID = "519bb9dd-079b-4488-8610-e330951ea3e4"
 
 func TestProjectDeleteCmd_UsesSDKAfterConfirmation(t *testing.T) {
+	fakeTerminal(t)
 	var getCalled, deleteCalled bool
 	ts := newTestServer(t, func(w http.ResponseWriter, r *http.Request) {
 		w.Header().Set("Content-Type", "application/json")

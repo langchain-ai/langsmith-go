@@ -264,7 +264,7 @@ Examples:
 
 	addProjectFlags(cmd, &project, &projectID)
 	cmd.Flags().StringVar(&dataset, "dataset", "", "Dataset (name or ID) the rule is attached to")
-	cmd.Flags().BoolVar(&yes, "yes", false, "Skip confirmation prompt")
+	addYesFlag(cmd, &yes, "Skip confirmation prompt")
 	return cmd
 }
 

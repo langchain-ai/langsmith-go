@@ -46,9 +46,9 @@ These commands page with `--cursor`: `langsmith evaluators rule list`, `langsmit
 
 ### Safety
 
-Get the user's explicit approval before running any delete. Some deletes run immediately with no prompt.
+Get the user's explicit approval before running any command that deletes or overwrites data.
 
-Deletes marked *confirms* in [All commands](#all-commands) print a warning to stderr and wait for `y` on stdin; without an answer they abort. Do not answer the prompt or pipe `y` into it: stop and ask the user. Only after the user approves that specific deletion, rerun the command with `--yes`.
+Commands marked *confirms* in [All commands](#all-commands) delete or overwrite data. In a terminal they print a warning to stderr and wait for `y`. When stdin is not a terminal, never pipe `y` into them: stop and ask the user, and only after the user approves that specific change, rerun the command with `--yes` (`apps pull` uses `--force`). `projects delete` has no such flag: ask the user to run it in a terminal. Without a terminal, a piped `y` still confirms and some of these commands still run without asking, with a deprecation warning on stderr; from 1.0.0 they refuse without `--yes`.
 
 Commands that create or update resources (datasets, examples, prompts, evaluator rules, annotation queues) change shared workspace data. Confirm the target with a `get` or `list` first, and prefer IDs over names when you build a command line.
 
@@ -717,7 +717,7 @@ Populate annotation queue with runs from an experiment.
 
 ## All commands
 
-Every command in this version of the CLI. Run `langsmith <command> --help` for its flags. Commands marked *confirms* ask before deleting; see [Safety](#safety).
+Every command in this version of the CLI. Run `langsmith <command> --help` for its flags. Commands marked *confirms* ask before deleting or overwriting data; see [Safety](#safety).
 
 | Command | Description |
 |---|---|
@@ -745,7 +745,7 @@ Every command in this version of the CLI. Run `langsmith <command> --help` for i
 | `langsmith apps dev` | Run the current directory's custom app locally in a real sandbox |
 | `langsmith apps init` | Scaffold a starter custom app in a new directory named after the app |
 | `langsmith apps list` | List custom apps |
-| `langsmith apps pull` | Download a custom app's source into a new directory |
+| `langsmith apps pull` | Download a custom app's source into a new directory *(confirms)* |
 | `langsmith apps push` | Upload the current directory as a custom app |
 | `langsmith auth hash-password` | Hash a local recovery password without contacting LangSmith |
 | `langsmith auth info` | Show the current authentication state |
@@ -775,14 +775,14 @@ Every command in this version of the CLI. Run `langsmith <command> --help` for i
 | `langsmith datasets versions retrieve-diff` | Get diff between two dataset versions. |
 | `langsmith docs agents` | Print the task-oriented CLI reference for coding agents as Markdown |
 | `langsmith evaluators create-decision-model` | Create a decision-model evaluator (Jev, SemIf or OpenAI Decisions) from its prompt and questions, and attach it to a project or dataset. |
-| `langsmith evaluators create-llm` | Create an LLM-as-judge evaluator rule |
+| `langsmith evaluators create-llm` | Create an LLM-as-judge evaluator rule *(confirms)* |
 | `langsmith evaluators delete` | Delete an evaluator by ID *(confirms)* |
 | `langsmith evaluators get` | Get an evaluator by name or ID |
 | `langsmith evaluators list` | List evaluators and the projects or datasets each one is attached to |
 | `langsmith evaluators rule delete` | Delete one evaluator rule; the evaluator itself is kept *(confirms)* |
 | `langsmith evaluators rule get` | Get an evaluator rule by ID |
 | `langsmith evaluators rule list` | List evaluator rules, optionally for one project, dataset, or evaluator |
-| `langsmith evaluators upload` | Upload a code evaluator file to LangSmith |
+| `langsmith evaluators upload` | Upload a code evaluator file to LangSmith *(confirms)* |
 | `langsmith examples bulk create` | Create bulk examples. |
 | `langsmith examples create` | Create a new example in a dataset, or one example per run with --from-run |
 | `langsmith examples delete` | Delete an example by its UUID *(confirms)* |
@@ -807,7 +807,7 @@ Every command in this version of the CLI. Run `langsmith <command> --help` for i
 | `langsmith hub get` | Get metadata for a hub repo |
 | `langsmith hub init` | Scaffold a starter agent or skill directory |
 | `langsmith hub list` | List hub repos (optionally filtered by type) |
-| `langsmith hub pull` | Pull an agent or skill commit into a local directory |
+| `langsmith hub pull` | Pull an agent or skill commit into a local directory *(confirms)* |
 | `langsmith hub push` | Push a local directory as an agent or skill commit |
 | `langsmith info list` | Returns information about the current LangSmith deployment: version, instance feature flags, batch-ingest limits, and max SDK versions. |
 | `langsmith insights config delete` | Delete an Insights job configuration *(confirms)* |
@@ -824,13 +824,13 @@ Every command in this version of the CLI. Run `langsmith <command> --help` for i
 | `langsmith online-evaluators update` | Update an existing evaluator's name, LLM configuration, or code configuration. |
 | `langsmith product-feedback retrieve` | Alpha: may change without notice. |
 | `langsmith profiles create` | Create an API-key profile |
-| `langsmith profiles delete` | Delete a saved profile |
+| `langsmith profiles delete` | Delete a saved profile *(confirms)* |
 | `langsmith profiles list` | List saved profiles |
 | `langsmith profiles set-workspace` | Set the default workspace for a profile |
 | `langsmith profiles show` | Show a saved profile |
 | `langsmith profiles use` | Set the current profile |
 | `langsmith projects dashboard` | Returns the prebuilt dashboard for the tracing project matching the query passed as the request payload. |
-| `langsmith projects delete` | Permanently delete a tracing project and all of its traces |
+| `langsmith projects delete` | Permanently delete a tracing project and all of its traces *(confirms)* |
 | `langsmith projects insights configs create` | Create an Insights job configuration for a project. |
 | `langsmith projects insights delete` | Delete an Insights job for a project. *(confirms)* |
 | `langsmith projects insights retrieve-runs` | List runs analyzed by an Insights job, optionally filtered by report cluster. |
@@ -889,7 +889,7 @@ Every command in this version of the CLI. Run `langsmith <command> --help` for i
 | `langsmith sandboxes console` | Open an interactive shell inside a sandbox |
 | `langsmith sandboxes cp` | Copy a file to or from a sandbox |
 | `langsmith sandboxes create` | Create a sandbox VM |
-| `langsmith sandboxes delete` | Delete one or more sandboxes |
+| `langsmith sandboxes delete` | Delete one or more sandboxes *(confirms)* |
 | `langsmith sandboxes exec` | Execute a command inside a sandbox |
 | `langsmith sandboxes generate-download-url` | Generate a link that downloads a sandbox file without credentials |
 | `langsmith sandboxes get` | Get a sandbox by name |
@@ -904,7 +904,7 @@ Every command in this version of the CLI. Run `langsmith <command> --help` for i
 | `langsmith sandboxes service-url` | Generate an authenticated URL for a sandbox HTTP service |
 | `langsmith sandboxes snapshot build` | Build a snapshot from a Docker image or a local Dockerfile |
 | `langsmith sandboxes snapshot capture` | Capture a snapshot from a sandbox |
-| `langsmith sandboxes snapshot delete` | Delete a snapshot by ID or Docker-style reference |
+| `langsmith sandboxes snapshot delete` | Delete a snapshot by ID or Docker-style reference *(confirms)* |
 | `langsmith sandboxes snapshot get` | Get a snapshot by ID or Docker-style reference |
 | `langsmith sandboxes snapshot list` | List snapshots |
 | `langsmith sandboxes snapshots retrieve-by-name` | Get a snapshot name and every tag under it, with the snapshot each tag resolves to. |

@@ -212,8 +212,9 @@ func forwardGenerated(cmd *cobra.Command, resource *cli.Command, path string, ar
 		if !yes && !hasHelpFlag(rest) {
 			noun := strings.ReplaceAll(strings.TrimPrefix(path, cmd.Root().Name()+" "), "-", " ")
 			if err := confirmDelete(cmd, deleteConfirmation{
-				target:   "the " + noun + " below",
-				identity: "Command: " + path + " " + strings.Join(redactCredentials(args), " "),
+				target:     "the " + noun + " below",
+				identity:   "Command: " + path + " " + strings.Join(redactCredentials(args), " "),
+				jsonOutput: jq != "" || argsRequestJSON(args),
 			}); err != nil {
 				return err
 			}

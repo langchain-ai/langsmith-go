@@ -5,7 +5,6 @@ import (
 	"bytes"
 	"compress/gzip"
 	"context"
-	"errors"
 	"fmt"
 	"io"
 	"os"
@@ -101,6 +100,7 @@ organization. Pass --scope to force one tier.`,
 	}
 
 	cmd.Flags().BoolVar(&force, "force", false, "Replace the target directory without confirming")
+	markConfirms(cmd)
 	cmd.Flags().StringVar(&scope, "scope", "", "Only match apps at this tier: \"workspace\" or \"org\"")
 	return cmd
 }
@@ -216,13 +216,13 @@ func confirmSourceDirReplace(cmd *cobra.Command, dest string, force bool) error 
 	if len(entries) == 0 || force {
 		return nil
 	}
-	fmt.Fprintf(cmd.ErrOrStderr(), "%s already exists and is not empty. Replace its contents? [y/N] ", dest)
-	var confirm string
-	_, _ = fmt.Fscanln(cmd.InOrStdin(), &confirm)
-	if ans := strings.ToLower(strings.TrimSpace(confirm)); ans != "y" && ans != "yes" {
-		return errors.New("aborted: pass --force to replace the directory")
-	}
-	return nil
+	return confirmDelete(cmd, deleteConfirmation{
+		acceptsUnterminated: true,
+		verb:                "replaces",
+		target:              "the contents of the existing directory",
+		identity:            fmt.Sprintf("Directory: %s (%d entries)", dest, len(entries)),
+		skipFlag:            "--force",
+	})
 }
 
 // extractSourceArchive gunzips and untars into dest.

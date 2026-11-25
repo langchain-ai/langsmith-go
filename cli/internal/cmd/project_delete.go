@@ -36,6 +36,7 @@ func newProjectDeleteCmd() *cobra.Command {
 			if err := confirmDelete(cmd, deleteConfirmation{
 				target:   "the tracing project and all of its traces",
 				identity: fmt.Sprintf("Project: %q (id: %s, runs: %d)", project.Name, project.ID, project.RunCount),
+				noSkip:   true,
 			}); err != nil {
 				return err
 			}
@@ -54,5 +55,8 @@ func newProjectDeleteCmd() *cobra.Command {
 	}
 
 	addProjectFlags(cmd, &projectName, &projectID)
+	// Deleting a project and its traces has no --yes: only a person at a
+	// terminal can confirm it.
+	markConfirms(cmd)
 	return cmd
 }

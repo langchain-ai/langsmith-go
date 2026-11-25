@@ -74,7 +74,7 @@ func uploadWholeFile(ctx context.Context, cmd *cobra.Command, c *client.Client, 
 		return err
 	}
 
-	existing, err := findRuleToReplace(ctx, c, u.name, u.target, u.replace, u.yes)
+	existing, err := findRuleToReplace(ctx, cmd, c, u.name, u.target, u.replace, u.yes)
 	if err != nil {
 		return err
 	}
