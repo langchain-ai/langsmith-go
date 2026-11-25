@@ -675,14 +675,16 @@ func (r runPromptTokenDetailsJSON) RawJSON() string {
 type RunStatus string
 
 const (
-	RunStatusSuccess RunStatus = "SUCCESS"
-	RunStatusError   RunStatus = "ERROR"
-	RunStatusPending RunStatus = "PENDING"
+	RunStatusSuccess     RunStatus = "SUCCESS"
+	RunStatusError       RunStatus = "ERROR"
+	RunStatusPending     RunStatus = "PENDING"
+	RunStatusInterrupted RunStatus = "INTERRUPTED"
+	RunStatusCancelled   RunStatus = "CANCELLED"
 )
 
 func (r RunStatus) IsKnown() bool {
 	switch r {
-	case RunStatusSuccess, RunStatusError, RunStatusPending:
+	case RunStatusSuccess, RunStatusError, RunStatusPending, RunStatusInterrupted, RunStatusCancelled:
 		return true
 	}
 	return false
