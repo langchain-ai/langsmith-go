@@ -3,6 +3,7 @@ package cmd
 import (
 	"context"
 	"encoding/json"
+	"errors"
 	"fmt"
 	"io"
 	"os"
@@ -11,6 +12,7 @@ import (
 	"time"
 
 	langsmith "github.com/langchain-ai/langsmith-go"
+	"github.com/langchain-ai/langsmith-go/cli/internal/exitcode"
 	"github.com/langchain-ai/langsmith-go/cli/internal/output"
 	"github.com/spf13/cobra"
 )
@@ -75,7 +77,8 @@ type insightConfigFile struct {
 	SummaryPrompt    string                                        `json:"summary_prompt"`
 }
 
-const (
+// Tests shorten these.
+var (
 	insightWaitInterval = 30 * time.Second
 	insightWaitTimeout  = 30 * time.Minute
 )
@@ -153,15 +156,11 @@ terminal status; waiting can take up to 30 minutes.`,
 			if err != nil {
 				return fmt.Errorf("insight config %s was saved, but starting the report failed: %w", config.ID, err)
 			}
+			var waitErr error
 			if opts.wait {
-				waitCtx, cancel := context.WithTimeout(ctx, insightWaitTimeout)
-				defer cancel()
-				completed, err := waitForInsight(waitCtx, c.SDK, sessionID, created.ID, insightWaitInterval)
-				if err != nil {
+				if waitErr, err = waitForCreatedInsight(ctx, c.SDK, sessionID, created); err != nil {
 					return err
 				}
-				created.Name = completed.Name
-				created.Status = completed.Status
 			}
 			schedule := ""
 			if !config.JSON.ScheduleCron.IsNull() {
@@ -169,8 +168,8 @@ terminal status; waiting can take up to 30 minutes.`,
 			}
 
 			if GetFormat() == "pretty" {
-				printInsightCreatePretty(created, sessionID, config.ID, opts.wait, schedule)
-				return nil
+				printInsightCreatePretty(created, sessionID, config.ID, opts.wait && waitErr == nil, schedule)
+				return waitErr
 			}
 			result := insightCreateResponseToMap(created, sessionID, config.ID)
 			if config.JSON.ScheduleCron.IsNull() {
@@ -178,10 +177,10 @@ terminal status; waiting can take up to 30 minutes.`,
 			} else {
 				result["schedule_cron"] = config.ScheduleCron
 			}
-			if err := output.OutputJSON(result, opts.outputFile); err != nil {
+			if err := output.OutputJSON(result, insightOutputFile(opts.outputFile, waitErr)); err != nil {
 				return err
 			}
-			return nil
+			return waitErr
 		},
 	}
 
@@ -298,12 +297,48 @@ func (c insightConfigFile) toSDKParams() (langsmith.CreateRunClusteringJobReques
 	return request, nil
 }
 
+// waitForCreatedInsight waits for a report the server has already accepted
+// and copies its last observed name and status into created. A wait that
+// times out is returned as timeout, naming the command that inspects the
+// report, so the caller still prints the report's IDs: the report keeps
+// running and must not be created again. err is any other wait failure.
+func waitForCreatedInsight(ctx context.Context, sdk *langsmith.Client, sessionID string, created *langsmith.SessionInsightNewResponse) (timeout, err error) {
+	waitCtx, cancel := context.WithTimeout(ctx, insightWaitTimeout)
+	defer cancel()
+	detail, err := waitForInsight(waitCtx, sdk, sessionID, created.ID, insightWaitInterval)
+	if detail != nil {
+		created.Name = detail.Name
+		created.Status = detail.Status
+	}
+	if err == nil || exitcode.For(err) != exitcode.Timeout {
+		return nil, err
+	}
+	return fmt.Errorf("%w; check it with: langsmith insights get %s --project-id %s", err, created.ID, sessionID), nil
+}
+
+// insightOutputFile is where a create or run command writes its JSON: stdout
+// instead of --output when the wait timed out, so a file holding an earlier
+// result is not replaced by an unfinished report.
+func insightOutputFile(outputFile string, waitTimeout error) string {
+	if waitTimeout != nil {
+		return ""
+	}
+	return outputFile
+}
+
+// waitForInsight polls a report until it succeeds or fails. On a timeout it
+// also returns the last details it read, if any.
 func waitForInsight(ctx context.Context, sdk *langsmith.Client, sessionID, insightID string, interval time.Duration) (*langsmith.SessionInsightGetJobResponse, error) {
+	var last *langsmith.SessionInsightGetJobResponse
 	for {
 		detail, err := sdk.Sessions.Insights.GetJob(ctx, sessionID, insightID)
 		if err != nil {
+			if errors.Is(ctx.Err(), context.DeadlineExceeded) {
+				return last, exitcode.WithCode(fmt.Errorf("timed out waiting for insight report %s", insightID), exitcode.Timeout)
+			}
 			return nil, fmt.Errorf("polling insight report %s: %w", insightID, err)
 		}
+		last = detail
 		switch detail.Status {
 		case "success":
 			return detail, nil
@@ -319,7 +354,7 @@ func waitForInsight(ctx context.Context, sdk *langsmith.Client, sessionID, insig
 		case <-ctx.Done():
 			timer.Stop()
 			if ctx.Err() == context.DeadlineExceeded {
-				return nil, fmt.Errorf("timed out waiting for insight report %s", insightID)
+				return last, exitcode.WithCode(fmt.Errorf("timed out waiting for insight report %s", insightID), exitcode.Timeout)
 			}
 			return nil, ctx.Err()
 		case <-timer.C:

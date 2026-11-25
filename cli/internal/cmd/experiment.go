@@ -226,7 +226,7 @@ func fetchExperiment(ctx context.Context, c *client.Client, nameOrID string) (ex
 		return experimentSummary{}, fmt.Errorf("fetching experiment: %w", err)
 	}
 	if len(resp.Items) == 0 {
-		return experimentSummary{}, fmt.Errorf("experiment not found: %s (run `langsmith experiments list`)", nameOrID)
+		return experimentSummary{}, notFoundf("experiment not found: %s (run `langsmith experiments list`)", nameOrID)
 	}
 	p := resp.Items[0]
 	exp := experimentSummary{

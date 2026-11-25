@@ -25,7 +25,23 @@ basics:
       - `--jq EXPR` filters the JSON output with a jq expression and implies `--format json`, e.g. `--jq '.[].id'`. No separate `jq` install is needed.
       - Many read commands take `-o FILE` (`--output`) to write the JSON to a file instead of stdout, which keeps large payloads out of the agent's context.
       - Trace and run commands return compact rows by default. Add `--include-io` for inputs, outputs and errors, `--include-metadata` for status, latency, tokens and costs, `--include-feedback` for feedback scores, or `--full` for all three.
-      - Errors go to stderr and the exit code is non-zero.
+      - Errors go to stderr and the exit code is non-zero. See [Exit codes](#exit-codes).
+  - title: Exit codes
+    text: |
+      Set `LANGSMITH_EXIT_CODES=detailed` in the environment. Every command, including the ones generated from the API, then exits with one of these codes; use them to decide whether to retry. Without it every failure exits 1 until 1.0.0, which makes these codes the default, and stderr carries a deprecation warning naming the new code.
+
+      | Code | Meaning | What to do |
+      | --- | --- | --- |
+      | 0 | Success | |
+      | 1 | Bad input: invalid flags or arguments, a request the API rejected as invalid (400, 422), or any failure not listed below | Fix the input before retrying; for a failure not listed below, read the error message |
+      | 2 | Authentication: no credentials, or the API rejected them (401, 403) | Check the API key, its workspace and region, or run `langsmith auth login` |
+      | 3 | Not found (404, 410), including a `--project` name that matches no project | Check the ID or name |
+      | 4 | Conflict or limit: the request is valid but the resource's state or the plan refuses it (409, 402) | Don't retry unchanged |
+      | 5 | A `--wait` timed out before the operation finished | The operation may still finish; check its status with the ID in the output or error instead of starting it again |
+      | 6 | Server error (5xx), a request timeout (408), or the API could not be reached | Retry reads with backoff. For writes, check whether the change took effect before repeating it |
+      | 7 | Rate limited (429) | Retry with backoff |
+
+      `langsmith sandboxes exec` exits with the remote command's own exit code instead.
   - title: Paging and time windows
     text: |
       List commands return a bounded page; set the size with `--limit` (`-n`). Trace and run queries cover the last 7 days unless you pass `--since`, `--before` or `--last-n-minutes`. To read further back, page with `--before` set to the oldest `start_time` you have seen.

@@ -13,6 +13,7 @@ import (
 	"github.com/langchain-ai/langsmith-go"
 	"github.com/langchain-ai/langsmith-go/cli/internal/client"
 	"github.com/langchain-ai/langsmith-go/cli/internal/cmdutil"
+	"github.com/langchain-ai/langsmith-go/cli/internal/exitcode"
 	generated "github.com/langchain-ai/langsmith-go/cli/internal/generated/pkg/cmd"
 	"github.com/langchain-ai/langsmith-go/cli/internal/output"
 	"github.com/langchain-ai/langsmith-go/cli/internal/usage"
@@ -183,6 +184,9 @@ func generatedCommand(name string, resource, op *cli.Command) *cobra.Command {
 }
 
 func forwardGenerated(cmd *cobra.Command, resource *cli.Command, path string, args []string) error {
+	// Cobra does not parse a generated command's flags, so record whether
+	// they ask for JSON for the errors returned to ExitCode.
+	generatedJSON = argsRequestJSON(args)
 	rest, flags, err := translateGlobalFlags(args)
 	if err != nil {
 		return err
@@ -545,12 +549,7 @@ func runGenerated(cmd *cobra.Command, resource *cli.Command, path string, rest [
 		if hint := generatedNotFoundHint(cmd.Root(), err, resource, path, rest); hint != "" {
 			fmt.Fprintln(cmd.ErrOrStderr(), "hint: "+hint)
 		}
-		code := 1
-		var exitErr cli.ExitCoder
-		if errors.As(err, &exitErr) {
-			code = exitErr.ExitCode()
-		}
-		exitGenerated(code)
+		exitGenerated(generatedExitCode(cmd.ErrOrStderr(), err, jq != "" || argsRequestJSON(rest)))
 		return nil
 	}
 	if jq == "" {
@@ -561,6 +560,17 @@ func runGenerated(cmd *cobra.Command, resource *cli.Command, path string, rest [
 		return err
 	}
 	return output.RenderJQ(os.Stdout, model, jq)
+}
+
+// generatedExitCode returns the exit code for a generated command's error: the
+// generated tree's own code for its errors that carry one, and otherwise the
+// shared mapping (see processExitCode), which may write a warning to w.
+func generatedExitCode(w io.Writer, err error, asJSON bool) int {
+	var exitErr cli.ExitCoder
+	if exitcode.For(err) == exitcode.Input && errors.As(err, &exitErr) && exitErr.ExitCode() != 0 {
+		return exitErr.ExitCode()
+	}
+	return processExitCode(w, err, asJSON)
 }
 
 // isHelpInvocation reports whether args only ask for help, which needs no

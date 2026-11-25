@@ -5,6 +5,7 @@ import (
 	"strings"
 
 	"github.com/langchain-ai/langsmith-go/cli/internal/cmdutil"
+	"github.com/langchain-ai/langsmith-go/cli/internal/exitcode"
 	"github.com/spf13/cobra"
 )
 
@@ -73,11 +74,14 @@ Make requests:
 
 			w := cmd.OutOrStdout()
 			statusCode, err := runRequest(c, method, path, body, input, params, headers, include, w, cmd.ErrOrStderr())
+			if statusCode >= 400 {
+				if err == nil {
+					err = fmt.Errorf("HTTP %d", statusCode)
+				}
+				return exitcode.WithCode(err, exitcode.FromHTTPStatus(statusCode))
+			}
 			if err != nil {
 				return err
-			}
-			if statusCode >= 400 {
-				return fmt.Errorf("HTTP %d", statusCode)
 			}
 			return nil
 		},

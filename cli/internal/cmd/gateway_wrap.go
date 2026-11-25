@@ -55,8 +55,6 @@ var wrapStrippedHeaders = []string{
 	"OpenAI-Project",
 }
 
-var exitProcess = os.Exit
-
 func newGatewayWrapCmd() *cobra.Command {
 	var gatewayURL string
 	cmd := &cobra.Command{

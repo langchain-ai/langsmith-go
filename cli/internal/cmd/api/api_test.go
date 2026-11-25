@@ -9,6 +9,9 @@ import (
 	"strings"
 	"sync/atomic"
 	"testing"
+
+	"github.com/langchain-ai/langsmith-go/cli/internal/exitcode"
+	"github.com/langchain-ai/langsmith-go/cli/internal/output"
 )
 
 func TestNewCmd_HasSubcommands(t *testing.T) {
@@ -263,5 +266,34 @@ func TestNewCmd_RunQueryHintGoesToStderr(t *testing.T) {
 	}
 	if strings.Contains(stdout.String(), "hint:") || !strings.Contains(stdout.String(), `"runs"`) {
 		t.Errorf("stdout = %q, want only the response body", stdout.String())
+	}
+}
+
+func TestNewCmd_ErrorStatusSetsExitCode(t *testing.T) {
+	ts := httptest.NewServer(http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
+		if r.URL.Path == "/openapi.json" {
+			_ = json.NewEncoder(w).Encode(map[string]any{"openapi": "3.1.0", "paths": map[string]any{}})
+			return
+		}
+		w.Header().Set("Content-Type", "text/html")
+		w.WriteHeader(http.StatusNotFound)
+		_, _ = w.Write([]byte("<html>not found</html>"))
+	}))
+	defer ts.Close()
+
+	for _, jq := range []string{"", "."} {
+		t.Run("jq="+jq, func(t *testing.T) {
+			output.SetJQ(jq)
+			t.Cleanup(func() { output.SetJQ("") })
+			root := newTestRoot()
+			var out bytes.Buffer
+			root.SetOut(&out)
+			root.SetErr(&out)
+			root.SetArgs([]string{"api", "--api-key", "test-key", "--api-url", ts.URL, "sessions/missing", "-X", "GET"})
+			err := root.Execute()
+			if got := exitcode.For(err); got != exitcode.NotFound {
+				t.Errorf("exit code = %d, want %d (err: %v)", got, exitcode.NotFound, err)
+			}
+		})
 	}
 }

@@ -2,7 +2,6 @@ package cmd
 
 import (
 	"bytes"
-	"context"
 	"encoding/json"
 	"fmt"
 	"strings"
@@ -296,22 +295,21 @@ The saved configuration and its schedule are not changed.`,
 			if err != nil {
 				return fmt.Errorf("running insight config %s: %w", args[0], err)
 			}
+			var waitErr error
 			if wait {
-				waitCtx, cancel := context.WithTimeout(cmd.Context(), insightWaitTimeout)
-				defer cancel()
-				completed, err := waitForInsight(waitCtx, c.SDK, sessionID, created.ID, insightWaitInterval)
-				if err != nil {
+				if waitErr, err = waitForCreatedInsight(cmd.Context(), c.SDK, sessionID, created); err != nil {
 					return err
 				}
-				created.Name = completed.Name
-				created.Status = completed.Status
 			}
 
 			if GetFormat() == "pretty" {
-				printInsightCreatePretty(created, sessionID, args[0], wait, "")
-				return nil
+				printInsightCreatePretty(created, sessionID, args[0], wait && waitErr == nil, "")
+				return waitErr
 			}
-			return output.OutputJSON(insightCreateResponseToMap(created, sessionID, args[0]), outputFile)
+			if err := output.OutputJSON(insightCreateResponseToMap(created, sessionID, args[0]), insightOutputFile(outputFile, waitErr)); err != nil {
+				return err
+			}
+			return waitErr
 		},
 	}
 

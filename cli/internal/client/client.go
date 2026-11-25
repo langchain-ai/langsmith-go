@@ -128,7 +128,7 @@ func (c *Client) ResolveSessionID(ctx context.Context, projectName string) (stri
 		return "", fmt.Errorf("resolving project %q: %w", projectName, err)
 	}
 	if len(resp.Items) == 0 {
-		return "", fmt.Errorf("project not found: %s (run `langsmith projects list`)", projectName)
+		return "", fmt.Errorf("project %w: %s (run `langsmith projects list`)", ErrNotFound, projectName)
 	}
 	id := resp.Items[0].ID
 	c.sessionCache[projectName] = id
@@ -590,4 +590,22 @@ func formatHTTPErrorBody(body []byte) string {
 	default:
 		return raw
 	}
+}
+
+// ErrNotFound marks a lookup the CLI resolved itself, such as a project name,
+// that matched nothing.
+var ErrNotFound = errors.New("not found")
+
+// HTTPStatus returns the status code of the API response that caused err, or 0
+// when err did not come from an API response.
+func HTTPStatus(err error) int {
+	var httpErr *httpError
+	if errors.As(err, &httpErr) {
+		return httpErr.statusCode
+	}
+	var apiErr *langsmith.Error
+	if errors.As(err, &apiErr) {
+		return apiErr.StatusCode
+	}
+	return 0
 }

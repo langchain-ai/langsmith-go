@@ -8,6 +8,7 @@ import (
 
 	"github.com/langchain-ai/langsmith-go/cli/internal/client"
 	lsconfig "github.com/langchain-ai/langsmith-go/cli/internal/config"
+	"github.com/langchain-ai/langsmith-go/cli/internal/exitcode"
 	"github.com/spf13/cobra"
 	"github.com/spf13/pflag"
 	"golang.org/x/term"
@@ -183,7 +184,7 @@ func GetClient(cmd *cobra.Command) (*client.Client, error) {
 		return nil, err
 	}
 	if !opts.HasAuth() {
-		return nil, fmt.Errorf("not authenticated; run 'langsmith auth login', set LANGSMITH_API_KEY, or pass --api-key")
+		return nil, exitcode.WithCode(fmt.Errorf("not authenticated; run 'langsmith auth login', set LANGSMITH_API_KEY, or pass --api-key"), exitcode.Auth)
 	}
 	NoteActiveProfile(getFlagString(cmd, "profile"), opts, ResolveJQ(cmd) != "" || (FormatChanged(cmd) && getFlagString(cmd, "format") == "json"))
 	return client.NewWithOptions(opts), nil

@@ -13,6 +13,7 @@ import (
 	"time"
 
 	langsmith "github.com/langchain-ai/langsmith-go"
+	"github.com/langchain-ai/langsmith-go/cli/internal/exitcode"
 	"github.com/langchain-ai/langsmith-go/cli/internal/output"
 	"github.com/langchain-ai/langsmith-go/option"
 	"github.com/langchain-ai/langsmith-go/shared"
@@ -102,8 +103,8 @@ func chartPreview(
 	if err != nil {
 		var apiErr *langsmith.Error
 		if errors.As(err, &apiErr) {
-			return nil, fmt.Errorf("chart preview: HTTP %d: %s",
-				apiErr.StatusCode, apiErrorDetail([]byte(apiErr.JSON.RawJSON())))
+			return nil, exitcode.WithCode(fmt.Errorf("chart preview: HTTP %d: %s",
+				apiErr.StatusCode, apiErrorDetail([]byte(apiErr.JSON.RawJSON()))), exitcode.FromHTTPStatus(apiErr.StatusCode))
 		}
 		return nil, fmt.Errorf("chart preview: %w", err)
 	}

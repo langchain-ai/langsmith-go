@@ -10,6 +10,7 @@ import (
 	"time"
 
 	"github.com/langchain-ai/langsmith-go/cli/internal/cache"
+	"github.com/langchain-ai/langsmith-go/cli/internal/exitcode"
 )
 
 const specCacheTTL = 24 * time.Hour
@@ -289,7 +290,11 @@ func loadSpec(apiURL, cacheDir string, forceRefresh bool) (*OpenAPISpec, error) 
 	defer resp.Body.Close()
 
 	if resp.StatusCode != 200 {
-		return nil, fmt.Errorf("fetching OpenAPI spec: HTTP %d", resp.StatusCode)
+		code := exitcode.FromHTTPStatus(resp.StatusCode)
+		if code == exitcode.OK {
+			code = exitcode.Input
+		}
+		return nil, exitcode.WithCode(fmt.Errorf("fetching OpenAPI spec: HTTP %d", resp.StatusCode), code)
 	}
 
 	data, err := io.ReadAll(resp.Body)

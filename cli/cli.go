@@ -10,6 +10,7 @@ package cli
 import (
 	"errors"
 	"fmt"
+	"os"
 
 	"github.com/langchain-ai/langsmith-go/cli/internal/cmd"
 )
@@ -21,9 +22,9 @@ func Main(version, commit, date string) int {
 	if err := rootCmd.Execute(); err != nil {
 		var reported cmd.ReportedError
 		if !errors.As(err, &reported) {
-			fmt.Println(err.Error())
+			fmt.Fprintln(os.Stderr, err.Error())
 		}
-		return 1
+		return cmd.ExitCode(err)
 	}
 	return 0
 }

@@ -12,6 +12,7 @@ import (
 	"strings"
 	"testing"
 
+	"github.com/langchain-ai/langsmith-go/cli/internal/exitcode"
 	generated "github.com/langchain-ai/langsmith-go/cli/internal/generated/pkg/cmd"
 	"github.com/spf13/cobra"
 	"github.com/urfave/cli/v3"
@@ -422,6 +423,7 @@ func TestGeneratedCommandAuth(t *testing.T) {
 		wantAPIKey      string
 		wantTenant      string
 		wantAuth        string
+		wantExit        int
 	}{
 		{
 			name:            "--profile ignores LANGSMITH_ENDPOINT",
@@ -461,9 +463,10 @@ func TestGeneratedCommandAuth(t *testing.T) {
 			wantTenant: "flag-ws",
 		},
 		{
-			name:    "no credentials",
-			env:     map[string]string{"LANGSMITH_ENDPOINT": "{{endpoint}}"},
-			wantErr: "not authenticated",
+			name:     "no credentials",
+			env:      map[string]string{"LANGSMITH_ENDPOINT": "{{endpoint}}"},
+			wantErr:  "not authenticated",
+			wantExit: exitcode.Auth,
 		},
 	}
 	for _, tt := range tests {
@@ -487,6 +490,9 @@ func TestGeneratedCommandAuth(t *testing.T) {
 			if tt.wantErr != "" {
 				if err == nil || !strings.Contains(err.Error(), tt.wantErr) {
 					t.Fatalf("err = %v, want it to contain %q", err, tt.wantErr)
+				}
+				if tt.wantExit != 0 && exitcode.For(err) != tt.wantExit {
+					t.Errorf("exit code = %d, want %d", exitcode.For(err), tt.wantExit)
 				}
 				if n := len(profileRequests) + len(endpointRequests); n != 0 {
 					t.Errorf("sent %d requests, want none", n)

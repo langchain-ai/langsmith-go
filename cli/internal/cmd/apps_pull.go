@@ -128,7 +128,7 @@ func resolveCustomAppInScope(ctx context.Context, c *client.Client, nameOrID, sc
 				}
 			}
 		}
-		return nil, fmt.Errorf("custom app %s not found %s (run `langsmith apps list`)", nameOrID, appScopeSearchedIn(scope))
+		return nil, notFoundf("custom app %s not found %s (run `langsmith apps list`)", nameOrID, appScopeSearchedIn(scope))
 	}
 
 	// Nearest scope wins.
@@ -146,7 +146,7 @@ func resolveCustomAppInScope(ctx context.Context, c *client.Client, nameOrID, sc
 			}
 		}
 	}
-	return nil, fmt.Errorf("no custom app named %q %s (run `langsmith apps list`)", nameOrID, appScopeSearchedIn(scope))
+	return nil, notFoundf("no custom app named %q %s (run `langsmith apps list`)", nameOrID, appScopeSearchedIn(scope))
 }
 
 // appScopeSearchOrder lists tiers, nearest first.
@@ -189,7 +189,7 @@ func customAppSourceError(err error, name string) error {
 	case client.IsNotFound(err) && strings.Contains(msg, "no source archive"):
 		return fmt.Errorf("custom app %q has no stored source — it was pushed before source upload existed. Ask whoever owns it to run `langsmith apps push` again, then retry", name)
 	case client.IsNotFound(err):
-		return fmt.Errorf("custom app %q not found (run `langsmith apps list`)", name)
+		return notFoundf("custom app %q not found (run `langsmith apps list`)", name)
 	case client.IsBadRequest(err):
 		return fmt.Errorf("the server rejected this app ID: %w", err)
 	default:

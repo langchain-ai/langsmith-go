@@ -13,6 +13,7 @@ import (
 	"github.com/langchain-ai/langsmith-go/cli/internal/cmd/api"
 	"github.com/langchain-ai/langsmith-go/cli/internal/cmdutil"
 	lsconfig "github.com/langchain-ai/langsmith-go/cli/internal/config"
+	"github.com/langchain-ai/langsmith-go/cli/internal/exitcode"
 	"github.com/langchain-ai/langsmith-go/cli/internal/output"
 	"github.com/langchain-ai/langsmith-go/cli/internal/usage"
 	"github.com/spf13/cobra"
@@ -75,7 +76,21 @@ Coding agents: run 'langsmith docs agents' for task-by-task usage.
 	  --format json    Machine-readable JSON for agents and scripts. From 1.0.0 it is
 	                   the default when stdout is piped or redirected.
 	  --json           Shorthand for --format json.
-	  --jq EXPR        Filter JSON output with a jq expression (implies --format json).`,
+	  --jq EXPR        Filter JSON output with a jq expression (implies --format json).
+
+Exit codes (every failure exits 1 until 1.0.0; set LANGSMITH_EXIT_CODES=detailed
+to use these now):
+  0  success
+  1  bad input (fix it before retrying), or a failure not listed below
+  2  missing or rejected credentials (HTTP 401, 403)
+  3  not found (HTTP 404, 410)
+  4  conflict or plan limit (HTTP 409, 402); don't retry unchanged
+  5  a --wait timed out; the operation may still finish, so check its
+     status instead of starting it again
+  6  server error or timeout (HTTP 5xx, 408), or the API could not be
+     reached; retry reads with backoff, and check whether a write took
+     effect before repeating it
+  7  rate limited (HTTP 429); retry with backoff`,
 		SilenceUsage:  true,
 		SilenceErrors: true,
 		Version:       displayVersion,
@@ -273,7 +288,7 @@ func showFeedbackHint(cmd *cobra.Command) {
 func MustGetClient() *client.Client {
 	c, err := getClient()
 	if err != nil {
-		ExitError(err.Error())
+		ExitErrorf("%v", err)
 	}
 	return c
 }
@@ -342,7 +357,7 @@ func resolveAuthenticatedOptions(flags globalFlags) (client.Options, error) {
 		return opts, err
 	}
 	if !opts.HasAuth() {
-		return opts, fmt.Errorf("not authenticated; run 'langsmith auth login', set LANGSMITH_API_KEY, or pass --api-key")
+		return opts, exitcode.WithCode(fmt.Errorf("not authenticated; run 'langsmith auth login', set LANGSMITH_API_KEY, or pass --api-key"), exitcode.Auth)
 	}
 	return opts, nil
 }
@@ -432,13 +447,44 @@ func resolveClientOptionsFor(flags globalFlags) (client.Options, error) {
 	return opts, nil
 }
 
-// ExitError prints an error to stderr and exits.
+// ExitError prints an error to stderr and exits with exitcode.Input.
 func ExitError(msg string) {
-	fmt.Fprintln(os.Stderr, msg)
-	os.Exit(1)
+	exitWithCode(msg, exitcode.Input)
 }
 
-// ExitErrorf prints a formatted error to stderr and exits.
+// ExitErrorf prints a formatted error to stderr and exits. The exit code comes
+// from the first error among args (see ExitCode), or is exitcode.Input when
+// there is none.
 func ExitErrorf(format string, args ...any) {
-	ExitError(fmt.Sprintf(format, args...))
+	msg := fmt.Sprintf(format, args...)
+	for _, arg := range args {
+		if err, ok := arg.(error); ok {
+			fmt.Fprintln(os.Stderr, msg)
+			exitProcess(ExitCode(err))
+			return
+		}
+	}
+	exitWithCode(msg, exitcode.Input)
+}
+
+// notFoundf returns an error for a LangSmith resource that a lookup did not
+// find, which exits with exitcode.NotFound.
+func notFoundf(format string, args ...any) error {
+	return exitcode.WithCode(fmt.Errorf(format, args...), exitcode.NotFound)
+}
+
+// exitNotFoundf prints a not-found message and exits with the code for
+// exitcode.NotFound.
+func exitNotFoundf(format string, args ...any) {
+	err := notFoundf(format, args...)
+	fmt.Fprintln(os.Stderr, err)
+	exitProcess(ExitCode(err))
+}
+
+// exitProcess ends the process. Tests replace it.
+var exitProcess = os.Exit
+
+func exitWithCode(msg string, code int) {
+	fmt.Fprintln(os.Stderr, msg)
+	exitProcess(code)
 }

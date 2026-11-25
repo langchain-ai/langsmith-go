@@ -1,6 +1,7 @@
 package cmd
 
 import (
+	"context"
 	"encoding/json"
 	"net/http"
 	"os"
@@ -10,6 +11,7 @@ import (
 	"time"
 
 	langsmith "github.com/langchain-ai/langsmith-go"
+	"github.com/langchain-ai/langsmith-go/cli/internal/exitcode"
 )
 
 // ==================== Command structure ====================
@@ -417,6 +419,67 @@ func TestInsightsCreateCmd_WaitsForSuccess(t *testing.T) {
 	}
 }
 
+func TestInsightsCreateCmd_WaitTimeoutStillPrintsReportIDs(t *testing.T) {
+	const projectID = "0199321d-e2b4-7000-8000-000000000001"
+	const configID = "0199321d-e2b4-7000-8000-000000000002"
+	const insightID = "0199321d-e2b4-7000-8000-000000000003"
+	configPath := filepath.Join(t.TempDir(), "insights.json")
+	if err := os.WriteFile(configPath, []byte(`{"name":"Reliability review","summary_prompt":"Diagnose {{run.error}}"}`), 0o600); err != nil {
+		t.Fatal(err)
+	}
+	server := newTestServer(t, func(w http.ResponseWriter, r *http.Request) {
+		w.Header().Set("Content-Type", "application/json")
+		switch {
+		case r.Method == http.MethodPost && strings.HasSuffix(r.URL.Path, "/insights/configs"):
+			_ = json.NewEncoder(w).Encode(map[string]any{
+				"id": configID, "name": "Reliability review", "description": nil,
+				"config": map[string]any{"name": "Reliability review", "summary_prompt": "Diagnose {{run.error}}", "model": "openai"},
+			})
+		case r.Method == http.MethodPost && strings.HasSuffix(r.URL.Path, "/insights"):
+			_ = json.NewEncoder(w).Encode(map[string]any{"id": insightID, "name": "Reliability review", "status": "pending", "error": nil})
+		case r.Method == http.MethodGet && strings.HasSuffix(r.URL.Path, "/insights/"+insightID):
+			_ = json.NewEncoder(w).Encode(map[string]any{"id": insightID, "name": "Reliability review", "status": "running", "error": nil})
+		default:
+			http.NotFound(w, r)
+		}
+	})
+	defer setupTestEnv(t, server.URL)()
+	flagOutputFormat = "json"
+	oldInterval, oldTimeout := insightWaitInterval, insightWaitTimeout
+	insightWaitInterval, insightWaitTimeout = time.Millisecond, 50*time.Millisecond
+	t.Cleanup(func() { insightWaitInterval, insightWaitTimeout = oldInterval, oldTimeout })
+
+	// A file holding an earlier result keeps it; the unfinished report goes
+	// to stdout.
+	outputPath := filepath.Join(t.TempDir(), "latest.json")
+	if err := os.WriteFile(outputPath, []byte(`{"status":"success"}`), 0o600); err != nil {
+		t.Fatal(err)
+	}
+	cmd := newInsightsCreateCmd()
+	cmd.SetArgs([]string{"--project-id", projectID, "--config", configPath, "--wait", "--output", outputPath})
+	var runErr error
+	out := captureStdout(t, func() { runErr = cmd.Execute() })
+	if exitcode.For(runErr) != exitcode.Timeout {
+		t.Fatalf("expected a timeout error, got %v", runErr)
+	}
+	if !strings.Contains(runErr.Error(), "langsmith insights get "+insightID+" --project-id "+projectID) {
+		t.Fatalf("expected the error to name the inspection command, got %v", runErr)
+	}
+	var result map[string]any
+	if err := json.Unmarshal([]byte(out), &result); err != nil {
+		t.Fatalf("parse output %q: %v", out, err)
+	}
+	if result["id"] != insightID || result["config_id"] != configID || result["project_id"] != projectID {
+		t.Fatalf("expected report, config and project IDs in output, got %#v", result)
+	}
+	if result["status"] != "running" {
+		t.Fatalf("expected the last polled status, got %#v", result["status"])
+	}
+	if saved, _ := os.ReadFile(outputPath); string(saved) != `{"status":"success"}` {
+		t.Fatalf("expected --output to keep the earlier result, got %s", saved)
+	}
+}
+
 func TestWaitForInsightPollsAndReturnsJobError(t *testing.T) {
 	const projectID = "0199321d-e2b4-7000-8000-000000000001"
 	const insightID = "0199321d-e2b4-7000-8000-000000000003"
@@ -445,6 +508,25 @@ func TestWaitForInsightPollsAndReturnsJobError(t *testing.T) {
 	}
 	if getCalls != 2 {
 		t.Fatalf("expected two status requests, got %d", getCalls)
+	}
+}
+
+func TestWaitForInsightTimesOutDuringARequest(t *testing.T) {
+	const projectID = "0199321d-e2b4-7000-8000-000000000001"
+	const insightID = "0199321d-e2b4-7000-8000-000000000003"
+	server := newTestServer(t, func(w http.ResponseWriter, r *http.Request) {
+		<-r.Context().Done()
+	})
+	defer setupTestEnv(t, server.URL)()
+	c, err := getClient()
+	if err != nil {
+		t.Fatal(err)
+	}
+	ctx, cancel := context.WithTimeout(t.Context(), 50*time.Millisecond)
+	defer cancel()
+	_, err = waitForInsight(ctx, c.SDK, projectID, insightID, time.Millisecond)
+	if got := exitcode.For(err); got != exitcode.Timeout {
+		t.Fatalf("exit code = %d, want %d (err %v)", got, exitcode.Timeout, err)
 	}
 }
 

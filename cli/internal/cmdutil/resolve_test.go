@@ -13,6 +13,7 @@ import (
 	"testing"
 	"time"
 
+	"github.com/langchain-ai/langsmith-go/cli/internal/exitcode"
 	"github.com/spf13/cobra"
 	"github.com/stretchr/testify/require"
 )
@@ -161,6 +162,7 @@ func TestGetClient_MissingKey(t *testing.T) {
 	}
 	// "langsmith login" is not a command; the OAuth flow lives under "auth".
 	require.Contains(t, err.Error(), "langsmith auth login")
+	require.Equal(t, exitcode.Auth, exitcode.For(err))
 }
 
 func TestGetClient_ProfileBearer(t *testing.T) {

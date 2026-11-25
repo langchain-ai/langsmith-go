@@ -278,7 +278,7 @@ func getRule(ctx context.Context, c *client.Client, id string) (*langsmith.Rule,
 			return &rules[i], nil
 		}
 	}
-	return nil, fmt.Errorf("evaluator rule %s not found (run `langsmith evaluators rule list`)", id)
+	return nil, notFoundf("evaluator rule %s not found (run `langsmith evaluators rule list`)", id)
 }
 
 func findRuleByName(ctx context.Context, c *client.Client, name, project, projectID, dataset string) (*langsmith.Rule, error) {
@@ -297,7 +297,7 @@ func findRuleByName(ctx context.Context, c *client.Client, name, project, projec
 	case 1:
 		return &matches[0], nil
 	case 0:
-		return nil, fmt.Errorf("no evaluator rule named %q on that target", name)
+		return nil, notFoundf("no evaluator rule named %q on that target", name)
 	default:
 		ids := make([]string, 0, len(matches))
 		for _, r := range matches {
