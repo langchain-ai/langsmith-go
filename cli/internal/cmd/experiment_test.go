@@ -11,7 +11,7 @@ import (
 
 func TestExperimentCmd_Subcommands(t *testing.T) {
 	cmd := newExperimentCmd()
-	expected := map[string]bool{"list": false, "get": false}
+	expected := map[string]bool{"list": false, "get": false, "compare": false}
 	for _, sub := range cmd.Commands() {
 		if _, ok := expected[sub.Name()]; ok {
 			expected[sub.Name()] = true
@@ -33,8 +33,8 @@ func TestExperimentCmd_UseField(t *testing.T) {
 
 func TestExperimentCmd_SubcommandCount(t *testing.T) {
 	cmd := newExperimentCmd()
-	if got := len(cmd.Commands()); got != 2 {
-		t.Errorf("expected 2 subcommands, got %d", got)
+	if got := len(cmd.Commands()); got != 3 {
+		t.Errorf("expected 3 subcommands, got %d", got)
 	}
 }
 

@@ -3,11 +3,13 @@ package cmd
 import (
 	"context"
 	"encoding/json"
+	"fmt"
 	"strconv"
 	"strings"
 
 	"github.com/google/uuid"
 	langsmith "github.com/langchain-ai/langsmith-go"
+	"github.com/langchain-ai/langsmith-go/cli/internal/client"
 	"github.com/langchain-ai/langsmith-go/cli/internal/output"
 	"github.com/spf13/cobra"
 )
@@ -28,11 +30,13 @@ List results are paginated and return at most 20 experiments by default
 Examples:
   langsmith experiments list
   langsmith experiments list --dataset my-eval-dataset
-  langsmith experiments get my-experiment-name`,
+  langsmith experiments get my-experiment-name
+  langsmith experiments compare baseline-experiment candidate-experiment`,
 	}
 
 	cmd.AddCommand(newExperimentListCmd())
 	cmd.AddCommand(newExperimentGetCmd())
+	cmd.AddCommand(newExperimentCompareCmd())
 	return cmd
 }
 
@@ -140,39 +144,12 @@ func newExperimentGetCmd() *cobra.Command {
 			c := MustGetClient()
 			ctx := context.Background()
 
-			var data map[string]any
-			// Try UUID first (direct GET), fall back to name search
-			if _, err := uuid.Parse(nameOrID); err == nil {
-				session, err := c.SDK.Sessions.GetV2(ctx, nameOrID, langsmith.SessionGetV2Params{
-					IncludeStats: langsmith.F(true),
-				})
-				if err != nil {
-					ExitErrorf("fetching experiment by ID: %v", err)
-				}
-				var totalCost any
-				if !session.JSON.TotalCost.IsNull() {
-					totalCost = session.TotalCost
-				}
-				data = experimentData(session.ID, session.Name, lowerFeedbackStatTypes(session.JSON.FeedbackStats.Raw()),
-					session.LatencyP50, session.TotalTokens, session.ErrorRate, session.RunCount, totalCost)
-			} else {
-				params := langsmith.SessionListParams{
-					Name:          langsmith.F(nameOrID),
-					Limit:         langsmith.F(int64(1)),
-					ReferenceFree: langsmith.F(false),
-					IncludeStats:  langsmith.F(true),
-				}
-				resp, err := c.SDK.Sessions.List(ctx, params)
-				if err != nil {
-					ExitErrorf("fetching experiment: %v", err)
-				}
-				if len(resp.Items) == 0 {
-					ExitErrorf("experiment not found: %s (run `langsmith experiments list`)", nameOrID)
-				}
-				p := resp.Items[0]
-				data = experimentData(p.ID, p.Name, p.FeedbackStats,
-					p.LatencyP50, p.TotalTokens, p.ErrorRate, p.RunCount, projectTotalCost(p))
+			exp, err := fetchExperiment(ctx, c, nameOrID)
+			if err != nil {
+				ExitErrorf("%v", err)
 			}
+			data := experimentData(exp.ID, exp.Name, exp.FeedbackStats,
+				exp.LatencyP50, exp.TotalTokens, exp.ErrorRate, exp.RunCount, exp.TotalCost)
 
 			fmt_ := GetFormat()
 			if fmt_ == "pretty" {
@@ -189,6 +166,87 @@ func newExperimentGetCmd() *cobra.Command {
 
 	cmd.Flags().StringVarP(&outputFile, "output", "o", "", "Write JSON output to a file")
 	return cmd
+}
+
+// experimentSummary holds an experiment's aggregate stats.
+type experimentSummary struct {
+	ID            string
+	Name          string
+	DatasetID     string
+	FeedbackStats map[string]any
+	LatencyP50    float64
+	HasLatencyP50 bool // false when the API returned null for latency_p50
+	LatencyP99    any  // float64, or nil when the API returned null
+	TotalTokens   int64
+	HasTokens     bool // false when the API returned no total_tokens
+	ErrorRate     float64
+	HasErrorRate  bool // false when the API returned no error_rate
+	RunCount      int64
+	TotalCost     any // float64, or nil when the API returned null
+}
+
+// fetchExperiment reads an experiment and its stats by ID, or by exact name
+// when nameOrID is not a UUID.
+func fetchExperiment(ctx context.Context, c *client.Client, nameOrID string) (experimentSummary, error) {
+	if _, err := uuid.Parse(nameOrID); err == nil {
+		session, err := c.SDK.Sessions.GetV2(ctx, nameOrID, langsmith.SessionGetV2Params{
+			IncludeStats: langsmith.F(true),
+		})
+		if err != nil {
+			return experimentSummary{}, fmt.Errorf("fetching experiment by ID: %w", err)
+		}
+		exp := experimentSummary{
+			ID:            session.ID,
+			Name:          session.Name,
+			DatasetID:     session.ReferenceDatasetID,
+			FeedbackStats: lowerFeedbackStatTypes(session.JSON.FeedbackStats.Raw()),
+			LatencyP50:    session.LatencyP50,
+			HasLatencyP50: !session.JSON.LatencyP50.IsNull() && !session.JSON.LatencyP50.IsMissing(),
+			TotalTokens:   session.TotalTokens,
+			HasTokens:     !session.JSON.TotalTokens.IsNull() && !session.JSON.TotalTokens.IsMissing(),
+			ErrorRate:     session.ErrorRate,
+			HasErrorRate:  !session.JSON.ErrorRate.IsNull() && !session.JSON.ErrorRate.IsMissing(),
+			RunCount:      session.RunCount,
+		}
+		if !session.JSON.LatencyP99.IsNull() && !session.JSON.LatencyP99.IsMissing() {
+			exp.LatencyP99 = session.LatencyP99
+		}
+		if !session.JSON.TotalCost.IsNull() {
+			exp.TotalCost = session.TotalCost
+		}
+		return exp, nil
+	}
+	resp, err := c.SDK.Sessions.List(ctx, langsmith.SessionListParams{
+		Name:          langsmith.F(nameOrID),
+		Limit:         langsmith.F(int64(1)),
+		ReferenceFree: langsmith.F(false),
+		IncludeStats:  langsmith.F(true),
+	})
+	if err != nil {
+		return experimentSummary{}, fmt.Errorf("fetching experiment: %w", err)
+	}
+	if len(resp.Items) == 0 {
+		return experimentSummary{}, fmt.Errorf("experiment not found: %s (run `langsmith experiments list`)", nameOrID)
+	}
+	p := resp.Items[0]
+	exp := experimentSummary{
+		ID:            p.ID,
+		Name:          p.Name,
+		DatasetID:     p.ReferenceDatasetID,
+		FeedbackStats: p.FeedbackStats,
+		LatencyP50:    p.LatencyP50,
+		HasLatencyP50: !p.JSON.LatencyP50.IsNull() && !p.JSON.LatencyP50.IsMissing(),
+		TotalTokens:   p.TotalTokens,
+		HasTokens:     !p.JSON.TotalTokens.IsNull() && !p.JSON.TotalTokens.IsMissing(),
+		ErrorRate:     p.ErrorRate,
+		HasErrorRate:  !p.JSON.ErrorRate.IsNull() && !p.JSON.ErrorRate.IsMissing(),
+		RunCount:      p.RunCount,
+		TotalCost:     projectTotalCost(p),
+	}
+	if !p.JSON.LatencyP99.IsNull() && !p.JSON.LatencyP99.IsMissing() {
+		exp.LatencyP99 = p.LatencyP99
+	}
+	return exp, nil
 }
 
 func experimentData(id, name string, feedbackStats map[string]any, latency float64, tokens int64, errorRate float64, runCount int64, totalCost any) map[string]any {

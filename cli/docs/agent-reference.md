@@ -416,7 +416,7 @@ Each of `--inputs`, `--outputs` and `--metadata` replaces the whole field; omit 
 
 ## Experiments
 
-An experiment is one evaluation run over a dataset. List the experiments on a dataset, then read one for its per-example results and feedback scores.
+An experiment is one evaluation run over a dataset. List the experiments on a dataset, then read one for its per-example results and feedback scores. To choose between two experiments on the same dataset, compare them: it gives each feedback score, cost, latency, tokens and error rate in both with the change, and the examples that got worse.
 
 ### `langsmith experiments list`
 
@@ -445,6 +445,21 @@ Usage: `langsmith experiments get NAME_OR_ID [flags]`
 
 ```bash
 langsmith experiments get my-experiment -o experiment.json
+```
+
+### `langsmith experiments compare`
+
+Compare two experiments on the same dataset
+
+Usage: `langsmith experiments compare BASELINE CANDIDATE [flags]`
+
+| Flag | Description |
+|---|---|
+| `-n, --limit int` | Maximum number of regressed examples to list (0 for all) |
+| `-o, --output string` | Write JSON output to a file |
+
+```bash
+langsmith experiments compare baseline-exp candidate-exp --format json
 ```
 
 ## Prompts
@@ -842,6 +857,7 @@ Every command in this version of the CLI. Run `langsmith <command> --help` for i
 | `langsmith examples retrieve` | Get a specific example. |
 | `langsmith examples retrieve-count` | Count the examples that match the filters. |
 | `langsmith examples update` | Update a specific example. |
+| `langsmith experiments compare` | Compare two experiments on the same dataset |
 | `langsmith experiments get` | Get detailed results for a specific experiment |
 | `langsmith experiments list` | List experiments, optionally filtered by dataset (default: 20) |
 | `langsmith feedback configs delete` | Soft delete one feedback config by id, or every config of a feedback key. *(confirms)* |

@@ -145,7 +145,7 @@ sections:
         note: Each of `--inputs`, `--outputs` and `--metadata` replaces the whole field; omit a flag to keep its current value.
   - title: Experiments
     intro: |
-      An experiment is one evaluation run over a dataset. List the experiments on a dataset, then read one for its per-example results and feedback scores.
+      An experiment is one evaluation run over a dataset. List the experiments on a dataset, then read one for its per-example results and feedback scores. To choose between two experiments on the same dataset, compare them: it gives each feedback score, cost, latency, tokens and error rate in both with the change, and the examples that got worse.
     commands:
       - path: experiments list
         flags: [--dataset, --limit]
@@ -155,6 +155,10 @@ sections:
         flags: [--output]
         examples:
           - langsmith experiments get my-experiment -o experiment.json
+      - path: experiments compare
+        flags: [--limit, --output]
+        examples:
+          - langsmith experiments compare baseline-exp candidate-exp --format json
   - title: Prompts
     intro: |
       Prompts live in Prompt Hub repos named `OWNER/REPO`. Each push creates a commit; tags point at commits.
