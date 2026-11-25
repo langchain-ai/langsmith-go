@@ -814,3 +814,8 @@ func TestResolveClientOptions_APIURLFlagBeatsProfileEndpoint(t *testing.T) {
 	require.NoError(t, err)
 	require.Equal(t, "https://flag.example.com", opts.APIURL)
 }
+
+func TestGlobalFlags_SelectionArgsQuotesShellWords(t *testing.T) {
+	got := globalFlags{Profile: "prod cache", APIURL: "https://api.example.com", WorkspaceID: "ws-1", APIKey: "secret"}.selectionArgs()
+	require.Equal(t, " --profile 'prod cache' --api-url https://api.example.com --workspace ws-1", got)
+}

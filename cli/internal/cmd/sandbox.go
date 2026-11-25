@@ -19,8 +19,8 @@ Common workflows:
   # Build a snapshot from a Docker image
   langsmith sandboxes snapshot build my-snap --docker-image ubuntu:24.04
 
-  # Create a sandbox from the snapshot
-  langsmith sandboxes create my-vm --snapshot-id <id>
+  # Create a sandbox from the snapshot and wait until it is ready
+  langsmith sandboxes create my-vm --snapshot-id <id> --wait
 
   # Run a command inside the sandbox
   langsmith sandboxes exec my-vm -- uname -a

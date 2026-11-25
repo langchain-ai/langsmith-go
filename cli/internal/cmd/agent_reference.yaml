@@ -230,3 +230,19 @@ sections:
         flags: [--queue-id, --item]
       - path: annotation-queues populate
         flags: [--queue-id, --session-id]
+  - title: Sandboxes
+    intro: |
+      Sandboxes are VMs you can run commands in (experimental). `create` returns before the sandbox is ready unless you pass `--wait`; `start` waits by default. Both exit non-zero if the sandbox fails or is not ready within `--timeout` (default 5m), and the error names the command to check next.
+    commands:
+      - path: sandboxes create
+        flags: [--snapshot, --wait, --timeout]
+        examples:
+          - langsmith sandboxes create my-vm --snapshot my-snap --wait --format json
+      - path: sandboxes start
+        flags: [--wait, --timeout]
+        examples:
+          - langsmith sandboxes start my-vm --timeout 10m --format json
+      - path: sandboxes get
+        examples:
+          - langsmith sandboxes get my-vm --format json
+      - path: sandboxes exec

@@ -309,6 +309,31 @@ func currentGlobalFlags() globalFlags {
 	return globalFlags{APIKey: flagAPIKey, APIURL: flagAPIURL, Profile: flagProfile, WorkspaceID: flagWorkspaceID}
 }
 
+// selectionArgs returns the flags that chose the profile, endpoint and
+// workspace, formatted to append to a suggested follow-up command so it acts
+// on the same workspace. The API key is never included.
+func (f globalFlags) selectionArgs() string {
+	var b strings.Builder
+	for _, kv := range [][2]string{{"--profile", f.Profile}, {"--api-url", f.APIURL}, {"--workspace", f.WorkspaceID}} {
+		if kv[1] != "" {
+			fmt.Fprintf(&b, " %s %s", kv[0], shellQuoteIfNeeded(kv[1]))
+		}
+	}
+	return b.String()
+}
+
+// shellQuoteIfNeeded leaves plain values bare so suggested commands stay
+// readable, and single-quotes anything the shell would split or expand.
+func shellQuoteIfNeeded(s string) string {
+	plain := strings.IndexFunc(s, func(r rune) bool {
+		return !(r >= 'a' && r <= 'z' || r >= 'A' && r <= 'Z' || r >= '0' && r <= '9' || strings.ContainsRune("-_.:/@=+,%", r))
+	}) == -1
+	if plain {
+		return s
+	}
+	return shellQuote(s)
+}
+
 // resolveAuthenticatedOptions resolves the client options and fails when they
 // carry no credentials.
 func resolveAuthenticatedOptions(flags globalFlags) (client.Options, error) {

@@ -2,6 +2,7 @@ package cmd
 
 import (
 	"context"
+	"errors"
 	"fmt"
 	"os"
 	"slices"
@@ -16,28 +17,103 @@ import (
 	"github.com/spf13/cobra"
 )
 
-const defaultBoxPollInterval = 2 * time.Second
+const (
+	defaultBoxWaitTimeout  = 5 * time.Minute
+	boxPollInitialInterval = 500 * time.Millisecond
+	boxPollMaxInterval     = 5 * time.Second
+)
 
-func waitForBoxReady(ctx context.Context, c *client.Client, name string) (*langsmith.SandboxStatusResponse, error) {
-	for {
-		resp, err := c.SDK.Sandboxes.Boxes.GetStatus(ctx, name)
-		if err != nil {
-			return nil, err
+// boxWaitClock is the time source for waitForBoxReady; tests swap it for a fake.
+var boxWaitClock = struct {
+	now   func() time.Time
+	sleep func(ctx context.Context, d time.Duration) error
+}{
+	now: time.Now,
+	sleep: func(ctx context.Context, d time.Duration) error {
+		timer := time.NewTimer(d)
+		defer timer.Stop()
+		select {
+		case <-ctx.Done():
+			return ctx.Err()
+		case <-timer.C:
+			return nil
 		}
+	},
+}
+
+// waitForBoxReady polls the box status with exponential backoff until it is
+// ready or failed. A timeout of 0 waits until ctx is done. The timeout also
+// bounds each status request, so a slow response can't outlast it.
+func waitForBoxReady(ctx context.Context, c *client.Client, name string, timeout time.Duration) (*langsmith.SandboxStatusResponse, error) {
+	var deadline time.Time
+	pollCtx := ctx
+	if timeout > 0 {
+		deadline = boxWaitClock.now().Add(timeout)
+		var cancel context.CancelFunc
+		pollCtx, cancel = context.WithTimeout(ctx, timeout)
+		defer cancel()
+	}
+	timedOut := func(last string) error {
+		if last == "" {
+			last = "unknown"
+		}
+		return fmt.Errorf(
+			"timed out after %s waiting for sandbox %s to be ready (last status: %s); "+
+				"it may still be starting: check with `langsmith sandboxes get %s --format json`, "+
+				"or rerun with a longer --timeout",
+			timeout, name, last, name,
+		)
+	}
+	lastStatus := ""
+	interval := boxPollInitialInterval
+	for {
+		resp, err := c.SDK.Sandboxes.Boxes.GetStatus(pollCtx, name)
+		if err != nil {
+			if ctx.Err() == nil && errors.Is(pollCtx.Err(), context.DeadlineExceeded) {
+				return nil, timedOut(lastStatus)
+			}
+			return nil, fmt.Errorf("checking sandbox status: %w", err)
+		}
+		lastStatus = resp.Status
 		switch resp.Status {
 		case "ready":
 			return resp, nil
 		case "failed":
-			return resp, fmt.Errorf("sandbox entered %s state", resp.Status)
+			msg := ""
+			if resp.StatusMessage != "" {
+				msg = ": " + resp.StatusMessage
+			}
+			return resp, fmt.Errorf("sandbox %s entered failed state%s; inspect it with `langsmith sandboxes get %s --format json`", name, msg, name)
 		}
-		timer := time.NewTimer(defaultBoxPollInterval)
-		select {
-		case <-ctx.Done():
-			timer.Stop()
-			return nil, ctx.Err()
-		case <-timer.C:
+		wait := interval
+		if !deadline.IsZero() {
+			remaining := deadline.Sub(boxWaitClock.now())
+			if remaining <= 0 {
+				return resp, timedOut(resp.Status)
+			}
+			wait = min(wait, remaining)
 		}
+		if err := boxWaitClock.sleep(pollCtx, wait); err != nil {
+			if ctx.Err() == nil && errors.Is(err, context.DeadlineExceeded) {
+				return resp, timedOut(resp.Status)
+			}
+			return nil, err
+		}
+		interval = min(interval*2, boxPollMaxInterval)
 	}
+}
+
+func validateBoxWaitFlags(cmd *cobra.Command, waiting bool, timeout time.Duration) error {
+	if !cmd.Flags().Changed("timeout") {
+		return nil
+	}
+	if !waiting {
+		return fmt.Errorf("--timeout only applies when waiting (--wait)")
+	}
+	if timeout <= 0 {
+		return fmt.Errorf("--timeout must be greater than 0 (got %s)", timeout)
+	}
+	return nil
 }
 
 type sandboxCreateInput struct {
@@ -69,6 +145,7 @@ type sandboxCreateInput struct {
 	RunConfig      sandboxRunConfigInput
 
 	Wait            bool
+	Timeout         time.Duration
 	Console         bool
 	Shell           string
 	ForwardSSHAgent bool
@@ -343,6 +420,11 @@ At most 4. A volume has one read-write attachment or any number of read-only one
 --mount-config accepts inline JSON or @file.json describing bucket, Git and
 Context Hub mounts.
 
+By default create returns as soon as the sandbox is accepted, usually before it
+is ready. --wait polls its status until it is ready, then prints it; if it fails
+or is not ready within --timeout (default 5m), the command exits non-zero.
+--console always waits.
+
 Examples:
   langsmith sandboxes create
   langsmith sandboxes create my-vm
@@ -350,6 +432,8 @@ Examples:
   langsmith sandboxes create my-vm --snapshot-id <id>
   langsmith sandboxes create my-vm --snapshot-id <id> --rootfs-capacity 8gb
   langsmith sandboxes create my-vm --snapshot-id <id> --proxy-config @proxy.json
+  langsmith sandboxes create my-vm --snapshot-id <id> --wait
+  langsmith sandboxes create my-vm --snapshot-id <id> --wait --timeout 10m
   langsmith sandboxes create my-vm --snapshot-id <id> --console
   langsmith sandboxes create my-vm --delegate-permission tracer_sessions:read
   langsmith sandboxes create my-vm --preserve-memory-on-stop --idle-ttl-seconds 1800
@@ -381,6 +465,7 @@ Examples:
 		cmd.Flags().StringArrayVar(&in.Volumes, "volume", nil, "Attach a volume: VOLUME:/mount/path[:ro] (beta, repeatable, at most 4)")
 		addSandboxRunConfigFlags(cmd, &in.RunConfig, "")
 		cmd.Flags().BoolVar(&in.Wait, "wait", in.Wait, "Wait until the sandbox is ready before printing it")
+		cmd.Flags().DurationVar(&in.Timeout, "timeout", defaultBoxWaitTimeout, "Maximum time to wait with --wait or --console (e.g. 90s, 10m)")
 		cmd.Flags().BoolVar(&in.Console, "console", in.Console, "Open an interactive console once the sandbox is ready")
 		cmd.Flags().StringVar(&in.Shell, "shell", in.Shell, "Shell to use for --console (default: sandbox default, usually /bin/bash)")
 		cmd.Flags().BoolVar(&in.ForwardSSHAgent, "forward-ssh-agent", in.ForwardSSHAgent, "Forward the local SSH agent (SSH_AUTH_SOCK) into the --console session")
@@ -403,6 +488,9 @@ Examples:
 		if in.Snapshot != "" && in.SnapshotID != "" {
 			return nil, fmt.Errorf("use either --snapshot or --snapshot-id, not both")
 		}
+		if err := validateBoxWaitFlags(cmd, in.Wait || in.Console, in.Timeout); err != nil {
+			return nil, err
+		}
 
 		in.PreserveMemoryOnStopSet = cmd.Flags().Changed("preserve-memory-on-stop")
 		if in.TagValueIDs, err = withResourceTags(ctx, c, in.TagValueIDs, in.ResourceTags); err != nil {
@@ -417,22 +505,24 @@ Examples:
 			return nil, fmt.Errorf("creating sandbox: %w", err)
 		}
 
+		if !in.Console && !in.Wait {
+			return nil, structured.Render(cmd, resp, sandboxBoxDetailRender)
+		}
+
+		if status, err := waitForBoxReady(ctx, c, resp.Name, in.Timeout); err != nil {
+			// A failed box keeps its name, so retrying create with the same
+			// name conflicts until the box is deleted.
+			if status != nil && status.Status == "failed" {
+				return nil, fmt.Errorf("%w; it still holds its name, so delete it with `langsmith sandboxes delete %s%s` before creating it again", err, resp.Name, currentGlobalFlags().selectionArgs())
+			}
+			return nil, err
+		}
 		if !in.Console {
-			if !in.Wait {
-				return nil, structured.Render(cmd, resp, sandboxBoxDetailRender)
-			}
-			if _, err := waitForBoxReady(ctx, c, resp.Name); err != nil {
-				return nil, err
-			}
 			ready, err := c.SDK.Sandboxes.Boxes.Get(ctx, resp.Name)
 			if err != nil {
 				return nil, fmt.Errorf("getting sandbox: %w", err)
 			}
 			return nil, structured.Render(cmd, ready, sandboxBoxDetailRender)
-		}
-
-		if _, err := waitForBoxReady(ctx, c, resp.Name); err != nil {
-			return nil, err
 		}
 		fmt.Fprintf(os.Stderr, "Sandbox %s ready, opening console...\n", resp.Name)
 		return nil, runConsole(resp.Name, in.Shell, in.ForwardSSHAgent, in.Env)
@@ -936,11 +1026,35 @@ Examples:
 	},
 }
 
-var sandboxStartCommand = structured.Command[struct{}]{
+type sandboxStartInput struct {
+	Wait    bool
+	Timeout time.Duration
+}
+
+var sandboxStartCommand = structured.Command[*sandboxStartInput]{
 	Use:   "start <name>",
 	Short: "Start a stopped sandbox",
-	Args:  cobra.ExactArgs(1),
-	Action: func(ctx context.Context, cmd *cobra.Command, in struct{}, args []string) (any, error) {
+	Long: `Start a stopped sandbox.
+
+By default start waits until the sandbox is ready. If it fails or is not ready
+within --timeout (default 5m), the command exits non-zero. --wait=false returns
+as soon as the start is accepted.
+
+Examples:
+  langsmith sandboxes start my-vm
+  langsmith sandboxes start my-vm --timeout 10m
+  langsmith sandboxes start my-vm --wait=false`,
+	Args: cobra.ExactArgs(1),
+	Input: func(cmd *cobra.Command) *sandboxStartInput {
+		in := &sandboxStartInput{}
+		cmd.Flags().BoolVar(&in.Wait, "wait", true, "Wait until the sandbox is ready before returning")
+		cmd.Flags().DurationVar(&in.Timeout, "timeout", defaultBoxWaitTimeout, "Maximum time to wait (e.g. 90s, 10m)")
+		return in
+	},
+	Action: func(ctx context.Context, cmd *cobra.Command, in *sandboxStartInput, args []string) (any, error) {
+		if err := validateBoxWaitFlags(cmd, in.Wait, in.Timeout); err != nil {
+			return nil, err
+		}
 		c, err := cmdutil.GetClient(cmd)
 		if err != nil {
 			return nil, err
@@ -950,7 +1064,10 @@ var sandboxStartCommand = structured.Command[struct{}]{
 			return nil, fmt.Errorf("starting sandbox: %w", err)
 		}
 
-		if _, err := waitForBoxReady(ctx, c, args[0]); err != nil {
+		if !in.Wait {
+			return sandboxMessage{Name: args[0], Message: fmt.Sprintf("Sandbox %s starting", args[0])}, nil
+		}
+		if _, err := waitForBoxReady(ctx, c, args[0], in.Timeout); err != nil {
 			return nil, err
 		}
 		return sandboxMessage{Name: args[0], Message: fmt.Sprintf("Sandbox %s started", args[0])}, nil

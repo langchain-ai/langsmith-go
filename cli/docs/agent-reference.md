@@ -715,6 +715,57 @@ Populate annotation queue with runs from an experiment.
 | `--queue-id string` | ID of the annotation queue to add runs to. |
 | `--session-id string` | Experiments whose runs are added to the queue. Each must be an experiment on a dataset. |
 
+## Sandboxes
+
+Sandboxes are VMs you can run commands in (experimental). `create` returns before the sandbox is ready unless you pass `--wait`; `start` waits by default. Both exit non-zero if the sandbox fails or is not ready within `--timeout` (default 5m), and the error names the command to check next.
+
+### `langsmith sandboxes create`
+
+Create a sandbox VM
+
+Usage: `langsmith sandboxes create [name] [flags]`
+
+| Flag | Description |
+|---|---|
+| `--snapshot string` | Snapshot ID or name to boot from |
+| `--wait` | Wait until the sandbox is ready before printing it |
+| `--timeout duration` | Maximum time to wait with --wait or --console (e.g. 90s, 10m) |
+
+```bash
+langsmith sandboxes create my-vm --snapshot my-snap --wait --format json
+```
+
+### `langsmith sandboxes start`
+
+Start a stopped sandbox
+
+Usage: `langsmith sandboxes start <name> [flags]`
+
+| Flag | Description |
+|---|---|
+| `--wait` | Wait until the sandbox is ready before returning |
+| `--timeout duration` | Maximum time to wait (e.g. 90s, 10m) |
+
+```bash
+langsmith sandboxes start my-vm --timeout 10m --format json
+```
+
+### `langsmith sandboxes get`
+
+Get a sandbox by name
+
+Usage: `langsmith sandboxes get <name> [flags]`
+
+```bash
+langsmith sandboxes get my-vm --format json
+```
+
+### `langsmith sandboxes exec`
+
+Execute a command inside a sandbox
+
+Usage: `langsmith sandboxes exec <name> -- <command> [flags]`
+
 ## All commands
 
 Every command in this version of the CLI. Run `langsmith <command> --help` for its flags. Commands marked *confirms* ask before deleting or overwriting data; see [Safety](#safety).
