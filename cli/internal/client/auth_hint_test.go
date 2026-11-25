@@ -13,17 +13,22 @@ import (
 )
 
 func TestAuthHintOption(t *testing.T) {
+	// The API sends the code as a Problem Details extension member; older
+	// servers send it in a plain JSON body.
+	const workspaceProblem = `{"type":"about:blank","title":"Forbidden","status":403,"detail":"This API key is org-scoped and requires workspace specification.","instance":"/api/v1/sessions","error":"org_scoped_key_requires_workspace","message":"This API key is org-scoped and requires workspace specification."}`
 	const workspaceBody = `{"error":"org_scoped_key_requires_workspace","message":"This API key is org-scoped and requires workspace specification."}`
 	tests := []struct {
 		name            string
 		status          int
+		contentType     string
 		body            string
 		expectForbidden bool
 		want            string
 	}{
 		{name: "401", status: http.StatusUnauthorized, want: "rejected these credentials (HTTP 401)"},
 		{name: "403", status: http.StatusForbidden, want: "run `langsmith auth info`"},
-		{name: "403 without workspace", status: http.StatusForbidden, body: workspaceBody, want: "Run `langsmith workspaces list`"},
+		{name: "403 without workspace", status: http.StatusForbidden, contentType: "application/problem+json", body: workspaceProblem, want: "Run `langsmith workspaces list`"},
+		{name: "403 without workspace from an older server", status: http.StatusForbidden, body: workspaceBody, want: "Run `langsmith workspaces list`"},
 		{name: "403 expected", status: http.StatusForbidden, expectForbidden: true},
 		{name: "401 expected", status: http.StatusUnauthorized, expectForbidden: true, want: "rejected these credentials (HTTP 401)"},
 		{name: "404", status: http.StatusNotFound},
@@ -34,8 +39,12 @@ func TestAuthHintOption(t *testing.T) {
 			if body == "" {
 				body = `{"detail":"Invalid token"}`
 			}
+			contentType := tt.contentType
+			if contentType == "" {
+				contentType = "application/json"
+			}
 			ts := httptest.NewServer(http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
-				w.Header().Set("Content-Type", "application/json")
+				w.Header().Set("Content-Type", contentType)
 				w.WriteHeader(tt.status)
 				_, _ = w.Write([]byte(body))
 			}))
