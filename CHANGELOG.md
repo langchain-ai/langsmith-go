@@ -1,5 +1,50 @@
 # Changelog
 
+## [0.34.0](https://github.com/langchain-ai/langsmith-go/compare/v0.33.1...v0.34.0) (2026-11-26)
+
+
+### ⚠ BREAKING CHANGES
+
+* **cli:** add --wait and --timeout to sandboxes create and start
+* add cursor-paginated workspace secrets listing
+
+### Features
+
+* accept cancelled run status in readers ([cc607e3](https://github.com/langchain-ai/langsmith-go/commit/cc607e3e7f06de0487780a5354eee50a2fb040be))
+* add cursor-paginated workspace secrets listing ([923b09c](https://github.com/langchain-ai/langsmith-go/commit/923b09c0206f4de48a2be6fe911edaa0356990c5))
+* **annotation-queues:** list a queue's reviewers with their progress ([318c221](https://github.com/langchain-ai/langsmith-go/commit/318c2212856d8b805618f7df6242cac2e4e49498))
+* **cli:** add --if-not-exists to datasets, prompt and agents create ([955ff52](https://github.com/langchain-ai/langsmith-go/commit/955ff524395292caa192bbad988184e7770b94aa))
+* **cli:** add --json as shorthand for --format json ([5bb9f81](https://github.com/langchain-ai/langsmith-go/commit/5bb9f8108cd7b2e9cca0aa648e3310a60ba59254))
+* **cli:** add --wait and --timeout to sandboxes create and start ([c22581b](https://github.com/langchain-ai/langsmith-go/commit/c22581bc70ab26aa7323776743c178794e55cc14))
+* **cli:** add `langsmith gateway wrap` and `gateway models` for the LLM Gateway ([5a67eb2](https://github.com/langchain-ai/langsmith-go/commit/5a67eb267395537cb315001cf7d20e6e8bf48f52))
+* **cli:** create examples from runs (ADX-439) ([85e7635](https://github.com/langchain-ai/langsmith-go/commit/85e76358cd4b362b9daf7818d971dd9965c11250))
+* **cli:** experiments compare (ADX-438) ([7822472](https://github.com/langchain-ai/langsmith-go/commit/78224720f5f29b5dded4b7a5ae6a6554f5510547))
+* **cli:** expose sandbox memory, lifecycle, snapshot, volume and file options ([7bb6894](https://github.com/langchain-ai/langsmith-go/commit/7bb68948b362c10ea600fe9e1ce6f063e558fbd7))
+* **cli:** map errors to distinct exit codes, opt-in until 1.0 ([a064cf9](https://github.com/langchain-ai/langsmith-go/commit/a064cf97b6bbff230bdd600dad5706ff49db03cb))
+* **cli:** name the fix command in not-found, workspace and 403 errors ([82169eb](https://github.com/langchain-ai/langsmith-go/commit/82169eb6815dec2c50a723d48847d49d3253004d))
+* **cli:** stderr notes for active profile, truncated lists and default time window ([ae2b849](https://github.com/langchain-ai/langsmith-go/commit/ae2b84931dd7a5cf7e5a83f18d0e1398cc297b77))
+* **cli:** upload whole evaluator files and sandbox code evaluators ([fc6275d](https://github.com/langchain-ai/langsmith-go/commit/fc6275d3084c4763a44d66c5e0fba6755b0dd00e))
+* **custom-apps:** answer custom apps errors with problem details ([7586e25](https://github.com/langchain-ai/langsmith-go/commit/7586e256d0753cff6759697d721283352eee6132))
+* **feedback:** delete feedback from Go ([d45b1ed](https://github.com/langchain-ai/langsmith-go/commit/d45b1edf942b5915ba065b9fc1523a72ebe32189))
+* **gateway:** support Vertex embeddings ([264a212](https://github.com/langchain-ai/langsmith-go/commit/264a212bc6fa452dd54b2b0dbf1ddde016235e2b))
+* **gateway:** support Vertex predict embeddings ([b3e850b](https://github.com/langchain-ai/langsmith-go/commit/b3e850b3190f71abbf2aee89bb189d110a1a3a6e))
+* **sdks:** build sandbox snapshots from a local Dockerfile in the Go SDK and CLI ([3406937](https://github.com/langchain-ai/langsmith-go/commit/3406937da920478fb575f3403ccbfa8316ff0a21))
+
+
+### Bug Fixes
+
+* **cli:** error on unknown subcommands (ADX-435) ([4edfb8a](https://github.com/langchain-ai/langsmith-go/commit/4edfb8a54c277c2084f6041acf30aa6991a597db))
+* **cli:** find trace get's project through v2, not the deprecated v1 runs query ([6e84226](https://github.com/langchain-ai/langsmith-go/commit/6e8422642473ef475667abf732f307840ff54de7))
+* **cli:** install the LangChain skills in langsmith setup ([04b41eb](https://github.com/langchain-ai/langsmith-go/commit/04b41eb71bad60169abcbb50c9788adf6e3ec1db))
+* **cli:** require --yes for every destructive command (ADX-440) ([746b3f7](https://github.com/langchain-ai/langsmith-go/commit/746b3f77cb9d7190a80dd766ab9001976cf09e86))
+* **go:** write the workspace-required auth error as problem details ([d0e194f](https://github.com/langchain-ai/langsmith-go/commit/d0e194f575e62bf0f9cda7cf787b65c788127c51))
+* **traceanthropic:** keep every block type in streamed completions ([6b825a7](https://github.com/langchain-ai/langsmith-go/commit/6b825a7aa5b5be353d0d1ee7572ffa359989015e))
+
+
+### Refactors
+
+* **cli:** move the CLI's code into the Go SDK module ([e672053](https://github.com/langchain-ai/langsmith-go/commit/e672053fefa0799848b61d2eb92df461431e6674))
+
 ## [0.33.1](https://github.com/langchain-ai/langsmith-go/compare/v0.33.0...v0.33.1) (2026-11-20)
 
 
