@@ -382,26 +382,48 @@ func TestRawDo_ReturnsNonJSONErrorResponseWithoutRetrying(t *testing.T) {
 }
 
 func TestRawGet_JSONHTTPErrorIncludesMessage(t *testing.T) {
-	ts := httptest.NewServer(http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
-		w.Header().Set("Content-Type", "application/json")
-		w.WriteHeader(http.StatusForbidden)
-		_ = json.NewEncoder(w).Encode(map[string]string{
-			"error":   "org_scoped_key_requires_workspace",
-			"message": "This API key requires a workspace ID.",
-		})
-	}))
-	defer ts.Close()
+	for _, tc := range []struct {
+		name   string
+		status int
+		body   map[string]any
+		want   string
+	}{
+		{
+			name:   "code and message",
+			status: http.StatusForbidden,
+			body: map[string]any{
+				"error":   "org_scoped_key_requires_workspace",
+				"message": "This API key requires a workspace ID.",
+			},
+			want: "HTTP 403: org_scoped_key_requires_workspace: This API key requires a workspace ID.",
+		},
+		{
+			// Problem details that repeat detail under error, as custom apps do.
+			name:   "error repeating detail",
+			status: http.StatusNotFound,
+			body: map[string]any{
+				"type": "about:blank", "title": "Not Found", "status": 404,
+				"detail": "custom app not found", "error": "custom app not found",
+			},
+			want: "HTTP 404: custom app not found",
+		},
+	} {
+		t.Run(tc.name, func(t *testing.T) {
+			ts := httptest.NewServer(http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
+				w.Header().Set("Content-Type", "application/json")
+				w.WriteHeader(tc.status)
+				_ = json.NewEncoder(w).Encode(tc.body)
+			}))
+			defer ts.Close()
 
-	c := New("key", ts.URL)
-	err := c.RawGet(context.Background(), "/fail", nil)
-	if err == nil {
-		t.Fatal("expected error for 403")
-	}
-	if !strings.Contains(err.Error(), "org_scoped_key_requires_workspace") {
-		t.Fatalf("expected error code, got %q", err.Error())
-	}
-	if !strings.Contains(err.Error(), "workspace ID") {
-		t.Fatalf("expected workspace guidance, got %q", err.Error())
+			err := New("key", ts.URL).RawGet(context.Background(), "/fail", nil)
+			if err == nil {
+				t.Fatalf("expected error for %d", tc.status)
+			}
+			if err.Error() != tc.want {
+				t.Fatalf("got %q, want %q", err.Error(), tc.want)
+			}
+		})
 	}
 }
 

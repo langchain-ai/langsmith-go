@@ -581,7 +581,7 @@ func formatHTTPErrorBody(body []byte) string {
 	}
 
 	switch {
-	case code != "" && message != "":
+	case code != "" && message != "" && code != message:
 		return code + ": " + message
 	case code != "":
 		return code
